@@ -1,2 +1,2 @@
 # geoclimate
-Private repository to share tools and scripts for geoclimate projects
+Repository to share tools and scripts for geoclimate projects
