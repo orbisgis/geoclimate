@@ -1,20 +1,19 @@
 package org.orbisgis
 
-import org.orbisgis.processmanager.ProcessFactory
-import org.orbisgis.processmanagerapi.IProcess
+import groovy.transform.BaseScript
 import org.orbisgis.datamanagerapi.dataset.ITable
+import org.orbisgis.processmanagerapi.IProcess
 
-class IndicatorDemo {
+@BaseScript Geoclimate geoclimate
 
-    final ProcessFactory processFactory = new ProcessFactory()
-
-    // Create a new process
-    public IProcess demoProcess = processFactory.create(
+// Create a new process
+static IProcess getDemoProcess() {
+    return processFactory.create(
             "Demo process",
             [inputA: ITable],
-            [outputA : String],
-            { inputA  ->
-                [outputA: inputA.columnNames] }
+            [outputA: String],
+            { inputA ->
+                [outputA: inputA.columnNames]
+            }
     )
-
 }
