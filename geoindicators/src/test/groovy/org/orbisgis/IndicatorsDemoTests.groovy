@@ -19,9 +19,8 @@ class IndicatorsDemoTests {
         """)
         assertNotNull(h2GIS)
 
-        IndicatorDemo  indicatorDemo =  new IndicatorDemo()
+        Geoclimate.IndicatorDemo.demoProcess.execute([inputA : h2GIS.getSpatialTable("spatial_table")])
+        assertTrue(Geoclimate.IndicatorDemo.demoProcess.results.outputA.equals(["ID", "THE_GEOM"]))
 
-        indicatorDemo.demoProcess.execute([inputA : h2GIS.getSpatialTable("spatial_table")])
-        assertTrue(indicatorDemo.demoProcess.results.outputA.equals(["ID", "THE_GEOM"]))
     }
 }
