@@ -9,7 +9,7 @@ import org.orbisgis.processmanagerapi.IProcess
 
 /**
  * This process extract geometry properties.
- * @return A database table.
+ * @return A database table name.
  * @author Erwan Bocher
  */
 static IProcess geometryProperties() {
@@ -35,3 +35,44 @@ return processFactory.create(
             [outputTableName: outputTableName]
             }
 )}
+
+/**
+ * This process extract building size properties.
+ * @return A database table name.
+ * @author Erwan Bocher
+ */
+static IProcess buildingSizeProperties() {
+    return processFactory.create(
+            "Building size properties",
+            [inputTableName: String,inputFields:String[],operations: String[]
+             , outputTableName: String, datasource: JdbcDataSource],
+            [outputTableName : String],
+            { inputTableName,inputFields, operations, outputTableName, datasource ->
+                String query = "CREATE TABLE $outputTableName AS SELECT "
+                def geometricField = "the_geom"
+                def dist_passiv = 3
+                def ops = ["building_volume","building_floor_area", "building_total_facade_length",
+                           "building_passive_volume_ratio"]
+
+                operations.each {operation ->
+                    if(operation=="building_volume") {
+                        query += "ST_AREA($geometricField)*0.5*(height_wall+height_roof) AS building_volume,"
+                    }
+                    else if(operation=="building_floor_area"){
+                        query += "ST_AREA($geometricField)*nb_lev AS building_floor_area,"
+                    }
+                    else if(operation=="building_total_facade_length"){
+                        query += "ST_PERIMETER($geometricField)+ST_PERIMETER(ST_HOLES($geometricField))" +
+                                " AS building_total_facade_length,"
+                    }
+                    else if(operation=="building_passive_volume_ratio") {
+                        query += "ST_AREA(ST_BUFFER($geometricField, -$dist_passiv, 'join=mitre'))/" +
+                                "ST_AREA($geometricField) AS building_passive_volume_ratio,"
+                    }
+                }
+                query+= "${inputFields.join(",")} FROM $inputTableName"
+                logger.info("Executing $query")
+                datasource.execute query
+                [outputTableName: outputTableName]
+            }
+    )}
