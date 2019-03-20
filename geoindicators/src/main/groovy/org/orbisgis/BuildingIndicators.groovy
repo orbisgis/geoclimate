@@ -23,9 +23,10 @@ return processFactory.create(
             def geometricField = "the_geom";
             def ops = ["st_geomtype","st_srid", "st_length","st_perimeter","st_area", "st_dimension",
                    "st_coorddim", "st_num_geoms", "st_num_pts", "st_issimple", "st_isvalid", "st_isempty"]
+
             operations.each {operation ->
                 if(ops.contains(operation)){
-                    query += "$operation($geometricField) as ${operation.substring(3)},"
+                    query += "$operation($geometricField) as $operation,"
                 }
             }
             query+= "${inputFields.join(",")} from $inputTableName"
