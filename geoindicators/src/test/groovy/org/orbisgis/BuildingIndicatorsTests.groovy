@@ -29,8 +29,7 @@ class BuildingIndicatorsTests {
     @Test
     void buildingSizeProperties() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
-        String sqlFilePath = System.getProperty("user.dir")+"/src/test/resources/org/orbisgis/data_for_tests.sql"
-        String sqlString = new File(sqlFilePath).text
+        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
 
         // Only the first 1 first created buildings are selected for the tests
