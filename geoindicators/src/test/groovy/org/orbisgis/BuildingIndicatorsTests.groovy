@@ -26,4 +26,26 @@ class BuildingIndicatorsTests {
         }
     }
 
+    @Test
+    void buildingSizeProperties() {
+        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
+        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
+        h2GIS.execute(sqlString)
+
+        // Only the first 1 first created buildings are selected for the tests
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, building_size_properties; CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build = 7;")
+
+        def  p =  Geoclimate.BuildingIndicators.buildingSizeProperties()
+        p.execute([inputBuildingTableName: "tempo_build", inputFields:["id_build", "the_geom"],
+                   operations:["building_volume", "building_floor_area", "building_total_facade_length",
+                               "building_passive_volume_ratio"],
+                   outputTableName : "building_size_properties",datasource:h2GIS])
+        h2GIS.getTable("building_size_properties").eachRow {
+            row ->
+                assertEquals(141,row.building_volume)
+                assertEquals(47, row.building_floor_area)
+                assertEquals(38,  row.building_total_facade_length)
+                assertEquals(0,  row.building_passive_volume_ratio)
+        }
+    }
 }
