@@ -39,7 +39,7 @@ return processFactory.create(
 /**
  * This process extract building size properties.
  * @return A database table name.
- * @author Erwan Bocher
+ * @author Jérémy Bernard
  */
 static IProcess buildingSizeProperties() {
     return processFactory.create(
