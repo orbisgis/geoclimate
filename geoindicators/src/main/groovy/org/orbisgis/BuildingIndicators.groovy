@@ -47,7 +47,7 @@ static IProcess buildingSizeProperties() {
             [inputBuildingTableName: String,inputFields:String[],operations: String[]
              , outputTableName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { inputTableName,inputFields, operations, outputTableName, datasource ->
+            { inputBuildingTableName,inputFields, operations, outputTableName, datasource ->
                 String query = "CREATE TABLE $outputTableName AS SELECT "
                 def geometricField = "the_geom"
                 def dist_passiv = 3
