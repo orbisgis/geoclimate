@@ -44,7 +44,7 @@ return processFactory.create(
 static IProcess buildingSizeProperties() {
     return processFactory.create(
             "Building size properties",
-            [inputTableName: String,inputFields:String[],operations: String[]
+            [inputBuildingTableName: String,inputFields:String[],operations: String[]
              , outputTableName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { inputTableName,inputFields, operations, outputTableName, datasource ->
@@ -70,7 +70,7 @@ static IProcess buildingSizeProperties() {
                                 "ST_AREA($geometricField) AS building_passive_volume_ratio,"
                     }
                 }
-                query+= "${inputFields.join(",")} FROM $inputTableName"
+                query+= "${inputFields.join(",")} FROM $inputBuildingTableName"
                 logger.info("Executing $query")
                 datasource.execute query
                 [outputTableName: outputTableName]
