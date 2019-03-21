@@ -36,7 +36,7 @@ class BuildingIndicatorsTests {
         h2GIS.execute("DROP TABLE IF EXISTS tempo_build, building_size_properties; CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build = 7;")
 
         def  p =  Geoclimate.BuildingIndicators.buildingSizeProperties()
-        p.execute([inputTableName: "tempo_build", inputFields:["id_build", "the_geom"],
+        p.execute([inputBuildingTableName: "tempo_build", inputFields:["id_build", "the_geom"],
                    operations:["building_volume", "building_floor_area", "building_total_facade_length",
                                "building_passive_volume_ratio"],
                    outputTableName : "building_size_properties",datasource:h2GIS])
