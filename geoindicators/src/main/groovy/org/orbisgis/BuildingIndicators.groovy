@@ -101,8 +101,8 @@ static IProcess buildingNeighborsProperties() {
                 def build_intersec = "build_intersec"+uid_out.toString()
 
 
-                String query = "CREATE SPATIAL INDEX IF NOT EXISTS buff_ids ON $inputBuildingTableName($geometricField) USING rtree; " +
-                        "CREATE INDEX IF NOT EXISTS buff_id ON $inputBuildingTableName($idField) USING rtree;" +
+                String query = "CREATE INDEX IF NOT EXISTS buff_ids ON $inputBuildingTableName($geometricField) USING RTREE; " +
+                        "CREATE INDEX IF NOT EXISTS buff_id ON $inputBuildingTableName($idField);" +
                         " CREATE TABLE $build_intersec AS SELECT "
 
                 String query_update = ""
@@ -132,7 +132,7 @@ static IProcess buildingNeighborsProperties() {
                         " WHERE a.$geometricField && b.$geometricField AND " +
                         "ST_INTERSECTS(a.$geometricField, b.$geometricField) AND a.$idField <> b.$idField" +
                         " GROUP BY a.$idField;" +
-                        "CREATE INDEX IF NOT EXISTS buff_id ON $build_intersec($idField) USING rtree;" +
+                        "CREATE INDEX IF NOT EXISTS buff_id ON $build_intersec($idField);" +
                         "CREATE TABLE $outputTableName AS SELECT b.${operations.join(",b.")}, a.${inputFields.join(",a.")}" +
                         " FROM $inputBuildingTableName a LEFT JOIN $build_intersec b ON a.$idField = b.$idField;"
                 query+= query_update
