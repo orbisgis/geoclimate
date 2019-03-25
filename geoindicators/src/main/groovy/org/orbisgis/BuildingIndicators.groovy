@@ -76,3 +76,72 @@ static IProcess buildingSizeProperties() {
                 [outputTableName: outputTableName]
             }
     )}
+
+
+/**
+ * This process extract building interactions properties.
+ * @return A database table name.
+ * @author Jérémy Bernard
+ */
+static IProcess buildingNeighborsProperties() {
+    return processFactory.create(
+            "Building interactions properties",
+            [inputBuildingTableName: String,inputFields:String[],operations: String[]
+             , outputTableName: String, datasource: JdbcDataSource],
+            [outputTableName : String],
+            { inputBuildingTableName,inputFields, operations, outputTableName, datasource ->
+                def geometricField = "the_geom"
+                def idField = "id_build"
+                def height_wall = "height_wall"
+                def ops = ["building_contiguity","building_common_wall_fraction",
+                           "building_number_building_neighbor"]
+                // To avoid overwriting the output files of this step, a unique identifier is created
+                def uid_out = System.currentTimeMillis()
+                // Temporary table names
+                def build_intersec = "build_intersec"+uid_out.toString()
+
+
+                String query = "CREATE INDEX IF NOT EXISTS buff_ids ON $inputBuildingTableName($geometricField) USING RTREE; " +
+                        "CREATE INDEX IF NOT EXISTS buff_id ON $inputBuildingTableName($idField);" +
+                        " CREATE TABLE $build_intersec AS SELECT "
+
+                String query_update = ""
+
+                operations.each {operation ->
+                    if(operation=="building_contiguity") {
+                        query += "sum(least(a.$height_wall, b.$height_wall)*" +
+                                "st_length(ST_INTERSECTION(a.$geometricField,b.$geometricField)))/" +
+                                "((ST_PERIMETER(a.$geometricField)+ST_PERIMETER(ST_HOLES(a.$geometricField)))*a.$height_wall)" +
+                                " AS $operation,"
+                    }
+                    else if(operation=="building_common_wall_fraction"){
+                        query += "sum(ST_LENGTH(ST_INTERSECTION(a.$geometricField, b.$geometricField)))/" +
+                                "(ST_PERIMETER(a.$geometricField)+ST_PERIMETER(ST_HOLES(a.$geometricField))) " +
+                                "AS $operation,"
+                    }
+                    else if(operation=="building_number_building_neighbor"){
+                        query += "COUNT(ST_INTERSECTION(a.$geometricField, b.$geometricField))" +
+                                " AS $operation,"
+                    }
+                    // The buildingNeighborProperty is set to 0 for the buildings that have no intersection with their building neighbors
+                    if(ops.contains(operation)){
+                        query_update+= "UPDATE $outputTableName SET $operation = 0 WHERE $operation IS null;"
+                    }
+                }
+                query+= "a.${inputFields.join(",a.")} FROM $inputBuildingTableName a, $inputBuildingTableName b" +
+                        " WHERE a.$geometricField && b.$geometricField AND " +
+                        "ST_INTERSECTS(a.$geometricField, b.$geometricField) AND a.$idField <> b.$idField" +
+                        " GROUP BY a.$idField;" +
+                        "CREATE INDEX IF NOT EXISTS buff_id ON $build_intersec($idField);" +
+                        "CREATE TABLE $outputTableName AS SELECT b.${operations.join(",b.")}, a.${inputFields.join(",a.")}" +
+                        " FROM $inputBuildingTableName a LEFT JOIN $build_intersec b ON a.$idField = b.$idField;"
+                query+= query_update
+
+                // The temporary tables are deleted
+                query+= "DROP TABLE IF EXISTS $build_intersec"
+
+                logger.info("Executing $query")
+                datasource.execute query
+                [outputTableName: outputTableName]
+            }
+    )}
