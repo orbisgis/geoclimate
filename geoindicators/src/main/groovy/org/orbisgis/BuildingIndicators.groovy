@@ -145,3 +145,43 @@ static IProcess buildingNeighborsProperties() {
                 [outputTableName: outputTableName]
             }
     )}
+
+
+/**
+ * This process extract building form properties.
+ * @return A database table name.
+ * @author Jérémy Bernard
+ */
+static IProcess buildingFormProperties() {
+    return processFactory.create(
+            "Building form properties",
+            [inputBuildingTableName: String,inputFields:String[],operations: String[]
+             , outputTableName: String, datasource: JdbcDataSource],
+            [outputTableName : String],
+            { inputBuildingTableName,inputFields, operations, outputTableName, datasource ->
+                def geometricField = "the_geom"
+                def height_wall = "height_wall"
+                def ops = ["building_concavity","building_form_factor",
+                           "building_raw_compacity"]
+
+                String query = " CREATE TABLE $outputTableName AS SELECT "
+
+                operations.each {operation ->
+                    if(operation=="building_concavity"){
+                        query += "ST_AREA($geometricField)/ST_AREA(ST_CONVEXHULL($geometricField)) AS $operation,"
+                    }
+                    else if(operation=="building_form_factor"){
+                        query += "ST_AREA($geometricField)/POWER(ST_PERIMETER($geometricField), 2) AS $operation,"
+                    }
+                    else if(operation=="building_raw_compacity") {
+                        query += "((ST_PERIMETER($geometricField)+ST_PERIMETER(ST_HOLES($geometricField)))*$height_wall+" +
+                                "ST_AREA($geometricField))/POWER(ST_AREA($geometricField)*$height_wall, 2./3) AS $operation,"
+                    }
+                }
+                query+= "${inputFields.join(",")} FROM $inputBuildingTableName"
+
+                logger.info("Executing $query")
+                datasource.execute query
+                [outputTableName: outputTableName]
+            }
+    )}
