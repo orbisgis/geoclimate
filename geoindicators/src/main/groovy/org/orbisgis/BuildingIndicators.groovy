@@ -227,18 +227,8 @@ static IProcess buildingFormProperties() {
     )}
 
 /**
- * This process extract building interactions properties.
- *
- * --> "building_contiguity": defined as the shared wall area divided by the total building wall area
- * (cf. Bocher et al. - 2018)
- * --> "building_common_wall_fraction": defined as ratio between the lenght of building wall shared with other buildings
- * and the length of total building walls
- * --> "building_number_building_neighbor": defined as the number of building  neighbors in contact with the building
- * (cf. Bocher et al. - 2018)
- *
- * References:
- *   Bocher, E., Petit, G., Bernard, J., & Palominos, S. (2018). A geoprocessing framework to compute
- * urban indicators: The MApUCE tools chain. Urban climate, 24, 153-174.
+ * This process extract the building closest distance to an other building. A buffer of defined size (bufferDist argument)
+ * is used to get the buildings within the building of interest and then the minimum distance is calculated.
  *
  * @return A database table name.
  * @author Jérémy Bernard
