@@ -76,4 +76,34 @@ class BuildingIndicatorsTests {
         assertEquals("0.0\n${(10/46).round(5)}\n".toString(), concat[1].toString())
         assertEquals("0\n1\n".toString(),  concat[2].toString())
     }
+
+    @Test
+    void buildingFormProperties() {
+        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
+        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
+        h2GIS.execute(sqlString)
+
+        // Only the first 1 first created buildings are selected for the tests
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, building_form_properties; CREATE TABLE tempo_build AS SELECT * " +
+                "FROM building_test WHERE id_build < 8")
+
+        def  p =  Geoclimate.BuildingIndicators.buildingFormProperties()
+        p.execute([inputBuildingTableName: "tempo_build", inputFields:["id_build", "the_geom"],
+                   operations:["building_concavity","building_form_factor",
+                               "building_raw_compacity"],
+                   outputTableName : "building_form_properties",datasource:h2GIS])
+        def concat = ["", "", ""]
+        h2GIS.eachRow("SELECT * FROM building_form_properties WHERE id_build = 1 OR id_build = 7 ORDER BY id_build ASC"){
+            row ->
+                concat[0]+= "${row.building_concavity}\n"
+                concat[1]+= "${row.building_form_factor.round(5)}\n"
+        }
+        h2GIS.eachRow("SELECT * FROM building_form_properties WHERE id_build = 2 ORDER BY id_build ASC"){
+            row ->
+                concat[2]+= "${row.building_raw_compacity.round(3)}\n"
+        }
+        assertEquals("1.0\n0.94\n".toString(),concat[0].toString())
+        assertEquals("${(0.0380859375).round(5)}\n${(0.0522222222222222).round(5)}\n".toString(), concat[1].toString())
+        assertEquals("5.607\n".toString(),  concat[2].toString())
+    }
 }

@@ -38,6 +38,17 @@ return processFactory.create(
 
 /**
  * This process extract building size properties.
+ *
+ * --> "building_volume": defined as the building area multiplied by the mean of the building
+ * wall height and the building roof height.
+ * --> "building_floor_area": defined as the number of level multiplied by the building area (cf. Bocher et al. - 2018)
+ * --> "building_total_facade_length": defined as the total linear of facade (sum of the building perimeter and
+ * the perimeter of the building courtyards)
+ *
+ * References:
+ *   Bocher, E., Petit, G., Bernard, J., & Palominos, S. (2018). A geoprocessing framework to compute
+ * urban indicators: The MApUCE tools chain. Urban climate, 24, 153-174.
+ *
  * @return A database table name.
  * @author Jérémy Bernard
  */
@@ -80,6 +91,18 @@ static IProcess buildingSizeProperties() {
 
 /**
  * This process extract building interactions properties.
+ *
+ * --> "building_contiguity": defined as the shared wall area divided by the total building wall area
+ * (cf. Bocher et al. - 2018)
+ * --> "building_common_wall_fraction": defined as ratio between the lenght of building wall shared with other buildings
+ * and the length of total building walls
+ * --> "building_number_building_neighbor": defined as the number of building  neighbors in contact with the building
+ * (cf. Bocher et al. - 2018)
+ *
+ * References:
+ *   Bocher, E., Petit, G., Bernard, J., & Palominos, S. (2018). A geoprocessing framework to compute
+ * urban indicators: The MApUCE tools chain. Urban climate, 24, 153-174.
+ *
  * @return A database table name.
  * @author Jérémy Bernard
  */
@@ -139,6 +162,63 @@ static IProcess buildingNeighborsProperties() {
 
                 // The temporary tables are deleted
                 query+= "DROP TABLE IF EXISTS $build_intersec"
+
+                logger.info("Executing $query")
+                datasource.execute query
+                [outputTableName: outputTableName]
+            }
+    )}
+
+
+/**
+ * This process extract building form properties.
+ *
+ * --> "building_concavity": defined as the building area divided by the convex hull area (cf. Bocher et al. - 2018)
+ * --> "building_form_factor": defined as ratio between the building area divided by the square of the building
+ * perimeter (cf. Bocher et al. - 2018)
+ * --> "building_raw_compacity": defined as the ratio between building surfaces (walls and roof) divided by the
+ * building volume at the power 2./3. For the calculation, the roof is supposed to have a gable and the roof surface
+ * is calculated considering that the building is square (otherwise, the assumption related to the gable direction
+ * would strongly affect the result).
+ *
+ * References:
+ *   Bocher, E., Petit, G., Bernard, J., & Palominos, S. (2018). A geoprocessing framework to compute
+ * urban indicators: The MApUCE tools chain. Urban climate, 24, 153-174.
+ *
+ * @return A database table name.
+ * @author Jérémy Bernard
+ */
+static IProcess buildingFormProperties() {
+    return processFactory.create(
+            "Building form properties",
+            [inputBuildingTableName: String,inputFields:String[],operations: String[]
+             , outputTableName: String, datasource: JdbcDataSource],
+            [outputTableName : String],
+            { inputBuildingTableName,inputFields, operations, outputTableName, datasource ->
+                def geometricField = "the_geom"
+                def height_wall = "height_wall"
+                def height_roof = "height_roof"
+                def ops = ["building_concavity","building_form_factor",
+                           "building_raw_compacity"]
+
+                String query = " CREATE TABLE $outputTableName AS SELECT "
+
+                operations.each {operation ->
+                    if(operation=="building_concavity"){
+                        query += "ST_AREA($geometricField)/ST_AREA(ST_CONVEXHULL($geometricField)) AS $operation,"
+                    }
+                    else if(operation=="building_form_factor"){
+                        query += "ST_AREA($geometricField)/POWER(ST_PERIMETER($geometricField), 2) AS $operation,"
+                    }
+                    else if(operation=="building_raw_compacity") {
+                        query += "((ST_PERIMETER($geometricField)+ST_PERIMETER(ST_HOLES($geometricField)))*$height_wall+" +
+                                "POWER(POWER(ST_AREA($geometricField),2)+4*ST_AREA($geometricField)*" +
+                                "POWER($height_roof-$height_wall, 2),0.5)+POWER(ST_AREA($geometricField),0.5)*" +
+                                "($height_roof-$height_wall))/POWER(ST_AREA($geometricField)*" +
+                                "($height_wall+$height_roof)/2, 2./3) AS $operation,"
+                    }
+                }
+                query+= "${inputFields.join(",")} FROM $inputBuildingTableName"
 
                 logger.info("Executing $query")
                 datasource.execute query
