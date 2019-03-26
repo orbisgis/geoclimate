@@ -280,3 +280,58 @@ static IProcess buildingMinimumBuildingSpacing() {
             }
     )}
 
+/**
+ * This process extract the building closest distance to a road. A buffer of defined size (bufferDist argument)
+ * is used to get the roads within the building of interest and then the minimum distance is calculated.
+ *
+ * @return A database table name.
+ * @author Jérémy Bernard
+ */
+static IProcess buildingRoadDistance() {
+    return processFactory.create(
+            "Building road distance",
+            [inputBuildingTableName: String, inputRoadTableName: String, inputFields:String[], bufferDist: Integer
+             , outputTableName: String, datasource: JdbcDataSource],
+            [outputTableName : String],
+            { inputBuildingTableName, inputRoadTableName, inputFields, bufferDist, outputTableName, datasource ->
+                def geometricField = "the_geom"
+                def idFieldBu = "id_build"
+                def road_width = "width"
+
+                // To avoid overwriting the output files of this step, a unique identifier is created
+                def uid_out = System.currentTimeMillis()
+
+                // Temporary table names
+                def build_buffer = "build_buffer"+uid_out.toString()
+                def road_surf = "road_surf"+uid_out.toString()
+                def road_within_buffer = "road_within_buffer"+uid_out.toString()
+
+                // The buffer is created
+                datasource.execute(("CREATE TABLE $build_buffer AS SELECT $idFieldBu, ST_BUFFER($geometricField, $bufferDist)"+
+                                " AS $geometricField FROM $inputBuildingTableName; "+
+                                "CREATE INDEX IF NOT EXISTS buff_ids ON $build_buffer($geometricField) USING RTREE").toString())
+                // The road surfaces are created
+                datasource.execute(("CREATE TABLE $road_surf AS SELECT ST_BUFFER($geometricField, $road_width/2) "+
+                                    "AS $geometricField FROM $inputRoadTableName; "+
+                                    "CREATE INDEX IF NOT EXISTS buff_ids ON $road_surf($geometricField) USING RTREE").toString())
+                // The roads located within the buffer are identified
+                datasource.execute(("DROP TABLE IF EXISTS $road_within_buffer; CREATE TABLE $road_within_buffer AS "+
+                                    "SELECT a.$idFieldBu, b.$geometricField FROM $build_buffer a, $road_surf b "+
+                                    "WHERE a.$geometricField && b.$geometricField AND "+
+                                    "ST_INTERSECTS(a.$geometricField, b.$geometricField); "+
+                                    "CREATE INDEX IF NOT EXISTS with_buff_id ON $road_within_buffer($idFieldBu); "+
+                                    "CREATE INDEX IF NOT EXISTS a_id ON $inputBuildingTableName($idFieldBu)").toString())
+                // The minimum distance is calculated between each building and the surrounding roads
+                datasource.execute(("DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS "+
+                                    "SELECT LEAST(st_distance(a.$geometricField, b.$geometricField)) AS building_road_distance, "+
+                                    "a.${inputFields.join(",a.")} FROM $road_within_buffer b RIGHT JOIN $inputBuildingTableName a "+
+                                    "ON a.$idFieldBu = b.$idFieldBu GROUP BY a.$idFieldBu").toString())
+                // The minimum distance is set to the bufferDist value for buildings having no road within a bufferDist meters distance
+                datasource.execute(("UPDATE $outputTableName SET building_road_distance = $bufferDist "+
+                                    "WHERE building_road_distance IS null").toString())
+                // The temporary tables are deleted
+                datasource.execute("DROP TABLE IF EXISTS $build_buffer, $road_within_buffer, $road_surf".toString())
+                
+                [outputTableName: outputTableName]
+            }
+    )}

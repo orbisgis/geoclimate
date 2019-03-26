@@ -129,4 +129,26 @@ class BuildingIndicatorsTests {
         assertEquals("2.0\n0.0\n7.0\n", concat)
     }
 
+    @Test
+    void buildingRoadDistance() {
+        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
+        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
+        h2GIS.execute(sqlString)
+
+        // Only the first 1 first created buildings are selected for the tests
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_road, building_road_distance; CREATE TABLE tempo_road AS SELECT * " +
+                "FROM road_test WHERE id = 1")
+
+        def  p =  Geoclimate.BuildingIndicators.buildingRoadDistance()
+        p.execute([inputBuildingTableName: "building_test", inputRoadTableName: "tempo_road",
+                   inputFields:["id_build", "the_geom"], bufferDist:100,
+                   outputTableName : "building_road_distance",datasource:h2GIS])
+        def concat = ""
+        h2GIS.eachRow("SELECT * FROM building_road_distance WHERE id_build = 1 OR id_build = 6 ORDER BY id_build ASC"){
+            row ->
+                concat+= "${row.building_road_distance}\n"
+        }
+        assertEquals("100.0\n61.0\n", concat)
+    }
+
 }
