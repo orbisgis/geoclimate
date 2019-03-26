@@ -225,3 +225,58 @@ static IProcess buildingFormProperties() {
                 [outputTableName: outputTableName]
             }
     )}
+
+/**
+ * This process extract the building closest distance to an other building. A buffer of defined size (bufferDist argument)
+ * is used to get the buildings within the building of interest and then the minimum distance is calculated.
+ *
+ * @return A database table name.
+ * @author Jérémy Bernard
+ */
+static IProcess buildingMinimumBuildingSpacing() {
+    return processFactory.create(
+            "Building minimum building spacing",
+            [inputBuildingTableName: String,inputFields:String[],bufferDist: Double
+             , outputTableName: String, datasource: JdbcDataSource],
+            [outputTableName : String],
+            { inputBuildingTableName,inputFields, bufferDist, outputTableName, JdbcDataSource datasource ->
+                def geometricField = "the_geom"
+                def idField = "id_build"
+
+                // To avoid overwriting the output files of this step, a unique identifier is created
+                def uid_out = System.currentTimeMillis()
+
+                // Temporary table names
+                def build_buffer = "build_buffer"+uid_out.toString()
+                def build_within_buffer = "build_within_buffer"+uid_out.toString()
+
+                // The buffer is created
+                datasource.execute(("CREATE TABLE $build_buffer AS SELECT $idField, ST_BUFFER($geometricField, $bufferDist)"+
+                                    " AS $geometricField FROM $inputBuildingTableName; " +
+                                    "CREATE INDEX IF NOT EXISTS buff_ids ON $build_buffer($geometricField) USING RTREE;"+
+                                    "CREATE INDEX IF NOT EXISTS inpute_ids ON $inputBuildingTableName($geometricField) USING RTREE;"+
+                                    "CREATE INDEX IF NOT EXISTS buff_id ON $build_buffer($idField); "+
+                                    "CREATE INDEX IF NOT EXISTS inpute_id ON $inputBuildingTableName($idField)").toString())
+                // The building located within the buffer are identified
+                datasource.execute(("DROP TABLE IF EXISTS $build_within_buffer; CREATE TABLE $build_within_buffer AS"+
+                                    " SELECT b.$idField, a.$geometricField FROM $inputBuildingTableName a, $build_buffer b "+
+                                    "WHERE a.$geometricField && b.$geometricField AND "+
+                                    "ST_INTERSECTS(a.$geometricField, b.$geometricField) AND a.$idField <> b.$idField;"+
+                                    "CREATE INDEX IF NOT EXISTS with_buff_id ON $build_within_buffer($idField);"+
+                                    "CREATE INDEX IF NOT EXISTS with_buff_ids ON $build_within_buffer($geometricField) "+
+                                    "USING RTREE").toString())
+                // The minimum distance is calculated
+                datasource.execute(("DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS "+
+                                    "SELECT MIN(ST_DISTANCE(a.$geometricField, b.$geometricField)) AS building_minimum_building_spacing, "+
+                                    "a.${inputFields.join(",a.")} FROM $build_within_buffer b RIGHT JOIN $inputBuildingTableName a ON a.$idField = b.$idField"+
+                                    " GROUP BY a.$idField").toString())
+                // The minimum distance is set to the $inputE value for buildings having no building neighbors in a $inputE meters distance
+                datasource.execute(("UPDATE $outputTableName SET building_minimum_building_spacing = $bufferDist "+
+                                    "WHERE building_minimum_building_spacing IS null").toString())
+                // The temporary tables are deleted
+                datasource.execute("DROP TABLE IF EXISTS $build_buffer, $build_within_buffer".toString())
+
+                [outputTableName: outputTableName]
+            }
+    )}
+

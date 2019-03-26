@@ -106,4 +106,27 @@ class BuildingIndicatorsTests {
         assertEquals("${(0.0380859375).round(5)}\n${(0.0522222222222222).round(5)}\n".toString(), concat[1].toString())
         assertEquals("5.607\n".toString(),  concat[2].toString())
     }
+
+    @Test
+    void buildingMinimumBuildingSpacing() {
+        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
+        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
+        h2GIS.execute(sqlString)
+
+        // Only the first 1 first created buildings are selected for the tests
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, building_form_properties; CREATE TABLE tempo_build AS SELECT * " +
+                "FROM building_test WHERE id_build < 7")
+
+        def  p =  Geoclimate.BuildingIndicators.buildingMinimumBuildingSpacing()
+        p.execute([inputBuildingTableName: "tempo_build", inputFields:["id_build", "the_geom"],
+                   bufferDist:100,
+                   outputTableName : "building_minimum_building_spacing",datasource:h2GIS])
+        def concat = ""
+        h2GIS.eachRow("SELECT * FROM building_minimum_building_spacing WHERE id_build = 2 OR id_build = 4 OR id_build = 6 ORDER BY id_build ASC"){
+            row ->
+                concat+= "${row.building_minimum_building_spacing}\n"
+        }
+        assertEquals("2.0\n0.0\n7.0\n", concat)
+    }
+
 }
