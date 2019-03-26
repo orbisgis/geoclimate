@@ -290,7 +290,7 @@ static IProcess buildingMinimumBuildingSpacing() {
 static IProcess buildingRoadDistance() {
     return processFactory.create(
             "Building road distance",
-            [inputBuildingTableName: String, inputRoadTableName: String, inputFields:String[], bufferDist: Integer
+            [inputBuildingTableName: String, inputRoadTableName: String, inputFields:String[], bufferDist: Double
              , outputTableName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { inputBuildingTableName, inputRoadTableName, inputFields, bufferDist, outputTableName, datasource ->
