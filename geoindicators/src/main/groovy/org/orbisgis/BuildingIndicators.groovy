@@ -236,10 +236,10 @@ static IProcess buildingFormProperties() {
 static IProcess buildingMinimumBuildingSpacing() {
     return processFactory.create(
             "Building minimum building spacing",
-            [inputBuildingTableName: String,inputFields:String[],bufferDist: Integer
+            [inputBuildingTableName: String,inputFields:String[],bufferDist: Double
              , outputTableName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { inputBuildingTableName,inputFields, bufferDist, outputTableName, datasource ->
+            { inputBuildingTableName,inputFields, bufferDist, outputTableName, JdbcDataSource datasource ->
                 def geometricField = "the_geom"
                 def idField = "id_build"
 
