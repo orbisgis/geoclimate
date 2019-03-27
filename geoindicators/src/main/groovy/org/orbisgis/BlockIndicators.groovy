@@ -43,8 +43,10 @@ return processFactory.create(
     )}
 
 /**
- * This process is used to compute basic statistical operations on a specific variable from a lower scale (for
- * example the sum of each building volume constituting a block to calculate the block volume)
+ * This process is used to compute weighted average and standard deviation on a specific variable from a lower scale (for
+ * example the mean building roof height within a reference spatial unit where the roof height values are weighted
+ * by the values of building area)
+ *
  * @return A database table name.
  * @author Erwan Bocher
  */
