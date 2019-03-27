@@ -11,7 +11,7 @@ import org.orbisgis.processmanagerapi.IProcess
  * This process is used to compute basic statistical operations on a specific variable from a lower scale (for
  * example the sum of each building volume constituting a block to calculate the block volume)
  * @return A database table name.
- * @author Erwan Bocher
+ * @author Jérémy Bernard
  */
 static IProcess unweightedOperationFromLowerScale() {
 return processFactory.create(
