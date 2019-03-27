@@ -21,7 +21,7 @@ return processFactory.create(
         [outputTableName : String],
         { inputLowerScaleTableName, inputCorrelationTableName, inputIdLow, inputIdUp,
           inputToTransfo, operations, outputTableName, datasource ->
-            def ops = ["SUM","AVG"]
+            def ops = ["SUM","AVG", "GEOM_AVG"]
 
             String query = "CREATE INDEX IF NOT EXISTS id_l ON $inputLowerScaleTableName($inputIdLow); "+
                             "CREATE INDEX IF NOT EXISTS id_lcorr ON $inputCorrelationTableName($inputIdLow); "+
@@ -30,7 +30,12 @@ return processFactory.create(
 
             operations.each {operation ->
                 if(ops.contains(operation)){
-                    query += "$operation(a.$inputToTransfo::float) AS ${operation+"_"+inputToTransfo},"
+                    if(operation=="GEOM_AVG"){
+                        query += "EXP(1.0/COUNT(*)*SUM(LOG(a.$inputToTransfo))) AS ${operation+"_"+inputToTransfo},"
+                    }
+                    else{
+                        query += "$operation(a.$inputToTransfo::float) AS ${operation+"_"+inputToTransfo},"
+                    }
                 }
             }
             query += "b.$inputIdUp FROM $inputLowerScaleTableName a, $inputCorrelationTableName b " +
