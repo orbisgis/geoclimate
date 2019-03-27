@@ -48,7 +48,7 @@ return processFactory.create(
  * by the values of building area)
  *
  * @return A database table name.
- * @author Erwan Bocher
+ * @author Jérémy Bernard
  */
 static IProcess weightedAggregatedStatistics() {
     return processFactory.create(
