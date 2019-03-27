@@ -13,4 +13,6 @@ abstract class Geoclimate extends Script {
 
 
     public static BuildingIndicators = new BuildingIndicators()
+
+    public static RsuIndicators = new RsuIndicators()
 }
