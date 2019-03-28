@@ -1,6 +1,5 @@
 package org.orbisgis
 
-import com.sun.org.apache.xpath.internal.functions.FuncFalse
 import groovy.transform.BaseScript
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanagerapi.dataset.ITable
