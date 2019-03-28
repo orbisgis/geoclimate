@@ -63,9 +63,9 @@ static IProcess weightedAggregatedStatistics() {
                 def uid_out = System.currentTimeMillis()
 
                 // Temporary table names
-                def weighted_mean = "weighted_mean"+uid_out.toString()
-                def corr_weight_mean = "corr_weight_mean"+uid_out.toString()
-                def weighted_all = "weighted_all"+uid_out.toString()
+                def weighted_mean = "weighted_mean"+uid_out
+                def corr_weight_mean = "corr_weight_mean"+uid_out
+                def weighted_all = "weighted_all"+uid_out
 
                 // The weighted mean is calculated in all cases since it is useful for the STD calculation
                 datasource.execute(("CREATE INDEX IF NOT EXISTS id_l ON $inputLowerScaleTableName($inputIdLow); "+
@@ -147,11 +147,11 @@ static IProcess blockPerkinsSkillScoreBuildingDirection() {
                     def uid_out = System.currentTimeMillis()
 
                     // Temporary table names
-                    def build_min_rec = "build_min_rec"+uid_out.toString()
-                    def build_dir360 = "build_dir360"+uid_out.toString()
-                    def build_dir180 = "build_dir180"+uid_out.toString()
-                    def build_dir_dist = "build_dir_dist"+uid_out.toString()
-                    def build_dir_tot = "build_dir_tot"+uid_out.toString()
+                    def build_min_rec = "build_min_rec"+uid_out
+                    def build_dir360 = "build_dir360"+uid_out
+                    def build_dir180 = "build_dir180"+uid_out
+                    def build_dir_dist = "build_dir_dist"+uid_out
+                    def build_dir_tot = "build_dir_tot"+uid_out
 
 
                     // The minimum diameter of the minimum rectangle is created for each building
