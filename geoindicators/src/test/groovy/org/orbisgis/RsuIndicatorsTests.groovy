@@ -59,4 +59,22 @@ class RsuIndicatorsTests {
         }
         assertEquals(0.54, concat, 0.05)
     }
+
+    @Test
+    void testRsuAspectRatio() {
+        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
+        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
+        h2GIS.execute(sqlString)
+
+        def  p =  Geoclimate.RsuIndicators.rsuAspectRatio()
+        p.execute([rsuTable: "rsu_test",inputColumns:["id_rsu", "the_geom"], rsuFreeExternalFacadeDensityColumn:
+                "rsu_free_external_facade_density", rsuBuildingDensityColumn: "rsu_building_density",
+                   outputTableName: "rsu_aspect_ratio", datasource: h2GIS])
+        def concat = 0
+        h2GIS.eachRow("SELECT * FROM rsu_aspect_ratio WHERE id_rsu = 1"){
+            row ->
+                concat+= row.rsu_aspect_ratio
+        }
+        assertEquals(1.344, concat, 0.001)
+    }
 }

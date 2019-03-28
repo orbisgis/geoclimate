@@ -160,3 +160,38 @@ static IProcess rsuGroundSkyViewFactor() {
                         "$ptsRSUfreeall, $randomSample, $svfPts").toString())
             }
     )}
+
+/**
+ * Process used to compute the aspect ratio such as defined by Stewart et Oke (2012): mean height-to-width ratio
+ * of street canyons (LCZs 1-7), building spacing (LCZs 8-10), and tree spacing (LCZs A - G). A simple approach based
+ * on the street canyons assumption is used for the calculation. The sum of facade area within a given RSU area
+ * is divided by the area of free surfaces of the given RSU (not covered by buildings). The
+ * "rsu_free_external_facade_density" and "rsu_building_density" are used for the calculation.
+ *
+ * @return A database table name.
+ * @author Jérémy Bernard
+ */
+static IProcess rsuAspectRatio() {
+    return processFactory.create(
+            "RSU aspect ratio",
+            [rsuTable: String, inputColumns:String[], rsuFreeExternalFacadeDensityColumn: String,
+             rsuBuildingDensityColumn: String, outputTableName: String, datasource: JdbcDataSource],
+            [outputTableName : String],
+            { rsuTable, inputColumns, rsuFreeExternalFacadeDensityColumn, rsuBuildingDensityColumn,
+              outputTableName, datasource ->
+
+                String query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS "+
+                        "SELECT $rsuFreeExternalFacadeDensityColumn/(1-$rsuBuildingDensityColumn) AS "+
+                        "rsu_aspect_ratio "
+
+                if(!inputColumns.isEmpty()){
+                    query += ", ${inputColumns.join(",")} "
+                }
+
+                query += " FROM $rsuTable"
+
+                logger.info("Executing $query")
+                datasource.execute query
+                [outputTableName: outputTableName]
+            }
+    )}
