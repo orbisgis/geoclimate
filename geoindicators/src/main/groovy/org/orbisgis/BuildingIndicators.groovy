@@ -227,8 +227,8 @@ static IProcess buildingFormProperties() {
     )}
 
 /**
- * This process extract the building closest distance to an other building. A buffer of defined size (bufferDist argument)
- * is used to get the buildings within the building of interest and then the minimum distance is calculated.
+ * This process extract the building closest distance to an other building. A buffer of defined size (bufferDist argument,
+ * default 100 m) is used to get the buildings within the building of interest and then the minimum distance is calculated.
  *
  * @return A database table name.
  * @author Jérémy Bernard
@@ -236,10 +236,10 @@ static IProcess buildingFormProperties() {
 static IProcess buildingMinimumBuildingSpacing() {
     return processFactory.create(
             "Building minimum building spacing",
-            [inputBuildingTableName: String,inputFields:String[],bufferDist: Integer
+            [inputBuildingTableName: String,inputFields:String[],bufferDist: Double
              , outputTableName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { inputBuildingTableName,inputFields, bufferDist, outputTableName, datasource ->
+            { inputBuildingTableName,inputFields, bufferDist = 100, outputTableName, datasource ->
                 def geometricField = "the_geom"
                 def idField = "id_build"
 
@@ -293,7 +293,7 @@ static IProcess buildingRoadDistance() {
             [inputBuildingTableName: String, inputRoadTableName: String, inputFields:String[], bufferDist: Double
              , outputTableName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { inputBuildingTableName, inputRoadTableName, inputFields, bufferDist, outputTableName, datasource ->
+            { inputBuildingTableName, inputRoadTableName, inputFields, bufferDist = 100, outputTableName, datasource ->
                 def geometricField = "the_geom"
                 def idFieldBu = "id_build"
                 def road_width = "width"
