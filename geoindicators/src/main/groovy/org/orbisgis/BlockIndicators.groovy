@@ -12,7 +12,7 @@ import org.orbisgis.processmanagerapi.IProcess
  * This process is used to compute basic statistical operations on a specific variable from a lower scale (for
  * example the sum of each building volume constituting a block to calculate the block volume)
  * @return A database table name.
- * @author Erwan Bocher
+ * @author Jérémy Bernard
  */
 static IProcess unweightedOperationFromLowerScale() {
 return processFactory.create(
@@ -65,9 +65,9 @@ static IProcess weightedAggregatedStatistics() {
                 def uid_out = System.currentTimeMillis()
 
                 // Temporary table names
-                def weighted_mean = "weighted_mean"+uid_out.toString()
-                def corr_weight_mean = "corr_weight_mean"+uid_out.toString()
-                def weighted_all = "weighted_all"+uid_out.toString()
+                def weighted_mean = "weighted_mean"+uid_out
+                def corr_weight_mean = "corr_weight_mean"+uid_out
+                def weighted_all = "weighted_all"+uid_out
 
                 // The weighted mean is calculated in all cases since it is useful for the STD calculation
                 datasource.execute(("CREATE INDEX IF NOT EXISTS id_l ON $inputLowerScaleTableName($inputIdLow); "+
@@ -112,7 +112,6 @@ static IProcess weightedAggregatedStatistics() {
                 }
                 query += " $inputIdUp FROM $weighted_all"
                 logger.info("Executing $query")
-                println(query)
                 datasource.execute query
 
                 // The temporary tables are deleted
