@@ -19,28 +19,28 @@ import org.orbisgis.processmanagerapi.IProcess
 static IProcess rsuFreeExternalFacadeDensity() {
 return processFactory.create(
         "RSU free external facade density",
-        [inputBuildingTableName: String,inputFields:String[],inputCorrelationTableName: String,
-         buContiguityFieldName: String, buTotalFacadeLength: String, outputTableName: String, datasource: JdbcDataSource],
+        [buildingTable: String,inputColumns:String[],correlationTable: String,
+         buContiguityColumn: String, buTotalFacadeLengthColumn: String, outputTableName: String, datasource: JdbcDataSource],
         [outputTableName : String],
-        { inputTableName, inputFields, inputCorrelationTableName, buContiguityFieldName, buTotalFacadeLength,
+        { buildingTable, inputColumns, correlationTable, buContiguityColumn, buTotalFacadeLengthColumn,
           outputTableName, datasource ->
             def geometricFieldRsu = "the_geom"
             def idFieldBu = "id_build"
             def idFieldRsu = "id_rsu"
             def height_wall = "height_wall"
 
-            String query = "CREATE INDEX IF NOT EXISTS id_bua ON $inputTableName($idFieldBu); "+
-                            "CREATE INDEX IF NOT EXISTS id_bub ON $inputCorrelationTableName($idFieldBu); "+
-                            "CREATE INDEX IF NOT EXISTS id_blb ON $inputCorrelationTableName($idFieldRsu); "+
+            String query = "CREATE INDEX IF NOT EXISTS id_bua ON $buildingTable($idFieldBu); "+
+                            "CREATE INDEX IF NOT EXISTS id_bub ON $correlationTable($idFieldBu); "+
+                            "CREATE INDEX IF NOT EXISTS id_blb ON $correlationTable($idFieldRsu); "+
                             "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS "+
-                            "SELECT SUM((1-a.$buContiguityFieldName)*a.$buTotalFacadeLength*a.$height_wall)/"+
+                            "SELECT SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$height_wall)/"+
                             "st_area(b.$geometricFieldRsu) AS rsu_free_external_facade_density, b.$idFieldRsu "
 
-            if(!inputFields.isEmpty()){
-                query += ", a.${inputFields.join(",a.")} "
+            if(!inputColumns.isEmpty()){
+                query += ", a.${inputColumns.join(",a.")} "
             }
 
-            query += "FROM $inputTableName a, $inputCorrelationTableName b "+
+            query += "FROM $buildingTable a, $correlationTable b "+
                         "WHERE a.$idFieldBu = b.$idFieldBu GROUP BY b.$idFieldRsu, b.$geometricFieldRsu;"
 
             logger.info("Executing $query")

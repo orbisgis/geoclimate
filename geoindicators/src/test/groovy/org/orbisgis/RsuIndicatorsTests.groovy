@@ -22,8 +22,8 @@ class RsuIndicatorsTests {
                 "FROM rsu_build_corr a, rsu_test b WHERE a.id_rsu = b.id_rsu")
 
         def  p =  Geoclimate.RsuIndicators.rsuFreeExternalFacadeDensity()
-        p.execute([inputBuildingTableName: "tempo_build",inputFields:[],inputCorrelationTableName: "corr_tempo",
-                   buContiguityFieldName: "building_contiguity", buTotalFacadeLength: "building_total_facade_length",
+        p.execute([buildingTable: "tempo_build",inputColumns:[],correlationTable: "corr_tempo",
+                   buContiguityColumn: "building_contiguity", buTotalFacadeLengthColumn: "building_total_facade_length",
                    outputTableName: "rsu_free_external_facade_density", datasource: h2GIS])
         def concat = 0
         h2GIS.eachRow("SELECT * FROM rsu_free_external_facade_density WHERE id_rsu = 1"){
