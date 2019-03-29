@@ -121,7 +121,7 @@ static IProcess buildingNeighborsProperties() {
                 // To avoid overwriting the output files of this step, a unique identifier is created
                 def uid_out = System.currentTimeMillis()
                 // Temporary table names
-                def build_intersec = "build_intersec"+uid_out.toString()
+                def build_intersec = "build_intersec"+uid_out
 
 
                 String query = "CREATE INDEX IF NOT EXISTS buff_ids ON $inputBuildingTableName($geometricField) USING RTREE; " +
@@ -247,8 +247,8 @@ static IProcess buildingMinimumBuildingSpacing() {
                 def uid_out = System.currentTimeMillis()
 
                 // Temporary table names
-                def build_buffer = "build_buffer"+uid_out.toString()
-                def build_within_buffer = "build_within_buffer"+uid_out.toString()
+                def build_buffer = "build_buffer"+uid_out
+                def build_within_buffer = "build_within_buffer"+uid_out
 
                 // The buffer is created
                 datasource.execute(("CREATE TABLE $build_buffer AS SELECT $idField, ST_BUFFER($geometricField, $bufferDist)"+
@@ -302,9 +302,9 @@ static IProcess buildingRoadDistance() {
                 def uid_out = System.currentTimeMillis()
 
                 // Temporary table names
-                def build_buffer = "build_buffer"+uid_out.toString()
-                def road_surf = "road_surf"+uid_out.toString()
-                def road_within_buffer = "road_within_buffer"+uid_out.toString()
+                def build_buffer = "build_buffer"+uid_out
+                def road_surf = "road_surf"+uid_out
+                def road_within_buffer = "road_within_buffer"+uid_out
 
                 // The buffer is created
                 datasource.execute(("CREATE TABLE $build_buffer AS SELECT $idFieldBu, ST_BUFFER($geometricField, $bufferDist)"+
