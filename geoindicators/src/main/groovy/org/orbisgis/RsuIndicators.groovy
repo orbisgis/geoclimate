@@ -195,3 +195,177 @@ static IProcess rsuAspectRatio() {
                 [outputTableName: outputTableName]
             }
     )}
+
+/**
+ * Script to compute the distribution of projected facade area within a RSU per vertical layer and direction
+ * of analysis (ie. wind or sun direction).
+ *
+ * References:
+ * --> Stewart, Ian D., and Tim R. Oke. "Local climate zones for urban temperature studies." Bulletin of
+ * the American Meteorological Society 93, no. 12 (2012): 1879-1900.
+ * --> Jérémy Bernard, Erwan Bocher, Gwendall Petit, Sylvain Palominos. Sky View Factor Calculation in
+ * Urban Context: Computational Performance and Accuracy Analysis of Two Open and Free GIS Tools. Climate ,
+ * MDPI, 2018, Urban Overheating - Progress on Mitigation Science and Engineering Applications, 6 (3), pp.60.
+ *
+ * @return A database table name.
+ * @author Jérémy Bernard
+ */
+static IProcess rsuProjectedFacadeAreaDistribution() {
+    return processFactory.create(
+            "RSU projected facade area distribution",
+            [buildingTable: String, rsuTable: String, listLayersBottom: Double[], numberOfDirection: Integer,
+             outputTableName: String, datasource: JdbcDataSource],
+            [outputTableName : String],
+            { buildingTable, rsuTable, listLayersBottom = [0, 10, 20, 30, 40, 50], numberOfDirection = 12,
+              outputTableName, datasource ->
+
+                if(180%numberOfDirection==0 & numberOfDirection%2==0){
+                    def geometricColumnRsu = "the_geom"
+                    def geometricColumnBu = "the_geom"
+                    def idColumnRsu = "id_rsu"
+                    def idColumnBu = "id_build"
+                    def height_wall = "height_wall"
+
+                    // To avoid overwriting the output files of this step, a unique identifier is created
+                    def uid_out = System.currentTimeMillis()
+
+                    // Temporary table names
+                    def buildingIntersection = "building_intersection" + uid_out
+                    def buildingIntersectionExpl = "building_intersection_expl" + uid_out
+                    def buildingFree = "buildingFree" + uid_out
+                    def buildingLayer = "buildingLayer" + uid_out
+                    def buildingFreeExpl = "buildingFreeExpl" + uid_out
+                    def rsuInter = "rsuInter" + uid_out
+                    def finalIndicator = "finalIndicator" + uid_out
+                    def rsuInterRot = "rsuInterRot" + uid_out
+
+                    // The projection should be performed at the median of the angle interval
+                    def dirMedDeg = 180/numberOfDirection
+                    def dirMedRad = Math.toRadians(dirMedDeg)
+
+                    // The list that will store the fields name is initialized
+                    def names = []
+
+                    // Indexes and spatial indexes are created on input tables
+                    datasource.execute(("CREATE SPATIAL INDEX IF NOT EXISTS ids_ina ON $buildingTable($geometricColumnBu); "+
+                            "CREATE SPATIAL INDEX IF NOT EXISTS ids_inb ON $rsuTable($geometricColumnRsu); "+
+                            "CREATE INDEX IF NOT EXISTS id_ina ON $buildingTable($idColumnBu); "+
+                            "CREATE INDEX IF NOT EXISTS id_inb ON $rsuTable($idColumnRsu);").toString())
+
+                    // Common party walls between buildings are calculated
+                    datasource.execute(("CREATE TABLE $buildingIntersection(pk SERIAL, the_geom GEOMETRY, "+
+                            "ID_build_a INTEGER, ID_build_b INTEGER, z_max DOUBLE, z_min DOUBLE) AS "+
+                            "(SELECT NULL, ST_INTERSECTION(a.$geometricColumnBu, b.$geometricColumnBu), "+
+                            "a.$idColumnBu, b.$idColumnBu, GREATEST(a.$height_wall,b.$height_wall), "+
+                            "LEAST(a.$height_wall,b.$height_wall) FROM $buildingTable AS a, $buildingTable AS b "+
+                            "WHERE a.$geometricColumnBu && b.$geometricColumnBu AND "+
+                            "ST_INTERSECTS(a.$geometricColumnBu, b.$geometricColumnBu) AND a.$idColumnBu <> b.$idColumnBu)").toString())
+
+                    // Common party walls are converted to multilines and then exploded
+                    datasource.execute(("CREATE TABLE $buildingIntersectionExpl(pk SERIAL, the_geom GEOMETRY, "+
+                            "ID_build_a INTEGER, ID_build_b INTEGER, z_max DOUBLE, z_min DOUBLE) AS "+
+                            "(SELECT NULL, ST_TOMULTILINE(the_geom), ID_build_a, ID_build_b, z_max, z_min "+
+                            "FROM ST_EXPLODE('(SELECT the_geom AS the_geom, ID_build_a, ID_build_b, z_max, z_min "+
+                            "FROM $buildingIntersection)'))").toString())
+
+                    // Each free facade is stored ONCE (an intersection could be seen from the point of view of two buildings).
+                    // Facades of isolated buildings are unioned to free facades of non-isolated buildings which are
+                    // unioned to free intersection facades. To each facade is affected its corresponding free height
+                    datasource.execute(("CREATE INDEX IF NOT EXISTS id_buint ON ${buildingIntersectionExpl}(ID_build_a); "+
+                            "CREATE TABLE $buildingFree(pk SERIAL, the_geom GEOMETRY, z_max DOUBLE, z_min DOUBLE) "+
+                            "AS (SELECT NULL, ST_TOMULTISEGMENTS(a.the_geom), a.$height_wall, 0 "+
+                            "FROM $buildingTable a WHERE a.$idColumnBu NOT IN (SELECT b.ID_build_a "+
+                            "FROM $buildingIntersectionExpl b) UNION SELECT NULL, "+
+                            "ST_TOMULTISEGMENTS(ST_DIFFERENCE(ST_TOMULTILINE(a.$geometricColumnBu), "+
+                            "ST_UNION(ST_ACCUM(b.the_geom)))), a.$height_wall, 0 FROM $buildingTable a, "+
+                            "$buildingIntersectionExpl b WHERE a.$height_wall=b.ID_build_a "+
+                            "GROUP BY a.the_geom, b.ID_build_a UNION SELECT NULL, ST_TOMULTISEGMENTS(the_geom) AS the_geom, "+
+                            "z_max, z_min FROM $buildingIntersectionExpl WHERE ID_build_a < ID_build_b)").toString())
+
+                    // The height of wall is calculated for each level
+                    String layerQuery = "CREATE TABLE $buildingLayer AS SELECT pk, the_geom, "
+                    for (i in 1..(listLayersBottom.size()-1)){
+                        names[i-1]="rsu_projected_facade_area_distribution${listLayersBottom[i-1]}"+
+                                "_${listLayersBottom[i]}"
+                        layerQuery += "CASEWHEN(z_max <= ${listLayersBottom[i-1]}, 0, CASEWHEN(z_min >= ${listLayersBottom[i]}, "+
+                                "0, ${listLayersBottom[i]-listLayersBottom[i-1]}-GREATEST(${listLayersBottom[i]}-z_max,0)"+
+                                "-GREATEST(z_min-${listLayersBottom[i-1]},0) AS ${names[i-1]} ,"
+                        }
+
+                    names[listLayersBottom.size()-1]="rsu_projected_facade_area_distribution${listLayersBottom[listLayersBottom.size()-1]}_"
+                    layerQuery += "CASEWHEN(z_max >= ${listLayersBottom[listLayersBottom.size()-1]}, "+
+                            "z_max-GREATEST(z_min,${listLayersBottom[listLayersBottom.size()-1]}), 0) "+
+                            "AS ${names[listLayersBottom.size()-1]} FROM $buildingFree"
+                    datasource.execute(layerQuery.toString())
+
+                    // Names and types of all columns are then useful when calling sql queries
+                    String namesAndType = ""
+                    String onlyNames = ""
+                    for (n in names){
+                        namesAndType += " " + n + " double,"
+                        onlyNames += " " + n + ","
+                        onlyNamesB += " b." + n + ","
+                    }
+                    // Free facades are exploded to multisegments
+                    datasource.execute(("CREATE TABLE $buildingFreeExpl(pk SERIAL, the_geom GEOMETRY, $namesAndType) AS "+
+                            "(SELECT NULL, the_geom, $onlyNames[0..-2] FROM ST_EXPLODE('$buildingFree'))").toString())
+
+                    // Intersections between free facades and rsu geometries are calculated
+                    datasource.execute(("CREATE SPATIAL INDEX IF NOT EXISTS ids_bufre ON $buildingFreeExpl(the_geom); "+
+                            "CREATE TABLE $rsuInter(id_rsu INTEGER, the_geom GEOMETRY, $namesAndType) AS "+
+                            "(SELECT a.$idColumnRsu, ST_INTERSECTION(a.$geometricColumnRsu, b.the_geom), "+
+                            "$onlyNamesB[0..-2] FROM $rsuTable a, $buildingFreeExpl b WHERE a.$buildingTable && b.the_geom "+
+                            "AND ST_INTERSECTS(a.$geometricColumnRsu, b.the_geom))").toString())
+
+                    // Basic informations are stored in the result Table where will be added all fields corresponding to the distribution
+                    datasource.execute(("CREATE TABLE ${finalIndicator+'-1'} AS SELECT $idColumnRsu AS id_rsu, "+
+                            "$geometricColumnRsu AS the_geom FROM înputB").toString())
+
+
+                    // The analysis is then performed for each direction ('numberOfDirection' / 2 because calculation
+                    // is performed for a direction independantly of the "toward")
+                    for (d=0; d<numberOfDirection/2; d++){
+                        def dirDeg = d*360/numberOfDirection
+                        def dirRad = Math.toRadians(dirDeg)
+
+                        // Define the field name for each of the directions and vertical layers
+                        String namesAndTypeDir = ""
+                        String onlyNamesDir = ""
+                        for (n in names){
+                            namesAndTypeDir += " " + n + "D" + (dirDeg+dirMedDeg).toString() + " double,"
+                            onlyNamesDir += " " + n + "D" + (dirDeg+dirMedDeg).toString() + ","
+                            onlyNamesDirB += " b." + n + "D" + (dirDeg+dirMedDeg).toString() + ","
+                        }
+
+                        // To calculate the indicator for a new wind direction, the free facades are rotated
+                        datasource.execute(("CREATE TABLE $rsuInterRot(id_rsu INTEGER, the_geom geometry, "+
+                                "$namesAndType[0..-2]) AS (SELECT id_rsu, ST_ROTATE(the_geom,${dirRad+dirMedRad}), "+
+                                "$onlyNames[0..-2] FROM $rsuInter)").toString())
+
+                        // The projected facade area indicator is calculated according to the free facades table for each vertical layer for this specific direction "d"
+                        String calcQuery = ""
+                        for (n in names){
+                            calcQuery += "sum((st_xmax(b.the_geom) - st_xmin(b.the_geom))*b.$n))/2 AS "+
+                                    "${n+'D'+(dirRad+dirMedRad).toString()}, "
+                        }
+                        datasource.execute(("CREATE INDEX IF NOT EXISTS id_rint ON $rsuInterRot(id_rsu); "+
+                                "CREATE INDEX IF NOT EXISTS id_fin ON ${finalIndicator+(d-1).toString()}(id_rsu); "+
+                                "CREATE TABLE ${finalIndicator+d.toString()} AS SELECT a.id_rsu, a.the_geom, $calcQuery "+
+                                "FROM ${finalIndicator+(d-1).toString()} a LEFT JOIN $rsuInterRot b "+
+                                "ON a.id_rsu = b.ID_RSU GROUP BY a.id_rsu, a.the_geom)").toString())
+                    }
+
+                    datasource.execute(("ALTER TABLE ${finalIndicator+(numberOfDirection/2)} RENAME TO $outputTableName").toString())
+
+                    // Remove all temporary tables created
+                    removeQuery = ", ${finalIndicator+'-1'}"
+                    for (d=0; d<numberOfDirection/2; d++){
+                        removeQuery += ", ${finalIndicator+d.toString()}"
+                    }
+                    datasource.execute(("DROP TABLE IF EXISTS ${buildingIntersection}, ${buildingIntersectionExpl}, "+
+                            "${buildingFree}, ${buildingFreeExpl}, ${rsuInter}").toString())
+
+                    [outputTableName: outputTableName]
+                }
+            }
+    )}

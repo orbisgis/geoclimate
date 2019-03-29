@@ -77,4 +77,38 @@ class RsuIndicatorsTests {
         }
         assertEquals(1.344, concat, 0.001)
     }
+
+    @Test
+    void testRsuProjectedFacadeAreaDistribution() {
+        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
+        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
+        h2GIS.execute(sqlString)
+
+        def listLayersBottom = [0, 10, 20, 30, 40, 50]
+        def numberOfDirection = 12
+        def  p =  Geoclimate.RsuIndicators.rsuProjectedFacadeAreaDistribution()
+        p.execute([buildingTable: "building_test", rsuTable: "rsu_test", listLayersBottom: listLayersBottom,
+                   numberOfDirection: numberOfDirection, outputTableName: "rsu_projected_facade_area_distribution",
+                   datasource: h2GIS])
+        def concat = 0
+        h2GIS.eachRow("SELECT * FROM rsu_projected_facade_area_distribution WHERE id_rsu = 1"){
+            row ->
+                // Iterate over columns
+                def names = String[]
+                for (i in 1..listLayersBottom.size()){
+                    names[i-1]="rsu_projected_facade_area_distribution"+listLayersBottom[i-1].toString()+
+                            "_"+listLayersBottom[i].toString()
+                    if (i == listLayersBottom.size()){
+                        names[listLayersBottom.size()-1]="rsu_projected_facade_area_distribution"+
+                                listLayersBottom[listLayersBottom.size()-1].toString()+"_"
+                    }
+                    for (int d=0; d<numberOfDirection/2; d++){
+                        int dirDeg = d*360/numberOfDirection
+                        concat+= row["${names[i-1]}D${dirDeg+dirMedDeg}".toString()].toString()+"\n"
+                    }
+                }
+
+        }
+        assertEquals("\n\n\n\n\n\n\n\n\n\n\n\n", concat)
+    }
 }
