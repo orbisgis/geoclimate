@@ -49,4 +49,45 @@ class BlockIndicatorsTests {
         assertEquals(10.69, concat[2], 0.01)
     }
 
+    @Test
+    void weightedAggregatedStatistics() {
+        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
+        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
+        h2GIS.execute(sqlString)
+
+        // Only the first 6 first created buildings are selected since any new created building may alter the results
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, weighted_aggregated_statistics1, " +
+                "weighted_aggregated_statistics2, weighted_aggregated_statistics3; " +
+                "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 8")
+
+        def  pavg =  Geoclimate.BlockIndicators.weightedAggregatedStatistics()
+        pavg.execute([inputLowerScaleTableName: "tempo_build",inputCorrelationTableName: "rsu_build_corr",inputIdLow: "id_build",
+                      inputIdUp: "id_rsu", inputToTransfo: "height_roof", inputWeight: "building_area", operations: ["AVG"],
+                      outputTableName: "weighted_aggregated_statistics1", datasource: h2GIS])
+        def  pstd =  Geoclimate.BlockIndicators.weightedAggregatedStatistics()
+        pstd.execute([inputLowerScaleTableName: "tempo_build",inputCorrelationTableName: "rsu_build_corr",inputIdLow: "id_build",
+                      inputIdUp: "id_rsu", inputToTransfo: "height_roof", inputWeight: "building_area", operations: ["STD"],
+                      outputTableName: "weighted_aggregated_statistics2", datasource: h2GIS])
+        def  pall =  Geoclimate.BlockIndicators.weightedAggregatedStatistics()
+        pall.execute([inputLowerScaleTableName: "tempo_build",inputCorrelationTableName: "rsu_build_corr",inputIdLow: "id_build",
+                      inputIdUp: "id_rsu", inputToTransfo: "height_roof", inputWeight: "building_area", operations: ["AVG", "STD"],
+                      outputTableName: "weighted_aggregated_statistics3", datasource: h2GIS])
+        def concat = [0, 0, ""]
+        h2GIS.eachRow("SELECT * FROM weighted_aggregated_statistics1 WHERE id_rsu = 1"){
+            row ->
+                concat[0]+= row.weighted_avg_height_roof
+        }
+        h2GIS.eachRow("SELECT * FROM weighted_aggregated_statistics2 WHERE id_rsu = 1"){
+            row ->
+                concat[1]+= row.weighted_std_height_roof
+        }
+        h2GIS.eachRow("SELECT * FROM weighted_aggregated_statistics3 WHERE id_rsu = 1"){
+            row ->
+                concat[2]+= "${row.weighted_avg_height_roof.round(3)}\n${row.weighted_std_height_roof.round(1)}\n"
+        }
+        assertEquals(10.178, concat[0], 0.001)
+        assertEquals(2.5, concat[1], 0.1)
+        assertEquals("10.178\n2.5\n", concat[2])
+    }
+
 }
