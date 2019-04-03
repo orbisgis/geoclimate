@@ -194,7 +194,6 @@ static IProcess rsuAspectRatio() {
                 datasource.execute query
                 [outputTableName: outputTableName]
             }
-<<<<<<< HEAD
     )}
 
 /**
