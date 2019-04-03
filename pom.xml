@@ -26,6 +26,40 @@
         <site.basedir>${project.basedir}</site.basedir>
     </properties>
 
+    <licenses>
+        <license>
+            <name>GNU Lesser General Public License (LGPLV3+)</name>
+            <url>http://www.gnu.org/licenses/lgpl-3.0.html</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Jeremy Bernard</name>
+            <organization>CNRS, Lab-STICC UMR 6285</organization>
+        </developer>
+        <developer>
+            <name>Erwan Bocher</name>
+            <organization>CNRS, Lab-STICC UMR 6285</organization>
+        </developer>
+        <developer>
+            <name>Jonathan Lao</name>
+            <organization>UBS, Lab-STICC UMR 6285</organization>
+        </developer>
+        <developer>
+            <name>Elisabeth Le Saux Wiederhold</name>
+            <organization>UBS, Lab-STICC UMR 6285</organization>
+        </developer>
+        <developer>
+            <name>Sylvain Palominos</name>
+            <organization>UBS, Lab-STICC UMR 6285</organization>
+        </developer>
+        <developer>
+            <name>Gwendall Petit</name>
+            <organization>CNRS, Lab-STICC UMR 6285</organization>
+        </developer>
+    </developers>
+
     <!-- Dependencies -->
     <dependencyManagement>
         <dependencies>
