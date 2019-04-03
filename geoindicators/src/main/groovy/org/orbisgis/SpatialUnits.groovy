@@ -9,10 +9,6 @@ import org.orbisgis.datamanager.JdbcDataSource
 /**
  * This process is used to create the reference spatial units (RSU)
  *
- * Reference:
- *  Bocher, E., Petit, G., Bernard, J., & Palominos, S. (2018). A geoprocessing framework to compute
- *  urban indicators: The MApUCE tools chain. Urban climate, 24, 153-174.
- *
  * @return A database table name.
  */
 static createRSU(){
