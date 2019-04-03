@@ -2,6 +2,7 @@ package org.orbisgis.osm
 
 import groovy.transform.BaseScript
 import groovyjarjarantlr.collections.List
+import org.orbisgis.datamanager.JdbcDataSource
 
 /**
  * OSMGISLayers is the main script to build a set of OSM GIS layers based on OSM data.
@@ -19,11 +20,43 @@ import org.orbisgis.processmanagerapi.IProcess
 
 @BaseScript PrepareData prepareData
 
+//TODO : use stream api instead of file
+
+static IProcess prepareBuildings() {
+    return processFactory.create(
+            "Prepare the building layer with OSM data",
+            [datasource   : JdbcDataSource,
+             prefix : String,
+             inputOptions: Map,
+             inputTagKeys: String[],
+             inputTagValues: String[],
+             buildingTableName: String,
+             zoneBufferTableName: String],
+            [buildingTableName: String],
+            { datasource, prefix, inputOptions, inputTagKeys, inputTagValues,
+              buildingTableName, zoneBufferTableName ->
+                logger.info('Buildings preparation starts')
+                if (buildingTableName == null){
+                    buildingTableName = 'RAW_INPUT_BUILDING'
+                }
+                def scriptFile = File.createTempFile("createBuildingTable", ".sql")
+                defineBuildingScript(prefix, inputOptions, inputTagKeys, inputTagValues,
+                        scriptFile, buildingTableName, zoneBufferTableName)
+                datasource.executeScript(scriptFile.getAbsolutePath())
+                scriptFile.delete()
+                logger.info('Buildings preparation finishes')
+                [buildingTableName: String]
+            }
+    )
+}
+
 //List of parameters
 // Zone to search in - must correspond to a administrative level 8 value
 String zoneCode = '56243' // Vannes 56260 - Séné 56243
 // Size of the extended zone to compute - in meters
 int extZoneSize = 1000
+// Size of the zone buffer to compute - in meters
+int bufferZoneSize = 500
 def prefix = "zoneExt" //prefix of the tables name in the h2DB
 
 /*
@@ -109,6 +142,7 @@ def dbName = outputFolder + File.separator + 'osmGisDb'
 // filenames of the files to store the layers tables in a geojson format
 def zoneFilePath = outputFolder + File.separator + 'zone.geojson'
 def extZoneFilePath = outputFolder + File.separator + 'zone_extended.geojson'
+def bufferZoneFilePath = outputFolder + File.separator + 'zone_buffer.geojson'
 def zoneNeighborsFilePath = outputFolder + File.separator + 'zone_neighbors.geojson'
 def buildingsFilePath = outputFolder + File.separator + 'input_building.geojson'
 def roadsFilePath = outputFolder + File.separator + 'input_road.geojson'
@@ -136,7 +170,7 @@ if (outputOSMFile.exists()) {
     def h2GIS =H2GIS.open([databaseName: dbName])
     h2GIS.load(outputOSMFile.absolutePath, 'zoneOsm', true)
     // Create the polygon corresponding to the zone limit and its extended area
-    h2GIS.execute zoneSQLScript('zoneOsm',zoneCode,extZoneSize)
+    h2GIS.execute zoneSQLScript('zoneOsm',zoneCode,extZoneSize, bufferZoneSize)
 
     //define the coordinates of the extended zone bbox
     h2GIS.select('''
@@ -147,10 +181,11 @@ if (outputOSMFile.exists()) {
     ''').from('ZONE_EXTENDED').getTable().eachRow{ row -> bbox = "$row.minLat, $row.minLon, $row.maxLat, $row.maxLon"}
     h2GIS.save('ZONE', zoneFilePath)
     h2GIS.save('ZONE_EXTENDED', extZoneFilePath)
+    h2GIS.save('ZONE_BUFFER', bufferZoneFilePath)
 
     h2GIS.execute(dropOSMTables('zoneOsm'))
 
-    println('Zone and Zone Extended OK')
+    logger.info('Zone, Zone Buffer and Zone Extended OK')
 
     //Download all the osm data concerning the extended zone bbox
     def outputOSMFile2 = new File(outputGarbageFolder + File.separator + "zoneExtended.osm")
@@ -163,81 +198,52 @@ if (outputOSMFile.exists()) {
         //Import the OSM file
         h2GIS.load(outputOSMFile2.absolutePath, prefix, true)
         h2GIS.execute createIndexesOnOSMTables(prefix)
+
         //Create the zone_neighbors table and save it in the targeted shapefile
-        //Build the overpass query to retrieve all the information about the neighbours cities limits
-
-        def queryNeighbours ='(('
-        def res = h2GIS.select ('id_relation').from(prefix+'_relation_tag rt JOIN '+prefix+'_tag t ON (rt.id_tag = t.id_tag)').where ("tag_key = 'admin_level' AND tag_value = '8'")
-        res.getTable().eachRow{row -> queryNeighbours += "relation($row.id_relation);"}
-        queryNeighbours += ");>;);out;"
-        // Retrieve the corresponding informations and store it in the h2GIS DB
-        def outputOSMFile3 = new File(outputGarbageFolder + File.separator + "zoneNeighbors.osm")
-        executeOverPassQuery(queryNeighbours, outputOSMFile3)
-        if (outputOSMFile3.exists()) {
-            h2GIS.load(outputOSMFile3.absolutePath, "neighbor", true)
-            h2GIS.execute zoneNeighborsSQLScript("neighbor")
-            h2GIS.save('ZONE_NEIGHBORS',zoneNeighborsFilePath)
-            println('Zone neighbors OK')
-
-            h2GIS.execute(dropOSMTables('neighbor'))
-
-
-        } else {
-            println "Cannot find OSM data for the zone neighbours"
-        }
+        h2GIS.execute zoneNeighborsSQLScript(prefix)
+        h2GIS.save('ZONE_NEIGHBORS',zoneNeighborsFilePath)
+        logger.info('Zone neighbors OK')
 
 
         //Create the buildings table and save it in the targeted file
-        defineBuildingScript(prefix, buildingOptions, buildingTagKeys, buildingTagValues, buildingsScriptPath)
+        defineBuildingScript(prefix, buildingOptions, buildingTagKeys, buildingTagValues, new File(buildingsScriptPath),
+                "RAW_INPUT_BUILDING","ZONE_BUFFER")
         h2GIS.executeScript(buildingsScriptPath)
-        h2GIS.save('INPUT_BUILDING', buildingsFilePath)
+        h2GIS.save('RAW_INPUT_BUILDING', buildingsFilePath)
         logger.info('Buildings OK')
 
         //Create the roads table and save it in the targeted file
         defineRoadScript(prefix, roadOptions, roadTagKeys, roadTagValues, roadsScriptPath)
         h2GIS.executeScript(roadsScriptPath)
         h2GIS.save('INPUT_ROAD', roadsFilePath)
-        println('Roads OK')
+        logger.info('Roads OK')
 
 
         //Create the rails table and save it in the targeted file
-        def railsScriptFile = new File(railsScriptPath)
-        defineRailScript(prefix, railOptions, railTagKeys, railTagValues, railsScriptFile)
+        defineRailScript(prefix, railOptions, railTagKeys, railTagValues, railsScriptPath)
         h2GIS.executeScript(railsScriptPath)
         h2GIS.save('INPUT_RAIL', railsFilePath)
-        println('Rails OK')
-        // A few stats
-        /*railOptions.each {it ->
-            res = h2GIS.select('"'+it.value+'", count(*)').from('INPUT_RAIL').groupBy('"'+it.value+'"')
-            println it.value
-            res.eachRow { row ->
-                println "${row.getObject 1} : " +
-                        "${row.getObject 2}"
-            }
-            println ()
-        }*/
+        logger.info('Rails OK')
 
         //Create the vegetation table and save it in the targeted file
-        def vegetScriptFile = new File(vegetScriptPath)
-        defineVegetationScript(prefix, vegetOptions, vegetTagKeys, vegetTagValues, vegetScriptFile)
+        defineVegetationScript(prefix, vegetOptions, vegetTagKeys, vegetTagValues, vegetScriptPath)
         h2GIS.executeScript(vegetScriptPath)
         h2GIS.save('INPUT_VEGET', vegetFilePath)
-        println('Vegetation OK')
+        logger.info('Vegetation OK')
 
         //Create the hydro table and save it in the targeted file
-        def hydroScriptFile = new File(hydroScriptPath)
-        defineHydroScript(prefix, hydroOptions, hydroTags, hydroScriptFile)
+        defineHydroScript(prefix, hydroOptions, hydroTags, hydroScriptPath)
         h2GIS.executeScript(hydroScriptPath)
         h2GIS.save('INPUT_HYDRO', hydroFilePath)
-        println('Hydro OK')
+        logger.info('Hydro OK')
 
-        println "DB and geojson files are ready in folder $outputFolder"
-        tmpGarbFolder.deleteDir()
+        logger.info "DB and geojson files are ready in folder $outputFolder"
+        //tmpGarbFolder.deleteDir()
         h2GIS.execute(dropOSMTables(prefix))
 
 
         def endTime = System.currentTimeMillis()
-        println 'Process took : ' + (endTime - startTime)/1000 +' seconds'
+        logger.info 'Process took : ' + (endTime - startTime)/1000 +' seconds'
 
     } else {
         println "Cannot find OSM data on the requested area"
@@ -264,10 +270,10 @@ def executeOverPassQuery(def query, def outputOSMFile) {
 
     connection.setRequestMethod("GET")
 
-    println "Executing query... $query"
+    logger.info "Executing query... $query"
     //Save the result in a file
     if (connection.responseCode == 200) {
-        println "Downloading the OSM data from overpass api"
+        logger.info "Downloading the OSM data from overpass api"
         outputOSMFile << connection.inputStream
         return true
     } else {
@@ -297,7 +303,7 @@ String dropOSMTables (String prefix) {
 /**
  ** Function to prepare the script to index the tables from OSM
  **/
-def createIndexesOnOSMTables(def prefix){
+static String createIndexesOnOSMTables(def prefix){
     def script = ''
     script = '''
             CREATE INDEX IF NOT EXISTS map_node_index on map_node(id_node);
@@ -321,7 +327,7 @@ def createIndexesOnOSMTables(def prefix){
 /**
  ** Function to create the script for the selected zone
  **/
-def zoneSQLScript(def prefix, def zoneCode, def bbox_size) {
+static String zoneSQLScript(def prefix, def zoneCode, def bboxSize, def bufferSize) {
     def script = 'DROP TABLE IF EXISTS ZONE;\n' +
             'CREATE TABLE ZONE AS\n' +
             '        SELECT '+ zoneCode + ', ST_Polygonize(ST_UNION(ST_ACCUM(the_geom))) the_geom, id_relation'
@@ -353,10 +359,19 @@ def zoneSQLScript(def prefix, def zoneCode, def bbox_size) {
         DROP TABLE IF EXISTS ZONE_EXTENDED;
         CREATE TABLE ZONE_EXTENDED AS
         SELECT ST_EXPAND( the_geom , '''
-    script += bbox_size+') as the_geom'
+    script += bboxSize+') as the_geom'
     script += '''
         FROM zone;
         CREATE SPATIAL INDEX ON ZONE_EXTENDED(the_geom) ;
+
+        -- Generation of a buffer around the studied zone
+        DROP TABLE IF EXISTS ZONE_BUFFER;
+        CREATE TABLE ZONE_BUFFER AS
+        SELECT ST_BUFFER( the_geom , '''
+    script += bboxSize+') as the_geom'
+    script += '''
+        FROM zone;
+        CREATE SPATIAL INDEX ON ZONE_BUFFER(the_geom) ;
     '''
     return script.replaceAll('map',prefix)
 }
@@ -411,10 +426,12 @@ def zoneNeighborsSQLScript(def prefix){
 /**
  ** Function to create the script for the buildings
  **/
-void defineBuildingScript(String prefix, def options, def tagKeys, def tagValues, def scriptPath){
+static void defineBuildingScript(String prefix, def options, def tagKeys, def tagValues, File scriptFile,
+                          String buildingTableName, String bufferTableName){
+    def uid = UUID.randomUUID().toString().replaceAll("-","")
     def script = ''
-    script += 'DROP TABLE IF EXISTS buildings_simp_raw; \n' +
-            'CREATE TABLE buildings_simp_raw AS \n' +
+    script += "DROP TABLE IF EXISTS buildings_simp_raw_$uid; \n" +
+            "CREATE TABLE buildings_simp_raw_$uid AS \n" +
             'SELECT id_way, ST_TRANSFORM(ST_SETSRID(ST_MAKEPOLYGON(ST_MAKELINE(the_geom)), 4326), 2154) the_geom \n' +
             'FROM \n' +
             '    (SELECT \n' +
@@ -452,9 +469,9 @@ void defineBuildingScript(String prefix, def options, def tagKeys, def tagValues
             '    WHERE w.id_way = b.id_way) geom_table \n' +
             'WHERE ST_GEOMETRYN(the_geom, 1) = ST_GEOMETRYN(the_geom, ST_NUMGEOMETRIES(the_geom)) \n' +
             'AND ST_NUMGEOMETRIES(the_geom) > 3;\n' +
-            'CREATE INDEX IF NOT EXISTS buildings_simp_raw_index ON buildings_simp_raw(id_way);\n'
-    script += 'DROP TABLE IF EXISTS buildings_simp; \n' +
-            'CREATE TABLE buildings_simp (the_geom polygon, id_way varchar'
+            'CREATE INDEX IF NOT EXISTS buildings_simp_raw_'+uid+'_index ON buildings_simp_raw_'+uid+'(id_way);\n'
+    script += 'DROP TABLE IF EXISTS buildings_simp_'+uid+'; \n' +
+            'CREATE TABLE buildings_simp_'+uid+' (the_geom polygon, id_way varchar'
     options.each {
         script += ', ' + it.value + ' varchar'
     }
@@ -462,20 +479,20 @@ void defineBuildingScript(String prefix, def options, def tagKeys, def tagValues
     options.eachWithIndex { it, i ->
         script += ', t' + i + '.' + it.value
     }
-    script += '\nFROM buildings_simp_raw a \n'
+    script += '\nFROM buildings_simp_raw_'+uid+' a \n'
     options.eachWithIndex { it, i ->
         script += 'LEFT JOIN     \n' +
                 '    (SELECT DISTINCT br.id_way, VALUE ' + it.value + ' \n' +
-                '    FROM map_way_tag wt, map_tag t, buildings_simp_raw br \n' +
+                '    FROM map_way_tag wt, map_tag t, buildings_simp_raw_'+uid+' br \n' +
                 '    WHERE wt.id_tag = t.id_tag AND t.tag_key IN (\'' + it.key + '\') \n' +
                 '    AND br.id_way = wt.id_way ) t' + i + ' \n' +
                 'ON a.id_way = t' + i + '.id_way \n'
     }
-    script += ';\nCREATE INDEX IF NOT EXISTS buildings_simp_index ON buildings_simp (id_way);\n' +
-            'CREATE SPATIAL INDEX ON buildings_simp(the_geom);\n' +
-            'DROP TABLE IF EXISTS buildings_simp_raw;\n' +
-            'DROP TABLE IF EXISTS buildings_rel_way; \n' +
-            'CREATE TABLE buildings_rel_way (id_relation varchar, id_way varchar, role varchar) AS \n' +
+    script += ';\nCREATE INDEX IF NOT EXISTS buildings_simp_'+uid+'_index ON buildings_simp_'+uid+' (id_way);\n' +
+            'CREATE SPATIAL INDEX ON buildings_simp_'+uid+'(the_geom);\n' +
+            'DROP TABLE IF EXISTS buildings_simp_raw_'+uid+';\n' +
+            'DROP TABLE IF EXISTS buildings_rel_way_'+uid+'; \n' +
+            'CREATE TABLE buildings_rel_way_'+uid+' (id_relation varchar, id_way varchar, role varchar) AS \n' +
             'SELECT rt.id_relation, wm.id_way, wm.role \n' +
             'FROM map_relation_tag rt, map_tag t, map_way_member wm \n' +
             'WHERE rt.id_tag = t.id_tag AND t.tag_key IN (\''
@@ -499,10 +516,10 @@ void defineBuildingScript(String prefix, def options, def tagKeys, def tagValues
         script += '\')'
     }
     script += ' AND rt.id_relation = wm.id_relation; \n' +
-            'CREATE INDEX IF NOT EXISTS buildings_rel_way_index on buildings_rel_way (id_way);\n' +
-            'CREATE INDEX IF NOT EXISTS buildings_rel_way_index2 on buildings_rel_way (id_relation);\n'
-    script += 'DROP TABLE IF EXISTS buildings_rel_raw; \n' +
-            'CREATE TABLE buildings_rel_raw AS \n' +
+            'CREATE INDEX IF NOT EXISTS buildings_rel_way_'+uid+'_index on buildings_rel_way_'+uid+' (id_way);\n' +
+            'CREATE INDEX IF NOT EXISTS buildings_rel_way_'+uid+'_index2 on buildings_rel_way_'+uid+' (id_relation);\n'
+    script += 'DROP TABLE IF EXISTS buildings_rel_raw_'+uid+'; \n' +
+            'CREATE TABLE buildings_rel_raw_'+uid+' AS \n' +
             'SELECT ST_LINEMERGE(ST_UNION(ST_ACCUM(the_geom))) the_geom, id_relation, role\n' +
             '    FROM \n' +
             '        (SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(the_geom), 4326), 2154) the_geom, id_relation, role, id_way \n' +
@@ -514,30 +531,30 @@ void defineBuildingScript(String prefix, def options, def tagKeys, def tagValues
             '                    FROM map_node n, map_way_node wn \n' +
             '                    WHERE n.id_node = wn.id_node ORDER BY wn.node_order) \n' +
             '                WHERE  idway = w.id_way) the_geom, w.id_way, br.id_relation, br.role \n' +
-            '            FROM map_way w, buildings_rel_way br \n' +
+            '            FROM map_way w, buildings_rel_way_'+uid+' br \n' +
             '            WHERE w.id_way = br.id_way) geom_table where st_numgeometries(the_geom)>=2)\n' +
             '    GROUP BY id_relation, role;\n'
-    script += 'DROP TABLE IF EXISTS buildings_rel_raw2; \n' +
-            'CREATE TABLE buildings_rel_raw2 AS \n' +
-            'SELECT * FROM ST_Explode(\'buildings_rel_raw\');\n'
-    script += 'DROP TABLE IF EXISTS buildings_rel_raw3; \n' +
-            'CREATE TABLE buildings_rel_raw3 AS \n' +
+    script += 'DROP TABLE IF EXISTS buildings_rel_raw2_'+uid+'; \n' +
+            'CREATE TABLE buildings_rel_raw2_'+uid+' AS \n' +
+            'SELECT * FROM ST_Explode(\'buildings_rel_raw_'+uid+'\');\n'
+    script += 'DROP TABLE IF EXISTS buildings_rel_raw3_'+uid+'; \n' +
+            'CREATE TABLE buildings_rel_raw3_'+uid+' AS \n' +
             'SELECT ST_MAKEPOLYGON(the_geom) the_geom, id_relation, role\n' +
-            'FROM buildings_rel_raw2\n' +
+            'FROM buildings_rel_raw2_'+uid+'\n' +
             'WHERE ST_STARTPOINT(the_geom) = ST_ENDPOINT(the_geom);\n'
-    script += 'UPDATE buildings_rel_raw3 SET role =\n' +
+    script += 'UPDATE buildings_rel_raw3_'+uid+' SET role =\n' +
             'CASE WHEN role = \'outline\' THEN \'outer\'\n' +
             '    ELSE role\n' +
             'END;\n'
-    script += 'DROP TABLE IF EXISTS buildings_rel_tot; \n' +
-            'CREATE TABLE buildings_rel_tot AS \n' +
+    script += 'DROP TABLE IF EXISTS buildings_rel_tot_'+uid+'; \n' +
+            'CREATE TABLE buildings_rel_tot_'+uid+' AS \n' +
             'SELECT ST_difference(st_union(st_accum(to.the_geom)),st_union(st_accum(ti.the_geom))) as the_geom, to.id_relation \n' +
             'FROM      \n' +
             '    (SELECT the_geom, id_relation, role \n' +
-            '    FROM buildings_rel_raw3 \n' +
+            '    FROM buildings_rel_raw3_'+uid+' \n' +
             '    WHERE role = \'outer\') to,     \n' +
             '    (SELECT the_geom, id_relation, role \n' +
-            '    FROM buildings_rel_raw3 \n' +
+            '    FROM buildings_rel_raw3_'+uid+' \n' +
             '    WHERE role = \'inner\') ti \n' +
             'where ti.id_relation = to.id_relation\n' +
             'GROUP BY to.id_relation\n' +
@@ -545,55 +562,54 @@ void defineBuildingScript(String prefix, def options, def tagKeys, def tagValues
             'SELECT a.the_geom, a.id_relation \n' +
             'FROM \n' +
             '    (SELECT the_geom, id_relation, role\n' +
-            '    FROM buildings_rel_raw3\n' +
+            '    FROM buildings_rel_raw3_'+uid+'\n' +
             '    WHERE role = \'outer\') a\n' +
             'LEFT JOIN \n' +
             '    (SELECT the_geom, id_relation, role\n' +
-            '    FROM buildings_rel_raw3\n' +
+            '    FROM buildings_rel_raw3_'+uid+'\n' +
             '    where role = \'inner\') b\n' +
             'ON a.id_relation = b.id_relation\n' +
             'WHERE b.id_relation IS NULL;\n'
-    script += 'DROP TABLE IF EXISTS buildings_rel; \n' +
-            'CREATE TABLE buildings_rel AS \n' +
+    script += 'DROP TABLE IF EXISTS buildings_rel_'+uid+'; \n' +
+            'CREATE TABLE buildings_rel_'+uid+' AS \n' +
             'SELECT a.the_geom, a.id_relation'
     options.eachWithIndex { it, i ->
         script += ', t' + i + '.' + it.value
     }
-    script += '\nFROM buildings_rel_tot a \n'
+    script += '\nFROM buildings_rel_tot_'+uid+' a \n'
     options.eachWithIndex { it, i ->
         script += 'LEFT JOIN     \n' +
                 '    (SELECT DISTINCT br.id_relation, tag_value ' + it.value + ' \n' +
-                '    FROM map_relation_tag rt, map_tag t, buildings_rel_tot br \n' +
+                '    FROM map_relation_tag rt, map_tag t, buildings_rel_tot_'+uid+' br \n' +
                 '    WHERE rt.id_tag = t.id_tag AND t.tag_key IN (\'' + it.key + '\') \n' +
                 '    AND br.id_relation = rt.id_relation ) t' + i + ' \n' +
                 '    ON a.id_relation =  t' + i +'.id_relation \n'
     }
-    script += ''';
-            CREATE SPATIAL INDEX ON buildings_rel_tot(the_geom);
-            DROP TABLE IF EXISTS INPUT_BUILDING;
-            CREATE TABLE INPUT_BUILDING AS
-            SELECT ST_MAKEVALID(a.the_geom) the_geom, id_way'''
+    script += """;
+            CREATE SPATIAL INDEX ON buildings_rel_tot_$uid (the_geom);
+            DROP TABLE IF EXISTS $buildingTableName;
+            CREATE TABLE $buildingTableName AS
+            SELECT ST_MAKEVALID(a.the_geom) the_geom, id_way"""
     options.each {
         script += ', ' + it.value
     }
-    script += '\nFROM buildings_simp a, zone_extended b\n' +
+    script += '\nFROM buildings_simp_'+uid+' a, '+bufferTableName+' b\n' +
             'WHERE ST_INTERSECTS(a.the_geom, b.the_geom) and a.the_geom && b.the_geom \n' +
             'UNION \n' +
             'SELECT ST_MAKEVALID(a.the_geom), id_relation'
     options.each {
         script += ', ' + it.value
     }
-    script += '\nFROM buildings_rel a, zone_extended b\n' +
+    script += '\nFROM buildings_rel_'+uid+' a, '+bufferTableName+' b\n' +
             'WHERE ST_INTERSECTS(a.the_geom, b.the_geom) and a.the_geom && b.the_geom;\n' +
-            'DROP TABLE IF EXISTS buildings_rel;\n' +
-            'DROP TABLE IF EXISTS buildings_rel_raw;\n' +
-            'DROP TABLE IF EXISTS buildings_rel_raw2;\n' +
-            'DROP TABLE IF EXISTS buildings_rel_raw3;\n' +
-            'DROP TABLE IF EXISTS buildings_rel_tot;\n' +
-            'DROP TABLE IF EXISTS buildings_rel_way;\n' +
-            'DROP TABLE IF EXISTS buildings_simp;\n' +
-            'CREATE SPATIAL INDEX ON INPUT_BUILDING(the_geom);\n'
-    def scriptFile = new File(scriptPath)
+            'DROP TABLE IF EXISTS buildings_rel_'+uid+';\n' +
+            'DROP TABLE IF EXISTS buildings_rel_raw_'+uid+';\n' +
+            'DROP TABLE IF EXISTS buildings_rel_raw2_'+uid+';\n' +
+            'DROP TABLE IF EXISTS buildings_rel_raw3_'+uid+';\n' +
+            'DROP TABLE IF EXISTS buildings_rel_tot_'+uid+';\n' +
+            'DROP TABLE IF EXISTS buildings_rel_way_'+uid+';\n' +
+            'DROP TABLE IF EXISTS buildings_simp_'+uid+';\n' +
+            'CREATE SPATIAL INDEX ON '+buildingTableName+'(the_geom);\n'
     scriptFile << script.replaceAll('map',prefix)
 }
 
