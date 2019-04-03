@@ -12,3 +12,5 @@ createOSMRoadTable.sql
 *.jar
 *.war
 *.ear
+
+site.xml
