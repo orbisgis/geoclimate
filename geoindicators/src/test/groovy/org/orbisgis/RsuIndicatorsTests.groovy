@@ -77,4 +77,43 @@ class RsuIndicatorsTests {
         }
         assertEquals(1.344, concat, 0.001)
     }
+
+    @Test
+    void testRsuProjectedFacadeAreaDistribution() {
+        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
+        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
+        h2GIS.execute(sqlString)
+
+        // Only the first 5 first created buildings are selected for the tests
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_build; CREATE TABLE tempo_build AS SELECT * " +
+                "FROM building_test WHERE id_build < 6")
+
+        def listLayersBottom = [0, 10, 20, 30, 40, 50]
+        def numberOfDirection = 2
+        def dirMedDeg = 180/numberOfDirection
+        def  p =  Geoclimate.RsuIndicators.rsuProjectedFacadeAreaDistribution()
+        p.execute([buildingTable: "tempo_build", inputColumns: ["id_rsu", "the_geom"], rsuTable: "rsu_test", listLayersBottom: listLayersBottom,
+                   numberOfDirection: numberOfDirection, outputTableName: "rsu_projected_facade_area_distribution",
+                   datasource: h2GIS])
+        def concat = ""
+        h2GIS.eachRow("SELECT * FROM rsu_projected_facade_area_distribution WHERE id_rsu = 1"){
+            row ->
+                // Iterate over columns
+                def names = []
+                for (i in 1..listLayersBottom.size()){
+                    names[i-1]="rsu_projected_facade_area_distribution${listLayersBottom[i-1]}"+
+                            "_${listLayersBottom[i]}"
+                    if (i == listLayersBottom.size()){
+                        names[listLayersBottom.size()-1]="rsu_projected_facade_area_distribution"+
+                                "${listLayersBottom[listLayersBottom.size()-1]}_"
+                    }
+                    for (int d=0; d<numberOfDirection/2; d++){
+                        int dirDeg = d*360/numberOfDirection
+                        concat+= row["${names[i-1]}D${dirDeg+dirMedDeg}".toString()].toString()+"\n"
+                    }
+                }
+
+        }
+        assertEquals("408.0\n20.0\n0.0\n0.0\n0.0\n0.0\n", concat)
+    }
 }
