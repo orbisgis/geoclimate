@@ -9,8 +9,19 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.build.timestamp.format>YYYY-MM-dd</maven.build.timestamp.format>
+        <buildNumber>${maven.build.timestamp}</buildNumber>
+        <site.basedir>${project.parent.basedir}</site.basedir>
+    </properties>
+
     <artifactId>prepare_data</artifactId>
     <dependencies>
+        <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
@@ -24,14 +35,13 @@
             <artifactId>data-manager</artifactId>
         </dependency>
         <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-core</artifactId>
-            <scope>test</scope>
+            <groupId>org.orbisgis</groupId>
+            <artifactId>process-manager</artifactId>
         </dependency>
+        <!-- Test dependencies -->
         <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <scope>test</scope>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
         </dependency>
     </dependencies>
 
@@ -72,4 +82,11 @@
         </plugins>
     </build>
 
+    <distributionManagement>
+        <site>
+            <id>orbisgis-devs-website</id>
+            <name>Devs Website</name>
+            <url>file:/var/www/html/${project.parent.artifactId}/${project.artifactId}</url>
+        </site>
+    </distributionManagement>
 </project>
