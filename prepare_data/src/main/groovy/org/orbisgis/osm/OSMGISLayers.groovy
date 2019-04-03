@@ -2,8 +2,6 @@ package org.orbisgis.osm
 
 import groovy.transform.BaseScript
 import groovyjarjarantlr.collections.List
-@GrabResolver(name='orbisgis', root='http://repo.orbisgis.org/')
-@Grab(group='org.orbisgis', module='data-manager', version='1.0-SNAPSHOT')
 
 /**
  * OSMGISLayers is the main script to build a set of OSM GIS layers based on OSM data.
