@@ -66,7 +66,46 @@ static IProcess importPreprocess(){
 
                         [outputBuildingName: 'INPUT_BUILDING', outputRoadName: 'INPUT_ROAD',
                          outputRailName: 'INPUT_RAIL', outputHydroName: 'INPUT_HYDRO', outputVegetName: 'INPUT_VEGET',
-                         outputZoneName: 'ZONE', outputZoneNeighborsName: 'ZONE_NEIGHBORS']
+                         outputZoneName: 'ZONE', outputZoneNeighborsName: 'ZONE_NEIGHBORS'
+                        ]
+            }
+    )
+}
+
+
+static IProcess initTypes(){
+    return processFactory.create(
+            'Initialize the types tables for BD Topo and define the matching with the abstract types',
+            [h2gis: H2GIS, buildingAbstractUseType: String, roadAbstractType: String,
+             railAbstractType: String, vegetAbstractType: String
+            ],
+            [outputBuildingBDTopoUseType: String, outputroadBDTopoType: String,
+             outputrailBDTopoType: String, outputvegetBDTopoType: String
+            ],
+            {H2GIS h2gis, buildingAbstractUseType, roadAbstractType, railAbstractType, vegetAbstractType ->
+                logger.info('Executing the typesMatching.sql script')
+                def uuid = UUID.randomUUID().toString().replaceAll('-', '_')
+                def buildingBDTopoUseType = 'BUILDING_BD_TOPO_USE_TYPE_' + uuid
+                def roadBDTopoType = 'ROAD_BD_TOPO_TYPE_' + uuid
+                def railBDTopoType = 'RAIL_BD_TOPO_TYPE_' + uuid
+                def vegetBDTopoType = 'VEGET_BD_TOPO_TYPE_' + uuid
+
+                h2gis.executeScript(this.class.getResource('typesMatching.sql').toString(),
+                        [BUILDING_ABSTRACT_USE_TYPE: buildingAbstractUseType,
+                         ROAD_ABSTRACT_TYPE: roadAbstractType,
+                         RAIL_ABSTRACT_TYPE: railAbstractType,
+                         VEGET_ABSTRACT_TYPE: vegetAbstractType,
+                         BUILDING_BD_TOPO_USE_TYPE: buildingBDTopoUseType,
+                         ROAD_BD_TOPO_TYPE: roadBDTopoType,
+                         RAIL_BD_TOPO_TYPE: railBDTopoType,
+                         VEGET_BD_TOPO_TYPE: vegetBDTopoType,
+                        ])
+
+                logger.info('The typesMatching.sql script has been executed')
+
+                [outputBuildingBDTopoUseType: 'BUILDING_BD_TOPO_USE_TYPE', outputroadBDTopoType: 'ROAD_BD_TOPO_TYPE',
+                 outputrailBDTopoType: 'RAIL_BD_TOPO_TYPE', outputvegetBDTopoType:'VEGET_BD_TOPO_TYPE'
+                ]
             }
     )
 }
