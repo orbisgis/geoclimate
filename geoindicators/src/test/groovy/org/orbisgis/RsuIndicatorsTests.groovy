@@ -77,6 +77,7 @@ class RsuIndicatorsTests {
         }
         assertEquals(1.344, concat, 0.001)
     }
+<<<<<<< HEAD
 
     @Test
     void testRsuProjectedFacadeAreaDistribution() {
@@ -116,4 +117,6 @@ class RsuIndicatorsTests {
         }
         assertEquals("408.0\n20.0\n0.0\n0.0\n0.0\n0.0\n", concat)
     }
+=======
+>>>>>>> master
 }
