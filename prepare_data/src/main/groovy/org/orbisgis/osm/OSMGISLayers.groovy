@@ -21,27 +21,30 @@ import org.orbisgis.processmanagerapi.IProcess
 @BaseScript PrepareData prepareData
 
 //TODO : use stream api instead of file
-
+/**
+ * This process is used to create the buildings table thank to the osm data tables
+ * @return the name of the buildings table
+ */
 static IProcess prepareBuildings() {
     return processFactory.create(
             "Prepare the building layer with OSM data",
-            [datasource   : JdbcDataSource,
-             prefix : String,
-             inputOptions: Map,
-             inputTagKeys: String[],
-             inputTagValues: String[],
+            [datasource: JdbcDataSource,
+             tablesPrefix: String,
+             ouputColumnNames: Map,
+             tagKeys: String[],
+             tagValues: String[],
              buildingTableName: String,
-             zoneBufferTableName: String],
+             filteringZoneTableName: String],
             [buildingTableName: String],
-            { datasource, prefix, inputOptions, inputTagKeys, inputTagValues,
-              buildingTableName, zoneBufferTableName ->
+            { datasource, tablesPrefix, ouputColumnNames, tagKeys, tagValues,
+              buildingTableName, filteringZoneTableName ->
                 logger.info('Buildings preparation starts')
                 if (buildingTableName == null){
                     buildingTableName = 'RAW_INPUT_BUILDING'
                 }
                 def scriptFile = File.createTempFile("createBuildingTable", ".sql")
-                defineBuildingScript(prefix, inputOptions, inputTagKeys, inputTagValues,
-                        scriptFile, buildingTableName, zoneBufferTableName)
+                defineBuildingScript(tablesPrefix, ouputColumnNames, tagKeys, tagValues,
+                        scriptFile, buildingTableName, filteringZoneTableName)
                 datasource.executeScript(scriptFile.getAbsolutePath())
                 scriptFile.delete()
                 logger.info('Buildings preparation finishes')
