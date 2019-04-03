@@ -214,7 +214,7 @@ static IProcess rsuAspectRatio() {
 static IProcess rsuProjectedFacadeAreaDistribution() {
     return processFactory.create(
             "RSU projected facade area distribution",
-            [buildingTable: String, rsuTable: String, inputColumns: String[], listLayersBottom: Double[], numberOfDirection: Integer,
+            [buildingTable: String, rsuTable: String, inputColumns: String[], listLayersBottom: double[], numberOfDirection: Integer,
              outputTableName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { buildingTable, rsuTable, inputColumns, listLayersBottom = [0, 10, 20, 30, 40, 50], numberOfDirection = 12,
