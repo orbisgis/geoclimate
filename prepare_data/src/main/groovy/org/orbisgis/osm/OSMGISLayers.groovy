@@ -1,7 +1,6 @@
 package org.orbisgis.osm
 
 import groovy.transform.BaseScript
-import groovyjarjarantlr.collections.List
 
 /**
  * OSMGISLayers is the main script to build a set of OSM GIS layers based on OSM data.
@@ -13,9 +12,7 @@ import groovyjarjarantlr.collections.List
 
 
 import org.orbisgis.datamanager.h2gis.H2GIS
-import org.orbisgis.datamanagerapi.dataset.ITable
-import org.orbisgis.osm.PrepareData
-import org.orbisgis.processmanagerapi.IProcess
+import org.orbisgis.PrepareData
 
 @BaseScript PrepareData prepareData
 
