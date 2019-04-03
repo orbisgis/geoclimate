@@ -194,7 +194,6 @@ static IProcess rsuAspectRatio() {
                 datasource.execute query
                 [outputTableName: outputTableName]
             }
-<<<<<<< HEAD
     )}
 
 /**
@@ -406,49 +405,59 @@ static IProcess rsuRoofAreaDistribution() {
                 def height_roof = "height_roof"
 
                 // To avoid overwriting the output files of this step, a unique identifier is created
-                def uid_out = System.currentTimeMillis()
+                def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
 
                 // Temporary table names
                 def buildRoofSurfIni = "build_roof_surf_ini" + uid_out
                 def buildVertRoofInter = "build_vert_roof_inter" + uid_out
+                def buildVertRoofAll = "buildVertRoofAll" + uid_out
                 def buildRoofSurfTot = "build_roof_surf_tot" + uid_out
-                def buildRoofPerLayer = "build_roof_per_layer" + uid_out
 
                 // Vertical and non-vertical (tilted and horizontal) roof areas are calculated
                 datasource.execute(("CREATE TABLE $buildRoofSurfIni AS SELECT $geometricColumnBu, $idColumnRsu," +
                         "$idColumnBu, $height_roof AS z_max, $height_wall AS z_min, ST_AREA($geometricColumnBu) AS"+
                         " building_area, ST_PERIMETER($geometricColumnBu)+ST_PERIMETER(ST_HOLES($geometricColumnBu))"+
-                        " AS building_total_facade_length, $height_roof-$height_wall AS delta_h, POWER(POWER(ST_AREA($geometricColumnBu),2)+4*"
+                        " AS building_total_facade_length, $height_roof-$height_wall AS delta_h, POWER(POWER(ST_AREA($geometricColumnBu),2)+4*"+
                         "ST_AREA($geometricColumnBu)*POWER($height_roof-$height_wall,2),0.5) AS non_vertical_roof_area,"+
-                        "POWER(ST_AREA($geometricColumnBu), 0.5)*($height_roof-$height_wall) AS vertical_roof_area;").toString())
+                        "POWER(ST_AREA($geometricColumnBu), 0.5)*($height_roof-$height_wall) AS vertical_roof_area"+
+                        " FROM $correlationBuildingTable;").toString())
+
 
                 // Indexes and spatial indexes are created on rsu and building Tables
-                datasource.execute(("CREATE SPATIAL INDEX IF NOT EXISTS ids_ina ON $buildRoofSurfIni($geometricColumnBu) USING RTREE; "+
+                datasource.execute(("CREATE INDEX IF NOT EXISTS ids_ina ON $buildRoofSurfIni($geometricColumnBu) USING RTREE; "+
                         "CREATE INDEX IF NOT EXISTS id_ina ON $buildRoofSurfIni($idColumnBu); "+
                         "CREATE INDEX IF NOT EXISTS id_ina ON $buildRoofSurfIni($idColumnRsu); ").toString())
 
                 // Vertical roofs that are potentially in contact with the facade of a building neighbor are identified
                 // and the corresponding area is estimated (only if the building roof does not overpass the building wall
                 // of the neighbor)
-                datasource.execute(("CREATE TABLE $buildVertRoofInter(id_build INTEGER, the_geom GEOMETRY, "+
+                datasource.execute(("CREATE TABLE $buildVertRoofInter(id_build INTEGER, vert_roof_to_remove DOUBLE) AS "+
+                        "(SELECT b.$idColumnBu, sum(CASEWHEN(b.building_area>a.building_area, POWER(a.building_area,0.5)*" +
+                        "b.delta_h/2, POWER(b.building_area,0.5)*b.delta_h/2)) FROM $buildRoofSurfIni a, " +
+                        "$buildRoofSurfIni b WHERE a.$geometricColumnBu && b.$geometricColumnBu" +
+                        " AND ST_INTERSECTS(a.$geometricColumnBu, b.$geometricColumnBu) AND a.$idColumnBu <> b.$idColumnBu " +
+                        "AND a.z_min >= b.z_max GROUP BY b.$idColumnBu);").toString())
+
+                // Indexes and spatial indexes are created on rsu and building Tables
+                datasource.execute(("CREATE INDEX IF NOT EXISTS id_bu ON $buildVertRoofInter(id_build);").toString())
+
+                // Vertical roofs that are potentially in contact with the facade of a building neighbor are identified
+                // and the corresponding area is estimated (only if the building roof does not overpass the building wall
+                // of the neighbor)
+                datasource.execute(("CREATE TABLE $buildVertRoofAll(id_build INTEGER, the_geom GEOMETRY, "+
                         "id_rsu INTEGER, z_max DOUBLE, z_min DOUBLE, delta_h DOUBLE, building_area DOUBLE, " +
                         "building_total_facade_length DOUBLE, non_vertical_roof_area DOUBLE, vertical_roof_area DOUBLE," +
                         " vert_roof_to_remove DOUBLE) AS "+
-                        "(SELECT b.$idColumnBu, b.$geometricColumnBu, b.$idColumnRsu, b.$height_roof, b.$height_wall," +
-                        "b.delta_h, b.building_area, b.building_total_facade_length, b.non_vertical_roof_area, " +
-                        "b.vertical_roof_area, sum(ISNULL(CASEWHEN(b.building_area>a.building_area, POWER(a.building_area,0.5)*" +
-                        "b.delta_h/2, POWER(b.building_area,0.5)*b.delta_h/2),0)) FROM $buildRoofSurfIni a LEFT JOIN" +
-                        "$buildRoofSurfIni b ON a.$idColumnBu=b.$idColumnBu WHERE a.$geometricColumnBu && b.$geometricColumnBu" +
-                        " AND ST_INTERSECTS(a.$geometricColumnBu, b.$geometricColumnBu) AND a.$idColumnBu <> b.$idColumnBu " +
-                        "AND a.z_min > b.z_max GROUP BY b.$idColumnBu, b.$geometricColumnBu, b.$idColumnRsu, b.$height_roof, b.$height_wall," +
-                        "b.delta_h, b.building_area, b.building_total_facade_length, b.non_vertical_roof_area," +
-                        "b.vertical_roof_area);").toString())
+                        "(SELECT a.$idColumnBu, a.$geometricColumnBu, a.$idColumnRsu, a.z_max, a.z_min," +
+                        "a.delta_h, a.building_area, a.building_total_facade_length, a.non_vertical_roof_area, " +
+                        "a.vertical_roof_area, ISNULL(b.vert_roof_to_remove,0) FROM $buildRoofSurfIni a LEFT JOIN " +
+                        "$buildVertRoofInter b ON a.$idColumnBu=b.$idColumnBu);").toString())
 
                 // Indexes and spatial indexes are created on rsu and building Tables
-                datasource.execute(("CREATE SPATIAL INDEX IF NOT EXISTS ids_bu ON $buildVertRoofInter(the_geom) USING RTREE; "+
-                        "CREATE INDEX IF NOT EXISTS id_bu ON $buildVertRoofInter(id_build); "+
-                        "CREATE INDEX IF NOT EXISTS id_rsu ON $buildVertRoofInter(id_rsu);" +
-                        "CREATE INDEX IF NOT EXISTS ids_rsu ON $rsuTable(geometricColumnRsu) USING RTREE;" +
+                datasource.execute(("CREATE INDEX IF NOT EXISTS ids_bu ON $buildVertRoofAll(the_geom) USING RTREE; "+
+                        "CREATE INDEX IF NOT EXISTS id_bu ON $buildVertRoofAll(id_build); "+
+                        "CREATE INDEX IF NOT EXISTS id_rsu ON $buildVertRoofAll(id_rsu);" +
+                        "CREATE INDEX IF NOT EXISTS ids_rsu ON $rsuTable($geometricColumnRsu) USING RTREE;" +
                         "CREATE INDEX IF NOT EXISTS id_rsu ON $rsuTable(id_rsu);").toString())
 
                 //PEUT-ETRE MIEUX VAUT-IL FAIRE L'INTERSECTION À PART POUR ÉVITER DE LA FAIRE 2 FOIS ICI ?
@@ -458,34 +467,49 @@ static IProcess rsuRoofAreaDistribution() {
                 // are considered as vertical roofs, the other to "normal roof".
                 datasource.execute(("CREATE TABLE $buildRoofSurfTot(id_build INTEGER,"+
                         "id_rsu INTEGER, z_max DOUBLE, z_min DOUBLE, delta_h DOUBLE, non_vertical_roof_area DOUBLE, " +
-                        "vertical_roof_area DOUBLE) AS SELECT a.id_build, a.id_rsu, a.z_max, a.z_min, a.delta_h, " +
-                        "a.non_vertical_roof_area*(1-ST_AREA(ST_INTERSECTION(a.the_geom, b.the_geom))/a.building_area) " +
+                        "vertical_roof_area DOUBLE) AS (SELECT a.id_build, a.id_rsu, a.z_max, a.z_min, a.delta_h, " +
+                        "a.non_vertical_roof_area*ST_AREA(ST_INTERSECTION(a.the_geom, b.$geometricColumnRsu))/a.building_area " +
                         "AS non_vertical_roof_area, (a.vertical_roof_area-a.vert_roof_to_remove)*" +
-                        "(1-0.5*ST_LENGTH(ST_ACCUM(ST_INTERSECTION(ST_TOMULTILINE(a.the_geom), b.the_geom)))/" +
-                        "a.building_total_facade_length) FROM $buildVertRoofInter a, $rsuTable b " +
+                        "(1-0.5*(1-ST_LENGTH(ST_ACCUM(ST_INTERSECTION(ST_TOMULTILINE(a.the_geom), b.$geometricColumnRsu)))/" +
+                        "a.building_total_facade_length)) FROM $buildVertRoofAll a, $rsuTable b " +
                         "WHERE a.id_rsu=b.$idColumnRsu GROUP BY a.id_build, a.id_rsu, a.z_max, a.z_min, a.delta_h);").toString())
-
-                // The roof area is calculated for each level
-                String finalQuery = "CREATE TABLE $buildRoofPerLayer AS SELECT id_rsu, "
+                datasource.eachRow("SELECT * FROM $buildRoofSurfTot".toString()){
+                    row ->
+                        println(row)
+                }
+                // The roof area is calculated for each level except the last one (> 50 m in the default case)
+                String finalQuery = "CREATE TABLE $outputTableName AS SELECT id_rsu, "
+                String nonVertQuery = ""
+                String vertQuery = ""
                 for (i in 1..(listLayersBottom.size()-1)){
-                    nonVertQuery += "SUM(CASEWHEN(z_max <= ${listLayersBottom[i-1]}, 0, CASEWHEN(z_max > ${listLayersBottom[i-1]} " +
-                            " & z_max <= ${listLayersBottom[i]}, non_vertical_roof_area*(z_max-GREATEST(${listLayersBottom[i-1]}," +
-                            "z_min))/delta_h 0, CASEWHEN(z_min < ${listLayersBottom[i]}, non_vertical_roof_area*(z_max-" +
-                            "GREATEST(${listLayersBottom[i]},z_min)/delta_h), 0)))) AS rsu_non_vert_roof_area_distribution" +
+                    nonVertQuery += " SUM(CASEWHEN(z_max <= ${listLayersBottom[i-1]}, 0, CASEWHEN(" +
+                            "z_max <= ${listLayersBottom[i]}, CASEWHEN(delta_h=0, non_vertical_roof_area, " +
+                            "non_vertical_roof_area*(z_max-GREATEST(${listLayersBottom[i-1]},z_min))/delta_h), " +
+                            "CASEWHEN(z_min < ${listLayersBottom[i]}, non_vertical_roof_area*(${listLayersBottom[i]}-" +
+                            "GREATEST(${listLayersBottom[i-1]},z_min))/delta_h, 0)))) AS rsu_non_vert_roof_area" +
                             "${listLayersBottom[i-1]}_${listLayersBottom[i]},"
-                    vertQuery += "SUM(CASEWHEN(z_max <= ${listLayersBottom[i-1]}, 0, CASEWHEN(z_max > ${listLayersBottom[i-1]} " +
-                            " & z_max <= ${listLayersBottom[i]}, vertical_roof_area*POWER((z_max-GREATEST(${listLayersBottom[i-1]}," +
-                            "z_min))/delta_h 0, 2), CASEWHEN(z_min < ${listLayersBottom[i]}, vertical_roof_area*POWER((z_max-" +
-                            "GREATEST(${listLayersBottom[i]},z_min)/delta_h,2), 0)))) AS rsu_vert_roof_area_distribution" +
+                    vertQuery += " SUM(CASEWHEN(z_max <= ${listLayersBottom[i-1]}, 0, CASEWHEN(" +
+                            "z_max <= ${listLayersBottom[i]}, CASEWHEN(delta_h=0, 0, " +
+                            "vertical_roof_area*POWER((z_max-GREATEST(${listLayersBottom[i-1]}," +
+                            "z_min))/delta_h, 2)), CASEWHEN(z_min < ${listLayersBottom[i]}, vertical_roof_area*POWER((${listLayersBottom[i]}-" +
+                            "GREATEST(${listLayersBottom[i-1]},z_min))/delta_h,2), 0)))) AS rsu_vert_roof_area" +
                             "${listLayersBottom[i-1]}_${listLayersBottom[i]},"
                 }
+                // The roof area is calculated for the last level (> 50 m in the default case)
+                def valueLastLevel = listLayersBottom[listLayersBottom.size()-1]
+                nonVertQuery += " SUM(CASEWHEN(z_max <= $valueLastLevel, 0, CASEWHEN(delta_h=0, non_vertical_roof_area, " +
+                        "non_vertical_roof_area*(z_max-GREATEST($valueLastLevel,z_min))/delta_h))) AS rsu_non_vert_roof_area" +
+                        "${valueLastLevel}_,"
+                vertQuery += " SUM(CASEWHEN(z_max <= $valueLastLevel, 0, CASEWHEN(delta_h=0, vertical_roof_area, " +
+                        "vertical_roof_area*(z_max-GREATEST($valueLastLevel,z_min))/delta_h))) AS rsu_vert_roof_area" +
+                        "${valueLastLevel}_,"
 
-                endQuery = "FROM $buildRoofSurfTot GROUP BY id_rsu;"
+                String endQuery = " FROM $buildRoofSurfTot GROUP BY id_rsu;"
 
-                datasource.execute((finalQuery+nonVertQuery+vertQuery+endQuery).toString())
+                datasource.execute((finalQuery+nonVertQuery+vertQuery[0..-2]+endQuery).toString())
 
                 datasource.execute(("DROP TABLE IF EXISTS ${buildRoofSurfIni}, ${buildVertRoofInter}, "+
-                        "${buildRoofSurfTot}, ${buildRoofPerLayer};").toString())
+                        "${buildRoofSurfTot};").toString())
 
                 [outputTableName: outputTableName]
             }
