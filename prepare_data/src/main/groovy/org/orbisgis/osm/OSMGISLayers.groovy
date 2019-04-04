@@ -22,8 +22,15 @@ import org.orbisgis.processmanagerapi.IProcess
 
 //TODO : use stream api instead of file
 /**
- * This process is used to create the buildings table thank to the osm data tables
- * @return the name of the buildings table
+ * This process is used to create the buildings table thanks to the osm data tables
+ * @param datasource A connexion to a DB containing the 11 OSM tables
+ * @param osmTablesPrefix The prefix used for naming the 11 OSM tables
+ * @param outputColumnNames A map of all the columns to keep in the resulting table (tagKey : columnName)
+ * @param tagKeys The tag keys corresponding to buildings
+ * @param tagValues The selection of admitted tag values corresponding to the given keys (null if no filter)
+ * @param buildingTablePrefix Prefix to give to the resulting table (null if none)
+ * @param filteringZoneTableName Zone on which the buildings will be kept if they intersect
+ * @return buildingTableName The name of the resulting buildings table
  */
 static IProcess prepareBuildings() {
     return processFactory.create(
@@ -57,8 +64,15 @@ static IProcess prepareBuildings() {
 }
 
 /**
- * This process is used to create the roads table thank to the osm data tables
- * @return the name of the roads table
+ * This process is used to create the roads table thanks to the osm data tables
+ * @param datasource A connexion to a DB containing the 11 OSM tables
+ * @param osmTablesPrefix The prefix used for naming the 11 OSM tables
+ * @param outputColumnNames A map of all the columns to keep in the resulting table (tagKey : columnName)
+ * @param tagKeys The tag keys corresponding to roads
+ * @param tagValues The selection of admitted tag values corresponding to the given keys (null if no filter)
+ * @param roadTablePrefix Prefix to give to the resulting table (null if none)
+ * @param filteringZoneTableName Zone on which the roads will be kept if they intersect
+ * @return roadTableName The name of the resulting roads table
  */
 static IProcess prepareRoads() {
     return processFactory.create(
@@ -92,9 +106,15 @@ static IProcess prepareRoads() {
 }
 
 /**
- * This process is used to create the rails table thank to the osm data tables
- * @param datasource A h2GIS db containing the 11 OSM tables
- * @return railTableName The name of the rails table in the db
+ * This process is used to create the rails table thanks to the osm data tables
+ * @param datasource A connexion to a DB containing the 11 OSM tables
+ * @param osmTablesPrefix The prefix used for naming the 11 OSM tables
+ * @param outputColumnNames A map of all the columns to keep in the resulting table (tagKey : columnName)
+ * @param tagKeys The tag keys corresponding to rails
+ * @param tagValues The selection of admitted tag values corresponding to the given keys (null if no filter)
+ * @param railTablePrefix Prefix to give to the resulting table (null if none)
+ * @param filteringZoneTableName Zone on which the rails will be kept if they intersect
+ * @return railTableName The name of the resulting rails table
  */
 static IProcess prepareRails() {
     return processFactory.create(
@@ -127,6 +147,17 @@ static IProcess prepareRails() {
     )
 }
 
+/**
+ * This process is used to create the vegetation table thanks to the osm data tables
+ * @param datasource A connexion to a DB containing the 11 OSM tables
+ * @param osmTablesPrefix The prefix used for naming the 11 OSM tables
+ * @param outputColumnNames A map of all the columns to keep in the resulting table (tagKey : columnName)
+ * @param tagKeys The tag keys corresponding to vegetation
+ * @param tagValues The selection of admitted tag values corresponding to the given keys (null if no filter)
+ * @param vegetTablePrefix Prefix to give to the resulting table (null if none)
+ * @param filteringZoneTableName Zone on which the vegetation will be kept if they intersect
+ * @return vegetTableName The name of the resulting vegetation table
+ */
 static IProcess prepareVeget() {
     return processFactory.create(
             "Prepare the vegetation layer with OSM data",
@@ -158,6 +189,17 @@ static IProcess prepareVeget() {
     )
 }
 
+/**
+ * This process is used to create the hydro table thanks to the osm data tables
+ * @param datasource A connexion to a DB containing the 11 OSM tables
+ * @param osmTablesPrefix The prefix used for naming the 11 OSM tables
+ * @param outputColumnNames A map of all the columns to keep in the resulting table (tagKey : columnName)
+ * @param tagKeys The tag keys corresponding to hydro
+ * @param tagValues The selection of admitted tag values corresponding to the given keys (null if no filter)
+ * @param hydroTablePrefix Prefix to give to the resulting table (null if none)
+ * @param filteringZoneTableName Zone on which the hydro will be kept if they intersect
+ * @return hydroTableName The name of the resulting vegetation table
+ */
 static IProcess prepareHydro() {
     return processFactory.create(
             "Prepare the hydrological layer with OSM data",
@@ -183,7 +225,7 @@ static IProcess prepareHydro() {
                 datasource.executeScript scriptFile.getAbsolutePath()
                 scriptFile.delete()
                 logger.info('Hydro preparation finishes')
-                [vegetTableName: tableName]
+                [hydroTableName: tableName]
             }
     )
 }
