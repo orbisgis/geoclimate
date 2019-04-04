@@ -68,8 +68,7 @@ class OSMTests {
                 roadTablePrefix: "RAW_",
                 filteringZoneTableName: "ZONE_BUFFER"])
         assertNotNull(h2GIS.getTable("RAW_INPUT_ROAD"))
-        assertTrue(h2GIS.getTable("RAW_INPUT_ROAD").getRowCount()==6545)
-        assertTrue(h2GIS.getTable("RAW_INPUT_ROAD").getColumnCount()==16)
+        assertTrue(h2GIS.getTable("RAW_INPUT_ROAD").getColumnNames().contains("junction"))
     }
 
     @Test
@@ -92,9 +91,8 @@ class OSMTests {
                 tagValues: null,
                 railTablePrefix: "RAW_",
                 filteringZoneTableName: "ZONE_BUFFER"])
+        assertNotNull(h2GIS.getTable("RAW_INPUT_RAIL"))
         assertTrue(h2GIS.getTable("RAW_INPUT_RAIL").getColumnNames().contains("highspeed"))
-        assertTrue(h2GIS.getTable("RAW_INPUT_RAIL").getRowCount()==380)
-        assertTrue(h2GIS.getTable("RAW_INPUT_RAIL").getColumnCount()==8)
     }
 
     @Test
@@ -121,9 +119,8 @@ class OSMTests {
                             'vineyard','hedge','hedge_bank','mangrove','banana_plants','banana','sugar_cane'],
                 vegetTablePrefix: "RAW_",
                 filteringZoneTableName: "ZONE_EXTENDED"])
+        assertNotNull(h2GIS.getTable("RAW_INPUT_VEGET"))
         assertTrue h2GIS.getTable("RAW_INPUT_VEGET").getColumnNames().contains("produce")
-        assertTrue h2GIS.getTable("RAW_INPUT_VEGET").getRowCount()==862
-        assertTrue h2GIS.getTable("RAW_INPUT_VEGET").getColumnCount()==14
     }
 
     @Test
@@ -144,9 +141,8 @@ class OSMTests {
                 tags: ['natural':['water','waterway','bay'],'water':[],'waterway':[]],
                 hydroTablePrefix: "RAW_",
                 filteringZoneTableName: "ZONE_EXTENDED"])
+        assertNotNull(h2GIS.getTable("RAW_INPUT_HYDRO"))
         assertTrue h2GIS.getTable("RAW_INPUT_HYDRO").getColumnNames().contains("waterway")
-        assertTrue h2GIS.getTable("RAW_INPUT_HYDRO").getRowCount()==155
-        assertTrue h2GIS.getTable("RAW_INPUT_HYDRO").getColumnCount()==5
     }
 
     @Test

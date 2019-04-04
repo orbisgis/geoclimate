@@ -504,7 +504,7 @@ static boolean executeOverPassQuery(def query, def outputOSMFile) {
     def apiUrl = "https://lz4.overpass-api.de/api/interpreter?data="
     def connection = new URL(apiUrl + URLEncoder.encode(query, java.nio.charset.StandardCharsets.UTF_8.toString())).openConnection() as HttpURLConnection
 
-    println(apiUrl + URLEncoder.encode(query, java.nio.charset.StandardCharsets.UTF_8.toString()))
+    logger.info apiUrl + URLEncoder.encode(query, java.nio.charset.StandardCharsets.UTF_8.toString())
 
     connection.setRequestMethod("GET")
 
