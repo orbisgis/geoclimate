@@ -10,10 +10,10 @@ import org.orbisgis.processmanagerapi.IProcess
 /**
  * This process is used to create the reference spatial units (RSU)
  *
- * @param inputTableName the input spatial table to be processed
- * @param prefixName a prefix used to name the output table
- * @param datasource a connection to a database
- * @param outputTableName the name of the output table
+ * @param inputTableName The input spatial table to be processed
+ * @param prefixName A prefix used to name the output table
+ * @param datasource A connection to a database
+ * @param outputTableName The name of the output table
  * @return A database table name.
  */
 static IProcess createRSU(){
@@ -35,20 +35,18 @@ static IProcess createRSU(){
  * This process is used to prepare the input abstract model
  * in order to compute the reference spatial units (RSU)
  *
- * @param zoneTable the area of zone to be processed
- * @param roadTable the road table to be processed
- * @param railTable the rail table to be processed
- * @param vegetationTable the vegetation table to be processed
- * @param hydrographicTable the hydrographic table to be processed
- * @param surface_vegetation a double value to select the vegetation geometry areas.
+ * @param zoneTable The area of zone to be processed
+ * @param roadTable The road table to be processed
+ * @param railTable The rail table to be processed
+ * @param vegetationTable The vegetation table to be processed
+ * @param hydrographicTable The hydrographic table to be processed
+ * @param surface_vegetation A double value to select the vegetation geometry areas.
  * Expressed in geometry unit of the vegetationTable
- * @param surface_hydro  double value to select the hydrographic geometry areas.
+ * @param surface_hydro  A double value to select the hydrographic geometry areas.
  * Expressed in geometry unit of the vegetationTable
- * @param prefixName a prefix used to name the output table
- * @param datasource a connection to a database
- * @param outputTableName the name of the output table
- * @return A database table name.
- *
+ * @param prefixName A prefix used to name the output table
+ * @param datasource A connection to a database
+ * @param outputTableName The name of the output table
  * @return A database table name.
  */
 static IProcess prepareRSUData(){
@@ -147,10 +145,10 @@ static IProcess prepareRSUData(){
 /**
  * This process is used to merge the geometries that touch each other
  *
- * @param inputTableName the input table to create the block (group of geometries)
- * @param distance a distance to group the geometries
- * @param prefixName a prefix used to name the output table
- * @param outputTableName the name of the output table
+ * @param inputTableName The input table tos create the block (group of geometries)
+ * @param distance A distance to group the geometries
+ * @param prefixName A prefix used to name the output table
+ * @param outputTableName The name of the output table
  * @return A database table name.
  */
 static IProcess createBlocks(){
