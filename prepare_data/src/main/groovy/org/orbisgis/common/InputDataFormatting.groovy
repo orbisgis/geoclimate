@@ -44,8 +44,10 @@ static IProcess inputDataFormatting(){
             'Allows to control, format and enrich the input data in order to feed the GeoClimate model',
             [datasource: JdbcDataSource, inputBuilding: String, inputRoad: String, inputRail: String,
              inputHydro: String, inputVeget: String, inputZone: String, inputZoneNeighbors: String,
-                    tables de param
-             hLevMin: int, hLevMax: int, hThresholdLev2: int
+
+             ajouter les tables de param
+
+             hLevMin: int, hLevMax: int, hThresholdLev2: int, idZone: String
             ],
             [outputBuilding: String, outputBuildingStatZone: String, outputBuildingStatZoneBuff: String,
              outputRoad: String, outputRoadStatZone: String, outputRoadStatZoneBuff: String,
@@ -56,7 +58,7 @@ static IProcess inputDataFormatting(){
             ],
             {JdbcDataSource datasource, inputBuilding, inputRoad, inputRail,
                 inputHydro, inputVeget, inputZone, inputZoneNeighbors,
-                hLevMin, hLevMax, hThresholdLev2 ->
+                hLevMin, hLevMax, hThresholdLev2, idZone ->
                 logger.info('Executing the inputDataFormatting.sql script')
                 def uuid = UUID.randomUUID().toString().replaceAll('-', '_')
                 def buZone = 'BU_ZONE_' + uuid
@@ -87,11 +89,14 @@ static IProcess inputDataFormatting(){
                 BUILD_LEV_RANGE
                 BUILD_TYPE
                 BUILD_TYPE_RANGE
+                BUILDING_ABSTRACT_USE_TYPE
+                BUILDING_ABSTRACT_PARAMETERS
                 B_STATS_ZONE
                 BUILD_VALID_EXT_ZONE
                 BUILD_EQUALS_EXT_ZONE
                 BUILD_OVERLAP_EXT_ZONE
                 B_STATS_EXT_ZONE
+
 
                 ROAD_FC_W_ZERO
                 ROAD_FC_W_NULL
@@ -99,6 +104,7 @@ static IProcess inputDataFormatting(){
                 R_FC_STATS_ZONE
                 R_FC_STATS_ZONE_BUF
                 ROAD
+                INPUT_ROAD
                 ROAD_ZONE
                 ROAD_VALID
                 ROAD_EMPTY
@@ -108,6 +114,8 @@ static IProcess inputDataFormatting(){
                 ROAD_W_RANGE
                 ROAD_TYPE
                 ROAD_TYPE_RANGE
+                ROAD_ABSTRACT_TYPE
+                ROAD_ABSTRACT_PARAMETERS
                 -----R_STATS------
 
                 RAIL
@@ -119,6 +127,7 @@ static IProcess inputDataFormatting(){
                 RAIL_OVERLAP
                 RAIL_TYPE
                 RAIL_TYPE_RANGE
+                RAIL_ABSTRACT_TYPE
                 RAIL_STATS_ZONE
 
                 HYDRO
@@ -138,9 +147,20 @@ static IProcess inputDataFormatting(){
                 VEGET_VALID
                 VEGET_EMPTY
                 VEGET_EQUALS
+                VEGET_OVERLAP
+                VEGET_TYPE
+                VEGET_TYPE_RANGE
+                VEGET_ABSTRACT_TYPE
+                VEGET_STATS_ZONE
+
+                VEGET_STATS_EXT_ZONE
 
                 datasource.executeScript(this.class.getResource('inputDataFormatting.sql').toString(),
-                [BU_ZONE: buZone
+                [BU_ZONE: buZone,
+
+
+
+                 H_LEV_MIN: hLevMin, H_LEV_MAX: hLevMax, H_THRESHOLD_LEV2: hThresholdLev2, ID_ZONE: idZone
 
                 ])
                 logger.info('The inputDataFormatting.sql script has been executed')
