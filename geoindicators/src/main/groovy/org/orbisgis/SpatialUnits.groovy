@@ -2,6 +2,7 @@ package org.orbisgis
 
 import groovy.transform.BaseScript
 import org.orbisgis.datamanager.JdbcDataSource
+import org.orbisgis.processmanagerapi.IProcess
 
 
 @BaseScript Geoclimate geoclimate
@@ -9,16 +10,21 @@ import org.orbisgis.datamanager.JdbcDataSource
 /**
  * This process is used to create the reference spatial units (RSU)
  *
+ * @param inputTableName the input spatial table to be processed
+ * @param prefixName a prefix used to name the output table
+ * @param datasource a connection to a database
+ * @param outputTableName the name of the output table
  * @return A database table name.
  */
-static createRSU(){
-    processFactory.create("Create reference spatial units (RSU)",
-            [inputTableName: String, outputTableName: String, datasource: JdbcDataSource],
+static IProcess createRSU(){
+    return processFactory.create("Create reference spatial units (RSU)",
+            [inputTableName: String, prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { inputTableName, outputTableName, datasource ->
+            { inputTableName, prefixName='rsu', datasource ->
                 logger.info("Creating the reference spatial units")
+                String outputTableName =  prefixName+"_"+UUID.randomUUID().toString().replaceAll("-","_")
                 datasource.execute "DROP TABLE IF EXISTS $outputTableName".toString()
-                datasource.execute "CREATE TABLE $outputTableName as  select  explode_id as rsu_id, the_geom from st_explode ('(select st_polygonize(st_union(st_precisionreducer(st_node(st_accum(the_geom)), 3))) as the_geom from $inputTableName)')".toString()
+                datasource.execute "CREATE TABLE $outputTableName as  select  EXPLOD_ID as id_rsu, the_geom from st_explode ('(select st_polygonize(st_union(st_precisionreducer(st_node(st_accum(the_geom)), 3))) as the_geom from $inputTableName)')".toString()
                 logger.info("Reference spatial units table created")
                 [outputTableName: outputTableName]
         }
@@ -29,19 +35,34 @@ static createRSU(){
  * This process is used to prepare the input abstract model
  * in order to compute the reference spatial units (RSU)
  *
+ * @param zoneTable the area of zone to be processed
+ * @param roadTable the road table to be processed
+ * @param railTable the rail table to be processed
+ * @param vegetationTable the vegetation table to be processed
+ * @param hydrographicTable the hydrographic table to be processed
+ * @param surface_vegetation a double value to select the vegetation geometry areas.
+ * Expressed in geometry unit of the vegetationTable
+ * @param surface_hydro  double value to select the hydrographic geometry areas.
+ * Expressed in geometry unit of the vegetationTable
+ * @param prefixName a prefix used to name the output table
+ * @param datasource a connection to a database
+ * @param outputTableName the name of the output table
+ * @return A database table name.
+ *
  * @return A database table name.
  */
-static prepareRSUData(){
-    processFactory.create("Prepare the abstract model to build the RSU",
+static IProcess prepareRSUData(){
+    return processFactory.create("Prepare the abstract model to build the RSU",
             [zoneTable: String, roadTable: String,  railTable: String, vegetationTable : String, hydrographicTable :String,
-             surface_vegetation : double, surface_hydro : double, outputTableName: String, datasource: JdbcDataSource],
+             surface_vegetation : double, surface_hydro : double, prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { zoneTable ,roadTable, railTable, vegetationTable , hydrographicTable, surface_vegetation =100000, surface_hydrographic=2500 ,outputTableName, datasource ->
+            { zoneTable ,roadTable, railTable, vegetationTable , hydrographicTable, surface_vegetation =100000, surface_hydrographic=2500 ,prefixName="unified_abstract_model", datasource ->
                 logger.info("Creating the reference spatial units")
+                String uuid_tmp =  UUID.randomUUID().toString().replaceAll("-", "_")+"_"
+                String outputTableName =  prefixName+"_"+uuid_tmp
                 def numberZone = datasource.firstRow("select count(*) as nb from $zoneTable".toString()).nb
 
                 if(numberZone==1){
-                    String uuid_tmp =  UUID.randomUUID().toString().replaceAll("-", "_")+"_"
                     logger.info("Preparing vegetation...")
                     String  vegetation_indice = vegetationTable+"_"+uuid_tmp
                     datasource.execute "DROP TABLE IF EXISTS $vegetation_indice".toString()
@@ -119,5 +140,30 @@ static prepareRSUData(){
                 [outputTableName: outputTableName]
             }
 
+    )
+}
+
+
+/**
+ * This process is used to merge the geometries that touch each other
+ *
+ * @param inputTableName the input table to create the block (group of geometries)
+ * @param distance a distance to group the geometries
+ * @param prefixName a prefix used to name the output table
+ * @param outputTableName the name of the output table
+ * @return A database table name.
+ */
+static IProcess createBlocks(){
+    return processFactory.create("Merge the geometries that touch each other",
+            [inputTableName: String, distance : double, prefixName: String, datasource: JdbcDataSource],
+            [outputTableName : String],
+            { inputTableName,distance =0.01, prefixName="block", datasource ->
+                logger.info("Merging the geometries...")
+                String outputTableName =  prefixName+"_"+UUID.randomUUID().toString().replaceAll("-","_")
+                datasource.execute "DROP TABLE IF EXISTS $outputTableName".toString()
+                datasource.execute "CREATE TABLE $outputTableName as  select  EXPLOD_ID as id_block, the_geom from st_explode ('(select ST_UNION(ST_ACCUM(ST_BUFFER(THE_GEOM,$distance))) as the_geom from $inputTableName)')".toString()
+                logger.info("The geometries have been merged")
+                [outputTableName: outputTableName]
+            }
     )
 }

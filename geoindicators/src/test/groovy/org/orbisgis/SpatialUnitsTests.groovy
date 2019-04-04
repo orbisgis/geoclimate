@@ -41,13 +41,24 @@ class SpatialUnitsTests {
         def  rsu =  Geoclimate.SpatialUnits.createRSU()
         rsu.execute([inputTableName: outputTableGeoms,
                      outputTableName: "rsu", datasource: h2GIS])
-
         h2GIS.save("rsu",'/tmp/rsu.shp')
-
         def countRows =  h2GIS.firstRow("select count(*) as numberOfRows from rsu")
 
-        println(countRows)
-        //assert 10 == countRows.numberOfRows
+        assert 223 == countRows.numberOfRows
+    }
+
+
+    @Test
+    void testCreateBlocks() {
+        def h2GIS = H2GIS.open([databaseName: '/tmp/spatialunitsdb'])
+        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
+        h2GIS.execute(sqlString)
+        def  blockP =  Geoclimate.SpatialUnits.createBlocks()
+        blockP.execute([inputTableName: "building_test",distance:0.01,
+                     prefixName: "block", datasource: h2GIS])
+        String outputTable = blockP.results.outputTableName
+        def countRows =  h2GIS.firstRow("select count(*) as numberOfRows from $outputTable".toString())
+        assert 12 == countRows.numberOfRows
     }
 
 
