@@ -158,6 +158,36 @@ static IProcess prepareVeget() {
     )
 }
 
+static IProcess prepareHydro() {
+    return processFactory.create(
+            "Prepare the hydrological layer with OSM data",
+            [datasource: JdbcDataSource,
+             osmTablesPrefix: String,
+             outputColumnNames: Map,
+             tags: Map,
+             hydroTablePrefix: String,
+             filteringZoneTableName: String],
+            [hydroTableName: String],
+            { datasource, osmTablesPrefix, outputColumnNames, tags,
+              hydroTablePrefix, filteringZoneTableName ->
+                logger.info('Hydro preparation starts')
+                String tableName
+                if (hydroTablePrefix == null || hydroTablePrefix.endsWith("_")){
+                    tableName = hydroTablePrefix+'INPUT_HYDRO'
+                } else {
+                    tableName = hydroTablePrefix+'_INPUT_HYDRO'
+                }
+                def scriptFile = File.createTempFile("createHydroTable", ".sql")
+                defineHydroScript osmTablesPrefix, outputColumnNames, tags,
+                        scriptFile, tableName, filteringZoneTableName
+                datasource.executeScript scriptFile.getAbsolutePath()
+                scriptFile.delete()
+                logger.info('Hydro preparation finishes')
+                [vegetTableName: tableName]
+            }
+    )
+}
+
 //List of parameters
 // Zone to search in - must correspond to a administrative level 8 value
 String zoneCode = '56243' // Vannes 56260 - Séné 56243
@@ -172,16 +202,6 @@ def prefix = "zoneExt" //prefix of the tables name in the h2DB
  * Information to retrieve for the vegetation layer
  */
 // TODO : reorganise keys and values as for the hydro layer
-
-// Tags that should be retrieved to compute the input_veget table (and the names they'll have in the table)
-def vegetOptions = ['natural':'natural','landuse':'landuse','landcover':'landcover','vegetation':'vegetation','barrier':'barrier','fence_type':'fence_type',
-                    'hedge':'hedge','wetland':'wetland','vineyard':'vineyard','trees':'trees','crop':'crop','produce':'produce']
-// Tag keys in which to search for the vegetation
-def vegetTagKeys = ['natural', 'landuse','landcover']
-
-// Corresponding tag values to search for the vegetation if any specific
-def vegetTagValues = ['fell', 'heath', 'scrub', 'tree', 'tree_row', 'trees', 'wood','farmland','forest','grass','grassland','greenfield',
-                      'meadow','orchard','plant_nursery','vineyard','hedge','hedge_bank','mangrove','banana_plants','banana','sugar_cane']
 
 /*
  * Information to retrieve for the hydro layer
@@ -277,7 +297,7 @@ if (outputOSMFile.exists()) {
         IProcess process = prepareBuildings()
         process.execute([
                 datasource   : h2GIS,
-                osmTablesPrefix : "ext",
+                osmTablesPrefix : "EXT",
                 ouputColumnNames: ['height':'height','building:height':'b_height','roof:height':'r_height','building:roof:height':'b_r_height',
                                    'building:levels':'b_lev','roof:levels':'r_lev','building:roof:levels':'b_r_lev','building':'building',
                                    'amenity':'amenity','layer':'zindex','aeroway':'aeroway','historic':'historic','leisure':'leisure','monument':'monument',
@@ -295,7 +315,7 @@ if (outputOSMFile.exists()) {
         process = prepareRoads()
         process.execute([
                 datasource   : h2GIS,
-                osmTablesPrefix : "ext",
+                osmTablesPrefix : "EXT",
                 ouputColumnNames: ['width':'width','highway':'highway', 'surface':'surface', 'sidewalk':'sidewalk',
                                    'lane':'lane','layer':'zindex','maxspeed':'maxspeed','oneway':'oneway',
                                    'h_ref':'h_ref','route':'route','cycleway':'cycleway',
@@ -310,7 +330,7 @@ if (outputOSMFile.exists()) {
         process = prepareRoads()
         process.execute([
                 datasource   : h2GIS,
-                osmTablesPrefix : "ext",
+                osmTablesPrefix : "EXT",
                 outputColumnNames: ['highspeed':'highspeed','railway':'railway','service':'service',
                                     'tunnel':'tunnel','layer':'layer','bridge':'bridge'],
                 tagKeys: ['railway'],
@@ -1057,13 +1077,13 @@ static void defineVegetationScript(String prefix, def options, def tagKeys, def 
 
 }
 
-static void defineHydroScript (def prefix, def options, def tags, def scriptPath,
+static void defineHydroScript (def prefix, def options, def tags, def scriptFile,
                        def hydroTableName, def filteringZoneTableName) {
-    def script = ''
+    def script
     def uid = UUID.randomUUID().toString().replaceAll("-","")
-    script += '''
-            DROP TABLE IF EXISTS hydro_simp_raw;
-            CREATE TABLE hydro_simp_raw AS
+    script = """
+            DROP TABLE IF EXISTS hydro_simp_raw_${uid};
+            CREATE TABLE hydro_simp_raw_${uid} AS
             SELECT id_way, ST_TRANSFORM(ST_SETSRID(ST_MAKEPOLYGON(ST_MAKELINE(the_geom)), 4326), 2154) the_geom, val as type
             FROM
             (SELECT
@@ -1078,7 +1098,7 @@ static void defineHydroScript (def prefix, def options, def tags, def scriptPath
                 (SELECT DISTINCT id_way, value as val
                     FROM map_way_tag wt 
                         JOIN map_tag t ON (wt.id_tag = t.id_tag)
-            '''
+            """
     tags.eachWithIndex { it, i ->
         if (i == 0) {
             script += "                    WHERE (t.tag_key = '" + it.key + "'"
@@ -1099,47 +1119,47 @@ static void defineHydroScript (def prefix, def options, def tags, def scriptPath
         }
     }
 
-    script +='''
+    script +="""
             ) b
             WHERE w.id_way = b.id_way) geom_table
             WHERE ST_GEOMETRYN(the_geom, 1) = ST_GEOMETRYN(the_geom, ST_NUMGEOMETRIES(the_geom))
             AND ST_NUMGEOMETRIES(the_geom) > 3;
-            CREATE INDEX IF NOT EXISTS hydro_simp_raw_index ON hydro_simp_raw(id_way);
+            CREATE INDEX IF NOT EXISTS hydro_simp_raw_${uid}_index ON hydro_simp_raw_${uid}(id_way);
             
-            DROP TABLE IF EXISTS hydro_simp_raw_filtered;
-            CREATE TABLE hydro_simp_raw_filtered as
+            DROP TABLE IF EXISTS hydro_simp_raw_filtered_${uid};
+            CREATE TABLE hydro_simp_raw_filtered_${uid} as
             select a.*
-            from hydro_simp_raw a, zone_extended b
+            from hydro_simp_raw_${uid} a, $filteringZoneTableName b
             where ST_INTERSECTS(a.the_geom, b.the_geom)
             and a.the_geom && b.the_geom; 
                        
-            DROP TABLE IF EXISTS hydro_simp;
-            CREATE TABLE hydro_simp AS
-            SELECT a.the_geom, a.id_way'''
+            DROP TABLE IF EXISTS hydro_simp_${uid};
+            CREATE TABLE hydro_simp_${uid} AS
+            SELECT a.the_geom, a.id_way"""
     options.eachWithIndex {it, i ->
-        script += ', t' + i + '."' + it.value + '"'
+        script += ", t" + i + '."' + it.value + '"'
     }
-    script += '\n             FROM hydro_simp_raw_filtered a'
+    script += "\n             FROM hydro_simp_raw_filtered_${uid} a"
     options.eachWithIndex {it, i ->
         script += '\n            LEFT JOIN     \n' +
                 '                (SELECT DISTINCT br.id_way, VALUE AS "' + it.value + '"\n' +
-                '                FROM map_way_tag wt, map_tag t, hydro_simp_raw br \n' +
+                "                FROM map_way_tag wt, map_tag t, hydro_simp_raw_filtered_${uid} br \n" +
                 '                WHERE wt.id_tag = t.id_tag AND t.tag_key IN (\'' + it.key + '\') \n' +
                 '                AND br.id_way = wt.id_way ) t'+i+' \n' +
                 '            ON a.id_way = t'+i+'.id_way'
     }
-    script += '''
+    script += """
             ;
-            CREATE INDEX IF NOT EXISTS hydro_simp_index ON hydro_simp (id_way);
-            DROP TABLE IF EXISTS hydro_simp_raw;
+            CREATE INDEX IF NOT EXISTS hydro_simp_${uid}_index ON hydro_simp_${uid} (id_way);
+            DROP TABLE IF EXISTS hydro_simp_raw_${uid};
 
-            DROP TABLE IF EXISTS hydro_rel_way;
-            CREATE TABLE hydro_rel_way (id_relation varchar, id_way varchar, role varchar) AS
+            DROP TABLE IF EXISTS hydro_rel_way_${uid};
+            CREATE TABLE hydro_rel_way_${uid} (id_relation varchar, id_way varchar, role varchar) AS
             SELECT rt.id_relation, wm.id_way, wm.role
             FROM map_relation_tag rt
                 JOIN map_tag t ON (rt.id_tag = t.id_tag)
                 JOIN map_way_member wm ON (rt.id_relation = wm.id_relation)
-            '''
+            """
     tags.eachWithIndex { it, i ->
         if (i == 0) {
             script += "         WHERE (t.tag_key = '" + it.key + "'"
@@ -1160,13 +1180,13 @@ static void defineHydroScript (def prefix, def options, def tags, def scriptPath
         }
     }
 
-    script +='''
+    script +="""
             ;
-            CREATE INDEX IF NOT EXISTS hydro_rel_way_index on hydro_rel_way (id_way);
-            CREATE INDEX IF NOT EXISTS hydro_rel_way_index2 on hydro_rel_way (id_relation);
+            CREATE INDEX IF NOT EXISTS hydro_rel_way_${uid}_index on hydro_rel_way_${uid} (id_way);
+            CREATE INDEX IF NOT EXISTS hydro_rel_way_${uid}_index2 on hydro_rel_way_${uid} (id_relation);
             
-            DROP TABLE IF EXISTS hydro_rel_raw;
-            CREATE TABLE hydro_rel_raw AS
+            DROP TABLE IF EXISTS hydro_rel_raw_${uid};
+            CREATE TABLE hydro_rel_raw_${uid} AS
             SELECT ST_LINEMERGE(ST_UNION(ST_ACCUM(the_geom))) the_geom, id_relation, role
                 FROM
                     (SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(the_geom), 4326), 2154) the_geom, id_relation, role, id_way
@@ -1181,41 +1201,41 @@ static void defineHydroScript (def prefix, def options, def tags, def scriptPath
                             WHERE  idway = w.id_way) the_geom, 
                             w.id_way, br.id_relation, br.role
                         FROM map_way w
-                            JOIN hydro_rel_way br ON (w.id_way = br.id_way)) geom_table 
+                            JOIN hydro_rel_way_${uid} br ON (w.id_way = br.id_way)) geom_table 
                     WHERE st_numgeometries(the_geom)>=2)
                 GROUP BY id_relation, role;
             
-            DROP TABLE IF EXISTS hydro_rel_raw2;
-            CREATE TABLE hydro_rel_raw2 AS
-            SELECT * FROM ST_Explode('hydro_rel_raw');
+            DROP TABLE IF EXISTS hydro_rel_raw2_${uid};
+            CREATE TABLE hydro_rel_raw2_${uid} AS
+            SELECT * FROM ST_Explode('hydro_rel_raw_${uid}');
 
-            DROP TABLE IF EXISTS hydro_rel_raw2_filtered;
-            CREATE TABLE hydro_rel_raw2_filtered as
+            DROP TABLE IF EXISTS hydro_rel_raw2_filtered_${uid};
+            CREATE TABLE hydro_rel_raw2_filtered_${uid} as
             select a.*
-            from hydro_rel_raw2 a, zone_extended b
+            from hydro_rel_raw2_${uid} a, $filteringZoneTableName b
             where ST_INTERSECTS(a.the_geom, b.the_geom)
             and a.the_geom && b.the_geom; 
             
-            DROP TABLE IF EXISTS hydro_rel_raw3;
-            CREATE TABLE hydro_rel_raw3 AS
+            DROP TABLE IF EXISTS hydro_rel_raw3_${uid};
+            CREATE TABLE hydro_rel_raw3_${uid} AS
             SELECT ST_MAKEPOLYGON(the_geom) the_geom, id_relation, role
-            FROM hydro_rel_raw2_filtered
+            FROM hydro_rel_raw2_filtered_${uid}
             WHERE ST_STARTPOINT(the_geom) = ST_ENDPOINT(the_geom);
             
-            UPDATE hydro_rel_raw3 SET role =
-            CASE WHEN role = 'outline' THEN 'outer\'
+            UPDATE hydro_rel_raw3_${uid} SET role =
+            CASE WHEN role = 'outline' THEN 'outer'
                 ELSE role
             END;
             
-            DROP TABLE IF EXISTS hydro_rel_tot;
-            CREATE TABLE hydro_rel_tot AS 
+            DROP TABLE IF EXISTS hydro_rel_tot_${uid};
+            CREATE TABLE hydro_rel_tot_${uid} AS 
             SELECT ST_difference(st_union(st_accum(to.the_geom)),st_union(st_accum(ti.the_geom))) as the_geom, to.id_relation
             FROM 
                 (SELECT the_geom, id_relation, role
-                FROM hydro_rel_raw3
+                FROM hydro_rel_raw3_${uid}
                 WHERE role = 'outer') to,
                 (SELECT the_geom, id_relation, role
-                FROM hydro_rel_raw3
+                FROM hydro_rel_raw3_${uid}
                 WHERE role = 'inner') ti
             where ti.id_relation = to.id_relation
             GROUP BY to.id_relation
@@ -1223,53 +1243,52 @@ static void defineHydroScript (def prefix, def options, def tags, def scriptPath
             SELECT a.the_geom, a.id_relation
             FROM
                 (SELECT the_geom, id_relation, role
-                FROM hydro_rel_raw3
+                FROM hydro_rel_raw3_${uid}
                 WHERE role = 'outer') a
             LEFT JOIN
                 (SELECT the_geom, id_relation, role
-                FROM hydro_rel_raw3
+                FROM hydro_rel_raw3_${uid}
                 where role = 'inner') b
             ON a.id_relation = b.id_relation
             WHERE b.id_relation IS NULL;
             
-            DROP TABLE IF EXISTS hydro_rel;
-            CREATE TABLE hydro_rel AS 
+            DROP TABLE IF EXISTS hydro_rel_${uid};
+            CREATE TABLE hydro_rel_${uid} AS 
             SELECT a.the_geom, a.id_relation 
-            '''
+            """
     options.eachWithIndex {it, i ->
         script += ', t' + i + '."' + it.value + '"'
     }
-    script += '             FROM hydro_rel_tot a'
+    script += "             FROM hydro_rel_tot_${uid} a"
     options.eachWithIndex {it, i ->
         script += '            LEFT JOIN     \n' +
                 '                (SELECT DISTINCT br.id_relation, tag_value AS "' + it.value + '"\n' +
-                '                FROM map_relation_tag rt, map_tag t, hydro_rel_tot br \n' +
+                "                FROM map_relation_tag rt, map_tag t, hydro_rel_tot_${uid} br \n" +
                 '                WHERE rt.id_tag = t.id_tag AND t.tag_key IN (\'' + it.key + '\') \n' +
                 '                AND br.id_relation = rt.id_relation ) t'+i+' \n' +
                 '            ON a.id_relation = t'+i+'.id_relation'
     }
-    script += ';\nDROP TABLE IF EXISTS INPUT_HYDRO; \n' +
-            'CREATE TABLE INPUT_HYDRO\n'
+    script += ";\nDROP TABLE IF EXISTS $hydroTableName; \n" +
+            "CREATE TABLE $hydroTableName\n"
     script += ' AS\nSELECT id_way as id_source, st_intersection(ST_MAKEVALID(a.the_geom), b.the_geom)  the_geom'
     options.each {
         script += ', "' + it.value + '"'
     }
-    script += '\nFROM hydro_simp a, zone_extended b \nUNION \nSELECT id_relation, st_intersection(ST_MAKEVALID(a.the_geom), b.the_geom)'
+    script += "\nFROM hydro_simp_${uid} a,  $filteringZoneTableName b \nUNION \nSELECT id_relation, st_intersection(ST_MAKEVALID(a.the_geom), b.the_geom)"
     options.each {
         script += ', "' + it.value + '"'
     }
-    script += '''
-            FROM hydro_rel a,zone_extended b;
-            DROP TABLE IF EXISTS hydro_rel;
-            DROP TABLE IF EXISTS hydro_rel_raw;
-            DROP TABLE IF EXISTS hydro_rel_raw2;
-            DROP TABLE IF EXISTS hydro_rel_raw2_filtered;
-            DROP TABLE IF EXISTS hydro_rel_raw3;
-            DROP TABLE IF EXISTS hydro_rel_tot;
-            DROP TABLE IF EXISTS hydro_rel_way;
-            DROP TABLE IF EXISTS hydro_simp;
-            DROP TABLE IF EXISTS HYDRO_SIMP_RAW_FILTERED;
-            '''
-    def scriptFile = new File(scriptPath)
+    script += """
+            FROM hydro_rel_${uid} a, $filteringZoneTableName b;
+            DROP TABLE IF EXISTS hydro_rel_${uid};
+            DROP TABLE IF EXISTS hydro_rel_raw_${uid};
+            DROP TABLE IF EXISTS hydro_rel_raw2_${uid};
+            DROP TABLE IF EXISTS hydro_rel_raw2_filtered_${uid};
+            DROP TABLE IF EXISTS hydro_rel_raw3_${uid};
+            DROP TABLE IF EXISTS hydro_rel_tot_${uid};
+            DROP TABLE IF EXISTS hydro_rel_way_${uid};
+            DROP TABLE IF EXISTS hydro_simp_${uid};
+            DROP TABLE IF EXISTS HYDRO_SIMP_RAW_FILTERED_${uid};
+            """
     scriptFile << script.replaceAll('map',prefix)
 }
