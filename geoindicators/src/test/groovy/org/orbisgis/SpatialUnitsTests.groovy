@@ -3,6 +3,9 @@ package org.orbisgis
 import org.junit.jupiter.api.Test
 import org.orbisgis.datamanager.h2gis.H2GIS
 
+import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertNotNull
+
 class SpatialUnitsTests {
 
     @Test
@@ -17,7 +20,7 @@ class SpatialUnitsTests {
                      prefixName: "rsu", datasource: h2GIS])
         String outputTable = rsu.results.outputTableName
         def countRows =  h2GIS.firstRow("select count(*) as numberOfRows from $outputTable".toString())
-        assert 10 == countRows.numberOfRows
+        assertEquals 10, countRows.numberOfRows
     }
 
     @Test
@@ -36,7 +39,7 @@ class SpatialUnitsTests {
 
         String outputTableGeoms = prepareData.results.outputTableName
 
-        assert h2GIS.getTable(outputTableGeoms)!=null
+        assertNotNull h2GIS.getTable(outputTableGeoms)
 
         def  rsu =  Geoclimate.SpatialUnits.createRSU()
         rsu.execute([inputTableName: outputTableGeoms,
@@ -44,7 +47,7 @@ class SpatialUnitsTests {
         h2GIS.save("rsu",'/tmp/rsu.shp')
         def countRows =  h2GIS.firstRow("select count(*) as numberOfRows from rsu")
 
-        assert 213 == countRows.numberOfRows
+        assertEquals 213 , countRows.numberOfRows
     }
 
 
@@ -58,7 +61,7 @@ class SpatialUnitsTests {
                      prefixName: "block", datasource: h2GIS])
         String outputTable = blockP.results.outputTableName
         def countRows =  h2GIS.firstRow("select count(*) as numberOfRows from $outputTable".toString())
-        assert 12 == countRows.numberOfRows
+        assertEquals 12 , countRows.numberOfRows
     }
 
 
