@@ -15,7 +15,7 @@ import org.orbisgis.datamanager.JdbcDataSource
 
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.datamanagerapi.dataset.ITable
-import org.orbisgis.osm.PrepareData
+import org.orbisgis.PrepareData
 import org.orbisgis.processmanagerapi.IProcess
 
 @BaseScript PrepareData prepareData

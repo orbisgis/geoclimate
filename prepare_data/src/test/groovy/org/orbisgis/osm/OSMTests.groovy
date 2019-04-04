@@ -1,5 +1,6 @@
 package org.orbisgis.osm
 
+import org.orbisgis.PrepareData
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -91,8 +92,8 @@ class OSMTests {
                 railTablePrefix: "RAW_",
                 filteringZoneTableName: "ZONE_BUFFER"])
         assertTrue(h2GIS.getTable("RAW_INPUT_RAIL").getColumnNames().contains("highspeed"))
-        assertTrue(h2GIS.getTable("RAW_INPUT_ROAD").getRowCount()==380)
-        assertTrue(h2GIS.getTable("RAW_INPUT_ROAD").getColumnCount()==8)
+        assertTrue(h2GIS.getTable("RAW_INPUT_RAIL").getRowCount()==380)
+        assertTrue(h2GIS.getTable("RAW_INPUT_RAIL").getColumnCount()==8)
     }
 
 }
