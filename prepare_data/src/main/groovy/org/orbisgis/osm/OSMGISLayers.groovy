@@ -29,26 +29,100 @@ static IProcess prepareBuildings() {
     return processFactory.create(
             "Prepare the building layer with OSM data",
             [datasource: JdbcDataSource,
-             tablesPrefix: String,
-             ouputColumnNames: Map,
+             osmTablesPrefix: String,
+             outputColumnNames: Map,
              tagKeys: String[],
              tagValues: String[],
-             buildingTableName: String,
+             buildingTablePrefix: String,
              filteringZoneTableName: String],
             [buildingTableName: String],
-            { datasource, tablesPrefix, ouputColumnNames, tagKeys, tagValues,
-              buildingTableName, filteringZoneTableName ->
+            { datasource, osmTablesPrefix, outputColumnNames, tagKeys, tagValues,
+              buildingTablePrefix, filteringZoneTableName ->
                 logger.info('Buildings preparation starts')
-                if (buildingTableName == null){
-                    buildingTableName = 'RAW_INPUT_BUILDING'
+                def tableName
+                if (buildingTablePrefix != null && buildingTablePrefix.endsWith("_")) {
+                    tableName = buildingTablePrefix+'INPUT_BUILDING'
+                } else {
+                    tableName = buildingTablePrefix+'_INPUT_BUILDING'
                 }
                 def scriptFile = File.createTempFile("createBuildingTable", ".sql")
-                defineBuildingScript(tablesPrefix, ouputColumnNames, tagKeys, tagValues,
-                        scriptFile, buildingTableName, filteringZoneTableName)
+                defineBuildingScript(osmTablesPrefix, outputColumnNames, tagKeys, tagValues,
+                        scriptFile, tableName, filteringZoneTableName)
                 datasource.executeScript(scriptFile.getAbsolutePath())
                 scriptFile.delete()
                 logger.info('Buildings preparation finishes')
-                [buildingTableName: String]
+                [buildingTableName: tableName]
+            }
+    )
+}
+
+/**
+ * This process is used to create the roads table thank to the osm data tables
+ * @return the name of the roads table
+ */
+static IProcess prepareRoads() {
+    return processFactory.create(
+            "Prepare the roads layer with OSM data",
+            [datasource: JdbcDataSource,
+             osmTablesPrefix: String,
+             outputColumnNames: Map,
+             tagKeys: String[],
+             tagValues: String[],
+             roadTablePrefix: String,
+             filteringZoneTableName: String],
+            [roadTableName: String],
+            { datasource, osmTablesPrefix, outputColumnNames, tagKeys, tagValues,
+              roadTablePrefix, filteringZoneTableName ->
+                logger.info('Roads preparation starts')
+                String tableName
+                if (roadTablePrefix != null && roadTablePrefix.endsWith("_")){
+                    tableName = roadTablePrefix+'INPUT_ROAD'
+                } else {
+                    tableName = roadTablePrefix+'_INPUT_ROAD'
+                }
+                def scriptFile = File.createTempFile("createRoadTable", ".sql")
+                defineRoadScript(osmTablesPrefix, outputColumnNames, tagKeys, tagValues,
+                        scriptFile, tableName, filteringZoneTableName)
+                datasource.executeScript(scriptFile.getAbsolutePath())
+                scriptFile.delete()
+                logger.info('Roads preparation finishes')
+                [roadTableName: tableName]
+            }
+    )
+}
+
+/**
+ * This process is used to create the rails table thank to the osm data tables
+ * @param datasource A h2GIS db containing the 11 OSM tables
+ * @return railTableName The name of the rails table in the db
+ */
+static IProcess prepareRails() {
+    return processFactory.create(
+            "Prepare the rails layer with OSM data",
+            [datasource: JdbcDataSource,
+             osmTablesPrefix: String,
+             outputColumnNames: Map,
+             tagKeys: String[],
+             tagValues: String[],
+             railTablePrefix: String,
+             filteringZoneTableName: String],
+            [railTableName: String],
+            { datasource, osmTablesPrefix, outputColumnNames, tagKeys, tagValues,
+              railTablePrefix, filteringZoneTableName ->
+                logger.info('Rails preparation starts')
+                String tableName
+                if (railTablePrefix != null && railTablePrefix.endsWith("_")){
+                    tableName = railTablePrefix+'INPUT_RAIL'
+                } else {
+                    tableName = railTablePrefix+'_INPUT_RAIL'
+                }
+                def scriptFile = File.createTempFile("createRailTable", ".sql")
+                defineRailScript osmTablesPrefix, outputColumnNames, tagKeys, tagValues,
+                        scriptFile, tableName, filteringZoneTableName
+                datasource.executeScript scriptFile.getAbsolutePath()
+                scriptFile.delete()
+                logger.info('Rails preparation finishes')
+                [railTableName: tableName]
             }
     )
 }
@@ -61,36 +135,6 @@ int extZoneSize = 1000
 // Size of the zone buffer to compute - in meters
 int bufferZoneSize = 500
 def prefix = "zoneExt" //prefix of the tables name in the h2DB
-
-/*
- * Information to retrieve for the buildings layer
- */
-// Tags that should be retrieved to compute the input_building table (and the names they'll have in the table)
-def buildingOptions = ['height':'height','building:height':'b_height','roof:height':'r_height','building:roof:height':'b_r_height',
-                       'building:levels':'b_lev','roof:levels':'r_lev','building:roof:levels':'b_r_lev','building':'building',
-                       'amenity':'amenity','layer':'zindex','aeroway':'aeroway','historic':'historic','leisure':'leisure','monument':'monument',
-                       'place_of_worship':'place_of_worship','military':'military','railway':'railway','public_transport':'public_transport',
-                       'barrier':'barrier','government':'government','historic:building':'historic_building','grandstand':'grandstand',
-                       'house':'house','shop':'shop','industrial':'industrial','man_made':'man_made', 'residential':'residential',
-                       'apartments':'apartments','ruins':'ruins','agricultural':'agricultural','barn':'barn', 'healthcare':'healthcare',
-                       'education':'education','restaurant':'restaurant','sustenance':'sustenance','office':'office']
-
-// Tag keys in which to search for the buildings
-def buildingTagKeys = ['building']
-// Corresponding tag values to search for the buildings if any specific
-def buildingTagValues = null
-
-/*
- * Information to retrieve for the roads layer
- */
-// Tags that should be retrieved to compute the input_road table (and the names they'll have in the table)
-def roadOptions = ['width':'width','highway':'highway', 'surface':'surface', 'sidewalk':'sidewalk','lane':'lane','layer':'zindex',
-                   'maxspeed':'maxspeed','oneway':'oneway','h_ref':'h_ref','route':'route','cycleway':'cycleway','biclycle_road':'biclycle_road','cyclestreet':'cyclestreet','junction':'junction']
-
-// Tag keys in which to search for the roads
-def roadTagKeys = ['highway','cycleway','biclycle_road','cyclestreet','route','junction']
-// Corresponding tag values to search for the roads if any specific
-def roadTagValues = null
 
 /*
  * Information to retrieve for the rails layer
@@ -207,35 +251,53 @@ if (outputOSMFile.exists()) {
         h2GIS.save('ZONE_NEIGHBORS',zoneNeighborsFilePath)
         logger.info('Zone neighbors OK')
 
+        //Create the buildings table
+        IProcess process = prepareBuildings()
+        process.execute([
+                datasource   : h2GIS,
+                tablesPrefix : "ext",
+                ouputColumnNames: ['height':'height','building:height':'b_height','roof:height':'r_height','building:roof:height':'b_r_height',
+                                   'building:levels':'b_lev','roof:levels':'r_lev','building:roof:levels':'b_r_lev','building':'building',
+                                   'amenity':'amenity','layer':'zindex','aeroway':'aeroway','historic':'historic','leisure':'leisure','monument':'monument',
+                                   'place_of_worship':'place_of_worship','military':'military','railway':'railway','public_transport':'public_transport',
+                                   'barrier':'barrier','government':'government','historic:building':'historic_building','grandstand':'grandstand',
+                                   'house':'house','shop':'shop','industrial':'industrial','man_made':'man_made', 'residential':'residential',
+                                   'apartments':'apartments','ruins':'ruins','agricultural':'agricultural','barn':'barn', 'healthcare':'healthcare',
+                                   'education':'education','restaurant':'restaurant','sustenance':'sustenance','office':'office'],
+                tagKeys: ['building'],
+                tagValues: null,
+                buildingTableName: "RAW_INPUT_BUILDING",
+                filteringZoneTableName: "ZONE_BUFFER"])
 
-        //Create the buildings table and save it in the targeted file
-        defineBuildingScript(prefix, buildingOptions, buildingTagKeys, buildingTagValues, new File(buildingsScriptPath),
-                "RAW_INPUT_BUILDING","ZONE_BUFFER")
-        h2GIS.executeScript(buildingsScriptPath)
-        h2GIS.save('RAW_INPUT_BUILDING', buildingsFilePath)
-        logger.info('Buildings OK')
-
-        //Create the roads table and save it in the targeted file
-        defineRoadScript(prefix, roadOptions, roadTagKeys, roadTagValues, roadsScriptPath)
-        h2GIS.executeScript(roadsScriptPath)
-        h2GIS.save('INPUT_ROAD', roadsFilePath)
-        logger.info('Roads OK')
+        //Create the roads table
+        process = prepareRoads()
+        process.execute([
+                datasource   : h2GIS,
+                tablesPrefix : "ext",
+                ouputColumnNames: ['width':'width','highway':'highway', 'surface':'surface', 'sidewalk':'sidewalk',
+                                   'lane':'lane','layer':'zindex','maxspeed':'maxspeed','oneway':'oneway',
+                                   'h_ref':'h_ref','route':'route','cycleway':'cycleway',
+                                   'biclycle_road':'biclycle_road','cyclestreet':'cyclestreet','junction':'junction'],
+                tagKeys: ['highway','cycleway','biclycle_road','cyclestreet','route','junction'],
+                tagValues: null,
+                roadTableName: "RAW_INPUT_ROAD2",
+                filteringZoneTableName: "ZONE_BUFFER"])
 
 
         //Create the rails table and save it in the targeted file
-        defineRailScript(prefix, railOptions, railTagKeys, railTagValues, railsScriptPath)
+        defineRailScript(prefix, railOptions, railTagKeys, railTagValues, new File(railsScriptPath), "RAW_INPUT_RAIL","ZONE_BUFFER")
         h2GIS.executeScript(railsScriptPath)
         h2GIS.save('INPUT_RAIL', railsFilePath)
         logger.info('Rails OK')
 
         //Create the vegetation table and save it in the targeted file
-        defineVegetationScript(prefix, vegetOptions, vegetTagKeys, vegetTagValues, vegetScriptPath)
+        defineVegetationScript(prefix, vegetOptions, vegetTagKeys, vegetTagValues, new File(vegetScriptPath), "RAW_INPUT_VEGET", "ZONE_EXTENDED")
         h2GIS.executeScript(vegetScriptPath)
         h2GIS.save('INPUT_VEGET', vegetFilePath)
         logger.info('Vegetation OK')
 
         //Create the hydro table and save it in the targeted file
-        defineHydroScript(prefix, hydroOptions, hydroTags, hydroScriptPath)
+        defineHydroScript(prefix, hydroOptions, hydroTags, hydroScriptPath, "RAW_INPUT_HYDRO", "ZONE_EXTENDED")
         h2GIS.executeScript(hydroScriptPath)
         h2GIS.save('INPUT_HYDRO', hydroFilePath)
         logger.info('Hydro OK')
@@ -429,8 +491,8 @@ def zoneNeighborsSQLScript(def prefix){
 /**
  ** Function to create the script for the buildings
  **/
-static void defineBuildingScript(String prefix, def options, def tagKeys, def tagValues, File scriptFile,
-                          String buildingTableName, String bufferTableName){
+static void defineBuildingScript(prefix, options, tagKeys, tagValues, scriptFile,
+                                 buildingTableName, bufferTableName){
     def uid = UUID.randomUUID().toString().replaceAll("-","")
     def script = ''
     script += "DROP TABLE IF EXISTS buildings_simp_raw_$uid; \n" +
@@ -617,11 +679,13 @@ static void defineBuildingScript(String prefix, def options, def tagKeys, def ta
 }
 
 // TODO : add a new parameter to take into account the list of desired 'highway' tag values
-void defineRoadScript(String prefix, def options, def tagKeys, def tagValues, def scriptPath) {
-    def script = ''
-    script += '''
-            DROP TABLE IF EXISTS roads_raw;
-            CREATE TABLE roads_raw AS
+static void defineRoadScript(prefix, options, tagKeys, tagValues, scriptFile
+                      , roadTableName, filteringZoneTableName) {
+    def script
+    def uid = UUID.randomUUID().toString().replaceAll("-","")
+    script = """
+            DROP TABLE IF EXISTS roads_raw_$uid;
+            CREATE TABLE roads_raw_$uid AS
             SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(the_geom), 4326), 2154) the_geom, id_way
             FROM
                 (SELECT w.id_way,
@@ -636,7 +700,7 @@ void defineRoadScript(String prefix, def options, def tagKeys, def tagValues, de
                     (SELECT DISTINCT id_way
                     FROM map_way_tag wt, map_tag t
                     WHERE wt.id_tag = t.id_tag
-            '''
+            """
     tagKeys.eachWithIndex { it, i ->
         if (i==0) {
             script += 'AND t.tag_key IN (\'' + it
@@ -656,28 +720,28 @@ void defineRoadScript(String prefix, def options, def tagKeys, def tagValues, de
         }
         script += '\')'
     }
-    script +=''') b
+    script +=""") b
                 WHERE w.id_way = b.id_way) geom_table
             WHERE ST_NUMGEOMETRIES(the_geom) >= 2;
             
-            CREATE INDEX IF NOT EXISTS roads_raw_index ON roads_raw(id_way);
-            CREATE SPATIAL INDEX ON roads_raw(the_geom);
-            '''
-    script += '''
-            CREATE TABLE roads_raw_filtered as
+            CREATE INDEX IF NOT EXISTS roads_raw_${uid}_index ON roads_raw_${uid}(id_way);
+            CREATE SPATIAL INDEX ON roads_raw_${uid}(the_geom);
+            """
+    script += """
+            CREATE TABLE roads_raw_filtered_${uid} as
             select st_intersection(a.the_geom, b.the_geom) the_geom, a.id_way
-            from roads_raw a, ZONE_EXTENDED b
+            from roads_raw_${uid} a, ${filteringZoneTableName} b
             where ST_INTERSECTS(a.the_geom, b.the_geom)
             and a.the_geom && b.the_geom;
-            CREATE INDEX IF NOT EXISTS roads_raw_filtered_index ON roads_raw_filtered(id_way);
-            DROP TABLE IF EXISTS roads_raw;
-            '''
-    script +='DROP TABLE IF EXISTS INPUT_ROAD;\n' +
-            'CREATE TABLE INPUT_ROAD AS\n    SELECT a.the_geom, a.id_way'
+            CREATE INDEX IF NOT EXISTS roads_raw_filtered_${uid}_index ON roads_raw_filtered_${uid}(id_way);
+            DROP TABLE IF EXISTS roads_raw_${uid};
+            """
+    script +='DROP TABLE IF EXISTS '+roadTableName+';\n' +
+            'CREATE TABLE '+roadTableName+' AS\n    SELECT a.the_geom, a.id_way'
     options.eachWithIndex{ it, i ->
         script +=', t'+i+'."'+it.value + '"'
     }
-    script +='\n    FROM roads_raw_filtered a\n'
+    script +='\n    FROM roads_raw_filtered_'+uid+' a\n'
     options.eachWithIndex { it, i ->
         script +='        LEFT JOIN\n' +
                 '            (SELECT DISTINCT wt.id_way, VALUE "'+it.value+'"\n' +
@@ -687,18 +751,19 @@ void defineRoadScript(String prefix, def options, def tagKeys, def tagValues, de
                 '            ) t'+i+'\n' +
                 '        ON a.id_way = t'+i+'.id_way\n'
     }
-    script+= ';\nDROP TABLE IF EXISTS roads_raw_filtered;\n'+
-            'CREATE SPATIAL INDEX ON INPUT_ROAD(the_geom);'
-    def scriptFile = new File(scriptPath)
+    script+= ';\nDROP TABLE IF EXISTS roads_raw_filtered_'+uid+';\n'+
+            'CREATE SPATIAL INDEX ON '+roadTableName+'(the_geom);'
     scriptFile << script.replaceAll('map',prefix)
 
 }
 
-void defineRailScript(String prefix, def options, def tagKeys, def tagValues, def scriptPath) {
-    def script = ''
-    script += '''
-            DROP TABLE IF EXISTS rails_raw;
-            CREATE TABLE rails_raw AS
+static void defineRailScript(prefix, options, tagKeys, tagValues, scriptFile,
+                      railTableName, filteringZoneTableName) {
+    def script
+    def uid = UUID.randomUUID().toString().replaceAll("-","")
+    script = """
+            DROP TABLE IF EXISTS rails_raw_${uid};
+            CREATE TABLE rails_raw_${uid} AS
             SELECT id_way, ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(the_geom), 4326), 2154) the_geom
             FROM
                 (SELECT w.id_way, val,
@@ -713,7 +778,7 @@ void defineRailScript(String prefix, def options, def tagKeys, def tagValues, de
                     (SELECT DISTINCT id_way, value as val
                     FROM map_way_tag wt, map_tag t
                     WHERE wt.id_tag = t.id_tag
-                    '''
+            """
     tagKeys.eachWithIndex { it, i ->
         if (i==0) {
             script += 'AND t.tag_key IN (\''+ it
@@ -734,26 +799,25 @@ void defineRailScript(String prefix, def options, def tagKeys, def tagValues, de
         script += '\')'
     }
 
-    script +=''') b
+    script +=""") b
                 WHERE w.id_way = b.id_way) geom_table
-            WHERE ST_NUMGEOMETRIES(the_geom) >= 2
-            and val in ('rail', 'disused');
-            CREATE INDEX IF NOT EXISTS rails_raw_index ON rails_raw(id_way);
+            WHERE ST_NUMGEOMETRIES(the_geom) >= 2;
+            CREATE INDEX IF NOT EXISTS rails_raw_${uid}_index ON rails_raw_${uid}(id_way);
             
-            DROP TABLE IF EXISTS rails_raw_filtered;
-            CREATE TABLE rails_raw_filtered as
+            DROP TABLE IF EXISTS rails_raw_filtered_${uid};
+            CREATE TABLE rails_raw_filtered_${uid} as
             select a.*
-            from rails_raw a, ZONE_EXTENDED b
+            from rails_raw_${uid} a, ${filteringZoneTableName} b
             where ST_INTERSECTS(a.the_geom, b.the_geom)
             and a.the_geom && b.the_geom;
-            CREATE INDEX IF NOT EXISTS rails_raw_filtered ON rails_raw(id_way);            
-            '''
-    script +='DROP TABLE IF EXISTS INPUT_RAIL;\n' +
-            'CREATE TABLE INPUT_RAIL AS\n    SELECT a.id_way, a.the_geom'
+            CREATE INDEX IF NOT EXISTS rails_raw_filtered_${uid}_index ON rails_raw_filtered_${uid}(id_way);            
+            """
+    script +="DROP TABLE IF EXISTS ${railTableName};\n" +
+            "CREATE TABLE ${railTableName} AS\n    SELECT a.id_way, a.the_geom"
     options.eachWithIndex{ it, i ->
         script +=', t'+i+'."'+it.value +'"'
     }
-    script +='\n    FROM rails_raw_filtered a\n'
+    script +="\n    FROM rails_raw_filtered_${uid} a\n"
     options.eachWithIndex { it, i ->
         script +='        LEFT JOIN\n' +
                 '            (SELECT DISTINCT wt.id_way, VALUE "'+it.value+'"\n' +
@@ -763,14 +827,14 @@ void defineRailScript(String prefix, def options, def tagKeys, def tagValues, de
                 '            ) t'+i+'\n' +
                 '        ON a.id_way = t'+i+'.id_way\n'
     }
-    script+= ';\nDROP TABLE IF EXISTS rails_raw;'
-    script+= ';\nDROP TABLE IF EXISTS rails_raw_filtered;'
-    def scriptFile = new File(scriptPath)
+    script+= ";\nDROP TABLE IF EXISTS rails_raw_${uid};"
+    script+= "\nDROP TABLE IF EXISTS rails_raw_filtered_${uid};"
     scriptFile << script.replaceAll('map',prefix)
 
 }
 
-void defineVegetationScript(String prefix, def options, def tagKeys, def tagValues, def scriptPath) {
+static void defineVegetationScript(String prefix, def options, def tagKeys, def tagValues, def scriptPath,
+                            def vegetTableName, def filteringZoneTableName) {
     def script = ''
     script += """
             DROP TABLE IF EXISTS veget_simp_raw;
@@ -964,7 +1028,8 @@ void defineVegetationScript(String prefix, def options, def tagKeys, def tagValu
 
 }
 
-def defineHydroScript (def prefix, def options, def tags, def scriptPath) {
+static void defineHydroScript (def prefix, def options, def tags, def scriptPath,
+                       def hydroTableName, def filteringZoneTableName) {
     def script = ''
     script += '''
             DROP TABLE IF EXISTS hydro_simp_raw;
