@@ -27,7 +27,7 @@ class OSMTests {
         def process = PrepareData.OSMGISLayers.prepareBuildings()
         process.execute([
                 datasource   : h2GIS,
-                osmTablesPrefix : "ext",
+                osmTablesPrefix : "EXT",
                 outputColumnNames: ['height':'height','building:height':'b_height','roof:height':'r_height','building:roof:height':'b_r_height',
                                'building:levels':'b_lev','roof:levels':'r_lev','building:roof:levels':'b_r_lev','building':'building',
                                'amenity':'amenity','layer':'zindex','aeroway':'aeroway','historic':'historic','leisure':'leisure','monument':'monument',
@@ -58,7 +58,7 @@ class OSMTests {
         def process = PrepareData.OSMGISLayers.prepareRoads()
         process.execute([
                 datasource   : h2GIS,
-                osmTablesPrefix : "ext",
+                osmTablesPrefix : "EXT",
                 outputColumnNames: ['width':'width','highway':'highway', 'surface':'surface', 'sidewalk':'sidewalk',
                                    'lane':'lane','layer':'zindex','maxspeed':'maxspeed','oneway':'oneway',
                                    'h_ref':'h_ref','route':'route','cycleway':'cycleway',
@@ -76,6 +76,7 @@ class OSMTests {
     void prepareRailsTest() {
         def h2GIS = H2GIS.open('./target/h2db')
         h2GIS.load(new File(this.class.getResource("zoneExtended.osm").toURI()).getAbsolutePath(),"ext",false)
+        h2GIS.execute "drop table if exists RAW_INPUT_RAIL;"
         assertNotNull(h2GIS.getTable("EXT_NODE"))
         logger.info('Load OSM tables OK')
         h2GIS.execute OSMGISLayers.createIndexesOnOSMTables("ext")
@@ -84,7 +85,7 @@ class OSMTests {
         def process = PrepareData.OSMGISLayers.prepareRails()
         process.execute([
                 datasource   : h2GIS,
-                osmTablesPrefix : "ext",
+                osmTablesPrefix : "EXT",
                 outputColumnNames: ['highspeed':'highspeed','railway':'railway','service':'service',
                                    'tunnel':'tunnel','layer':'layer','bridge':'bridge'],
                 tagKeys: ['railway'],
@@ -94,6 +95,58 @@ class OSMTests {
         assertTrue(h2GIS.getTable("RAW_INPUT_RAIL").getColumnNames().contains("highspeed"))
         assertTrue(h2GIS.getTable("RAW_INPUT_RAIL").getRowCount()==380)
         assertTrue(h2GIS.getTable("RAW_INPUT_RAIL").getColumnCount()==8)
+    }
+
+    @Test
+    void prepareVegetTest() {
+        def h2GIS = H2GIS.open('./target/h2db')
+        h2GIS.load(new File(this.class.getResource("zoneExtended.osm").toURI()).getAbsolutePath(),"ext",false)
+        h2GIS.execute "drop table if exists RAW_INPUT_VEGET;"
+        assertNotNull(h2GIS.getTable("EXT_NODE"))
+        logger.info('Load OSM tables OK')
+        h2GIS.execute OSMGISLayers.createIndexesOnOSMTables("ext")
+        logger.info('Index OSM tables OK')
+        h2GIS.execute OSMGISLayers.zoneSQLScript('ext',"35236",1000, 500)
+        def process = PrepareData.OSMGISLayers.prepareVeget()
+        process.execute([
+                datasource   : h2GIS,
+                osmTablesPrefix : "EXT",
+                outputColumnNames: ['natural':'natural','landuse':'landuse','landcover':'landcover',
+                                    'vegetation':'vegetation','barrier':'barrier','fence_type':'fence_type',
+                                    'hedge':'hedge','wetland':'wetland','vineyard':'vineyard',
+                                    'trees':'trees','crop':'crop','produce':'produce'],
+                tagKeys: ['natural', 'landuse','landcover'],
+                tagValues: ['fell', 'heath', 'scrub', 'tree', 'tree_row', 'trees', 'wood','farmland',
+                            'forest','grass','grassland','greenfield','meadow','orchard','plant_nursery',
+                            'vineyard','hedge','hedge_bank','mangrove','banana_plants','banana','sugar_cane'],
+                vegetTablePrefix: "RAW_",
+                filteringZoneTableName: "ZONE_EXTENDED"])
+        assertTrue h2GIS.getTable("RAW_INPUT_VEGET").getColumnNames().contains("produce")
+        assertTrue h2GIS.getTable("RAW_INPUT_VEGET").getRowCount()==862
+        assertTrue h2GIS.getTable("RAW_INPUT_VEGET").getColumnCount()==14
+    }
+
+    @Test
+    void prepareHydroTest() {
+        def h2GIS = H2GIS.open('./target/h2db')
+        h2GIS.load(new File(this.class.getResource("zoneExtended.osm").toURI()).getAbsolutePath(),"ext",false)
+        h2GIS.execute "drop table if exists RAW_INPUT_HYDRO;"
+        assertNotNull(h2GIS.getTable("EXT_NODE"))
+        logger.info('Load OSM tables OK')
+        h2GIS.execute OSMGISLayers.createIndexesOnOSMTables("ext")
+        logger.info('Index OSM tables OK')
+        h2GIS.execute OSMGISLayers.zoneSQLScript('ext',"35236",1000, 500)
+        def process = PrepareData.OSMGISLayers.prepareHydro()
+        process.execute([
+                datasource   : h2GIS,
+                osmTablesPrefix : "EXT",
+                outputColumnNames: ['natural':'natural','water':'water','waterway':'waterway'],
+                tags: ['natural':['water','waterway','bay'],'water':[],'waterway':[]],
+                hydroTablePrefix: "RAW_",
+                filteringZoneTableName: "ZONE_EXTENDED"])
+        assertTrue h2GIS.getTable("RAW_INPUT_HYDRO").getColumnNames().contains("waterway")
+        assertTrue h2GIS.getTable("RAW_INPUT_HYDRO").getRowCount()==155
+        assertTrue h2GIS.getTable("RAW_INPUT_HYDRO").getColumnCount()==5
     }
 
 }
