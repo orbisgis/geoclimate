@@ -1,12 +1,13 @@
 -- -*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/--
 -- 																								--
 -- Title : Data Input Model pre-process 														--
--- Project : URCLIM / Paendora (ADEME - MODEVAL 2017-5)													--
+-- Project : URCLIM / Paendora (ADEME - MODEVAL 2017-5)											--
 -- Abstract : This script aims at pre-process data (coming from the french BD Topo) in order    --
 --			  to feed (at the end of this script) the GeoClimate model.	                        --
 --																								--
 -- Author : Gwendall Petit (DECIDE Team, Lab-STICC CNRS UMR 6285)								--
 -- Last update : 15/03/2019																		--
+-- Licence : GPLv3 (https://www.gnu.org/licenses/gpl-3.0.html)                                  --
 -- Comments :																					--
 --   - Input layers : IRIS_GE,BATI_INDIFFERENCIE, BATI_INDUSTRIEL, BATI_REMARQUABLE,            --
 --					  ROUTE, TRONCON_VOIE_FERREE, SURFACE_EAU and ZONE_VEGETATION               --
@@ -33,15 +34,15 @@
 -- 2- Create (spatial) indexes if not already exists on the input layers
 --------------------------------------------------------------------------------------------------
 
-CREATE SPATIAL INDEX IF NOT EXISTS idx_geom ON $IRIS_GE(the_geom);
+CREATE INDEX IF NOT EXISTS idx_geom ON $IRIS_GE(the_geom) USING RTREE;
 CREATE INDEX IF NOT EXISTS idx_insee ON $IRIS_GE(INSEE_COM);
-CREATE SPATIAL INDEX IF NOT EXISTS idx_geom ON $BATI_INDIFFERENCIE(the_geom);
-CREATE SPATIAL INDEX IF NOT EXISTS idx_geom ON $BATI_INDUSTRIEL(the_geom);
-CREATE SPATIAL INDEX IF NOT EXISTS idx_geom ON $BATI_REMARQUABLE(the_geom);
-CREATE SPATIAL INDEX IF NOT EXISTS idx_geom ON $ROUTE(the_geom);
-CREATE SPATIAL INDEX IF NOT EXISTS idx_geom ON $TRONCON_VOIE_FERREE(the_geom);
-CREATE SPATIAL INDEX IF NOT EXISTS idx_geom ON $SURFACE_EAU(the_geom);
-CREATE SPATIAL INDEX IF NOT EXISTS idx_geom ON $ZONE_VEGETATION(the_geom);
+CREATE INDEX IF NOT EXISTS idx_geom ON $BATI_INDIFFERENCIE(the_geom) USING RTREE;
+CREATE INDEX IF NOT EXISTS idx_geom ON $BATI_INDUSTRIEL(the_geom) USING RTREE;
+CREATE INDEX IF NOT EXISTS idx_geom ON $BATI_REMARQUABLE(the_geom) USING RTREE;
+CREATE INDEX IF NOT EXISTS idx_geom ON $ROUTE(the_geom) USING RTREE;
+CREATE INDEX IF NOT EXISTS idx_geom ON $TRONCON_VOIE_FERREE(the_geom) USING RTREE;
+CREATE INDEX IF NOT EXISTS idx_geom ON $SURFACE_EAU(the_geom) USING RTREE;
+CREATE INDEX IF NOT EXISTS idx_geom ON $ZONE_VEGETATION(the_geom) USING RTREE;
 
 
 --------------------------------------------------------------------------------------------------
@@ -52,27 +53,27 @@ CREATE SPATIAL INDEX IF NOT EXISTS idx_geom ON $ZONE_VEGETATION(the_geom);
 -- Extraction of IRIS on the study commune
 DROP TABLE IF EXISTS $TMP_IRIS;
 CREATE TABLE $TMP_IRIS AS SELECT * FROM $IRIS_GE WHERE INSEE_COM=$ID_ZONE;
-CREATE SPATIAL INDEX ON $TMP_IRIS(the_geom);
+CREATE INDEX ON $TMP_IRIS(the_geom) USING RTREE;
 
 -- Generation of the geometry of the commune, on the basis of the IRIS
 DROP TABLE IF EXISTS $ZONE;
 CREATE TABLE $ZONE AS SELECT INSEE_COM as ID_ZONE, ST_UNION(ST_ACCUM(THE_GEOM)) AS THE_GEOM FROM $TMP_IRIS GROUP BY INSEE_COM;
-CREATE SPATIAL INDEX ON $ZONE (the_geom);
+CREATE INDEX ON $ZONE (the_geom) USING RTREE;
 
 -- Generation of a buffer area around the studied commune
 DROP TABLE IF EXISTS $ZONE_BUFFER;
 CREATE TABLE $ZONE_BUFFER AS SELECT ST_BUFFER(the_geom, $DIST_BUFFER) as the_geom FROM $ZONE;
-CREATE SPATIAL INDEX ON $ZONE_BUFFER(the_geom);
+CREATE INDEX ON $ZONE_BUFFER(the_geom) USING RTREE;
 
 -- Generation of a rectangular area (bbox) around the studied commune
 DROP TABLE IF EXISTS $ZONE_EXTENDED;
 CREATE TABLE $ZONE_EXTENDED AS SELECT ST_EXPAND(the_geom, $EXPAND) as the_geom FROM $ZONE;
-CREATE SPATIAL INDEX ON $ZONE_EXTENDED(the_geom);
+CREATE INDEX ON $ZONE_EXTENDED(the_geom) USING RTREE;
 
 -- Generation of the geometries of the neighbouring communes to the one studied
 DROP TABLE IF EXISTS $ZONE_NEIGHBORS;
 CREATE TABLE $ZONE_NEIGHBORS AS SELECT ST_UNION(ST_ACCUM(a.the_geom)) as the_geom, INSEE_COM as ID_ZONE FROM $IRIS_GE a, $ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) GROUP BY a.INSEE_COM;
-CREATE SPATIAL INDEX ON $ZONE_NEIGHBORS(the_geom);
+CREATE INDEX ON $ZONE_NEIGHBORS(the_geom) USING RTREE;
 
 
 --------------------------------------------------------------------------------------------------
@@ -105,7 +106,7 @@ UPDATE $INPUT_BUILDING SET TYPE=(SELECT c.TERM FROM $BUILDING_BD_TOPO_USE_TYPE b
 DROP TABLE IF EXISTS $INPUT_ROAD;
 CREATE TABLE $INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH double, TYPE varchar, SURFACE varchar, SIDEWALK varchar, ZINDEX integer)
 AS SELECT a.THE_GEOM, a.ID, a.LARGEUR, a.NATURE, '', '', a.POS_SOL FROM $ROUTE a, $ZONE_BUFFER b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
-CREATE SPATIAL INDEX ON $INPUT_ROAD(the_geom);
+CREATE INDEX ON $INPUT_ROAD(the_geom) USING RTREE;
 
 -- Update the ROAD table with the new appropriate type key, coming from the abstract table
 UPDATE $INPUT_ROAD SET TYPE=(SELECT c.TERM FROM $ROAD_BD_TOPO_TYPE b, $ROAD_ABSTRACT_TYPE c WHERE c.ID_TYPE=b.ID_TYPE and $INPUT_ROAD.TYPE=b.NATURE) WHERE TYPE IN (SELECT b.NATURE FROM $ROAD_BD_TOPO_TYPE b);

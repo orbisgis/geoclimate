@@ -3,7 +3,7 @@ package org.orbisgis.bdtopo
 
 import groovy.transform.BaseScript
 import org.orbisgis.PrepareData
-import org.orbisgis.datamanager.h2gis.H2GIS
+import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanagerapi.IProcess
 
 import javax.lang.model.element.NestingKind
@@ -13,7 +13,7 @@ import javax.lang.model.element.NestingKind
 /**
  * This script allows to import, filter and preprocess needed data from BD Topo for a specific ZONE
  *
- * @param h2gis A connexion to an H2GIS database, in which the data to process will be stored
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...), in which the data to process will be stored
  * @param tableIrisName The table name in which the IRIS are stored
  * @param tableBuildIndifName The table name in which the undifferentiated ("Indifférencié" in french) buildings are stored
  * @param tableBuildIndusName The table name in which the industrial buildings are stored
@@ -38,12 +38,12 @@ import javax.lang.model.element.NestingKind
 static IProcess importPreprocess(){
     return processFactory.create(
             'Import and preprocess data from BD Topo in order to feed the abstract model',
-            [h2gis: H2GIS, tableIrisName: String, tableBuildIndifName: String, tableBuildIndusName: String,
+            [datasource: JdbcDataSource, tableIrisName: String, tableBuildIndifName: String, tableBuildIndusName: String,
              tableBuildRemarqName: String, tableRoadName: String, tableRailName: String,
              tableHydroName: String, tableVegetName: String, distBuffer: int, expand: int, idZone: String],
             [outputBuildingName: String, outputRoadName: String, outputRailName: String, outputHydroName: String,
              outputVegetName: String, outputZoneName: String, outputZoneNeighborsName: String],
-            {H2GIS h2gis, tableIrisName, tableBuildIndifName, tableBuildIndusName,
+            {JdbcDataSource datasource, tableIrisName, tableBuildIndifName, tableBuildIndusName,
                 tableBuildRemarqName, tableRoadName, tableRailName,
                 tableHydroName, tableVegetName, distBuffer, expand, idZone ->
 
@@ -71,7 +71,7 @@ static IProcess importPreprocess(){
                 def veget_bd_topo_type = 'VEGET_BD_TOPO_TYPE_' + uuid
                 def veget_abstract_type = 'VEGET_ABSTRACT_TYPE_' + uuid
 
-                h2gis.executeScript(this.class.getResource('importPreprocess.sql').toString(),
+                datasource.executeScript(this.class.getResource('importPreprocess.sql').toString(),
                         [ID_ZONE: idZone, DIST_BUFFER: distBuffer, EXPAND: expand, IRIS_GE: tableIrisName,
                          BATI_INDIFFERENCIE: tableBuildIndifName, BATI_INDUSTRIEL: tableBuildIndusName,
                          BATI_REMARQUABLE: tableBuildRemarqName, ROUTE: tableRoadName, TRONCON_VOIE_FERREE: tableRailName,
@@ -100,28 +100,28 @@ static IProcess importPreprocess(){
 /**
  * This process initialize the tables in which the objects type (for buildings, roads, rails and vegetation areas) are stored
  *
- * @param h2gis A connexion to an H2GIS database, in which the data to process will be stored
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...), in which the data to process will be stored
  * @param buildingAbstractUseType The name of the table in which the abstract building's use and type are stored
- * @param roadAbstractType The name of the table in which the abstract road's type is stored
- * @param railAbstractType The name of the table in which the abstract rail's type is stored
- * @param vegetAbstractType The name of the table in which the abstract vegetation's type is stored
+ * @param roadAbstractType The name of the table in which the abstract road's types are stored
+ * @param railAbstractType The name of the table in which the abstract rail's types are stored
+ * @param vegetAbstractType The name of the table in which the abstract vegetation's types are stored
  *
  * @return outputBuildingBDTopoUse Type The name of the table in which the BD Topo building's use and type are stored
- * @return outputroadBDTopoType The name of the table in which the BD Topo road's type is stored
- * @return outputrailBDTopoType The name of the table in which the BD Topo rail's type is stored
- * @return outputvegetBDTopoType The name of the table in which the BD Topo vegetation's type is stored
+ * @return outputroadBDTopoType The name of the table in which the BD Topo road's types are stored
+ * @return outputrailBDTopoType The name of the table in which the BD Topo rail's types are stored
+ * @return outputvegetBDTopoType The name of the table in which the BD Topo vegetation's types are stored
  */
 
 static IProcess initTypes(){
     return processFactory.create(
             'Initialize the types tables for BD Topo and define the matching with the abstract types',
-            [h2gis: H2GIS, buildingAbstractUseType: String, roadAbstractType: String,
+            [datasource: JdbcDataSource, buildingAbstractUseType: String, roadAbstractType: String,
              railAbstractType: String, vegetAbstractType: String
             ],
             [outputBuildingBDTopoUseType: String, outputroadBDTopoType: String,
              outputrailBDTopoType: String, outputvegetBDTopoType: String
             ],
-            {H2GIS h2gis, buildingAbstractUseType, roadAbstractType, railAbstractType, vegetAbstractType ->
+            {JdbcDataSource datasource, buildingAbstractUseType, roadAbstractType, railAbstractType, vegetAbstractType ->
                 logger.info('Executing the typesMatching.sql script')
                 def uuid = UUID.randomUUID().toString().replaceAll('-', '_')
                 def buildingBDTopoUseType = 'BUILDING_BD_TOPO_USE_TYPE_' + uuid
@@ -129,7 +129,7 @@ static IProcess initTypes(){
                 def railBDTopoType = 'RAIL_BD_TOPO_TYPE_' + uuid
                 def vegetBDTopoType = 'VEGET_BD_TOPO_TYPE_' + uuid
 
-                h2gis.executeScript(this.class.getResource('typesMatching.sql').toString(),
+                datasource.executeScript(this.class.getResource('typesMatching.sql').toString(),
                         [BUILDING_ABSTRACT_USE_TYPE: buildingAbstractUseType,
                          ROAD_ABSTRACT_TYPE: roadAbstractType,
                          RAIL_ABSTRACT_TYPE: railAbstractType,
