@@ -25,6 +25,14 @@ import javax.lang.model.element.NestingKind
  * @param distBuffer The distance (exprimed in meter) used to compute the buffer area around the ZONE
  * @param expand The distance (exprimed in meter) used to compute the extended area around the ZONE
  * @param idZone The ZONE id
+ * @param building_bd_topo_use_type The name of the table in which the BD Topo building's use and type are stored
+ * @param building_abstract_use_type The name of the table in which the abstract building's use and type are stored
+ * @param road_bd_topo_type The name of the table in which the BD Topo road's types are stored
+ * @param road_abstract_type The name of the table in which the abstract road's types are stored
+ * @param rail_bd_topo_type The name of the table in which the BD Topo rails's types are stored
+ * @param rail_abstract_type The name of the table in which the abstract rails's types are stored
+ * @param veget_bd_topo_type The name of the table in which the BD Topo vegetation's types are stored
+ * @param veget_abstract_type The name of the table in which the abstract vegetation's types are stored
  *
  * @return outputBuildingName Table name in which the (ready to feed the GeoClimate model) buildings are stored
  * @return outputRoadName Table name in which the (ready to feed the GeoClimate model) roads are stored
@@ -40,12 +48,18 @@ static IProcess importPreprocess(){
             'Import and preprocess data from BD Topo in order to feed the abstract model',
             [datasource: JdbcDataSource, tableIrisName: String, tableBuildIndifName: String, tableBuildIndusName: String,
              tableBuildRemarqName: String, tableRoadName: String, tableRailName: String,
-             tableHydroName: String, tableVegetName: String, distBuffer: int, expand: int, idZone: String],
+             tableHydroName: String, tableVegetName: String, distBuffer: int, expand: int, idZone: String,
+             building_bd_topo_use_type: String, building_abstract_use_type: String, road_bd_topo_type: String,
+             road_abstract_type: String, rail_bd_topo_type: String, rail_abstract_type: String,
+             veget_bd_topo_type: String, veget_abstract_type: String
+            ],
             [outputBuildingName: String, outputRoadName: String, outputRailName: String, outputHydroName: String,
              outputVegetName: String, outputZoneName: String, outputZoneNeighborsName: String],
             {JdbcDataSource datasource, tableIrisName, tableBuildIndifName, tableBuildIndusName,
                 tableBuildRemarqName, tableRoadName, tableRailName,
-                tableHydroName, tableVegetName, distBuffer, expand, idZone ->
+                tableHydroName, tableVegetName, distBuffer, expand, idZone, building_bd_topo_use_type,
+                    building_abstract_use_type, road_bd_topo_type, road_abstract_type, rail_bd_topo_type,
+                    rail_abstract_type, veget_bd_topo_type, veget_abstract_type ->
 
                 logger.info('Executing the importPreprocess.sql script')
                 def uuid = UUID.randomUUID().toString().replaceAll('-', '_')
@@ -62,14 +76,6 @@ static IProcess importPreprocess(){
                 def input_rail = 'INPUT_RAIL_' + uuid
                 def input_hydro = 'INPUT_HYDRO_' + uuid
                 def input_veget = 'INPUT_VEGET_' + uuid
-                def building_bd_topo_use_type = 'BUILDING_BD_TOPO_USE_TYPE_' + uuid
-                def building_abstract_use_type = 'BUILDING_ABSTRACT_USE_TYPE_' + uuid
-                def road_bd_topo_type = 'ROAD_BD_TOPO_TYPE_' + uuid
-                def road_abstract_type = 'ROAD_ABSTRACT_TYPE_' + uuid
-                def rail_bd_topo_type = 'RAIL_BD_TOPO_TYPE_' + uuid
-                def rail_abstract_type = 'RAIL_ABSTRACT_TYPE_' + uuid
-                def veget_bd_topo_type = 'VEGET_BD_TOPO_TYPE_' + uuid
-                def veget_abstract_type = 'VEGET_ABSTRACT_TYPE_' + uuid
 
                 datasource.executeScript(this.class.getResource('importPreprocess.sql').toString(),
                         [ID_ZONE: idZone, DIST_BUFFER: distBuffer, EXPAND: expand, IRIS_GE: tableIrisName,
