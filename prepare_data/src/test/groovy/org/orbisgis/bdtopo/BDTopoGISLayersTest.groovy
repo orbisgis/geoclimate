@@ -4,9 +4,7 @@ import org.junit.jupiter.api.Test
 import org.orbisgis.PrepareData
 import org.orbisgis.datamanager.h2gis.H2GIS
 
-import static org.junit.jupiter.api.Assertions.assertFalse
-import static org.junit.jupiter.api.Assertions.assertNotNull
-import static org.junit.jupiter.api.Assertions.assertTrue
+import static org.junit.jupiter.api.Assertions.assertNull
 
 class BDTopoGISLayersTest {
 
@@ -22,7 +20,7 @@ class BDTopoGISLayersTest {
                          tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                          distBuffer: 500, expand: 1000, idZone: '56260'])
         process.getResults().each {
-            entry -> assertNotNull h2GISDatabase.getTable(entry.getValue())
+            entry -> assertNull h2GISDatabase.getTable(entry.getValue())
         }
     }
 
@@ -34,7 +32,7 @@ class BDTopoGISLayersTest {
                          roadAbstractType: 'ROAD_ABSTRACT_TYPE',  railAbstractType: 'RAIL_ABSTRACT_TYPE',
                          vegetAbstractType: 'VEGET_ABSTRACT_TYPE'])
         process.getResults().each {
-            entry -> assertNotNull h2GISDatabase.getTable(entry.getValue())
+            entry -> assertNull h2GISDatabase.getTable(entry.getValue())
         }
     }
 

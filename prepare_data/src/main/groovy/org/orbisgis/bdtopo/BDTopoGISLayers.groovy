@@ -10,6 +10,31 @@ import javax.lang.model.element.NestingKind
 
 @BaseScript PrepareData prepareData
 
+/**
+ * This script allows to import, filter and preprocess needed data from BD Topo for a specific ZONE
+ *
+ * @param h2gis A connexion to an H2GIS database, in which the data to process will be stored
+ * @param tableIrisName The table name in which the IRIS are stored
+ * @param tableBuildIndifName The table name in which the undifferentiated ("Indifférencié" in french) buildings are stored
+ * @param tableBuildIndusName The table name in which the industrial buildings are stored
+ * @param tableBuildRemarqName The table name in which the remarkable ("Remarquable" in french) buildings are stored
+ * @param tableRoadName The table name in which the roads are stored
+ * @param tableRailName The table name in which the rail ways are stored
+ * @param tableHydroName The table name in which the hydrographic areas are stored
+ * @param tableVegetName The table name in which the vegetation areas are stored
+ * @param distBuffer The distance (exprimed in meter) used to compute the buffer area around the ZONE
+ * @param expand The distance (exprimed in meter) used to compute the extended area around the ZONE
+ * @param idZone The ZONE id
+ *
+ * @return outputBuildingName Table name in which the (ready to feed the GeoClimate model) buildings are stored
+ * @return outputRoadName Table name in which the (ready to feed the GeoClimate model) roads are stored
+ * @return outputRailName Table name in which the (ready to feed the GeoClimate model) rail ways are stored
+ * @return outputHydroName Table name in which the (ready to feed the GeoClimate model) hydrographic areas are stored
+ * @return outputVegetName Table name in which the (ready to feed the GeoClimate model) vegetation areas are stored
+ * @return outputZoneName Table name in which the (ready to feed the GeoClimate model) zone is stored
+ * @return outputZoneNeighborsName Table name in which the (ready to feed the GeoClimate model) neighboring zones are stored
+ */
+
 static IProcess importPreprocess(){
     return processFactory.create(
             'Import and preprocess data from BD Topo in order to feed the abstract model',
@@ -72,6 +97,20 @@ static IProcess importPreprocess(){
     )
 }
 
+/**
+ * This process initialize the tables in which the objects type (for buildings, roads, rails and vegetation areas) are stored
+ *
+ * @param h2gis A connexion to an H2GIS database, in which the data to process will be stored
+ * @param buildingAbstractUseType The name of the table in which the abstract building's use and type are stored
+ * @param roadAbstractType The name of the table in which the abstract road's type is stored
+ * @param railAbstractType The name of the table in which the abstract rail's type is stored
+ * @param vegetAbstractType The name of the table in which the abstract vegetation's type is stored
+ *
+ * @return outputBuildingBDTopoUse Type The name of the table in which the BD Topo building's use and type are stored
+ * @return outputroadBDTopoType The name of the table in which the BD Topo road's type is stored
+ * @return outputrailBDTopoType The name of the table in which the BD Topo rail's type is stored
+ * @return outputvegetBDTopoType The name of the table in which the BD Topo vegetation's type is stored
+ */
 
 static IProcess initTypes(){
     return processFactory.create(
