@@ -230,6 +230,78 @@ static IProcess prepareHydro() {
     )
 }
 
+/**
+ * This process is used to create the hydro table thanks to the osm data tables
+ * @param datasource A connexion to a DB
+ * @param osmTablesPrefix The prefix used for naming the 11 OSM tables
+ * @param zoneCode A string representing the inseeCode of the administrative level8 zone
+ * @param extendedZoneSize The integer value of the Extended Zone
+ * @param bufferZoneSize The integer value of the Zone buffer
+ * @return success A boolean indicating whether the process succeeded or not
+ */
+static IProcess loadInitialData() {
+    return processFactory.create(
+            "Import the data concerning a given zone and generate the 4 associated zone tables",
+            [datasource : JdbcDataSource,
+             osmTablesPrefix: String,
+             zoneCode : String,
+             extendedZoneSize : int,
+             bufferZoneSize : int
+            ],
+            [success : boolean],
+            { datasource, osmTablesPrefix, zoneCode, extendedZoneSize, bufferZoneSize ->
+                boolean success = true
+                def tmpOSMFile = File.createTempFile("zone", ".osm")
+                //zone download : relation, ways and nodes corresponding to the targeted zone limit
+                def initQuery = "[timeout:900];(relation[\"ref:INSEE\"=\"$zoneCode\"][\"boundary\"=\"administrative\"][\"admin_level\"=\"8\"];>;);out;"
+                //Download the corresponding OSM data
+                executeOverPassQuery(initQuery, tmpOSMFile)
+                if (tmpOSMFile.exists()) {
+                    datasource.load(tmpOSMFile.absolutePath, 'zoneOsm', true)
+                    // Create the polygon corresponding to the zone limit and its extended area
+                    datasource.execute zoneSQLScript('zoneOsm', zoneCode, extendedZoneSize, bufferZoneSize)
+
+                    //define the coordinates of the extended zone bbox
+
+                    String bbox
+                    datasource.select('''
+                        ST_XMin(ST_TRANSFORM(ST_SETSRID(the_geom,2154), 4326)) as minLon, 
+                        ST_XMax(ST_TRANSFORM(ST_SETSRID(the_geom,2154), 4326)) as maxLon,
+                        ST_YMin(ST_TRANSFORM(ST_SETSRID(the_geom,2154), 4326)) as minLat, 
+                        ST_YMax(ST_TRANSFORM(ST_SETSRID(the_geom,2154), 4326)) as maxLat
+                    ''').from('ZONE_EXTENDED').getTable().eachRow { row ->
+                         bbox = "$row.minLat, $row.minLon, $row.maxLat, $row.maxLon"
+                    }
+                    datasource.execute(dropOSMTables('zoneOsm'))
+                    logger.info('Zone, Zone Buffer and Zone Extended OK')
+
+                    //Download all the osm data concerning the extended zone bbox
+                    def tmpOSMFile2 = File.createTempFile("zoneExtended",".osm")
+                    def queryURLExtendedZone = "[bbox:$bbox];((node;way;relation;);>;);out;"
+                    executeOverPassQuery(queryURLExtendedZone, tmpOSMFile2)
+
+                    //If the osm file is downloaded do the job
+                    if (tmpOSMFile2.exists()) {
+
+                        //Import the OSM file
+                        datasource.load(tmpOSMFile2.absolutePath, osmTablesPrefix, true)
+                        datasource.execute createIndexesOnOSMTables(osmTablesPrefix)
+
+                        //Create the zone_neighbors table and save it in the targeted shapefile
+                        datasource.execute zoneNeighborsSQLScript(osmTablesPrefix)
+                        logger.info('Zone neighbors OK')
+
+                    } else {
+                        success = false
+                    }
+                } else {
+                    success = false
+                }
+                [success: success]
+            }
+    )
+}
+
 //List of parameters
 // Zone to search in - must correspond to a administrative level 8 value
 String zoneCode = '56243' // Vannes 56260 - Séné 56243
@@ -245,14 +317,6 @@ def prefix = "zoneExt" //prefix of the tables name in the h2DB
  */
 // TODO : reorganise keys and values as for the hydro layer
 
-/*
- * Information to retrieve for the hydro layer
- */
-// Tags that should be retrieved to compute the input_hydro table (and the names they'll have in the table)
-def hydroOptions = ['natural':'natural','water':'water','waterway':'waterway']
-// Tag keys/values in which to search for the hydro
-def hydroTags = ['natural':['water','waterway','bay'],'water':[],'waterway':[]]
-
 
 //The sql script to create the buildings from osm model
 // ELS : for the moment, I've been putting everything in the tmp dir so that it can be both used on Windows and Linux without changing a single line
@@ -262,12 +326,6 @@ def tmpPath = System.getProperty("java.io.tmpdir")
 def outputFolder = tmpPath + File.separator + "osm_gis_final" // working folder
 def outputGarbageFolder = tmpPath + File.separator + "osm_gis_final" + File.separator + "tmp" // garbage folder
 
-//filenames of temporary files to store the layers tables creation sql scripts
-def buildingsScriptPath = outputGarbageFolder + File.separator + 'createOSMBuildingTable.sql'
-def roadsScriptPath = outputGarbageFolder + File.separator + 'createOSMRoadTable.sql'
-def railsScriptPath = outputGarbageFolder + File.separator + 'createOSMRailTable.sql'
-def vegetScriptPath = outputGarbageFolder + File.separator + 'createOSMVegetTable.sql'
-def hydroScriptPath = outputGarbageFolder + File.separator + 'createOSMHydroTable.sql'
 def dbName = outputFolder + File.separator + 'osmGisDb'
 
 // filenames of the files to store the layers tables in a geojson format
@@ -352,6 +410,8 @@ if (outputOSMFile.exists()) {
                 tagValues: null,
                 buildingTablePrefix: "RAW_",
                 filteringZoneTableName: "ZONE_BUFFER"])
+        h2GIS.save('RAW_INPUT_BUILDING', buildingsFilePath)
+        logger.info('Building OK')
 
         //Create the roads table
         process = prepareRoads()
@@ -366,6 +426,8 @@ if (outputOSMFile.exists()) {
                 tagValues: null,
                 roadTablePrefix: "RAW_",
                 filteringZoneTableName: "ZONE_BUFFER"])
+        h2GIS.save('RAW_INPUT_ROAD', roadsFilePath)
+        logger.info('Roads OK')
 
 
         //Create the rails table
@@ -379,27 +441,47 @@ if (outputOSMFile.exists()) {
                 tagValues: null,
                 railTablePrefix: "RAW_",
                 filteringZoneTableName: "ZONE_BUFFER"])
+        h2GIS.save('RAW_INPUT_RAIL', railsFilePath)
+        logger.info('Rails OK')
 
 
         //Create the vegetation table
-        defineVegetationScript(prefix, vegetOptions, vegetTagKeys, vegetTagValues, new File(vegetScriptPath), "RAW_INPUT_VEGET", "ZONE_EXTENDED")
-        h2GIS.executeScript(vegetScriptPath)
-        h2GIS.save('INPUT_VEGET', vegetFilePath)
+        process = prepareVeget()
+        process.execute([
+                datasource   : h2GIS,
+                osmTablesPrefix : "EXT",
+                outputColumnNames: ['natural':'natural','landuse':'landuse','landcover':'landcover',
+                                    'vegetation':'vegetation','barrier':'barrier','fence_type':'fence_type',
+                                    'hedge':'hedge','wetland':'wetland','vineyard':'vineyard',
+                                    'trees':'trees','crop':'crop','produce':'produce'],
+                tagKeys: ['natural', 'landuse','landcover'],
+                tagValues: ['fell', 'heath', 'scrub', 'tree', 'tree_row', 'trees', 'wood','farmland',
+                            'forest','grass','grassland','greenfield','meadow','orchard','plant_nursery',
+                            'vineyard','hedge','hedge_bank','mangrove','banana_plants','banana','sugar_cane'],
+                vegetTablePrefix: "RAW_",
+                filteringZoneTableName: "ZONE_EXTENDED"])
+        h2GIS.save('RAW_INPUT_VEGET', vegetFilePath)
         logger.info('Vegetation OK')
 
-        //Create the hydro table and save it in the targeted file
-        defineHydroScript(prefix, hydroOptions, hydroTags, hydroScriptPath, "RAW_INPUT_HYDRO", "ZONE_EXTENDED")
-        h2GIS.executeScript(hydroScriptPath)
-        h2GIS.save('INPUT_HYDRO', hydroFilePath)
+        //Create the hydro table
+        process = prepareHydro()
+        process.execute([
+                datasource   : h2GIS,
+                osmTablesPrefix : "EXT",
+                outputColumnNames: ['natural':'natural','water':'water','waterway':'waterway'],
+                tags: ['natural':['water','waterway','bay'],'water':[],'waterway':[]],
+                hydroTablePrefix: "RAW_",
+                filteringZoneTableName: "ZONE_EXTENDED"])
+        h2GIS.save('RAW_INPUT_HYDRO', hydroFilePath)
         logger.info('Hydro OK')
 
-        logger.info "DB and geojson files are ready in folder $outputFolder"
-        //tmpGarbFolder.deleteDir()
+        logger.info "DB and files arre ready in folder $outputFolder"
         h2GIS.execute(dropOSMTables(prefix))
 
 
         def endTime = System.currentTimeMillis()
         logger.info 'Process took : ' + (endTime - startTime)/1000 +' seconds'
+        tmpGarbFolder.deleteDir()
 
     } else {
         println "Cannot find OSM data on the requested area"
@@ -415,11 +497,11 @@ if (outputOSMFile.exists()) {
  ** Method to execute the Overpass query
  ** TODO replace with overpass4J in a future release
  **/
-def executeOverPassQuery(def query, def outputOSMFile) {
+static boolean executeOverPassQuery(def query, def outputOSMFile) {
     if (outputOSMFile.exists()) {
         outputOSMFile.delete()
     }
-    apiUrl = "https://lz4.overpass-api.de/api/interpreter?data="
+    def apiUrl = "https://lz4.overpass-api.de/api/interpreter?data="
     def connection = new URL(apiUrl + URLEncoder.encode(query, java.nio.charset.StandardCharsets.UTF_8.toString())).openConnection() as HttpURLConnection
 
     println(apiUrl + URLEncoder.encode(query, java.nio.charset.StandardCharsets.UTF_8.toString()))
@@ -433,7 +515,7 @@ def executeOverPassQuery(def query, def outputOSMFile) {
         outputOSMFile << connection.inputStream
         return true
     } else {
-        println "Cannot execute the query"
+        logger.error  "Cannot execute the query"
         return false
     }
 }
@@ -442,8 +524,8 @@ def executeOverPassQuery(def query, def outputOSMFile) {
  ** Function to drop the temp tables coming from the OSM extraction
  **/
 
-String dropOSMTables (String prefix) {
-    script = '        DROP TABLE IF EXISTS '+prefix+'_NODE;\n' +
+static String dropOSMTables (String prefix) {
+    String script = '        DROP TABLE IF EXISTS '+prefix+'_NODE;\n' +
             '        DROP TABLE IF EXISTS '+prefix+'_NODE_MEMBER;\n' +
             '        DROP TABLE IF EXISTS '+prefix+'_NODE_TAG;\n' +
             '        DROP TABLE IF EXISTS '+prefix+'_RELATION;\n' +
@@ -535,7 +617,7 @@ static String zoneSQLScript(def prefix, def zoneCode, def bboxSize, def bufferSi
 /**
  ** Function to create the script for the zone neighbors
  **/
-def zoneNeighborsSQLScript(def prefix){
+static String zoneNeighborsSQLScript(def prefix){
     def script = '''
         DROP TABLE IF EXISTS ZONE_NEIGHBORS;
         CREATE TABLE ZONE_NEIGHBORS AS

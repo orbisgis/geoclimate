@@ -149,4 +149,26 @@ class OSMTests {
         assertTrue h2GIS.getTable("RAW_INPUT_HYDRO").getColumnCount()==5
     }
 
+    @Test
+    void loadInitialDataTest() {
+        def h2GIS = H2GIS.open('./target/h2db')
+        h2GIS.execute OSMGISLayers.dropOSMTables("EXT")
+        h2GIS.execute "drop table if exists ZONE;"
+        h2GIS.execute "drop table if exists ZONE_EXTENDED;"
+        h2GIS.execute "drop table if exists ZONE_BUFFER;"
+        h2GIS.execute "drop table if exists ZONE_NEIGHBORS;"
+        def process = PrepareData.OSMGISLayers.loadInitialData()
+        process.execute([
+                datasource : h2GIS,
+                osmTablesPrefix: "EXT",
+                zoneCode : 35236,
+                extendedZoneSize : 1000,
+                bufferZoneSize:500])
+        assertNotNull h2GIS.getTable("EXT_NODE")
+        assertNotNull h2GIS.getTable("ZONE")
+        assertNotNull h2GIS.getTable("ZONE_EXTENDED")
+        assertNotNull h2GIS.getTable("ZONE_BUFFER")
+        assertNotNull h2GIS.getTable("ZONE_NEIGHBORS")
+    }
+
 }
