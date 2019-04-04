@@ -33,7 +33,8 @@ class SpatialUnitsTests {
         h2GIS.load(this.class.getResource("zone_test.shp").toString(),true)
 
         def  prepareData =  Geoclimate.SpatialUnits.prepareRSUData()
-        prepareData.execute([zoneTable: 'zone_test', roadTable: 'road_test',  railTable: 'rail_test', vegetationTable : 'veget_test',
+        prepareData.execute([zoneTable: 'zone_test', roadTable: 'road_test',  railTable: 'rail_test',
+                             vegetationTable : 'veget_test',
                              hydrographicTable :'hydro_test',surface_vegetation : null, surface_hydro : null,
                              prefixName: "block", datasource: h2GIS])
 
