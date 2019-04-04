@@ -452,7 +452,10 @@ static IProcess rsuRoofAreaDistribution() {
                         "a.delta_h, a.building_area, a.building_total_facade_length, a.non_vertical_roof_area, " +
                         "a.vertical_roof_area, ISNULL(b.vert_roof_to_remove,0) FROM $buildRoofSurfIni a LEFT JOIN " +
                         "$buildVertRoofInter b ON a.$idColumnBu=b.$idColumnBu);").toString())
-
+                datasource.eachRow("SELECT * FROM $buildVertRoofAll".toString()){
+                    row ->
+                        println(row)
+                }
                 // Indexes and spatial indexes are created on rsu and building Tables
                 datasource.execute(("CREATE INDEX IF NOT EXISTS ids_bu ON $buildVertRoofAll(the_geom) USING RTREE; "+
                         "CREATE INDEX IF NOT EXISTS id_bu ON $buildVertRoofAll(id_build); "+
@@ -473,10 +476,7 @@ static IProcess rsuRoofAreaDistribution() {
                         "(1-0.5*(1-ST_LENGTH(ST_ACCUM(ST_INTERSECTION(ST_TOMULTILINE(a.the_geom), b.$geometricColumnRsu)))/" +
                         "a.building_total_facade_length)) FROM $buildVertRoofAll a, $rsuTable b " +
                         "WHERE a.id_rsu=b.$idColumnRsu GROUP BY a.id_build, a.id_rsu, a.z_max, a.z_min, a.delta_h);").toString())
-                datasource.eachRow("SELECT * FROM $buildRoofSurfTot".toString()){
-                    row ->
-                        println(row)
-                }
+
                 // The roof area is calculated for each level except the last one (> 50 m in the default case)
                 String finalQuery = "CREATE TABLE $outputTableName AS SELECT id_rsu, "
                 String nonVertQuery = ""
@@ -491,9 +491,11 @@ static IProcess rsuRoofAreaDistribution() {
                     vertQuery += " SUM(CASEWHEN(z_max <= ${listLayersBottom[i-1]}, 0, CASEWHEN(" +
                             "z_max <= ${listLayersBottom[i]}, CASEWHEN(delta_h=0, 0, " +
                             "vertical_roof_area*POWER((z_max-GREATEST(${listLayersBottom[i-1]}," +
-                            "z_min))/delta_h, 2)), CASEWHEN(z_min < ${listLayersBottom[i]}, vertical_roof_area*POWER((${listLayersBottom[i]}-" +
-                            "GREATEST(${listLayersBottom[i-1]},z_min))/delta_h,2), 0)))) AS rsu_vert_roof_area" +
-                            "${listLayersBottom[i-1]}_${listLayersBottom[i]},"
+                            "z_min))/delta_h, 2)), CASEWHEN(z_min < ${listLayersBottom[i]}, " +
+                            "CASEWHEN(z_min>${listLayersBottom[i - 1]}, vertical_roof_area*(1-" +
+                            "POWER((z_max-${listLayersBottom[i]})/delta_h,2)),vertical_roof_area*(1-" +
+                            "POWER((${listLayersBottom[i]}-z_min)/delta_h,2)-POWER((z_max-${listLayersBottom[i]})/" +
+                            "delta_h,2))), 0)))) AS rsu_vert_roof_area${listLayersBottom[i-1]}_${listLayersBottom[i]},"
                 }
                 // The roof area is calculated for the last level (> 50 m in the default case)
                 def valueLastLevel = listLayersBottom[listLayersBottom.size()-1]
