@@ -7,6 +7,7 @@
 --																								--
 -- Author: Gwendall Petit (DECIDE Team, Lab-STICC CNRS UMR 6285)								--
 -- Last update: 05/03/2019																		--
+-- Licence : GPLv3 (https://www.gnu.org/licenses/gpl-3.0.html)                                  --
 --																								--
 -- Comments: - the types concerns the buildings, the roads, the rails and the vegetation areas  --
 --           - the surface concerns only the roads                                              --
