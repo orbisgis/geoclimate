@@ -43,9 +43,10 @@ class SpatialUnitsTests {
 
         def  rsu =  Geoclimate.SpatialUnits.createRSU()
         rsu.execute([inputTableName: outputTableGeoms,
-                     outputTableName: "rsu", datasource: h2GIS])
+                     prefixName: "rsu", datasource: h2GIS])
+        String outputTable = rsu.results.outputTableName
         h2GIS.save("rsu",'/tmp/rsu.shp')
-        def countRows =  h2GIS.firstRow("select count(*) as numberOfRows from rsu")
+        def countRows =  h2GIS.firstRow("select count(*) as numberOfRows from $outputTable".toString())
 
         assertEquals 213 , countRows.numberOfRows
     }
