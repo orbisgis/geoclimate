@@ -26,7 +26,7 @@ import org.orbisgis.processmanagerapi.IProcess
  * @param buildingAbstractParameters The name of the table in which the abstract building's parameters are stored
  * @param roadAbstractType The name of the table in which the abstract road's types are stored
  * @param roadAbstractParameters The name of the table in which the abstract road's parameters are stored
- * @param railAbstractType The name of the table in which the abstract road's types are stored
+ * @param railAbstractType The name of the table in which the abstract rail's types are stored
  * @param vegetAbstractType The name of the table in which the abstract vegetation area's types are stored
  * @param vegetAbstractParameters The name of the table in which the abstract vegetation area's parameters are stored
  *
