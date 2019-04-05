@@ -4,6 +4,7 @@
 target/
 createOSMBuildingTable.sql
 createOSMRoadTable.sql
+geoclimate_bdtopo_data_test
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
