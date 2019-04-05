@@ -43,6 +43,46 @@ static IProcess transformBuildings() {
     )
 }
 
+/**
+ * This process is used to transform the raw roads table into a table that matches the constraints
+ * of the geoClimate Input Model
+ * @param datasource A connexion to a DB containing the raw roads table
+ * @param inputTableName The name of the raw roads table in the DB
+ * @param mappingForType A map between the target values for the column type in the model
+ *        and the associated key/value tags retrieved from OSM
+ * @param mappingForSurface A map between the target values for the column type in the model
+ *        and the associated key/value tags retrieved from OSM
+ * @return outputTableName The name of the final roads table
+ */
+static IProcess transformRoads() {
+    return processFactory.create(
+            "transform the raw roads table into a table that matches the constraints of the GeoClimate Input Model",
+            [datasource          : JdbcDataSource,
+             inputTableName      : String,
+             mappingForType: Map,
+             mappingForSurface: Map],
+            [outputTableName: String],
+            { datasource, inputTableName, mappingForType, mappingForSurface ->
+                def inputTable = datasource.getSpatialTable(inputTableName)
+                String uid = UUID.randomUUID().toString().replaceAll("-", "")
+                datasource.execute("    drop table if exists tmp_" + uid + ";\n" +
+                        "CREATE TABLE tmp_" + uid + " THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR, \" +\n" +
+                        "            \"SURFACE VARCHAR, SIDEWALK VARCHAR, ZINDEX INTEGER)")
+                inputTable.eachRow { row ->
+                    Float width = getWidth(row.getString("width"))
+                    String type = getAbstractValue(row, mappingType)
+                    String surface = getAbstractValue(row, mappingSurface)
+                    String sidewalk = getSidewalk(row.getString("sidewalk"))
+                    Integer zIndex = getZIndex(row.getString("zindex"))
+                    datasource.execute ("insert into tmp_${uid} values('${row.getGeometry("the_geom")}','${row.getString("id_way")}',${width},'${type}','${surface}','${sidewalk}',${zIndex})".toString())
+                }
+
+                datasource.execute("drop table if exists input_road; alter table tmp_"+uid+" rename to input_road")
+                [outputTableName: "INPUT_ROAD"]
+            }
+    )
+}
+
 // Data management for the buildings
 static String[] getTypeAndUse(def row, def myMaps) {
     String strType = null
@@ -136,4 +176,66 @@ static int getNbLevels (def row) {
     }
     return result
 }
+
+// define the value of the column width according to the value of width from OSM
+static Float getWidth (String width){
+    Float result
+    if (width != null && width.isFloat()) {
+        result=width.toFloat()
+    }
+    return result
+}
+
+// define the value of the column width according to the value of width from OSM
+static Integer getZIndex (String zindex){
+    Integer result
+    if (zindex != null && zindex.isInteger()) {
+        result=zindex.toInteger()
+    }
+    return result
+}
+// Get the equivalent abstract value for a set of osm key/value elements
+static String getAbstractValue(def row, def myMaps) {
+    String strType = null
+    myMaps.each { finalVal ->
+        finalVal.value.each { osmVals ->
+            osmVals.value.each { osmVal ->
+                def val = osmVal.toString()
+                if (val.startsWith("!")) {
+                    val.replace("! ","")
+                    if ((row.getString(osmVals.key) != val) && (row.getString(osmVals.key) != null)) {
+                        if (strType == null) {
+                            strType = finalVal.key
+                        }
+                    }
+                } else {
+                    if (row.getString(osmVals.key) == val) {
+                        if (strType == null) {
+                            strType = finalVal.key
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return strType
+}
+
+// define the value of the column sidewalk according to the values of sidewalk from OSM
+static String getSidewalk(String sidewalk) {
+    String result
+    if (sidewalk != null) {
+        if (sidewalk == 'both') {
+            result = "two"
+        } else {
+            if (sidewalk == 'right' || sidewalk == 'left' || sidewalk == 'yes') {
+                result = "one"
+            } else {
+                result = "no"
+            }
+        }
+    }
+    return result
+}
+
 
