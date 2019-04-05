@@ -20,7 +20,7 @@ public static ProcessMapper createMapper(){
     mapper.link(outputBuildingAbstractUseType : abstractTablesInit, buildingAbstractUseType : bdTopoInitTypes)
     mapper.link(outputRoadAbstractType : abstractTablesInit, roadAbstractType : bdTopoInitTypes)
     mapper.link(outputRailAbstractType : abstractTablesInit, railAbstractType : bdTopoInitTypes)
-    mapper.link(outputVegetAbstractType : abstractTablesInit, VegetAbstractType : bdTopoInitTypes)
+    mapper.link(outputVegetAbstractType : abstractTablesInit, vegetAbstractType : bdTopoInitTypes)
 
     return mapper
 }
