@@ -157,7 +157,7 @@ class OSMTests {
         process.execute([
                 datasource : h2GIS,
                 osmTablesPrefix: "EXT",
-                zoneCode : 35236,
+                zoneCode : "35236",
                 extendedZoneSize : 1000,
                 bufferZoneSize:500])
         assertNotNull h2GIS.getTable("EXT_NODE")

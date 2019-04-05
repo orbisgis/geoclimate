@@ -343,155 +343,107 @@ def hydroFilePath = outputFolder + File.separator + 'input_hydro.geojson'
 def tmpFolder = new File(outputFolder)
 tmpFolder.deleteDir()
 tmpFolder.mkdir()
-def tmpGarbFolder = new File(outputGarbageFolder)
-tmpGarbFolder.mkdir()
 
-//Temporary file to store the osm data retrieved at the zone level
-def outputOSMFile = new File(outputGarbageFolder + File.separator + "zone.osm")
-
-//zone download : relation, ways and nodes corresponding to the targeted zone limit
-def initQuery="[timeout:900];(relation[\"ref:INSEE\"=\"$zoneCode\"][\"boundary\"=\"administrative\"][\"admin_level\"=\"8\"];>;);out;"
-//Download the corresponding OSM data
-def startTime = System.currentTimeMillis()
-executeOverPassQuery(initQuery, outputOSMFile)
-
-if (outputOSMFile.exists()) {
-    def h2GIS =H2GIS.open([databaseName: dbName])
-    h2GIS.load(outputOSMFile.absolutePath, 'zoneOsm', true)
-    // Create the polygon corresponding to the zone limit and its extended area
-    h2GIS.execute zoneSQLScript('zoneOsm',zoneCode,extZoneSize, bufferZoneSize)
-
-    //define the coordinates of the extended zone bbox
-    h2GIS.select('''
-        ST_XMin(ST_TRANSFORM(ST_SETSRID(the_geom,2154), 4326)) as minLon, 
-        ST_XMax(ST_TRANSFORM(ST_SETSRID(the_geom,2154), 4326)) as maxLon,
-        ST_YMin(ST_TRANSFORM(ST_SETSRID(the_geom,2154), 4326)) as minLat, 
-        ST_YMax(ST_TRANSFORM(ST_SETSRID(the_geom,2154), 4326)) as maxLat
-    ''').from('ZONE_EXTENDED').getTable().eachRow{ row -> bbox = "$row.minLat, $row.minLon, $row.maxLat, $row.maxLon"}
+def h2GIS =H2GIS.open([databaseName: dbName])
+def process = loadInitialData()
+process.execute([
+        datasource : h2GIS,
+        osmTablesPrefix: "EXT",
+        zoneCode : "35236",
+        extendedZoneSize : 1000,
+        bufferZoneSize:500])
+def ok
+process.results.each {result -> ok = result.value}
+if (ok) {
     h2GIS.save('ZONE', zoneFilePath)
     h2GIS.save('ZONE_EXTENDED', extZoneFilePath)
     h2GIS.save('ZONE_BUFFER', bufferZoneFilePath)
+    h2GIS.save('ZONE_NEIGHBORS',zoneNeighborsFilePath)
+    //Create the buildings table
+    process = prepareBuildings()
+    process.execute([
+            datasource   : h2GIS,
+            osmTablesPrefix : "EXT",
+            ouputColumnNames: ['height':'height','building:height':'b_height','roof:height':'r_height','building:roof:height':'b_r_height',
+                               'building:levels':'b_lev','roof:levels':'r_lev','building:roof:levels':'b_r_lev','building':'building',
+                               'amenity':'amenity','layer':'zindex','aeroway':'aeroway','historic':'historic','leisure':'leisure','monument':'monument',
+                               'place_of_worship':'place_of_worship','military':'military','railway':'railway','public_transport':'public_transport',
+                               'barrier':'barrier','government':'government','historic:building':'historic_building','grandstand':'grandstand',
+                               'house':'house','shop':'shop','industrial':'industrial','man_made':'man_made', 'residential':'residential',
+                               'apartments':'apartments','ruins':'ruins','agricultural':'agricultural','barn':'barn', 'healthcare':'healthcare',
+                               'education':'education','restaurant':'restaurant','sustenance':'sustenance','office':'office'],
+            tagKeys: ['building'],
+            tagValues: null,
+            buildingTablePrefix: "RAW_",
+            filteringZoneTableName: "ZONE_BUFFER"])
+    h2GIS.save('RAW_INPUT_BUILDING', buildingsFilePath)
+    logger.info('Building OK')
 
-    h2GIS.execute(dropOSMTables('zoneOsm'))
-
-    logger.info('Zone, Zone Buffer and Zone Extended OK')
-
-    //Download all the osm data concerning the extended zone bbox
-    def outputOSMFile2 = new File(outputGarbageFolder + File.separator + "zoneExtended.osm")
-    def queryURLExtendedZone  = "[bbox:$bbox];((node;way;relation;);>;);out;"
-    executeOverPassQuery(queryURLExtendedZone, outputOSMFile2)
-
-    //If the osm file is downloaded do the job
-    if (outputOSMFile2.exists()) {
-
-        //Import the OSM file
-        h2GIS.load(outputOSMFile2.absolutePath, prefix, true)
-        h2GIS.execute createIndexesOnOSMTables(prefix)
-
-        //Create the zone_neighbors table and save it in the targeted shapefile
-        h2GIS.execute zoneNeighborsSQLScript(prefix)
-        h2GIS.save('ZONE_NEIGHBORS',zoneNeighborsFilePath)
-        logger.info('Zone neighbors OK')
-
-        //Create the buildings table
-        IProcess process = prepareBuildings()
-        process.execute([
-                datasource   : h2GIS,
-                osmTablesPrefix : "EXT",
-                ouputColumnNames: ['height':'height','building:height':'b_height','roof:height':'r_height','building:roof:height':'b_r_height',
-                                   'building:levels':'b_lev','roof:levels':'r_lev','building:roof:levels':'b_r_lev','building':'building',
-                                   'amenity':'amenity','layer':'zindex','aeroway':'aeroway','historic':'historic','leisure':'leisure','monument':'monument',
-                                   'place_of_worship':'place_of_worship','military':'military','railway':'railway','public_transport':'public_transport',
-                                   'barrier':'barrier','government':'government','historic:building':'historic_building','grandstand':'grandstand',
-                                   'house':'house','shop':'shop','industrial':'industrial','man_made':'man_made', 'residential':'residential',
-                                   'apartments':'apartments','ruins':'ruins','agricultural':'agricultural','barn':'barn', 'healthcare':'healthcare',
-                                   'education':'education','restaurant':'restaurant','sustenance':'sustenance','office':'office'],
-                tagKeys: ['building'],
-                tagValues: null,
-                buildingTablePrefix: "RAW_",
-                filteringZoneTableName: "ZONE_BUFFER"])
-        h2GIS.save('RAW_INPUT_BUILDING', buildingsFilePath)
-        logger.info('Building OK')
-
-        //Create the roads table
-        process = prepareRoads()
-        process.execute([
-                datasource   : h2GIS,
-                osmTablesPrefix : "EXT",
-                ouputColumnNames: ['width':'width','highway':'highway', 'surface':'surface', 'sidewalk':'sidewalk',
-                                   'lane':'lane','layer':'zindex','maxspeed':'maxspeed','oneway':'oneway',
-                                   'h_ref':'h_ref','route':'route','cycleway':'cycleway',
-                                   'biclycle_road':'biclycle_road','cyclestreet':'cyclestreet','junction':'junction'],
-                tagKeys: ['highway','cycleway','biclycle_road','cyclestreet','route','junction'],
-                tagValues: null,
-                roadTablePrefix: "RAW_",
-                filteringZoneTableName: "ZONE_BUFFER"])
-        h2GIS.save('RAW_INPUT_ROAD', roadsFilePath)
-        logger.info('Roads OK')
+    //Create the roads table
+    process = prepareRoads()
+    process.execute([
+            datasource   : h2GIS,
+            osmTablesPrefix : "EXT",
+            ouputColumnNames: ['width':'width','highway':'highway', 'surface':'surface', 'sidewalk':'sidewalk',
+                               'lane':'lane','layer':'zindex','maxspeed':'maxspeed','oneway':'oneway',
+                               'h_ref':'h_ref','route':'route','cycleway':'cycleway',
+                               'biclycle_road':'biclycle_road','cyclestreet':'cyclestreet','junction':'junction'],
+            tagKeys: ['highway','cycleway','biclycle_road','cyclestreet','route','junction'],
+            tagValues: null,
+            roadTablePrefix: "RAW_",
+            filteringZoneTableName: "ZONE_BUFFER"])
+    h2GIS.save('RAW_INPUT_ROAD', roadsFilePath)
+    logger.info('Roads OK')
 
 
-        //Create the rails table
-        process = prepareRoads()
-        process.execute([
-                datasource   : h2GIS,
-                osmTablesPrefix : "EXT",
-                outputColumnNames: ['highspeed':'highspeed','railway':'railway','service':'service',
-                                    'tunnel':'tunnel','layer':'layer','bridge':'bridge'],
-                tagKeys: ['railway'],
-                tagValues: null,
-                railTablePrefix: "RAW_",
-                filteringZoneTableName: "ZONE_BUFFER"])
-        h2GIS.save('RAW_INPUT_RAIL', railsFilePath)
-        logger.info('Rails OK')
+    //Create the rails table
+    process = prepareRoads()
+    process.execute([
+            datasource   : h2GIS,
+            osmTablesPrefix : "EXT",
+            outputColumnNames: ['highspeed':'highspeed','railway':'railway','service':'service',
+                                'tunnel':'tunnel','layer':'layer','bridge':'bridge'],
+            tagKeys: ['railway'],
+            tagValues: null,
+            railTablePrefix: "RAW_",
+            filteringZoneTableName: "ZONE_BUFFER"])
+    h2GIS.save('RAW_INPUT_RAIL', railsFilePath)
+    logger.info('Rails OK')
 
 
-        //Create the vegetation table
-        process = prepareVeget()
-        process.execute([
-                datasource   : h2GIS,
-                osmTablesPrefix : "EXT",
-                outputColumnNames: ['natural':'natural','landuse':'landuse','landcover':'landcover',
-                                    'vegetation':'vegetation','barrier':'barrier','fence_type':'fence_type',
-                                    'hedge':'hedge','wetland':'wetland','vineyard':'vineyard',
-                                    'trees':'trees','crop':'crop','produce':'produce'],
-                tagKeys: ['natural', 'landuse','landcover'],
-                tagValues: ['fell', 'heath', 'scrub', 'tree', 'tree_row', 'trees', 'wood','farmland',
-                            'forest','grass','grassland','greenfield','meadow','orchard','plant_nursery',
-                            'vineyard','hedge','hedge_bank','mangrove','banana_plants','banana','sugar_cane'],
-                vegetTablePrefix: "RAW_",
-                filteringZoneTableName: "ZONE_EXTENDED"])
-        h2GIS.save('RAW_INPUT_VEGET', vegetFilePath)
-        logger.info('Vegetation OK')
+    //Create the vegetation table
+    process = prepareVeget()
+    process.execute([
+            datasource   : h2GIS,
+            osmTablesPrefix : "EXT",
+            outputColumnNames: ['natural':'natural','landuse':'landuse','landcover':'landcover',
+                                'vegetation':'vegetation','barrier':'barrier','fence_type':'fence_type',
+                                'hedge':'hedge','wetland':'wetland','vineyard':'vineyard',
+                                'trees':'trees','crop':'crop','produce':'produce'],
+            tagKeys: ['natural', 'landuse','landcover'],
+            tagValues: ['fell', 'heath', 'scrub', 'tree', 'tree_row', 'trees', 'wood','farmland',
+                        'forest','grass','grassland','greenfield','meadow','orchard','plant_nursery',
+                        'vineyard','hedge','hedge_bank','mangrove','banana_plants','banana','sugar_cane'],
+            vegetTablePrefix: "RAW_",
+            filteringZoneTableName: "ZONE_EXTENDED"])
+    h2GIS.save('RAW_INPUT_VEGET', vegetFilePath)
+    logger.info('Vegetation OK')
 
-        //Create the hydro table
-        process = prepareHydro()
-        process.execute([
-                datasource   : h2GIS,
-                osmTablesPrefix : "EXT",
-                outputColumnNames: ['natural':'natural','water':'water','waterway':'waterway'],
-                tags: ['natural':['water','waterway','bay'],'water':[],'waterway':[]],
-                hydroTablePrefix: "RAW_",
-                filteringZoneTableName: "ZONE_EXTENDED"])
-        h2GIS.save('RAW_INPUT_HYDRO', hydroFilePath)
-        logger.info('Hydro OK')
+    //Create the hydro table
+    process = prepareHydro()
+    process.execute([
+            datasource   : h2GIS,
+            osmTablesPrefix : "EXT",
+            outputColumnNames: ['natural':'natural','water':'water','waterway':'waterway'],
+            tags: ['natural':['water','waterway','bay'],'water':[],'waterway':[]],
+            hydroTablePrefix: "RAW_",
+            filteringZoneTableName: "ZONE_EXTENDED"])
+    h2GIS.save('RAW_INPUT_HYDRO', hydroFilePath)
+    logger.info('Hydro OK')
 
-        logger.info "DB and files arre ready in folder $outputFolder"
-        h2GIS.execute(dropOSMTables(prefix))
-
-
-        def endTime = System.currentTimeMillis()
-        logger.info 'Process took : ' + (endTime - startTime)/1000 +' seconds'
-        tmpGarbFolder.deleteDir()
-
-    } else {
-        println "Cannot find OSM data on the requested area"
-    }
-
-} else {
-    println "Cannot find OSM data on the requested area"
-}//Download the osm data according to an insee code
-
-
+    logger.info "DB and files are ready in folder $outputFolder"
+    h2GIS.execute(dropOSMTables(prefix))
+}
 
 /**
  ** Method to execute the Overpass query
