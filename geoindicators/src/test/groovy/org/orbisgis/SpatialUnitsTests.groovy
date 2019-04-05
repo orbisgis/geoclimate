@@ -58,8 +58,10 @@ class SpatialUnitsTests {
         def h2GIS = H2GIS.open([databaseName: '/tmp/spatialunitsdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
+        h2GIS.execute("drop table if exists build_tempo; " +
+                "create table build_tempo as select * from building_test where id_build <27")
         def  blockP =  Geoclimate.SpatialUnits.createBlocks()
-        blockP.execute([inputTableName: "building_test",distance:0.01,
+        blockP.execute([inputTableName: "build_tempo",distance:0.01,
                      prefixName: "block", datasource: h2GIS])
         String outputTable = blockP.results.outputTableName
         def countRows =  h2GIS.firstRow("select count(*) as numberOfRows from $outputTable".toString())
