@@ -45,7 +45,10 @@ INSERT INTO building_test VALUES (1, 'POLYGON((4 4, 10 4, 10 30, 4 30, 4 4))'::G
  (23, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 100, 200), 20, 20, null, null, null, null, null, null),
  (24, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 140, 200), 20, 20, null, null, null, null, null, null),
  (25, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 200, 200), 20, 20, null, null, null, null, null, null),
- (26, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 240, 200), 20, 20, null, null, null, null, null, null);
+ (26, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 240, 200), 20, 20, null, null, null, null, null, null),
+ (27, st_translate('POLYGON((1210 1190, 1230 1210, 1230 1230, 1210 1230, 1210 1190))'::GEOMETRY, 200, 200), 5, 15, 600, 108.2842712474619, 4, 108.2842712474619, 0, null),
+ (28, st_translate('POLYGON((1310 1190, 1330 1210, 1330 1230, 1280 1230, 1310 1190))'::GEOMETRY, 200, 200), 18, 32, 1200, 148.2842712474619, 10, 148.2842712474619, 0, null);
+
 INSERT INTO block_test VALUES (1, 'POLYGON((4 4, 10 4, 10 30, 4 30, 4 4))'::GEOMETRY),
  (2, 'POLYGON((12 4, 20 4, 20 9, 12 9, 12 4))'::GEOMETRY),
  (3, 'POLYGON((25 4, 45 4, 45 9, 25 9, 25 4))'::GEOMETRY),
@@ -64,7 +67,8 @@ INSERT INTO rsu_test VALUES (1, 'POLYGON((0 0, 50 0, 50 40, 0 40, 0 0))'::GEOMET
  (9, st_translate('POLYGON((1000 1000, 1100 1000, 1100 1100, 1000 1100, 1000 1000))'::GEOMETRY, 200, 100), 10000, 0.4, null),
  (10, st_translate('POLYGON((1000 1000, 1100 1000, 1100 1100, 1000 1100, 1000 1000))'::GEOMETRY, 0, 200), 10000, 0.4, null),
  (11, st_translate('POLYGON((1000 1000, 1100 1000, 1100 1100, 1000 1100, 1000 1000))'::GEOMETRY, 100, 200), 10000, 0.4, null),
- (12, st_translate('POLYGON((1000 1000, 1100 1000, 1100 1100, 1000 1100, 1000 1000))'::GEOMETRY, 200, 200), 10000, 0.4, null);
+ (12, st_translate('POLYGON((1000 1000, 1100 1000, 1100 1100, 1000 1100, 1000 1000))'::GEOMETRY, 200, 200), 10000, 0.4, null),
+ (13, st_translate('POLYGON((1200 1200, 1300 1200, 1300 1300, 1200 1300, 1200 1200))'::GEOMETRY, 200, 200), 10000, 0.4, null);
 INSERT INTO rsu_build_corr VALUES (1, 1, 10.178217821), (1, 2, 10.178217821), (1, 3, 10.178217821), (1, 4, 10.178217821),
  (1, 5, 10.178217821), (2, 6, 18), (3, 7, 3), (1, 8, 10.178217821), (4, 9, null), (4, 10, null), (5, 11, null), (5, 12, null),
  (6, 13, null), (6, 14, null), (7, 15, null), (7, 16, null), (8, 17, null), (8, 18, null), (9, 19, null), (9, 20, null),
@@ -73,3 +77,8 @@ INSERT INTO road_test VALUES (1, 'LINESTRING(120 60, 120 -10)'::GEOMETRY, 10);
 INSERT INTO road_test VALUES (2, 'LINESTRING (86 19, 170 20)'::GEOMETRY, 5);
 INSERT INTO road_test VALUES (3, 'LINESTRING (93 53, 149 54, 145 -5)'::GEOMETRY, 5);
 INSERT INTO road_test VALUES (4, 'LINESTRING (85 60, 85 -1, 155 1, 148 54, 92 50, 96 -12, 119 -11, 117 -4, 78 -5)'::GEOMETRY, 10);
+
+UPDATE building_test SET building_area = ST_AREA(the_geom);
+UPDATE building_test SET building_perimeter = ST_PERIMETER(the_geom);
+UPDATE building_test SET building_total_facade_length = ST_PERIMETER(the_geom);
+
