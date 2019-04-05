@@ -231,7 +231,8 @@ static IProcess prepareHydro() {
 }
 
 /**
- * This process is used to create the hydro table thanks to the osm data tables
+ * This process loads the data concerning the target zone from OSM using the overpass API and
+ * creates the tables corresponding to this zone and its surroundings.
  * @param datasource A connexion to a DB
  * @param osmTablesPrefix The prefix used for naming the 11 OSM tables
  * @param zoneCode A string representing the inseeCode of the administrative level8 zone
