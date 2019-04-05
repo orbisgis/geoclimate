@@ -3,14 +3,19 @@ package org.orbisgis.osm
 import org.junit.jupiter.api.Test
 import org.orbisgis.PrepareData
 import org.orbisgis.datamanager.h2gis.H2GIS
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.*
 
 class FormattingForAbstractModelTests {
 
+    private static final Logger logger = LoggerFactory.getLogger(OSMGISLayersTests.class)
+
     @Test
     void transformBuildingsTest() {
-        def h2GIS = H2GIS.open('D:\\Users\\le_sauxe\\AppData\\Local\\Temp\\osm_gis_final\\osmGisDb')
+        new OSMGISLayersTests().prepareBuildingsTest()
+        def h2GIS = H2GIS.open('./target/h2db')
         h2GIS.execute "drop table if exists INPUT_BUILDING;"
         assertNotNull(h2GIS.getTable("RAW_INPUT_BUILDING"))
         def mappingTypeAndUse = [
@@ -166,8 +171,8 @@ class FormattingForAbstractModelTests {
 
     @Test
     void transformRoadsTest() {
-        def h2GIS = H2GIS.open('D:\\Users\\le_sauxe\\AppData\\Local\\Temp\\osm_gis_final\\osmGisDb')
-        h2GIS.execute "drop table if exists INPUT_ROAD;"
+        new OSMGISLayersTests().prepareRoadsTest()
+        def h2GIS = H2GIS.open('./target/h2db')
         assertNotNull(h2GIS.getTable("RAW_INPUT_ROAD"))
         //Define the mapping between the values in OSM and those used in the abstract model
         def mappingType = [
@@ -240,7 +245,7 @@ class FormattingForAbstractModelTests {
                 "metal":["surface":["metal"]],
                 "water":["surface":["water"]]
         ]
-
+        logger.info('Process starts')
         def process = PrepareData.FormattingForAbstractModel.transformRoads()
         process.execute([datasource          : h2GIS,
                          inputTableName      : "RAW_INPUT_ROAD",

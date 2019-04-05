@@ -66,12 +66,12 @@ static IProcess transformRoads() {
                 def inputTable = datasource.getSpatialTable(inputTableName)
                 String uid = UUID.randomUUID().toString().replaceAll("-", "")
                 datasource.execute("    drop table if exists tmp_" + uid + ";\n" +
-                        "CREATE TABLE tmp_" + uid + " THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR, \" +\n" +
-                        "            \"SURFACE VARCHAR, SIDEWALK VARCHAR, ZINDEX INTEGER)")
+                        "CREATE TABLE tmp_" + uid + " (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR,\n" +
+                        "SURFACE VARCHAR, SIDEWALK VARCHAR, ZINDEX INTEGER)")
                 inputTable.eachRow { row ->
                     Float width = getWidth(row.getString("width"))
-                    String type = getAbstractValue(row, mappingType)
-                    String surface = getAbstractValue(row, mappingSurface)
+                    String type = getAbstractValue(row, mappingForType)
+                    String surface = getAbstractValue(row, mappingForSurface)
                     String sidewalk = getSidewalk(row.getString("sidewalk"))
                     Integer zIndex = getZIndex(row.getString("zindex"))
                     datasource.execute ("insert into tmp_${uid} values('${row.getGeometry("the_geom")}','${row.getString("id_way")}',${width},'${type}','${surface}','${sidewalk}',${zIndex})".toString())
