@@ -33,7 +33,7 @@ static IProcess transformBuildings() {
                     def heightRoof = getHeightRoof(row)
                     def nbLevels = getNbLevels(row)
                     def typeAndUseValues = getTypeAndUse(row, mappingForTypeAndUse)
-                    datasource.execute("insert into input_building values('${row.getGeometry("the_geom")}','${row.getString("id_way")}',${heightWall},${heightRoof},${nbLevels},'${typeAndUseValues[0]}','${typeAndUseValues[1]}',${row.getString("zindex")})".toString())
+                    datasource.execute("insert into input_building values('${row.the_geom}','${row.id_way}',${heightWall},${heightRoof},${nbLevels},'${typeAndUseValues[0]}','${typeAndUseValues[1]}',${row.zindex})".toString())
                 }
                 [outputTableName: "INPUT_BUILDING"]
             }
@@ -65,12 +65,12 @@ static IProcess transformRoads() {
                         "CREATE TABLE input_road (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR,\n" +
                         "SURFACE VARCHAR, SIDEWALK VARCHAR, ZINDEX INTEGER)")
                 inputTable.eachRow { row ->
-                    Float width = getWidth(row.getString("width"))
+                    Float width = getWidth(row.width)
                     String type = getAbstractValue(row, mappingForType)
                     String surface = getAbstractValue(row, mappingForSurface)
-                    String sidewalk = getSidewalk(row.getString("sidewalk"))
-                    Integer zIndex = getZIndex(row.getString("zindex"))
-                    datasource.execute ("insert into input_road values('${row.getGeometry("the_geom")}','${row.getString("id_way")}',${width},'${type}','${surface}','${sidewalk}',${zIndex})".toString())
+                    String sidewalk = getSidewalk(row.sidewalk)
+                    Integer zIndex = getZIndex(row.zindex)
+                    datasource.execute ("insert into input_road values('${row.the_geom}','${row.id_way}',${width},'${type}','${surface}','${sidewalk}',${zIndex})".toString())
                 }
                 [outputTableName: "INPUT_ROAD"]
             }
@@ -99,17 +99,17 @@ static IProcess transformRails() {
                         "CREATE TABLE input_rail (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER)")
                 inputTable.eachRow { row ->
                     String type = getAbstractValue(row, mappingForType)
-                    Integer zIndex = getZIndex(row.getString("layer"))
+                    Integer zIndex = getZIndex(row.layer)
 
                     //special treatment if type is subway
                     if (type == "subway") {
 
-                        if (!((row.getString("tunnel") != null && row.getString("tunnel") == "no" && row.getString("layer") != null && row.getString("layer").toInt() >= 0)
-                                || (row.getString("bridge") != null && (row.getString("bridge") == "yes" || row.getString("bridge") == "viaduct")))) {
+                        if (!((row.tunnel != null && row.tunnel == "no" && row.layer != null && row.layer.toInt() >= 0)
+                                || (row.bridge != null && (row.bridge == "yes" || row.bridge == "viaduct")))) {
                             type = null
                         }
                     }
-                    def query = "insert into input_rail values(${row.getGeometry("the_geom")},${row.getString("id_way")},${type},${zIndex})"
+                    def query = "insert into input_rail values(${row.the_geom},${row.id_way},${type},${zIndex})"
                     datasource.execute (query)
                 }
                 [outputTableName: "INPUT_RAIL"]
@@ -139,7 +139,7 @@ static IProcess transformVeget() {
                         "CREATE TABLE input_veget (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, TYPE VARCHAR)")
                 inputTable.eachRow { row ->
                     String type = getAbstractValue(row, mappingForType)
-                    def query = "insert into input_veget values(${row.getGeometry("the_geom")},${row.getString("id_source")},${type})"
+                    def query = "insert into input_veget values(${row.the_geom},${row.id_source},${type})"
                     datasource.execute (query)
                 }
                 [outputTableName: "INPUT_VEGET"]
@@ -167,7 +167,7 @@ static IProcess transformHydro() {
                 datasource.execute("    drop table if exists input_hydro;\n" +
                         "CREATE TABLE input_hydro (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR)")
                 inputTable.eachRow { row ->
-                    def query = "insert into input_hydro values(${row.getGeometry("the_geom")},${row.getString("id_source")})"
+                    def query = "insert into input_hydro values(${row.the_geom},${row.id_source})"
                     datasource.execute (query)
                 }
                 [outputTableName: "INPUT_HYDRO"]
