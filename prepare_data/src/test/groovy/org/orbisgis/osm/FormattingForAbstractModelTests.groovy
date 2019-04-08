@@ -176,80 +176,80 @@ class FormattingForAbstractModelTests {
         assertNotNull(h2GIS.getTable("RAW_INPUT_ROAD"))
         //Define the mapping between the values in OSM and those used in the abstract model
         def mappingType = [
-                "cycleway":[
-                        "highway":["cycleway"],
-                        "cycleway":["track"],
-                        "biclycle_road":["yes"]
+                "cycleway"    : [
+                        "highway"      : ["cycleway"],
+                        "cycleway"     : ["track"],
+                        "biclycle_road": ["yes"]
                 ],
-                "ferry":[
-                        "route":["ferry"]
+                "ferry"       : [
+                        "route": ["ferry"]
                 ],
-                "footway":[
-                        "highway":["footway","pedestrian"]
+                "footway"     : [
+                        "highway": ["footway", "pedestrian"]
                 ],
-                "highway":[
-                        "highway":["service","road","raceway","escape"],
-                        "cyclestreet":["yes"]
+                "highway"     : [
+                        "highway"    : ["service", "road", "raceway", "escape"],
+                        "cyclestreet": ["yes"]
                 ],
-                "highway_link":[
-                        "highway":["motorway_link","motorway_junction","trunk_link","primary_link","secondary_link","tertiary_link","junction"]
+                "highway_link": [
+                        "highway": ["motorway_link", "motorway_junction", "trunk_link", "primary_link", "secondary_link", "tertiary_link", "junction"]
                 ],
-                "motorway":[
-                        "highway":["motorway"]
+                "motorway"    : [
+                        "highway": ["motorway"]
                 ],
-                "path":[
-                        "highway":["path","bridleway"]
+                "path"        : [
+                        "highway": ["path", "bridleway"]
                 ],
-                "primary":[
-                        "highway":["primary"]
+                "primary"     : [
+                        "highway": ["primary"]
                 ],
-                "residential":[
-                        "highway":["residential","living_street"]
+                "residential" : [
+                        "highway": ["residential", "living_street"]
                 ],
-                "roundabout":[
-                        "junction":["roundabout","circular"]
+                "roundabout"  : [
+                        "junction": ["roundabout", "circular"]
                 ],
-                "secondary":[
-                        "highway":["secondary"]
+                "secondary"   : [
+                        "highway": ["secondary"]
                 ],
-                "steps":[
-                        "highway":["steps"]
+                "steps"       : [
+                        "highway": ["steps"]
                 ],
-                "tertiary":[
-                        "highway":["tertiary"]
+                "tertiary"    : [
+                        "highway": ["tertiary"]
                 ],
-                "track":[
-                        "highway":["track"]
+                "track"       : [
+                        "highway": ["track"]
                 ],
-                "trunk":[
-                        "highway":["trunk"]
+                "trunk"       : [
+                        "highway": ["trunk"]
                 ],
-                "unclassified":[
-                        "highway":["unclassified"]
+                "unclassified": [
+                        "highway": ["unclassified"]
                 ]
         ]
 
         def mappingSurface = [
-                "unpaved":["surface":["unpaved","grass_paver","artificial_turf"]],
-                "paved":["surface":["paved","asphalt"]],
-                "ground":["surface":["ground","dirt","earth","clay"]],
-                "gravel":["surface":["gravel","fine_gravel","gravel_turf"]],
-                "concrete":["surface":["concrete","concrete:lanes","concrete:plates","cement"]],
-                "grass":["surface":["grass"]],
-                "compacted":["surface":["compacted"]],
-                "sand":["surface":["sand"]],
-                "cobblestone":["surface":["cobblestone","paving_stones","sett","unhewn_cobblestone"]],
-                "wood":["surface":["wood","woodchips"]],
-                "pebblestone":["surface":["pebblestone"]],
-                "mud":["surface":["mud"]],
-                "metal":["surface":["metal"]],
-                "water":["surface":["water"]]
+                "unpaved"    : ["surface": ["unpaved", "grass_paver", "artificial_turf"]],
+                "paved"      : ["surface": ["paved", "asphalt"]],
+                "ground"     : ["surface": ["ground", "dirt", "earth", "clay"]],
+                "gravel"     : ["surface": ["gravel", "fine_gravel", "gravel_turf"]],
+                "concrete"   : ["surface": ["concrete", "concrete:lanes", "concrete:plates", "cement"]],
+                "grass"      : ["surface": ["grass"]],
+                "compacted"  : ["surface": ["compacted"]],
+                "sand"       : ["surface": ["sand"]],
+                "cobblestone": ["surface": ["cobblestone", "paving_stones", "sett", "unhewn_cobblestone"]],
+                "wood"       : ["surface": ["wood", "woodchips"]],
+                "pebblestone": ["surface": ["pebblestone"]],
+                "mud"        : ["surface": ["mud"]],
+                "metal"      : ["surface": ["metal"]],
+                "water"      : ["surface": ["water"]]
         ]
         logger.info('Process starts')
         def process = PrepareData.FormattingForAbstractModel.transformRoads()
-        process.execute([datasource          : h2GIS,
-                         inputTableName      : "RAW_INPUT_ROAD",
-                         mappingForType: mappingType,
+        process.execute([datasource       : h2GIS,
+                         inputTableName   : "RAW_INPUT_ROAD",
+                         mappingForType   : mappingType,
                          mappingForSurface: mappingSurface])
         assertNotNull(h2GIS.getTable("INPUT_ROAD"))
         assertEquals(h2GIS.getTable("RAW_INPUT_ROAD").getRowCount(), h2GIS.getTable("INPUT_ROAD").getRowCount())
@@ -257,4 +257,76 @@ class FormattingForAbstractModelTests {
         assertTrue(h2GIS.getTable("INPUT_ROAD").getColumnNames().contains("SURFACE"))
         assertTrue(h2GIS.getTable("INPUT_ROAD").getColumnNames().contains("ZINDEX"))
     }
+
+    @Test
+    void transformRailsTest() {
+        new OSMGISLayersTests().prepareRailsTest()
+        def h2GIS = H2GIS.open('./target/h2db')
+        assertNotNull(h2GIS.getTable("RAW_INPUT_RAIL"))
+        //Define the mapping between the values in OSM and those used in the abstract model
+        def mappingType = [
+                "highspeed":["highspeed":["yes"]],
+                "rail":["railway":["rail","light_rail","narrow_gauge"]],
+                "service_track":["service":["yard","siding","spur","crossover"]],
+                "disused":["railway":["disused"]],
+                "funicular":["railway":["funicular"]],
+                "subway":["railway":["subway"]],
+                "tram":["railway":["tram"]]
+        ]
+        logger.info('Process starts')
+        def process = PrepareData.FormattingForAbstractModel.transformRails()
+        process.execute([datasource       : h2GIS,
+                         inputTableName   : "RAW_INPUT_RAIL",
+                         mappingForType   : mappingType])
+        assertNotNull(h2GIS.getTable("INPUT_RAIL"))
+        assertEquals(h2GIS.getTable("RAW_INPUT_RAIL").getRowCount(), h2GIS.getTable("INPUT_RAIL").getRowCount())
+        assertTrue(h2GIS.getTable("INPUT_RAIL").getColumnNames().contains("TYPE"))
+        assertTrue(h2GIS.getTable("INPUT_RAIL").getColumnNames().contains("ZINDEX"))
+    }
+
+    @Test
+    void transformVegetTest() {
+        new OSMGISLayersTests().prepareVegetTest()
+        def h2GIS = H2GIS.open('./target/h2db')
+        assertNotNull(h2GIS.getTable("RAW_INPUT_VEGET"))
+        //Define the mapping between the values in OSM and those used in the abstract model
+        def mappingType = [
+                "tree":["natural":["tree"]],
+                "wood":["landcover":["trees"],"natural":["wood"]],
+                "forest":["landuse":["forest"]],
+                "scrub":["natural":["scrub"],"landcover":["scrub"],"landuse":["scrub"]],
+                "grassland":["landcover":["grass","grassland"],"natural":["grass","grassland"],"vegetation":["grassland"],"landuse":["grass","grassland"]],
+                "heath":["natural":["heath"]],
+                "tree_row":["natural":["tree_row"],"landcover":["tree_row"],"barrier":["tree_row"]],
+                "hedge":["barrier":["hedge"],"natural":["hedge","hedge_bank"],"fence_type":["hedge"],"hedge":["hedge_bank"]],
+                "mangrove":["wetland":["mangrove"]],
+                "orchard":["landuse":["orchard"]],
+                "vineyard":["landuse":["vineyard"],"vineyard":["! no"]],
+                "banana plants":["trees":["banana_plants"],"crop":["banana"]],
+                "sugar cane":["produce":["sugar_cane"],"crop":["sugar_cane"]]
+        ]
+        logger.info('Process starts')
+        def process = PrepareData.FormattingForAbstractModel.transformVeget()
+        process.execute([datasource       : h2GIS,
+                         inputTableName   : "RAW_INPUT_VEGET",
+                         mappingForType   : mappingType])
+        assertNotNull(h2GIS.getTable("INPUT_VEGET"))
+        assertEquals(h2GIS.getTable("RAW_INPUT_VEGET").getRowCount(), h2GIS.getTable("INPUT_VEGET").getRowCount())
+        assertTrue(h2GIS.getTable("INPUT_VEGET").getColumnNames().contains("TYPE"))
+    }
+
+    @Test
+    void transformHydroTest() {
+        new OSMGISLayersTests().prepareHydroTest()
+        def h2GIS = H2GIS.open('./target/h2db')
+        assertNotNull(h2GIS.getTable("RAW_INPUT_HYDRO"))
+        logger.info('Process starts')
+        def process = PrepareData.FormattingForAbstractModel.transformHydro()
+        process.execute([datasource       : h2GIS,
+                         inputTableName   : "RAW_INPUT_HYDRO"])
+        assertNotNull(h2GIS.getTable("INPUT_HYDRO"))
+        assertEquals(h2GIS.getTable("RAW_INPUT_HYDRO").getRowCount(), h2GIS.getTable("INPUT_HYDRO").getRowCount())
+        assertEquals(2, h2GIS.getTable("INPUT_HYDRO").getColumnCount())
+    }
+
 }
