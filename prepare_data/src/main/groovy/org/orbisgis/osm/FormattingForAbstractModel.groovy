@@ -103,9 +103,9 @@ static IProcess transformRails() {
 
                     //special treatment if type is subway
                     if (type == "subway") {
-                        boolean keepSubway
-                        keepSubway = (row.getString("tunnel") != null && row.getString("tunnel") == "no" && row.getString("layer") != null && row.getString("layer").toInt() >= 0) || (row.getString("bridge") != null && (row.getString("bridge") == "yes" || row.getString("bridge") == "viaduct"))
-                        if (!keepSubway) {
+
+                        if (!((row.getString("tunnel") != null && row.getString("tunnel") == "no" && row.getString("layer") != null && row.getString("layer").toInt() >= 0)
+                                || (row.getString("bridge") != null && (row.getString("bridge") == "yes" || row.getString("bridge") == "viaduct")))) {
                             type = null
                         }
                     }
@@ -293,11 +293,7 @@ static int getNbLevels (def row) {
  * @return the calculated value of width (default value : null)
  */
 static Float getWidth (String width){
-    Float result
-    if (width != null && width.isFloat()) {
-        result=width.toFloat()
-    }
-    return result
+    return (width != null && width.isFloat()) ? width.toFloat() : null
 }
 
 /**
@@ -306,11 +302,7 @@ static Float getWidth (String width){
  * @return The calculated value of zindex (default value : null)
  */
 static Integer getZIndex (String zindex){
-    Integer result
-    if (zindex != null && zindex.isInteger()) {
-        result=zindex.toInteger()
-    }
-    return result
+    return (zindex != null && zindex.isInteger()) ? zindex.toInteger() : null
 }
 
 /**
@@ -352,16 +344,18 @@ static String getAbstractValue(def row, def myMap) {
  */
 static String getSidewalk(String sidewalk) {
     String result
-    if (sidewalk != null) {
-        if (sidewalk == 'both') {
-            result = "two"
-        } else {
-            if (sidewalk == 'right' || sidewalk == 'left' || sidewalk == 'yes') {
-                result = "one"
-            } else {
-                result = "no"
-            }
-        }
+    switch(sidewalk){
+        case 'both':
+            result = 'two'
+            break
+        case 'right':
+        case 'left':
+        case 'yes':
+            result = 'one'
+            break
+        default:
+            result = 'no'
+            break
     }
     return result
 }
