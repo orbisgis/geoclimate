@@ -43,7 +43,7 @@ static IProcess prepareBuildings() {
              buildingTablePrefix: String,
              filteringZoneTableName: String],
             [buildingTableName: String],
-            { datasource, osmTablesPrefix, outputColumnNames, tagKeys, tagValues,
+            { JdbcDataSource datasource, osmTablesPrefix, outputColumnNames, tagKeys, tagValues,
               buildingTablePrefix, filteringZoneTableName ->
                 logger.info('Buildings preparation starts')
                 def tableName
@@ -365,7 +365,7 @@ if (ok) {
     process.execute([
             datasource   : h2GIS,
             osmTablesPrefix : "EXT",
-            ouputColumnNames: ['height':'height','building:height':'b_height','roof:height':'r_height','building:roof:height':'b_r_height',
+            outputColumnNames: ['height':'height','building:height':'b_height','roof:height':'r_height','building:roof:height':'b_r_height',
                                'building:levels':'b_lev','roof:levels':'r_lev','building:roof:levels':'b_r_lev','building':'building',
                                'amenity':'amenity','layer':'zindex','aeroway':'aeroway','historic':'historic','leisure':'leisure','monument':'monument',
                                'place_of_worship':'place_of_worship','military':'military','railway':'railway','public_transport':'public_transport',
