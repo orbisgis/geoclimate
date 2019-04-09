@@ -385,16 +385,26 @@ static IProcess rsuProjectedFacadeAreaDistribution() {
  * calculation error (for example considering that the gable is always oriented parallel to the larger side of the
  * building.
  *
- * @return A database table name.
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param correlationBuildingTable the name of the input ITable where are stored the buildings and the relationships
+ * between buildings and RSU
+ * @param rsuTable the name of the input ITable where are stored the RSU
+ * @param outputTableName the name of the output ITable
+ * @param listLayersBottom the list of height corresponding to the bottom of each vertical layers (default [0, 10, 20, 30, 40, 50])
+ * @param inputColumns the columns
+ *
+ * @return outputTableName Table name in which the rsu id and their corresponding indicator value are stored
+ *
  * @author Jérémy Bernard
  */
 static IProcess rsuRoofAreaDistribution() {
     return processFactory.create(
             "RSU roof area distribution",
-            [rsuTable: String, correlationBuildingTable: String, inputColumns: String[], listLayersBottom: Double[],
+            [rsuTable: String, correlationBuildingTable: String, listLayersBottom: Double[],
              outputTableName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { rsuTable, correlationBuildingTable, inputColumns, listLayersBottom = [0, 10, 20, 30, 40, 50],
+            { rsuTable, correlationBuildingTable, listLayersBottom = [0, 10, 20, 30, 40, 50],
               outputTableName, datasource ->
 
                 def geometricColumnRsu = "the_geom"

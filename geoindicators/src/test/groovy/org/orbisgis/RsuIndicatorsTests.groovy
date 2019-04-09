@@ -131,7 +131,7 @@ class RsuIndicatorsTests {
 
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def  p =  Geoclimate.RsuIndicators.rsuRoofAreaDistribution()
-        p.execute([rsuTable: "rsu_test", correlationBuildingTable: "tempo_build", inputColumns: ["id_rsu", "the_geom"],
+        p.execute([rsuTable: "rsu_test", correlationBuildingTable: "tempo_build",
                    listLayersBottom: listLayersBottom, outputTableName: "rsu_roof_area_distribution",
                    datasource: h2GIS])
         def concat1 = ""
