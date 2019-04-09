@@ -1,12 +1,22 @@
 package org.orbisgis.processingchain
 
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.processmanager.ProcessMapper
 
+import static org.junit.jupiter.api.Assertions.assertNull
+
 class ProcessingChainTest {
 
+    @BeforeAll
+    static void init(){
+        System.setProperty("test.processingchain",
+                Boolean.toString(ProcessingChainTest.getResource("geoclimate_bdtopo_data_test") != null))
+    }
+
+    @EnabledIfSystemProperty(named = "test.processingchain", matches = "true")
     @Test
     void runBDTopoProcessingChain(){
         H2GIS h2GIS = H2GIS.open("./target/processingchaindb")
@@ -23,8 +33,12 @@ class ProcessingChainTest {
         pm.execute([datasource: h2GIS, distBuffer : 500, expand : 1000, idZone : "56260", tableIrisName: "IRIS_GE",
                     tableBuildIndifName: "BATI_INDIFFERENCIE", tableBuildIndusName: "BATI_INDUSTRIEL",
                     tableBuildRemarqName: "BATI_REMARQUABLE", tableRoadName: "ROUTE", tableRailName: "TRONCON_VOIE_FERREE",
-                    tableHydroName: "SURFACE_EAU", tableVegetName: "ZONE_VEGETATION"])
+                    tableHydroName: "SURFACE_EAU", tableVegetName: "ZONE_VEGETATION",  hLevMin: 3,  hLevMax: 15,
+                    hThresholdLev2: 10])
 
+        pm.getResults().each {
+            entry -> assertNull h2GIS.getTable(entry.getValue())
+        }
     }
 
 }
