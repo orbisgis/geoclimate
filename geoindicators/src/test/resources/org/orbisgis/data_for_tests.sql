@@ -29,7 +29,7 @@ INSERT INTO building_test VALUES (1, 'POLYGON((4 4, 10 4, 10 30, 4 30, 4 4))'::G
  (7, 'POLYGON((0 -5, 10 -5, 10 0, 0 0, 0 -5), (1 -4, 2 -4, 2 -1, 1 -1, 1 -4))'::GEOMETRY, 3, 3, 47, 30, 1, 38, 0, 0),
  (8, 'POLYGON((30 25, 40 15, 45 20, 40 25, 30 25))'::GEOMETRY, 4, 4, 75, 38.284, 1, 38.284, 1, null),
  (9, 'POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 20, 20, null, null, null, null, null, null),
- (10, st_translate('POLYGON((1060 1000, 1080 1000, 1080 1100, 1060 1100, 1060 1000))'::GEOMETRY, 40, 0), 20, 20, null, null, null, null, null, null),
+ (10, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 40, 0), 20, 20, null, null, null, null, null, null),
  (11, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 100, 0), 20, 20, null, null, null, null, null, null),
  (12, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 140, 0), 20, 20, null, null, null, null, null, null),
  (13, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 200, 0), 20, 20, null, null, null, null, null, null),
@@ -77,4 +77,3 @@ INSERT INTO road_test VALUES (1, 'LINESTRING(120 60, 120 -10)'::GEOMETRY, 10);
 INSERT INTO road_test VALUES (2, 'LINESTRING (86 19, 170 20)'::GEOMETRY, 5);
 INSERT INTO road_test VALUES (3, 'LINESTRING (93 53, 149 54, 145 -5)'::GEOMETRY, 5);
 INSERT INTO road_test VALUES (4, 'LINESTRING (85 60, 85 -1, 155 1, 148 54, 92 50, 96 -12, 119 -11, 117 -4, 78 -5)'::GEOMETRY, 10);
-
