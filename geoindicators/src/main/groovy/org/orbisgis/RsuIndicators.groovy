@@ -492,9 +492,9 @@ static IProcess rsuRoofAreaDistribution() {
                             "z_max <= ${listLayersBottom[i]}, CASEWHEN(delta_h=0, 0, " +
                             "vertical_roof_area*POWER((z_max-GREATEST(${listLayersBottom[i-1]}," +
                             "z_min))/delta_h, 2)), CASEWHEN(z_min < ${listLayersBottom[i]}, " +
-                            "CASEWHEN(z_min>${listLayersBottom[i - 1]}, vertical_roof_area*(1-" +
-                            "POWER((z_max-${listLayersBottom[i]})/delta_h,2)),vertical_roof_area*(1-" +
-                            "POWER((${listLayersBottom[i]}-z_min)/delta_h,2)-POWER((z_max-${listLayersBottom[i]})/" +
+                            "CASEWHEN(z_min>${listLayersBottom[i-1]}, vertical_roof_area*(1-" +
+                            "POWER((z_max-${listLayersBottom[i]})/delta_h,2)),vertical_roof_area*(" +
+                            "POWER((z_max-${listLayersBottom[i-1]})/delta_h,2)-POWER((z_max-${listLayersBottom[i]})/" +
                             "delta_h,2))), 0)))) AS rsu_vert_roof_area${listLayersBottom[i-1]}_${listLayersBottom[i]},"
                 }
                 // The roof area is calculated for the last level (> 50 m in the default case)

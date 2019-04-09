@@ -126,28 +126,47 @@ class RsuIndicatorsTests {
         // Only the first 5 first created buildings are selected for the tests
         h2GIS.execute("DROP TABLE IF EXISTS tempo_build, rsu_roof_area_distribution; " +
                 "CREATE TABLE tempo_build AS SELECT a.*, b.id_rsu " +
-                "FROM building_test a, rsu_build_corr b WHERE a.id_build = b.id_build AND a.id_build < 6")
+                "FROM building_test a, rsu_build_corr b WHERE a.id_build = b.id_build AND a.id_build < 6 OR " +
+                "a.id_build = b.id_build AND a.id_build < 29 AND a.id_build > 26")
 
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def  p =  Geoclimate.RsuIndicators.rsuRoofAreaDistribution()
         p.execute([rsuTable: "rsu_test", correlationBuildingTable: "tempo_build", inputColumns: ["id_rsu", "the_geom"],
                    listLayersBottom: listLayersBottom, outputTableName: "rsu_roof_area_distribution",
                    datasource: h2GIS])
-        def concat = ""
+        def concat1 = ""
+        def concat2 = ""
         h2GIS.eachRow("SELECT * FROM rsu_roof_area_distribution WHERE id_rsu = 1"){
             row ->
                 // Iterate over columns
                 for (i in 1..listLayersBottom.size()){
                     if (i == listLayersBottom.size()) {
-                        concat += row["rsu_non_vert_roof_area${listLayersBottom[listLayersBottom.size() - 1]}_"] + "\n"
-                        concat += row["rsu_vert_roof_area${listLayersBottom[listLayersBottom.size() - 1]}_"] + "\n"
+                        concat1 += row["rsu_non_vert_roof_area${listLayersBottom[listLayersBottom.size() - 1]}_"].round(2) + "\n"
+                        concat1 += row["rsu_vert_roof_area${listLayersBottom[listLayersBottom.size() - 1]}_"].round(2) + "\n"
                     }
                     else {
-                        concat+=row["rsu_non_vert_roof_area${listLayersBottom[i-1]}_${listLayersBottom[i]}"]+"\n"
-                        concat+=row["rsu_vert_roof_area${listLayersBottom[i-1]}_${listLayersBottom[i]}"]+"\n"
+                        concat1+=row["rsu_non_vert_roof_area${listLayersBottom[i-1]}_${listLayersBottom[i]}"].round(2)+"\n"
+                        concat1+=row["rsu_vert_roof_area${listLayersBottom[i-1]}_${listLayersBottom[i]}"].round(2)+"\n"
                     }
                 }
         }
-        assertEquals("408.0\n20.0\n0.0\n0.0\n0.0\n0.0\n", concat)
+        h2GIS.eachRow("SELECT * FROM rsu_roof_area_distribution WHERE id_rsu = 13"){
+            row ->
+                // Iterate over columns
+                for (i in 1..listLayersBottom.size()){
+                    if (i == listLayersBottom.size()) {
+                        concat2 += row["rsu_non_vert_roof_area${listLayersBottom[listLayersBottom.size() - 1]}_"].round(2) + "\n"
+                        concat2 += row["rsu_vert_roof_area${listLayersBottom[listLayersBottom.size() - 1]}_"].round(2) + "\n"
+                    }
+                    else {
+                        concat2+=row["rsu_non_vert_roof_area${listLayersBottom[i-1]}_${listLayersBottom[i]}"].round(2)+"\n"
+                        concat2+=row["rsu_vert_roof_area${listLayersBottom[i-1]}_${listLayersBottom[i]}"].round(2)+"\n"
+                    }
+                }
+        }
+        assertEquals("405.25\n56.48\n289.27\n45.64\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n",
+                concat1)
+        assertEquals("355.02\n163.23\n404.01\n141.88\n244.92\n235.5\n48.98\n6.73\n0.0\n0.0\n0.0\n0.0\n",
+                concat2)
     }
 }
