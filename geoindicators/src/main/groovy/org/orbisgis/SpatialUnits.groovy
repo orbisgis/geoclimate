@@ -185,3 +185,40 @@ static IProcess createBlocks(){
             }
     )
 }
+
+/**
+ * This process is used to link each object of a lower scale to an upper scale ID (i.e.: building to RSU)
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param inputLowerScaleTableName The input table where are stored the lowerScale objects (i.e. buildings)
+ * @param inputUpperScaleTableName The input table where are stored the upperScale objects (i.e. RSU)
+ * @param idColumnUp The column name where is stored the ID of the upperScale objects (i.e. RSU)
+ * @param prefixName A prefix used to name the output table
+ *
+ * @return A database table name.
+ */
+static IProcess createScalesRelations(){
+    return processFactory.create("Creating the Tables of relations between two scales",
+            [inputLowerScaleTableName: String, inputUpperScaleTableName : String, idColumnUp: String,
+             prefixName: String, datasource: JdbcDataSource],
+            [outputTableName : String],
+            { inputLowerScaleTableName, inputUpperScaleTableName, idColumnUp, prefixName, datasource ->
+
+                def geometricColumnLow = "the_geom"
+                def geometricColumnUp = "the_geom"
+
+                String outputTableName =  prefixName+"_"+inputLowerScaleTableName+"_corr"
+                datasource.execute(("DROP TABLE IF EXISTS $outputTableName; CREATE INDEX IF NOT EXISTS ids_l "+
+                        "ON $inputLowerScaleTableName($geometricColumnLow) USING RTREE; CREATE INDEX IF NOT EXISTS "+
+                        "ids_u ON $inputUpperScaleTableName($geometricColumnUp) USING RTREE").toString())
+                datasource.execute(("CREATE TABLE $outputTableName AS SELECT a.*, (SELECT b.$idColumnUp "+
+                        "FROM $inputUpperScaleTableName b WHERE a.$geometricColumnLow && b.$geometricColumnUp AND "+
+                        "ST_INTERSECTS(a.$geometricColumnLow, b.$geometricColumnUp) ORDER BY "+
+                        "ST_AREA(ST_INTERSECTION(a.$geometricColumnLow, b.$geometricColumnUp)) " +
+                        "DESC LIMIT 1) AS $idColumnUp FROM $inputLowerScaleTableName a").toString())
+                logger.info("The relations between scales have been created")
+                [outputTableName: outputTableName]
+            }
+    )
+}
