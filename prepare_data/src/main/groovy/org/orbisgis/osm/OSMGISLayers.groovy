@@ -37,24 +37,24 @@ static IProcess prepareBuildings() {
             "Prepare the building layer with OSM data",
             [datasource: JdbcDataSource,
              osmTablesPrefix: String,
-             outputColumnNames: Map,
-             tagKeys: String[],
-             tagValues: String[],
-             buildingTablePrefix: String,
-             filteringZoneTableName: String],
+             buildingTableColumnsNames: Map,
+             buildingTagKeys: String[],
+             buildingTagValues: String[],
+             tablesPrefix: String,
+             buildingFilter: String],
             [buildingTableName: String],
-            { JdbcDataSource datasource, osmTablesPrefix, outputColumnNames, tagKeys, tagValues,
-              buildingTablePrefix, filteringZoneTableName ->
+            { JdbcDataSource datasource, osmTablesPrefix, buildingTableColumnsNames, buildingTagKeys, buildingTagValues,
+              tablesPrefix, buildingFilter ->
                 logger.info('Buildings preparation starts')
                 def tableName
-                if (buildingTablePrefix != null && buildingTablePrefix.endsWith("_")) {
-                    tableName = buildingTablePrefix+'INPUT_BUILDING'
+                if (tablesPrefix != null && tablesPrefix.endsWith("_")) {
+                    tableName = tablesPrefix+'INPUT_BUILDING'
                 } else {
-                    tableName = buildingTablePrefix+'_INPUT_BUILDING'
+                    tableName = tablesPrefix+'_INPUT_BUILDING'
                 }
                 def scriptFile = File.createTempFile("createBuildingTable", ".sql")
-                defineBuildingScript(osmTablesPrefix, outputColumnNames, tagKeys, tagValues,
-                        scriptFile, tableName, filteringZoneTableName)
+                defineBuildingScript(osmTablesPrefix, buildingTableColumnsNames, buildingTagKeys, buildingTagValues,
+                        scriptFile, tableName, buildingFilter)
                 datasource.executeScript(scriptFile.getAbsolutePath())
                 scriptFile.delete()
                 logger.info('Buildings preparation finishes')
@@ -79,24 +79,24 @@ static IProcess prepareRoads() {
             "Prepare the roads layer with OSM data",
             [datasource: JdbcDataSource,
              osmTablesPrefix: String,
-             outputColumnNames: Map,
-             tagKeys: String[],
-             tagValues: String[],
-             roadTablePrefix: String,
-             filteringZoneTableName: String],
+             roadTableColumnsNames: Map,
+             roadTagKeys: String[],
+             roadTagValues: String[],
+             tablesPrefix: String,
+             roadFilter: String],
             [roadTableName: String],
-            { datasource, osmTablesPrefix, outputColumnNames, tagKeys, tagValues,
-              roadTablePrefix, filteringZoneTableName ->
+            { datasource, osmTablesPrefix, roadTableColumnsNames, roadTagKeys, roadTagValues,
+              tablesPrefix, roadFilter ->
                 logger.info('Roads preparation starts')
                 String tableName
-                if (roadTablePrefix != null && roadTablePrefix.endsWith("_")){
-                    tableName = roadTablePrefix+'INPUT_ROAD'
+                if (tablesPrefix != null && tablesPrefix.endsWith("_")){
+                    tableName = tablesPrefix+'INPUT_ROAD'
                 } else {
-                    tableName = roadTablePrefix+'_INPUT_ROAD'
+                    tableName = tablesPrefix+'_INPUT_ROAD'
                 }
                 def scriptFile = File.createTempFile("createRoadTable", ".sql")
-                defineRoadScript(osmTablesPrefix, outputColumnNames, tagKeys, tagValues,
-                        scriptFile, tableName, filteringZoneTableName)
+                defineRoadScript(osmTablesPrefix, roadTableColumnsNames, roadTagKeys, roadTagValues,
+                        scriptFile, tableName, roadFilter)
                 datasource.executeScript(scriptFile.getAbsolutePath())
                 scriptFile.delete()
                 logger.info('Roads preparation finishes')
@@ -121,13 +121,13 @@ static IProcess prepareRails() {
             "Prepare the rails layer with OSM data",
             [datasource: JdbcDataSource,
              osmTablesPrefix: String,
-             outputColumnNames: Map,
-             tagKeys: String[],
-             tagValues: String[],
-             railTablePrefix: String,
-             filteringZoneTableName: String],
+             railTableColumnsNames: Map,
+             railTagKeys: String[],
+             railTagValues: String[],
+             tablesPrefix: String,
+             railFilter: String],
             [railTableName: String],
-            { datasource, osmTablesPrefix, outputColumnNames, tagKeys, tagValues,
+            { datasource, osmTablesPrefix, railTableColumnsNames, tagKeys, tagValues,
               railTablePrefix, filteringZoneTableName ->
                 logger.info('Rails preparation starts')
                 String tableName
@@ -137,7 +137,7 @@ static IProcess prepareRails() {
                     tableName = railTablePrefix+'_INPUT_RAIL'
                 }
                 def scriptFile = File.createTempFile("createRailTable", ".sql")
-                defineRailScript osmTablesPrefix, outputColumnNames, tagKeys, tagValues,
+                defineRailScript osmTablesPrefix, railTableColumnsNames, tagKeys, tagValues,
                         scriptFile, tableName, filteringZoneTableName
                 datasource.executeScript scriptFile.getAbsolutePath()
                 scriptFile.delete()
@@ -163,24 +163,24 @@ static IProcess prepareVeget() {
             "Prepare the vegetation layer with OSM data",
             [datasource: JdbcDataSource,
              osmTablesPrefix: String,
-             outputColumnNames: Map,
-             tagKeys: String[],
-             tagValues: String[],
-             vegetTablePrefix: String,
-             filteringZoneTableName: String],
+             vegetTableColumnsNames: Map,
+             vegetTagKeys: String[],
+             vegetTagValues: String[],
+             tablesPrefix: String,
+             vegetFilter: String],
             [vegetTableName: String],
-            { datasource, osmTablesPrefix, outputColumnNames, tagKeys, tagValues,
-              vegetTablePrefix, filteringZoneTableName ->
+            { datasource, osmTablesPrefix, vegetTableColumnsNames, vegetTagKeys, vegetTagValues,
+              tablesPrefix, vegetFilter ->
                 logger.info('Veget preparation starts')
                 String tableName
-                if (vegetTablePrefix == null || vegetTablePrefix.endsWith("_")){
-                    tableName = vegetTablePrefix+'INPUT_VEGET'
+                if (tablesPrefix == null || tablesPrefix.endsWith("_")){
+                    tableName = tablesPrefix+'INPUT_VEGET'
                 } else {
-                    tableName = vegetTablePrefix+'_INPUT_VEGET'
+                    tableName = tablesPrefix+'_INPUT_VEGET'
                 }
                 def scriptFile = File.createTempFile("createVegetTable", ".sql")
-                defineVegetationScript osmTablesPrefix, outputColumnNames, tagKeys, tagValues,
-                        scriptFile, tableName, filteringZoneTableName
+                defineVegetationScript osmTablesPrefix, vegetTableColumnsNames, vegetTagKeys, vegetTagValues,
+                        scriptFile, tableName, vegetFilter
                 datasource.executeScript scriptFile.getAbsolutePath()
                 scriptFile.delete()
                 logger.info('Veget preparation finishes')
@@ -205,23 +205,23 @@ static IProcess prepareHydro() {
             "Prepare the hydrological layer with OSM data",
             [datasource: JdbcDataSource,
              osmTablesPrefix: String,
-             outputColumnNames: Map,
-             tags: Map,
-             hydroTablePrefix: String,
-             filteringZoneTableName: String],
+             hydroTableColumnsNames: Map,
+             hydroTags: Map,
+             tablesPrefix: String,
+             hydroFilter: String],
             [hydroTableName: String],
-            { datasource, osmTablesPrefix, outputColumnNames, tags,
-              hydroTablePrefix, filteringZoneTableName ->
+            { datasource, osmTablesPrefix, hydroTableColumnsNames, hydroTags,
+              tablesPrefix, hydroFilter ->
                 logger.info('Hydro preparation starts')
                 String tableName
-                if (hydroTablePrefix == null || hydroTablePrefix.endsWith("_")){
-                    tableName = hydroTablePrefix+'INPUT_HYDRO'
+                if (tablesPrefix == null || tablesPrefix.endsWith("_")){
+                    tableName = tablesPrefix+'INPUT_HYDRO'
                 } else {
-                    tableName = hydroTablePrefix+'_INPUT_HYDRO'
+                    tableName = tablesPrefix+'_INPUT_HYDRO'
                 }
                 def scriptFile = File.createTempFile("createHydroTable", ".sql")
-                defineHydroScript osmTablesPrefix, outputColumnNames, tags,
-                        scriptFile, tableName, filteringZoneTableName
+                defineHydroScript osmTablesPrefix, hydroTableColumnsNames, hydroTags,
+                        scriptFile, tableName, hydroFilter
                 datasource.executeScript scriptFile.getAbsolutePath()
                 scriptFile.delete()
                 logger.info('Hydro preparation finishes')
@@ -233,7 +233,7 @@ static IProcess prepareHydro() {
 /**
  * This process loads the data concerning the target zone from OSM using the overpass API and
  * creates the tables corresponding to this zone and its surroundings.
- * @param datasource A connexion to a DB
+ * @param dbDirPath the path of the directory where the DB should be stored
  * @param osmTablesPrefix The prefix used for naming the 11 OSM tables
  * @param zoneCode A string representing the inseeCode of the administrative level8 zone
  * @param extendedZoneSize The integer value of the Extended Zone
@@ -243,15 +243,17 @@ static IProcess prepareHydro() {
 static IProcess loadInitialData() {
     return processFactory.create(
             "Import the data concerning a given zone and generate the 4 associated zone tables",
-            [datasource : JdbcDataSource,
+            [dbPath : String,
              osmTablesPrefix: String,
              zoneCode : String,
              extendedZoneSize : int,
              bufferZoneSize : int
             ],
-            [success : boolean],
-            { datasource, osmTablesPrefix, zoneCode, extendedZoneSize, bufferZoneSize ->
+            [success : boolean,
+             outDatasource : JdbcDataSource],
+            { dbPath, osmTablesPrefix, zoneCode, extendedZoneSize, bufferZoneSize ->
                 boolean success = true
+                def datasource = H2GIS.open([databaseName: dbPath])
                 def tmpOSMFile = File.createTempFile("zone", ".osm")
                 //zone download : relation, ways and nodes corresponding to the targeted zone limit
                 def initQuery = "[timeout:900];(relation[\"ref:INSEE\"=\"$zoneCode\"][\"boundary\"=\"administrative\"][\"admin_level\"=\"8\"];>;);out;"
@@ -298,7 +300,7 @@ static IProcess loadInitialData() {
                 } else {
                     success = false
                 }
-                [success: success]
+                [success: success, outDatasource: datasource]
             }
     )
 }
@@ -348,7 +350,7 @@ tmpFolder.mkdir()
 def h2GIS =H2GIS.open([databaseName: dbName])
 def process = loadInitialData()
 process.execute([
-        datasource : h2GIS,
+        datasource : dbName,
         osmTablesPrefix: "EXT",
         zoneCode : "35236",
         extendedZoneSize : 1000,
