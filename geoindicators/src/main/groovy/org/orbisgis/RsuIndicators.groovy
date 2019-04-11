@@ -74,8 +74,8 @@ static IProcess rsuGroundSkyViewFactor() {
     return processFactory.create(
             "RSU ground sky view factor",
             [rsuTable: String,inputColumns:String[],correlationBuildingTable: String,
-             rsuAreaColumn: String, rsuBuildingDensityColumn: String, pointDensity: Double, rayLength: Double,
-             numberOfDirection: Double, outputTableName: String, datasource: JdbcDataSource],
+             rsuAreaColumn: String, rsuBuildingDensityColumn: String, pointDensity: double, rayLength: double,
+             numberOfDirection: int, outputTableName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { rsuTable, inputColumns, correlationBuildingTable, rsuAreaColumn, rsuBuildingDensityColumn,
               pointDensity = 0.008, rayLength = 100, numberOfDirection = 60, outputTableName, datasource ->
@@ -214,7 +214,7 @@ static IProcess rsuAspectRatio() {
 static IProcess rsuProjectedFacadeAreaDistribution() {
     return processFactory.create(
             "RSU projected facade area distribution",
-            [buildingTable: String, rsuTable: String, inputColumns: String[], listLayersBottom: double[], numberOfDirection: Integer,
+            [buildingTable: String, rsuTable: String, inputColumns: String[], listLayersBottom: double[], numberOfDirection: int,
              outputTableName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { buildingTable, rsuTable, inputColumns, listLayersBottom = [0, 10, 20, 30, 40, 50], numberOfDirection = 12,
@@ -401,7 +401,7 @@ static IProcess rsuProjectedFacadeAreaDistribution() {
 static IProcess rsuRoofAreaDistribution() {
     return processFactory.create(
             "RSU roof area distribution",
-            [rsuTable: String, correlationBuildingTable: String, listLayersBottom: Double[],
+            [rsuTable: String, correlationBuildingTable: String, listLayersBottom: double[],
              outputTableName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { rsuTable, correlationBuildingTable, listLayersBottom = [0, 10, 20, 30, 40, 50],
@@ -522,6 +522,100 @@ static IProcess rsuRoofAreaDistribution() {
 
                 datasource.execute(("DROP TABLE IF EXISTS ${buildRoofSurfIni}, ${buildVertRoofInter}, "+
                         "${buildRoofSurfTot};").toString())
+
+                [outputTableName: outputTableName]
+            }
+    )}
+
+
+/**
+ * Script to compute the effective terrain roughness (z0). The method for z0 calculation is based on the
+ * Hanna and Britter (2010) procedure (see equation (17) and examples of calculation p. 156 in the
+ * corresponding reference). It needs the "rsu_projected_facade_area_distribution" and the
+ * "rsu_geometric_mean_height" as input data.
+ *
+ * Warning: the calculation of z0 is only performed for angles included in the range [0, 180[°.
+ * To simplify the calculation, z0 is considered as equal for a given orientation independantly of the direction.
+ * This assumption is right when the RSU do not split buildings but could slightly overestimate the results
+ * otherwise (the real z0 is actually overestimated in one direction but OK in the opposite direction).
+ *
+ * References:
+ * Stewart, Ian D., and Tim R. Oke. "Local climate zones for urban temperature studies." Bulletin of the American Meteorological Society 93, no. 12 (2012): 1879-1900.
+ * Hanna, Steven R., and Rex E. Britter. Wind flow and vapor cloud dispersion at industrial and urban sites. Vol. 7. John Wiley & Sons, 2010.
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param rsuTable the name of the input ITable where are stored the RSU geometries, the rsu_geometric_mean_height and
+ * the rsu_projected_facade_area_distribution fields
+ * @param projectedFacadeAreaName the name base used for naming the projected facade area field within the
+ * inputA rsuTable (default rsu_projected_facade_area_distribution - note that the field is also constructed
+ * with the direction and vertical height informations)
+ * @param geometricMeanBuildingHeightName the field name corresponding to the RSU geometric mean height of the
+ * roughness elements (buildings, trees, etc.) (in the inputA ITable)
+ * @param prefixName String use as prefix to name the output table
+ * @param listLayersBottom the list of height corresponding to the bottom of each vertical layers used for calculation
+ * of the rsu_projected_facade_area_density (default [0, 10, 20, 30, 40, 50])
+ * @param numberOfDirection the number of directions used for the calculation - according to the method used it should
+ * be divisor of 360 AND a multiple of 2 (default 12)
+ *
+ * @return outputTableName Table name in which the rsu id and their corresponding indicator value are stored
+ *
+ * @author Jérémy Bernard
+ */
+static IProcess rsuEffectiveTerrainRoughnessHeight() {
+    return processFactory.create(
+            "RSU effective terrain roughness height",
+            [rsuTable: String, projectedFacadeAreaName: String, geometricMeanBuildingHeightName: String,
+             prefixName: String, listLayersBottom: double[], numberOfDirection: int,
+             datasource: JdbcDataSource],
+            [outputTableName : String],
+            { rsuTable, projectedFacadeAreaName = "rsu_projected_facade_area_distribution", geometricMeanBuildingHeightName,
+              prefixName, listLayersBottom = [0, 10, 20, 30, 40, 50], numberOfDirection = 12, datasource ->
+
+                def geometricColumn = "the_geom"
+                def idColumnRsu = "id_rsu"
+
+                // Processes used for the indicator calculation
+                // Some local variables are initialized
+                def names = []
+                // The projection should be performed at the median of the angle interval
+                def dirMedDeg = 180/numberOfDirection
+
+                // To avoid overwriting the output files of this step, a unique identifier is created
+                def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
+
+                // Temporary table names
+                def lambdaTable = "lambdaTable" + uid_out
+
+                // The name of the outputTableName is constructed
+                String baseName = "rsu_effective_terrain_roughness"
+                String outputTableName = prefixName + "_" + baseName
+
+                // The lambda_f indicator is first calculated
+                def lambdaQuery = "CREATE TABLE $lambdaTable AS SELECT $idColumnRsu, $geometricMeanBuildingHeightName, ("
+                for (int i in 1..listLayersBottom.size()){
+                    names[i-1]="$projectedFacadeAreaName${listLayersBottom[i-1]}_${listLayersBottom[i]}"
+                    if (i == listLayersBottom.size()){
+                        names[listLayersBottom.size()-1]="$projectedFacadeAreaName${listLayersBottom[listLayersBottom.size()-1]}_"
+                    }
+                    for (int d=0; d<numberOfDirection/2; d++){
+                        def dirDeg = d*360/numberOfDirection
+                        lambdaQuery += "${names[i-1]}D${dirDeg+dirMedDeg}+"
+                    }
+                }
+                lambdaQuery = lambdaQuery[0..-2] + ")/(${numberOfDirection/2}*ST_AREA($geometricColumn)) " +
+                        "AS lambda_f FROM $rsuTable"
+                datasource.execute(lambdaQuery.toString())
+
+                // The rugosity z0 is calculated according to the indicator lambda_f
+                datasource.execute(("DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName " +
+                        "AS SELECT $idColumnRsu, CASEWHEN(lambda_f < 0.15, lambda_f*$geometricMeanBuildingHeightName," +
+                        " 0.15*$geometricMeanBuildingHeightName) AS $baseName FROM $lambdaTable").toString())
+
+                // The value of indicator z0 is limited to 3 m
+                datasource.execute("UPDATE $outputTableName SET $baseName = 3 WHERE $baseName > 3".toString())
+
+                datasource.execute("DROP TABLE IF EXISTS $lambdaTable".toString())
 
                 [outputTableName: outputTableName]
             }

@@ -139,7 +139,7 @@ static IProcess blockPerkinsSkillScoreBuildingDirection() {
     return processFactory.create(
             "Block Perkins skill score building direction",
             [inputBuildingTableName: String,inputCorrelationTableName: String,
-             angleRangeSize: Integer, outputTableName: String, datasource: JdbcDataSource],
+             angleRangeSize: int, outputTableName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { inputBuildingTableName, inputCorrelationTableName, angleRangeSize = 15, outputTableName, datasource->
 
