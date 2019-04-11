@@ -74,8 +74,8 @@ static IProcess rsuGroundSkyViewFactor() {
     return processFactory.create(
             "RSU ground sky view factor",
             [rsuTable: String,inputColumns:String[],correlationBuildingTable: String,
-             rsuAreaColumn: String, rsuBuildingDensityColumn: String, pointDensity: Double, rayLength: Double,
-             numberOfDirection: Double, outputTableName: String, datasource: JdbcDataSource],
+             rsuAreaColumn: String, rsuBuildingDensityColumn: String, pointDensity: double, rayLength: double,
+             numberOfDirection: int, outputTableName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { rsuTable, inputColumns, correlationBuildingTable, rsuAreaColumn, rsuBuildingDensityColumn,
               pointDensity = 0.008, rayLength = 100, numberOfDirection = 60, outputTableName, datasource ->
@@ -214,7 +214,7 @@ static IProcess rsuAspectRatio() {
 static IProcess rsuProjectedFacadeAreaDistribution() {
     return processFactory.create(
             "RSU projected facade area distribution",
-            [buildingTable: String, rsuTable: String, inputColumns: String[], listLayersBottom: double[], numberOfDirection: Integer,
+            [buildingTable: String, rsuTable: String, inputColumns: String[], listLayersBottom: double[], numberOfDirection: int,
              outputTableName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { buildingTable, rsuTable, inputColumns, listLayersBottom = [0, 10, 20, 30, 40, 50], numberOfDirection = 12,
@@ -401,7 +401,7 @@ static IProcess rsuProjectedFacadeAreaDistribution() {
 static IProcess rsuRoofAreaDistribution() {
     return processFactory.create(
             "RSU roof area distribution",
-            [rsuTable: String, correlationBuildingTable: String, listLayersBottom: Double[],
+            [rsuTable: String, correlationBuildingTable: String, listLayersBottom: double[],
              outputTableName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { rsuTable, correlationBuildingTable, listLayersBottom = [0, 10, 20, 30, 40, 50],
@@ -566,7 +566,7 @@ static IProcess rsuEffectiveTerrainRoughnessHeight() {
     return processFactory.create(
             "RSU effective terrain roughness height",
             [rsuTable: String, projectedFacadeAreaName: String, geometricMeanBuildingHeightName: String,
-             prefixName: String, listLayersBottom: Double[], numberOfDirection: Integer,
+             prefixName: String, listLayersBottom: double[], numberOfDirection: int,
              datasource: JdbcDataSource],
             [outputTableName : String],
             { rsuTable, projectedFacadeAreaName = "rsu_projected_facade_area_distribution", geometricMeanBuildingHeightName,
