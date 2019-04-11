@@ -89,7 +89,7 @@ class RsuIndicatorsTests {
                 "FROM building_test WHERE id_build < 6")
 
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
-        def numberOfDirection = 2
+        def numberOfDirection = 4
         def dirMedDeg = 180/numberOfDirection
         def  p =  Geoclimate.RsuIndicators.rsuProjectedFacadeAreaDistribution()
         p.execute([buildingTable: "tempo_build", inputColumns: ["id_rsu", "the_geom"], rsuTable: "rsu_test", listLayersBottom: listLayersBottom,
@@ -109,12 +109,12 @@ class RsuIndicatorsTests {
                     }
                     for (int d=0; d<numberOfDirection/2; d++){
                         int dirDeg = d*360/numberOfDirection
-                        concat+= row["${names[i-1]}D${dirDeg+dirMedDeg}".toString()].toString()+"\n"
+                        concat+= row["${names[i-1]}D${dirDeg+dirMedDeg}".toString()].round(2).toString()+"\n"
                     }
                 }
 
         }
-        assertEquals("408.0\n20.0\n0.0\n0.0\n0.0\n0.0\n", concat)
+        assertEquals("637.1\n637.1\n32.53\n32.53\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n", concat)
     }
 
     @Test
@@ -168,5 +168,44 @@ class RsuIndicatorsTests {
                 concat1)
         assertEquals("355.02\n163.23\n404.01\n141.88\n244.92\n235.5\n48.98\n6.73\n0.0\n0.0\n0.0\n0.0\n",
                 concat2)
+    }
+
+    @Test
+    void testRsuEffectiveTerrainRoughnessHeight() {
+        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
+        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
+        h2GIS.execute(sqlString)
+
+        // Only the first 5 first created buildings are selected for the tests
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, rsu_table; CREATE TABLE tempo_build AS SELECT * " +
+                "FROM building_test WHERE id_build < 6")
+
+        def listLayersBottom = [0, 10, 20, 30, 40, 50]
+        def numberOfDirection = 4
+        def pFacadeDistrib =  Geoclimate.RsuIndicators.rsuProjectedFacadeAreaDistribution()
+        pFacadeDistrib.execute([buildingTable: "tempo_build", inputColumns: ["id_rsu", "the_geom"],
+                                rsuTable: "rsu_test", listLayersBottom: listLayersBottom, numberOfDirection:
+                                numberOfDirection, outputTableName: "rsu_projected_facade_area_distribution",
+                                datasource: h2GIS])
+        def  pGeomAvg =  Geoclimate.BlockIndicators.unweightedOperationFromLowerScale()
+        pGeomAvg.execute([inputLowerScaleTableName: "tempo_build",inputCorrelationTableName: "rsu_build_corr",
+                          inputIdLow: "id_build", inputIdUp: "id_rsu", inputToTransfo: "height_roof",
+                          operations: ["GEOM_AVG"], outputTableName: "unweighted_operation_from_lower_scale",
+                          datasource: h2GIS])
+
+        h2GIS.execute("CREATE TABLE rsu_table AS SELECT a.*, b.geom_avg_height_roof " +
+                "FROM rsu_projected_facade_area_distribution a, unweighted_operation_from_lower_scale b " +
+                "WHERE a.id_rsu = b.id_rsu")
+        def  p =  Geoclimate.RsuIndicators.rsuEffectiveTerrainRoughnessHeight()
+        p.execute([rsuTable: "rsu_table", projectedFacadeAreaName: "rsu_projected_facade_area_distribution",
+                   geometricMeanBuildingHeightName: "geom_avg_height_roof", prefixName: "test", listLayersBottom: listLayersBottom,
+                   numberOfDirection: numberOfDirection, datasource: h2GIS])
+
+        def concat = 0
+        h2GIS.eachRow("SELECT * FROM test_rsu_effective_terrain_roughness WHERE id_rsu = 1"){
+            row ->
+                concat += row["rsu_effective_terrain_roughness"].round(2)
+                }
+        assertEquals(1.6, concat)
     }
 }
