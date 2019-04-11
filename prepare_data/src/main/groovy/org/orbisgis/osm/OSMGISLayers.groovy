@@ -8,13 +8,12 @@ import org.orbisgis.datamanager.JdbcDataSource
  * OSMGISLayers is the main script to build a set of OSM GIS layers based on OSM data.
  * It uses the overpass api to download data
  * It builds a sql script file to create the layers table with the geometries and the attributes given as parameters
- * It produces a shapefile for each layer
  * Produced layers : buildings, roads, rails, vegetation, hydro
+ * Data credit : www.openstreetmap.org/copyright
  **/
 
 
 import org.orbisgis.datamanager.h2gis.H2GIS
-import org.orbisgis.datamanagerapi.dataset.ITable
 import org.orbisgis.PrepareData
 import org.orbisgis.processmanagerapi.IProcess
 
