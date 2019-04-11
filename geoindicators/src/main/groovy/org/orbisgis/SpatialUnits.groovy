@@ -163,6 +163,8 @@ static IProcess prepareRSUData(){
 /**
  * This process is used to merge the geometries that touch each other
  *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
  * @param inputTableName The input table tos create the block (group of geometries)
  * @param distance A distance to group the geometries
  * @param prefixName A prefix used to name the output table
