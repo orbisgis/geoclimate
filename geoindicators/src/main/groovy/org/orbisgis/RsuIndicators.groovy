@@ -2,7 +2,6 @@ package org.orbisgis
 
 import groovy.transform.BaseScript
 import org.orbisgis.datamanager.JdbcDataSource
-import org.orbisgis.datamanagerapi.dataset.ITable
 import org.orbisgis.processmanagerapi.IProcess
 
 @BaseScript Geoclimate geoclimate
@@ -462,10 +461,7 @@ static IProcess rsuRoofAreaDistribution() {
                         "a.delta_h, a.building_area, a.building_total_facade_length, a.non_vertical_roof_area, " +
                         "a.vertical_roof_area, ISNULL(b.vert_roof_to_remove,0) FROM $buildRoofSurfIni a LEFT JOIN " +
                         "$buildVertRoofInter b ON a.$idColumnBu=b.$idColumnBu);").toString())
-                datasource.eachRow("SELECT * FROM $buildVertRoofAll".toString()){
-                    row ->
-                        println(row)
-                }
+
                 // Indexes and spatial indexes are created on rsu and building Tables
                 datasource.execute(("CREATE INDEX IF NOT EXISTS ids_bu ON $buildVertRoofAll(the_geom) USING RTREE; "+
                         "CREATE INDEX IF NOT EXISTS id_bu ON $buildVertRoofAll(id_build); "+

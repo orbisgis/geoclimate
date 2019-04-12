@@ -71,13 +71,13 @@ INSERT INTO rsu_test VALUES (1, 'POLYGON((0 0, 50 0, 50 40, 0 40, 0 0))'::GEOMET
  (11, st_translate('POLYGON((1000 1000, 1100 1000, 1100 1100, 1000 1100, 1000 1000))'::GEOMETRY, 100, 200), 10000, 0.4, null),
  (12, st_translate('POLYGON((1000 1000, 1100 1000, 1100 1100, 1000 1100, 1000 1000))'::GEOMETRY, 200, 200), 10000, 0.4, null),
  (13, st_translate('POLYGON((1200 1200, 1300 1200, 1300 1300, 1200 1300, 1200 1200))'::GEOMETRY, 200, 200), 10000, 0.4, null),
- (14, 'POLYGON((0 100, 50 100, 50 150, 0 150, 0 100))'::GEOMETRY, 2500, null, null),
- (15, 'POLYGON((0 99, 50 99, 50 100, 0 100, 0 99))'::GEOMETRY, 50, null, null);
+ (14, 'POLYGON((0 100, 50 100, 50 150, 0 150, 0 100))'::GEOMETRY, 2500, 0, 0),
+ (15, 'POLYGON((0 99, 50 99, 50 100, 0 100, 0 99))'::GEOMETRY, 50, 0, 0);
 INSERT INTO rsu_build_corr VALUES (1, 1, 10.178217821), (1, 2, 10.178217821), (1, 3, 10.178217821), (1, 4, 10.178217821),
  (1, 5, 10.178217821), (2, 6, 18), (3, 7, 3), (1, 8, 10.178217821), (4, 9, null), (4, 10, null), (5, 11, null), (5, 12, null),
  (6, 13, null), (6, 14, null), (7, 15, null), (7, 16, null), (8, 17, null), (8, 18, null), (9, 19, null), (9, 20, null),
  (10, 21, null), (10, 22, null), (11, 23, null), (11, 24, null), (12, 25, null), (12, 26, null), (13, 27, null),
- (13, 28, null);
+ (13, 28, null), (3, 29, null);
 INSERT INTO road_test VALUES (1, 'LINESTRING(120 60, 120 -10)'::GEOMETRY, 10, 0),
 (2, 'LINESTRING (86 19, 170 20)'::GEOMETRY, 5, 0), (3, 'LINESTRING (93 53, 149 54, 145 -5)'::GEOMETRY, 5, 0),
 (4, 'LINESTRING (85 60, 85 -1, 155 1, 148 54, 92 50, 96 -12, 119 -11, 117 -4, 78 -5)'::GEOMETRY, 10, 0),

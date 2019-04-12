@@ -1,7 +1,6 @@
 package org.orbisgis
 
 import org.junit.jupiter.api.Test
-import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanager.h2gis.H2GIS
 
 import static org.junit.jupiter.api.Assertions.assertEquals
