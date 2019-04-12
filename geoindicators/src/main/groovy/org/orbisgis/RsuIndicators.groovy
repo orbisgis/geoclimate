@@ -620,3 +620,162 @@ static IProcess rsuEffectiveTerrainRoughnessHeight() {
                 [outputTableName: outputTableName]
             }
     )}
+
+/** Performs operations on the linear of road within the RSU scale objects. Note that when a road is located at
+ * the boundary of two RSU, it is arbitrarily attributed to the RSU having the lowest ID in order to not
+ * duplicate the corresponding road.
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param rsuTable the name of the input ITable where are stored the RSU geometries
+ * @param roadTable the name of the input ITable where are stored the road geometries
+ * @param operations the name of the geospatial variables to calculated using the linear of road:
+ *      -> "rsu_road_direction_distribution": The direction of each segment of road is calculated. The percentage of linear of road
+ *  * in each range of direction is then calculated (a range is defined - default 30°) for directions
+ *  * included in [0, 180[°).
+ *      -> "rsu_linear_road_density": linear of road within an area divided by the rsu_area.
+ * @param levelConsiderated the indicators can be calculated independantly for each level (0 indicates that the object
+ * is on the ground. 1 to 4 indicates that the object is in the air. -4 to -1 value indicates that the object is
+ * underground) or not (null). Default [0, 1]
+ * @param prefixName String use as prefix to name the output table
+ * @param angleRangeSize the range size (in °) of each interval angle used to calculate the distribution of road per
+ * direction (should be a divisor of 180 - default 30°)
+ *
+ * @return outputTableName Table name in which the rsu id and their corresponding indicator value are stored
+ *
+ * @author Jérémy Bernard
+ */
+static IProcess rsuLinearRoadOperations() {
+    return processFactory.create(
+            "Operations on the linear of road",
+            [rsuTable: String, roadTable: String, operations: String[], prefixName: String, angleRangeSize: int,
+             levelConsiderated: int[], datasource: JdbcDataSource],
+            [outputTableName : String],
+            { rsuTable, roadTable, operations, prefixName, angleRangeSize = 30, levelConsiderated = [0, 1],
+              datasource ->
+
+                // Test whether the angleRangeSize is a divisor of 180°
+                if (180%angleRangeSize==0 & 180/angleRangeSize>1){
+                    // Define the field names of the Abstract tables used
+                    def geometricColumnRsu = "the_geom"
+                    def idColumnRsu = "id_rsu"
+                    def geometricColumnRoad = "the_geom"
+                    def zindex = "zindex"
+
+                    // To avoid overwriting the output files of this step, a unique identifier is created
+                    def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
+
+                    // Temporary table names
+                    def roadInter = "roadInter" + uid_out
+                    def roadExpl = "roadExpl" + uid_out
+                    def roadDistrib = "roadDistrib" + uid_out
+                    def roadDens = "roadDens" + uid_out
+                    def roadDistTot = "roadDistTot" + uid_out
+                    def roadDensTot = "roadDensTot" + uid_out
+
+                    // The name of the outputTableName is constructed
+                    String baseName = "rsu_road_linear_properties"
+                    String outputTableName = prefixName + "_" + baseName
+
+                    // OPERATIONS PERFORMED WHATEVER ARE THE OPERATIONS
+                    // Only some of the roads are selected according to the level they are located
+                    if (levelConsiderated == null) {
+                        String ifZindex = ""
+                        String filtering = ""
+                    } else {
+                        String ifZindex = ", b.$zindex AS zindex"
+                        String filtering = " AND "
+                        levelConsiderated.each { lev ->
+                            filtering += "$zindex=$lev OR"
+                        }
+                        filtering = filtering[0..-3] + " GROUP BY b.$zindex"
+                    }
+                    def selectionQuery = "DROP TABLE IF EXISTS $outputTableName; DROP TABLE IF EXISTS $roadInter; " +
+                            "CREATE INDEX IF NOT EXISTS ids_r ON $roadTable($geometricColumnRoad) USING RTREE; " +
+                            "CREATE INDEX IF NOT EXISTS ids_u ON $rsuTable($geometricColumnRsu) USING RTREE; " +
+                            "CREATE TABLE $roadInter AS SELECT a.$idColumnRsu " +
+                            "AS id_rsu, ST_AREA(a.$geometricColumnRsu) AS rsu_area, ST_INTERSECTION(a.$geometricColumnRsu, " +
+                            "b.$geometricColumnRoad) AS the_geom $ifZindex FROM $rsuTable a, $roadTable b " +
+                            "WHERE a.$geometricColumnRsu && b.$geometricColumnRoad AND ST_INTERSECTS(a.$geometricColumnRsu," +
+                            " b.$geometricColumnRoad) $filtering"
+                    datasource.execute(selectionQuery.toString())
+
+                    // If all roads are considered at the same level...
+                    if(levelConsiderated==null){
+                        String ifZindex = ""
+                        def caseQueryDens = "SUM(ST_LENGTH(the_geom))/rsu_area AS rsu_linear_road_density "
+                        def caseQueryDistrib = ""
+                        for (int d=angleRangeSize; d<=180; d+=angleRangeSize){
+                            caseQueryDistrib += "SUM(CASEWHEN(azimuth>=${d-angleRangeSize} AND azimuth<$d, length, 0)) AS" +
+                                    "rsu_road_direction_distribution_d${d-angleRangeSize}_$d,"
+                        }
+                    }
+                    // If only certain levels are considered independantly
+                    else{
+                        String ifZindex = ", zindex "
+                        def caseQueryDistrib = ""
+                        def caseQueryDens = ""
+                        def nameDens = ""
+                        levelConsiderated.each { lev ->
+                            caseQueryDens += "SUM(CASEWHEN(zindex = $lev, ST_LENGTH(the_geom), 0))/rsu_area " +
+                                    "AS rsu_linear_road_density_h${lev.toString().replaceAll('-','minus')},"
+                            nameDens += "rsu_linear_road_density_h${lev.toString().replaceAll('-','minus')},"
+                            for (int d=angleRangeSize; d<=180; d+=angleRangeSize){
+                                caseQueryDistrib += "SUM(CASEWHEN(azimuth>=${d-angleRangeSize} AND azimuth<$d AND" +
+                                        "zindex = $lev, length, 0)) AS " +
+                                        "rsu_road_direction_distribution_h${lev.toString().replaceAll("-","minus")}" +
+                                        "_d${d-angleRangeSize}_$d,"
+                            }
+                        }
+                    }
+
+                    // QUERIES EXECUTED DEPENDING ON THE CONTENT OF THE OPERATION LIST
+                    // If the road direction distribution is calculated, explode the roads into segments in order to calculate
+                    // their length for each azimuth range
+                    if (operations.contains("rsu_road_direction_distribution")) {
+                        def queryExpl = "DROP TABLE IF EXISTS $roadExpl;" +
+                                "CREATE TABLE $roadExpl AS SELECT id_rsu, the_geom, " +
+                                "CASEWHEN(ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom))>=pi()," +
+                                "ROUND(DEGREES(ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom))))-180" +
+                                "ROUND(DEGREES(ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom)))) AS azimuth,"+
+                                "ST_LENGTH(the_geom) AS length $ifZindex FROM (SELECT ST_TOMULTISEGMENTS(the_geom) AS " +
+                                "the_geom, id_rsu $ifZindex FROM $roadInter);"
+                        // Calculate the road direction for each direction and optionally level
+                        def queryDistrib = queryExpl+"CREATE TABLE $roadDistrib AS SELECT id_rsu, "+caseQueryDistrib[0..-2]+
+                                " FROM $roadExpl GROUP BY id_rsu"+
+                                "CREATE INDEX IF NOT EXISTS id_u ON $rsuTable($idColumnRsu);"+
+                                "CREATE INDEX IF NOT EXISTS id_d ON $roadDistrib(id_rsu);"+
+                                "DROP TABLE IF EXISTS $roadDistTot; CREATE TABLE $roadDistTot AS SELECT b.* " +
+                                "FROM $rsuTable a LEFT JOIN $roadDistrib b ON a.$idColumnRsu=b.id_rsu"
+                        datasource.execute(queryDistrib.toString())
+                        if(operations.contains("rsu_linear_road_density") == false){
+                            datasource.execute("ALTER TABLE $roadDistTot RENAME TO $outputTableName")
+                        }
+                    }
+                    // If the rsu linear density should be calculated
+                    else if(operations.contains("rsu_linear_road_density")){
+                        queryDensity = "CREATE TABLE $roadDens AS SELECT id_rsu, "+caseQueryDens[0..-2]+
+                                " FROM $roadInter GROUP BY id_rsu"+
+                                "CREATE INDEX IF NOT EXISTS id_u ON $rsuTable($idColumnRsu);"+
+                                "CREATE INDEX IF NOT EXISTS id_d ON $roadDens(id_rsu);"+
+                                "DROP TABLE IF EXISTS $roadDensTot; CREATE TABLE $roadDensTot AS SELECT b.* " +
+                                "FROM $rsuTable a LEFT JOIN $roadDens b ON a.$idColumnRsu=b.id_rsu"
+                        datasource.execute(queryDensity.toString())
+                        if(operations.contains("rsu_road_direction_distribution") == false){
+                            datasource.execute("ALTER TABLE $roadDensTot RENAME TO $outputTableName")
+                        }
+                    }
+                    if (operations.contains("rsu_road_direction_distribution") && operations.contains("rsu_linear_road_density")){
+                        datasource.execute(("CREATE TABLE $outputTableName AS SELECT a.*,
+                                    "b.${nameDens.join(",b.")} FROM $roadDistTot a LEFT JOIN $roadDensTot b " +
+                                    "ON a.id_rsu=b.id_rsu").toString())
+                    }
+
+                    // NOTE THAT NONE OF THE POTENTIAL NULL VALUES ARE FILLED FOR THE MOMENT...
+
+                    datasource.execute(("DROP TABLE IF EXISTS $lambdaTable, $roadInter, $roadExpl, $roadDistrib,"+
+                                "$roadDens, $roadDistTot, $roadDensTot").toString())
+                    [outputTableName: outputTableName]
+                }
+            }
+    )}
