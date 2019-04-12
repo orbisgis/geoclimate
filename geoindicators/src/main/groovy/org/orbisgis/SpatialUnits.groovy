@@ -189,7 +189,9 @@ static IProcess createBlocks(){
 }
 
 /**
- * This process is used to link each object of a lower scale to an upper scale ID (i.e.: building to RSU)
+ * This process is used to link each object of a lower scale to an upper scale ID (i.e.: building to RSU). If a
+ * lower scale object intersects two upper scale objects, it is attributed to the one where is located the
+ * major part of its surface.
  *
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
