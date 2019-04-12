@@ -229,9 +229,9 @@ class RsuIndicatorsTests {
                 "FROM test_rsu_road_linear_properties WHERE id_rsu = 14")
         def t2 = h2GIS.firstRow("SELECT rsu_linear_road_density " +
                 "FROM test_rsu_road_linear_properties WHERE id_rsu = 14")
-        assertEquals(25.27, t0.rsu_road_direction_distribution_d0_30.round(2))
+        assertEquals(25.59, t0.rsu_road_direction_distribution_d0_30.round(2))
         assertEquals(10.0, t1.rsu_road_direction_distribution_d90_120)
-        assertEquals(0.0235, t2.rsu_linear_road_density.round(4))
+        assertEquals(0.0142, t2.rsu_linear_road_density.round(4))
 
         def p2 =  Geoclimate.RsuIndicators.rsuLinearRoadOperations()
         p2.execute([rsuTable: "rsu_test", roadTable: "road_test", operations: ["rsu_road_direction_distribution"],
@@ -243,8 +243,8 @@ class RsuIndicatorsTests {
         def p3 =  Geoclimate.RsuIndicators.rsuLinearRoadOperations()
         p3.execute([rsuTable: "rsu_test", roadTable: "road_test", operations: ["rsu_linear_road_density"],
                     prefixName: "test", angleRangeSize: 30, levelConsiderated: [-1], datasource: h2GIS])
-        def t001 = h2GIS.firstRow("SELECT rsu_linear_road_density " +
+        def t001 = h2GIS.firstRow("SELECT rsu_linear_road_density_hminus1 " +
                 "FROM test_rsu_road_linear_properties WHERE id_rsu = 14")
-        assertEquals(0.01018, t001.rsu_linear_road_density_hminus1.round(5))
+        assertEquals(0.00224, t001.rsu_linear_road_density_hminus1.round(5))
     }
 }
