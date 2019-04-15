@@ -621,7 +621,7 @@ static IProcess rsuEffectiveTerrainRoughnessHeight() {
  * the boundary of two RSU, it is arbitrarily attributed to the RSU having the lowest ID in order to not
  * duplicate the corresponding road.
  *
- * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input tables and in which
  * the resulting database will be stored
  * @param rsuTable the name of the input ITable where are stored the RSU geometries
  * @param roadTable the name of the input ITable where are stored the road geometries
@@ -673,7 +673,7 @@ static IProcess rsuLinearRoadOperations() {
                     String baseName = "rsu_road_linear_properties"
                     String outputTableName = prefixName + "_" + baseName
 
-                    // OPERATIONS PERFORMED WHATEVER ARE THE OPERATIONS
+                    //      1. Whatever are the operations to proceed, this step is done the same way
                     // Only some of the roads are selected according to the level they are located
                     // Initialize some parameters
                     def ifZindex = ""
@@ -726,7 +726,7 @@ static IProcess rsuLinearRoadOperations() {
                         }
                     }
 
-                    // QUERIES EXECUTED DEPENDING ON THE CONTENT OF THE OPERATION LIST
+                    //      2. Depending on the operations to proceed, the queries executed during this step will differ
                     // If the road direction distribution is calculated, explode the roads into segments in order to calculate
                     // their length for each azimuth range
                     if (operations.contains("rsu_road_direction_distribution")) {
@@ -745,7 +745,7 @@ static IProcess rsuLinearRoadOperations() {
                                 "DROP TABLE IF EXISTS $roadDistTot; CREATE TABLE $roadDistTot AS SELECT b.* " +
                                 "FROM $rsuTable a LEFT JOIN $roadDistrib b ON a.$idColumnRsu=b.id_rsu;"
                         datasource.execute(queryDistrib.toString())
-                        if(operations.contains("rsu_linear_road_density") == false){
+                        if(!operations.contains("rsu_linear_road_density")){
                             datasource.execute("ALTER TABLE $roadDistTot RENAME TO $outputTableName".toString())
                         }
                     }
@@ -758,7 +758,7 @@ static IProcess rsuLinearRoadOperations() {
                                 "DROP TABLE IF EXISTS $roadDensTot; CREATE TABLE $roadDensTot AS SELECT b.* " +
                                 "FROM $rsuTable a LEFT JOIN $roadDens b ON a.$idColumnRsu=b.id_rsu"
                         datasource.execute(queryDensity.toString())
-                        if(operations.contains("rsu_road_direction_distribution") == false){
+                        if(!operations.contains("rsu_road_direction_distribution")){
                             datasource.execute("ALTER TABLE $roadDensTot RENAME TO $outputTableName".toString())
                         }
                     }
