@@ -620,3 +620,155 @@ static IProcess rsuEffectiveTerrainRoughnessHeight() {
                 [outputTableName: outputTableName]
             }
     )}
+
+/**
+ * Script to compute the vegetation fraction (low, high or total).
+
+ *
+ * References:
+ * Stewart, Ian D., and Tim R. Oke. "Local climate zones for urban temperature studies." Bulletin of the American Meteorological Society 93, no. 12 (2012): 1879-1900.
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param rsuTable the name of the input ITable where are stored the RSU geometries
+ * @param vegetTable the name of the input ITable where are stored the vegetation geometries and the height_class
+ * @param fractionType the list of type of vegetation fraction to calculate
+ *          --> "low": the low vegetation density is calculated
+ *          --> "high": the high vegetation density is calculated
+ *          --> "all": the total (low + high) vegetation density is calculated
+ * @param prefixName String use as prefix to name the output table
+ *
+ * @return outputTableName Table name in which the rsu id and their corresponding indicator value are stored
+ *
+ * @author Jérémy Bernard
+ */
+static IProcess vegetationFraction() {
+    return processFactory.create(
+            "vegetation fraction",
+            [rsuTable: String, vegetTable: String, fractionType: String[], prefixName: String, datasource: JdbcDataSource],
+            [outputTableName : String],
+            { rsuTable, vegetTable, fractionType, prefixName, datasource ->
+
+                def geometricColumnRsu = "the_geom"
+                def geometricColumnVeget = "the_geom"
+                def idColumnRsu = "id_rsu"
+                def vegetClass = "height_class"
+
+                // The name of the outputTableName is constructed
+                String baseName = "vegetation_fraction"
+                String outputTableName = prefixName + "_" + baseName
+
+                // To avoid overwriting the output files of this step, a unique identifier is created
+                def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
+
+                // Temporary table names
+                def interTable = "interTable" + uid_out
+
+                // Intersections between vegetation and RSU are calculated
+                // ATTENTION : POUR L'INSTANT SI PAS DE VEGETATION DANS LA RSU, CELLE-CI DISPARAÎT DES RESULTATS...
+                def interQuery = "DROP TABLE IF EXISTS $interTable; " +
+                        "CREATE INDEX IF NOT EXISTS ids_r ON $rsuTable($geometricColumnRsu) USING RTREE; " +
+                        "CREATE INDEX IF NOT EXISTS ids_v ON $vegetTable($geometricColumnVeget) USING RTREE;" +
+                        "CREATE TABLE $interTable AS SELECT b.$idColumnRsu, a.$vegetClass, " +
+                        "ST_AREA(b.$geometricColumnRsu) AS RSU_AREA, " +
+                        "ST_AREA(ST_INTERSECTION(a.$geometricColumnVeget, b.$geometricColumnRsu)) AS VEGET_AREA " +
+                        "FROM $vegetTable a, $rsuTable b WHERE a.$geometricColumnVeget && b.$geometricColumnRsu AND " +
+                        "ST_INTERSECTS(a.$geometricColumnVeget, b.$geometricColumnRsu);"
+
+                // Vegetation Fraction is calculated at RSU scale for different vegetation types
+                def finalQuery = interQuery + "DROP TABLE IF EXISTS $outputTableName;" +
+                        "CREATE INDEX IF NOT EXISTS idi_i ON $interTable($idColumnRsu);" +
+                        "CREATE INDEX IF NOT EXISTS idt_i ON $interTable($vegetClass);" +
+                        "CREATE TABLE $outputTableName AS SELECT $idColumnRsu,"
+                fractionType.each{op ->
+                    if(op == "low" || op == "high"){
+                        finalQuery += "SUM(CASEWHEN($vegetClass = '$op', VEGET_AREA, 0))/RSU_AREA AS ${op}_vegetation_fraction,"
+                    }
+                    else if(op == "all"){
+                        finalQuery += "SUM(VEGET_AREA)/RSU_AREA AS ${op}_vegetation_fraction,"
+                    }
+                }
+                finalQuery = finalQuery[0..-2] + " FROM $interTable GROUP BY $idColumnRsu "
+
+                datasource.execute finalQuery
+
+                datasource.execute("DROP TABLE IF EXISTS $interTable".toString())
+
+                [outputTableName: outputTableName]
+            }
+    )}
+
+/**
+ * Script to compute the road fraction.
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param rsuTable the name of the input ITable where are stored the RSU geometries
+ * @param roadTable the name of the input ITable where are stored the road geometries and their level (zindex)
+ * @param levelToConsiders a map containing the prefix name of the indicator to calculate and as values the
+ * zindex of the road to consider for this indicator (e.g. ["underground": [-4,-3,-2,-1]])
+ * @param prefixName String use as prefix to name the output table
+ *
+ * @return outputTableName Table name in which the rsu id and their corresponding indicator value are stored
+ *
+ * @author Jérémy Bernard
+ */
+static IProcess roadFraction() {
+    return processFactory.create(
+            "road fraction",
+            [rsuTable: String, roadTable: String, levelToConsiders: String[], prefixName: String, datasource: JdbcDataSource],
+            [outputTableName : String],
+            { rsuTable, roadTable, levelToConsiders, prefixName, datasource ->
+
+                def geometricColumnRsu = "the_geom"
+                def geometricColumnRoad = "the_geom"
+                def idColumnRsu = "id_rsu"
+                def zindexRoad = "zindex"
+                def widthRoad = "width"
+
+                // The name of the outputTableName is constructed
+                String baseName = "road_fraction"
+                String outputTableName = prefixName + "_" + baseName
+
+                // To avoid overwriting the output files of this step, a unique identifier is created
+                def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
+
+                // Temporary table names
+                def surfTable = "surfTable" + uid_out
+                def interTable = "interTable" + uid_out
+
+               def surfQuery = "DROP TABLE IF EXISTS $surfTable; CREATE TABLE $surfTable AS SELECT " +
+                        "ST_BUFFER($geometricColumnRoad,$widthRoad,'endcap=flat') AS the_geom," +
+                        "$zindexRoad FROM $roadTable;"
+
+                // Intersections between road surfaces and RSU are calculated
+                def interQuery = "DROP TABLE IF EXISTS $interTable; " +
+                        "CREATE INDEX IF NOT EXISTS ids_r ON $rsuTable($geometricColumnRsu) USING RTREE; " +
+                        "CREATE INDEX IF NOT EXISTS ids_v ON $surfTable($geometricColumnRoad) USING RTREE;" +
+                        "CREATE TABLE $interTable AS SELECT b.$idColumnRsu, a.$zindexRoad, " +
+                        "ST_AREA(b.$geometricColumnRsu) AS RSU_AREA, " +
+                        "ST_AREA(ST_INTERSECTION(a.$geometricColumnRoad, b.$geometricColumnRsu)) AS ROAD_AREA " +
+                        "FROM $roadTable a, $rsuTable b WHERE a.$geometricColumnRoad && b.$geometricColumnRsu AND " +
+                        "ST_INTERSECTS(a.$geometricColumnRoad, b.$geometricColumnRsu);"
+
+                // Road fraction is calculated at RSU scale for different road types (combinations of levels)
+                def finalQuery = "DROP TABLE IF EXISTS $outputTableName;" +
+                        "CREATE INDEX IF NOT EXISTS idi_i ON $interTable($idColumnRsu);" +
+                        "CREATE INDEX IF NOT EXISTS idt_i ON $interTable($zindexRoad);" +
+                        "CREATE TABLE $outputTableName AS SELECT $idColumnRsu,"
+                levelToConsiders.each{name, levels ->
+                    def conditions = ""
+                    levels.each{lev ->
+                        conditions += "$zindexRoad=$lev OR"
+                    }
+                    finalQuery += "SUM(CASEWHEN(${conditions[0..-3]}, ROAD_AREA, 0))/RSU_AREA AS ${name}_road_fraction,"
+                }
+                finalQuery = finalQuery[0..-2] + " FROM $interTable GROUP BY $idColumnRsu "
+
+                datasource.execute((surfQuery+interQuery+finalQuery).toString())
+
+                datasource.execute("DROP TABLE IF EXISTS $surfTable, $interTable".toString())
+
+                [outputTableName: outputTableName]
+            }
+    )}
