@@ -177,8 +177,8 @@ class RsuIndicatorsTests {
         h2GIS.execute(sqlString)
 
         // Only the first 5 first created buildings are selected for the tests
-        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, rsu_table; CREATE TABLE tempo_build AS SELECT * " +
-                "FROM building_test WHERE id_build < 6")
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, rsu_table; CREATE TABLE tempo_build AS SELECT a.*, b.id_rsu " +
+                "FROM building_test a, rsu_build_corr b WHERE a.id_build < 6 AND a.id_build = b.id_build")
 
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def numberOfDirection = 4
@@ -188,13 +188,12 @@ class RsuIndicatorsTests {
                                 numberOfDirection, outputTableName: "rsu_projected_facade_area_distribution",
                                 datasource: h2GIS])
         def  pGeomAvg =  Geoclimate.BlockIndicators.unweightedOperationFromLowerScale()
-        pGeomAvg.execute([inputLowerScaleTableName: "tempo_build",inputCorrelationTableName: "rsu_build_corr",
-                          inputIdLow: "id_build", inputIdUp: "id_rsu", inputToTransfo: "height_roof",
-                          operations: ["GEOM_AVG"], outputTableName: "unweighted_operation_from_lower_scale",
-                          datasource: h2GIS])
+        pGeomAvg.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "rsu_build_corr",
+                          inputIdUp: "id_rsu", inputVarAndOperations: ["height_roof": ["GEOM_AVG"]],
+                          prefixName: "test", datasource: h2GIS])
 
         h2GIS.execute("CREATE TABLE rsu_table AS SELECT a.*, b.geom_avg_height_roof " +
-                "FROM rsu_projected_facade_area_distribution a, unweighted_operation_from_lower_scale b " +
+                "FROM rsu_projected_facade_area_distribution a, test_unweighted_operation_from_lower_scale b " +
                 "WHERE a.id_rsu = b.id_rsu")
         def  p =  Geoclimate.RsuIndicators.rsuEffectiveTerrainRoughnessHeight()
         p.execute([rsuTable: "rsu_table", projectedFacadeAreaName: "rsu_projected_facade_area_distribution",

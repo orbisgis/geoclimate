@@ -25,7 +25,7 @@ class BlockIndicatorsTests {
         def  psum =  Geoclimate.BlockIndicators.unweightedOperationFromLowerScale()
         psum.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "block_test",
                    inputIdUp: "id_block", inputVarAndOperations: ["building_area":["SUM"]],
-                      prefixName: "first", datasource: h2GIS])
+                   prefixName: "first", datasource: h2GIS])
         def  pavg =  Geoclimate.BlockIndicators.unweightedOperationFromLowerScale()
         pavg.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "rsu_test",
                       inputIdUp: "id_rsu", inputVarAndOperations: ["building_number_building_neighbor":["AVG"]],
