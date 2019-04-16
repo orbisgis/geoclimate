@@ -56,38 +56,42 @@ class BlockIndicatorsTests {
         h2GIS.execute(sqlString)
 
         // Only the first 6 first created buildings are selected since any new created building may alter the results
-        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, weighted_aggregated_statistics1, " +
-                "weighted_aggregated_statistics2, weighted_aggregated_statistics3; " +
-                "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 8")
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, one_weighted_aggregated_statistics, " +
+                "two_weighted_aggregated_statistics, three_weighted_aggregated_statistics; " +
+                "CREATE TABLE tempo_build AS SELECT a.*, b.id_rsu FROM building_test a, rsu_build_corr b " +
+                "WHERE a.id_build < 8 AND a.id_build = b.id_build")
 
         def  pavg =  Geoclimate.BlockIndicators.weightedAggregatedStatistics()
-        pavg.execute([inputLowerScaleTableName: "tempo_build",inputCorrelationTableName: "rsu_build_corr",inputIdLow: "id_build",
-                      inputIdUp: "id_rsu", inputToTransfo: "height_roof", inputWeight: "building_area", operations: ["AVG"],
-                      outputTableName: "weighted_aggregated_statistics1", datasource: h2GIS])
+        pavg.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "rsu_test",
+                      inputIdUp: "id_rsu", inputVarWeightsOperations: ["height_roof" : ["building_area": ["AVG"]]],
+                      prefixName: "one", datasource: h2GIS])
         def  pstd =  Geoclimate.BlockIndicators.weightedAggregatedStatistics()
-        pstd.execute([inputLowerScaleTableName: "tempo_build",inputCorrelationTableName: "rsu_build_corr",inputIdLow: "id_build",
-                      inputIdUp: "id_rsu", inputToTransfo: "height_roof", inputWeight: "building_area", operations: ["STD"],
-                      outputTableName: "weighted_aggregated_statistics2", datasource: h2GIS])
+        pstd.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "rsu_test",
+                      inputIdUp: "id_rsu", inputVarWeightsOperations: ["height_roof": ["building_area": ["STD"]]],
+                      prefixName: "two", datasource: h2GIS])
         def  pall =  Geoclimate.BlockIndicators.weightedAggregatedStatistics()
-        pall.execute([inputLowerScaleTableName: "tempo_build",inputCorrelationTableName: "rsu_build_corr",inputIdLow: "id_build",
-                      inputIdUp: "id_rsu", inputToTransfo: "height_roof", inputWeight: "building_area", operations: ["AVG", "STD"],
-                      outputTableName: "weighted_aggregated_statistics3", datasource: h2GIS])
+        pall.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "rsu_test",
+                      inputIdUp: "id_rsu", inputVarWeightsOperations: ["height_wall": ["building_area": ["STD"]],
+                                                                       "height_roof": ["building_area": ["AVG", "STD"]]],
+                      prefixName: "three", datasource: h2GIS])
         def concat = [0, 0, ""]
-        h2GIS.eachRow("SELECT * FROM weighted_aggregated_statistics1 WHERE id_rsu = 1"){
+        h2GIS.eachRow("SELECT * FROM one_weighted_aggregated_statistics WHERE id_rsu = 1"){
             row ->
-                concat[0]+= row.weighted_avg_height_roof
+                concat[0]+= row.weighted_avg_height_roof_building_area
         }
-        h2GIS.eachRow("SELECT * FROM weighted_aggregated_statistics2 WHERE id_rsu = 1"){
+        h2GIS.eachRow("SELECT * FROM two_weighted_aggregated_statistics WHERE id_rsu = 1"){
             row ->
-                concat[1]+= row.weighted_std_height_roof
+                concat[1]+= row.weighted_std_height_roof_building_area
         }
-        h2GIS.eachRow("SELECT * FROM weighted_aggregated_statistics3 WHERE id_rsu = 1"){
+        h2GIS.eachRow("SELECT * FROM three_weighted_aggregated_statistics WHERE id_rsu = 1"){
             row ->
-                concat[2]+= "${row.weighted_avg_height_roof.round(3)}\n${row.weighted_std_height_roof.round(1)}\n"
+                concat[2]+= "${row.weighted_avg_height_roof_building_area.round(3)}\n" +
+                        "${row.weighted_std_height_roof_building_area.round(1)}\n" +
+                        "${row.weighted_std_height_wall_building_area.round(2)}\n"
         }
         assertEquals(10.178, concat[0], 0.001)
         assertEquals(2.5, concat[1], 0.1)
-        assertEquals("10.178\n2.5\n", concat[2])
+        assertEquals("10.178\n2.5\n2.52\n", concat[2])
     }
 
     @Test
