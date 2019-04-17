@@ -223,7 +223,7 @@ class RsuIndicatorsTests {
         p0.execute([rsuTable: "rsu_test", vegetTable: "tempo_veget", fractionType: ["low"], prefixName: "zero",
                    datasource: h2GIS])
         def concat = ["",""]
-        h2GIS.eachRow("SELECT * FROM zero_vegetation_fraction WHERE id_rsu = 1 OR id_rsu = 2"){
+        h2GIS.eachRow("SELECT * FROM zero_vegetation_fraction WHERE id_rsu = 14 OR id_rsu = 15"){
             row ->
                 concat[0]+= "${row.low_vegetation_fraction}\n"
         }
@@ -254,7 +254,7 @@ void testRoadFraction() {
                 prefixName: "zero",
                 datasource: h2GIS])
     def concat = ["",""]
-    h2GIS.eachRow("SELECT * FROM zero_road_fraction WHERE id_rsu = 1 OR id_rsu = 2"){
+    h2GIS.eachRow("SELECT * FROM zero_road_fraction WHERE id_rsu = 14 OR id_rsu = 15"){
         row ->
             concat[0]+= "${row.low_vegetation_fraction}\n"
     }
@@ -269,5 +269,26 @@ void testRoadFraction() {
     }
     assertEquals("0.0016\n0.02\n", concat[0])
     assertEquals("0.02\n0.0216\n0.0\n0.02\n", concat[1])
+    }
+
+@Test
+void testWaterFraction() {
+    def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
+    String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
+    h2GIS.execute(sqlString)
+
+    // Only the first 4 first created vegetation areas are selected for the tests
+    h2GIS.execute("DROP TABLE IF EXISTS tempo_hydro; CREATE TABLE tempo_hydro AS SELECT * " +
+            "FROM hydro_test WHERE id_hydro < 2")
+
+    def  p =  Geoclimate.RsuIndicators.waterFraction()
+    p.execute([rsuTable: "rsu_test", waterTable: "tempo_hydro", prefixName: "test",
+                datasource: h2GIS])
+    def concat = [""]
+    h2GIS.eachRow("SELECT * FROM test_water_fraction WHERE id_rsu = 14 OR id_rsu = 15"){
+        row ->
+            concat[0]+= "${row.water_fraction}\n"
+    }
+    assertEquals("0.004\n0.04\n", concat[0])
     }
 }

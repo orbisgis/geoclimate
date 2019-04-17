@@ -663,9 +663,9 @@ static IProcess vegetationFraction() {
 
                 // Temporary table names
                 def interTable = "interTable" + uid_out
+                def buffTable = "buffTable" + uid_out
 
                 // Intersections between vegetation and RSU are calculated
-                // ATTENTION : POUR L'INSTANT SI PAS DE VEGETATION DANS LA RSU, CELLE-CI DISPARAÎT DES RESULTATS...
                 def interQuery = "DROP TABLE IF EXISTS $interTable; " +
                         "CREATE INDEX IF NOT EXISTS ids_r ON $rsuTable($geometricColumnRsu) USING RTREE; " +
                         "CREATE INDEX IF NOT EXISTS ids_v ON $vegetTable($geometricColumnVeget) USING RTREE;" +
@@ -676,23 +676,31 @@ static IProcess vegetationFraction() {
                         "ST_INTERSECTS(a.$geometricColumnVeget, b.$geometricColumnRsu);"
 
                 // Vegetation Fraction is calculated at RSU scale for different vegetation types
-                def finalQuery = interQuery + "DROP TABLE IF EXISTS $outputTableName;" +
+                def buffQuery = interQuery + "DROP TABLE IF EXISTS $buffTable;" +
                         "CREATE INDEX IF NOT EXISTS idi_i ON $interTable($idColumnRsu);" +
                         "CREATE INDEX IF NOT EXISTS idt_i ON $interTable($vegetClass);" +
-                        "CREATE TABLE $outputTableName AS SELECT $idColumnRsu,"
+                        "CREATE TABLE $buffTable AS SELECT $idColumnRsu,"
+                def names = []
                 fractionType.each{op ->
+                    names.add("${op}_vegetation_fraction")
                     if(op == "low" || op == "high"){
-                        finalQuery += "SUM(CASEWHEN($vegetClass = '$op', VEGET_AREA, 0))/RSU_AREA AS ${op}_vegetation_fraction,"
+                        buffQuery += "SUM(CASEWHEN($vegetClass = '$op', VEGET_AREA, 0))/RSU_AREA AS ${names[-1]},"
                     }
                     else if(op == "all"){
-                        finalQuery += "SUM(VEGET_AREA)/RSU_AREA AS ${op}_vegetation_fraction,"
+                        buffQuery += "SUM(VEGET_AREA)/RSU_AREA AS ${names[-1]},"
                     }
                 }
-                finalQuery = finalQuery[0..-2] + " FROM $interTable GROUP BY $idColumnRsu "
+                buffQuery = buffQuery[0..-2] + " FROM $interTable GROUP BY $idColumnRsu;"
+
+                def finalQuery = buffQuery + "DROP TABLE IF EXISTS $outputTableName; " +
+                        "CREATE INDEX IF NOT EXISTS ids_r ON $buffTable($idColumnRsu); " +
+                        "CREATE TABLE $outputTableName($idColumnRsu INTEGER, ${names.join(" DOUBLE DEFAULT 0,")} " +
+                        " DOUBLE DEFAULT 0) AS (SELECT a.$idColumnRsu, b.${names.join(", b.")} " +
+                        "FROM $rsuTable a LEFT JOIN $buffTable b ON a.$idColumnRsu = b.$idColumnRsu)"
 
                 datasource.execute finalQuery
 
-                datasource.execute("DROP TABLE IF EXISTS $interTable".toString())
+                datasource.execute("DROP TABLE IF EXISTS $interTable, $buffTable".toString())
 
                 [outputTableName: outputTableName]
             }
@@ -736,8 +744,9 @@ static IProcess roadFraction() {
                 // Temporary table names
                 def surfTable = "surfTable" + uid_out
                 def interTable = "interTable" + uid_out
+                def buffTable = "buffTable" + uid_out
 
-               def surfQuery = "DROP TABLE IF EXISTS $surfTable; CREATE TABLE $surfTable AS SELECT " +
+                def surfQuery = "DROP TABLE IF EXISTS $surfTable; CREATE TABLE $surfTable AS SELECT " +
                         "ST_BUFFER($geometricColumnRoad,$widthRoad,'endcap=flat') AS the_geom," +
                         "$zindexRoad FROM $roadTable;"
 
@@ -752,22 +761,88 @@ static IProcess roadFraction() {
                         "ST_INTERSECTS(a.$geometricColumnRoad, b.$geometricColumnRsu);"
 
                 // Road fraction is calculated at RSU scale for different road types (combinations of levels)
-                def finalQuery = "DROP TABLE IF EXISTS $outputTableName;" +
+                def buffQuery = "DROP TABLE IF EXISTS $buffTable;" +
                         "CREATE INDEX IF NOT EXISTS idi_i ON $interTable($idColumnRsu);" +
                         "CREATE INDEX IF NOT EXISTS idt_i ON $interTable($zindexRoad);" +
-                        "CREATE TABLE $outputTableName AS SELECT $idColumnRsu,"
+                        "CREATE TABLE $buffTable AS SELECT $idColumnRsu,"
+                def names = []
                 levelToConsiders.each{name, levels ->
                     def conditions = ""
+                    names.add("${name}_road_fraction")
                     levels.each{lev ->
                         conditions += "$zindexRoad=$lev OR"
                     }
-                    finalQuery += "SUM(CASEWHEN(${conditions[0..-3]}, ROAD_AREA, 0))/RSU_AREA AS ${name}_road_fraction,"
+                    buffQuery += "SUM(CASEWHEN(${conditions[0..-3]}, ROAD_AREA, 0))/RSU_AREA AS ${names[-1]},"
                 }
-                finalQuery = finalQuery[0..-2] + " FROM $interTable GROUP BY $idColumnRsu "
+                buffQuery = buffQuery[0..-2] + " FROM $interTable GROUP BY $idColumnRsu; "
 
-                datasource.execute((surfQuery+interQuery+finalQuery).toString())
+                def finalQuery = "DROP TABLE IF EXISTS $outputTableName; " +
+                        "CREATE INDEX IF NOT EXISTS ids_r ON $buffTable($idColumnRsu); " +
+                        "CREATE TABLE $outputTableName($idColumnRsu INTEGER, ${names.join(" DOUBLE DEFAULT 0,")} " +
+                        " DOUBLE DEFAULT 0) AS (SELECT a.$idColumnRsu, b.${names.join(", b.")} " +
+                        "FROM $rsuTable a LEFT JOIN $buffTable b ON a.$idColumnRsu = b.$idColumnRsu)"
 
-                datasource.execute("DROP TABLE IF EXISTS $surfTable, $interTable".toString())
+                datasource.execute((surfQuery+interQuery+buffQuery+finalQuery).toString())
+
+                datasource.execute("DROP TABLE IF EXISTS $surfTable, $interTable, $buffTable".toString())
+
+                [outputTableName: outputTableName]
+            }
+    )}
+
+/**
+ * Script to compute the water fraction.
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param rsuTable the name of the input ITable where are stored the RSU geometries
+ * @param waterTable the name of the input ITable where are stored the water surface geometries
+ * @param prefixName String use as prefix to name the output table
+ *
+ * @return outputTableName Table name in which the rsu id and their corresponding indicator value are stored
+ *
+ * @author Jérémy Bernard
+ */
+static IProcess waterFraction() {
+    return processFactory.create(
+            "water fraction",
+            [rsuTable: String, waterTable: String, prefixName: String, datasource: JdbcDataSource],
+            [outputTableName : String],
+            { rsuTable, waterTable, prefixName, datasource ->
+
+                def geometricColumnRsu = "the_geom"
+                def geometricColumnWater = "the_geom"
+                def idColumnRsu = "id_rsu"
+
+                // The name of the outputTableName is constructed
+                String baseName = "water_fraction"
+                String outputTableName = prefixName + "_" + baseName
+
+                // To avoid overwriting the output files of this step, a unique identifier is created
+                def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
+
+                // Temporary table names
+                def buffTable = "buffTable" + uid_out
+
+                // Intersections between vegetation and RSU are calculated
+                def buffQuery = "DROP TABLE IF EXISTS $buffTable; " +
+                        "CREATE INDEX IF NOT EXISTS ids_r ON $rsuTable($geometricColumnRsu) USING RTREE; " +
+                        "CREATE INDEX IF NOT EXISTS ids_v ON $waterTable($geometricColumnWater) USING RTREE;" +
+                        "CREATE INDEX IF NOT EXISTS ids_v ON $rsuTable($idColumnRsu);" +
+                        "CREATE TABLE $buffTable AS SELECT b.$idColumnRsu, " +
+                        "SUM(ST_AREA(ST_INTERSECTION(a.$geometricColumnWater, b.$geometricColumnRsu)))" +
+                        "/ST_AREA(b.$geometricColumnRsu) AS water_fraction FROM $waterTable a, $rsuTable b " +
+                        "WHERE a.$geometricColumnWater && b.$geometricColumnRsu AND " +
+                        "ST_INTERSECTS(a.$geometricColumnWater, b.$geometricColumnRsu) GROUP BY b.$idColumnRsu;"
+
+                def finalQuery = "DROP TABLE IF EXISTS $outputTableName; " +
+                        "CREATE INDEX IF NOT EXISTS ids_r ON $buffTable($idColumnRsu); " +
+                        "CREATE TABLE $outputTableName($idColumnRsu INTEGER, water_fraction DOUBLE DEFAULT 0) AS " +
+                        "(SELECT a.$idColumnRsu, b.water_fraction FROM $rsuTable a LEFT JOIN $buffTable b ON " +
+                        "a.$idColumnRsu = b.$idColumnRsu)"
+                datasource.execute((buffQuery+finalQuery).toString())
+
+                datasource.execute("DROP TABLE IF EXISTS $buffTable".toString())
 
                 [outputTableName: outputTableName]
             }
