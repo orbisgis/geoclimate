@@ -37,7 +37,7 @@ class BlockIndicatorsTests {
         def  pdens =  Geoclimate.BlockIndicators.unweightedOperationFromLowerScale()
         pavg.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "rsu_test",
                       inputIdUp: "id_rsu", inputVarAndOperations: ["building_number_building_neighbor":["AVG"],
-                                                                   "building_area":["SUM", "DENS"]],
+                                                                   "building_area":["SUM", "DENS", "NB_DENS"]],
                       prefixName: "fourth", datasource: h2GIS])
         def concat = ["", "", 0, ""]
         h2GIS.eachRow("SELECT * FROM first_unweighted_operation_from_lower_scale WHERE id_block = 1 OR id_block = 4 ORDER BY id_block ASC"){
@@ -57,11 +57,12 @@ class BlockIndicatorsTests {
                 concat[3]+= "${row.avg_building_number_building_neighbor}\n"
                 concat[3]+= "${row.sum_building_area}\n"
                 concat[3]+= "${row.dens_building_area}\n"
+                concat[3]+= "${row.bui_nb_dens}\n"
         }
         assertEquals("156.0\n310.0\n", concat[0])
         assertEquals("0.4\n0.0\n", concat[1])
         assertEquals(10.69, concat[2], 0.01)
-        assertEquals("0.4\n606.0\n0.303\n", concat[3])
+        assertEquals("0.4\n606.0\n0.303\n0.0025\n", concat[3])
     }
 
     @Test

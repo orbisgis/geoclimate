@@ -17,12 +17,15 @@ import org.orbisgis.processmanagerapi.IProcess
  * @param inputUpperScaleTableName the table of the upper scale where the informations has to be aggregated to
  * @param inputIdUp the ID of the upper scale
  * @param inputVarAndOperations a map containing as key the informations that has to be transformed from the lower to
- * the upper scale and as values a LIST of operation to apply to this information. Operations should be in the following
- * list:
+ * the upper scale and as values a LIST of operation to apply to this information (e.g. ["building_area":["SUM", "NB_DENS"]]).
+ * Operations should be in the following list:
  *          --> "SUM": sum the geospatial variables at the upper scale
  *          --> "AVG": average the geospatial variables at the upper scale
  *          --> "GEOM_AVG": average the geospatial variables at the upper scale using a geometric average
  *          --> "DENS": sum the geospatial variables at the upper scale and divide by the area of the upper scale
+ *          --> "NB_DENS" : count the number of lower scale objects within the upper scale object and divide by the upper
+ *          scale area. NOTE THAT THE THREE FIRST LETTERS OF THE MAP KEY WILL BE USED TO CREATE THE NAME OF THE INDICATOR
+ *          (e.g. "BUI" in the case of the example given above)
  * @param prefixName String use as prefix to name the output table
  *
  * @return A database table name.
@@ -44,7 +47,7 @@ return processFactory.create(
             String outputTableName = prefixName + "_" + baseName
 
             // List of possible operations
-            def ops = ["SUM","AVG", "GEOM_AVG", "DENS"]
+            def ops = ["SUM","AVG", "GEOM_AVG", "DENS", "NB_DENS"]
 
             String query = "CREATE INDEX IF NOT EXISTS id_l ON $inputLowerScaleTableName($inputIdUp); "+
                             "CREATE INDEX IF NOT EXISTS id_ucorr ON $inputUpperScaleTableName($inputIdUp); "+
@@ -59,6 +62,9 @@ return processFactory.create(
                         }
                         else if(op=="DENS"){
                             query += "SUM(a.$var::float)/ST_AREA(b.$geometricFieldUp) AS ${op+"_"+var},"
+                        }
+                        else if(op=="NB_DENS"){
+                            query += "COUNT(a.*)/ST_AREA(b.$geometricFieldUp) AS ${var[0..2]+"_"+op},"
                         }
                         else{
                             query += "$op(a.$var::float) AS ${op+"_"+var},"
