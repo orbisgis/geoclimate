@@ -11,36 +11,71 @@ import org.orbisgis.processmanagerapi.IProcess
 /**
  * This process is used to compute basic statistical operations on a specific variable from a lower scale (for
  * example the sum of each building volume constituting a block to calculate the block volume)
+ *
+ * @param inputLowerScaleTableName the table name where are stored low scale objects and the id of the upper scale
+ * zone they are belonging to (e.g. buildings)
+ * @param inputUpperScaleTableName the table of the upper scale where the informations has to be aggregated to
+ * @param inputIdUp the ID of the upper scale
+ * @param inputVarAndOperations a map containing as key the informations that has to be transformed from the lower to
+ * the upper scale and as values a LIST of operation to apply to this information (e.g. ["building_area":["SUM", "NB_DENS"]]).
+ * Operations should be in the following list:
+ *          --> "SUM": sum the geospatial variables at the upper scale
+ *          --> "AVG": average the geospatial variables at the upper scale
+ *          --> "GEOM_AVG": average the geospatial variables at the upper scale using a geometric average
+ *          --> "DENS": sum the geospatial variables at the upper scale and divide by the area of the upper scale
+ *          --> "NB_DENS" : count the number of lower scale objects within the upper scale object and divide by the upper
+ *          scale area. NOTE THAT THE THREE FIRST LETTERS OF THE MAP KEY WILL BE USED TO CREATE THE NAME OF THE INDICATOR
+ *          (e.g. "BUI" in the case of the example given above)
+ * @param prefixName String use as prefix to name the output table
+ *
  * @return A database table name.
  * @author Jérémy Bernard
  */
 static IProcess unweightedOperationFromLowerScale() {
 return processFactory.create(
         "Unweighted statistical operations from lower scale",
-        [inputLowerScaleTableName: String,inputCorrelationTableName: String,inputIdLow: String, inputIdUp: String,
-         inputToTransfo: String,operations: String[], outputTableName: String, datasource: JdbcDataSource],
+        [inputLowerScaleTableName: String,inputUpperScaleTableName: String, inputIdUp: String,
+         inputVarAndOperations: String[], prefixName: String, datasource: JdbcDataSource],
         [outputTableName : String],
-        { inputLowerScaleTableName, inputCorrelationTableName, inputIdLow, inputIdUp,
-          inputToTransfo, operations, outputTableName, datasource ->
-            def ops = ["SUM","AVG", "GEOM_AVG"]
+        { inputLowerScaleTableName, inputUpperScaleTableName, inputIdUp,
+          inputVarAndOperations, prefixName, datasource ->
 
-            String query = "CREATE INDEX IF NOT EXISTS id_l ON $inputLowerScaleTableName($inputIdLow); "+
-                            "CREATE INDEX IF NOT EXISTS id_lcorr ON $inputCorrelationTableName($inputIdLow); "+
-                            "CREATE INDEX IF NOT EXISTS id_ucorr ON $inputCorrelationTableName($inputIdUp); "+
+            def geometricFieldUp = "the_geom"
+
+            // The name of the outputTableName is constructed
+            String baseName = "unweighted_operation_from_lower_scale"
+            String outputTableName = prefixName + "_" + baseName
+
+            // List of possible operations
+            def ops = ["SUM","AVG", "GEOM_AVG", "DENS", "NB_DENS"]
+
+            String query = "CREATE INDEX IF NOT EXISTS id_l ON $inputLowerScaleTableName($inputIdUp); "+
+                            "CREATE INDEX IF NOT EXISTS id_ucorr ON $inputUpperScaleTableName($inputIdUp); "+
                             "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
 
-            operations.each {operation ->
-                if(ops.contains(operation)){
-                    if(operation=="GEOM_AVG"){
-                        query += "EXP(1.0/COUNT(*)*SUM(LOG(a.$inputToTransfo))) AS ${operation+"_"+inputToTransfo},"
-                    }
-                    else{
-                        query += "$operation(a.$inputToTransfo::float) AS ${operation+"_"+inputToTransfo},"
+
+            inputVarAndOperations.each {var, operations ->
+                operations.each{op ->
+                    op = op.toUpperCase()
+                    if(ops.contains(op)){
+                        if(op=="GEOM_AVG"){
+                            query += "EXP(1.0/COUNT(*)*SUM(LOG(a.$var))) AS ${op+"_"+var},"
+                        }
+                        else if(op=="DENS"){
+                            query += "SUM(a.$var::float)/ST_AREA(b.$geometricFieldUp) AS ${op+"_"+var},"
+                        }
+                        else if(op=="NB_DENS"){
+                            query += "COUNT(a.*)/ST_AREA(b.$geometricFieldUp) AS ${var[0..2]+"_"+op},"
+                        }
+                        else{
+                            query += "$op(a.$var::float) AS ${op+"_"+var},"
+                        }
                     }
                 }
+
             }
-            query += "b.$inputIdUp FROM $inputLowerScaleTableName a, $inputCorrelationTableName b " +
-                    "WHERE a.$inputIdLow = b.$inputIdLow GROUP BY b.$inputIdUp"
+            query += "b.$inputIdUp FROM $inputLowerScaleTableName a, $inputUpperScaleTableName b " +
+                    "WHERE a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp"
             logger.info("Executing $query")
             datasource.execute query
             [outputTableName: outputTableName]
