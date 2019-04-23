@@ -14,7 +14,7 @@ class SpatialUnitsTests {
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
         h2GIS.execute("drop table if exists roads_rsu; " +
-                "create table roads_rsu as select * from road_test where id <5")
+                "create table roads_rsu as select * from road_test where id_road <5")
         def  rsu =  Geoclimate.SpatialUnits.createRSU()
         rsu.execute([inputTableName: "roads_rsu",
                      prefixName: "rsu", datasource: h2GIS])
@@ -69,7 +69,7 @@ class SpatialUnitsTests {
     }
 
     @Test
-    void test() {
+    void testCreateScalesRelations() {
         def h2GIS = H2GIS.open([databaseName: '/tmp/spatialunitsdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
