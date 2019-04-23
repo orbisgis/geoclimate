@@ -109,6 +109,8 @@ static IProcess weightedAggregatedStatistics() {
                         "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT b.$inputIdUp,"
                 inputVarWeightsOperations.each{var, weights ->
                     weights.each{weight, operations ->
+                        // The operation names are transformed into upper case
+                        operations.replaceAll({s -> s.toUpperCase()})
                         if(operations.contains("AVG")) {
                             weightedStdQuery += "b.weighted_avg_${var}_$weight,"
                         }
