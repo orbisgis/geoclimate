@@ -1,7 +1,6 @@
 package org.orbisgis
 
 import org.junit.jupiter.api.Test
-import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanager.h2gis.H2GIS
 
 import static org.junit.jupiter.api.Assertions.assertEquals
@@ -207,5 +206,65 @@ class RsuIndicatorsTests {
                 concat += row["rsu_effective_terrain_roughness"].round(2)
                 }
         assertEquals(1.6, concat)
+    }
+
+    @Test
+    void testRsuLinearRoadOperations() {
+        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
+        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
+        h2GIS.execute(sqlString)
+
+        // Only the first 5 first created buildings are selected for the tests
+        h2GIS.execute("DROP TABLE IF EXISTS road_tempo; CREATE TABLE road_tempo AS SELECT * " +
+                "FROM road_test WHERE id_road < 7")
+
+        def p1 =  Geoclimate.RsuIndicators.rsuLinearRoadOperations()
+        p1.execute([rsuTable: "rsu_test", roadTable: "road_test", operations: ["rsu_road_direction_distribution",
+                "rsu_linear_road_density"], prefixName: "test", angleRangeSize: 30, levelConsiderated: null,
+                datasource: h2GIS])
+        def t0 = h2GIS.firstRow("SELECT rsu_road_direction_distribution_d0_30 " +
+                "FROM test_rsu_road_linear_properties WHERE id_rsu = 14")
+        def t1 = h2GIS.firstRow("SELECT rsu_road_direction_distribution_d90_120 " +
+                "FROM test_rsu_road_linear_properties WHERE id_rsu = 14")
+        def t2 = h2GIS.firstRow("SELECT rsu_linear_road_density " +
+                "FROM test_rsu_road_linear_properties WHERE id_rsu = 14")
+        assertEquals(25.59, t0.rsu_road_direction_distribution_d0_30.round(2))
+        assertEquals(10.0, t1.rsu_road_direction_distribution_d90_120)
+        assertEquals(0.0142, t2.rsu_linear_road_density.round(4))
+
+        def p2 =  Geoclimate.RsuIndicators.rsuLinearRoadOperations()
+        p2.execute([rsuTable: "rsu_test", roadTable: "road_test", operations: ["rsu_road_direction_distribution"],
+                    prefixName: "test", angleRangeSize: 30, levelConsiderated: [0], datasource: h2GIS])
+        def t01 = h2GIS.firstRow("SELECT rsu_road_direction_distribution_h0_d0_30 " +
+                "FROM test_rsu_road_linear_properties WHERE id_rsu = 14")
+        assertEquals(20, t01.rsu_road_direction_distribution_h0_d0_30)
+
+        def p3 =  Geoclimate.RsuIndicators.rsuLinearRoadOperations()
+        p3.execute([rsuTable: "rsu_test", roadTable: "road_test", operations: ["rsu_linear_road_density"],
+                    prefixName: "test", angleRangeSize: 30, levelConsiderated: [-1], datasource: h2GIS])
+        def t001 = h2GIS.firstRow("SELECT rsu_linear_road_density_hminus1 " +
+                "FROM test_rsu_road_linear_properties WHERE id_rsu = 14")
+        assertEquals(0.00224, t001.rsu_linear_road_density_hminus1.round(5))
+    }
+
+@Test
+void testEffectiveTerrainRoughnessClass() {
+    def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
+    String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
+    h2GIS.execute(sqlString)
+
+    // Only the first 5 first created buildings are selected for the tests
+    h2GIS.execute("DROP TABLE IF EXISTS rsu_tempo; CREATE TABLE rsu_tempo AS SELECT *, CASEWHEN(id_rsu = 1, 2.3," +
+            "CASEWHEN(id_rsu = 2, 0.1, null)) AS rsu_effective_terrain_roughness_height FROM rsu_test")
+
+    def p =  Geoclimate.RsuIndicators.EffectiveTerrainRoughnessClass()
+    p.execute([datasource: h2GIS, rsuTable: "rsu_tempo", effectiveTerrainRoughnessHeight: "rsu_effective_terrain_roughness_height",
+               prefixName: "test"])
+    def concat = ""
+    h2GIS.eachRow("SELECT * FROM test_effective_terrain_roughness_class WHERE id_rsu < 4 ORDER BY id_rsu ASC"){
+        row ->
+            concat += "${row["effective_terrain_roughness_class"]}\n".toString()
+    }
+    assertEquals("8\n4\nnull\n", concat)
     }
 }
