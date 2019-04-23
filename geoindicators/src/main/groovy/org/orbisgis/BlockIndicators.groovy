@@ -56,6 +56,7 @@ return processFactory.create(
 
             inputVarAndOperations.each {var, operations ->
                 operations.each{op ->
+                    op = op.toUpperCase()
                     if(ops.contains(op)){
                         if(op=="GEOM_AVG"){
                             query += "EXP(1.0/COUNT(*)*SUM(LOG(a.$var))) AS ${op+"_"+var},"
