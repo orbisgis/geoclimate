@@ -620,3 +620,56 @@ static IProcess rsuEffectiveTerrainRoughnessHeight() {
                 [outputTableName: outputTableName]
             }
     )}
+
+/**
+ * Script to compute the effective terrain class from the effective terrain roughness height (z0).
+ * The classes are defined according to the Davenport lookup Table (cf Table 5 in Stewart and Oke, 2012)
+ *
+ * Warning: the Davenport definition defines a class for a given z0 value. Then there is no definition of the z0 range
+ * corresponding to a certain class. Then we have arbitrarily defined the z0 value corresponding to a certain
+ * Davenport class as the average of each interval, and the boundary between two classes is defined as the arithmetic
+ * average between the z0 values of each class. A definition of the interval based on the profile of class = f(z0)
+ * could lead to different results (especially for classes 3, 4 and 5).
+ *
+ * References:
+ * Stewart, Ian D., and Tim R. Oke. "Local climate zones for urban temperature studies." Bulletin of the American Meteorological Society 93, no. 12 (2012): 1879-1900.
+
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param rsuTable the name of the input ITable where are stored the effectiveTerrainRoughnessHeight values
+ * @param effectiveTerrainRoughnessHeight the field name corresponding to the RSU effective terrain roughness class due
+ * to roughness elements (buildings, trees, etc.) (in the rsuTable)
+ * @param prefixName String use as prefix to name the output table
+ *
+ * @return outputTableName Table name in which the rsu id and their corresponding indicator value are stored
+ *
+ * @author Jérémy Bernard
+ */
+static IProcess EffectiveTerrainRoughnessClass() {
+    return processFactory.create(
+            "RSU effective terrain roughness class",
+            [datasource: JdbcDataSource, rsuTable: String, effectiveTerrainRoughnessHeight: String, prefixName: String],
+            [outputTableName : String],
+            { datasource, rsuTable, effectiveTerrainRoughnessHeight, prefixName ->
+
+                def idColumnRsu = "id_rsu"
+
+                // The name of the outputTableName is constructed
+                String baseName = "effective_terrain_roughness_class"
+                String outputTableName = prefixName + "_" + baseName
+
+                // Based on the lookup Table of Davenport
+                datasource.execute(("DROP TABLE IF EXISTS $outputTableName;" +
+                        "CREATE TABLE $outputTableName AS SELECT $idColumnRsu, " +
+                        "CASEWHEN($effectiveTerrainRoughnessHeight<0.0 OR $effectiveTerrainRoughnessHeight IS NULL, null," +
+                        "CASEWHEN($effectiveTerrainRoughnessHeight<0.00035, 1," +
+                        "CASEWHEN($effectiveTerrainRoughnessHeight<0.01525, 2," +
+                        "CASEWHEN($effectiveTerrainRoughnessHeight<0.065, 3," +
+                        "CASEWHEN($effectiveTerrainRoughnessHeight<0.175, 4," +
+                        "CASEWHEN($effectiveTerrainRoughnessHeight<0.375, 5," +
+                        "CASEWHEN($effectiveTerrainRoughnessHeight<0.75, 6," +
+                        "CASEWHEN($effectiveTerrainRoughnessHeight<1.5, 7, 8)))))))) AS $baseName FROM $rsuTable").toString())
+
+                [outputTableName: outputTableName]
+            }
+    )}
