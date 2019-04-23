@@ -306,7 +306,7 @@ class RsuIndicatorsTests {
 
         // Only the first 4 first created vegetation areas are selected for the tests
         h2GIS.execute("DROP TABLE IF EXISTS tempo_road; CREATE TABLE tempo_road AS SELECT * " +
-                "FROM road_test WHERE id_road < 4")
+                "FROM road_test WHERE id_road < 7")
 
         def  p0 =  Geoclimate.RsuIndicators.roadFraction()
         p0.execute([rsuTable: "rsu_test", roadTable: "tempo_road", levelToConsiders: ["underground":[-4, -3, -2, -1]],
@@ -315,7 +315,7 @@ class RsuIndicatorsTests {
         def concat = ["",""]
         h2GIS.eachRow("SELECT * FROM zero_road_fraction WHERE id_rsu = 14 OR id_rsu = 15"){
             row ->
-                concat[0]+= "${row.low_vegetation_fraction}\n"
+                concat[0]+= "${row.underground_road_fraction.round(5)}\n"
         }
         def  p1 =  Geoclimate.RsuIndicators.roadFraction()
         p1.execute([rsuTable: "rsu_test", roadTable: "tempo_road", levelToConsiders: ["underground":[-4, -3, -2, -1],
@@ -323,11 +323,11 @@ class RsuIndicatorsTests {
                     datasource: h2GIS])
         h2GIS.eachRow("SELECT * FROM one_road_fraction WHERE id_rsu = 14 OR id_rsu = 15"){
             row ->
-                concat[1]+= "${row.underground_road_fraction}\n"
-                concat[1]+= "${row.ground_road_fraction}\n"
+                concat[1]+= "${row.underground_road_fraction.round(5)}\n"
+                concat[1]+= "${row.ground_road_fraction.round(5)}\n"
         }
-        assertEquals("0.0016\n0.02\n", concat[0])
-        assertEquals("0.02\n0.0216\n0.0\n0.02\n", concat[1])
+        assertEquals("0.01005\n0.08\n", concat[0])
+        assertEquals("0.01005\n0.06161\n0.08\n0.15866\n", concat[1])
     }
 
     @Test

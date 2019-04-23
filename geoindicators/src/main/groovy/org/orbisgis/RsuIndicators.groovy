@@ -976,7 +976,7 @@ static IProcess roadFraction() {
                 def buffTable = "buffTable" + uid_out
 
                 def surfQuery = "DROP TABLE IF EXISTS $surfTable; CREATE TABLE $surfTable AS SELECT " +
-                        "ST_BUFFER($geometricColumnRoad,$widthRoad,'endcap=flat') AS the_geom," +
+                        "ST_BUFFER($geometricColumnRoad,$widthRoad/2,'endcap=flat') AS the_geom," +
                         "$zindexRoad FROM $roadTable;"
 
                 // Intersections between road surfaces and RSU are calculated
@@ -986,8 +986,9 @@ static IProcess roadFraction() {
                         "CREATE TABLE $interTable AS SELECT b.$idColumnRsu, a.$zindexRoad, " +
                         "ST_AREA(b.$geometricColumnRsu) AS RSU_AREA, " +
                         "ST_AREA(ST_INTERSECTION(a.$geometricColumnRoad, b.$geometricColumnRsu)) AS ROAD_AREA " +
-                        "FROM $roadTable a, $rsuTable b WHERE a.$geometricColumnRoad && b.$geometricColumnRsu AND " +
+                        "FROM $surfTable a, $rsuTable b WHERE a.$geometricColumnRoad && b.$geometricColumnRsu AND " +
                         "ST_INTERSECTS(a.$geometricColumnRoad, b.$geometricColumnRsu);"
+
 
                 // Road fraction is calculated at RSU scale for different road types (combinations of levels)
                 def buffQuery = "DROP TABLE IF EXISTS $buffTable;" +
@@ -999,9 +1000,9 @@ static IProcess roadFraction() {
                     def conditions = ""
                     names.add("${name}_road_fraction")
                     levels.each{lev ->
-                        conditions += "$zindexRoad=$lev OR"
+                        conditions += "$zindexRoad=$lev OR "
                     }
-                    buffQuery += "SUM(CASEWHEN(${conditions[0..-3]}, ROAD_AREA, 0))/RSU_AREA AS ${names[-1]},"
+                    buffQuery += "SUM(CASEWHEN(${conditions[0..-4]}, ROAD_AREA, 0))/RSU_AREA AS ${names[-1]},"
                 }
                 buffQuery = buffQuery[0..-2] + " FROM $interTable GROUP BY $idColumnRsu; "
 
