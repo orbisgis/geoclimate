@@ -137,7 +137,7 @@ class BuildingIndicatorsTests {
 
         // Only the first 1 first created buildings are selected for the tests
         h2GIS.execute("DROP TABLE IF EXISTS tempo_road, building_road_distance; CREATE TABLE tempo_road AS SELECT * " +
-                "FROM road_test WHERE id = 1")
+                "FROM road_test WHERE id_road = 1")
 
         def  p =  Geoclimate.BuildingIndicators.buildingRoadDistance()
         p.execute([inputBuildingTableName: "building_test", inputRoadTableName: "tempo_road",
