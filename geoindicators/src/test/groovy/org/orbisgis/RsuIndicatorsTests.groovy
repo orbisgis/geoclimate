@@ -246,4 +246,25 @@ class RsuIndicatorsTests {
                 "FROM test_rsu_road_linear_properties WHERE id_rsu = 14")
         assertEquals(0.00224, t001.rsu_linear_road_density_hminus1.round(5))
     }
+
+@Test
+void testEffectiveTerrainRoughnessClass() {
+    def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
+    String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
+    h2GIS.execute(sqlString)
+
+    // Only the first 5 first created buildings are selected for the tests
+    h2GIS.execute("DROP TABLE IF EXISTS rsu_tempo; CREATE TABLE rsu_tempo AS SELECT *, CASEWHEN(id_rsu = 1, 2.3," +
+            "CASEWHEN(id_rsu = 2, 0.1, null)) AS rsu_effective_terrain_roughness_height FROM rsu_test")
+
+    def p =  Geoclimate.RsuIndicators.EffectiveTerrainRoughnessClass()
+    p.execute([datasource: h2GIS, rsuTable: "rsu_tempo", effectiveTerrainRoughnessHeight: "rsu_effective_terrain_roughness_height",
+               prefixName: "test"])
+    def concat = ""
+    h2GIS.eachRow("SELECT * FROM test_effective_terrain_roughness_class WHERE id_rsu < 4 ORDER BY id_rsu ASC"){
+        row ->
+            concat += "${row["effective_terrain_roughness_class"]}\n".toString()
+    }
+    assertEquals("8\n4\nnull\n", concat)
+    }
 }
