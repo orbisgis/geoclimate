@@ -131,4 +131,23 @@ class BlockIndicatorsTests {
         assertEquals(4.0/12, concat, 0.0001)
     }
 
+    @Test
+    void holeAreaDensity() {
+        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
+        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
+        h2GIS.execute(sqlString)
+
+        // Only the first 6 first created buildings are selected since any new created building may alter the results
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_block; " +
+                "CREATE TABLE tempo_block AS SELECT * FROM block_test WHERE id_block = 6")
+
+        def  p =  Geoclimate.BlockIndicators.holeAreaDensity()
+        p.execute([blockTable: "tempo_block", prefixName: "test", datasource: h2GIS])
+        def concat = 0
+        h2GIS.eachRow("SELECT * FROM test_block_hole_area_density"){
+            row ->
+                concat+= row.block_hole_area_density
+        }
+        assertEquals(3.0/47, concat, 0.00001)
+    }
 }
