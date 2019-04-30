@@ -260,3 +260,51 @@ static IProcess blockPerkinsSkillScoreBuildingDirection() {
                 }
             }
     )}
+
+/**
+ * The sum of the building free external area composing the block are divided by the sum of the building volume.
+ * The sum of the building volume is calculated at the power 2/3 in order to have a ratio of homogeneous quantities (same unit)
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param buildTable the name of the input ITable where are stored the "building_volume", the "building_contiguity" and
+ * the geometry field
+ * @param correlationTableName the name of the input ITable where are stored the relationships between blocks and buildings
+ * @param buildingVolumeField the name of the input field where are stored the "building_volume" values within the "buildTable"
+ * @param buildingContiguityField the name of the input field where are stored the "building_contiguity"
+ * values within the "buildTable"
+ * @param prefixName String use as prefix to name the output table
+ *
+ * @return outputTableName Table name in which the block id and their corresponding indicator value are stored
+ * @author Jérémy Bernard
+ */
+static IProcess blockNetCompacity() {
+    return processFactory.create(
+            "Hole area ratio",
+            [buildTable: String, correlationTableName: String, buildingVolumeField: String, buildingContiguityField: String,
+             prefixName: String, datasource: JdbcDataSource],
+            [outputTableName : String],
+            { buildTable, correlationTableName, buildingVolumeField, buildingContiguityField, prefixName, datasource ->
+                def geometryFieldBu = "the_geom"
+                def idColumnBu = "id_build"
+                def idColumnBl = "id_block"
+                def height_wall = "height_wall"
+
+                // The name of the outputTableName is constructed
+                String baseName = "block_net_compacity"
+                String outputTableName = prefixName + "_" + baseName
+
+                String query = "CREATE INDEX IF NOT EXISTS id_bu ON $buildTable($idColumnBu); CREATE INDEX IF NOT EXISTS" +
+                        " id_bubl ON $correlationTableName($idColumnBu); CREATE INDEX IF NOT EXISTS id_b " +
+                        "ON $correlationTableName($idColumnBl); DROP TABLE IF EXISTS $outputTableName;" +
+                        " CREATE TABLE $outputTableName AS SELECT b.$idColumnBl, " +
+                        "SUM(a.$buildingContiguityField*(ST_PERIMETER(a.$geometryFieldBu)+" +
+                        "ST_PERIMETER(ST_HOLES(a.$geometryFieldBu)))*a.$height_wall)/POWER(SUM($buildingVolumeField)," +
+                        " 2./3) AS $baseName FROM $buildTable a, $correlationTableName b " +
+                        "WHERE a.$idColumnBu = b.$idColumnBu GROUP BY b.$idColumnBl"
+
+                logger.info("Executing $query")
+                datasource.execute query
+                [outputTableName: outputTableName]
+            }
+    )}

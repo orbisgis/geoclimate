@@ -59,7 +59,7 @@ static IProcess buildingSizeProperties() {
              , outputTableName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { inputBuildingTableName,inputFields, operations, outputTableName, datasource ->
-                String query = "CREATE TABLE $outputTableName AS SELECT "
+                String query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
                 def geometricField = "the_geom"
                 def dist_passiv = 3
                 def ops = ["building_volume","building_floor_area", "building_total_facade_length",
@@ -156,7 +156,8 @@ static IProcess buildingNeighborsProperties() {
                         "ST_INTERSECTS(a.$geometricField, b.$geometricField) AND a.$idField <> b.$idField" +
                         " GROUP BY a.$idField;" +
                         "CREATE INDEX IF NOT EXISTS buff_id ON $build_intersec($idField);" +
-                        "CREATE TABLE $outputTableName AS SELECT b.${operations.join(",b.")}, a.${inputFields.join(",a.")}" +
+                        "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
+                        "SELECT b.${operations.join(",b.")}, a.${inputFields.join(",a.")}" +
                         " FROM $inputBuildingTableName a LEFT JOIN $build_intersec b ON a.$idField = b.$idField;"
                 query+= query_update
 
