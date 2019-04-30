@@ -279,13 +279,14 @@ static IProcess holeAreaDensity() {
             [outputTableName : String],
             { blockTable, prefixName, datasource ->
                 def geometricField = "the_geom"
+                def idColumnBl = "id_block"
 
                 // The name of the outputTableName is constructed
                 String baseName = "block_hole_area_density"
                 String outputTableName = prefixName + "_" + baseName
 
                 String query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
-                        "SELECT ST_AREA(ST_HOLES($geometricField))/ST_AREA($geometricField) " +
+                        "SELECT $idColumnBl, ST_AREA(ST_HOLES($geometricField))/ST_AREA($geometricField) " +
                         "AS $baseName FROM $blockTable"
 
                 logger.info("Executing $query")
