@@ -349,4 +349,48 @@ class RsuIndicatorsTests {
         }
         assertEquals("0.004\n0.04\n", concat[0])
     }
+
+    @Test
+    void perviousnessFraction() {
+        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
+        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
+        h2GIS.execute(sqlString)
+
+        // Only the first created vegetation, road and water areas are selected for the tests
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_hydro, tempo_veget, tempo_road; CREATE TABLE tempo_hydro AS SELECT * " +
+                "FROM hydro_test WHERE id_hydro < 2; CREATE TABLE tempo_veget AS SELECT * " +
+                "FROM veget_test WHERE id_veget < 4; CREATE TABLE tempo_road AS SELECT * " +
+                "FROM road_test WHERE id_road < 7")
+
+        // The corresponding fractions are calculated
+        def  pveg =  Geoclimate.RsuIndicators.vegetationFraction()
+        pveg.execute([rsuTable: "rsu_test", vegetTable: "tempo_veget", fractionType: ["low"], prefixName: "test",
+                      datasource: h2GIS])
+        def  pwat =  Geoclimate.RsuIndicators.waterFraction()
+        pwat.execute([rsuTable: "rsu_test", waterTable: "tempo_hydro", prefixName: "test",
+                      datasource: h2GIS])
+        def  proad =  Geoclimate.RsuIndicators.roadFraction()
+        proad.execute([rsuTable: "rsu_test", roadTable: "tempo_road", levelToConsiders: ["underground":[-4, -3, -2, -1],
+                                                                                         "ground":[0]], prefixName: "test",
+                       datasource: h2GIS])
+
+        // The data useful for pervious fraction calculation are gathered in a same Table
+        h2GIS.execute("DROP TABLE IF EXISTS needed_data; CREATE TABLE needed_data AS SELECT a.*, " +
+                "b.water_fraction, c.ground_road_fraction FROM test_vegetation_fraction a, test_water_fraction b," +
+                "test_road_fraction c WHERE a.id_rsu = b.id_rsu AND a.id_rsu = c.id_rsu;")
+
+        def pfin = Geoclimate.RsuIndicators.perviousnessFraction()
+        pfin.execute([rsuTable: "needed_data", operationsAndComposition: ["pervious_fraction" : ["low_vegetation_fraction",
+                                                                                                 "water_fraction"], "impervious_fraction" :
+                                                                                  ["ground_road_fraction"]], prefixName: "test",
+                      datasource: h2GIS])
+        def concat = ["", ""]
+        h2GIS.eachRow("SELECT * FROM test_perviousness_fraction WHERE id_rsu = 14 OR id_rsu = 15"){
+            row ->
+                concat[0]+= "${row.pervious_fraction}\n"
+                concat[1]+= "${row.impervious_fraction.round(5)}\n"
+        }
+        assertEquals("0.0056\n0.06\n", concat[0])
+        assertEquals("0.06161\n0.15866\n", concat[1])
+    }
 }
