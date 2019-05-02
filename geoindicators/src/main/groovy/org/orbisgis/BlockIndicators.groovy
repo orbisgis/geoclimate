@@ -278,6 +278,58 @@ static IProcess blockPerkinsSkillScoreBuildingDirection() {
  * @return outputTableName Table name in which the block id and their corresponding indicator value are stored
  * @author Jérémy Bernard
  */
+
+/**
+ * This process calculates the ratio between the area of hole within a block and the area of the block.
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param blockTable the name of the input ITable where are stored the block geometries
+ * @param prefixName String use as prefix to name the output table
+ *
+ * @return outputTableName Table name in which the block id and their corresponding indicator value are stored
+ * @author Jérémy Bernard
+ */
+static IProcess holeAreaDensity() {
+    return processFactory.create(
+            "Hole area ratio",
+            [blockTable: String, prefixName: String, datasource: JdbcDataSource],
+            [outputTableName : String],
+            { blockTable, prefixName, datasource ->
+                def geometricField = "the_geom"
+                def idColumnBl = "id_block"
+
+                // The name of the outputTableName is constructed
+                String baseName = "block_hole_area_density"
+                String outputTableName = prefixName + "_" + baseName
+
+                String query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
+                        "SELECT $idColumnBl, ST_AREA(ST_HOLES($geometricField))/ST_AREA($geometricField) " +
+                        "AS $baseName FROM $blockTable"
+
+                logger.info("Executing $query")
+                datasource.execute query
+                [outputTableName: outputTableName]
+            }
+    )}
+
+/**
+ * The sum of the building free external area composing the block are divided by the sum of the building volume.
+ * The sum of the building volume is calculated at the power 2/3 in order to have a ratio of homogeneous quantities (same unit)
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param buildTable the name of the input ITable where are stored the "building_volume", the "building_contiguity" and
+ * the geometry field
+ * @param correlationTableName the name of the input ITable where are stored the relationships between blocks and buildings
+ * @param buildingVolumeField the name of the input field where are stored the "building_volume" values within the "buildTable"
+ * @param buildingContiguityField the name of the input field where are stored the "building_contiguity"
+ * values within the "buildTable"
+ * @param prefixName String use as prefix to name the output table
+ *
+ * @return outputTableName Table name in which the block id and their corresponding indicator value are stored
+ * @author Jérémy Bernard
+ */
 static IProcess netCompacity() {
     return processFactory.create(
             "Hole area ratio",
