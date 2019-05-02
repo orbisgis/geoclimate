@@ -53,10 +53,11 @@ INSERT INTO building_test VALUES (1, 'POLYGON((4 4, 10 4, 10 30, 4 30, 4 4))'::G
  (27, st_translate('POLYGON((1210 1190, 1230 1210, 1230 1230, 1210 1230, 1210 1190))'::GEOMETRY, 200, 200), 5, 15, 600, 108.2842712474619, 4, 108.2842712474619, 0, null),
  (28, st_translate('POLYGON((1310 1190, 1330 1210, 1330 1230, 1280 1230, 1310 1190))'::GEOMETRY, 200, 200), 18, 32, 1200, 148.2842712474619, 10, 148.2842712474619, 0, null),
  (29, 'POLYGON((20 -2, 21 -2, 21 1, 20 1, 20 -2))'::GEOMETRY, 3, 5, 3, 8, 1, 8, 0, 0),
- (30, 'POLYGON((5 -145, 20 -145, 20 -105, 5 -105, 5 -145),(10 -130, 15 -130, 15 -110, 10 -110, 10 -130))'::GEOMETRY, 10, 10, null, null, null, null, null, null),
- (31, 'POLYGON((20 -110, 45 -110, 45 -105, 20 -105, 20 -110))'::GEOMETRY, 15, 17, null, null, null, null, null, null),
- (32, 'POLYGON((35 -145, 45 -145, 45 -110, 35 -110, 35 -145))'::GEOMETRY, 12, 12, null, null, null, null, null, null),
- (33, 'POLYGON((20 -145, 35 -145, 35 -140, 15 -130, 20 -145))'::GEOMETRY, 12, 15, null, null, null, null, null, null);
+ (30, 'POLYGON((4 36, 6 36, 6 40, 4 40, 4 39, 5 39, 5 38, 4 38, 4 36))'::GEOMETRY, 3, 5, 7, 14, null, null, null, null),
+ (31, 'POLYGON((5 -145, 20 -145, 20 -105, 5 -105, 5 -145),(10 -130, 15 -130, 15 -110, 10 -110, 10 -130))'::GEOMETRY, 10, 10, null, null, null, null, null, null),
+ (32, 'POLYGON((20 -110, 45 -110, 45 -105, 20 -105, 20 -110))'::GEOMETRY, 15, 17, null, null, null, null, null, null),
+ (33, 'POLYGON((35 -145, 45 -145, 45 -110, 35 -110, 35 -145))'::GEOMETRY, 12, 12, null, null, null, null, null, null),
+ (34, 'POLYGON((20 -145, 35 -145, 35 -140, 15 -130, 20 -145))'::GEOMETRY, 12, 15, null, null, null, null, null, null);
 
 INSERT INTO block_test VALUES (1, 'POLYGON((4 4, 10 4, 10 30, 4 30, 4 4))'::GEOMETRY),
  (2, 'POLYGON((12 4, 20 4, 20 9, 12 9, 12 4))'::GEOMETRY),
@@ -66,8 +67,8 @@ INSERT INTO block_test VALUES (1, 'POLYGON((4 4, 10 4, 10 30, 4 30, 4 4))'::GEOM
  (6, 'POLYGON((0 -5, 10 -5, 10 0, 0 0, 0 -5), (1 -4, 2 -4, 2 -1, 1 -1, 1 -4))'::GEOMETRY),
  (7, 'POLYGON((20 -2, 21 -2, 21 1, 20 1, 20 -2))'::GEOMETRY),
  (8, 'POLYGON((5 -145, 45 -145, 45 -105, 5 -105, 5 -145), (10 -130, 15 -130, 15 -110, 10 -110, 10 -130), (20 -140, 35 -140, 35 -110, 20 -110, 20 -140))'::GEOMETRY);
-INSERT INTO block_build_corr VALUES (1, 1), (2, 2), (3, 3), (4, 4), (4, 5), (5, 6), (6, 7), (4, 8), (7, 29), (8, 30),
-(8, 31), (8, 32), (8, 33);
+INSERT INTO block_build_corr VALUES (1, 1), (2, 2), (3, 3), (4, 4), (4, 5), (5, 6), (6, 7), (4, 8), (7, 29), (8, 31),
+(8, 32), (8, 33), (8, 34);
 INSERT INTO rsu_test VALUES (1, 'POLYGON((0 0, 50 0, 50 40, 0 40, 0 0))'::GEOMETRY, 2000, 0.303, 0.937),
  (2, 'POLYGON((50 0, 55 0, 55 30, 50 30, 50 0))'::GEOMETRY, 150, 16.0/150, 2),
  (3, 'POLYGON((0 0, 0 -15, 25 -15, 25 0, 0 0))'::GEOMETRY, 375, 47.0/375, 0.304),
