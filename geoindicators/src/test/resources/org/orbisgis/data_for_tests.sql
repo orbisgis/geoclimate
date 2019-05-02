@@ -12,6 +12,8 @@ DROP TABLE IF EXISTS block_build_corr;
 DROP TABLE IF EXISTS rsu_test;
 DROP TABLE IF EXISTS rsu_build_corr;
 DROP TABLE IF EXISTS road_test;
+DROP TABLE IF EXISTS veget_test;
+DROP TABLE IF EXISTS hydro_test;
 
 CREATE TABLE building_test (id_build int, the_geom geometry, height_wall float, height_roof float, building_area float, building_perimeter float, nb_lev int, building_total_facade_length float, building_number_building_neighbor int, building_contiguity float);
 CREATE TABLE block_test (id_block int, the_geom geometry);
@@ -19,6 +21,8 @@ CREATE TABLE block_build_corr (id_block int, id_build int);
 CREATE TABLE rsu_test (id_rsu int, the_geom geometry, rsu_area float, rsu_building_density float, rsu_free_external_facade_density float);
 CREATE TABLE rsu_build_corr (id_rsu int, id_build int, rsu_mean_building_height float);
 CREATE TABLE road_test (id_road int, the_geom geometry, width float, zindex int);
+CREATE TABLE veget_test (id_veget int, the_geom geometry, height_class varchar);
+CREATE TABLE hydro_test (id_hydro int, the_geom geometry);
 
 INSERT INTO building_test VALUES (1, 'POLYGON((4 4, 10 4, 10 30, 4 30, 4 4))'::GEOMETRY, 8, 8, 156, 64, 2, 64, 0, 0),
  (2, 'POLYGON((12 4, 20 4, 20 9, 12 9, 12 4))'::GEOMETRY, 10, 13, 40, 26, 3, 26, 0, 0),
@@ -48,7 +52,8 @@ INSERT INTO building_test VALUES (1, 'POLYGON((4 4, 10 4, 10 30, 4 30, 4 4))'::G
  (26, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 240, 200), 20, 20, null, null, null, null, null, null),
  (27, st_translate('POLYGON((1210 1190, 1230 1210, 1230 1230, 1210 1230, 1210 1190))'::GEOMETRY, 200, 200), 5, 15, 600, 108.2842712474619, 4, 108.2842712474619, 0, null),
  (28, st_translate('POLYGON((1310 1190, 1330 1210, 1330 1230, 1280 1230, 1310 1190))'::GEOMETRY, 200, 200), 18, 32, 1200, 148.2842712474619, 10, 148.2842712474619, 0, null),
- (29, 'POLYGON((20 -2, 21 -2, 21 1, 20 1, 20 -2))'::GEOMETRY, 3, 5, 3, 8, 1, 8, 0, 0);
+ (29, 'POLYGON((20 -2, 21 -2, 21 1, 20 1, 20 -2))'::GEOMETRY, 3, 5, 3, 8, 1, 8, 0, 0),
+ (30, 'POLYGON((4 36, 6 36, 6 40, 4 40, 4 39, 5 39, 5 38, 4 38, 4 36))'::GEOMETRY, 3, 5, 7, 14, null, null, null, null);
 
 INSERT INTO block_test VALUES (1, 'POLYGON((4 4, 10 4, 10 30, 4 30, 4 4))'::GEOMETRY),
  (2, 'POLYGON((12 4, 20 4, 20 9, 12 9, 12 4))'::GEOMETRY),
@@ -83,4 +88,8 @@ INSERT INTO road_test VALUES (1, 'LINESTRING(120 60, 120 -10)'::GEOMETRY, 10, 0)
 (4, 'LINESTRING (85 60, 85 -1, 155 1, 148 54, 92 50, 96 -12, 119 -11, 117 -4, 78 -5)'::GEOMETRY, 10, 0),
 (5, 'LINESTRING (20 100, 25 100, 25 120, 20 120)'::GEOMETRY, 6, 0),
 (6, 'LINESTRING (50 105, 47 99)'::GEOMETRY, 6, -1);
+INSERT INTO veget_test VALUES (1, 'POLYGON((35 98, 36 98, 36 104, 35 104, 35 98))'::GEOMETRY, 'low'),
+(2, 'POLYGON((20 140, 25 140, 25 145, 20 145, 20 140))'::GEOMETRY, 'high'),
+(3, 'POLYGON((45 130, 55 130, 55 135, 45 135, 45 130))'::GEOMETRY, 'high');
+INSERT INTO hydro_test VALUES (1, 'POLYGON((-2 95, 2 95, 2 105, -2 105, -2 95))'::GEOMETRY);
 
