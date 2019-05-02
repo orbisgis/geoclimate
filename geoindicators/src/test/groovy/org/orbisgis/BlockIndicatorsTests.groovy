@@ -132,7 +132,7 @@ class BlockIndicatorsTests {
     }
 
     @Test
-    void blockNetCompacity() {
+    void netCompacity() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -150,7 +150,7 @@ class BlockIndicatorsTests {
                 "CREATE TABLE tempo_build2 AS SELECT a.*, b.building_volume FROM tempo_build a" +
                 " LEFT JOIN building_size_properties b ON a.id_build = b.id_build")
 
-        def  p =  Geoclimate.BlockIndicators.blockNetCompacity()
+        def  p =  Geoclimate.BlockIndicators.netCompacity()
         p.execute([buildTable: "tempo_build2", correlationTableName: "block_build_corr", buildingVolumeField: "building_volume",
                    buildingContiguityField: "building_contiguity", prefixName: "test", datasource: h2GIS])
         def concat = 0

@@ -278,7 +278,7 @@ static IProcess blockPerkinsSkillScoreBuildingDirection() {
  * @return outputTableName Table name in which the block id and their corresponding indicator value are stored
  * @author Jérémy Bernard
  */
-static IProcess blockNetCompacity() {
+static IProcess netCompacity() {
     return processFactory.create(
             "Hole area ratio",
             [buildTable: String, correlationTableName: String, buildingVolumeField: String, buildingContiguityField: String,
