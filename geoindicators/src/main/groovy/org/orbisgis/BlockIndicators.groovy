@@ -285,27 +285,26 @@ static IProcess blockPerkinsSkillScoreBuildingDirection() {
  * @return outputTableName Table name in which the block id and their corresponding indicator value are stored
  * @author Jérémy Bernard
  */
-static IProcess Closingness() {
+static IProcess closingness() {
     return processFactory.create(
             "Closingness of a block",
-            [buildTable: String, correlationTableName: String, prefixName: String, datasource: JdbcDataSource],
+            [correlationTableName: String, blockTable: String, prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { buildTable, correlationTableName, prefixName, datasource ->
+            { correlationTableName, blockTable, prefixName, datasource ->
                 def geometryFieldBu = "the_geom"
                 def geometryFieldBl = "the_geom"
-                def idColumnBu = "id_build"
                 def idColumnBl = "id_block"
 
                 // The name of the outputTableName is constructed
                 String baseName = "block_closingness"
                 String outputTableName = prefixName + "_" + baseName
 
-                String query = "CREATE INDEX IF NOT EXISTS id_bu ON $buildTable($idColumnBu); CREATE INDEX IF NOT EXISTS" +
-                        " id_bubl ON $correlationTableName($idColumnBu); CREATE INDEX IF NOT EXISTS id_b " +
-                        "ON $correlationTableName($idColumnBl); DROP TABLE IF EXISTS $outputTableName;" +
+                String query = "CREATE INDEX IF NOT EXISTS id_bubl ON $blockTable($idColumnBl); " +
+                        "CREATE INDEX IF NOT EXISTS id_b ON $correlationTableName($idColumnBl); " +
+                        "DROP TABLE IF EXISTS $outputTableName;" +
                         " CREATE TABLE $outputTableName AS SELECT b.$idColumnBl, " +
                         "ST_AREA(ST_HOLES(b.$geometryFieldBl))-SUM(ST_AREA(ST_HOLES(a.$geometryFieldBu))) AS $baseName " +
-                        "FROM $buildTable a, $correlationTableName b WHERE a.$idColumnBu = b.$idColumnBu " +
+                        "FROM $correlationTableName a, $blockTable b WHERE a.$idColumnBl = b.$idColumnBl " +
                         "GROUP BY b.$idColumnBl"
 
                 logger.info("Executing $query")

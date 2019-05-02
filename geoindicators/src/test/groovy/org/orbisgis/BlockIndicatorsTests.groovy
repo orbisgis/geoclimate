@@ -131,4 +131,24 @@ class BlockIndicatorsTests {
         assertEquals(4.0/12, concat, 0.0001)
     }
 
+    @Test
+    void closingness() {
+        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
+        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
+        h2GIS.execute(sqlString)
+
+        // Only the first 6 first created buildings are selected since any new created building may alter the results
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_block, tempo_build; " +
+                "CREATE TABLE tempo_block AS SELECT * FROM block_test WHERE id_block = 8; CREATE TABLE tempo_build AS" +
+                " SELECT a.*, b.id_block FROM building_test a, block_build_corr b WHERE a.id_build = b.id_build AND b.id_block = 8")
+
+        def  p =  Geoclimate.BlockIndicators.closingness()
+        p.execute([correlationTableName: "tempo_build", blockTable: "tempo_block", prefixName: "test", datasource: h2GIS])
+        def concat = 0
+        h2GIS.eachRow("SELECT * FROM test_block_closingness"){
+            row ->
+                concat+= row.block_closingness
+        }
+        assertEquals(450, concat)
+    }
 }
