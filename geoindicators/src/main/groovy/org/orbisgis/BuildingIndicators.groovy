@@ -181,6 +181,8 @@ static IProcess buildingNeighborsProperties() {
  * building volume at the power 2./3. For the calculation, the roof is supposed to have a gable and the roof surface
  * is calculated considering that the building is square (otherwise, the assumption related to the gable direction
  * would strongly affect the result).
+ * --> "building_convexhull_perimeter_density": defined as the ratio between building convexhull perimeter and
+ * building perimeter.
  *
  * References:
  *   Bocher, E., Petit, G., Bernard, J., & Palominos, S. (2018). A geoprocessing framework to compute
@@ -200,7 +202,7 @@ static IProcess buildingFormProperties() {
                 def height_wall = "height_wall"
                 def height_roof = "height_roof"
                 def ops = ["building_concavity","building_form_factor",
-                           "building_raw_compacity"]
+                           "building_raw_compacity", "building_convexhull_perimeter_density"]
 
                 String query = " CREATE TABLE $outputTableName AS SELECT "
 
@@ -217,6 +219,10 @@ static IProcess buildingFormProperties() {
                                 "POWER($height_roof-$height_wall, 2),0.5)+POWER(ST_AREA($geometricField),0.5)*" +
                                 "($height_roof-$height_wall))/POWER(ST_AREA($geometricField)*" +
                                 "($height_wall+$height_roof)/2, 2./3) AS $operation,"
+                    }
+                    else if(operation=="building_convexhull_perimeter_density") {
+                        query += "ST_PERIMETER(ST_CONVEXHULL($geometricField))/(ST_PERIMETER($geometricField)+" +
+                                "ST_PERIMETER(ST_HOLES($geometricField))) AS $operation,"
                     }
                 }
                 query+= "${inputFields.join(",")} FROM $inputBuildingTableName"

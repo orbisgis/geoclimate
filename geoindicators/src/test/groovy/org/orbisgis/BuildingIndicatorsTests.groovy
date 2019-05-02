@@ -85,14 +85,14 @@ class BuildingIndicatorsTests {
 
         // Only the first 1 first created buildings are selected for the tests
         h2GIS.execute("DROP TABLE IF EXISTS tempo_build, building_form_properties; CREATE TABLE tempo_build AS SELECT * " +
-                "FROM building_test WHERE id_build < 8")
+                "FROM building_test WHERE id_build < 8 OR id_build = 30")
 
         def  p =  Geoclimate.BuildingIndicators.buildingFormProperties()
         p.execute([inputBuildingTableName: "tempo_build", inputFields:["id_build", "the_geom"],
                    operations:["building_concavity","building_form_factor",
-                               "building_raw_compacity"],
+                               "building_raw_compacity", "building_convexhull_perimeter_density"],
                    outputTableName : "building_form_properties",datasource:h2GIS])
-        def concat = ["", "", ""]
+        def concat = ["", "", "", ""]
         h2GIS.eachRow("SELECT * FROM building_form_properties WHERE id_build = 1 OR id_build = 7 ORDER BY id_build ASC"){
             row ->
                 concat[0]+= "${row.building_concavity}\n"
@@ -102,9 +102,15 @@ class BuildingIndicatorsTests {
             row ->
                 concat[2]+= "${row.building_raw_compacity.round(3)}\n"
         }
+        h2GIS.eachRow("SELECT * FROM building_form_properties WHERE id_build = 1 OR id_build = 7 OR " +
+                "id_build = 30 ORDER BY id_build ASC"){
+            row ->
+                concat[3]+= "${row.building_convexhull_perimeter_density.round(5)}\n"
+        }
         assertEquals("1.0\n0.94\n".toString(),concat[0].toString())
         assertEquals("${(0.0380859375).round(5)}\n${(0.0522222222222222).round(5)}\n".toString(), concat[1].toString())
         assertEquals("5.607\n".toString(),  concat[2].toString())
+        assertEquals("1.0\n0.78947\n0.85714\n".toString(), concat[3].toString())
     }
 
     @Test
