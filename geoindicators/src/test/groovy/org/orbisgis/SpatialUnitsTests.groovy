@@ -14,7 +14,7 @@ class SpatialUnitsTests {
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
         h2GIS.execute("drop table if exists roads_rsu; " +
-                "create table roads_rsu as select * from road_test where id <5")
+                "create table roads_rsu as select * from road_test where id_road <5")
         def  rsu =  Geoclimate.SpatialUnits.createRSU()
         rsu.execute([inputTableName: "roads_rsu",
                      prefixName: "rsu", datasource: h2GIS])
@@ -68,5 +68,31 @@ class SpatialUnitsTests {
         assertEquals 12 , countRows.numberOfRows
     }
 
+    @Test
+    void testCreateScalesRelations() {
+        def h2GIS = H2GIS.open([databaseName: '/tmp/spatialunitsdb'])
+        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
+        h2GIS.execute(sqlString)
+        h2GIS.execute("DROP TABLE IF EXISTS build_tempo; " +
+                "CREATE TABLE build_tempo AS SELECT * FROM building_test WHERE id_build < 9 "+
+                "OR id_build > 28 AND id_build < 30")
+        def  pRsu =  Geoclimate.SpatialUnits.createScalesRelations()
+        pRsu.execute([inputLowerScaleTableName: "build_tempo", inputUpperScaleTableName : "rsu_test",
+                      idColumnUp: "id_rsu", prefixName: "test", datasource: h2GIS])
+        h2GIS.eachRow("SELECT * FROM ${pRsu.results.outputTableName}".toString()){
+            row ->
+                def expected = h2GIS.firstRow("SELECT id_rsu FROM rsu_build_corr WHERE id_build = ${row.id_build}".toString())
+                assertEquals(row.id_rsu, expected.id_rsu)
+        }
+        def  pBlock =  Geoclimate.SpatialUnits.createScalesRelations()
+        pBlock.execute([inputLowerScaleTableName: "build_tempo", inputUpperScaleTableName : "block_test",
+                        idColumnUp: "id_block", prefixName: "test", datasource: h2GIS])
+
+        h2GIS.eachRow("SELECT * FROM ${pBlock.results.outputTableName}".toString()){
+            row ->
+                def expected = h2GIS.firstRow("SELECT id_block FROM block_build_corr WHERE id_build = ${row.id_build}".toString())
+                assertEquals(row.id_block, expected.id_block)
+        }
+    }
 
 }

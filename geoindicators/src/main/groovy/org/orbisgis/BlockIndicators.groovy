@@ -11,36 +11,71 @@ import org.orbisgis.processmanagerapi.IProcess
 /**
  * This process is used to compute basic statistical operations on a specific variable from a lower scale (for
  * example the sum of each building volume constituting a block to calculate the block volume)
+ *
+ * @param inputLowerScaleTableName the table name where are stored low scale objects and the id of the upper scale
+ * zone they are belonging to (e.g. buildings)
+ * @param inputUpperScaleTableName the table of the upper scale where the informations has to be aggregated to
+ * @param inputIdUp the ID of the upper scale
+ * @param inputVarAndOperations a map containing as key the informations that has to be transformed from the lower to
+ * the upper scale and as values a LIST of operation to apply to this information (e.g. ["building_area":["SUM", "NB_DENS"]]).
+ * Operations should be in the following list:
+ *          --> "SUM": sum the geospatial variables at the upper scale
+ *          --> "AVG": average the geospatial variables at the upper scale
+ *          --> "GEOM_AVG": average the geospatial variables at the upper scale using a geometric average
+ *          --> "DENS": sum the geospatial variables at the upper scale and divide by the area of the upper scale
+ *          --> "NB_DENS" : count the number of lower scale objects within the upper scale object and divide by the upper
+ *          scale area. NOTE THAT THE THREE FIRST LETTERS OF THE MAP KEY WILL BE USED TO CREATE THE NAME OF THE INDICATOR
+ *          (e.g. "BUI" in the case of the example given above)
+ * @param prefixName String use as prefix to name the output table
+ *
  * @return A database table name.
  * @author Jérémy Bernard
  */
 static IProcess unweightedOperationFromLowerScale() {
 return processFactory.create(
         "Unweighted statistical operations from lower scale",
-        [inputLowerScaleTableName: String,inputCorrelationTableName: String,inputIdLow: String, inputIdUp: String,
-         inputToTransfo: String,operations: String[], outputTableName: String, datasource: JdbcDataSource],
+        [inputLowerScaleTableName: String,inputUpperScaleTableName: String, inputIdUp: String,
+         inputVarAndOperations: String[], prefixName: String, datasource: JdbcDataSource],
         [outputTableName : String],
-        { inputLowerScaleTableName, inputCorrelationTableName, inputIdLow, inputIdUp,
-          inputToTransfo, operations, outputTableName, datasource ->
-            def ops = ["SUM","AVG", "GEOM_AVG"]
+        { inputLowerScaleTableName, inputUpperScaleTableName, inputIdUp,
+          inputVarAndOperations, prefixName, datasource ->
 
-            String query = "CREATE INDEX IF NOT EXISTS id_l ON $inputLowerScaleTableName($inputIdLow); "+
-                            "CREATE INDEX IF NOT EXISTS id_lcorr ON $inputCorrelationTableName($inputIdLow); "+
-                            "CREATE INDEX IF NOT EXISTS id_ucorr ON $inputCorrelationTableName($inputIdUp); "+
+            def geometricFieldUp = "the_geom"
+
+            // The name of the outputTableName is constructed
+            String baseName = "unweighted_operation_from_lower_scale"
+            String outputTableName = prefixName + "_" + baseName
+
+            // List of possible operations
+            def ops = ["SUM","AVG", "GEOM_AVG", "DENS", "NB_DENS"]
+
+            String query = "CREATE INDEX IF NOT EXISTS id_l ON $inputLowerScaleTableName($inputIdUp); "+
+                            "CREATE INDEX IF NOT EXISTS id_ucorr ON $inputUpperScaleTableName($inputIdUp); "+
                             "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
 
-            operations.each {operation ->
-                if(ops.contains(operation)){
-                    if(operation=="GEOM_AVG"){
-                        query += "EXP(1.0/COUNT(*)*SUM(LOG(a.$inputToTransfo))) AS ${operation+"_"+inputToTransfo},"
-                    }
-                    else{
-                        query += "$operation(a.$inputToTransfo::float) AS ${operation+"_"+inputToTransfo},"
+
+            inputVarAndOperations.each {var, operations ->
+                operations.each{op ->
+                    op = op.toUpperCase()
+                    if(ops.contains(op)){
+                        if(op=="GEOM_AVG"){
+                            query += "EXP(1.0/COUNT(*)*SUM(LOG(a.$var))) AS ${op+"_"+var},"
+                        }
+                        else if(op=="DENS"){
+                            query += "SUM(a.$var::float)/ST_AREA(b.$geometricFieldUp) AS ${op+"_"+var},"
+                        }
+                        else if(op=="NB_DENS"){
+                            query += "COUNT(a.*)/ST_AREA(b.$geometricFieldUp) AS ${var[0..2]+"_"+op},"
+                        }
+                        else{
+                            query += "$op(a.$var::float) AS ${op+"_"+var},"
+                        }
                     }
                 }
+
             }
-            query += "b.$inputIdUp FROM $inputLowerScaleTableName a, $inputCorrelationTableName b " +
-                    "WHERE a.$inputIdLow = b.$inputIdLow GROUP BY b.$inputIdUp"
+            query += "b.$inputIdUp FROM $inputLowerScaleTableName a, $inputUpperScaleTableName b " +
+                    "WHERE a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp"
             logger.info("Executing $query")
             datasource.execute query
             [outputTableName: outputTableName]
@@ -52,75 +87,83 @@ return processFactory.create(
  * example the mean building roof height within a reference spatial unit where the roof height values are weighted
  * by the values of building area)
  *
+ *  @param inputLowerScaleTableName the table name where are stored low scale objects and the id of the upper scale
+ *  zone they are belonging to (e.g. buildings)
+ *  @param inputUpperScaleTableName the table of the upper scale where the informations has to be aggregated to
+ *  @param inputIdUp the ID of the upper scale
+ *  @param inputVarWeightsOperations a map containing as key the informations that has to be transformed from the lower to
+ *  the upper scale, and as value a map containing as key the variable that has to be used as weight and as values
+ *  a LIST of operation to apply to this couple (information/weight). Note that the allowed operations should be in
+ *  the following list:
+ *           --> "STD": weighted standard deviation
+ *           --> "AVG": weighted mean
+ *  @param prefixName String use as prefix to name the output table
+ *
  * @return A database table name.
  * @author Jérémy Bernard
  */
 static IProcess weightedAggregatedStatistics() {
     return processFactory.create(
             "Weighted statistical operations from lower scale",
-            [inputLowerScaleTableName: String,inputCorrelationTableName: String,inputIdLow: String, inputIdUp: String,
-             inputToTransfo: String, inputWeight: String, operations: String[], outputTableName: String,
-             datasource: JdbcDataSource],
+            [inputLowerScaleTableName: String,inputUpperScaleTableName: String, inputIdUp: String,
+             inputVarWeightsOperations: String, prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { inputLowerScaleTableName, inputCorrelationTableName, inputIdLow, inputIdUp,
-              inputToTransfo, inputWeight, operations, outputTableName, datasource ->
+            { inputLowerScaleTableName, inputUpperScaleTableName, inputIdUp,
+              inputVarWeightsOperations, prefixName, datasource ->
                 def ops = ["AVG", "STD"]
+
+                // The name of the outputTableName is constructed
+                String baseName = "weighted_aggregated_statistics"
+                String outputTableName = prefixName + "_" + baseName
 
                 // To avoid overwriting the output files of this step, a unique identifier is created
                 def uid_out = System.currentTimeMillis()
 
                 // Temporary table names
                 def weighted_mean = "weighted_mean"+uid_out
-                def corr_weight_mean = "corr_weight_mean"+uid_out
-                def weighted_all = "weighted_all"+uid_out
 
                 // The weighted mean is calculated in all cases since it is useful for the STD calculation
-                datasource.execute(("CREATE INDEX IF NOT EXISTS id_l ON $inputLowerScaleTableName($inputIdLow); "+
-                        "CREATE INDEX IF NOT EXISTS id_lcorr ON $inputCorrelationTableName($inputIdLow); "+
-                        "CREATE INDEX IF NOT EXISTS id_ucorr ON $inputCorrelationTableName($inputIdUp); "+
-                        "DROP TABLE IF EXISTS $weighted_mean; CREATE TABLE $weighted_mean AS SELECT b.$inputIdUp, " +
-                        "SUM(a.$inputToTransfo*a.$inputWeight) / SUM(a.$inputWeight) " +
-                        "AS ${"weighted_avg_"+inputToTransfo} FROM $inputLowerScaleTableName a, " +
-                        "$inputCorrelationTableName b WHERE a.$inputIdLow = b.$inputIdLow GROUP BY " +
-                        "b.$inputIdUp").toString())
-
-                // The weighted std is calculated if needed
-                if(operations.contains("STD")) {
-                    // First, the weighted mean should be set for each rsu in the building/rsu correlation table
-                    datasource.execute(("CREATE INDEX IF NOT EXISTS id_ucorr ON $weighted_mean($inputIdUp); " +
-                            "DROP TABLE IF EXISTS $corr_weight_mean; CREATE TABLE $corr_weight_mean AS SELECT " +
-                            "a.*, b.${"weighted_avg_"+inputToTransfo} FROM $inputCorrelationTableName a " +
-                            "LEFT JOIN $weighted_mean b ON a.$inputIdUp = b.$inputIdUp").toString())
-                    datasource.execute(("CREATE INDEX IF NOT EXISTS id_lcorr ON $corr_weight_mean($inputIdLow); " +
-                            "CREATE INDEX IF NOT EXISTS id_ucorr ON $corr_weight_mean($inputIdUp); " +
-                            "DROP TABLE IF EXISTS $weighted_all; CREATE TABLE $weighted_all AS SELECT " +
-                            "POWER(SUM(a.$inputWeight*POWER(a.$inputToTransfo-b.${"weighted_avg_"+inputToTransfo},2))/" +
-                            "SUM(a.$inputWeight),0.5)" +
-                            " AS ${"weighted_std_" + inputToTransfo}, b.${"weighted_avg_" + inputToTransfo}, " +
-                            "b.$inputIdUp FROM $inputLowerScaleTableName a, $corr_weight_mean b" +
-                            " WHERE a.$inputIdLow = b.$inputIdLow GROUP BY b.$inputIdUp").toString())
-                }
-                // If STD is not calculated, the name of weighted_mean is modified
-                else{
-                    datasource.execute("ALTER TABLE $weighted_mean RENAME TO $weighted_all;".toString())
-                }
-
-                // Return only the needed fields and the object ID
-                String query = "CREATE TABLE $outputTableName AS SELECT "
-                operations.each {operation ->
-                    if(operation=="AVG"){
-                        query += "${"weighted_avg_"+inputToTransfo},"
-                    }
-                    if(operation=="STD"){
-                        query += "${"weighted_std_"+inputToTransfo},"
+                def weightedMeanQuery = "CREATE INDEX IF NOT EXISTS id_l ON $inputLowerScaleTableName($inputIdUp); "+
+                        "CREATE INDEX IF NOT EXISTS id_ucorr ON $inputUpperScaleTableName($inputIdUp); "+
+                        "DROP TABLE IF EXISTS $weighted_mean; CREATE TABLE $weighted_mean($inputIdUp INTEGER,"
+                def nameAndType = ""
+                def weightedMean = ""
+                inputVarWeightsOperations.each{var, weights ->
+                    weights.each{weight, operations ->
+                        nameAndType += "weighted_avg_${var}_$weight DOUBLE DEFAULT 0,"
+                        weightedMean += "SUM(a.$var*a.$weight) / SUM(a.$weight) AS weighted_avg_${var}_$weight,"
                     }
                 }
-                query += " $inputIdUp FROM $weighted_all"
-                logger.info("Executing $query")
-                datasource.execute query
+                weightedMeanQuery += nameAndType[0..-2] + ") AS (SELECT b.$inputIdUp, ${weightedMean[0..-2]}" +
+                        " FROM $inputLowerScaleTableName a, $inputUpperScaleTableName b " +
+                        "WHERE a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp)"
+                datasource.execute(weightedMeanQuery.toString())
+
+                // The weighted std is calculated if needed and only the needed fields are returned
+                def weightedStdQuery = "CREATE INDEX IF NOT EXISTS id_lcorr ON $weighted_mean($inputIdUp); " +
+                        "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT b.$inputIdUp,"
+                inputVarWeightsOperations.each{var, weights ->
+                    weights.each{weight, operations ->
+                        // The operation names are transformed into upper case
+                        operations.replaceAll({s -> s.toUpperCase()})
+                        if(operations.contains("AVG")) {
+                            weightedStdQuery += "b.weighted_avg_${var}_$weight,"
+                        }
+                        if(operations.contains("STD")) {
+                            weightedStdQuery += "POWER(SUM(a.$weight*POWER(a.$var-b.weighted_avg_${var}_$weight,2))/" +
+                                    "SUM(a.$weight),0.5) AS weighted_std_${var}_$weight,"
+                        }
+                    }
+                }
+                weightedStdQuery = weightedStdQuery[0..-2] +" FROM $inputLowerScaleTableName a, $weighted_mean b " +
+                        "WHERE a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp"
+
+                logger.info("Executing $weightedStdQuery")
+                datasource.execute weightedStdQuery
 
                 // The temporary tables are deleted
-                datasource.execute("DROP TABLE IF EXISTS $weighted_mean, $corr_weight_mean, $weighted_all".toString())
+                datasource.execute("DROP TABLE IF EXISTS $weighted_mean".toString())
+
                 [outputTableName: outputTableName]
             }
     )}
@@ -139,7 +182,7 @@ static IProcess blockPerkinsSkillScoreBuildingDirection() {
     return processFactory.create(
             "Block Perkins skill score building direction",
             [inputBuildingTableName: String,inputCorrelationTableName: String,
-             angleRangeSize: Integer, outputTableName: String, datasource: JdbcDataSource],
+             angleRangeSize: int, outputTableName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { inputBuildingTableName, inputCorrelationTableName, angleRangeSize = 15, outputTableName, datasource->
 
@@ -215,5 +258,39 @@ static IProcess blockPerkinsSkillScoreBuildingDirection() {
 
                     [outputTableName: outputTableName]
                 }
+            }
+    )}
+
+/**
+ * This process calculates the ratio between the area of hole within a block and the area of the block.
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param blockTable the name of the input ITable where are stored the block geometries
+ * @param prefixName String use as prefix to name the output table
+ *
+ * @return outputTableName Table name in which the block id and their corresponding indicator value are stored
+ * @author Jérémy Bernard
+ */
+static IProcess holeAreaDensity() {
+    return processFactory.create(
+            "Hole area ratio",
+            [blockTable: String, prefixName: String, datasource: JdbcDataSource],
+            [outputTableName : String],
+            { blockTable, prefixName, datasource ->
+                def geometricField = "the_geom"
+                def idColumnBl = "id_block"
+
+                // The name of the outputTableName is constructed
+                String baseName = "block_hole_area_density"
+                String outputTableName = prefixName + "_" + baseName
+
+                String query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
+                        "SELECT $idColumnBl, ST_AREA(ST_HOLES($geometricField))/ST_AREA($geometricField) " +
+                        "AS $baseName FROM $blockTable"
+
+                logger.info("Executing $query")
+                datasource.execute query
+                [outputTableName: outputTableName]
             }
     )}
