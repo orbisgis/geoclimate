@@ -262,6 +262,40 @@ static IProcess blockPerkinsSkillScoreBuildingDirection() {
     )}
 
 /**
+ * This process calculates the ratio between the area of hole within a block and the area of the block.
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param blockTable the name of the input ITable where are stored the block geometries
+ * @param prefixName String use as prefix to name the output table
+ *
+ * @return outputTableName Table name in which the block id and their corresponding indicator value are stored
+ * @author Jérémy Bernard
+ */
+static IProcess holeAreaDensity() {
+    return processFactory.create(
+            "Hole area ratio",
+            [blockTable: String, prefixName: String, datasource: JdbcDataSource],
+            [outputTableName : String],
+            { blockTable, prefixName, datasource ->
+                def geometricField = "the_geom"
+                def idColumnBl = "id_block"
+
+                // The name of the outputTableName is constructed
+                String baseName = "block_hole_area_density"
+                String outputTableName = prefixName + "_" + baseName
+
+                String query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
+                        "SELECT $idColumnBl, ST_AREA(ST_HOLES($geometricField))/ST_AREA($geometricField) " +
+                        "AS $baseName FROM $blockTable"
+
+                logger.info("Executing $query")
+                datasource.execute query
+                [outputTableName: outputTableName]
+            }
+    )}
+
+/**
  * This indicator is usefull for the urban fabric classification proposed in Thornay et al. (2017) and also described
  * in Bocher et al. (2018). It answers to the Step 11 of the manual decision tree which consists in checking whether
  * the block is closed (continuous buildings the aligned along road). In order to identify the RSU with closed blocks,
