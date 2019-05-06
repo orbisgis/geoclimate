@@ -1077,3 +1077,53 @@ static IProcess waterFraction() {
                 [outputTableName: outputTableName]
             }
     )}
+
+/**
+ * Script to compute the pervious and impervious fraction within each RSU of an area from other land fractions.
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param rsuTable the name of the input ITable where are stored the land fractions used for the pervious and impervious
+ * fractions"
+ * @param operationsAndComposition a map containing as key the name of the operations to perform (pervious fraction
+ * or impervious fraction) and as value the list of land fractions which constitutes them (and which are stored
+ * in the rsuTable).
+ *          -> "pervious_fraction": default composed of "low_vegetation_fraction" and "water_fraction"
+ *          -> "impervious_fraction": default composed of "road_fraction" only
+ * @param prefixName String used as prefix to name the output table
+ *
+ * @return outputTableName Table name in which the rsu id and their corresponding indicator value are stored
+ *
+ * @author Jérémy Bernard
+ */
+static IProcess perviousnessFraction() {
+    return processFactory.create(
+            "Perviousness fraction",
+            [rsuTable: String, operationsAndComposition: String[], prefixName: String, datasource: JdbcDataSource],
+            [outputTableName : String],
+            { rsuTable, operationsAndComposition = ["pervious_fraction" : ["low_vegetation_fraction",
+                                                                           "water_fraction"], "impervious_fraction" : ["road_fraction"]], prefixName, datasource ->
+
+                def idColumnRsu = "id_rsu"
+
+                // The name of the outputTableName is constructed
+                String baseName = "perviousness_fraction"
+                String outputTableName = prefixName + "_" + baseName
+
+                // The pervious or impervious fractions are calculated
+                def query = "DROP TABLE IF EXISTS $outputTableName; " +
+                        "CREATE TABLE $outputTableName AS SELECT $idColumnRsu, "
+
+                operationsAndComposition.each{indic, land_fractions ->
+                    land_fractions.each{lf ->
+                        query += "$lf +"
+                    }
+                    query = query[0..-2] + "AS $indic,"
+                }
+                query = query[0..-2] + " FROM $rsuTable;"
+
+                logger.info("Executing $query")
+                datasource.execute query
+                [outputTableName: outputTableName]
+            }
+    )}
