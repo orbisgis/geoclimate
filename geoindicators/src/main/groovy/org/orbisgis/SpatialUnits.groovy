@@ -175,7 +175,7 @@ static IProcess createBlocks(){
     return processFactory.create("Merge the geometries that touch each other",
             [inputTableName: String, distance : double, prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { inputTableName,distance =0.01, prefixName="block", datasource ->
+            { inputTableName,distance =0.0, prefixName="block", datasource ->
                 logger.info("Merging the geometries...")
                 String outputTableName =  prefixName+"_"+UUID.randomUUID().toString().replaceAll("-","_")
                 datasource.execute "DROP TABLE IF EXISTS $outputTableName".toString()
