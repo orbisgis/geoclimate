@@ -18,15 +18,19 @@ import org.orbisgis.processmanagerapi.IProcess
 static IProcess rsuFreeExternalFacadeDensity() {
 return processFactory.create(
         "RSU free external facade density",
-        [buildingTable: String,inputColumns:String[],correlationTable: String,
-         buContiguityColumn: String, buTotalFacadeLengthColumn: String, outputTableName: String, datasource: JdbcDataSource],
+        [buildingTable: String,correlationTable: String,
+         buContiguityColumn: String, buTotalFacadeLengthColumn: String, prefixName: String, datasource: JdbcDataSource],
         [outputTableName : String],
-        { buildingTable, inputColumns, correlationTable, buContiguityColumn, buTotalFacadeLengthColumn,
-          outputTableName, datasource ->
+        { buildingTable, correlationTable, buContiguityColumn, buTotalFacadeLengthColumn,
+          prefixName, datasource ->
             def geometricFieldRsu = "the_geom"
             def idFieldBu = "id_build"
             def idFieldRsu = "id_rsu"
             def height_wall = "height_wall"
+
+            // The name of the outputTableName is constructed
+            String baseName = "rsu_free_external_facade_density"
+            String outputTableName = prefixName + "_" + baseName
 
             String query = "CREATE INDEX IF NOT EXISTS id_bua ON $buildingTable($idFieldBu); "+
                             "CREATE INDEX IF NOT EXISTS id_bub ON $correlationTable($idFieldBu); "+
@@ -35,11 +39,7 @@ return processFactory.create(
                             "SELECT SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$height_wall)/"+
                             "st_area(b.$geometricFieldRsu) AS rsu_free_external_facade_density, b.$idFieldRsu "
 
-            if(!inputColumns.isEmpty()){
-                query += ", a.${inputColumns.join(",a.")} "
-            }
-
-            query += "FROM $buildingTable a, $correlationTable b "+
+            query += " FROM $buildingTable a, $correlationTable b "+
                         "WHERE a.$idFieldBu = b.$idFieldBu GROUP BY b.$idFieldRsu, b.$geometricFieldRsu;"
 
             logger.info("Executing $query")
@@ -72,12 +72,12 @@ return processFactory.create(
 static IProcess rsuGroundSkyViewFactor() {
     return processFactory.create(
             "RSU ground sky view factor",
-            [rsuTable: String,inputColumns:String[],correlationBuildingTable: String,
+            [rsuTable: String,correlationBuildingTable: String,
              rsuAreaColumn: String, rsuBuildingDensityColumn: String, pointDensity: double, rayLength: double,
-             numberOfDirection: int, outputTableName: String, datasource: JdbcDataSource],
+             numberOfDirection: int, prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { rsuTable, inputColumns, correlationBuildingTable, rsuAreaColumn, rsuBuildingDensityColumn,
-              pointDensity = 0.008, rayLength = 100, numberOfDirection = 60, outputTableName, datasource ->
+            { rsuTable, correlationBuildingTable, rsuAreaColumn, rsuBuildingDensityColumn,
+              pointDensity = 0.008, rayLength = 100, numberOfDirection = 60, prefixName, datasource ->
                 def geometricColumnRsu = "the_geom"
                 def geometricColumnBu = "the_geom"
                 def idColumnRsu = "id_rsu"
@@ -94,6 +94,10 @@ static IProcess rsuGroundSkyViewFactor() {
                 def ptsRSUfreeall = "ptsRSUfreeall"+uid_out
                 def randomSample = "randomSample"+uid_out
                 def svfPts = "svfPts"+uid_out
+
+                // The name of the outputTableName is constructed
+                String baseName = "rsu_ground_sky_view_factor"
+                String outputTableName = prefixName + "_" + baseName
 
                 // Other local variables
                 // Size of the grid mesh used to sample each RSU (according to the point density, we take a factor 10
@@ -173,21 +177,23 @@ static IProcess rsuGroundSkyViewFactor() {
 static IProcess rsuAspectRatio() {
     return processFactory.create(
             "RSU aspect ratio",
-            [rsuTable: String, inputColumns:String[], rsuFreeExternalFacadeDensityColumn: String,
-             rsuBuildingDensityColumn: String, outputTableName: String, datasource: JdbcDataSource],
+            [rsuTable: String, rsuFreeExternalFacadeDensityColumn: String,
+             rsuBuildingDensityColumn: String, prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { rsuTable, inputColumns, rsuFreeExternalFacadeDensityColumn, rsuBuildingDensityColumn,
-              outputTableName, datasource ->
+            { rsuTable, rsuFreeExternalFacadeDensityColumn, rsuBuildingDensityColumn,
+              prefixName, datasource ->
+
+                def columnIdRsu = "id_rsu"
+
+                // The name of the outputTableName is constructed
+                String baseName = "rsu_aspect_ratio"
+                String outputTableName = prefixName + "_" + baseName
 
                 String query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS "+
                         "SELECT $rsuFreeExternalFacadeDensityColumn/(1-$rsuBuildingDensityColumn) AS "+
                         "rsu_aspect_ratio "
 
-                if(!inputColumns.isEmpty()){
-                    query += ", ${inputColumns.join(",")} "
-                }
-
-                query += " FROM $rsuTable"
+                query += ", $columnIdRsu FROM $rsuTable"
 
                 logger.info("Executing $query")
                 datasource.execute query
@@ -213,11 +219,11 @@ static IProcess rsuAspectRatio() {
 static IProcess rsuProjectedFacadeAreaDistribution() {
     return processFactory.create(
             "RSU projected facade area distribution",
-            [buildingTable: String, rsuTable: String, inputColumns: String[], listLayersBottom: double[], numberOfDirection: int,
-             outputTableName: String, datasource: JdbcDataSource],
+            [buildingTable: String, rsuTable: String, listLayersBottom: double[], numberOfDirection: int,
+             prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { buildingTable, rsuTable, inputColumns, listLayersBottom = [0, 10, 20, 30, 40, 50], numberOfDirection = 12,
-              outputTableName, datasource ->
+            { buildingTable, rsuTable, listLayersBottom = [0, 10, 20, 30, 40, 50], numberOfDirection = 12,
+              prefixName, datasource ->
 
                 if(180%numberOfDirection==0 & numberOfDirection%2==0){
                     def geometricColumnRsu = "the_geom"
@@ -242,6 +248,10 @@ static IProcess rsuProjectedFacadeAreaDistribution() {
                     // The projection should be performed at the median of the angle interval
                     def dirMedDeg = 180/numberOfDirection
                     def dirMedRad = Math.toRadians(dirMedDeg)
+
+                    // The name of the outputTableName is constructed
+                    String baseName = "rsu_projected_facade_area_distribution"
+                    String outputTableName = prefixName + "_" + baseName
 
                     // The list that will store the fields name is initialized
                     def names = []
@@ -322,7 +332,7 @@ static IProcess rsuProjectedFacadeAreaDistribution() {
 
                     // Basic informations are stored in the result Table where will be added all fields
                     // corresponding to the distribution
-                    datasource.execute(("CREATE TABLE ${finalIndicator}_0 AS SELECT ${inputColumns.join(",")} "+
+                    datasource.execute(("CREATE TABLE ${finalIndicator}_0 AS SELECT $idColumnRsu "+
                             "FROM $rsuTable").toString())
 
 
@@ -358,7 +368,7 @@ static IProcess rsuProjectedFacadeAreaDistribution() {
                                 "CREATE INDEX IF NOT EXISTS id_fin ON ${finalIndicator}_$d(id_rsu); "+
                                 "CREATE TABLE ${finalIndicator}_${d+1} AS SELECT a.*, ${calcQuery[0..-3]} "+
                                 "FROM ${finalIndicator}_$d a LEFT JOIN $rsuInterRot b "+
-                                "ON a.id_rsu = b.ID_RSU GROUP BY a.id_rsu, a.the_geom").toString())
+                                "ON a.id_rsu = b.ID_RSU GROUP BY a.id_rsu").toString())
                     }
 
                     datasource.execute(("DROP TABLE IF EXISTS $outputTableName; ALTER TABLE "+
@@ -401,10 +411,10 @@ static IProcess rsuRoofAreaDistribution() {
     return processFactory.create(
             "RSU roof area distribution",
             [rsuTable: String, correlationBuildingTable: String, listLayersBottom: double[],
-             outputTableName: String, datasource: JdbcDataSource],
+             prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { rsuTable, correlationBuildingTable, listLayersBottom = [0, 10, 20, 30, 40, 50],
-              outputTableName, datasource ->
+              prefixName, datasource ->
 
                 def geometricColumnRsu = "the_geom"
                 def geometricColumnBu = "the_geom"
@@ -421,6 +431,10 @@ static IProcess rsuRoofAreaDistribution() {
                 def buildVertRoofInter = "build_vert_roof_inter" + uid_out
                 def buildVertRoofAll = "buildVertRoofAll" + uid_out
                 def buildRoofSurfTot = "build_roof_surf_tot" + uid_out
+
+                // The name of the outputTableName is constructed
+                String baseName = "rsu_roof_area_distribution"
+                String outputTableName = prefixName + "_" + baseName
 
                 // Vertical and non-vertical (tilted and horizontal) roof areas are calculated
                 datasource.execute(("CREATE TABLE $buildRoofSurfIni AS SELECT $geometricColumnBu, $idColumnRsu," +

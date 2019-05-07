@@ -121,10 +121,10 @@ class BlockIndicatorsTests {
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 9")
 
         def  p =  Geoclimate.BlockIndicators.blockPerkinsSkillScoreBuildingDirection()
-        p.execute([inputBuildingTableName: "tempo_build",inputCorrelationTableName: "block_build_corr",
-                   angleRangeSize: 15, outputTableName: "block_perkins_skill_score_building_direction", datasource: h2GIS])
+        p.execute([buildingTableName: "tempo_build",correlationTableName: "block_build_corr",
+                   angleRangeSize: 15, prefixName: "test", datasource: h2GIS])
         def concat = 0
-        h2GIS.eachRow("SELECT * FROM block_perkins_skill_score_building_direction WHERE id_block = 4"){
+        h2GIS.eachRow("SELECT * FROM test_block_perkins_skill_score_building_direction WHERE id_block = 4"){
             row ->
                 concat+= row.block_perkins_skill_score_building_direction
         }

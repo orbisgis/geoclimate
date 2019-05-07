@@ -13,7 +13,7 @@ import org.orbisgis.processmanagerapi.IProcess
  * @param inputTableName The input spatial table to be processed
  * @param prefixName A prefix used to name the output table
  * @param datasource A connection to a database
- * @param outputTableName The name of the output table
+ *
  * @return A database table name.
  */
 static IProcess createRSU(){
@@ -22,7 +22,11 @@ static IProcess createRSU(){
             [outputTableName : String],
             { inputTableName, prefixName='rsu', datasource ->
                 logger.info("Creating the reference spatial units")
-                String outputTableName =  prefixName+"_"+UUID.randomUUID().toString().replaceAll("-","_")
+
+                // The name of the outputTableName is constructed
+                String baseName = "created_rsu"
+                String outputTableName = prefixName + "_" + baseName
+
                 datasource.execute "DROP TABLE IF EXISTS $outputTableName".toString()
                 datasource.execute "CREATE TABLE $outputTableName as  select  EXPLOD_ID as id_rsu, the_geom".toString()+
                         " from st_explode ('(select st_polygonize(st_union(".toString()+
@@ -60,7 +64,11 @@ static IProcess prepareRSUData(){
               surface_hydrographic=2500 ,prefixName="unified_abstract_model", datasource ->
                 logger.info("Creating the reference spatial units")
                 String uuid_tmp =  UUID.randomUUID().toString().replaceAll("-", "_")+"_"
-                String outputTableName =  prefixName+"_"+uuid_tmp
+
+                // The name of the outputTableName is constructed
+                String baseName = "prepared_rsu_data"
+                String outputTableName = prefixName + "_" + baseName
+
                 def numberZone = datasource.firstRow("select count(*) as nb from $zoneTable".toString()).nb
 
                 if(numberZone==1){
@@ -177,7 +185,11 @@ static IProcess createBlocks(){
             [outputTableName : String],
             { inputTableName,distance =0.0, prefixName="block", datasource ->
                 logger.info("Merging the geometries...")
-                String outputTableName =  prefixName+"_"+UUID.randomUUID().toString().replaceAll("-","_")
+
+                // The name of the outputTableName is constructed
+                String baseName = "created_blocks"
+                String outputTableName = prefixName + "_" + baseName
+
                 datasource.execute "DROP TABLE IF EXISTS $outputTableName".toString()
                 datasource.execute "CREATE TABLE $outputTableName as  select  EXPLOD_ID as id_block, the_geom ".toString()+
                         "from st_explode ('(select ST_UNION(ST_ACCUM(ST_BUFFER(THE_GEOM,$distance))) as the_geom".toString()+
@@ -212,7 +224,9 @@ static IProcess createScalesRelations(){
                 def geometricColumnLow = "the_geom"
                 def geometricColumnUp = "the_geom"
 
+                // The name of the outputTableName is constructed
                 String outputTableName =  prefixName+"_"+inputLowerScaleTableName+"_corr"
+
                 datasource.execute(("DROP TABLE IF EXISTS $outputTableName; CREATE INDEX IF NOT EXISTS ids_l "+
                         "ON $inputLowerScaleTableName($geometricColumnLow) USING RTREE; CREATE INDEX IF NOT EXISTS "+
                         "ids_u ON $inputUpperScaleTableName($geometricColumnUp) USING RTREE").toString())

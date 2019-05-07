@@ -9,6 +9,16 @@ import org.orbisgis.processmanagerapi.IProcess
 
 /**
  * This process extract geometry properties.
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param inputFields Fields to conserved from the input table in the output table
+ * @param inputTableName The name of the input ITable where are stored the geometries to apply the geometry operations
+ * @param operations Operations that have to be applied. These operations should be in the following list (see http://www.h2gis.org/docs/dev/functions/):
+ * ["st_geomtype","st_srid", "st_length","st_perimeter","st_area", "st_dimension", "st_coorddim", "st_num_geoms",
+ * "st_num_pts", "st_issimple", "st_isvalid", "st_isempty"]
+ * @param prefixName String use as prefix to name the output table
+ *
  * @return A database table name.
  * @author Erwan Bocher
  */
@@ -16,13 +26,19 @@ static IProcess geometryProperties() {
 return processFactory.create(
         "Geometry properties",
         [inputTableName: String,inputFields:String[],operations: String[]
-         , outputTableName: String, datasource: JdbcDataSource],
+         , prefixName: String, datasource: JdbcDataSource],
         [outputTableName : String],
-        { inputTableName,inputFields, operations, outputTableName, datasource ->
-            String query = "CREATE TABLE $outputTableName AS SELECT "
+        { inputTableName,inputFields, operations, prefixName, datasource ->
+
             def geometricField = "the_geom";
             def ops = ["st_geomtype","st_srid", "st_length","st_perimeter","st_area", "st_dimension",
                    "st_coorddim", "st_num_geoms", "st_num_pts", "st_issimple", "st_isvalid", "st_isempty"]
+
+            // The name of the outputTableName is constructed
+            String baseName = "geometry_properties"
+            String outputTableName = prefixName + "_" + baseName
+
+            String query = "CREATE TABLE $outputTableName AS SELECT "
 
             operations.each {operation ->
                 if(ops.contains(operation)){
@@ -39,11 +55,17 @@ return processFactory.create(
 /**
  * This process extract building size properties.
  *
- * --> "building_volume": defined as the building area multiplied by the mean of the building
- * wall height and the building roof height.
- * --> "building_floor_area": defined as the number of level multiplied by the building area (cf. Bocher et al. - 2018)
- * --> "building_total_facade_length": defined as the total linear of facade (sum of the building perimeter and
- * the perimeter of the building courtyards)
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param inputBuildingTableName The name of the input ITable where are stored the building geometries
+ * @param operations Operations that have to be applied. These operations should be in the following list:
+ *          --> "building_volume": defined as the building area multiplied by the mean of the building
+ *          wall height and the building roof height.
+ *          --> "building_floor_area": defined as the number of level multiplied by the building area
+ *          (cf. Bocher et al. - 2018)
+ *          --> "building_total_facade_length": defined as the total linear of facade (sum of the building perimeter
+ *          and the perimeter of the building courtyards)
+ * @param prefixName String use as prefix to name the output table
  *
  * References:
  *   Bocher, E., Petit, G., Bernard, J., & Palominos, S. (2018). A geoprocessing framework to compute
@@ -55,15 +77,22 @@ return processFactory.create(
 static IProcess buildingSizeProperties() {
     return processFactory.create(
             "Building size properties",
-            [inputBuildingTableName: String,inputFields:String[],operations: String[]
-             , outputTableName: String, datasource: JdbcDataSource],
+            [inputBuildingTableName: String, operations: String[]
+             , prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { inputBuildingTableName,inputFields, operations, outputTableName, datasource ->
-                String query = "CREATE TABLE $outputTableName AS SELECT "
+            { inputBuildingTableName, operations, prefixName, datasource ->
+
                 def geometricField = "the_geom"
+                def columnIdBu ="id_build"
                 def dist_passiv = 3
                 def ops = ["building_volume","building_floor_area", "building_total_facade_length",
                            "building_passive_volume_ratio"]
+
+                // The name of the outputTableName is constructed
+                String baseName = "building_size_properties"
+                String outputTableName = prefixName + "_" + baseName
+
+                String query = "CREATE TABLE $outputTableName AS SELECT "
 
                 operations.each {operation ->
                     if(operation=="building_volume") {
@@ -81,7 +110,7 @@ static IProcess buildingSizeProperties() {
                                 "ST_AREA($geometricField) AS building_passive_volume_ratio,"
                     }
                 }
-                query+= "${inputFields.join(",")} FROM $inputBuildingTableName"
+                query+= "$columnIdBu FROM $inputBuildingTableName"
                 logger.info("Executing $query")
                 datasource.execute query
                 [outputTableName: outputTableName]
@@ -92,13 +121,18 @@ static IProcess buildingSizeProperties() {
 /**
  * This process extract building interactions properties.
  *
- * --> "building_contiguity": defined as the shared wall area divided by the total building wall area
- * (cf. Bocher et al. - 2018)
- * --> "building_common_wall_fraction": defined as ratio between the lenght of building wall shared with other buildings
- * and the length of total building walls
- * --> "building_number_building_neighbor": defined as the number of building  neighbors in contact with the building
- * (cf. Bocher et al. - 2018)
- *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param inputBuildingTableName The name of the input ITable where are stored the building geometries
+ * @param operations Operations that have to be applied. These operations should be in the following list:
+ *              --> "building_contiguity": defined as the shared wall area divided by the total building wall area
+ *              (cf. Bocher et al. - 2018)
+ *              --> "building_common_wall_fraction": defined as ratio between the lenght of building wall shared with other buildings
+ *              and the length of total building walls
+ *              --> "building_number_building_neighbor": defined as the number of building  neighbors in contact with the building
+ *              (cf. Bocher et al. - 2018)
+ * @param prefixName String use as prefix to name the output table
+
  * References:
  *   Bocher, E., Petit, G., Bernard, J., & Palominos, S. (2018). A geoprocessing framework to compute
  * urban indicators: The MApUCE tools chain. Urban climate, 24, 153-174.
@@ -109,10 +143,10 @@ static IProcess buildingSizeProperties() {
 static IProcess buildingNeighborsProperties() {
     return processFactory.create(
             "Building interactions properties",
-            [inputBuildingTableName: String,inputFields:String[],operations: String[]
-             , outputTableName: String, datasource: JdbcDataSource],
+            [inputBuildingTableName: String, operations: String[]
+             , prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { inputBuildingTableName,inputFields, operations, outputTableName, datasource ->
+            { inputBuildingTableName, operations, prefixName, datasource ->
                 def geometricField = "the_geom"
                 def idField = "id_build"
                 def height_wall = "height_wall"
@@ -123,6 +157,9 @@ static IProcess buildingNeighborsProperties() {
                 // Temporary table names
                 def build_intersec = "build_intersec"+uid_out
 
+                // The name of the outputTableName is constructed
+                String baseName = "building_neighbors_properties"
+                String outputTableName = prefixName + "_" + baseName
 
                 String query = "CREATE INDEX IF NOT EXISTS buff_ids ON $inputBuildingTableName($geometricField) USING RTREE; " +
                         "CREATE INDEX IF NOT EXISTS buff_id ON $inputBuildingTableName($idField);" +
@@ -151,12 +188,12 @@ static IProcess buildingNeighborsProperties() {
                         query_update+= "UPDATE $outputTableName SET $operation = 0 WHERE $operation IS null;"
                     }
                 }
-                query+= "a.${inputFields.join(",a.")} FROM $inputBuildingTableName a, $inputBuildingTableName b" +
+                query+= "a.$idField FROM $inputBuildingTableName a, $inputBuildingTableName b" +
                         " WHERE a.$geometricField && b.$geometricField AND " +
                         "ST_INTERSECTS(a.$geometricField, b.$geometricField) AND a.$idField <> b.$idField" +
                         " GROUP BY a.$idField;" +
                         "CREATE INDEX IF NOT EXISTS buff_id ON $build_intersec($idField);" +
-                        "CREATE TABLE $outputTableName AS SELECT b.${operations.join(",b.")}, a.${inputFields.join(",a.")}" +
+                        "CREATE TABLE $outputTableName AS SELECT b.${operations.join(",b.")}, a.$idField" +
                         " FROM $inputBuildingTableName a LEFT JOIN $build_intersec b ON a.$idField = b.$idField;"
                 query+= query_update
 
@@ -173,15 +210,20 @@ static IProcess buildingNeighborsProperties() {
 /**
  * This process extract building form properties.
  *
- * --> "building_concavity": defined as the building area divided by the convex hull area (cf. Bocher et al. - 2018)
- * --> "building_form_factor": defined as ratio between the building area divided by the square of the building
- * perimeter (cf. Bocher et al. - 2018)
- * --> "building_raw_compacity": defined as the ratio between building surfaces (walls and roof) divided by the
- * building volume at the power 2./3. For the calculation, the roof is supposed to have a gable and the roof surface
- * is calculated considering that the building is square (otherwise, the assumption related to the gable direction
- * would strongly affect the result).
- * --> "building_convexhull_perimeter_density": defined as the ratio between building convexhull perimeter and
- * building perimeter.
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param inputBuildingTableName The name of the input ITable where are stored the building geometries
+ * @param operations Operations that have to be applied. These operations should be in the following list:
+ *              --> "building_concavity": defined as the building area divided by the convex hull area (cf. Bocher et al. - 2018)
+ *              --> "building_form_factor": defined as ratio between the building area divided by the square of the building
+ *              perimeter (cf. Bocher et al. - 2018)
+ *              --> "building_raw_compacity": defined as the ratio between building surfaces (walls and roof) divided by the
+ *              building volume at the power 2./3. For the calculation, the roof is supposed to have a gable and the roof surface
+ *              is calculated considering that the building is square (otherwise, the assumption related to the gable direction
+ *              would strongly affect the result).
+ *              --> "building_convexhull_perimeter_density": defined as the ratio between building convexhull perimeter and
+ *              building perimeter.
+ * @param prefixName String use as prefix to name the output table
  *
  * References:
  *   Bocher, E., Petit, G., Bernard, J., & Palominos, S. (2018). A geoprocessing framework to compute
@@ -193,15 +235,20 @@ static IProcess buildingNeighborsProperties() {
 static IProcess buildingFormProperties() {
     return processFactory.create(
             "Building form properties",
-            [inputBuildingTableName: String,inputFields:String[],operations: String[]
-             , outputTableName: String, datasource: JdbcDataSource],
+            [inputBuildingTableName: String,operations: String[]
+             , prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { inputBuildingTableName,inputFields, operations, outputTableName, datasource ->
+            { inputBuildingTableName, operations, prefixName, datasource ->
                 def geometricField = "the_geom"
+                def idField = "id_build"
                 def height_wall = "height_wall"
                 def height_roof = "height_roof"
                 def ops = ["building_concavity","building_form_factor",
                            "building_raw_compacity", "building_convexhull_perimeter_density"]
+
+                // The name of the outputTableName is constructed
+                String baseName = "building_form_properties"
+                String outputTableName = prefixName + "_" + baseName
 
                 String query = " CREATE TABLE $outputTableName AS SELECT "
 
@@ -224,7 +271,7 @@ static IProcess buildingFormProperties() {
                                 "ST_PERIMETER(ST_HOLES($geometricField))) AS $operation,"
                     }
                 }
-                query+= "${inputFields.join(",")} FROM $inputBuildingTableName"
+                query+= "$idField FROM $inputBuildingTableName"
 
                 logger.info("Executing $query")
                 datasource.execute query
@@ -236,16 +283,23 @@ static IProcess buildingFormProperties() {
  * This process extract the building closest distance to an other building. A buffer of defined size (bufferDist argument,
  * default 100 m) is used to get the buildings within the building of interest and then the minimum distance is calculated.
  *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param inputBuildingTableName The name of the input ITable where are stored the building geometries
+ * @param bufferDist Distance (in meter) used to consider the neighbors of a building. If there is no building within this buffer
+ * distance of a building, the minimum distance is set to this value.
+ * @param prefixName String use as prefix to name the output table
+ *
  * @return A database table name.
  * @author Jérémy Bernard
  */
 static IProcess buildingMinimumBuildingSpacing() {
     return processFactory.create(
             "Building minimum building spacing",
-            [inputBuildingTableName: String,inputFields:String[],bufferDist: double
-             , outputTableName: String, datasource: JdbcDataSource],
+            [inputBuildingTableName: String,bufferDist: double
+             , prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { inputBuildingTableName,inputFields, bufferDist = 100, outputTableName, datasource ->
+            { inputBuildingTableName, bufferDist = 100, prefixName, datasource ->
                 def geometricField = "the_geom"
                 def idField = "id_build"
 
@@ -255,6 +309,10 @@ static IProcess buildingMinimumBuildingSpacing() {
                 // Temporary table names
                 def build_buffer = "build_buffer"+uid_out
                 def build_within_buffer = "build_within_buffer"+uid_out
+
+                // The name of the outputTableName is constructed
+                String baseName = "building_minimum_building_spacing"
+                String outputTableName = prefixName + "_" + baseName
 
                 // The buffer is created
                 datasource.execute(("CREATE TABLE $build_buffer AS SELECT $idField, ST_BUFFER($geometricField, $bufferDist)"+
@@ -274,7 +332,7 @@ static IProcess buildingMinimumBuildingSpacing() {
                 // The minimum distance is calculated
                 datasource.execute(("DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS "+
                                     "SELECT MIN(ST_DISTANCE(a.$geometricField, b.$geometricField)) AS building_minimum_building_spacing, "+
-                                    "a.${inputFields.join(",a.")} FROM $build_within_buffer b RIGHT JOIN $inputBuildingTableName a ON a.$idField = b.$idField"+
+                                    "a.$idField FROM $build_within_buffer b RIGHT JOIN $inputBuildingTableName a ON a.$idField = b.$idField"+
                                     " GROUP BY a.$idField").toString())
                 // The minimum distance is set to the $inputE value for buildings having no building neighbors in a $inputE meters distance
                 datasource.execute(("UPDATE $outputTableName SET building_minimum_building_spacing = $bufferDist "+
@@ -290,16 +348,24 @@ static IProcess buildingMinimumBuildingSpacing() {
  * This process extract the building closest distance to a road. A buffer of defined size (bufferDist argument)
  * is used to get the roads within the building of interest and then the minimum distance is calculated.
  *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param inputBuildingTableName The name of the input ITable where are stored the building geometries
+ * @param inputRoadTableName The name of the input ITable where are stored the road geometries
+ * @param bufferDist Distance (in meter) used to consider the neighbors of a building. If there is no road within
+ * this buffer distance of a building, the minimum distance to a road is set to this value.
+ * @param prefixName String use as prefix to name the output table
+ *
  * @return A database table name.
  * @author Jérémy Bernard
  */
 static IProcess buildingRoadDistance() {
     return processFactory.create(
             "Building road distance",
-            [inputBuildingTableName: String, inputRoadTableName: String, inputFields:String[], bufferDist: double
-             , outputTableName: String, datasource: JdbcDataSource],
+            [inputBuildingTableName: String, inputRoadTableName: String, bufferDist: double
+             , prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { inputBuildingTableName, inputRoadTableName, inputFields, bufferDist = 100, outputTableName, datasource ->
+            { inputBuildingTableName, inputRoadTableName, bufferDist = 100, prefixName, datasource ->
                 def geometricField = "the_geom"
                 def idFieldBu = "id_build"
                 def road_width = "width"
@@ -311,6 +377,10 @@ static IProcess buildingRoadDistance() {
                 def build_buffer = "build_buffer"+uid_out
                 def road_surf = "road_surf"+uid_out
                 def road_within_buffer = "road_within_buffer"+uid_out
+
+                // The name of the outputTableName is constructed
+                String baseName = "building_road_distance"
+                String outputTableName = prefixName + "_" + baseName
 
                 // The buffer is created
                 datasource.execute(("CREATE TABLE $build_buffer AS SELECT $idFieldBu, ST_BUFFER($geometricField, $bufferDist)"+
@@ -330,7 +400,7 @@ static IProcess buildingRoadDistance() {
                 // The minimum distance is calculated between each building and the surrounding roads
                 datasource.execute(("DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS "+
                                     "SELECT LEAST(st_distance(a.$geometricField, b.$geometricField)) AS building_road_distance, "+
-                                    "a.${inputFields.join(",a.")} FROM $road_within_buffer b RIGHT JOIN $inputBuildingTableName a "+
+                                    "a.$idFieldBu FROM $road_within_buffer b RIGHT JOIN $inputBuildingTableName a "+
                                     "ON a.$idFieldBu = b.$idFieldBu GROUP BY a.$idFieldBu").toString())
                 // The minimum distance is set to the bufferDist value for buildings having no road within a bufferDist meters distance
                 datasource.execute(("UPDATE $outputTableName SET building_road_distance = $bufferDist "+

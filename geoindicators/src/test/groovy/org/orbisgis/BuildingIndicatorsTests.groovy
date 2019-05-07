@@ -10,14 +10,14 @@ class BuildingIndicatorsTests {
     void testGeometryProperties() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         h2GIS.execute("""
-                DROP TABLE IF EXISTS spatial_table, geom_properties;
+                DROP TABLE IF EXISTS spatial_table, test_geometry_properties;
                 CREATE TABLE spatial_table (id int, the_geom LINESTRING);
                 INSERT INTO spatial_table VALUES (1, 'LINESTRING(0 0, 0 10)'::GEOMETRY);
         """)
        def  p =  Geoclimate.BuildingIndicators.geometryProperties()
-       p.execute([inputTableName: "spatial_table", inputFields:["id", "the_geom"], operations:["st_issimple","st_area", "area", "st_dimension"], outputTableName : "geom_properties",datasource:h2GIS])
-        assert p.results.outputTableName == "geom_properties"
-        h2GIS.getTable("geom_properties").eachRow {
+       p.execute([inputTableName: "spatial_table", inputFields:["id", "the_geom"], operations:["st_issimple","st_area", "area", "st_dimension"], prefixName : "test",datasource:h2GIS])
+        assert p.results.outputTableName == "test_geometry_properties"
+        h2GIS.getTable("test_geometry_properties").eachRow {
             row -> assert row.the_geom!=null
                 assert row.st_issimple==true
                 assertEquals(0,row.st_area)
@@ -33,14 +33,13 @@ class BuildingIndicatorsTests {
         h2GIS.execute(sqlString)
 
         // Only the first 1 first created buildings are selected for the tests
-        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, building_size_properties; CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build = 7;")
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, test_building_size_properties; CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build = 7;")
 
         def  p =  Geoclimate.BuildingIndicators.buildingSizeProperties()
-        p.execute([inputBuildingTableName: "tempo_build", inputFields:["id_build", "the_geom"],
-                   operations:["building_volume", "building_floor_area", "building_total_facade_length",
+        p.execute([inputBuildingTableName: "tempo_build", operations:["building_volume", "building_floor_area", "building_total_facade_length",
                                "building_passive_volume_ratio"],
-                   outputTableName : "building_size_properties",datasource:h2GIS])
-        h2GIS.getTable("building_size_properties").eachRow {
+                   prefixName : "test",datasource:h2GIS])
+        h2GIS.getTable("test_building_size_properties").eachRow {
             row ->
                 assertEquals(141,row.building_volume)
                 assertEquals(47, row.building_floor_area)
@@ -56,16 +55,16 @@ class BuildingIndicatorsTests {
         h2GIS.execute(sqlString)
 
         // Only the first 6 first created buildings are selected since any new created building may alter the results
-        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, building_neighbors_properties; CREATE TABLE tempo_build AS SELECT * " +
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, test_building_neighbors_properties; CREATE TABLE tempo_build AS SELECT * " +
                 "FROM building_test WHERE id_build < 7")
 
         def  p =  Geoclimate.BuildingIndicators.buildingNeighborsProperties()
-        p.execute([inputBuildingTableName: "tempo_build", inputFields:["id_build", "the_geom"],
+        p.execute([inputBuildingTableName: "tempo_build",
                    operations:["building_contiguity","building_common_wall_fraction",
                                "building_number_building_neighbor"],
-                   outputTableName : "building_neighbors_properties",datasource:h2GIS])
+                   prefixName : "test",datasource:h2GIS])
         def concat = ["", "", ""]
-        h2GIS.eachRow("SELECT * FROM building_neighbors_properties WHERE id_build = 1 OR id_build = 5 ORDER BY id_build ASC"){
+        h2GIS.eachRow("SELECT * FROM test_building_neighbors_properties WHERE id_build = 1 OR id_build = 5 ORDER BY id_build ASC"){
             row ->
                 concat[0]+= "${row.building_contiguity.round(5)}\n"
                 concat[1]+= "${row.building_common_wall_fraction.round(5)}\n"
@@ -84,25 +83,25 @@ class BuildingIndicatorsTests {
         h2GIS.execute(sqlString)
 
         // Only the first 1 first created buildings are selected for the tests
-        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, building_form_properties; CREATE TABLE tempo_build AS SELECT * " +
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, test_building_form_properties; CREATE TABLE tempo_build AS SELECT * " +
                 "FROM building_test WHERE id_build < 8 OR id_build = 30")
 
         def  p =  Geoclimate.BuildingIndicators.buildingFormProperties()
-        p.execute([inputBuildingTableName: "tempo_build", inputFields:["id_build", "the_geom"],
+        p.execute([inputBuildingTableName: "tempo_build",
                    operations:["building_concavity","building_form_factor",
                                "building_raw_compacity", "building_convexhull_perimeter_density"],
-                   outputTableName : "building_form_properties",datasource:h2GIS])
+                   prefixName : "test",datasource:h2GIS])
         def concat = ["", "", "", ""]
-        h2GIS.eachRow("SELECT * FROM building_form_properties WHERE id_build = 1 OR id_build = 7 ORDER BY id_build ASC"){
+        h2GIS.eachRow("SELECT * FROM test_building_form_properties WHERE id_build = 1 OR id_build = 7 ORDER BY id_build ASC"){
             row ->
                 concat[0]+= "${row.building_concavity}\n"
                 concat[1]+= "${row.building_form_factor.round(5)}\n"
         }
-        h2GIS.eachRow("SELECT * FROM building_form_properties WHERE id_build = 2 ORDER BY id_build ASC"){
+        h2GIS.eachRow("SELECT * FROM test_building_form_properties WHERE id_build = 2 ORDER BY id_build ASC"){
             row ->
                 concat[2]+= "${row.building_raw_compacity.round(3)}\n"
         }
-        h2GIS.eachRow("SELECT * FROM building_form_properties WHERE id_build = 1 OR id_build = 7 OR " +
+        h2GIS.eachRow("SELECT * FROM test_building_form_properties WHERE id_build = 1 OR id_build = 7 OR " +
                 "id_build = 30 ORDER BY id_build ASC"){
             row ->
                 concat[3]+= "${row.building_convexhull_perimeter_density.round(5)}\n"
@@ -120,15 +119,15 @@ class BuildingIndicatorsTests {
         h2GIS.execute(sqlString)
 
         // Only the first 1 first created buildings are selected for the tests
-        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, building_form_properties; CREATE TABLE tempo_build AS SELECT * " +
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, test_building_form_properties; CREATE TABLE tempo_build AS SELECT * " +
                 "FROM building_test WHERE id_build < 7")
 
         def  p =  Geoclimate.BuildingIndicators.buildingMinimumBuildingSpacing()
-        p.execute([inputBuildingTableName: "tempo_build", inputFields:["id_build", "the_geom"],
+        p.execute([inputBuildingTableName: "tempo_build",
                    bufferDist:100,
-                   outputTableName : "building_minimum_building_spacing",datasource:h2GIS])
+                   prefixName : "test",datasource:h2GIS])
         def concat = ""
-        h2GIS.eachRow("SELECT * FROM building_minimum_building_spacing WHERE id_build = 2 OR id_build = 4 OR id_build = 6 ORDER BY id_build ASC"){
+        h2GIS.eachRow("SELECT * FROM test_building_minimum_building_spacing WHERE id_build = 2 OR id_build = 4 OR id_build = 6 ORDER BY id_build ASC"){
             row ->
                 concat+= "${row.building_minimum_building_spacing}\n"
         }
@@ -142,15 +141,14 @@ class BuildingIndicatorsTests {
         h2GIS.execute(sqlString)
 
         // Only the first 1 first created buildings are selected for the tests
-        h2GIS.execute("DROP TABLE IF EXISTS tempo_road, building_road_distance; CREATE TABLE tempo_road AS SELECT * " +
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_road, test_building_road_distance; CREATE TABLE tempo_road AS SELECT * " +
                 "FROM road_test WHERE id_road = 1")
 
         def  p =  Geoclimate.BuildingIndicators.buildingRoadDistance()
-        p.execute([inputBuildingTableName: "building_test", inputRoadTableName: "tempo_road",
-                   inputFields:["id_build", "the_geom"], bufferDist:100,
-                   outputTableName : "building_road_distance",datasource:h2GIS])
+        p.execute([inputBuildingTableName: "building_test", inputRoadTableName: "tempo_road", bufferDist:100,
+                   prefixName : "test",datasource:h2GIS])
         def concat = ""
-        h2GIS.eachRow("SELECT * FROM building_road_distance WHERE id_build = 1 OR id_build = 6 ORDER BY id_build ASC"){
+        h2GIS.eachRow("SELECT * FROM test_building_road_distance WHERE id_build = 1 OR id_build = 6 ORDER BY id_build ASC"){
             row ->
                 concat+= "${row.building_road_distance}\n"
         }
