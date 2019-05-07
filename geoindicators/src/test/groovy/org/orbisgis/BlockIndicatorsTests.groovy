@@ -162,13 +162,13 @@ class BlockIndicatorsTests {
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 8")
 
         def  p_size =  Geoclimate.BuildingIndicators.buildingSizeProperties()
-        p_size.execute([inputBuildingTableName: "tempo_build", inputFields:["id_build", "the_geom"],
-                        operations:["building_volume"], outputTableName : "building_size_properties", datasource:h2GIS])
+        p_size.execute([inputBuildingTableName: "tempo_build",
+                        operations:["building_volume"], prefixName : "test", datasource:h2GIS])
 
         // The indicators are gathered in a same table
         h2GIS.execute("DROP TABLE IF EXISTS tempo_build2; " +
                 "CREATE TABLE tempo_build2 AS SELECT a.*, b.building_volume FROM tempo_build a" +
-                " LEFT JOIN building_size_properties b ON a.id_build = b.id_build")
+                " LEFT JOIN test_building_size_properties b ON a.id_build = b.id_build")
 
         def  p =  Geoclimate.BlockIndicators.netCompacity()
         p.execute([buildTable: "tempo_build2", correlationTableName: "block_build_corr", buildingVolumeField: "building_volume",
