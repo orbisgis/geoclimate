@@ -12,6 +12,16 @@ import org.orbisgis.processmanagerapi.IProcess
  * according to a building Table where are stored the "building_contiguity", the building wall height and
  * the "building_total_facade_length" values as well as a correlation Table between buildings and blocks.
  *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param buildingTable The name of the input ITable where are stored the buildings
+ * @param correlationTable The name of the input ITable where are stored the rsu and the relationships
+ * between buildings and RSU
+ * @param buContiguityColumn The name of the column where are stored the building contiguity values (within the building Table)
+ * @param buTotalFacadeLengthColumn The name of the column where are stored the building total facade length values
+ * (within the building Table)
+ * @param prefixName String use as prefix to name the output table
+ *
  * @return A database table name.
  * @author Jérémy Bernard
  */
@@ -59,6 +69,17 @@ return processFactory.create(
  * based on the median of Bernard et al. (2018) dataset). The calculation needs the "rsu_building_density"
  * and the "rsu_area".
  *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param rsuTable The name of the input ITable where are stored the RSU
+ * @param correlationBuildingTable The name of the input ITable where are stored the buildings and the relationships
+ * between buildings and RSU
+ * @param rsuBuildingDensityColumn The name of the column where are stored the building density values (within the rsu Table)
+ * @param pointDensity The density of points (nb / free m²) used to calculate the spatial average SVF
+ * @param rayLength The maximum distance to consider an obstacle as potential sky cover
+ * @param numberOfDirection the number of directions considered to calculate the SVF
+ * @param prefixName String use as prefix to name the output table
+ *
  * References:
  * --> Stewart, Ian D., and Tim R. Oke. "Local climate zones for urban temperature studies." Bulletin of
  * the American Meteorological Society 93, no. 12 (2012): 1879-1900.
@@ -72,11 +93,10 @@ return processFactory.create(
 static IProcess rsuGroundSkyViewFactor() {
     return processFactory.create(
             "RSU ground sky view factor",
-            [rsuTable: String,correlationBuildingTable: String,
-             rsuAreaColumn: String, rsuBuildingDensityColumn: String, pointDensity: double, rayLength: double,
+            [rsuTable: String,correlationBuildingTable: String, rsuBuildingDensityColumn: String, pointDensity: double, rayLength: double,
              numberOfDirection: int, prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { rsuTable, correlationBuildingTable, rsuAreaColumn, rsuBuildingDensityColumn,
+            { rsuTable, correlationBuildingTable, rsuBuildingDensityColumn,
               pointDensity = 0.008, rayLength = 100, numberOfDirection = 60, prefixName, datasource ->
                 def geometricColumnRsu = "the_geom"
                 def geometricColumnBu = "the_geom"
@@ -136,7 +156,7 @@ static IProcess rsuGroundSkyViewFactor() {
                     // is drawn in order to have the same density of point in each RSU
                     datasource.execute(("DROP TABLE IF EXISTS $randomSample; CREATE TABLE $randomSample AS "+
                             "SELECT pk FROM $ptsRSUfreeall ORDER BY RANDOM() LIMIT "+
-                            "(TRUNC(${pointDensity*row[rsuAreaColumn]*(1.0-row[rsuBuildingDensityColumn])})+1);").toString())
+                            "(TRUNC(${pointDensity}*ST_AREA('${row[geometricColumnRsu]}'::GEOMETRY)*${(1.0-row[rsuBuildingDensityColumn])})+1);").toString())
                     // The sample of point is inserted into the Table gathering the SVF points used for all RSU
                     datasource.execute(("CREATE INDEX IF NOT EXISTS id_temp ON $ptsRSUfreeall(pk); "+
                             "CREATE INDEX IF NOT EXISTS id_temp ON $randomSample(pk); "+
@@ -170,6 +190,14 @@ static IProcess rsuGroundSkyViewFactor() {
  * on the street canyons assumption is used for the calculation. The sum of facade area within a given RSU area
  * is divided by the area of free surfaces of the given RSU (not covered by buildings). The
  * "rsu_free_external_facade_density" and "rsu_building_density" are used for the calculation.
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param rsuTable The name of the input ITable where are stored the RSU
+ * @param rsuFreeExternalFacadeDensityColumn The name of the column where are stored the free external density
+ * values (within the rsu Table)
+ * @param rsuBuildingDensityColumn The name of the column where are stored the building density values (within the rsu Table)
+ * @param prefixName String use as prefix to name the output table
  *
  * @return A database table name.
  * @author Jérémy Bernard
@@ -205,6 +233,15 @@ static IProcess rsuAspectRatio() {
  * Script to compute the distribution of projected facade area within a RSU per vertical layer and direction
  * of analysis (ie. wind or sun direction). Note that the method used is an approximation if the RSU split
  * a building into two parts (the facade included within the RSU is counted half).
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param rsuTable The name of the input ITable where are stored the RSU
+ * @param buildingTable The name of the input ITable where are stored the buildings
+ * @param listLayersBottom the list of height corresponding to the bottom of each vertical layers (default [0, 10, 20, 30, 40, 50])
+ * @param numberOfDirection the number of directions used for the calculation - according to the method used it should
+ * be divisor of 360 AND a multiple of 2 (default 12)
+ * @param prefixName String use as prefix to name the output table
  *
  * References:
  * --> Stewart, Ian D., and Tim R. Oke. "Local climate zones for urban temperature studies." Bulletin of
@@ -399,9 +436,8 @@ static IProcess rsuProjectedFacadeAreaDistribution() {
  * @param correlationBuildingTable the name of the input ITable where are stored the buildings and the relationships
  * between buildings and RSU
  * @param rsuTable the name of the input ITable where are stored the RSU
- * @param outputTableName the name of the output ITable
+ * @param prefixName String use as prefix to name the output table
  * @param listLayersBottom the list of height corresponding to the bottom of each vertical layers (default [0, 10, 20, 30, 40, 50])
- * @param inputColumns the columns
  *
  * @return outputTableName Table name in which the rsu id and their corresponding indicator value are stored
  *

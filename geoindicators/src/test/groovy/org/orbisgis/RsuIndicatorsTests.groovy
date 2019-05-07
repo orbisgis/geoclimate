@@ -47,9 +47,8 @@ class RsuIndicatorsTests {
                 "FROM rsu_build_corr a, tempo_build b WHERE a.id_build = b.id_build")
 
         def  p =  Geoclimate.RsuIndicators.rsuGroundSkyViewFactor()
-        p.execute([rsuTable: "rsu_test",correlationBuildingTable: "corr_tempo",
-                   rsuAreaColumn: "rsu_area", rsuBuildingDensityColumn: "rsu_building_density", pointDensity: 0.008,
-                   rayLength: 100, numberOfDirection: 60, prefixName: "test",
+        p.execute([rsuTable: "rsu_test",correlationBuildingTable: "corr_tempo", rsuBuildingDensityColumn:
+                "rsu_building_density", pointDensity: 0.008, rayLength: 100, numberOfDirection: 60, prefixName: "test",
                    datasource: h2GIS])
         def concat = 0
         h2GIS.eachRow("SELECT * FROM test_rsu_ground_sky_view_factor WHERE id_rsu = 8"){
