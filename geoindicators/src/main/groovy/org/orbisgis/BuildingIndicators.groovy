@@ -330,14 +330,13 @@ static IProcess buildingMinimumBuildingSpacing() {
                                     "CREATE INDEX IF NOT EXISTS with_buff_id ON $build_within_buffer($idField);"+
                                     "CREATE INDEX IF NOT EXISTS with_buff_ids ON $build_within_buffer($geometricField) "+
                                     "USING RTREE").toString())
-                // The minimum distance is calculated
-                datasource.execute(("DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS "+
-                                    "SELECT MIN(ST_DISTANCE(a.$geometricField, b.$geometricField)) AS building_minimum_building_spacing, "+
-                                    "a.$idField FROM $build_within_buffer b RIGHT JOIN $inputBuildingTableName a ON a.$idField = b.$idField"+
-                                    " GROUP BY a.$idField").toString())
-                // The minimum distance is set to the $inputE value for buildings having no building neighbors in a $inputE meters distance
-                datasource.execute(("UPDATE $outputTableName SET building_minimum_building_spacing = $bufferDist "+
-                                    "WHERE building_minimum_building_spacing IS null").toString())
+                // The minimum distance is calculated (The minimum distance is set to the $inputE value for buildings
+                // having no building neighbors in a bufferDist meters distance
+                datasource.execute(("DROP TABLE IF EXISTS $outputTableName; CREATE TABLE " +
+                        "$outputTableName(building_minimum_building_spacing DOUBLE, $idField INTEGER)" +
+                        " AS (SELECT COALESCE(MIN(ST_DISTANCE(a.$geometricField, b.$geometricField)), $bufferDist), a.$idField " +
+                        "FROM $build_within_buffer b RIGHT JOIN $inputBuildingTableName a ON a.$idField = b.$idField"+
+                        " GROUP BY a.$idField)").toString())
                 // The temporary tables are deleted
                 datasource.execute("DROP TABLE IF EXISTS $build_buffer, $build_within_buffer".toString())
 
@@ -398,14 +397,14 @@ static IProcess buildingRoadDistance() {
                                     "ST_INTERSECTS(a.$geometricField, b.$geometricField); "+
                                     "CREATE INDEX IF NOT EXISTS with_buff_id ON $road_within_buffer($idFieldBu); "+
                                     "CREATE INDEX IF NOT EXISTS a_id ON $inputBuildingTableName($idFieldBu)").toString())
-                // The minimum distance is calculated between each building and the surrounding roads
-                datasource.execute(("DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS "+
-                                    "SELECT LEAST(st_distance(a.$geometricField, b.$geometricField)) AS building_road_distance, "+
+                // The minimum distance is calculated between each building and the surrounding roads (he minimum distance
+                // is set to the bufferDist value for buildings having no road within a bufferDist meters distance)
+                datasource.execute(("DROP TABLE IF EXISTS $outputTableName; CREATE TABLE " +
+                        "$outputTableName(building_road_distance DOUBLE, $idFieldBu INTEGER) AS "+
+                                    "(SELECT COALESCE(LEAST(st_distance(a.$geometricField, b.$geometricField)), $bufferDist), "+
                                     "a.$idFieldBu FROM $road_within_buffer b RIGHT JOIN $inputBuildingTableName a "+
-                                    "ON a.$idFieldBu = b.$idFieldBu GROUP BY a.$idFieldBu").toString())
-                // The minimum distance is set to the bufferDist value for buildings having no road within a bufferDist meters distance
-                datasource.execute(("UPDATE $outputTableName SET building_road_distance = $bufferDist "+
-                                    "WHERE building_road_distance IS null").toString())
+                                    "ON a.$idFieldBu = b.$idFieldBu GROUP BY a.$idFieldBu)").toString())
+
                 // The temporary tables are deleted
                 datasource.execute("DROP TABLE IF EXISTS $build_buffer, $road_within_buffer, $road_surf".toString())
                 

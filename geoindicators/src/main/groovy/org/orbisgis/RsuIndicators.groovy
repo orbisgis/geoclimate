@@ -653,13 +653,11 @@ static IProcess rsuEffectiveTerrainRoughnessHeight() {
                         "AS lambda_f FROM $rsuTable"
                 datasource.execute(lambdaQuery.toString())
 
-                // The rugosity z0 is calculated according to the indicator lambda_f
+                // The rugosity z0 is calculated according to the indicator lambda_f (the value of indicator z0 is limited to 3 m)
                 datasource.execute(("DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName " +
-                        "AS SELECT $idColumnRsu, CASEWHEN(lambda_f < 0.15, lambda_f*$geometricMeanBuildingHeightName," +
-                        " 0.15*$geometricMeanBuildingHeightName) AS $baseName FROM $lambdaTable").toString())
-
-                // The value of indicator z0 is limited to 3 m
-                datasource.execute("UPDATE $outputTableName SET $baseName = 3 WHERE $baseName > 3".toString())
+                        "AS SELECT $idColumnRsu, CASEWHEN(lambda_f < 0.15, CASEWHEN(lambda_f*$geometricMeanBuildingHeightName>3," +
+                        "3,lambda_f*$geometricMeanBuildingHeightName), CASEWHEN(0.15*$geometricMeanBuildingHeightName>3,3," +
+                        "0.15*$geometricMeanBuildingHeightName)) AS $baseName FROM $lambdaTable").toString())
 
                 datasource.execute("DROP TABLE IF EXISTS $lambdaTable".toString())
 
