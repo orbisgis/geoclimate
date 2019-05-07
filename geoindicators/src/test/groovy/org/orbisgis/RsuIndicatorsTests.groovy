@@ -21,11 +21,11 @@ class RsuIndicatorsTests {
                 "FROM rsu_build_corr a, rsu_test b WHERE a.id_rsu = b.id_rsu")
 
         def  p =  Geoclimate.RsuIndicators.rsuFreeExternalFacadeDensity()
-        p.execute([buildingTable: "tempo_build",inputColumns:[],correlationTable: "corr_tempo",
+        p.execute([buildingTable: "tempo_build",correlationTable: "corr_tempo",
                    buContiguityColumn: "building_contiguity", buTotalFacadeLengthColumn: "building_total_facade_length",
-                   outputTableName: "rsu_free_external_facade_density", datasource: h2GIS])
+                   prefixName: "test", datasource: h2GIS])
         def concat = 0
-        h2GIS.eachRow("SELECT * FROM rsu_free_external_facade_density WHERE id_rsu = 1"){
+        h2GIS.eachRow("SELECT * FROM test_rsu_free_external_facade_density WHERE id_rsu = 1"){
             row ->
                 concat+= row.rsu_free_external_facade_density
         }
@@ -47,12 +47,11 @@ class RsuIndicatorsTests {
                 "FROM rsu_build_corr a, tempo_build b WHERE a.id_build = b.id_build")
 
         def  p =  Geoclimate.RsuIndicators.rsuGroundSkyViewFactor()
-        p.execute([rsuTable: "rsu_test",inputColumns:[],correlationBuildingTable: "corr_tempo",
-                   rsuAreaColumn: "rsu_area", rsuBuildingDensityColumn: "rsu_building_density", pointDensity: 0.008,
-                   rayLength: 100, numberOfDirection: 60, outputTableName: "rsu_ground_sky_view_factor",
+        p.execute([rsuTable: "rsu_test",correlationBuildingTable: "corr_tempo", rsuBuildingDensityColumn:
+                "rsu_building_density", pointDensity: 0.008, rayLength: 100, numberOfDirection: 60, prefixName: "test",
                    datasource: h2GIS])
         def concat = 0
-        h2GIS.eachRow("SELECT * FROM rsu_ground_sky_view_factor WHERE id_rsu = 8"){
+        h2GIS.eachRow("SELECT * FROM test_rsu_ground_sky_view_factor WHERE id_rsu = 8"){
             row ->
                 concat+= row.rsu_ground_sky_view_factor
         }
@@ -66,11 +65,11 @@ class RsuIndicatorsTests {
         h2GIS.execute(sqlString)
 
         def  p =  Geoclimate.RsuIndicators.rsuAspectRatio()
-        p.execute([rsuTable: "rsu_test",inputColumns:["id_rsu", "the_geom"], rsuFreeExternalFacadeDensityColumn:
+        p.execute([rsuTable: "rsu_test", rsuFreeExternalFacadeDensityColumn:
                 "rsu_free_external_facade_density", rsuBuildingDensityColumn: "rsu_building_density",
-                   outputTableName: "rsu_aspect_ratio", datasource: h2GIS])
+                   prefixName: "test", datasource: h2GIS])
         def concat = 0
-        h2GIS.eachRow("SELECT * FROM rsu_aspect_ratio WHERE id_rsu = 1"){
+        h2GIS.eachRow("SELECT * FROM test_rsu_aspect_ratio WHERE id_rsu = 1"){
             row ->
                 concat+= row.rsu_aspect_ratio
         }
@@ -91,11 +90,11 @@ class RsuIndicatorsTests {
         def numberOfDirection = 4
         def dirMedDeg = 180/numberOfDirection
         def  p =  Geoclimate.RsuIndicators.rsuProjectedFacadeAreaDistribution()
-        p.execute([buildingTable: "tempo_build", inputColumns: ["id_rsu", "the_geom"], rsuTable: "rsu_test", listLayersBottom: listLayersBottom,
-                   numberOfDirection: numberOfDirection, outputTableName: "rsu_projected_facade_area_distribution",
+        p.execute([buildingTable: "tempo_build", rsuTable: "rsu_test", listLayersBottom: listLayersBottom,
+                   numberOfDirection: numberOfDirection, prefixName: "test",
                    datasource: h2GIS])
         def concat = ""
-        h2GIS.eachRow("SELECT * FROM rsu_projected_facade_area_distribution WHERE id_rsu = 1"){
+        h2GIS.eachRow("SELECT * FROM test_rsu_projected_facade_area_distribution WHERE id_rsu = 1"){
             row ->
                 // Iterate over columns
                 def names = []
@@ -123,7 +122,7 @@ class RsuIndicatorsTests {
         h2GIS.execute(sqlString)
 
         // Only the first 5 first created buildings are selected for the tests
-        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, rsu_roof_area_distribution; " +
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, test_rsu_roof_area_distribution; " +
                 "CREATE TABLE tempo_build AS SELECT a.*, b.id_rsu " +
                 "FROM building_test a, rsu_build_corr b WHERE a.id_build = b.id_build AND a.id_build < 6 OR " +
                 "a.id_build = b.id_build AND a.id_build < 29 AND a.id_build > 26")
@@ -131,11 +130,11 @@ class RsuIndicatorsTests {
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def  p =  Geoclimate.RsuIndicators.rsuRoofAreaDistribution()
         p.execute([rsuTable: "rsu_test", correlationBuildingTable: "tempo_build",
-                   listLayersBottom: listLayersBottom, outputTableName: "rsu_roof_area_distribution",
+                   listLayersBottom: listLayersBottom, prefixName: "test",
                    datasource: h2GIS])
         def concat1 = ""
         def concat2 = ""
-        h2GIS.eachRow("SELECT * FROM rsu_roof_area_distribution WHERE id_rsu = 1"){
+        h2GIS.eachRow("SELECT * FROM test_rsu_roof_area_distribution WHERE id_rsu = 1"){
             row ->
                 // Iterate over columns
                 for (i in 1..listLayersBottom.size()){
@@ -149,7 +148,7 @@ class RsuIndicatorsTests {
                     }
                 }
         }
-        h2GIS.eachRow("SELECT * FROM rsu_roof_area_distribution WHERE id_rsu = 13"){
+        h2GIS.eachRow("SELECT * FROM test_rsu_roof_area_distribution WHERE id_rsu = 13"){
             row ->
                 // Iterate over columns
                 for (i in 1..listLayersBottom.size()){
@@ -182,17 +181,22 @@ class RsuIndicatorsTests {
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def numberOfDirection = 4
         def pFacadeDistrib =  Geoclimate.RsuIndicators.rsuProjectedFacadeAreaDistribution()
-        pFacadeDistrib.execute([buildingTable: "tempo_build", inputColumns: ["id_rsu", "the_geom"],
+        pFacadeDistrib.execute([buildingTable: "tempo_build",
                                 rsuTable: "rsu_test", listLayersBottom: listLayersBottom, numberOfDirection:
-                                numberOfDirection, outputTableName: "rsu_projected_facade_area_distribution",
+                                numberOfDirection, prefixName: "test",
                                 datasource: h2GIS])
         def  pGeomAvg =  Geoclimate.BlockIndicators.unweightedOperationFromLowerScale()
         pGeomAvg.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "rsu_build_corr",
                           inputIdUp: "id_rsu", inputVarAndOperations: ["height_roof": ["GEOM_AVG"]],
                           prefixName: "test", datasource: h2GIS])
 
-        h2GIS.execute("CREATE TABLE rsu_table AS SELECT a.*, b.geom_avg_height_roof " +
-                "FROM rsu_projected_facade_area_distribution a, test_unweighted_operation_from_lower_scale b " +
+        // Add the geometry field in the previous resulting Tables
+        h2GIS.execute("ALTER TABLE test_unweighted_operation_from_lower_scale add column the_geom GEOMETRY;" +
+                "UPDATE test_unweighted_operation_from_lower_scale set the_geom = (SELECT a.the_geom FROM " +
+                "rsu_test a WHERE a.id_rsu = test_unweighted_operation_from_lower_scale.id_rsu);")
+
+        h2GIS.execute("CREATE TABLE rsu_table AS SELECT a.*, b.geom_avg_height_roof, b.the_geom " +
+                "FROM test_rsu_projected_facade_area_distribution a, test_unweighted_operation_from_lower_scale b " +
                 "WHERE a.id_rsu = b.id_rsu")
         def  p =  Geoclimate.RsuIndicators.rsuEffectiveTerrainRoughnessHeight()
         p.execute([rsuTable: "rsu_table", projectedFacadeAreaName: "rsu_projected_facade_area_distribution",
@@ -348,5 +352,49 @@ class RsuIndicatorsTests {
                 concat[0]+= "${row.water_fraction}\n"
         }
         assertEquals("0.004\n0.04\n", concat[0])
+    }
+
+    @Test
+    void perviousnessFraction() {
+        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
+        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
+        h2GIS.execute(sqlString)
+
+        // Only the first created vegetation, road and water areas are selected for the tests
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_hydro, tempo_veget, tempo_road; CREATE TABLE tempo_hydro AS SELECT * " +
+                "FROM hydro_test WHERE id_hydro < 2; CREATE TABLE tempo_veget AS SELECT * " +
+                "FROM veget_test WHERE id_veget < 4; CREATE TABLE tempo_road AS SELECT * " +
+                "FROM road_test WHERE id_road < 7")
+
+        // The corresponding fractions are calculated
+        def  pveg =  Geoclimate.RsuIndicators.vegetationFraction()
+        pveg.execute([rsuTable: "rsu_test", vegetTable: "tempo_veget", fractionType: ["low"], prefixName: "test",
+                      datasource: h2GIS])
+        def  pwat =  Geoclimate.RsuIndicators.waterFraction()
+        pwat.execute([rsuTable: "rsu_test", waterTable: "tempo_hydro", prefixName: "test",
+                      datasource: h2GIS])
+        def  proad =  Geoclimate.RsuIndicators.roadFraction()
+        proad.execute([rsuTable: "rsu_test", roadTable: "tempo_road", levelToConsiders: ["underground":[-4, -3, -2, -1],
+                                                                                         "ground":[0]], prefixName: "test",
+                       datasource: h2GIS])
+
+        // The data useful for pervious fraction calculation are gathered in a same Table
+        h2GIS.execute("DROP TABLE IF EXISTS needed_data; CREATE TABLE needed_data AS SELECT a.*, " +
+                "b.water_fraction, c.ground_road_fraction FROM test_vegetation_fraction a, test_water_fraction b," +
+                "test_road_fraction c WHERE a.id_rsu = b.id_rsu AND a.id_rsu = c.id_rsu;")
+
+        def pfin = Geoclimate.RsuIndicators.perviousnessFraction()
+        pfin.execute([rsuTable: "needed_data", operationsAndComposition: ["pervious_fraction" : ["low_vegetation_fraction",
+                                                                                                 "water_fraction"], "impervious_fraction" :
+                                                                                  ["ground_road_fraction"]], prefixName: "test",
+                      datasource: h2GIS])
+        def concat = ["", ""]
+        h2GIS.eachRow("SELECT * FROM test_perviousness_fraction WHERE id_rsu = 14 OR id_rsu = 15"){
+            row ->
+                concat[0]+= "${row.pervious_fraction}\n"
+                concat[1]+= "${row.impervious_fraction.round(5)}\n"
+        }
+        assertEquals("0.0056\n0.06\n", concat[0])
+        assertEquals("0.06161\n0.15866\n", concat[1])
     }
 }

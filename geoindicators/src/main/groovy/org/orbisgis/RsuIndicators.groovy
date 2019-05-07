@@ -12,21 +12,35 @@ import org.orbisgis.processmanagerapi.IProcess
  * according to a building Table where are stored the "building_contiguity", the building wall height and
  * the "building_total_facade_length" values as well as a correlation Table between buildings and blocks.
  *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param buildingTable The name of the input ITable where are stored the buildings
+ * @param correlationTable The name of the input ITable where are stored the rsu and the relationships
+ * between buildings and RSU
+ * @param buContiguityColumn The name of the column where are stored the building contiguity values (within the building Table)
+ * @param buTotalFacadeLengthColumn The name of the column where are stored the building total facade length values
+ * (within the building Table)
+ * @param prefixName String use as prefix to name the output table
+ *
  * @return A database table name.
  * @author Jérémy Bernard
  */
 static IProcess rsuFreeExternalFacadeDensity() {
 return processFactory.create(
         "RSU free external facade density",
-        [buildingTable: String,inputColumns:String[],correlationTable: String,
-         buContiguityColumn: String, buTotalFacadeLengthColumn: String, outputTableName: String, datasource: JdbcDataSource],
+        [buildingTable: String,correlationTable: String,
+         buContiguityColumn: String, buTotalFacadeLengthColumn: String, prefixName: String, datasource: JdbcDataSource],
         [outputTableName : String],
-        { buildingTable, inputColumns, correlationTable, buContiguityColumn, buTotalFacadeLengthColumn,
-          outputTableName, datasource ->
+        { buildingTable, correlationTable, buContiguityColumn, buTotalFacadeLengthColumn,
+          prefixName, datasource ->
             def geometricFieldRsu = "the_geom"
             def idFieldBu = "id_build"
             def idFieldRsu = "id_rsu"
             def height_wall = "height_wall"
+
+            // The name of the outputTableName is constructed
+            String baseName = "rsu_free_external_facade_density"
+            String outputTableName = prefixName + "_" + baseName
 
             String query = "CREATE INDEX IF NOT EXISTS id_bua ON $buildingTable($idFieldBu); "+
                             "CREATE INDEX IF NOT EXISTS id_bub ON $correlationTable($idFieldBu); "+
@@ -35,11 +49,7 @@ return processFactory.create(
                             "SELECT SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$height_wall)/"+
                             "st_area(b.$geometricFieldRsu) AS rsu_free_external_facade_density, b.$idFieldRsu "
 
-            if(!inputColumns.isEmpty()){
-                query += ", a.${inputColumns.join(",a.")} "
-            }
-
-            query += "FROM $buildingTable a, $correlationTable b "+
+            query += " FROM $buildingTable a, $correlationTable b "+
                         "WHERE a.$idFieldBu = b.$idFieldBu GROUP BY b.$idFieldRsu, b.$geometricFieldRsu;"
 
             logger.info("Executing $query")
@@ -59,6 +69,17 @@ return processFactory.create(
  * based on the median of Bernard et al. (2018) dataset). The calculation needs the "rsu_building_density"
  * and the "rsu_area".
  *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param rsuTable The name of the input ITable where are stored the RSU
+ * @param correlationBuildingTable The name of the input ITable where are stored the buildings and the relationships
+ * between buildings and RSU
+ * @param rsuBuildingDensityColumn The name of the column where are stored the building density values (within the rsu Table)
+ * @param pointDensity The density of points (nb / free m²) used to calculate the spatial average SVF
+ * @param rayLength The maximum distance to consider an obstacle as potential sky cover
+ * @param numberOfDirection the number of directions considered to calculate the SVF
+ * @param prefixName String use as prefix to name the output table
+ *
  * References:
  * --> Stewart, Ian D., and Tim R. Oke. "Local climate zones for urban temperature studies." Bulletin of
  * the American Meteorological Society 93, no. 12 (2012): 1879-1900.
@@ -72,12 +93,11 @@ return processFactory.create(
 static IProcess rsuGroundSkyViewFactor() {
     return processFactory.create(
             "RSU ground sky view factor",
-            [rsuTable: String,inputColumns:String[],correlationBuildingTable: String,
-             rsuAreaColumn: String, rsuBuildingDensityColumn: String, pointDensity: double, rayLength: double,
-             numberOfDirection: int, outputTableName: String, datasource: JdbcDataSource],
+            [rsuTable: String,correlationBuildingTable: String, rsuBuildingDensityColumn: String, pointDensity: double, rayLength: double,
+             numberOfDirection: int, prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { rsuTable, inputColumns, correlationBuildingTable, rsuAreaColumn, rsuBuildingDensityColumn,
-              pointDensity = 0.008, rayLength = 100, numberOfDirection = 60, outputTableName, datasource ->
+            { rsuTable, correlationBuildingTable, rsuBuildingDensityColumn,
+              pointDensity = 0.008, rayLength = 100, numberOfDirection = 60, prefixName, datasource ->
                 def geometricColumnRsu = "the_geom"
                 def geometricColumnBu = "the_geom"
                 def idColumnRsu = "id_rsu"
@@ -94,6 +114,10 @@ static IProcess rsuGroundSkyViewFactor() {
                 def ptsRSUfreeall = "ptsRSUfreeall"+uid_out
                 def randomSample = "randomSample"+uid_out
                 def svfPts = "svfPts"+uid_out
+
+                // The name of the outputTableName is constructed
+                String baseName = "rsu_ground_sky_view_factor"
+                String outputTableName = prefixName + "_" + baseName
 
                 // Other local variables
                 // Size of the grid mesh used to sample each RSU (according to the point density, we take a factor 10
@@ -132,7 +156,7 @@ static IProcess rsuGroundSkyViewFactor() {
                     // is drawn in order to have the same density of point in each RSU
                     datasource.execute(("DROP TABLE IF EXISTS $randomSample; CREATE TABLE $randomSample AS "+
                             "SELECT pk FROM $ptsRSUfreeall ORDER BY RANDOM() LIMIT "+
-                            "(TRUNC(${pointDensity*row[rsuAreaColumn]*(1.0-row[rsuBuildingDensityColumn])})+1);").toString())
+                            "(TRUNC(${pointDensity}*ST_AREA('${row[geometricColumnRsu]}'::GEOMETRY)*${(1.0-row[rsuBuildingDensityColumn])})+1);").toString())
                     // The sample of point is inserted into the Table gathering the SVF points used for all RSU
                     datasource.execute(("CREATE INDEX IF NOT EXISTS id_temp ON $ptsRSUfreeall(pk); "+
                             "CREATE INDEX IF NOT EXISTS id_temp ON $randomSample(pk); "+
@@ -167,27 +191,37 @@ static IProcess rsuGroundSkyViewFactor() {
  * is divided by the area of free surfaces of the given RSU (not covered by buildings). The
  * "rsu_free_external_facade_density" and "rsu_building_density" are used for the calculation.
  *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param rsuTable The name of the input ITable where are stored the RSU
+ * @param rsuFreeExternalFacadeDensityColumn The name of the column where are stored the free external density
+ * values (within the rsu Table)
+ * @param rsuBuildingDensityColumn The name of the column where are stored the building density values (within the rsu Table)
+ * @param prefixName String use as prefix to name the output table
+ *
  * @return A database table name.
  * @author Jérémy Bernard
  */
 static IProcess rsuAspectRatio() {
     return processFactory.create(
             "RSU aspect ratio",
-            [rsuTable: String, inputColumns:String[], rsuFreeExternalFacadeDensityColumn: String,
-             rsuBuildingDensityColumn: String, outputTableName: String, datasource: JdbcDataSource],
+            [rsuTable: String, rsuFreeExternalFacadeDensityColumn: String,
+             rsuBuildingDensityColumn: String, prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { rsuTable, inputColumns, rsuFreeExternalFacadeDensityColumn, rsuBuildingDensityColumn,
-              outputTableName, datasource ->
+            { rsuTable, rsuFreeExternalFacadeDensityColumn, rsuBuildingDensityColumn,
+              prefixName, datasource ->
+
+                def columnIdRsu = "id_rsu"
+
+                // The name of the outputTableName is constructed
+                String baseName = "rsu_aspect_ratio"
+                String outputTableName = prefixName + "_" + baseName
 
                 String query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS "+
                         "SELECT $rsuFreeExternalFacadeDensityColumn/(1-$rsuBuildingDensityColumn) AS "+
                         "rsu_aspect_ratio "
 
-                if(!inputColumns.isEmpty()){
-                    query += ", ${inputColumns.join(",")} "
-                }
-
-                query += " FROM $rsuTable"
+                query += ", $columnIdRsu FROM $rsuTable"
 
                 logger.info("Executing $query")
                 datasource.execute query
@@ -199,6 +233,15 @@ static IProcess rsuAspectRatio() {
  * Script to compute the distribution of projected facade area within a RSU per vertical layer and direction
  * of analysis (ie. wind or sun direction). Note that the method used is an approximation if the RSU split
  * a building into two parts (the facade included within the RSU is counted half).
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param rsuTable The name of the input ITable where are stored the RSU
+ * @param buildingTable The name of the input ITable where are stored the buildings
+ * @param listLayersBottom the list of height corresponding to the bottom of each vertical layers (default [0, 10, 20, 30, 40, 50])
+ * @param numberOfDirection the number of directions used for the calculation - according to the method used it should
+ * be divisor of 360 AND a multiple of 2 (default 12)
+ * @param prefixName String use as prefix to name the output table
  *
  * References:
  * --> Stewart, Ian D., and Tim R. Oke. "Local climate zones for urban temperature studies." Bulletin of
@@ -213,11 +256,11 @@ static IProcess rsuAspectRatio() {
 static IProcess rsuProjectedFacadeAreaDistribution() {
     return processFactory.create(
             "RSU projected facade area distribution",
-            [buildingTable: String, rsuTable: String, inputColumns: String[], listLayersBottom: double[], numberOfDirection: int,
-             outputTableName: String, datasource: JdbcDataSource],
+            [buildingTable: String, rsuTable: String, listLayersBottom: double[], numberOfDirection: int,
+             prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { buildingTable, rsuTable, inputColumns, listLayersBottom = [0, 10, 20, 30, 40, 50], numberOfDirection = 12,
-              outputTableName, datasource ->
+            { buildingTable, rsuTable, listLayersBottom = [0, 10, 20, 30, 40, 50], numberOfDirection = 12,
+              prefixName, datasource ->
 
                 if(180%numberOfDirection==0 & numberOfDirection%2==0){
                     def geometricColumnRsu = "the_geom"
@@ -242,6 +285,10 @@ static IProcess rsuProjectedFacadeAreaDistribution() {
                     // The projection should be performed at the median of the angle interval
                     def dirMedDeg = 180/numberOfDirection
                     def dirMedRad = Math.toRadians(dirMedDeg)
+
+                    // The name of the outputTableName is constructed
+                    String baseName = "rsu_projected_facade_area_distribution"
+                    String outputTableName = prefixName + "_" + baseName
 
                     // The list that will store the fields name is initialized
                     def names = []
@@ -322,7 +369,7 @@ static IProcess rsuProjectedFacadeAreaDistribution() {
 
                     // Basic informations are stored in the result Table where will be added all fields
                     // corresponding to the distribution
-                    datasource.execute(("CREATE TABLE ${finalIndicator}_0 AS SELECT ${inputColumns.join(",")} "+
+                    datasource.execute(("CREATE TABLE ${finalIndicator}_0 AS SELECT $idColumnRsu "+
                             "FROM $rsuTable").toString())
 
 
@@ -358,7 +405,7 @@ static IProcess rsuProjectedFacadeAreaDistribution() {
                                 "CREATE INDEX IF NOT EXISTS id_fin ON ${finalIndicator}_$d(id_rsu); "+
                                 "CREATE TABLE ${finalIndicator}_${d+1} AS SELECT a.*, ${calcQuery[0..-3]} "+
                                 "FROM ${finalIndicator}_$d a LEFT JOIN $rsuInterRot b "+
-                                "ON a.id_rsu = b.ID_RSU GROUP BY a.id_rsu, a.the_geom").toString())
+                                "ON a.id_rsu = b.ID_RSU GROUP BY a.id_rsu").toString())
                     }
 
                     datasource.execute(("DROP TABLE IF EXISTS $outputTableName; ALTER TABLE "+
@@ -389,9 +436,8 @@ static IProcess rsuProjectedFacadeAreaDistribution() {
  * @param correlationBuildingTable the name of the input ITable where are stored the buildings and the relationships
  * between buildings and RSU
  * @param rsuTable the name of the input ITable where are stored the RSU
- * @param outputTableName the name of the output ITable
+ * @param prefixName String use as prefix to name the output table
  * @param listLayersBottom the list of height corresponding to the bottom of each vertical layers (default [0, 10, 20, 30, 40, 50])
- * @param inputColumns the columns
  *
  * @return outputTableName Table name in which the rsu id and their corresponding indicator value are stored
  *
@@ -401,10 +447,10 @@ static IProcess rsuRoofAreaDistribution() {
     return processFactory.create(
             "RSU roof area distribution",
             [rsuTable: String, correlationBuildingTable: String, listLayersBottom: double[],
-             outputTableName: String, datasource: JdbcDataSource],
+             prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { rsuTable, correlationBuildingTable, listLayersBottom = [0, 10, 20, 30, 40, 50],
-              outputTableName, datasource ->
+              prefixName, datasource ->
 
                 def geometricColumnRsu = "the_geom"
                 def geometricColumnBu = "the_geom"
@@ -421,6 +467,10 @@ static IProcess rsuRoofAreaDistribution() {
                 def buildVertRoofInter = "build_vert_roof_inter" + uid_out
                 def buildVertRoofAll = "buildVertRoofAll" + uid_out
                 def buildRoofSurfTot = "build_roof_surf_tot" + uid_out
+
+                // The name of the outputTableName is constructed
+                String baseName = "rsu_roof_area_distribution"
+                String outputTableName = prefixName + "_" + baseName
 
                 // Vertical and non-vertical (tilted and horizontal) roof areas are calculated
                 datasource.execute(("CREATE TABLE $buildRoofSurfIni AS SELECT $geometricColumnBu, $idColumnRsu," +
@@ -603,13 +653,11 @@ static IProcess rsuEffectiveTerrainRoughnessHeight() {
                         "AS lambda_f FROM $rsuTable"
                 datasource.execute(lambdaQuery.toString())
 
-                // The rugosity z0 is calculated according to the indicator lambda_f
+                // The rugosity z0 is calculated according to the indicator lambda_f (the value of indicator z0 is limited to 3 m)
                 datasource.execute(("DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName " +
-                        "AS SELECT $idColumnRsu, CASEWHEN(lambda_f < 0.15, lambda_f*$geometricMeanBuildingHeightName," +
-                        " 0.15*$geometricMeanBuildingHeightName) AS $baseName FROM $lambdaTable").toString())
-
-                // The value of indicator z0 is limited to 3 m
-                datasource.execute("UPDATE $outputTableName SET $baseName = 3 WHERE $baseName > 3".toString())
+                        "AS SELECT $idColumnRsu, CASEWHEN(lambda_f < 0.15, CASEWHEN(lambda_f*$geometricMeanBuildingHeightName>3," +
+                        "3,lambda_f*$geometricMeanBuildingHeightName), CASEWHEN(0.15*$geometricMeanBuildingHeightName>3,3," +
+                        "0.15*$geometricMeanBuildingHeightName)) AS $baseName FROM $lambdaTable").toString())
 
                 datasource.execute("DROP TABLE IF EXISTS $lambdaTable".toString())
 
@@ -1074,6 +1122,56 @@ static IProcess waterFraction() {
 
                 datasource.execute("DROP TABLE IF EXISTS $buffTable".toString())
 
+                [outputTableName: outputTableName]
+            }
+    )}
+
+/**
+ * Script to compute the pervious and impervious fraction within each RSU of an area from other land fractions.
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param rsuTable the name of the input ITable where are stored the land fractions used for the pervious and impervious
+ * fractions"
+ * @param operationsAndComposition a map containing as key the name of the operations to perform (pervious fraction
+ * or impervious fraction) and as value the list of land fractions which constitutes them (and which are stored
+ * in the rsuTable).
+ *          -> "pervious_fraction": default composed of "low_vegetation_fraction" and "water_fraction"
+ *          -> "impervious_fraction": default composed of "road_fraction" only
+ * @param prefixName String used as prefix to name the output table
+ *
+ * @return outputTableName Table name in which the rsu id and their corresponding indicator value are stored
+ *
+ * @author Jérémy Bernard
+ */
+static IProcess perviousnessFraction() {
+    return processFactory.create(
+            "Perviousness fraction",
+            [rsuTable: String, operationsAndComposition: String[], prefixName: String, datasource: JdbcDataSource],
+            [outputTableName : String],
+            { rsuTable, operationsAndComposition = ["pervious_fraction" : ["low_vegetation_fraction",
+                                                                           "water_fraction"], "impervious_fraction" : ["road_fraction"]], prefixName, datasource ->
+
+                def idColumnRsu = "id_rsu"
+
+                // The name of the outputTableName is constructed
+                String baseName = "perviousness_fraction"
+                String outputTableName = prefixName + "_" + baseName
+
+                // The pervious or impervious fractions are calculated
+                def query = "DROP TABLE IF EXISTS $outputTableName; " +
+                        "CREATE TABLE $outputTableName AS SELECT $idColumnRsu, "
+
+                operationsAndComposition.each{indic, land_fractions ->
+                    land_fractions.each{lf ->
+                        query += "$lf +"
+                    }
+                    query = query[0..-2] + "AS $indic,"
+                }
+                query = query[0..-2] + " FROM $rsuTable;"
+
+                logger.info("Executing $query")
+                datasource.execute query
                 [outputTableName: outputTableName]
             }
     )}
