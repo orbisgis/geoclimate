@@ -314,7 +314,7 @@ static IProcess holeAreaDensity() {
  */
 static IProcess netCompacity() {
     return processFactory.create(
-            "Hole area ratio",
+            "Block net compacity",
             [buildTable: String, correlationTableName: String, buildingVolumeField: String, buildingContiguityField: String,
              prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
