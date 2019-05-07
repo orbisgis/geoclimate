@@ -152,6 +152,36 @@ class BlockIndicatorsTests {
     }
 
     @Test
+    void netCompacity() {
+        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
+        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
+        h2GIS.execute(sqlString)
+
+        // Only the first 6 first created buildings are selected since any new created building may alter the results
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, building_size_properties, building_contiguity; " +
+                "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 8")
+
+        def  p_size =  Geoclimate.BuildingIndicators.buildingSizeProperties()
+        p_size.execute([inputBuildingTableName: "tempo_build", inputFields:["id_build", "the_geom"],
+                        operations:["building_volume"], outputTableName : "building_size_properties", datasource:h2GIS])
+
+        // The indicators are gathered in a same table
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_build2; " +
+                "CREATE TABLE tempo_build2 AS SELECT a.*, b.building_volume FROM tempo_build a" +
+                " LEFT JOIN building_size_properties b ON a.id_build = b.id_build")
+
+        def  p =  Geoclimate.BlockIndicators.netCompacity()
+        p.execute([buildTable: "tempo_build2", correlationTableName: "block_build_corr", buildingVolumeField: "building_volume",
+                   buildingContiguityField: "building_contiguity", prefixName: "test", datasource: h2GIS])
+        def concat = 0
+        h2GIS.eachRow("SELECT * FROM test_block_net_compacity WHERE id_block = 4"){
+            row ->
+                concat+= row.block_net_compacity
+        }
+        assertEquals(0.51195, concat, 0.00001)
+    }
+
+    @Test
     void closingness() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
