@@ -92,7 +92,7 @@ static IProcess buildingSizeProperties() {
                 String baseName = "building_size_properties"
                 String outputTableName = prefixName + "_" + baseName
 
-                String query = "CREATE TABLE $outputTableName AS SELECT "
+                String query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
 
                 operations.each {operation ->
                     if(operation=="building_volume") {
@@ -193,7 +193,8 @@ static IProcess buildingNeighborsProperties() {
                         "ST_INTERSECTS(a.$geometricField, b.$geometricField) AND a.$idField <> b.$idField" +
                         " GROUP BY a.$idField;" +
                         "CREATE INDEX IF NOT EXISTS buff_id ON $build_intersec($idField);" +
-                        "CREATE TABLE $outputTableName AS SELECT b.${operations.join(",b.")}, a.$idField" +
+                        "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
+                        "SELECT b.${operations.join(",b.")}, a.$idField" +
                         " FROM $inputBuildingTableName a LEFT JOIN $build_intersec b ON a.$idField = b.$idField;"
                 query+= query_update
 
