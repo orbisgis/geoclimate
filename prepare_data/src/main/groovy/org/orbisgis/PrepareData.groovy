@@ -21,6 +21,6 @@ abstract class PrepareData extends Script {
     public static BDTopoGISLayers = new BDTopoGISLayers()
     public static OSMGISLayers = new OSMGISLayers()
     public static FormattingForAbstractModel = new FormattingForAbstractModel()
-
     public static InputDataFormatting = new InputDataFormatting()
+
 }
