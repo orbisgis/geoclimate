@@ -709,6 +709,9 @@ static IProcess linearRoadOperations() {
                         logger.error("The parameter operations is empty")
                     }
                     else {
+                        // The operation names are transformed into lower case
+                        operations.replaceAll({s -> s.toLowerCase()})
+
                         def opOk = true
                         operations.each { op ->
                             opOk &= ops.contains(op)
@@ -958,6 +961,10 @@ static IProcess vegetationFraction() {
                         "CREATE INDEX IF NOT EXISTS idt_i ON $interTable($vegetClass);" +
                         "CREATE TABLE $buffTable AS SELECT $idColumnRsu,"
                 def names = []
+
+                // The fraction type names are transformed into lower case
+                fractionType.replaceAll({s -> s.toLowerCase()})
+
                 fractionType.each{op ->
                     names.add("${op}_vegetation_fraction")
                     if(op == "low" || op == "high"){
@@ -1153,6 +1160,7 @@ static IProcess perviousnessFraction() {
                                                                            "water_fraction"], "impervious_fraction" : ["road_fraction"]], prefixName, datasource ->
 
                 def idColumnRsu = "id_rsu"
+                def ops = ["pervious_fraction", "impervious_fraction"]
 
                 // The name of the outputTableName is constructed
                 String baseName = "perviousness_fraction"
@@ -1162,11 +1170,19 @@ static IProcess perviousnessFraction() {
                 def query = "DROP TABLE IF EXISTS $outputTableName; " +
                         "CREATE TABLE $outputTableName AS SELECT $idColumnRsu, "
 
+                // The pervious or impervious names are transformed into lower case
+                operationsAndComposition.replaceAll({s -> s.toLowerCase()})
+
                 operationsAndComposition.each{indic, land_fractions ->
-                    land_fractions.each{lf ->
-                        query += "$lf +"
+                    if(ops.contains(indic)) {
+                        land_fractions.each { lf ->
+                            query += "$lf +"
+                        }
+                        query = query[0..-2] + "AS $indic,"
                     }
-                    query = query[0..-2] + "AS $indic,"
+                    else{
+                        logger.error("$indic is not a valid name (valid names are in $ops).".toString())
+                    }
                 }
                 query = query[0..-2] + " FROM $rsuTable;"
 
@@ -1174,4 +1190,5 @@ static IProcess perviousnessFraction() {
                 datasource.execute query
                 [outputTableName: outputTableName]
             }
-    )}
+    )
+}
