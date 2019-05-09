@@ -1,7 +1,6 @@
 package org.orbisgis.processingchain
 
 import org.junit.jupiter.api.Test
-import org.orbisgis.PrepareData
 import org.orbisgis.processmanager.ProcessMapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

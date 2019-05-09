@@ -290,7 +290,6 @@ class FormattingForAbstractModelTests {
         new OSMGISLayersTests().prepareVegetTest()
         def h2GIS = H2GIS.open('./target/osmdb')
         assertNotNull(h2GIS.getTable("RAW_INPUT_VEGET"))
-        println h2GIS.getTable("RAW_INPUT_VEGET").getColumnNames()
         //Define the mapping between the values in OSM and those used in the abstract model
         def mappingType = [
                 "tree":["natural":["tree"]],
@@ -315,7 +314,6 @@ class FormattingForAbstractModelTests {
         assertNotNull(h2GIS.getTable("INPUT_VEGET"))
         assertEquals(h2GIS.getTable("RAW_INPUT_VEGET").getRowCount(), h2GIS.getTable("INPUT_VEGET").getRowCount())
         assertTrue(h2GIS.getTable("INPUT_VEGET").getColumnNames().contains("TYPE"))
-        println h2GIS.getTable("INPUT_VEGET").getColumnNames()
 
     }
 

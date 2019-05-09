@@ -14,7 +14,7 @@ class OSMGISLayersTests {
 
     @Test
     void prepareBuildingsTest() {
-        def h2GIS = H2GIS.open('./target/h2db')
+        def h2GIS = H2GIS.open('./target/osmdb')
         h2GIS.load(new File(this.class.getResource("zoneExtended.osm").toURI()).getAbsolutePath(),"ext",false)
         h2GIS.execute "drop table if exists RAW_INPUT_BUILDING;"
         assertNotNull(h2GIS.getTable("EXT_NODE"))
@@ -45,7 +45,7 @@ class OSMGISLayersTests {
 
     @Test
     void prepareRoadsTest() {
-        def h2GIS = H2GIS.open('./target/h2db')
+        def h2GIS = H2GIS.open('./target/osmdb')
         h2GIS.load(new File(this.class.getResource("zoneExtended.osm").toURI()).getAbsolutePath(),"ext",false)
         h2GIS.execute "drop table if exists RAW_INPUT_ROAD;"
         assertNotNull(h2GIS.getTable("EXT_NODE"))
@@ -71,7 +71,7 @@ class OSMGISLayersTests {
 
     @Test
     void prepareRailsTest() {
-        def h2GIS = H2GIS.open('./target/h2db')
+        def h2GIS = H2GIS.open('./target/osmdb')
         h2GIS.load(new File(this.class.getResource("zoneExtended.osm").toURI()).getAbsolutePath(),"ext",false)
         h2GIS.execute "drop table if exists RAW_INPUT_RAIL;"
         assertNotNull(h2GIS.getTable("EXT_NODE"))
@@ -95,7 +95,7 @@ class OSMGISLayersTests {
 
     @Test
     void prepareVegetTest() {
-        def h2GIS = H2GIS.open('./target/h2db')
+        def h2GIS = H2GIS.open('./target/osmdb')
         h2GIS.load(new File(this.class.getResource("zoneExtended.osm").toURI()).getAbsolutePath(),"ext",false)
         h2GIS.execute "drop table if exists RAW_INPUT_VEGET;"
         assertNotNull(h2GIS.getTable("EXT_NODE"))
@@ -123,7 +123,7 @@ class OSMGISLayersTests {
 
     @Test
     void prepareHydroTest() {
-        def h2GIS = H2GIS.open('./target/h2db')
+        def h2GIS = H2GIS.open('./target/osmdb')
         h2GIS.load(new File(this.class.getResource("zoneExtended.osm").toURI()).getAbsolutePath(),"ext",false)
         h2GIS.execute "drop table if exists RAW_INPUT_HYDRO;"
         assertNotNull(h2GIS.getTable("EXT_NODE"))
@@ -145,7 +145,7 @@ class OSMGISLayersTests {
 
     @Test
     void loadInitialDataTest() {
-        def h2GIS = H2GIS.open('./target/h2db')
+        def h2GIS = H2GIS.open('./target/osmdb')
         h2GIS.execute OSMGISLayers.dropOSMTables("EXT")
         h2GIS.execute "drop table if exists ZONE;"
         h2GIS.execute "drop table if exists ZONE_EXTENDED;"
@@ -153,12 +153,11 @@ class OSMGISLayersTests {
         h2GIS.execute "drop table if exists ZONE_NEIGHBORS;"
         def process = PrepareData.OSMGISLayers.loadInitialData()
         process.execute([
-                dbPath : "./target/h2db",
+                dbPath : "./target/osmdb",
                 osmTablesPrefix: "EXT",
                 zoneCode : "35236",
                 extendedZoneSize : 1000,
                 bufferZoneSize:500])
-        println h2GIS.getTableNames()
         assertNotNull h2GIS.getTable("EXT_NODE")
         assertNotNull h2GIS.getTable("ZONE")
         assertNotNull h2GIS.getTable("ZONE_EXTENDED")

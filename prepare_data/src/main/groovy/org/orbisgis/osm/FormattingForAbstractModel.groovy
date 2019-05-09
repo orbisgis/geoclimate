@@ -174,12 +174,14 @@ static IProcess transformHydro() {
             [outputTableName: String],
             { datasource, inputTableName ->
                 def inputTable = datasource.getSpatialTable(inputTableName)
+                logger.info('Veget transformation starts')
                 datasource.execute("    drop table if exists input_hydro;\n" +
                         "CREATE TABLE input_hydro (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR)")
                 inputTable.eachRow { row ->
                     def query = "insert into input_hydro values(${row.the_geom},${row.id_source})"
                     datasource.execute (query)
                 }
+                logger.info('Veget transformation finishes')
                 [outputTableName: "INPUT_HYDRO"]
             }
     )
