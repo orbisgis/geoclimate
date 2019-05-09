@@ -27,7 +27,7 @@ class BuildingIndicatorsTests {
     }
 
     @Test
-    void buildingSizePropertiesTest() {
+    void sizePropertiesTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -35,7 +35,7 @@ class BuildingIndicatorsTests {
         // Only the first 1 first created buildings are selected for the tests
         h2GIS.execute("DROP TABLE IF EXISTS tempo_build, test_building_size_properties; CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build = 7;")
 
-        def  p =  Geoclimate.BuildingIndicators.buildingSizeProperties()
+        def  p =  Geoclimate.BuildingIndicators.sizeProperties()
         p.execute([inputBuildingTableName: "tempo_build", operations:["building_volume", "building_floor_area", "building_total_facade_length",
                                "building_passive_volume_ratio"],
                    prefixName : "test",datasource:h2GIS])
@@ -49,7 +49,7 @@ class BuildingIndicatorsTests {
     }
 
     @Test
-    void buildingNeighborsPropertiesTest() {
+    void neighborsPropertiesTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -58,7 +58,7 @@ class BuildingIndicatorsTests {
         h2GIS.execute("DROP TABLE IF EXISTS tempo_build, test_building_neighbors_properties; CREATE TABLE tempo_build AS SELECT * " +
                 "FROM building_test WHERE id_build < 7")
 
-        def  p =  Geoclimate.BuildingIndicators.buildingNeighborsProperties()
+        def  p =  Geoclimate.BuildingIndicators.neighborsProperties()
         p.execute([inputBuildingTableName: "tempo_build",
                    operations:["building_contiguity","building_common_wall_fraction",
                                "building_number_building_neighbor"],
@@ -77,7 +77,7 @@ class BuildingIndicatorsTests {
     }
 
     @Test
-    void buildingFormPropertiesTest() {
+    void formPropertiesTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -86,7 +86,7 @@ class BuildingIndicatorsTests {
         h2GIS.execute("DROP TABLE IF EXISTS tempo_build, test_building_form_properties; CREATE TABLE tempo_build AS SELECT * " +
                 "FROM building_test WHERE id_build < 8 OR id_build = 30")
 
-        def  p =  Geoclimate.BuildingIndicators.buildingFormProperties()
+        def  p =  Geoclimate.BuildingIndicators.formProperties()
         p.execute([inputBuildingTableName: "tempo_build",
                    operations:["building_concavity","building_form_factor",
                                "building_raw_compacity", "building_convexhull_perimeter_density"],
@@ -113,7 +113,7 @@ class BuildingIndicatorsTests {
     }
 
     @Test
-    void buildingMinimumBuildingSpacingTest() {
+    void minimumBuildingSpacingTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -122,7 +122,7 @@ class BuildingIndicatorsTests {
         h2GIS.execute("DROP TABLE IF EXISTS tempo_build, test_building_form_properties; CREATE TABLE tempo_build AS SELECT * " +
                 "FROM building_test WHERE id_build < 7")
 
-        def  p =  Geoclimate.BuildingIndicators.buildingMinimumBuildingSpacing()
+        def  p =  Geoclimate.BuildingIndicators.minimumBuildingSpacing()
         p.execute([inputBuildingTableName: "tempo_build",
                    bufferDist:100,
                    prefixName : "test",datasource:h2GIS])
@@ -135,7 +135,7 @@ class BuildingIndicatorsTests {
     }
 
     @Test
-    void buildingRoadDistanceTest() {
+    void roadDistanceTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -144,7 +144,7 @@ class BuildingIndicatorsTests {
         h2GIS.execute("DROP TABLE IF EXISTS tempo_road, test_building_road_distance; CREATE TABLE tempo_road AS SELECT * " +
                 "FROM road_test WHERE id_road = 1")
 
-        def  p =  Geoclimate.BuildingIndicators.buildingRoadDistance()
+        def  p =  Geoclimate.BuildingIndicators.roadDistance()
         p.execute([inputBuildingTableName: "building_test", inputRoadTableName: "tempo_road", bufferDist:100,
                    prefixName : "test",datasource:h2GIS])
         def concat = ""

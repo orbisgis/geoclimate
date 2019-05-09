@@ -25,7 +25,7 @@ import org.orbisgis.processmanagerapi.IProcess
  * @return A database table name.
  * @author Jérémy Bernard
  */
-static IProcess rsuFreeExternalFacadeDensity() {
+static IProcess freeExternalFacadeDensity() {
 return processFactory.create(
         "RSU free external facade density",
         [buildingTable: String,correlationTable: String,
@@ -90,7 +90,7 @@ return processFactory.create(
  * @return A database table name.
  * @author Jérémy Bernard
  */
-static IProcess rsuGroundSkyViewFactor() {
+static IProcess groundSkyViewFactor() {
     return processFactory.create(
             "RSU ground sky view factor",
             [rsuTable: String,correlationBuildingTable: String, rsuBuildingDensityColumn: String, pointDensity: double, rayLength: double,
@@ -202,7 +202,7 @@ static IProcess rsuGroundSkyViewFactor() {
  * @return A database table name.
  * @author Jérémy Bernard
  */
-static IProcess rsuAspectRatio() {
+static IProcess aspectRatio() {
     return processFactory.create(
             "RSU aspect ratio",
             [rsuTable: String, rsuFreeExternalFacadeDensityColumn: String,
@@ -253,7 +253,7 @@ static IProcess rsuAspectRatio() {
  * @return A database table name.
  * @author Jérémy Bernard
  */
-static IProcess rsuProjectedFacadeAreaDistribution() {
+static IProcess projectedFacadeAreaDistribution() {
     return processFactory.create(
             "RSU projected facade area distribution",
             [buildingTable: String, rsuTable: String, listLayersBottom: double[], numberOfDirection: int,
@@ -443,7 +443,7 @@ static IProcess rsuProjectedFacadeAreaDistribution() {
  *
  * @author Jérémy Bernard
  */
-static IProcess rsuRoofAreaDistribution() {
+static IProcess roofAreaDistribution() {
     return processFactory.create(
             "RSU roof area distribution",
             [rsuTable: String, correlationBuildingTable: String, listLayersBottom: double[],
@@ -608,7 +608,7 @@ static IProcess rsuRoofAreaDistribution() {
  *
  * @author Jérémy Bernard
  */
-static IProcess rsuEffectiveTerrainRoughnessHeight() {
+static IProcess effectiveTerrainRoughnessHeight() {
     return processFactory.create(
             "RSU effective terrain roughness height",
             [rsuTable: String, projectedFacadeAreaName: String, geometricMeanBuildingHeightName: String,
@@ -689,7 +689,7 @@ static IProcess rsuEffectiveTerrainRoughnessHeight() {
  *
  * @author Jérémy Bernard
  */
-static IProcess rsuLinearRoadOperations() {
+static IProcess linearRoadOperations() {
     return processFactory.create(
             "Operations on the linear of road",
             [rsuTable: String, roadTable: String, operations: String[], prefixName: String, angleRangeSize: int,
@@ -870,7 +870,7 @@ static IProcess rsuLinearRoadOperations() {
  *
  * @author Jérémy Bernard
  */
-static IProcess EffectiveTerrainRoughnessClass() {
+static IProcess effectiveTerrainRoughnessClass() {
     return processFactory.create(
             "RSU effective terrain roughness class",
             [datasource: JdbcDataSource, rsuTable: String, effectiveTerrainRoughnessHeight: String, prefixName: String],

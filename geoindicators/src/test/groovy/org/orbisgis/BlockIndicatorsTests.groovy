@@ -111,7 +111,7 @@ class BlockIndicatorsTests {
     }
 
     @Test
-    void blockPerkinsSkillScoreBuildingDirectionTest() {
+    void perkinsSkillScoreBuildingDirectionTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -120,7 +120,7 @@ class BlockIndicatorsTests {
         h2GIS.execute("DROP TABLE IF EXISTS tempo_build, block_perkins_skill_score_building_direction; " +
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 9")
 
-        def  p =  Geoclimate.BlockIndicators.blockPerkinsSkillScoreBuildingDirection()
+        def  p =  Geoclimate.BlockIndicators.perkinsSkillScoreBuildingDirectionTest()
         p.execute([buildingTableName: "tempo_build",correlationTableName: "block_build_corr",
                    angleRangeSize: 15, prefixName: "test", datasource: h2GIS])
         def concat = 0
@@ -161,7 +161,7 @@ class BlockIndicatorsTests {
         h2GIS.execute("DROP TABLE IF EXISTS tempo_build, building_size_properties, building_contiguity; " +
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 8")
 
-        def  p_size =  Geoclimate.BuildingIndicators.buildingSizeProperties()
+        def  p_size =  Geoclimate.BuildingIndicators.sizeProperties()
         p_size.execute([inputBuildingTableName: "tempo_build",
                         operations:["building_volume"], prefixName : "test", datasource:h2GIS])
 
