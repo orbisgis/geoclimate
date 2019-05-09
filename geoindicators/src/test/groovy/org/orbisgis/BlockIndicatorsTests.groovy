@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals
 class BlockIndicatorsTests {
 
     @Test
-    void unweightedOperationFromLowerScale() {
+    void unweightedOperationFromLowerScaleTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -66,7 +66,7 @@ class BlockIndicatorsTests {
     }
 
     @Test
-    void weightedAggregatedStatistics() {
+    void weightedAggregatedStatisticsTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -111,7 +111,7 @@ class BlockIndicatorsTests {
     }
 
     @Test
-    void blockPerkinsSkillScoreBuildingDirection() {
+    void blockPerkinsSkillScoreBuildingDirectionTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -132,7 +132,7 @@ class BlockIndicatorsTests {
     }
 
     @Test
-    void holeAreaDensity() {
+    void holeAreaDensityTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -152,7 +152,7 @@ class BlockIndicatorsTests {
     }
 
     @Test
-    void netCompacity() {
+    void netCompacityTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -182,7 +182,7 @@ class BlockIndicatorsTests {
     }
 
     @Test
-    void closingness() {
+    void closingnessTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)

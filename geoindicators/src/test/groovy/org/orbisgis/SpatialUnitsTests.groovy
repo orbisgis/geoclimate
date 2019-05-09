@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull
 class SpatialUnitsTests {
 
     @Test
-    void testCreateRSU() {
+    void createRSUTest() {
         def h2GIS = H2GIS.open([databaseName: '/tmp/spatialunitsdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -24,7 +24,7 @@ class SpatialUnitsTests {
     }
 
     @Test
-    void testPrepareGeometriesForRSU() {
+    void prepareGeometriesForRSUTest() {
         H2GIS h2GIS = H2GIS.open([databaseName: '/tmp/spatialunitsdb'])
         h2GIS.load(this.class.getResource("road_test.shp").toString(), true)
         h2GIS.load(this.class.getResource("rail_test.shp").toString(), true)
@@ -54,7 +54,7 @@ class SpatialUnitsTests {
 
 
     @Test
-    void testCreateBlocks() {
+    void createBlocksTest() {
         def h2GIS = H2GIS.open([databaseName: '/tmp/spatialunitsdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -69,7 +69,7 @@ class SpatialUnitsTests {
     }
 
     @Test
-    void testCreateScalesRelations() {
+    void createScalesRelationsTest() {
         def h2GIS = H2GIS.open([databaseName: '/tmp/spatialunitsdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)

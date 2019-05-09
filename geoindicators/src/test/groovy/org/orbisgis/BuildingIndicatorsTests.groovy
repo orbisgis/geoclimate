@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 class BuildingIndicatorsTests {
 
     @Test
-    void testGeometryProperties() {
+    void geometryPropertiesTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         h2GIS.execute("""
                 DROP TABLE IF EXISTS spatial_table, test_geometry_properties;
@@ -27,7 +27,7 @@ class BuildingIndicatorsTests {
     }
 
     @Test
-    void buildingSizeProperties() {
+    void buildingSizePropertiesTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -49,7 +49,7 @@ class BuildingIndicatorsTests {
     }
 
     @Test
-    void buildingNeighborsProperties() {
+    void buildingNeighborsPropertiesTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -77,7 +77,7 @@ class BuildingIndicatorsTests {
     }
 
     @Test
-    void buildingFormProperties() {
+    void buildingFormPropertiesTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -113,7 +113,7 @@ class BuildingIndicatorsTests {
     }
 
     @Test
-    void buildingMinimumBuildingSpacing() {
+    void buildingMinimumBuildingSpacingTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -135,7 +135,7 @@ class BuildingIndicatorsTests {
     }
 
     @Test
-    void buildingRoadDistance() {
+    void buildingRoadDistanceTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)

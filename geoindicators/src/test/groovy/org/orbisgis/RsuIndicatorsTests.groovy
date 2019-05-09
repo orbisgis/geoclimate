@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals
 class RsuIndicatorsTests {
 
     @Test
-    void testRsuFreeExternalFacadeDensity() {
+    void rsuFreeExternalFacadeDensityTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -33,7 +33,7 @@ class RsuIndicatorsTests {
     }
 
     @Test
-    void testRsuGroundSkyViewFactor() {
+    void rsuGroundSkyViewFactorTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -59,7 +59,7 @@ class RsuIndicatorsTests {
     }
 
     @Test
-    void testRsuAspectRatio() {
+    void rsuAspectRatioTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -77,7 +77,7 @@ class RsuIndicatorsTests {
     }
 
     @Test
-    void testRsuProjectedFacadeAreaDistribution() {
+    void rsuProjectedFacadeAreaDistributionTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -116,7 +116,7 @@ class RsuIndicatorsTests {
     }
 
     @Test
-    void testRsuRoofAreaDistribution() {
+    void rsuRoofAreaDistributionTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -169,7 +169,7 @@ class RsuIndicatorsTests {
     }
 
     @Test
-    void testRsuEffectiveTerrainRoughnessHeight() {
+    void rsuEffectiveTerrainRoughnessHeightTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -212,7 +212,7 @@ class RsuIndicatorsTests {
     }
 
     @Test
-    void testRsuLinearRoadOperations() {
+    void rsuLinearRoadOperationsTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -251,7 +251,7 @@ class RsuIndicatorsTests {
     }
 
     @Test
-    void testEffectiveTerrainRoughnessClass() {
+    void effectiveTerrainRoughnessClassTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -272,7 +272,7 @@ class RsuIndicatorsTests {
     }
 
     @Test
-    void testVegetationFraction() {
+    void vegetationFractionTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -302,7 +302,7 @@ class RsuIndicatorsTests {
     }
 
     @Test
-    void testRoadFraction() {
+    void roadFractionTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -334,7 +334,7 @@ class RsuIndicatorsTests {
     }
 
     @Test
-    void testWaterFraction() {
+    void waterFractionTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -355,7 +355,7 @@ class RsuIndicatorsTests {
     }
 
     @Test
-    void perviousnessFraction() {
+    void perviousnessFractionTest() {
         def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
