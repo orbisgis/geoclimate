@@ -35,7 +35,9 @@ public static ProcessMapper createMapper(){
     def prepareRSUData = SpatialUnits.prepareRSUData()
     def createRSU = SpatialUnits.createRSU()
     def createBlocks = SpatialUnits.createBlocks()
-    def createScalesRelations = SpatialUnits.createScalesRelations()
+    def createScalesRelationsBlBu = SpatialUnits.createScalesRelations()
+    def createScalesRelationsRsuBl = SpatialUnits.createScalesRelations()
+    def createScalesRelationsRsuBlBu = SpatialUnits.createScalesRelations()
 
     ProcessMapper mapper = new ProcessMapper()
     // FROM prepareRSUData...
@@ -44,21 +46,21 @@ public static ProcessMapper createMapper(){
 
     // FROM createRSU...
     // ...to createScalesRelations (relationship between RSU and buildings)
-    mapper.link(outputTableName : createRSU, inputUpperScaleTableName : createScalesRelations)
+    mapper.link(outputTableName : createRSU, inputUpperScaleTableName : createScalesRelationsRsuBl)
 
-    // ...to createScalesRelations (relationship between RSU and blocks)
-    mapper.link(outputTableName : createRSU, inputUpperScaleTableName : createScalesRelations)
+    // ...to createScalesRelations (relationship between RSU and blocks and buildings)
+    mapper.link(outputTableName : createRSU, inputUpperScaleTableName : createScalesRelationsRsuBlBu)
 
     // FROM createBlocks...
     // ...to createScalesRelations (relationships between blocks and RSU)
-    mapper.link(outputTableName : createBlocks, inputLowerScaleTableName : createScalesRelations)
+    mapper.link(outputTableName : createBlocks, inputLowerScaleTableName : createScalesRelationsRsuBl)
 
     // ...to createScalesRelations (relationships between blocks and buildings)
-    mapper.link(outputTableName : createBlocks, inputUpperScaleTableName : createScalesRelations)
+    mapper.link(outputTableName : createBlocks, inputUpperScaleTableName : createScalesRelationsBlBu)
 
     // FROM createScalesRelations (that comes from the createBlocks)...
     // ...to createScalesRelations (relationships between blocks, RSU and buildings...)
-    mapper.link(outputTableName : createScalesRelations, inputLowerScaleTableName : createScalesRelations)
+    mapper.link(outputTableName : createScalesRelationsBlBu, inputLowerScaleTableName : createScalesRelationsRsuBlBu)
 
     return mapper
 }
