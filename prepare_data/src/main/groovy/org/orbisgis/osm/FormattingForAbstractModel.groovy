@@ -25,8 +25,6 @@ static IProcess transformBuildings() {
             [outputTableName: String],
             { datasource, inputTableName, mappingForTypeAndUse ->
                 def inputTable = datasource.getSpatialTable(inputTableName)
-                println inputTableName
-                println inputTable.columnNames
                 logger.info('Buildings transformation starts')
                 datasource.execute("    drop table if exists input_building;\n" +
                         "CREATE TABLE input_building (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT,\n" +
@@ -65,8 +63,6 @@ static IProcess transformRoads() {
             [outputTableName: String],
             { datasource, inputTableName, mappingForRoadType, mappingForSurface ->
                 def inputTable = datasource.getSpatialTable(inputTableName)
-                println inputTableName
-                println inputTable.columnNames
                 logger.info('Roads transformation starts')
                 datasource.execute("    drop table if exists input_road;\n" +
                         "CREATE TABLE input_road (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR,\n" +
@@ -103,8 +99,6 @@ static IProcess transformRails() {
             [outputTableName: String],
             { datasource, inputTableName, mappingForRailType ->
                 def inputTable = datasource.getSpatialTable(inputTableName)
-                println inputTableName
-                println inputTable.columnNames
                 logger.info('Rails transformation starts')
                 datasource.execute("    drop table if exists input_rail;\n" +
                         "CREATE TABLE input_rail (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER)")
@@ -149,8 +143,6 @@ static IProcess transformVeget() {
             [outputTableName: String],
             { JdbcDataSource datasource, inputTableName, mappingForVegetType ->
                 def inputTable = datasource.getSpatialTable(inputTableName)
-                println inputTableName
-                println inputTable.columnNames
                 logger.info('Veget transformation starts')
                 datasource.execute("    drop table if exists input_veget;\n" +
                         "CREATE TABLE input_veget (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, TYPE VARCHAR)")
@@ -182,8 +174,6 @@ static IProcess transformHydro() {
             [outputTableName: String],
             { datasource, inputTableName ->
                 def inputTable = datasource.getSpatialTable(inputTableName)
-                println inputTableName
-                println inputTable.columnNames
                 datasource.execute("    drop table if exists input_hydro;\n" +
                         "CREATE TABLE input_hydro (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR)")
                 inputTable.eachRow { row ->

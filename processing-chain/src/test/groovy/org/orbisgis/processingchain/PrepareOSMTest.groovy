@@ -1,4 +1,4 @@
-package org.orbisgis.osm
+package org.orbisgis.processingchain
 
 import org.junit.jupiter.api.Test
 import org.orbisgis.PrepareData
@@ -6,12 +6,12 @@ import org.orbisgis.processmanager.ProcessMapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-class OSMPreparationChainTest {
-    private static final Logger logger = LoggerFactory.getLogger(OSMPreparationChainTest.class)
+class PrepareOSMTest {
+    private static final Logger logger = LoggerFactory.getLogger(PrepareOSMTest.class)
 
     @Test
-    void OSMPreparationMapperTest() {
-        ProcessMapper mapper = PrepareData.OSMPreparationChain.OSMPreparationMapper()
+    void PrepareOSMMapperTest() {
+        ProcessMapper mapper = ProcessingChain.prepareOSM.PrepareOSMMapper()
         def mappingTypeAndUse = [
                 terminal: [aeroway : ["terminal", "airport_terminal"],
                            amenity : ["terminal", "airport_terminal"],

@@ -1,4 +1,4 @@
-package org.orbisgis.osm
+package org.orbisgis.processingchain
 
 import groovy.transform.BaseScript
 import org.orbisgis.PrepareData
@@ -11,19 +11,19 @@ import org.orbisgis.processmanager.ProcessMapper
  *
  * @return
  */
-public static ProcessMapper OSMPreparationMapper(){
-    def loadInitialData = OSMGISLayers.loadInitialData()
-    def prepareBuildings = OSMGISLayers.prepareBuildings()
-    def prepareRoads = OSMGISLayers.prepareRoads()
-    def prepareRails = OSMGISLayers.prepareRails()
-    def prepareVeget = OSMGISLayers.prepareVeget()
-    def prepareHydro = OSMGISLayers.prepareHydro()
+public static ProcessMapper PrepareOSMMapper(){
+    def loadInitialData = org.orbisgis.osm.OSMGISLayers.loadInitialData()
+    def prepareBuildings = org.orbisgis.osm.OSMGISLayers.prepareBuildings()
+    def prepareRoads = org.orbisgis.osm.OSMGISLayers.prepareRoads()
+    def prepareRails = org.orbisgis.osm.OSMGISLayers.prepareRails()
+    def prepareVeget = org.orbisgis.osm.OSMGISLayers.prepareVeget()
+    def prepareHydro = org.orbisgis.osm.OSMGISLayers.prepareHydro()
 
-    def transformBuildings = FormattingForAbstractModel.transformBuildings()
-    def transformRoads = FormattingForAbstractModel.transformRoads()
-    def transformRails = FormattingForAbstractModel.transformRails()
-    def transformVeget = FormattingForAbstractModel.transformVeget()
-    def transformHydro = FormattingForAbstractModel.transformHydro()
+    def transformBuildings = org.orbisgis.osm.FormattingForAbstractModel.transformBuildings()
+    def transformRoads = org.orbisgis.osm.FormattingForAbstractModel.transformRoads()
+    def transformRails = org.orbisgis.osm.FormattingForAbstractModel.transformRails()
+    def transformVeget = org.orbisgis.osm.FormattingForAbstractModel.transformVeget()
+    def transformHydro = org.orbisgis.osm.FormattingForAbstractModel.transformHydro()
 
 
     ProcessMapper mapper = new ProcessMapper()
