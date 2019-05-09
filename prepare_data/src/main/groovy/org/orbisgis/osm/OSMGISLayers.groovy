@@ -252,8 +252,9 @@ static IProcess loadInitialData() {
              outDatasource : JdbcDataSource],
             { dbPath, osmTablesPrefix, zoneCode, extendedZoneSize, bufferZoneSize ->
                 boolean success = true
+                def datasource
                 if (dbPath != null) {
-                    def datasource = H2GIS.open([databaseName: dbPath])
+                    datasource = H2GIS.open([databaseName: dbPath])
                     def tmpOSMFile = File.createTempFile("zone", ".osm")
                     //zone download : relation, ways and nodes corresponding to the targeted zone limit
                     def initQuery = "[timeout:900];(relation[\"ref:INSEE\"=\"$zoneCode\"][\"boundary\"=\"administrative\"][\"admin_level\"=\"8\"];>;);out;"
@@ -303,7 +304,6 @@ static IProcess loadInitialData() {
                 } else {
                     logger.error("The database path must be provided.")
                     success = false
-                    def datasource = null
                 }
                 [success: success, outDatasource: datasource]
             }
