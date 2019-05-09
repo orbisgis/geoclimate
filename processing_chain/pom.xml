@@ -16,7 +16,7 @@
         <site.basedir>${project.parent.basedir}</site.basedir>
     </properties>
 
-    <artifactId>processing-chain</artifactId>
+    <artifactId>processing_chain</artifactId>
     <dependencies>
         <dependency>
             <groupId>org.codehaus.groovy</groupId>

@@ -186,7 +186,7 @@ static IProcess weightedAggregatedStatistics() {
  * @return A database table name.
  * @author Jérémy Bernard
  */
-static IProcess blockPerkinsSkillScoreBuildingDirection() {
+static IProcess perkinsSkillScoreBuildingDirection() {
     return processFactory.create(
             "Block Perkins skill score building direction",
             [buildingTableName: String,correlationTableName: String,

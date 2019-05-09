@@ -18,7 +18,7 @@ class ProcessingChainTest {
 
     @EnabledIfSystemProperty(named = "test.processingchain", matches = "true")
     @Test
-    void runBDTopoProcessingChain(){
+    void BDTopoProcessingChainTest(){
         H2GIS h2GIS = H2GIS.open("./target/processingchaindb")
 
         h2GIS.load(new File(this.class.getResource("geoclimate_bdtopo_data_test/IRIS_GE.geojson").toURI()).getAbsolutePath(),"IRIS_GE",true)
@@ -42,7 +42,7 @@ class ProcessingChainTest {
     }
 
     @Test
-    void runCreateScalesOfAnalysis(){
+    void CreateScalesOfAnalysisTest(){
         H2GIS h2GIS = H2GIS.open("./target/processingchaindb")
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -59,10 +59,11 @@ class ProcessingChainTest {
         pm.execute([datasource: h2GIS, zoneTable : "tempo_zone", roadTable : "tempo_road", railTable : "tempo_road",
                     vegetationTable: "tempo_veget", hydrographicTable: "tempo_hydro", surface_vegetation: null,
                     surface_hydro: null, inputTableName: "tempo_build", distance: null,
-                    inputLowerScaleTableName: "tempo_build",  idColumnUp: "id_rsu",  prefixName: "test"])
+                    inputLowerScaleTableName: "tempo_build",  prefixName: "test"])
 
+        println pm.getResults()
         // Test the number of blocks within RSU ID 1, whether id_build 4 and 5 belongs to the same block and the same
         // RSU
-        // def nb_blocks = h2GIS.firstRow('select count(*) as nb_blocks from ...')
+        // def nb_blocks = h2GIS.firstRow('select count(*) as nb_blocks from $pm.getResults()')
     }
 }
