@@ -40,6 +40,9 @@ return processFactory.create(
 
             String query = "CREATE TABLE $outputTableName AS SELECT "
 
+            // The operation names are transformed into lower case
+            operations.replaceAll({s -> s.toLowerCase()})
+
             operations.each {operation ->
                 if(ops.contains(operation)){
                     query += "$operation($geometricField) as $operation,"
@@ -93,6 +96,9 @@ static IProcess sizeProperties() {
                 String outputTableName = prefixName + "_" + baseName
 
                 String query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
+
+                // The operation names are transformed into lower case
+                operations.replaceAll({s -> s.toLowerCase()})
 
                 operations.each {operation ->
                     if(operation=="building_volume") {
@@ -166,6 +172,9 @@ static IProcess neighborsProperties() {
                         " CREATE TABLE $build_intersec AS SELECT "
 
                 String query_update = ""
+
+                // The operation names are transformed into lower case
+                operations.replaceAll({s -> s.toLowerCase()})
 
                 operations.each {operation ->
                     if(operation=="building_contiguity") {
@@ -252,6 +261,9 @@ static IProcess formProperties() {
                 String outputTableName = prefixName + "_" + baseName
 
                 String query = " CREATE TABLE $outputTableName AS SELECT "
+
+                // The operation names are transformed into lower case
+                operations.replaceAll({s -> s.toLowerCase()})
 
                 operations.each {operation ->
                     if(operation=="building_concavity"){
