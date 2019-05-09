@@ -159,7 +159,7 @@ static IProcess neighborsProperties() {
                 def ops = ["building_contiguity","building_common_wall_fraction",
                            "building_number_building_neighbor"]
                 // To avoid overwriting the output files of this step, a unique identifier is created
-                def uid_out = System.currentTimeMillis()
+                def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
                 // Temporary table names
                 def build_intersec = "build_intersec"+uid_out
 
@@ -317,7 +317,7 @@ static IProcess minimumBuildingSpacing() {
                 def idField = "id_build"
 
                 // To avoid overwriting the output files of this step, a unique identifier is created
-                def uid_out = System.currentTimeMillis()
+                def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
 
                 // Temporary table names
                 def build_buffer = "build_buffer"+uid_out
@@ -383,7 +383,7 @@ static IProcess roadDistance() {
                 def road_width = "width"
 
                 // To avoid overwriting the output files of this step, a unique identifier is created
-                def uid_out = System.currentTimeMillis()
+                def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
 
                 // Temporary table names
                 def build_buffer = "build_buffer"+uid_out
