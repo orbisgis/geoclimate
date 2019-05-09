@@ -185,7 +185,7 @@ class RsuIndicatorsTests {
                                 rsuTable: "rsu_test", listLayersBottom: listLayersBottom, numberOfDirection:
                                 numberOfDirection, prefixName: "test",
                                 datasource: h2GIS])
-        def  pGeomAvg =  Geoclimate.BlockIndicators.unweightedOperationFromLowerScale()
+        def  pGeomAvg =  Geoclimate.GenericIndicators.unweightedOperationFromLowerScale()
         pGeomAvg.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "rsu_build_corr",
                           inputIdUp: "id_rsu", inputVarAndOperations: ["height_roof": ["GEOM_AVG"]],
                           prefixName: "test", datasource: h2GIS])

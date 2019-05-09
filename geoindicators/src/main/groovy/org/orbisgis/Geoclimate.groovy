@@ -18,6 +18,8 @@ abstract class Geoclimate extends Script {
 
     public static BlockIndicators = new BlockIndicators()
 
+    public  static GenericIndicators = new GenericIndicators()
+
     public  static SpatialUnits = new SpatialUnits()
 
 }
