@@ -104,7 +104,7 @@ static IProcess rsuGroundSkyViewFactor() {
                 def height_wall = "height_wall"
 
                 // To avoid overwriting the output files of this step, a unique identifier is created
-                def uid_out = System.currentTimeMillis()
+                def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
 
                 // Temporary table names
                 def ptsRSUtot = "ptsRSUtot"+uid_out
