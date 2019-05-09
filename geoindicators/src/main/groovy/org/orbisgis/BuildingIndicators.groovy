@@ -74,7 +74,7 @@ return processFactory.create(
  * @return A database table name.
  * @author Jérémy Bernard
  */
-static IProcess buildingSizeProperties() {
+static IProcess sizeProperties() {
     return processFactory.create(
             "Building size properties",
             [inputBuildingTableName: String, operations: String[]
@@ -140,7 +140,7 @@ static IProcess buildingSizeProperties() {
  * @return A database table name.
  * @author Jérémy Bernard
  */
-static IProcess buildingNeighborsProperties() {
+static IProcess neighborsProperties() {
     return processFactory.create(
             "Building interactions properties",
             [inputBuildingTableName: String, operations: String[]
@@ -233,7 +233,7 @@ static IProcess buildingNeighborsProperties() {
  * @return A database table name.
  * @author Jérémy Bernard
  */
-static IProcess buildingFormProperties() {
+static IProcess formProperties() {
     return processFactory.create(
             "Building form properties",
             [inputBuildingTableName: String,operations: String[]
@@ -294,7 +294,7 @@ static IProcess buildingFormProperties() {
  * @return A database table name.
  * @author Jérémy Bernard
  */
-static IProcess buildingMinimumBuildingSpacing() {
+static IProcess minimumBuildingSpacing() {
     return processFactory.create(
             "Building minimum building spacing",
             [inputBuildingTableName: String,bufferDist: double
@@ -359,7 +359,7 @@ static IProcess buildingMinimumBuildingSpacing() {
  * @return A database table name.
  * @author Jérémy Bernard
  */
-static IProcess buildingRoadDistance() {
+static IProcess roadDistance() {
     return processFactory.create(
             "Building road distance",
             [inputBuildingTableName: String, inputRoadTableName: String, bufferDist: double
