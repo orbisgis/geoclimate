@@ -120,7 +120,7 @@ class BlockIndicatorsTests {
         h2GIS.execute("DROP TABLE IF EXISTS tempo_build, block_perkins_skill_score_building_direction; " +
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 9")
 
-        def  p =  Geoclimate.BlockIndicators.perkinsSkillScoreBuildingDirectionTest()
+        def  p =  Geoclimate.BlockIndicators.perkinsSkillScoreBuildingDirection()
         p.execute([buildingTableName: "tempo_build",correlationTableName: "block_build_corr",
                    angleRangeSize: 15, prefixName: "test", datasource: h2GIS])
         def concat = 0
