@@ -1170,11 +1170,8 @@ static IProcess perviousnessFraction() {
                 def query = "DROP TABLE IF EXISTS $outputTableName; " +
                         "CREATE TABLE $outputTableName AS SELECT $idColumnRsu, "
 
-                // The pervious or impervious names are transformed into lower case
-                operationsAndComposition.replaceAll({s -> s.toLowerCase()})
-
                 operationsAndComposition.each{indic, land_fractions ->
-                    if(ops.contains(indic)) {
+                    if(ops.contains(indic.toLowerCase())) {
                         land_fractions.each { lf ->
                             query += "$lf +"
                         }
