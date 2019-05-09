@@ -252,52 +252,58 @@ static IProcess loadInitialData() {
              outDatasource : JdbcDataSource],
             { dbPath, osmTablesPrefix, zoneCode, extendedZoneSize, bufferZoneSize ->
                 boolean success = true
-                def datasource = H2GIS.open([databaseName: dbPath])
-                def tmpOSMFile = File.createTempFile("zone", ".osm")
-                //zone download : relation, ways and nodes corresponding to the targeted zone limit
-                def initQuery = "[timeout:900];(relation[\"ref:INSEE\"=\"$zoneCode\"][\"boundary\"=\"administrative\"][\"admin_level\"=\"8\"];>;);out;"
-                //Download the corresponding OSM data
-                executeOverPassQuery(initQuery, tmpOSMFile)
-                if (tmpOSMFile.exists()) {
-                    datasource.load(tmpOSMFile.absolutePath, 'zoneOsm', true)
-                    // Create the polygon corresponding to the zone limit and its extended area
-                    datasource.execute zoneSQLScript('zoneOsm', zoneCode, extendedZoneSize, bufferZoneSize)
+                if (dbPath != null) {
+                    def datasource = H2GIS.open([databaseName: dbPath])
+                    def tmpOSMFile = File.createTempFile("zone", ".osm")
+                    //zone download : relation, ways and nodes corresponding to the targeted zone limit
+                    def initQuery = "[timeout:900];(relation[\"ref:INSEE\"=\"$zoneCode\"][\"boundary\"=\"administrative\"][\"admin_level\"=\"8\"];>;);out;"
+                    //Download the corresponding OSM data
+                    executeOverPassQuery(initQuery, tmpOSMFile)
+                    if (tmpOSMFile.exists()) {
+                        datasource.load(tmpOSMFile.absolutePath, 'zoneOsm', true)
+                        // Create the polygon corresponding to the zone limit and its extended area
+                        datasource.execute zoneSQLScript('zoneOsm', zoneCode, extendedZoneSize, bufferZoneSize)
 
-                    //define the coordinates of the extended zone bbox
+                        //define the coordinates of the extended zone bbox
 
-                    String bbox
-                    datasource.select('''
-                        ST_XMin(ST_TRANSFORM(ST_SETSRID(the_geom,2154), 4326)) as minLon, 
-                        ST_XMax(ST_TRANSFORM(ST_SETSRID(the_geom,2154), 4326)) as maxLon,
-                        ST_YMin(ST_TRANSFORM(ST_SETSRID(the_geom,2154), 4326)) as minLat, 
-                        ST_YMax(ST_TRANSFORM(ST_SETSRID(the_geom,2154), 4326)) as maxLat
-                    ''').from('ZONE_EXTENDED').getTable().eachRow { row ->
-                         bbox = "$row.minLat, $row.minLon, $row.maxLat, $row.maxLon"
-                    }
-                    datasource.execute(dropOSMTables('zoneOsm'))
-                    logger.info('Zone, Zone Buffer and Zone Extended OK')
+                        String bbox
+                        datasource.select('''
+                            ST_XMin(ST_TRANSFORM(ST_SETSRID(the_geom,2154), 4326)) as minLon, 
+                            ST_XMax(ST_TRANSFORM(ST_SETSRID(the_geom,2154), 4326)) as maxLon,
+                            ST_YMin(ST_TRANSFORM(ST_SETSRID(the_geom,2154), 4326)) as minLat, 
+                            ST_YMax(ST_TRANSFORM(ST_SETSRID(the_geom,2154), 4326)) as maxLat
+                        ''').from('ZONE_EXTENDED').getTable().eachRow { row ->
+                            bbox = "$row.minLat, $row.minLon, $row.maxLat, $row.maxLon"
+                        }
+                        datasource.execute(dropOSMTables('zoneOsm'))
+                        logger.info('Zone, Zone Buffer and Zone Extended OK')
 
-                    //Download all the osm data concerning the extended zone bbox
-                    def tmpOSMFile2 = File.createTempFile("zoneExtended",".osm")
-                    def queryURLExtendedZone = "[bbox:$bbox];((node;way;relation;);>;);out;"
-                    executeOverPassQuery(queryURLExtendedZone, tmpOSMFile2)
+                        //Download all the osm data concerning the extended zone bbox
+                        def tmpOSMFile2 = File.createTempFile("zoneExtended", ".osm")
+                        def queryURLExtendedZone = "[bbox:$bbox];((node;way;relation;);>;);out;"
+                        executeOverPassQuery(queryURLExtendedZone, tmpOSMFile2)
 
-                    //If the osm file is downloaded do the job
-                    if (tmpOSMFile2.exists()) {
+                        //If the osm file is downloaded do the job
+                        if (tmpOSMFile2.exists()) {
 
-                        //Import the OSM file
-                        datasource.load(tmpOSMFile2.absolutePath, osmTablesPrefix, true)
-                        datasource.execute createIndexesOnOSMTables(osmTablesPrefix)
+                            //Import the OSM file
+                            datasource.load(tmpOSMFile2.absolutePath, osmTablesPrefix, true)
+                            datasource.execute createIndexesOnOSMTables(osmTablesPrefix)
 
-                        //Create the zone_neighbors table and save it in the targeted shapefile
-                        datasource.execute zoneNeighborsSQLScript(osmTablesPrefix)
-                        logger.info('Zone neighbors OK')
+                            //Create the zone_neighbors table and save it in the targeted shapefile
+                            datasource.execute zoneNeighborsSQLScript(osmTablesPrefix)
+                            logger.info('Zone neighbors OK')
 
+                        } else {
+                            success = false
+                        }
                     } else {
                         success = false
                     }
                 } else {
+                    logger.error("The database path must be provided.")
                     success = false
+                    def datasource = null
                 }
                 [success: success, outDatasource: datasource]
             }

@@ -15,7 +15,7 @@ class FormattingForAbstractModelTests {
     @Test
     void transformBuildingsTest() {
         new OSMGISLayersTests().prepareBuildingsTest()
-        def h2GIS = H2GIS.open('./target/h2db')
+        def h2GIS = H2GIS.open('./target/osmdb')
         h2GIS.execute "drop table if exists INPUT_BUILDING;"
         assertNotNull(h2GIS.getTable("RAW_INPUT_BUILDING"))
         def mappingTypeAndUse = [
@@ -172,7 +172,7 @@ class FormattingForAbstractModelTests {
     @Test
     void transformRoadsTest() {
         new OSMGISLayersTests().prepareRoadsTest()
-        def h2GIS = H2GIS.open('./target/h2db')
+        def h2GIS = H2GIS.open('./target/osmdb')
         assertNotNull(h2GIS.getTable("RAW_INPUT_ROAD"))
         //Define the mapping between the values in OSM and those used in the abstract model
         def mappingType = [
@@ -261,7 +261,7 @@ class FormattingForAbstractModelTests {
     @Test
     void transformRailsTest() {
         new OSMGISLayersTests().prepareRailsTest()
-        def h2GIS = H2GIS.open('./target/h2db')
+        def h2GIS = H2GIS.open('./target/osmdb')
         assertNotNull(h2GIS.getTable("RAW_INPUT_RAIL"))
         logger.info(h2GIS.getTable("RAW_INPUT_RAIL").getRowCount().toString())
         //Define the mapping between the values in OSM and those used in the abstract model
@@ -288,7 +288,7 @@ class FormattingForAbstractModelTests {
     @Test
     void transformVegetTest() {
         new OSMGISLayersTests().prepareVegetTest()
-        def h2GIS = H2GIS.open('./target/h2db')
+        def h2GIS = H2GIS.open('./target/osmdb')
         assertNotNull(h2GIS.getTable("RAW_INPUT_VEGET"))
         println h2GIS.getTable("RAW_INPUT_VEGET").getColumnNames()
         //Define the mapping between the values in OSM and those used in the abstract model
@@ -322,7 +322,7 @@ class FormattingForAbstractModelTests {
     @Test
     void transformHydroTest() {
         new OSMGISLayersTests().prepareHydroTest()
-        def h2GIS = H2GIS.open('./target/h2db')
+        def h2GIS = H2GIS.open('./target/osmdb')
         assertNotNull(h2GIS.getTable("RAW_INPUT_HYDRO"))
         logger.info('Process starts')
         def process = PrepareData.FormattingForAbstractModel.transformHydro()
