@@ -117,7 +117,7 @@ static IProcess weightedAggregatedStatistics() {
                 String outputTableName = prefixName + "_" + baseName
 
                 // To avoid overwriting the output files of this step, a unique identifier is created
-                def uid_out = System.currentTimeMillis()
+                def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
 
                 // Temporary table names
                 def weighted_mean = "weighted_mean"+uid_out
@@ -205,7 +205,7 @@ static IProcess perkinsSkillScoreBuildingDirection() {
                 // Test whether the angleRangeSize is a divisor of 180°
                 if (180%angleRangeSize==0 & 180/angleRangeSize>1){
                     // To avoid overwriting the output files of this step, a unique identifier is created
-                    def uid_out = System.currentTimeMillis()
+                    def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
 
                     // Temporary table names
                     def build_min_rec = "build_min_rec"+uid_out

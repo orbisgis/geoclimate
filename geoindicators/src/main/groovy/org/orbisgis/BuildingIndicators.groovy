@@ -40,6 +40,9 @@ return processFactory.create(
 
             String query = "CREATE TABLE $outputTableName AS SELECT "
 
+            // The operation names are transformed into lower case
+            operations.replaceAll({s -> s.toLowerCase()})
+
             operations.each {operation ->
                 if(ops.contains(operation)){
                     query += "$operation($geometricField) as $operation,"
@@ -93,6 +96,9 @@ static IProcess sizeProperties() {
                 String outputTableName = prefixName + "_" + baseName
 
                 String query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
+
+                // The operation names are transformed into lower case
+                operations.replaceAll({s -> s.toLowerCase()})
 
                 operations.each {operation ->
                     if(operation=="building_volume") {
@@ -153,7 +159,7 @@ static IProcess neighborsProperties() {
                 def ops = ["building_contiguity","building_common_wall_fraction",
                            "building_number_building_neighbor"]
                 // To avoid overwriting the output files of this step, a unique identifier is created
-                def uid_out = System.currentTimeMillis()
+                def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
                 // Temporary table names
                 def build_intersec = "build_intersec"+uid_out
 
@@ -166,6 +172,9 @@ static IProcess neighborsProperties() {
                         " CREATE TABLE $build_intersec AS SELECT "
 
                 String query_update = ""
+
+                // The operation names are transformed into lower case
+                operations.replaceAll({s -> s.toLowerCase()})
 
                 operations.each {operation ->
                     if(operation=="building_contiguity") {
@@ -253,6 +262,9 @@ static IProcess formProperties() {
 
                 String query = " CREATE TABLE $outputTableName AS SELECT "
 
+                // The operation names are transformed into lower case
+                operations.replaceAll({s -> s.toLowerCase()})
+
                 operations.each {operation ->
                     if(operation=="building_concavity"){
                         query += "ST_AREA($geometricField)/ST_AREA(ST_CONVEXHULL($geometricField)) AS $operation,"
@@ -305,7 +317,7 @@ static IProcess minimumBuildingSpacing() {
                 def idField = "id_build"
 
                 // To avoid overwriting the output files of this step, a unique identifier is created
-                def uid_out = System.currentTimeMillis()
+                def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
 
                 // Temporary table names
                 def build_buffer = "build_buffer"+uid_out
@@ -371,7 +383,7 @@ static IProcess roadDistance() {
                 def road_width = "width"
 
                 // To avoid overwriting the output files of this step, a unique identifier is created
-                def uid_out = System.currentTimeMillis()
+                def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
 
                 // Temporary table names
                 def build_buffer = "build_buffer"+uid_out
