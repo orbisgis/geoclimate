@@ -81,8 +81,8 @@ class SpatialUnitsTests {
                       idColumnUp: "id_rsu", prefixName: "test", datasource: h2GIS])
         h2GIS.eachRow("SELECT * FROM ${pRsu.results.outputTableName}".toString()){
             row ->
-                def expected = h2GIS.firstRow("SELECT id_rsu FROM rsu_build_corr WHERE id_build = ${row.id_build}".toString())
-                assertEquals(row.id_rsu, expected.id_rsu)
+                def expected = h2GIS.firstRow("SELECT ${pRsu.results.outputIdColumnUp} FROM rsu_build_corr WHERE id_build = ${row.id_build}".toString())
+                assertEquals(row[pRsu.results.outputIdColumnUp], expected[pRsu.results.outputIdColumnUp])
         }
         def  pBlock =  Geoclimate.SpatialUnits.createScalesRelations()
         pBlock.execute([inputLowerScaleTableName: "build_tempo", inputUpperScaleTableName : "block_test",
@@ -90,8 +90,8 @@ class SpatialUnitsTests {
 
         h2GIS.eachRow("SELECT * FROM ${pBlock.results.outputTableName}".toString()){
             row ->
-                def expected = h2GIS.firstRow("SELECT id_block FROM block_build_corr WHERE id_build = ${row.id_build}".toString())
-                assertEquals(row.id_block, expected.id_block)
+                def expected = h2GIS.firstRow("SELECT ${pRsu.results.outputIdColumnUp} FROM block_build_corr WHERE id_build = ${row.id_build}".toString())
+                assertEquals(row[pRsu.results.outputIdColumnUp], expected[pRsu.results.outputIdColumnUp])
         }
     }
 

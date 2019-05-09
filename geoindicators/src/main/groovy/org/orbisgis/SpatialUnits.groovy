@@ -14,25 +14,27 @@ import org.orbisgis.processmanagerapi.IProcess
  * @param prefixName A prefix used to name the output table
  * @param datasource A connection to a database
  *
- * @return A database table name.
+ * @return A database table name and the name of the column ID
  */
 static IProcess createRSU(){
     return processFactory.create("Create reference spatial units (RSU)",
             [inputTableName: String, prefixName: String, datasource: JdbcDataSource],
-            [outputTableName : String],
+            [outputTableName : String, outputIdRsu: String],
             { inputTableName, prefixName='rsu', datasource ->
                 logger.info("Creating the reference spatial units")
+
+                def columnIdName = "id_rsu"
 
                 // The name of the outputTableName is constructed
                 String baseName = "created_rsu"
                 String outputTableName = prefixName + "_" + baseName
 
                 datasource.execute "DROP TABLE IF EXISTS $outputTableName".toString()
-                datasource.execute "CREATE TABLE $outputTableName as  select  EXPLOD_ID as id_rsu, the_geom".toString()+
+                datasource.execute "CREATE TABLE $outputTableName as  select  EXPLOD_ID as $columnIdName, the_geom".toString()+
                         " from st_explode ('(select st_polygonize(st_union(".toString()+
                 "st_precisionreducer(st_node(st_accum(the_geom)), 3))) as the_geom from $inputTableName)')".toString()
                 logger.info("Reference spatial units table created")
-                [outputTableName: outputTableName]
+                [outputTableName: outputTableName, outputIdRsu: columnIdName]
         }
     )
 }
@@ -177,25 +179,27 @@ static IProcess prepareRSUData(){
  * @param distance A distance to group the geometries
  * @param prefixName A prefix used to name the output table
  * @param outputTableName The name of the output table
- * @return A database table name.
+ * @return A database table name and the name of the column ID
  */
 static IProcess createBlocks(){
     return processFactory.create("Merge the geometries that touch each other",
             [inputTableName: String, distance : double, prefixName: String, datasource: JdbcDataSource],
-            [outputTableName : String],
+            [outputTableName : String, outputIdBlock: String],
             { inputTableName,distance =0.0, prefixName="block", datasource ->
                 logger.info("Merging the geometries...")
+
+                def columnIdName = "id_block"
 
                 // The name of the outputTableName is constructed
                 String baseName = "created_blocks"
                 String outputTableName = prefixName + "_" + baseName
 
                 datasource.execute "DROP TABLE IF EXISTS $outputTableName".toString()
-                datasource.execute "CREATE TABLE $outputTableName as  select  EXPLOD_ID as id_block, the_geom ".toString()+
+                datasource.execute "CREATE TABLE $outputTableName as  select  EXPLOD_ID as $columnIdName, the_geom ".toString()+
                         "from st_explode ('(select ST_UNION(ST_ACCUM(ST_BUFFER(THE_GEOM,$distance))) as the_geom".toString()+
                         " from $inputTableName)')".toString()
                 logger.info("The geometries have been merged")
-                [outputTableName: outputTableName]
+                [outputTableName: outputTableName, outputIdBlock: columnIdName]
             }
     )
 }
@@ -212,13 +216,13 @@ static IProcess createBlocks(){
  * @param idColumnUp The column name where is stored the ID of the upperScale objects (i.e. RSU)
  * @param prefixName A prefix used to name the output table
  *
- * @return A database table name.
+ * @return A database table name and the name of its ID field
  */
 static IProcess createScalesRelations(){
     return processFactory.create("Creating the Tables of relations between two scales",
             [inputLowerScaleTableName: String, inputUpperScaleTableName : String, idColumnUp: String,
              prefixName: String, datasource: JdbcDataSource],
-            [outputTableName : String],
+            [outputTableName: String, outputIdColumnUp: String],
             { inputLowerScaleTableName, inputUpperScaleTableName, idColumnUp, prefixName, datasource ->
 
                 def geometricColumnLow = "the_geom"
@@ -236,7 +240,7 @@ static IProcess createScalesRelations(){
                         "ST_AREA(ST_INTERSECTION(a.$geometricColumnLow, b.$geometricColumnUp)) " +
                         "DESC LIMIT 1) AS $idColumnUp FROM $inputLowerScaleTableName a").toString())
                 logger.info("The relations between scales have been created")
-                [outputTableName: outputTableName]
+                [outputTableName: outputTableName, outputIdColumnUp: idColumnUp]
             }
     )
 }

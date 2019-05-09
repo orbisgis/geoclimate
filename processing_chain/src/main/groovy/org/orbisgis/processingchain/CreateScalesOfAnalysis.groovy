@@ -23,7 +23,6 @@ import org.orbisgis.processmanager.ProcessMapper
  * @param inputTableName The input table where are stored the geometries used to create the block (e.g. buildings...)
  * @param distance A distance to group two geometries (e.g. two buildings in a block - default 0.01 m)
  * @param inputLowerScaleTableName The input table where are stored the lowerScale objects (i.e. buildings)
- * @param idColumnUp The column name where is stored the ID of the upperScale objects (i.e. RSU)
  * @param prefixName A prefix used to name the output table
  * @param datasource A connection to a database
  *
@@ -35,7 +34,9 @@ public static ProcessMapper createMapper(){
     def prepareRSUData = SpatialUnits.prepareRSUData()
     def createRSU = SpatialUnits.createRSU()
     def createBlocks = SpatialUnits.createBlocks()
-    def createScalesRelations = SpatialUnits.createScalesRelations()
+    def createScalesRelationsBlBu = SpatialUnits.createScalesRelations()
+    def createScalesRelationsRsuBl = SpatialUnits.createScalesRelations()
+    def createScalesRelationsRsuBlBu = SpatialUnits.createScalesRelations()
 
     ProcessMapper mapper = new ProcessMapper()
     // FROM prepareRSUData...
@@ -44,21 +45,24 @@ public static ProcessMapper createMapper(){
 
     // FROM createRSU...
     // ...to createScalesRelations (relationship between RSU and buildings)
-    mapper.link(outputTableName : createRSU, inputUpperScaleTableName : createScalesRelations)
+    mapper.link(outputTableName : createRSU, inputUpperScaleTableName : createScalesRelationsRsuBl)
+    mapper.link(outputIdRsu : createRSU, idColumnUp : createScalesRelationsRsuBl)
 
-    // ...to createScalesRelations (relationship between RSU and blocks)
-    mapper.link(outputTableName : createRSU, inputUpperScaleTableName : createScalesRelations)
+    // ...to createScalesRelations (relationship between RSU and blocks and buildings)
+    mapper.link(outputTableName : createRSU, inputUpperScaleTableName : createScalesRelationsRsuBlBu)
+    mapper.link(outputIdRsu : createRSU, idColumnUp : createScalesRelationsRsuBlBu)
 
     // FROM createBlocks...
     // ...to createScalesRelations (relationships between blocks and RSU)
-    mapper.link(outputTableName : createBlocks, inputLowerScaleTableName : createScalesRelations)
+    mapper.link(outputTableName : createBlocks, inputLowerScaleTableName : createScalesRelationsRsuBl)
+    mapper.link(outputIdBlock : createBlocks, idColumnUp : createScalesRelationsRsuBl)
 
     // ...to createScalesRelations (relationships between blocks and buildings)
-    mapper.link(outputTableName : createBlocks, inputUpperScaleTableName : createScalesRelations)
+    mapper.link(outputTableName : createBlocks, inputUpperScaleTableName : createScalesRelationsBlBu)
 
     // FROM createScalesRelations (that comes from the createBlocks)...
     // ...to createScalesRelations (relationships between blocks, RSU and buildings...)
-    mapper.link(outputTableName : createScalesRelations, inputLowerScaleTableName : createScalesRelations)
+    mapper.link(outputTableName : createScalesRelationsBlBu, inputLowerScaleTableName : createScalesRelationsRsuBlBu)
 
     return mapper
 }
