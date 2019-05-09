@@ -184,7 +184,7 @@ static IProcess prepareRSUData(){
 static IProcess createBlocks(){
     return processFactory.create("Merge the geometries that touch each other",
             [inputTableName: String, distance : double, prefixName: String, datasource: JdbcDataSource],
-            [outputTableName : String],
+            [outputTableName : String, outputIdBlock: String],
             { inputTableName,distance =0.0, prefixName="block", datasource ->
                 logger.info("Merging the geometries...")
 
