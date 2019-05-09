@@ -11,12 +11,10 @@ import org.orbisgis.datamanager.h2gis.H2GIS
 class OSMGISLayersTests {
 
     private static final Logger logger = LoggerFactory.getLogger(OSMGISLayersTests.class)
-    /**
-     * A basic test just for demo... must be removed
-     */
+
     @Test
     void prepareBuildingsTest() {
-        def h2GIS = H2GIS.open('./target/h2db')
+        def h2GIS = H2GIS.open('./target/osmdb')
         h2GIS.load(new File(this.class.getResource("zoneExtended.osm").toURI()).getAbsolutePath(),"ext",false)
         h2GIS.execute "drop table if exists RAW_INPUT_BUILDING;"
         assertNotNull(h2GIS.getTable("EXT_NODE"))
@@ -28,7 +26,7 @@ class OSMGISLayersTests {
         process.execute([
                 datasource   : h2GIS,
                 osmTablesPrefix : "EXT",
-                outputColumnNames: ['height':'height','building:height':'b_height','roof:height':'r_height','building:roof:height':'b_r_height',
+                buildingTableColumnsNames: ['height':'height','building:height':'b_height','roof:height':'r_height','building:roof:height':'b_r_height',
                                     'building:levels':'b_lev','roof:levels':'r_lev','building:roof:levels':'b_r_lev','building':'building',
                                     'amenity':'amenity','layer':'zindex','aeroway':'aeroway','historic':'historic','leisure':'leisure','monument':'monument',
                                     'place_of_worship':'place_of_worship','military':'military','railway':'railway','public_transport':'public_transport',
@@ -36,10 +34,10 @@ class OSMGISLayersTests {
                                     'house':'house','shop':'shop','industrial':'industrial','man_made':'man_made', 'residential':'residential',
                                     'apartments':'apartments','ruins':'ruins','agricultural':'agricultural','barn':'barn', 'healthcare':'healthcare',
                                     'education':'education','restaurant':'restaurant','sustenance':'sustenance','office':'office'],
-                tagKeys: ['building'],
-                tagValues: null,
-                buildingTablePrefix: "RAW_",
-                filteringZoneTableName: "ZONE_BUFFER"])
+                buildingTagKeys: ['building'],
+                buildingTagValues: null,
+                tablesPrefix: "RAW_",
+                buildingFilter: "ZONE_BUFFER"])
         assertNotNull(h2GIS.getTable("RAW_INPUT_BUILDING"))
         assertTrue(h2GIS.getTable("RAW_INPUT_BUILDING").getColumnNames().contains("HEIGHT"))
         assertTrue(h2GIS.getTable("RAW_INPUT_BUILDING").getColumnNames().contains("OFFICE"))
@@ -47,7 +45,7 @@ class OSMGISLayersTests {
 
     @Test
     void prepareRoadsTest() {
-        def h2GIS = H2GIS.open('./target/h2db')
+        def h2GIS = H2GIS.open('./target/osmdb')
         h2GIS.load(new File(this.class.getResource("zoneExtended.osm").toURI()).getAbsolutePath(),"ext",false)
         h2GIS.execute "drop table if exists RAW_INPUT_ROAD;"
         assertNotNull(h2GIS.getTable("EXT_NODE"))
@@ -59,21 +57,21 @@ class OSMGISLayersTests {
         process.execute([
                 datasource   : h2GIS,
                 osmTablesPrefix : "EXT",
-                outputColumnNames: ['width':'width','highway':'highway', 'surface':'surface', 'sidewalk':'sidewalk',
+                roadTableColumnsNames: ['width':'width','highway':'highway', 'surface':'surface', 'sidewalk':'sidewalk',
                                     'lane':'lane','layer':'zindex','maxspeed':'maxspeed','oneway':'oneway',
                                     'h_ref':'h_ref','route':'route','cycleway':'cycleway',
                                     'biclycle_road':'biclycle_road','cyclestreet':'cyclestreet','junction':'junction'],
-                tagKeys: ['highway','cycleway','biclycle_road','cyclestreet','route','junction'],
-                tagValues: null,
-                roadTablePrefix: "RAW_",
-                filteringZoneTableName: "ZONE_BUFFER"])
+                roadTagKeys: ['highway','cycleway','biclycle_road','cyclestreet','route','junction'],
+                roadTagValues: null,
+                tablesPrefix: "RAW_",
+                roadFilter: "ZONE_BUFFER"])
         assertNotNull(h2GIS.getTable("RAW_INPUT_ROAD"))
         assertTrue(h2GIS.getTable("RAW_INPUT_ROAD").getColumnNames().contains("junction"))
     }
 
     @Test
     void prepareRailsTest() {
-        def h2GIS = H2GIS.open('./target/h2db')
+        def h2GIS = H2GIS.open('./target/osmdb')
         h2GIS.load(new File(this.class.getResource("zoneExtended.osm").toURI()).getAbsolutePath(),"ext",false)
         h2GIS.execute "drop table if exists RAW_INPUT_RAIL;"
         assertNotNull(h2GIS.getTable("EXT_NODE"))
@@ -85,19 +83,19 @@ class OSMGISLayersTests {
         process.execute([
                 datasource   : h2GIS,
                 osmTablesPrefix : "EXT",
-                outputColumnNames: ['highspeed':'highspeed','railway':'railway','service':'service',
+                railTableColumnsNames: ['highspeed':'highspeed','railway':'railway','service':'service',
                                     'tunnel':'tunnel','layer':'layer','bridge':'bridge'],
-                tagKeys: ['railway'],
-                tagValues: null,
-                railTablePrefix: "RAW_",
-                filteringZoneTableName: "ZONE_BUFFER"])
+                railTagKeys: ['railway'],
+                railTagValues: null,
+                tablesPrefix: "RAW_",
+                railFilter: "ZONE_BUFFER"])
         assertNotNull(h2GIS.getTable("RAW_INPUT_RAIL"))
         assertTrue(h2GIS.getTable("RAW_INPUT_RAIL").getColumnNames().contains("highspeed"))
     }
 
     @Test
     void prepareVegetTest() {
-        def h2GIS = H2GIS.open('./target/h2db')
+        def h2GIS = H2GIS.open('./target/osmdb')
         h2GIS.load(new File(this.class.getResource("zoneExtended.osm").toURI()).getAbsolutePath(),"ext",false)
         h2GIS.execute "drop table if exists RAW_INPUT_VEGET;"
         assertNotNull(h2GIS.getTable("EXT_NODE"))
@@ -109,23 +107,23 @@ class OSMGISLayersTests {
         process.execute([
                 datasource   : h2GIS,
                 osmTablesPrefix : "EXT",
-                outputColumnNames: ['natural':'natural','landuse':'landuse','landcover':'landcover',
+                vegetTableColumnsNames: ['natural':'natural','landuse':'landuse','landcover':'landcover',
                                     'vegetation':'vegetation','barrier':'barrier','fence_type':'fence_type',
                                     'hedge':'hedge','wetland':'wetland','vineyard':'vineyard',
                                     'trees':'trees','crop':'crop','produce':'produce'],
-                tagKeys: ['natural', 'landuse','landcover'],
-                tagValues: ['fell', 'heath', 'scrub', 'tree', 'tree_row', 'trees', 'wood','farmland',
+                vegetTagKeys: ['natural', 'landuse','landcover'],
+                vegetTagValues: ['fell', 'heath', 'scrub', 'tree', 'tree_row', 'trees', 'wood','farmland',
                             'forest','grass','grassland','greenfield','meadow','orchard','plant_nursery',
                             'vineyard','hedge','hedge_bank','mangrove','banana_plants','banana','sugar_cane'],
-                vegetTablePrefix: "RAW_",
-                filteringZoneTableName: "ZONE_EXTENDED"])
+                tablesPrefix: "RAW_",
+                vegetFilter: "ZONE_EXTENDED"])
         assertNotNull(h2GIS.getTable("RAW_INPUT_VEGET"))
         assertTrue h2GIS.getTable("RAW_INPUT_VEGET").getColumnNames().contains("produce")
     }
 
     @Test
     void prepareHydroTest() {
-        def h2GIS = H2GIS.open('./target/h2db')
+        def h2GIS = H2GIS.open('./target/osmdb')
         h2GIS.load(new File(this.class.getResource("zoneExtended.osm").toURI()).getAbsolutePath(),"ext",false)
         h2GIS.execute "drop table if exists RAW_INPUT_HYDRO;"
         assertNotNull(h2GIS.getTable("EXT_NODE"))
@@ -137,17 +135,17 @@ class OSMGISLayersTests {
         process.execute([
                 datasource   : h2GIS,
                 osmTablesPrefix : "EXT",
-                outputColumnNames: ['natural':'natural','water':'water','waterway':'waterway'],
-                tags: ['natural':['water','waterway','bay'],'water':[],'waterway':[]],
-                hydroTablePrefix: "RAW_",
-                filteringZoneTableName: "ZONE_EXTENDED"])
+                hydroTableColumnsNames: ['natural':'natural','water':'water','waterway':'waterway'],
+                hydroTags: ['natural':['water','waterway','bay'],'water':[],'waterway':[]],
+                tablesPrefix: "RAW_",
+                hydroFilter: "ZONE_EXTENDED"])
         assertNotNull(h2GIS.getTable("RAW_INPUT_HYDRO"))
         assertTrue h2GIS.getTable("RAW_INPUT_HYDRO").getColumnNames().contains("waterway")
     }
 
     @Test
     void loadInitialDataTest() {
-        def h2GIS = H2GIS.open('./target/h2db')
+        def h2GIS = H2GIS.open('./target/osmdb')
         h2GIS.execute OSMGISLayers.dropOSMTables("EXT")
         h2GIS.execute "drop table if exists ZONE;"
         h2GIS.execute "drop table if exists ZONE_EXTENDED;"
@@ -155,7 +153,7 @@ class OSMGISLayersTests {
         h2GIS.execute "drop table if exists ZONE_NEIGHBORS;"
         def process = PrepareData.OSMGISLayers.loadInitialData()
         process.execute([
-                datasource : h2GIS,
+                dbPath : "./target/osmdb",
                 osmTablesPrefix: "EXT",
                 zoneCode : "35236",
                 extendedZoneSize : 1000,

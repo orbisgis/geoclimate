@@ -1,181 +1,161 @@
-package org.orbisgis.osm
+package org.orbisgis.processingchain
 
 import org.junit.jupiter.api.Test
-import org.orbisgis.PrepareData
-import org.orbisgis.datamanager.h2gis.H2GIS
+import org.orbisgis.processmanager.ProcessMapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import static org.junit.jupiter.api.Assertions.*
-
-class FormattingForAbstractModelTests {
-
-    private static final Logger logger = LoggerFactory.getLogger(OSMGISLayersTests.class)
+class PrepareOSMTest {
+    private static final Logger logger = LoggerFactory.getLogger(PrepareOSMTest.class)
 
     @Test
-    void transformBuildingsTest() {
-        new OSMGISLayersTests().prepareBuildingsTest()
-        def h2GIS = H2GIS.open('./target/osmdb')
-        h2GIS.execute "drop table if exists INPUT_BUILDING;"
-        assertNotNull(h2GIS.getTable("RAW_INPUT_BUILDING"))
+    void PrepareOSMMapperTest() {
+        ProcessMapper mapper = ProcessingChain.prepareOSM.PrepareOSMMapper()
         def mappingTypeAndUse = [
-                "terminal"                       : ["aeroway" : ["terminal", "airport_terminal"],
-                                                    "amenity" : ["terminal", "airport_terminal"],
-                                                    "building": ["terminal", "airport_terminal"]
+                terminal: [aeroway : ["terminal", "airport_terminal"],
+                           amenity : ["terminal", "airport_terminal"],
+                           building: ["terminal", "airport_terminal"]
                 ],
-                "monument"                       : ["building": ["monument"],
-                                                    "historic": ["monument"],
-                                                    "leisure" : ["monument"],
-                                                    "monument": ["yes"]
+                monument: [
+                        building: ["monument"],
+                        historic: ["monument"],
+                        leisure : ["monument"],
+                        monument: ["yes"]
                 ],
-                "religious"                      : ["building"        : ["religious", "abbey", "cathedral", "chapel", "church", "mosque", "musalla", "temple", "synagogue", "shrine", "place_of_worship", "wayside_shrine"],
-                                                    "amenity"         : ["religious", "abbey", "cathedral", "chapel", "church", "mosque", "musalla", "temple", "synagogue", "shrine", "place_of_worship", "wayside_shrine"],
-                                                    "place_of_worship": ["! no", "! chapel", "! church"]
+                religious: [
+                        building: ["religious", "abbey", "cathedral", "chapel", "church", "mosque",
+                                   "musalla", "temple", "synagogue", "shrine", "place_of_worship",
+                                   "wayside_shrine"],
+                        amenity: ["religious", "abbey", "cathedral", "chapel", "church",
+                                  "mosque", "musalla", "temple", "synagogue", "shrine",
+                                  "place_of_worship", "wayside_shrine"],
+                        place_of_worship: ["! no", "! chapel", "! church"]
                 ],
-                "sport"                          : ["building": ["swimming_pool", "fitness_centre", "horse_riding", "ice_rink", "pitch", "stadium", "track"],
+                sport                          : ["building": ["swimming_pool", "fitness_centre", "horse_riding", "ice_rink", "pitch", "stadium", "track"],
                                                     "leisure" : ["swimming_pool", "fitness_centre", "horse_riding", "ice_rink", "pitch", "stadium", "track"],
                                                     "amenity" : ["swimming_pool", "fitness_centre", "horse_riding", "ice_rink", "pitch", "stadium", "track"]
                 ],
-                "sports_centre"                  : ["building": ["sports_centre", "sports_hall"],
+                sports_centre                  : ["building": ["sports_centre", "sports_hall"],
                                                     "leisure" : ["sports_centre", "sports_hall"],
                                                     "amenity" : ["sports_centre", "sports_hall"]
                 ],
-                "chapel"                         : ["building"        : ["chapel"],
+                chapel                         : ["building"        : ["chapel"],
                                                     "amenity"         : ["chapel"],
                                                     "place_of_worship": ["chapel"],
                 ],
-                "church"                         : ["building"        : ["church"],
+                church                         : ["building"        : ["church"],
                                                     "amenity"         : ["church"],
                                                     "place_of_worship": ["church"],
                 ],
-                "castle"                         : ["building": ["castle", "fortress"],
+                castle                         : ["building": ["castle", "fortress"],
                 ],
-                "military"                       : ["military": ["ammunition", "bunker", "barracks", "casemate", "office", "shelter"],
+                military                       : ["military": ["ammunition", "bunker", "barracks", "casemate", "office", "shelter"],
                                                     "building": ["ammunition", "bunker", "barracks", "casemate", "military", "shelter"],
                                                     "office"  : ["military"]
                 ],
-                "train_station"                  : ["building"        : ["train_station"],
+                train_station                  : ["building"        : ["train_station"],
                                                     "railway"         : ["station", "train_station"],
                                                     "public_transport": ["train_station"],
                                                     "amenity"         : ["train_station"]
                 ],
-                "townhall"                       : ["amenity" : ["townhall"],
+                townhall                       : ["amenity" : ["townhall"],
                                                     "building": ["townhall"]
                 ],
-                "toll"                           : ["barrier" : ["toll_booth"],
+                toll                          : ["barrier" : ["toll_booth"],
                                                     "building": ["toll_booth"]
                 ],
-                "government"                     : ["building"  : ["government", "government_office"],
+                government                     : ["building"  : ["government", "government_office"],
                                                     "government": ["! no"],
                                                     "office"    : ["government"]
                 ],
-                "historic"                       : ["building"         : ["historic"],
+                historic                       : ["building"         : ["historic"],
                                                     "historic"         : [],
                                                     "historic_building": ["! no"]
                 ],
-                "grandstand"                     : ["building"  : ["grandstand"],
+                grandstand                     : ["building"  : ["grandstand"],
                                                     "leisure"   : ["grandstand"],
                                                     "amenity"   : ["grandstand"],
                                                     "grandstand": ["yes"]
                 ],
-                "detached"                       : ["building": ["detached"],
+                detached                       : ["building": ["detached"],
                                                     "house"   : ["detached"]
                 ],
-                "farm_auxiliary"                 : ["building": ["farm_auxiliary", "barn", "stable", "sty", "cowshed", "digester", "greenhouse"]
+                farm_auxiliary                 : ["building": ["farm_auxiliary", "barn", "stable", "sty", "cowshed", "digester", "greenhouse"]
                 ],
-                "commercial"                     : ["building": ["bank", "bureau_de_change", "boat_rental", "car_rental", "commercial", "internet_cafe", "kiosk", "money_transfer", "market", "market_place", "pharmacy", "post_office", "retail", "shop", "store", "supermarket", "warehouse"],
+                commercial                     : ["building": ["bank", "bureau_de_change", "boat_rental", "car_rental", "commercial", "internet_cafe", "kiosk", "money_transfer", "market", "market_place", "pharmacy", "post_office", "retail", "shop", "store", "supermarket", "warehouse"],
                                                     "amenity" : ["bank", "bureau_de_change", "boat_rental", "car_rental", "commercial", "internet_cafe", "kiosk", "money_transfer", "market", "market_place", "pharmacy", "post_office", "retail", "shop", "store", "supermarket", "warehouse"],
                                                     "shop"    : ["!= no"]
                 ],
-                "industrial"                     : ["building"  : ["industrial", "factory", "warehouse"],
+                industrial                     : ["building"  : ["industrial", "factory", "warehouse"],
                                                     "industrial": ["factory"],
                                                     "amenity"   : ["factory"]
                 ],
-                "greenhouse"                     : ["building"  : ["greenhouse"],
+                greenhouse                     : ["building"  : ["greenhouse"],
                                                     "amenity"   : ["greenhouse"],
                                                     "industrial": ["greenhouse"]
                 ],
-                "silo"                           : ["building": ["silo", "grain_silo"],
+                silo                           : ["building": ["silo", "grain_silo"],
                                                     "man_made": ["silo", "grain_silo"]
                 ],
-                "house"                          : ["building": ["house"],
+                house                          : ["building": ["house"],
                                                     "house"   : ["! no", "! detached", "! residential", "! villa"],
                                                     "amenity" : ["house"]
                 ],
-                "residential"                    : ["building"   : ["residential", "villa", "detached", "dormitory", "condominium", "sheltered_housing", "workers_dormitory", "terrace"],
+                residential                    : ["building"   : ["residential", "villa", "detached", "dormitory", "condominium", "sheltered_housing", "workers_dormitory", "terrace"],
                                                     "residential": ["university", "detached", "dormitory", "condominium", "sheltered_housing", "workers_dormitory", "building"],
                                                     "house"      : ["residential"],
                                                     "amenity"    : ["residential"]
                 ],
-                "apartments"                     : ["building"   : ["apartments"],
+                apartments                     : ["building"   : ["apartments"],
                                                     "residential": ["apartments"],
                                                     "amenity"    : ["apartments"],
                                                     "apartments" : ["yes"]
                 ],
-                "bungalow"                       : ["building": ["bungalow"],
+                bungalow                       : ["building": ["bungalow"],
                                                     "house"   : ["bungalow"],
                                                     "amenity" : ["bungalow"]
                 ],
-                "ruins"                          : ["building": ["ruins"],
+                ruins                          : ["building": ["ruins"],
                                                     "ruins"   : ["ruins"]
                 ],
-                "agricultural"                   : ["building"    : ["agricultural"],
+                agricultural                   : ["building"    : ["agricultural"],
                                                     "agricultural": ["building"]
                 ],
-                "farm"                           : ["building": ["farm", "farmhouse"]
+                farm                           : ["building": ["farm", "farmhouse"]
                 ],
-                "barn"                           : ["building": ["barn"],
+                barn                           : ["building": ["barn"],
                                                     "barn"    : ["! no"]
                 ],
-                "transportation"                 : ["building"        : ["train_station", "transportation", "station"],
+                transportation                 : ["building"        : ["train_station", "transportation", "station"],
                                                     "aeroway"         : ["hangar", "tower", "bunker", "control_tower", "building"],
                                                     "railway"         : ["station", "train_station", "building"],
                                                     "public_transport": ["train_station", "station"],
                                                     "amenity"         : ["train_station", "terminal"]
                 ],
-                "healthcare"                     : ["amenity"   : ["healthcare"],
+                healthcare                     : ["amenity"   : ["healthcare"],
                                                     "building"  : ["healthcare"],
                                                     "healthcare": ["! no"]
                 ],
-                "education"                      : ["amenity"  : ["education", "college", "kindergarten", "school", "university"],
+                education                      : ["amenity"  : ["education", "college", "kindergarten", "school", "university"],
                                                     "building" : ["education", "college", "kindergarten", "school", "university"],
                                                     "education": ["college", "kindergarten", "school", "university"]
                 ],
                 "entertainment, arts and culture": ["leisure": ["! no"]
                 ],
-                "sustenance"                     : ["amenity"   : ["restaurant", "bar", "cafe", "fast_food", "ice_cream", "pub"],
+                sustenance                     : ["amenity"   : ["restaurant", "bar", "cafe", "fast_food", "ice_cream", "pub"],
                                                     "building"  : ["restaurant", "bar", "cafe", "fast_food", "ice_cream", "pub"],
                                                     "restaurant": ["! no"],
                                                     "shop"      : ["restaurant", "bar", "cafe", "fast_food", "ice_cream", "pub"],
                                                     "sustenance": ["! no"]
                 ],
-                "office"                         : ["building": ["office"],
-                                                    "amenity" : ["office"],
-                                                    "office"  : ["! no"]
+                office                         : [building: ["office"],
+                                                    amenity : ["office"],
+                                                    office  : ["! no"]
                 ],
-                "building"                       : ["building": ["yes"]
+                building                       : [building: ["yes"]
                 ]
         ]
-
-        def process = PrepareData.FormattingForAbstractModel.transformBuildings()
-        process.execute([
-                datasource          : h2GIS,
-                inputTableName      : "RAW_INPUT_BUILDING",
-                mappingForTypeAndUse: mappingTypeAndUse])
-        assertNotNull(h2GIS.getTable("INPUT_BUILDING"))
-        assertEquals(h2GIS.getTable("RAW_INPUT_BUILDING").getRowCount(), h2GIS.getTable("INPUT_BUILDING").getRowCount())
-        assertTrue(h2GIS.getTable("INPUT_BUILDING").getColumnNames().contains("TYPE"))
-        assertTrue(h2GIS.getTable("INPUT_BUILDING").getColumnNames().contains("MAIN_USE"))
-        assertTrue(h2GIS.getTable("INPUT_BUILDING").getColumnNames().contains("HEIGHT_WALL"))
-    }
-
-    @Test
-    void transformRoadsTest() {
-        new OSMGISLayersTests().prepareRoadsTest()
-        def h2GIS = H2GIS.open('./target/osmdb')
-        assertNotNull(h2GIS.getTable("RAW_INPUT_ROAD"))
-        //Define the mapping between the values in OSM and those used in the abstract model
-        def mappingType = [
+        def mappingRoadType = [
                 "cycleway"    : [
                         "highway"      : ["cycleway"],
                         "cycleway"     : ["track"],
@@ -245,27 +225,8 @@ class FormattingForAbstractModelTests {
                 "metal"      : ["surface": ["metal"]],
                 "water"      : ["surface": ["water"]]
         ]
-        logger.info('Process starts')
-        def process = PrepareData.FormattingForAbstractModel.transformRoads()
-        process.execute([datasource       : h2GIS,
-                         inputTableName   : "RAW_INPUT_ROAD",
-                         mappingForRoadType   : mappingType,
-                         mappingForSurface: mappingSurface])
-        assertNotNull(h2GIS.getTable("INPUT_ROAD"))
-        assertEquals(h2GIS.getTable("RAW_INPUT_ROAD").getRowCount(), h2GIS.getTable("INPUT_ROAD").getRowCount())
-        assertTrue(h2GIS.getTable("INPUT_ROAD").getColumnNames().contains("TYPE"))
-        assertTrue(h2GIS.getTable("INPUT_ROAD").getColumnNames().contains("SURFACE"))
-        assertTrue(h2GIS.getTable("INPUT_ROAD").getColumnNames().contains("ZINDEX"))
-    }
 
-    @Test
-    void transformRailsTest() {
-        new OSMGISLayersTests().prepareRailsTest()
-        def h2GIS = H2GIS.open('./target/osmdb')
-        assertNotNull(h2GIS.getTable("RAW_INPUT_RAIL"))
-        logger.info(h2GIS.getTable("RAW_INPUT_RAIL").getRowCount().toString())
-        //Define the mapping between the values in OSM and those used in the abstract model
-        def mappingType = [
+        def mappingRailType = [
                 "highspeed":["highspeed":["yes"]],
                 "rail":["railway":["rail","light_rail","narrow_gauge"]],
                 "service_track":["service":["yard","siding","spur","crossover"]],
@@ -274,24 +235,8 @@ class FormattingForAbstractModelTests {
                 "subway":["railway":["subway"]],
                 "tram":["railway":["tram"]]
         ]
-        logger.info('Process starts')
-        def process = PrepareData.FormattingForAbstractModel.transformRails()
-        process.execute([datasource       : h2GIS,
-                         inputTableName   : "RAW_INPUT_RAIL",
-                         mappingForRailType   : mappingType])
-        assertNotNull(h2GIS.getTable("INPUT_RAIL"))
-        assertEquals(h2GIS.getTable("RAW_INPUT_RAIL").getRowCount(), h2GIS.getTable("INPUT_RAIL").getRowCount())
-        assertTrue(h2GIS.getTable("INPUT_RAIL").getColumnNames().contains("TYPE"))
-        assertTrue(h2GIS.getTable("INPUT_RAIL").getColumnNames().contains("ZINDEX"))
-    }
 
-    @Test
-    void transformVegetTest() {
-        new OSMGISLayersTests().prepareVegetTest()
-        def h2GIS = H2GIS.open('./target/osmdb')
-        assertNotNull(h2GIS.getTable("RAW_INPUT_VEGET"))
-        //Define the mapping between the values in OSM and those used in the abstract model
-        def mappingType = [
+        def mappingVegetType = [
                 "tree":["natural":["tree"]],
                 "wood":["landcover":["trees"],"natural":["wood"]],
                 "forest":["landuse":["forest"]],
@@ -306,29 +251,64 @@ class FormattingForAbstractModelTests {
                 "banana plants":["trees":["banana_plants"],"crop":["banana"]],
                 "sugar cane":["produce":["sugar_cane"],"crop":["sugar_cane"]]
         ]
-        logger.info('Process starts')
-        def process = PrepareData.FormattingForAbstractModel.transformVeget()
-        process.execute([datasource       : h2GIS,
-                         inputTableName   : "RAW_INPUT_VEGET",
-                         mappingForVegetType   : mappingType])
-        assertNotNull(h2GIS.getTable("INPUT_VEGET"))
-        assertEquals(h2GIS.getTable("RAW_INPUT_VEGET").getRowCount(), h2GIS.getTable("INPUT_VEGET").getRowCount())
-        assertTrue(h2GIS.getTable("INPUT_VEGET").getColumnNames().contains("TYPE"))
 
+        mapper.execute([
+                dbPath : "./target/h2db",
+                osmTablesPrefix: "EXT",
+                zoneCode : "35236",
+                extendedZoneSize : 1000,
+                bufferZoneSize:500,
+
+                buildingTableColumnsNames:
+                    ['height':'height','building:height':'b_height','roof:height':'r_height','building:roof:height':'b_r_height',
+                    'building:levels':'b_lev','roof:levels':'r_lev','building:roof:levels':'b_r_lev','building':'building',
+                    'amenity':'amenity','layer':'zindex','aeroway':'aeroway','historic':'historic','leisure':'leisure','monument':'monument',
+                    'place_of_worship':'place_of_worship','military':'military','railway':'railway','public_transport':'public_transport',
+                    'barrier':'barrier','government':'government','historic:building':'historic_building','grandstand':'grandstand',
+                    'house':'house','shop':'shop','industrial':'industrial','man_made':'man_made', 'residential':'residential',
+                    'apartments':'apartments','ruins':'ruins','agricultural':'agricultural','barn':'barn', 'healthcare':'healthcare',
+                    'education':'education','restaurant':'restaurant','sustenance':'sustenance','office':'office'],
+                buildingTagKeys: ['building'],
+                buildingTagValues: null,
+                tablesPrefix: "RAW_",
+                buildingFilter: "ZONE_BUFFER",
+
+                roadTableColumnsNames: ['width':'width','highway':'highway', 'surface':'surface', 'sidewalk':'sidewalk',
+                                    'lane':'lane','layer':'zindex','maxspeed':'maxspeed','oneway':'oneway',
+                                    'h_ref':'h_ref','route':'route','cycleway':'cycleway',
+                                    'biclycle_road':'biclycle_road','cyclestreet':'cyclestreet','junction':'junction'],
+                roadTagKeys: ['highway','cycleway','biclycle_road','cyclestreet','route','junction'],
+                roadTagValues: null,
+                roadFilter: "ZONE_BUFFER",
+
+                railTableColumnsNames: ['highspeed':'highspeed','railway':'railway','service':'service',
+                                        'tunnel':'tunnel','layer':'layer','bridge':'bridge'],
+                railTagKeys: ['railway'],
+                railTagValues: null,
+                railFilter: "ZONE",
+
+                vegetTableColumnsNames: ['natural':'natural','landuse':'landuse','landcover':'landcover',
+                                         'vegetation':'vegetation','barrier':'barrier','fence_type':'fence_type',
+                                         'hedge':'hedge','wetland':'wetland','vineyard':'vineyard','trees':'trees',
+                                         'crop':'crop','produce':'produce'],
+                vegetTagKeys: ['natural', 'landuse','landcover'],
+                vegetTagValues: ['fell', 'heath', 'scrub', 'tree', 'tree_row', 'trees', 'wood','farmland',
+                            'forest','grass','grassland','greenfield','meadow','orchard','plant_nursery',
+                            'vineyard','hedge','hedge_bank','mangrove','banana_plants','banana','sugar_cane'],
+                vegetFilter: "ZONE_EXTENDED",
+
+                hydroTableColumnsNames: ['natural':'natural','water':'water','waterway':'waterway'],
+                hydroTags: ['natural':['water','waterway','bay'],'water':[],'waterway':[]],
+                hydroFilter: "ZONE_EXTENDED",
+
+                mappingForTypeAndUse : mappingTypeAndUse,
+
+                mappingForRoadType : mappingRoadType,
+                mappingForSurface : mappingSurface,
+
+                mappingForRailType : mappingRailType,
+
+                mappingForVegetType : mappingVegetType
+        ])
     }
-
-    @Test
-    void transformHydroTest() {
-        new OSMGISLayersTests().prepareHydroTest()
-        def h2GIS = H2GIS.open('./target/osmdb')
-        assertNotNull(h2GIS.getTable("RAW_INPUT_HYDRO"))
-        logger.info('Process starts')
-        def process = PrepareData.FormattingForAbstractModel.transformHydro()
-        process.execute([datasource       : h2GIS,
-                         inputTableName   : "RAW_INPUT_HYDRO"])
-        assertNotNull(h2GIS.getTable("INPUT_HYDRO"))
-        assertEquals(h2GIS.getTable("RAW_INPUT_HYDRO").getRowCount(), h2GIS.getTable("INPUT_HYDRO").getRowCount())
-        assertEquals(2, h2GIS.getTable("INPUT_HYDRO").getColumnCount())
-    }
-
 }

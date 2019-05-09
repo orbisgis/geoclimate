@@ -25,6 +25,7 @@ static IProcess transformBuildings() {
             [outputTableName: String],
             { datasource, inputTableName, mappingForTypeAndUse ->
                 def inputTable = datasource.getSpatialTable(inputTableName)
+                logger.info('Buildings transformation starts')
                 datasource.execute("    drop table if exists input_building;\n" +
                         "CREATE TABLE input_building (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT,\n" +
                         "        NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER)")
@@ -35,6 +36,7 @@ static IProcess transformBuildings() {
                     def typeAndUseValues = getTypeAndUse(row, mappingForTypeAndUse)
                     datasource.execute("insert into input_building values('${row.the_geom}','${row.id_way}',${heightWall},${heightRoof},${nbLevels},'${typeAndUseValues[0]}','${typeAndUseValues[1]}',${row.zindex})".toString())
                 }
+                logger.info('Buildings transformation finishes')
                 [outputTableName: "INPUT_BUILDING"]
             }
     )
@@ -56,22 +58,24 @@ static IProcess transformRoads() {
             "transform the raw roads table into a table that matches the constraints of the GeoClimate Input Model",
             [datasource          : JdbcDataSource,
              inputTableName      : String,
-             mappingForType: Map,
+             mappingForRoadType: Map,
              mappingForSurface: Map],
             [outputTableName: String],
-            { datasource, inputTableName, mappingForType, mappingForSurface ->
+            { datasource, inputTableName, mappingForRoadType, mappingForSurface ->
                 def inputTable = datasource.getSpatialTable(inputTableName)
+                logger.info('Roads transformation starts')
                 datasource.execute("    drop table if exists input_road;\n" +
                         "CREATE TABLE input_road (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR,\n" +
                         "SURFACE VARCHAR, SIDEWALK VARCHAR, ZINDEX INTEGER)")
                 inputTable.eachRow { row ->
                     Float width = getWidth(row.width)
-                    String type = getAbstractValue(row, mappingForType)
+                    String type = getAbstractValue(row, mappingForRoadType)
                     String surface = getAbstractValue(row, mappingForSurface)
                     String sidewalk = getSidewalk(row.sidewalk)
                     Integer zIndex = getZIndex(row.zindex)
                     datasource.execute ("insert into input_road values('${row.the_geom}','${row.id_way}',${width},'${type}','${surface}','${sidewalk}',${zIndex})".toString())
                 }
+                logger.info('Roads transformation finishes')
                 [outputTableName: "INPUT_ROAD"]
             }
     )
@@ -91,14 +95,15 @@ static IProcess transformRails() {
             "transform the raw rails table into a table that matches the constraints of the GeoClimate Input Model",
             [datasource          : JdbcDataSource,
              inputTableName      : String,
-             mappingForType: Map],
+             mappingForRailType: Map],
             [outputTableName: String],
-            { datasource, inputTableName, mappingForType ->
+            { datasource, inputTableName, mappingForRailType ->
                 def inputTable = datasource.getSpatialTable(inputTableName)
+                logger.info('Rails transformation starts')
                 datasource.execute("    drop table if exists input_rail;\n" +
                         "CREATE TABLE input_rail (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER)")
                 inputTable.eachRow { row ->
-                    String type = getAbstractValue(row, mappingForType)
+                    String type = getAbstractValue(row, mappingForRailType)
                     Integer zIndex = getZIndex(row.layer)
 
                     //special treatment if type is subway
@@ -112,6 +117,9 @@ static IProcess transformRails() {
                     def query = "insert into input_rail values(${row.the_geom},${row.id_way},${type},${zIndex})"
                     datasource.execute (query)
                 }
+                def geoFile = File.createTempFile("rail",".geojson")
+                datasource.save('INPUT_RAIL', geoFile.getAbsolutePath())
+                logger.info('Rails transformation finishes')
                 [outputTableName: "INPUT_RAIL"]
             }
     )
@@ -129,19 +137,21 @@ static IProcess transformRails() {
 static IProcess transformVeget() {
     return processFactory.create(
             "transform the raw vegetation table into a table that matches the constraints of the GeoClimate Input Model",
-            [datasource          : JdbcDataSource,
-             inputTableName      : String,
-             mappingForType: Map],
+            [datasource    : JdbcDataSource,
+             inputTableName: String,
+             mappingForVegetType: Map],
             [outputTableName: String],
-            { datasource, inputTableName, mappingForType ->
+            { JdbcDataSource datasource, inputTableName, mappingForVegetType ->
                 def inputTable = datasource.getSpatialTable(inputTableName)
+                logger.info('Veget transformation starts')
                 datasource.execute("    drop table if exists input_veget;\n" +
                         "CREATE TABLE input_veget (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, TYPE VARCHAR)")
                 inputTable.eachRow { row ->
-                    String type = getAbstractValue(row, mappingForType)
+                    String type = getAbstractValue(row, mappingForVegetType)
                     def query = "insert into input_veget values(${row.the_geom},${row.id_source},${type})"
-                    datasource.execute (query)
+                    datasource.execute(query)
                 }
+                logger.info('Veget transformation finishes')
                 [outputTableName: "INPUT_VEGET"]
             }
     )
@@ -164,12 +174,14 @@ static IProcess transformHydro() {
             [outputTableName: String],
             { datasource, inputTableName ->
                 def inputTable = datasource.getSpatialTable(inputTableName)
+                logger.info('Veget transformation starts')
                 datasource.execute("    drop table if exists input_hydro;\n" +
                         "CREATE TABLE input_hydro (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR)")
                 inputTable.eachRow { row ->
                     def query = "insert into input_hydro values(${row.the_geom},${row.id_source})"
                     datasource.execute (query)
                 }
+                logger.info('Veget transformation finishes')
                 [outputTableName: "INPUT_HYDRO"]
             }
     )
@@ -219,10 +231,10 @@ static String[] getTypeAndUse(def row, def myMap) {
  * @return The calculated value of height_wall (default value : 0)
  */
 static float getHeightWall(def row) {
-    String height = row.getString("height")
-    String b_height = row.getString("b_height")
-    String r_height = row.getString("r_height")
-    String b_r_height = row.getString("b_r_height")
+    String height = row.height
+    String b_height = row.b_height
+    String r_height = row.r_height
+    String b_r_height = row.b_r_height
     Float result = 0
     if ((height != null && height.isFloat()) || (b_height != null && b_height.isFloat())) {
         if ((r_height != null && r_height.isFloat()) || (b_r_height != null && b_r_height.isFloat())) {
@@ -250,8 +262,8 @@ static float getHeightWall(def row) {
  * @return The calculated value of height_roof (default value : 0)
  */
 static float getHeightRoof(def row) {
-    String height = row.getString("height")
-    String b_height = row.getString("b_height")
+    String height = row.height
+    String b_height = row.b_height
     Float result = 0
     if ((height != null && height.isFloat()) || (b_height != null && b_height.isFloat())) {
         if (height != null && height.isFloat()) {
@@ -269,9 +281,9 @@ static float getHeightRoof(def row) {
  * @return The calculated value of nb_lev (default value : 0)
  */
 static int getNbLevels (def row) {
-    String b_lev = row.getString("b_lev")
-    String r_lev = row.getString("r_lev")
-    String b_r_lev = row.getString("b_r_lev")
+    String b_lev = row.b_lev
+    String r_lev = row.r_lev
+    String b_r_lev = row.b_r_lev
     int result = 0
     if (b_lev != null && b_lev.isFloat()) {
         if ((r_lev != null && r_lev.isFloat()) || (b_r_lev != null && b_r_lev.isFloat())) {
