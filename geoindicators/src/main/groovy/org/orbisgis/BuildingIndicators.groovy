@@ -376,3 +376,58 @@ static IProcess roadDistance() {
                 [outputTableName: outputTableName]
             }
     )}
+
+/**
+ * Script to compute the building closeness to a 50 m wide isolated building ("building_number_building_neighbor" = 0).
+ * The step 9 of the manual decision tree for building type of the classification consists of checking whether
+ * buildings have a horizontal extent larger than 50 m. We therefore introduce an indicator which  measures the
+ * horizontal extent of buildings. This indicator is based on the largest side of the building  minimum rectangle.
+ * We use a logistic function to avoid threshold effects (e.g. totally different result for building sizes
+ * of 49 m and 51 m). The gamma and x0 parameters in the logistic function are specified after analysis of the
+ * training data to identify the real size of the buildings classified as larger than 50 m in the
+ * subjective training process.
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param buildingTableName The name of the input ITable where are stored the building geometries
+ * @param nbOfBuildNeighbors The field name corresponding to the "building_number_building_neighbor" (in the "buildingTableName" ITable)
+ * @param prefixName String used as prefix to name the output table
+ *
+ * References:
+ *   Amossé, A. Identification automatique d'une typologie urbaine des îlots urbains en France. Tech. rep., Laboratoire
+ * de recherche en architecture, Laboratoire de recherche en architecture, Toulouse, France, 2015.
+ *
+ * @return A database table name.
+ * @author Jérémy Bernard
+ *
+ */
+static IProcess likelihoodLargeBuilding() {
+    return processFactory.create(
+            "Building closeness to a 50 m wide building",
+            [buildingTableName: String, nbOfBuildNeighbors: String, prefixName: String, datasource: JdbcDataSource],
+            [outputTableName : String],
+            { buildingTableName, nbOfBuildNeighbors, prefixName, datasource ->
+                def geometricField = "the_geom"
+                def idFieldBu = "id_build"
+
+                // Processes used for the indicator calculation
+                // a and r are the two parameters necessary for the logistic regression calculation (their value is set according to the training sample of the MaPuce dataset)
+                def a = Math.exp(6.5)
+                def r = 0.25
+
+                // The name of the outputTableName is constructed
+                String baseName = "building_likelihood_large_building"
+                String outputTableName = prefixName + "_" + baseName
+
+                // The calculation of the logistic function is performed only for buildings having no neighbors
+                datasource.execute(("CREATE INDEX ON $buildingTableName($idFieldBu); DROP TABLE IF EXISTS $outputTableName; "+
+                        "CREATE TABLE $outputTableName AS SELECT a.$idFieldBu, " +
+                        "CASEWHEN(a.$nbOfBuildNeighbors>0, 0," +
+                        " 1/(1+$a*exp(-$r*st_maxdistance(a.$geometricField, b.$geometricField)))) AS $baseName " +
+                        "FROM $buildingTableName a LEFT JOIN $buildingTableName b "+
+                        "ON a.$idFieldBu = b.$idFieldBu").toString())
+
+                [outputTableName: outputTableName]
+            }
+    )
+}

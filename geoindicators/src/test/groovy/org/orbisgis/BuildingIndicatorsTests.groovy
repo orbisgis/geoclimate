@@ -135,4 +135,35 @@ class BuildingIndicatorsTests {
         assertEquals("100.0\n61.0\n", concat)
     }
 
+    @Test
+    void likelihoodLargeBuildingTest() {
+        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
+        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
+        h2GIS.execute(sqlString)
+
+        // Only the first 1 first created buildings are selected for the tests
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, tempo_build2, test_building_neighbors_properties; " +
+                "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 29")
+
+        def  pneighb =  Geoclimate.BuildingIndicators.neighborsProperties()
+        pneighb.execute([inputBuildingTableName: "tempo_build",
+                   operations:["building_number_building_neighbor"],
+                   prefixName : "test", datasource:h2GIS])
+
+        // The number of neighbors are added to the tempo_build table
+        h2GIS.execute("CREATE TABLE tempo_build2 AS SELECT a.id_build, a.the_geom, b.building_number_building_neighbor" +
+                " FROM tempo_build a, test_building_neighbors_properties b WHERE a.id_build = b.id_build")
+
+        def  p =  Geoclimate.BuildingIndicators.likelihoodLargeBuilding()
+        p.execute([buildingTableName: "tempo_build2", nbOfBuildNeighbors: "building_number_building_neighbor",
+                  prefixName : "test", datasource:h2GIS])
+        def concat = ""
+        h2GIS.eachRow("SELECT * FROM test_building_likelihood_large_building WHERE id_build = 4 OR id_build = 7 OR " +
+                "id_build = 28 ORDER BY id_build ASC"){
+            row ->
+                concat+= "${row.building_likelihood_large_building.round(2)}\n"
+        }
+        assertEquals("0.0\n0.02\n1.0\n", concat)
+    }
+
 }
