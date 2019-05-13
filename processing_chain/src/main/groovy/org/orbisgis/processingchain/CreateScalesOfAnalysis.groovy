@@ -22,7 +22,7 @@ import org.orbisgis.processmanager.ProcessMapper
  * @param surface_hydro  The minimum area of water that will be considered to delineate the RSU (default 2,500 m²)
  * @param inputTableName The input table where are stored the geometries used to create the block (e.g. buildings...)
  * @param distance A distance to group two geometries (e.g. two buildings in a block - default 0.01 m)
- * @param inputLowerScaleTableName The input table where are stored the lowerScale objects (i.e. buildings)
+ * @param inputLowerScaleTableName The input table where are stored the lowerScale objects (buildings)
  * @param prefixName A prefix used to name the output table
  * @param datasource A connection to a database
  *
@@ -54,11 +54,11 @@ public static ProcessMapper createMapper(){
 
     // FROM createBlocks...
     // ...to createScalesRelations (relationships between blocks and RSU)
-    mapper.link(outputTableName : createBlocks, inputLowerScaleTableName : createScalesRelationsRsuBl)
-    mapper.link(outputIdBlock : createBlocks, idColumnUp : createScalesRelationsRsuBl)
+    mapper.link(outputTableName : createBlocks, inputLowerScaleTableName : createScalesRelationsBlBu)
 
     // ...to createScalesRelations (relationships between blocks and buildings)
     mapper.link(outputTableName : createBlocks, inputUpperScaleTableName : createScalesRelationsBlBu)
+    mapper.link(outputIdBlock : createBlocks, idColumnUp : createScalesRelationsBlBu)
 
     // FROM createScalesRelations (that comes from the createBlocks)...
     // ...to createScalesRelations (relationships between blocks, RSU and buildings...)
