@@ -234,9 +234,9 @@ static IProcess prepareHydro() {
  * creates the tables corresponding to this zone and its surroundings.
  * @param dbDirPath the path of the directory where the DB should be stored
  * @param osmTablesPrefix The prefix used for naming the 11 OSM tables
- * @param zoneCode A string representing the inseeCode of the administrative level8 zone
- * @param extendedZoneSize The integer value of the Extended Zone
- * @param bufferZoneSize The integer value of the Zone buffer
+ * @param idZone A string representing the inseeCode of the administrative level8 zone
+ * @param expand The integer value of the Extended Zone
+ * @param distBuffer The integer value of the Zone buffer
  * @return success A boolean indicating whether the process succeeded or not
  */
 static IProcess loadInitialData() {
@@ -244,26 +244,28 @@ static IProcess loadInitialData() {
             "Import the data concerning a given zone and generate the 4 associated zone tables",
             [dbPath : String,
              osmTablesPrefix: String,
-             zoneCode : String,
-             extendedZoneSize : int,
-             bufferZoneSize : int
+             idZone : String,
+             expand : int,
+             distBuffer : int
             ],
             [success : boolean,
-             outDatasource : JdbcDataSource],
-            { dbPath, osmTablesPrefix, zoneCode, extendedZoneSize, bufferZoneSize ->
+             outDatasource : JdbcDataSource,
+             outputZone : String,
+             outputZoneNeighbors : String],
+            { dbPath, osmTablesPrefix, idZone, expand, distBuffer ->
                 boolean success = true
                 def datasource
                 if (dbPath != null) {
                     datasource = H2GIS.open([databaseName: dbPath])
                     def tmpOSMFile = File.createTempFile("zone", ".osm")
                     //zone download : relation, ways and nodes corresponding to the targeted zone limit
-                    def initQuery = "[timeout:900];(relation[\"ref:INSEE\"=\"$zoneCode\"][\"boundary\"=\"administrative\"][\"admin_level\"=\"8\"];>;);out;"
+                    def initQuery = "[timeout:900];(relation[\"ref:INSEE\"=\"$idZone\"][\"boundary\"=\"administrative\"][\"admin_level\"=\"8\"];>;);out;"
                     //Download the corresponding OSM data
                     executeOverPassQuery(initQuery, tmpOSMFile)
                     if (tmpOSMFile.exists()) {
                         datasource.load(tmpOSMFile.absolutePath, 'zoneOsm', true)
                         // Create the polygon corresponding to the zone limit and its extended area
-                        datasource.execute zoneSQLScript('zoneOsm', zoneCode, extendedZoneSize, bufferZoneSize)
+                        datasource.execute zoneSQLScript('zoneOsm', idZone, expand, distBuffer)
 
                         //define the coordinates of the extended zone bbox
 
@@ -305,18 +307,19 @@ static IProcess loadInitialData() {
                     logger.error("The database path must be provided.")
                     success = false
                 }
-                [success: success, outDatasource: datasource]
+                [success: success, outDatasource: datasource,
+                 outputZone : "ZONE", outputZoneNeighbors : "ZONE_NEIGHBORS"]
             }
     )
 }
 
 //List of parameters
-// Zone to search in - must correspond to a administrative level 8 value
-String zoneCode = '56243' // Vannes 56260 - Séné 56243
+// Zone to search in - must correspond to an administrative level 8 value
+String idZone = '56243' // Vannes 56260 - Séné 56243
 // Size of the extended zone to compute - in meters
 int extZoneSize = 1000
 // Size of the zone buffer to compute - in meters
-int bufferZoneSize = 500
+int distBuffer = 500
 def prefix = "zoneExt" //prefix of the tables name in the h2DB
 
 
@@ -355,11 +358,11 @@ tmpFolder.mkdir()
 def h2GIS =H2GIS.open([databaseName: dbName])
 def process = loadInitialData()
 process.execute([
-        datasource : dbName,
+        dbPath : dbName,
         osmTablesPrefix: "EXT",
-        zoneCode : "35236",
-        extendedZoneSize : 1000,
-        bufferZoneSize:500])
+        idZone : "35236",
+        expand : 1000,
+        distBuffer:500])
 def ok
 process.results.each {result -> ok = result.value}
 if (ok) {
@@ -525,10 +528,10 @@ static String createIndexesOnOSMTables(def prefix){
 /**
  ** Function to create the script for the selected zone
  **/
-static String zoneSQLScript(def prefix, def zoneCode, def bboxSize, def bufferSize) {
+static String zoneSQLScript(def prefix, def idZone, def bboxSize, def bufferSize) {
     def script = 'DROP TABLE IF EXISTS ZONE;\n' +
             'CREATE TABLE ZONE AS\n' +
-            '        SELECT '+ zoneCode + ', ST_Polygonize(ST_UNION(ST_ACCUM(the_geom))) the_geom, id_relation'
+            '        SELECT '+ idZone + ', ST_Polygonize(ST_UNION(ST_ACCUM(the_geom))) the_geom, id_relation'
     script += '''
         FROM (
                 SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(the_geom), 4326), 2154) the_geom, id_relation, id_way
