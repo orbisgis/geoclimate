@@ -80,6 +80,7 @@ static IProcess inputDataFormatting(){
                 def buildingFC = 'BUILDING_FC_' + uuid
                 def fcBuildHZero = 'FC_BUILD_H_ZERO_' + uuid
                 def fcBuildHNull = 'FC_BUILD_H_NULL_' + uuid
+                def fcBuildHRange= 'FC_BUILD_H_RANGE'+uuid
                 def fcBuildStatsZone = 'FC_BUILD_STATS_ZONE_' + uuid
                 def fcBuildStatsExtZone = 'FC_BUILD_STATS_EXT_ZONE_' + uuid
                 def buildNumb = 'BUILD_NUMB_' + uuid
@@ -148,13 +149,12 @@ static IProcess inputDataFormatting(){
                 def VEGET_STATS_EXT_ZONE='VEGET_STATS_EXT_ZONE'
 
                 //Run the sql script
-                try {
-                    datasource.executeScript(this.class.getResource('inputDataFormatting.sql').toString(),
-                            [INPUT_BUILDING            : inputBuilding, INPUT_ROAD: inputRoad, INPUT_RAIL: inputRail,
-                             INPUT_HYDRO               : inputHydro, INPUT_VEGET: inputVeget, ZONE: inputZone, ZONE_NEIGHBORS: inputZoneNeighbors,
-                             H_LEV_MIN                 : hLevMin, H_LEV_MAX: hLevMax, H_THRESHOLD_LEV2: hThresholdLev2, ID_ZONE: idZone,
+                datasource.executeScript(getClass().getResource('inputDataFormatting.sql').toString(),
+                            [INPUT_BUILDING : inputBuilding, INPUT_ROAD: inputRoad, INPUT_RAIL: inputRail,
+                             INPUT_HYDRO  : inputHydro, INPUT_VEGET: inputVeget, ZONE: inputZone, ZONE_NEIGHBORS: inputZoneNeighbors,
+                             H_LEV_MIN : hLevMin, H_LEV_MAX: hLevMax, H_THRESHOLD_LEV2: hThresholdLev2, ID_ZONE: idZone,
                              BUILDING_ABSTRACT_USE_TYPE: buildingAbstractUseType, BUILDING_ABSTRACT_PARAMETERS: buildingAbstractParameters,
-                             ROAD_ABSTRACT_TYPE        : roadAbstractType, ROAD_ABSTRACT_PARAMETERS: roadAbstractParameters,
+                             ROAD_ABSTRACT_TYPE : roadAbstractType, ROAD_ABSTRACT_PARAMETERS: roadAbstractParameters,
                              RAIL_ABSTRACT_TYPE        : railAbstractType,
                              VEGET_ABSTRACT_TYPE       : vegetAbstractType, VEGET_ABSTRACT_PARAMETERS: vegetAbstractParameters,
                              BU_ZONE                   : buZone, BUILD_WITHIN_ZONE: buildWithZone, BUILD_OUTER_ZONE: buildOuterZone,
@@ -183,12 +183,9 @@ static IProcess inputDataFormatting(){
                              ROAD_STATS_EXT_ZONE       : ROAD_STATS_EXT_ZONE, RAIL: RAIL,
                              RAIL_STATS_ZONE           : RAIL_STATS_ZONE, HYDRO: HYDRO, HYDRO_STATS_ZONE: HYDRO_STATS_ZONE,
                              HYDRO_STATS_EXT_ZONE      : HYDRO_STATS_EXT_ZONE, VEGET: VEGET, VEGET_STATS_ZONE: VEGET_STATS_ZONE,
-                             VEGET_STATS_EXT_ZONE      : VEGET_STATS_EXT_ZONE
+                             VEGET_STATS_EXT_ZONE      : VEGET_STATS_EXT_ZONE,FC_BUILD_H_RANGE:fcBuildHRange
                             ])
-                }
-                catch (Exception ex){
-                    logger.error(ex)
-                }
+
                 logger.info('The inputDataFormatting.sql script has been executed')
 
                 [outputBuilding: BUILDING,
