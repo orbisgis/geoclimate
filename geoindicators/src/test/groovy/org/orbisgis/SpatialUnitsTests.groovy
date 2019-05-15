@@ -2,6 +2,7 @@ package org.orbisgis
 
 import org.junit.jupiter.api.Test
 import org.orbisgis.datamanager.h2gis.H2GIS
+import org.orbisgis.processmanagerapi.IProcess
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertNotNull
@@ -76,7 +77,7 @@ class SpatialUnitsTests {
         h2GIS.execute("DROP TABLE IF EXISTS build_tempo; " +
                 "CREATE TABLE build_tempo AS SELECT * FROM building_test WHERE id_build < 9 "+
                 "OR id_build > 28 AND id_build < 30")
-        def  pRsu =  Geoclimate.SpatialUnits.createScalesRelations()
+        def pRsu =  Geoclimate.SpatialUnits.createScalesRelations()
         pRsu.execute([inputLowerScaleTableName: "build_tempo", inputUpperScaleTableName : "rsu_test",
                       idColumnUp: "id_rsu", prefixName: "test", datasource: h2GIS])
         h2GIS.eachRow("SELECT * FROM ${pRsu.results.outputTableName}".toString()){
@@ -84,14 +85,14 @@ class SpatialUnitsTests {
                 def expected = h2GIS.firstRow("SELECT ${pRsu.results.outputIdColumnUp} FROM rsu_build_corr WHERE id_build = ${row.id_build}".toString())
                 assertEquals(row[pRsu.results.outputIdColumnUp], expected[pRsu.results.outputIdColumnUp])
         }
-        def  pBlock =  Geoclimate.SpatialUnits.createScalesRelations()
+        def pBlock =  Geoclimate.SpatialUnits.createScalesRelations()
         pBlock.execute([inputLowerScaleTableName: "build_tempo", inputUpperScaleTableName : "block_test",
                         idColumnUp: "id_block", prefixName: "test", datasource: h2GIS])
 
         h2GIS.eachRow("SELECT * FROM ${pBlock.results.outputTableName}".toString()){
             row ->
-                def expected = h2GIS.firstRow("SELECT ${pRsu.results.outputIdColumnUp} FROM block_build_corr WHERE id_build = ${row.id_build}".toString())
-                assertEquals(row[pRsu.results.outputIdColumnUp], expected[pRsu.results.outputIdColumnUp])
+                def expected = h2GIS.firstRow("SELECT ${pBlock.results.outputIdColumnUp} FROM block_build_corr WHERE id_build = ${row.id_build}".toString())
+                assertEquals(row[pBlock.results.outputIdColumnUp], expected[pBlock.results.outputIdColumnUp])
         }
     }
 
