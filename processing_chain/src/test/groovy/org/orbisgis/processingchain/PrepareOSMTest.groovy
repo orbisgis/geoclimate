@@ -159,7 +159,7 @@ class PrepareOSMTest {
                 "cycleway"    : [
                         "highway"      : ["cycleway"],
                         "cycleway"     : ["track"],
-                        "biclycle_road": ["yes"]
+                        "bicycle_road": ["yes"]
                 ],
                 "ferry"       : [
                         "route": ["ferry"]
@@ -253,11 +253,14 @@ class PrepareOSMTest {
         ]
 
         mapper.execute([
+                hLevMin: 3,
+                hLevMax: 15,
+                hThresholdLev2: 10,
                 dbPath : "./target/h2db",
                 osmTablesPrefix: "EXT",
-                zoneCode : "35236",
-                extendedZoneSize : 1000,
-                bufferZoneSize:500,
+                idZone : "35236",
+                expand : 1000,
+                distBuffer:500,
 
                 buildingTableColumnsNames:
                     ['height':'height','building:height':'b_height','roof:height':'r_height','building:roof:height':'b_r_height',
@@ -276,8 +279,8 @@ class PrepareOSMTest {
                 roadTableColumnsNames: ['width':'width','highway':'highway', 'surface':'surface', 'sidewalk':'sidewalk',
                                     'lane':'lane','layer':'zindex','maxspeed':'maxspeed','oneway':'oneway',
                                     'h_ref':'h_ref','route':'route','cycleway':'cycleway',
-                                    'biclycle_road':'biclycle_road','cyclestreet':'cyclestreet','junction':'junction'],
-                roadTagKeys: ['highway','cycleway','biclycle_road','cyclestreet','route','junction'],
+                                    'bicycle_road':'bicycle_road','cyclestreet':'cyclestreet','junction':'junction'],
+                roadTagKeys: ['highway','cycleway','bicycle_road','cyclestreet','route','junction'],
                 roadTagValues: null,
                 roadFilter: "ZONE_BUFFER",
 

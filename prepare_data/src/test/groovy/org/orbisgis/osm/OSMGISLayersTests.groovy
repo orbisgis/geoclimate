@@ -155,9 +155,9 @@ class OSMGISLayersTests {
         process.execute([
                 dbPath : "./target/osmdb",
                 osmTablesPrefix: "EXT",
-                zoneCode : "35236",
-                extendedZoneSize : 1000,
-                bufferZoneSize:500])
+                idZone : "35236",
+                expand : 1000,
+                distBuffer:500])
         assertNotNull h2GIS.getTable("EXT_NODE")
         assertNotNull h2GIS.getTable("ZONE")
         assertNotNull h2GIS.getTable("ZONE_EXTENDED")
