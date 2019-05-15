@@ -263,9 +263,9 @@ class ProcessingChainsTest {
                 hThresholdLev2: 10,
                 directory : "/tmp/osm_process",
                 osmTablesPrefix: "EXT",
-                idZone : "56223",
-                expand : 0,
-                distBuffer:0,
+                idZone : "35236",
+                expand : 100,
+                distBuffer:100,
 
                 buildingTableColumnsNames:
                         ['height':'height','building:height':'b_height','roof:height':'r_height','building:roof:height':'b_r_height',
