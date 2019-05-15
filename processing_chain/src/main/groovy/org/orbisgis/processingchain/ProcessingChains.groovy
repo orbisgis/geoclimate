@@ -4,5 +4,3 @@ import groovy.transform.BaseScript
 import org.orbisgis.SpatialUnits
 import org.orbisgis.processmanager.ProcessMapper
 
-@BaseScript ProcessingChain processingChain
-
