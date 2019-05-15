@@ -210,8 +210,8 @@ abstract class ProcessingChains extends Script {
 
                     def initResults = initParametersAbstract.getResults()
 
-                    def inputZone = loadInitialData.getResults().outputZoneName
-                    def inputZoneNeighbors = loadInitialData.getResults().outputZoneNeighborsName
+                    def inputZone = loadInitialData.getResults().outputZone
+                    def inputZoneNeighbors = loadInitialData.getResults().outputZoneNeighbors
 
                     IProcess inputDataFormatting = org.orbisgis.common.InputDataFormatting.inputDataFormatting()
 
