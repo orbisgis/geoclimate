@@ -5,7 +5,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.processmanager.ProcessMapper
+import org.orbisgis.processmanagerapi.IProcess
 
+import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertNull
 
 class ProcessingChainTest {
@@ -42,7 +44,7 @@ class ProcessingChainTest {
     }
 
     @Test
-    void CreateScalesOfAnalysisTest(){
+    void CreateUnitsOfAnalysisTest(){
         H2GIS h2GIS = H2GIS.open("./target/processingchaindb")
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -51,20 +53,28 @@ class ProcessingChainTest {
         h2GIS.execute("DROP TABLE IF EXISTS tempo_build, tempo_road, tempo_zone, tempo_veget, tempo_hydro; " +
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 9; CREATE TABLE " +
                 "tempo_road AS SELECT id_road, the_geom, zindex FROM road_test WHERE id_road < 5 UNION ALL " +
-                "(SELECT 6, the_geom, 0 FROM rsu_test WHERE id_rsu < 5);" +
+                "(SELECT 6, st_tomultiline(the_geom) as the_geom, 0 FROM rsu_test WHERE id_rsu < 5);" +
                 "CREATE TABLE tempo_zone AS SELECT * FROM zone_test;" +
                 "CREATE TABLE tempo_veget AS SELECT id_veget, the_geom FROM veget_test WHERE id_veget < 4;" +
                 "CREATE TABLE tempo_hydro AS SELECT id_hydro, the_geom FROM hydro_test WHERE id_hydro < 2;")
 
-        ProcessMapper pm =  ProcessingChain.createScalesOfAnalysis.createMapper()
+
+
+        IProcess pm =  ProcessingChain.processingChains.createUnitsOfAnalysis()
         pm.execute([datasource: h2GIS, zoneTable : "tempo_zone", roadTable : "tempo_road", railTable : "tempo_road",
                     vegetationTable: "tempo_veget", hydrographicTable: "tempo_hydro", surface_vegetation: null,
-                    surface_hydro: null, inputTableName: "tempo_build", distance: null,
+                    surface_hydro: null, inputTableName: "tempo_build", distance: 0.0,
                     inputLowerScaleTableName: "tempo_build",  prefixName: "test"])
 
-        println pm.getResults()
-        // Test the number of blocks within RSU ID 1, whether id_build 4 and 5 belongs to the same block and the same
-        // RSU
-        // def nb_blocks = h2GIS.firstRow('select count(*) as nb_blocks from $pm.getResults()')
+        // Test the number of blocks within RSU ID 2, whether id_build 4 and 8 belongs to the same block and are both
+        // within id_rsu = 2
+        def row_nb = h2GIS.firstRow(("SELECT COUNT(*) AS nb_blocks FROM ${pm.results.outputTableBlockName} " +
+                "WHERE id_rsu = 2").toString())
+        def row_bu4 = h2GIS.firstRow(("SELECT id_block AS id_block FROM ${pm.results.outputTableBuildingName} " +
+                "WHERE id_build = 4 AND id_rsu = 2").toString())
+        def row_bu8 = h2GIS.firstRow(("SELECT id_block AS id_block FROM ${pm.results.outputTableBuildingName} " +
+                "WHERE id_build = 8 AND id_rsu = 2").toString())
+        assertEquals 4 , row_nb.nb_blocks
+        assertEquals row_bu4.id_block , row_bu8.id_blockgit
     }
 }
