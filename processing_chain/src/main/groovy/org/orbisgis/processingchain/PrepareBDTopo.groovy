@@ -71,6 +71,11 @@ public static ProcessMapper createMapper(){
     mapper.link(outputBuildingAbstractParameters : abstractTablesInit, buildingAbstractParameters : dataFormatting)
     mapper.link(outputRoadAbstractParameters : abstractTablesInit, roadAbstractParameters : dataFormatting)
     mapper.link(outputVegetAbstractParameters : abstractTablesInit, vegetAbstractParameters : dataFormatting)
+    mapper.link(outputBuildingAbstractUseType : abstractTablesInit, buildingAbstractUseType : dataFormatting)
+    mapper.link(outputRoadAbstractType : abstractTablesInit, roadAbstractType : dataFormatting)
+    mapper.link(outputRailAbstractType : abstractTablesInit, railAbstractType : dataFormatting)
+    mapper.link(outputVegetAbstractType : abstractTablesInit, vegetAbstractType : dataFormatting)
+
 
     // FROM bdTopoInitTypes...
     // ...to tableFeeding
