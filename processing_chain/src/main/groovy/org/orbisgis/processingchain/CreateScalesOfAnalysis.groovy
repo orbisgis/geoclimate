@@ -54,7 +54,7 @@ public static ProcessMapper createMapper(){
 
     // FROM createBlocks...
     // ...to createScalesRelations (relationships between blocks and RSU)
-    mapper.link(outputTableName : createBlocks, inputLowerScaleTableName : createScalesRelationsBlBu)
+    mapper.link(outputTableName : createBlocks, inputLowerScaleTableName : createScalesRelationsRsuBl)
 
     // ...to createScalesRelations (relationships between blocks and buildings)
     mapper.link(outputTableName : createBlocks, inputUpperScaleTableName : createScalesRelationsBlBu)
