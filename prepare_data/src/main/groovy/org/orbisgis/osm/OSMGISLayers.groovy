@@ -387,7 +387,7 @@ static String createIndexesOnOSMTables(def prefix){
  **/
 static String zoneSQLScript(def prefix, def idZone, def bboxSize, def bufferSize) {
     def script = 'DROP TABLE IF EXISTS ZONE;\n' +
-            'CREATE TABLE ZONE AS\n' +
+            'CREATE TABLE ZONE (ID_ZONE VARCHAR, THE_GEOM GEOMETRY, ID_RELATION INTEGER) AS\n' +
             '        SELECT '+ idZone + ', ST_Polygonize(ST_UNION(ST_ACCUM(the_geom))) the_geom, id_relation'
     script += '''
         FROM (
