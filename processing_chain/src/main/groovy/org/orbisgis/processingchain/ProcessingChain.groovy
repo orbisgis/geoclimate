@@ -16,6 +16,4 @@ abstract class ProcessingChain extends Script {
 
     public  static CreateScalesOfAnalysis createScalesOfAnalysis= new CreateScalesOfAnalysis()
 
-    public  static ProcessingChains processingChains= new ProcessingChains()
-
 }

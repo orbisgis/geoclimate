@@ -56,7 +56,7 @@ static IProcess prepareBuildings() {
                         scriptFile, tableName, buildingFilter)
                 datasource.executeScript(scriptFile.getAbsolutePath())
                 scriptFile.delete()
-                logger.info('Buildings preparation finishes')
+                logger.info('Buildings preparation finished')
                 [buildingTableName: tableName]
             }
     )

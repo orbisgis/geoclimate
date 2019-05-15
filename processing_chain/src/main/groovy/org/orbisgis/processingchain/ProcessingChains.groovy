@@ -23,7 +23,7 @@ abstract class ProcessingChains extends Script {
      */
     static IProcess prepareOSM() {
         return processFactory.create("Extract and transform OSM data to Geoclimate model",
-                [dbPath : String,
+                [directory : String,
                  osmTablesPrefix: String,
                  idZone : String,
                  expand : int,
@@ -55,9 +55,10 @@ abstract class ProcessingChains extends Script {
                  mappingForRoadType : Map,
                  mappingForSurface : Map,
                  mappingForRailType : Map,
-                 mappingForVegetType : Map],
+                 mappingForVegetType : Map,
+                 saveResults : boolean],
                 [message: String],
-                { dbPath, osmTablesPrefix, idZone , expand, distBuffer,  hLevMin, hLevMax,hThresholdLev2, buildingTableColumnsNames,
+                { directory, osmTablesPrefix, idZone , expand, distBuffer,  hLevMin, hLevMax,hThresholdLev2, buildingTableColumnsNames,
                     buildingTagKeys,buildingTagValues,
                     tablesPrefix,
                     buildingFilter,
@@ -80,7 +81,26 @@ abstract class ProcessingChains extends Script {
                     mappingForRoadType,
                     mappingForSurface,
                     mappingForRailType,
-                    mappingForVegetType -> ;
+                    mappingForVegetType,
+                    saveResults -> ;
+
+                    if(directory==null){
+                        logger.info("The directory to save the data cannot be null")
+                        return
+                    }
+                    File dirFile = new File(directory)
+
+                    if(!dirFile.exists()){
+                        dirFile.mkdir()
+                        logger.info("The folder ${directory} has been created")
+                    }
+                    else if (!dirFile.isDirectory()){
+                        logger.info("Invalid directory path")
+                        return
+                    }
+
+
+                    String dbPath = dirFile.absolutePath+ File.separator+ "osmdb"
 
                     IProcess loadInitialData = org.orbisgis.osm.OSMGISLayers.loadInitialData()
 
@@ -91,8 +111,10 @@ abstract class ProcessingChains extends Script {
                             expand : expand,
                             distBuffer:distBuffer])
 
+                    logger.info("The OSM data has been downloaded for the zone id : ${idZone}.")
+
                     //The connection to the database
-                    def datasource = oadInitialData.getResults().outDatasource
+                    JdbcDataSource datasource = loadInitialData.getResults().outDatasource
 
                     if(datasource==null){
                         logger.error("Cannot create the database to store the osm data")
@@ -102,37 +124,125 @@ abstract class ProcessingChains extends Script {
                     IProcess initParametersAbstract = org.orbisgis.common.AbstractTablesInitialization.initParametersAbstract()
                     initParametersAbstract.execute(datasource:datasource)
 
-                    initParametersAbstract.getResults()
+                    logger.info("The geoclimate data model has been initialized.")
+
+                    logger.info("Transform OSM data to GIS tables.")
+
+                    IProcess prepareBuildings = org.orbisgis.osm.OSMGISLayers.prepareBuildings()
+
+                    prepareBuildings.execute([datasource:datasource, osmTablesPrefix:osmTablesPrefix,
+                                              buildingTableColumnsNames : buildingTableColumnsNames,
+                                              buildingTagKeys:buildingTagKeys,
+                                              buildingTagValues:buildingTagValues,
+                                              buildingTagValues:buildingTagValues,
+                                              tablesPrefix:tablesPrefix,
+                                              buildingFilter:buildingFilter,
+                    ]);
+                    IProcess prepareRoads = org.orbisgis.osm.OSMGISLayers.prepareRoads()
+                    prepareRoads.execute([datasource: datasource,
+                                          osmTablesPrefix: osmTablesPrefix,
+                                          roadTableColumnsNames: roadTableColumnsNames,
+                                          roadTagKeys: roadTagKeys,
+                                          roadTagValues: roadTagValues,
+                                          tablesPrefix: tablesPrefix,
+                                          roadFilter: roadFilter])
+
+                    IProcess prepareRails = org.orbisgis.osm.OSMGISLayers.prepareRails()
+                    prepareRails.execute([datasource: datasource,
+                                          osmTablesPrefix: osmTablesPrefix,
+                                          railTableColumnsNames: railTableColumnsNames,
+                                          railTagKeys: railTagKeys,
+                                          railTagValues: railTagValues,
+                                          tablesPrefix: tablesPrefix,
+                                          railFilter: railFilter])
+
+                    IProcess prepareVeget = org.orbisgis.osm.OSMGISLayers.prepareVeget()
+                    prepareVeget.execute([datasource: datasource,
+                                          osmTablesPrefix: osmTablesPrefix,
+                                          vegetTableColumnsNames: vegetTableColumnsNames,
+                                          vegetTagKeys: vegetTagKeys,
+                                          vegetTagValues: vegetTagValues,
+                                          tablesPrefix: tablesPrefix,
+                                          vegetFilter: vegetFilter])
+
+                    IProcess prepareHydro = org.orbisgis.osm.OSMGISLayers.prepareHydro()
+                    prepareHydro.execute([datasource: datasource,
+                                          osmTablesPrefix: osmTablesPrefix,
+                                          hydroTableColumnsNames: hydroTableColumnsNames,
+                                          hydroTags: hydroTags,
+                                          tablesPrefix: tablesPrefix,
+                                          hydroFilter: hydroFilter])
+
+                    IProcess transformBuildings = org.orbisgis.osm.FormattingForAbstractModel.transformBuildings()
+                    transformBuildings.execute([datasource : datasource,
+                            inputTableName      : prepareBuildings.getResults().buildingTableName,
+                            mappingForTypeAndUse: mappingForTypeAndUse])
+                    def inputBuilding =  transformBuildings.getResults().outputTableName
+
+                    IProcess transformRoads = org.orbisgis.osm.FormattingForAbstractModel.transformRoads()
+                    transformRoads.execute([datasource : datasource,
+                            inputTableName      : prepareRoads.getResults().roadTableName,
+                            mappingForRoadType: mappingForRoadType,
+                            mappingForSurface: mappingForSurface])
+                    def inputRoads =  transformRoads.getResults().outputTableName
+
+
+                    IProcess transformRails = org.orbisgis.osm.FormattingForAbstractModel.transformRails()
+                    transformRails.execute([datasource          : datasource,
+                            inputTableName : prepareRails.getResults().railTableName,
+                            mappingForRailType: mappingForRailType])
+                    def inputRail =  transformRails.getResults().outputTableName
+
+                    IProcess transformVeget = org.orbisgis.osm.FormattingForAbstractModel.transformVeget()
+                    transformVeget.execute([datasource    : datasource,
+                                            inputTableName: prepareVeget.getResults().vegetTableName,
+                                            mappingForVegetType: mappingForVegetType])
+                    def inputVeget =  transformVeget.getResults().outputTableName
+
+                    IProcess transformHydro = org.orbisgis.osm.FormattingForAbstractModel.transformHydro()
+                    transformHydro.execute([datasource    : datasource,
+                                            inputTableName: prepareHydro.getResults().hydroTableName])
+                    def inputHydro =  transformHydro.getResults().outputTableName
+
+                    logger.info("All OSM data have been tranformed to GIS tables.")
+
+                    logger.info("Formating GIS tables to Geoclimate model...")
+
+                    def initResults = initParametersAbstract.getResults()
+
+                    def inputZone = loadInitialData.getResults().outputZoneName
+                    def inputZoneNeighbors = loadInitialData.getResults().outputZoneNeighborsName
 
                     IProcess inputDataFormatting = org.orbisgis.common.InputDataFormatting.inputDataFormatting()
 
-                    inputDataFormatting.execute([datasource: h2GISDatabase,
-                                     inputBuilding: 'INPUT_BUILDING', inputRoad: 'INPUT_ROAD', inputRail: 'INPUT_RAIL',
-                                     inputHydro: 'INPUT_HYDRO', inputVeget: 'INPUT_VEGET',
-                                     inputZone: 'ZONE', inputZoneNeighbors: 'ZONE_NEIGHBORS',
+                    inputDataFormatting.execute([datasource: datasource,
+                                     inputBuilding: inputBuilding, inputRoad: inputRoads, inputRail: inputRail,
+                                     inputHydro: inputHydro, inputVeget: inputVeget,
+                                     inputZone: inputZone, inputZoneNeighbors: inputZoneNeighbors,
+                                     hLevMin: hLevMin, hLevMax: hLevMax, hThresholdLev2: hThresholdLev2, idZone: idZone,
+                                     buildingAbstractUseType: initResults.outputBuildingAbstractUseType, buildingAbstractParameters: initResults.outputBuildingAbstractParameters,
+                                     roadAbstractType: initResults.outputRoadAbstractType, roadAbstractParameters: initResults.outputRoadAbstractParameters,
+                                     railAbstractType: initResults.outputRailAbstractType,
+                                     vegetAbstractType: initResults.outputVegetAbstractType,
+                                                 vegetAbstractParameters: initResults.outputVegetAbstractParameters])
 
-                                     hLevMin: 3, hLevMax: 15, hThresholdLev2: 10, idZone: '56260',
+                    logger.info("End of the OSM extract transform process.")
 
-                                     buildingAbstractUseType: 'BUILDING_ABSTRACT_USE_TYPE', buildingAbstractParameters: 'BUILDING_ABSTRACT_PARAMETERS',
-                                     roadAbstractType: 'ROAD_ABSTRACT_TYPE', roadAbstractParameters: 'ROAD_ABSTRACT_PARAMETERS',
-                                     railAbstractType: 'RAIL_ABSTRACT_TYPE',
-                                     vegetAbstractType: 'VEGET_ABSTRACT_TYPE', vegetAbstractParameters: 'VEGET_ABSTRACT_PARAMETERS'])
+                    if(saveResults){
+                        String finalBuildings = inputDataFormatting.getResults().outputBuilding
+                        datasource.save(finalBuildings, dirFile.absolutePath+File.separator+"${finalBuildings}.geojson")
 
+                        //String finalRoads = inputDataFormatting.getResults().outputRoad
 
+                        /outputBuilding: String, outputBuildingStatZone: String, outputBuildingStatZoneBuff: String,
+                        outputRoad: String, outputRoadStatZone: String, outputRoadStatZoneBuff: String,
+                        outputRail: String, outputRailStatZone: String,
+                        outputHydro: String, outputHydroStatZone: String, outputHydroStatZoneExt: String,
+                        outputVeget: String, outputVegetStatZone: String, outputVegetStatZoneExt: String,
+                        outputZone: String*/
+                    }
 
-
-                    IProcess prepareBuildings = org.orbisgis.osm.OSMGISLayers.prepareBuildings()
-                    IProcess prepareRoads = org.orbisgis.osm.OSMGISLayers.prepareRoads()
-                    IProcess prepareRails = org.orbisgis.osm.OSMGISLayers.prepareRails()
-                    IProcess prepareVeget = org.orbisgis.osm.OSMGISLayers.prepareVeget()
-                    IProcess prepareHydro = org.orbisgis.osm.OSMGISLayers.prepareHydro()
-                    IProcess transformBuildings = org.orbisgis.osm.FormattingForAbstractModel.transformBuildings()
-                    IProcess transformRoads = org.orbisgis.osm.FormattingForAbstractModel.transformRoads()
-                    IProcess transformRails = org.orbisgis.osm.FormattingForAbstractModel.transformRails()
-                    IProcess transformVeget = org.orbisgis.osm.FormattingForAbstractModel.transformVeget()
-                    IProcess transformHydro = org.orbisgis.osm.FormattingForAbstractModel.transformHydro()
-
-
+                    [message: "Sucess"]
 
                 })
     }
