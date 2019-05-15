@@ -73,8 +73,8 @@ DROP TABLE IF EXISTS $BUILDING_ABSTRACT_PARAMETERS;
 CREATE TABLE $BUILDING_ABSTRACT_PARAMETERS (ID_TYPE serial, TERM varchar, NB_LEV integer);
 
 -- Add comments
-COMMENT ON COLUMN $BUILDING_ABSTRACT_PARAMETERS.TERM IS 'Building type';
-COMMENT ON COLUMN $BUILDING_ABSTRACT_PARAMETERS.NB_LEV IS 'Specifies whether or not the building type is taken into account when calculating the number of levels (0 = not taken into account (in this case, the number of levels will be forced to 0) / 1= taken into account (in this case, a formula will be used to deduct the number) / 2= taken into account only when the wall height is higher than 10m)';
+COMMENT ON COLUMN $BUILDING_ABSTRACT_PARAMETERS."TERM" IS 'Building type';
+COMMENT ON COLUMN $BUILDING_ABSTRACT_PARAMETERS."NB_LEV" IS 'Specifies whether or not the building type is taken into account when calculating the number of levels (0 = not taken into account (in this case, the number of levels will be forced to 0) / 1= taken into account (in this case, a formula will be used to deduct the number) / 2= taken into account only when the wall height is higher than 10m)';
 
 -- Feed the table
 
@@ -181,8 +181,8 @@ DROP TABLE IF EXISTS $ROAD_ABSTRACT_PARAMETERS;
 CREATE TABLE $ROAD_ABSTRACT_PARAMETERS (ID_TYPE serial, TERM varchar, MIN_WIDTH integer);
 
 -- Add comments
-COMMENT ON COLUMN $ROAD_ABSTRACT_PARAMETERS.TERM IS 'Road type';
-COMMENT ON COLUMN $ROAD_ABSTRACT_PARAMETERS.MIN_WIDTH IS 'Specifies the road minimum width (in meter)';
+COMMENT ON COLUMN $ROAD_ABSTRACT_PARAMETERS."TERM" IS 'Road type';
+COMMENT ON COLUMN $ROAD_ABSTRACT_PARAMETERS."MIN_WIDTH" IS 'Specifies the road minimum width (in meter)';
 
 -- Feed the table
 
@@ -263,8 +263,8 @@ DROP TABLE IF EXISTS $VEGET_ABSTRACT_PARAMETERS;
 CREATE TABLE $VEGET_ABSTRACT_PARAMETERS (ID_TYPE serial, TERM varchar, HEIGHT_CLASS varchar);
 
 -- Add comments
-COMMENT ON COLUMN $VEGET_ABSTRACT_PARAMETERS.TERM IS 'Vegetation type';
-COMMENT ON COLUMN $VEGET_ABSTRACT_PARAMETERS.HEIGHT_CLASS IS 'Specifies whether it is high or low vegetation';
+COMMENT ON COLUMN $VEGET_ABSTRACT_PARAMETERS."TERM" IS 'Vegetation type';
+COMMENT ON COLUMN $VEGET_ABSTRACT_PARAMETERS."HEIGHT_CLASS" IS 'Specifies whether it is high or low vegetation';
 
 -- Feed the table
 
