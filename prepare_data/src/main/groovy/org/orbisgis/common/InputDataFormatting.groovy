@@ -131,18 +131,31 @@ static IProcess inputDataFormatting(){
                 def vegetType = 'VEGET_TYPE_' + uuid
                 def vegetTypeRange = 'VEGET_TYPE_RANGE_' + uuid
 
+                //Final output table names
+                def BUILDING = 'BUILDING'
+                def BUILDING_STATS_ZONE = 'BUILDING_STATS_ZONE'
+                def BUILDING_STATS_EXT_ZONE = 'BUILDING_STATS_EXT_ZONE'
+                def ROAD='ROAD'
+                def ROAD_STATS_ZONE='ROAD_STATS_ZONE'
+                def ROAD_STATS_EXT_ZONE='ROAD_STATS_EXT_ZONE'
+                def RAIL ='RAIL'
+                def RAIL_STATS_ZONE='RAIL_STATS_ZONE'
+                def HYDRO ='HYDRO'
+                def HYDRO_STATS_ZONE = 'HYDRO_STATS_ZONE'
+                def HYDRO_STATS_EXT_ZONE='HYDRO_STATS_EXT_ZONE'
+                def VEGET ='VEGET'
+                def VEGET_STATS_ZONE='VEGET_STATS_ZONE'
+                def VEGET_STATS_EXT_ZONE='VEGET_STATS_EXT_ZONE'
+
+                //Run the sql script
                 datasource.executeScript(this.class.getResource('inputDataFormatting.sql').toString(),
-                [
-                 INPUT_BUILDING: inputBuilding, INPUT_ROAD: inputRoad, INPUT_RAIL: inputRail,
+                [INPUT_BUILDING: inputBuilding, INPUT_ROAD: inputRoad, INPUT_RAIL: inputRail,
                  INPUT_HYDRO: inputHydro, INPUT_VEGET: inputVeget, ZONE: inputZone, ZONE_NEIGHBORS: inputZoneNeighbors,
-
                  H_LEV_MIN: hLevMin, H_LEV_MAX: hLevMax, H_THRESHOLD_LEV2: hThresholdLev2, ID_ZONE: idZone,
-
                  BUILDING_ABSTRACT_USE_TYPE: buildingAbstractUseType, BUILDING_ABSTRACT_PARAMETERS: buildingAbstractParameters,
                  ROAD_ABSTRACT_TYPE: roadAbstractType, ROAD_ABSTRACT_PARAMETERS: roadAbstractParameters,
                  RAIL_ABSTRACT_TYPE: railAbstractType,
                  VEGET_ABSTRACT_TYPE: vegetAbstractType, VEGET_ABSTRACT_PARAMETERS: vegetAbstractParameters,
-
                  BU_ZONE: buZone, BUILD_WITHIN_ZONE: buildWithZone, BUILD_OUTER_ZONE: buildOuterZone,
                  BUILD_OUTER_ZONE_MATRIX: buildOuterZoneMatrix, BUILD_ZONE_MATRIX: buildZoneMatrix,
                  BUILDING_FC: buildingFC, FC_BUILD_H_ZERO: fcBuildHZero, FC_BUILD_H_NULL: fcBuildHNull,
@@ -153,31 +166,33 @@ static IProcess inputDataFormatting(){
                  BUILD_LEV_RANGE: buildLevRange, BUILD_TYPE: buildType, BUILD_TYPE_RANGE: buildTypeRange,
                  BUILD_VALID_EXT_ZONE: buildValidExtZone, BUILD_EQUALS_EXT_ZONE: buildEqualsExtZone,
                  BUILD_OVERLAP_EXT_ZONE: buildOverlapExtZone,
-
                  ROAD_FC_W_ZERO: roadFCWZero, ROAD_FC_W_NULL: roadFCWNull, ROAD_FC_W_RANGE: roadFCWRange,
                  R_FC_STATS_ZONE: rFCStatsZone, R_FC_STATS_EXT_ZONE: rFCStatsExtZone, ROAD_ZONE: roadZone,
                  ROAD_VALID: roadValid, ROAD_EMPTY: roadEmpty, ROAD_EQUALS: roadEquals, ROAD_OVERLAP: roadOverlap,
                  ROAD_W: roadW, ROAD_W_RANGE: roadWRange, ROAD_TYPE: roadType, ROAD_TYPE_RANGE: roadTypeRange,
-
                  RAIL_NB: railNB, RAIL_VALID: railValid, RAIL_EMPTY: railEmpty, RAIL_EQUALS: railEquals,
                  RAIL_OVERLAP: railOverlap, RAIL_TYPE: railType, RAIL_TYPE_RANGE: railTypeRange,
-
                  HYDRO_NUM_ZONE: hydroNumZone, HYDRO_VALID: hydroValid, HYDRO_EMPTY: hydroEmpty,
                  HYDRO_EQUALS: hydroEquals, HYDRO_OVERLAP: hydroOlverlap,
-
                  VEGET_NUM_ZONE: vegetNumZone, VEGET_VALID: vegetValid, VEGET_EMPTY: vegetEmpty,
                  VEGET_EQUALS: vegetEquals, VEGET_OVERLAP: vegetOverlap, VEGET_TYPE: vegetType,
-                 VEGET_TYPE_RANGE: vegetTypeRange
+                 VEGET_TYPE_RANGE: vegetTypeRange,
+                 BUILDING : BUILDING,BUILDING_STATS_ZONE:BUILDING_STATS_ZONE,
+                 BUILDING_STATS_EXT_ZONE:BUILDING_STATS_EXT_ZONE, ROAD:ROAD,ROAD_STATS_ZONE:ROAD_STATS_ZONE,
+                 ROAD_STATS_EXT_ZONE:ROAD_STATS_EXT_ZONE,RAIL:RAIL,
+                 RAIL_STATS_ZONE:RAIL_STATS_ZONE, HYDRO:HYDRO, HYDRO_STATS_ZONE:HYDRO_STATS_ZONE,
+                 HYDRO_STATS_EXT_ZONE:HYDRO_STATS_EXT_ZONE,VEGET:VEGET, VEGET_STATS_ZONE:VEGET_STATS_ZONE,
+                 VEGET_STATS_EXT_ZONE:VEGET_STATS_EXT_ZONE
                 ])
                 logger.info('The inputDataFormatting.sql script has been executed')
 
-                [outputBuilding: 'BUILDING',
-                 outputBuildingStatZone: 'BUILDING_STATS_ZONE', outputBuildingStatZoneBuff: 'BUILDING_STATS_EXT_ZONE',
-                 outputRoad: 'ROAD', outputRoadStatZone: 'ROAD_STATS_ZONE', outputRoadStatZoneBuff: 'ROAD_STATS_EXT_ZONE',
-                 outputRail: 'RAIL', outputRailStatZone: 'RAIL_STATS_ZONE',
-                 outputHydro: 'HYDRO', outputHydroStatZone: 'HYDRO_STATS_ZONE', outputHydroStatZoneExt: 'HYDRO_STATS_EXT_ZONE',
-                 outputVeget: 'VEGET', outputVegetStatZone: 'VEGET_STATS_ZONE', outputVegetStatZoneExt: 'VEGET_STATS_EXT_ZONE',
-                 outputZone: 'ZONE'
+                [outputBuilding: BUILDING,
+                 outputBuildingStatZone: BUILDING_STATS_ZONE, outputBuildingStatZoneBuff: BUILDING_STATS_EXT_ZONE,
+                 outputRoad: ROAD, outputRoadStatZone: ROAD_STATS_ZONE, outputRoadStatZoneBuff: ROAD_STATS_EXT_ZONE,
+                 outputRail: RAIL, outputRailStatZone: RAIL_STATS_ZONE,
+                 outputHydro: HYDRO, outputHydroStatZone: HYDRO_STATS_ZONE, outputHydroStatZoneExt: HYDRO_STATS_EXT_ZONE,
+                 outputVeget: VEGET, outputVegetStatZone: VEGET_STATS_ZONE, outputVegetStatZoneExt: VEGET_STATS_EXT_ZONE,
+                 outputZone: inputZone
                 ]
             }
     )

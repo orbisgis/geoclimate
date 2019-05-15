@@ -19,7 +19,7 @@ import org.orbisgis.processmanagerapi.IProcess
 
 @BaseScript PrepareData prepareData
 
-//TODO : use stream api instead of file
+
 /**
  * This process is used to create the buildings table thanks to the osm data tables
  * @param datasource A connexion to a DB containing the 11 OSM tables
