@@ -13,6 +13,4 @@ abstract class ProcessingChain extends Script {
 
     public  static PrepareBDTopo prepareBDTopo= new PrepareBDTopo()
 
-    public  static CreateScalesOfAnalysis createScalesOfAnalysis= new CreateScalesOfAnalysis()
-
 }
