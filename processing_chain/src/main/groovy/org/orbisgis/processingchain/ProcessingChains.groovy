@@ -735,17 +735,17 @@ abstract class ProcessingChains extends Script {
      * @param prefixName A prefix used to name the output table
      * @param datasource A connection to a database
      *
-     * @return outputTableRsuName Table name where are stored the resulting RSU
+     * @return outputTableName Table name where are stored the resulting RSU
      */
     static IProcess createLCZ(){
         return processFactory.create("Merge the geometries that touch each other",
-                [datasource: String, buildingTable : String, rsuTable : String, roadTable : String,
+                [datasource: JdbcDataSource, prefixName: String, buildingTable : String, rsuTable : String, roadTable : String,
                  vegetationTable: String, hydrographicTable: String, facadeDensListLayersBottom: Double[],
                  facadeDensNumberOfDirection: Integer, svfPointDensity: Double, svfRayLength: Double,
                  svfNumberOfDirection: Double, heightColumnName: String, inputIdUp: String,
                  fractionTypePervious: String[], fractionTypeImpervious : String[], inputFields: String[],
-                 inputFields: String[], levelForRoads: String[], prefixName: String],
-                [outputTableRsuName: String],
+                 levelForRoads: String[]],
+                [outputTableName: String],
                 { datasource, prefixName, buildingTable, rsuTable, roadTable, vegetationTable,
                   hydrographicTable, facadeDensListLayersBottom = [0], facadeDensNumberOfDirection = 8,
                   svfPointDensity = 0.008, svfRayLength = 100, svfNumberOfDirection = 60,
@@ -943,7 +943,7 @@ abstract class ProcessingChains extends Script {
                     datasource.execute("DROP TABLE IF EXISTS $rsu_indic0, $rsu_indic1, $rsu_indic2, $rsu_indic3, $rsu_all_indic")
 
 
-                    [outputTableRsuName: rsu_all_indic]
+                    [outputTableName: rsu_all_indic]
                 }
         )
     }
