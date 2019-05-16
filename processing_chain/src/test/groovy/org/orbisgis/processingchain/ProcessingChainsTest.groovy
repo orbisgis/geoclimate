@@ -12,7 +12,7 @@ class ProcessingChainsTest {
     private static final Logger logger = LoggerFactory.getLogger(PrepareOSMTest.class)
 
     @Test
-    void PrepareOSMMapperTest() {
+    void PrepareOSMTest() {
 
         IProcess prepareOSMData = org.orbisgis.processingchains.ProcessingChains.prepareOSM()
 
@@ -261,9 +261,9 @@ class ProcessingChainsTest {
                 hLevMin: 3,
                 hLevMax: 15,
                 hThresholdLev2: 10,
-                directory : "/tmp/osm_process",
+                directory : "./target/osm_processchain",
                 osmTablesPrefix: "EXT",
-                idZone : "35236",
+                idZone : "56223",
                 expand : 100,
                 distBuffer:100,
 
@@ -319,5 +319,14 @@ class ProcessingChainsTest {
                 mappingForVegetType : mappingVegetType,
                 saveResults : true
         ])
+    }
+
+    @Test
+    void PrepareOSMDefaultConfigTest() {
+        IProcess prepareOSMData = org.orbisgis.processingchains.ProcessingChains.prepareOSMDefaultConfig()
+        prepareOSMData.execute([
+                directory : "./target/osm_processchain",
+                idZone : "56223",
+                saveResults : true])
     }
 }
