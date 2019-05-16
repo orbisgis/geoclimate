@@ -6,7 +6,9 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.orbisgis.datamanager.h2gis.H2GIS
 
+import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertNull
+import static org.junit.jupiter.api.Assertions.assertTrue
 
 class ProcessingChainsTest {
 
@@ -362,7 +364,7 @@ class ProcessingChainsTest {
                 "WHERE id_build = 4 AND id_rsu = 2").toString())
         def row_bu8 = h2GIS.firstRow(("SELECT id_block AS id_block FROM ${pm.results.outputTableBuildingName} " +
                 "WHERE id_build = 8 AND id_rsu = 2").toString())
-        assertEquals 4 , row_nb.nb_blocks
-        assertEquals row_bu4.id_block , row_bu8.id_blockgit
+        assertTrue(4 == row_nb.nb_blocks)
+        assertTrue(row_bu4.id_block ==row_bu8.id_blockgit)
     }
 }
