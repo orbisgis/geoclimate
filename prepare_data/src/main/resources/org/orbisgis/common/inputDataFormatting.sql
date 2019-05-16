@@ -109,41 +109,28 @@ DROP TABLE IF EXISTS $INPUT_BUILDING, $BU_ZONE, $BUILDING_FC;
 ---------------------------------------------------------
 
 -- Update HEIGHT_WALL
-UPDATE $BUILDING SET HEIGHT_WALL = CASE WHEN HEIGHT_WALL is null or HEIGHT_WALL = 0 THEN (
-                                        CASE WHEN HEIGHT_ROOF is null or HEIGHT_ROOF = 0 THEN (
-                                            CASE WHEN NB_LEV is null or NB_LEV = 0 THEN $H_LEV_MIN
-                                            ELSE (NB_LEV*$H_LEV_MIN) END)
-                                        ELSE HEIGHT_ROOF END)
-                                    ELSE HEIGHT_WALL END;
+UPDATE $BUILDING SET HEIGHT_WALL = CASE WHEN HEIGHT_WALL is null or HEIGHT_WALL = 0 THEN
+(CASE WHEN HEIGHT_ROOF is null or HEIGHT_ROOF = 0 THEN (CASE WHEN NB_LEV is null or NB_LEV = 0 THEN $H_LEV_MIN ELSE (NB_LEV*$H_LEV_MIN) END) ELSE HEIGHT_ROOF END) ELSE HEIGHT_WALL END;
 
 -- Update HEIGHT_ROOF
-UPDATE $BUILDING SET HEIGHT_ROOF = CASE WHEN HEIGHT_ROOF is null or HEIGHT_ROOF = 0 THEN (
-                                        CASE WHEN HEIGHT_WALL is null or HEIGHT_WALL = 0 THEN (
-                                            CASE WHEN NB_LEV is null or NB_LEV = 0 THEN $H_LEV_MIN
-                                            ELSE (NB_LEV*$H_LEV_MIN) END)
-                                        ELSE HEIGHT_WALL END)
-                                    ELSE HEIGHT_ROOF END;
+UPDATE $BUILDING SET HEIGHT_ROOF = CASE WHEN HEIGHT_ROOF is null or HEIGHT_ROOF = 0 THEN (CASE WHEN HEIGHT_WALL is null or HEIGHT_WALL = 0 THEN (
+CASE WHEN NB_LEV is null or NB_LEV = 0 THEN $H_LEV_MIN ELSE (NB_LEV*$H_LEV_MIN) END) ELSE HEIGHT_WALL END) ELSE HEIGHT_ROOF END;
 
 -- Update NB_LEV
 -- If the NB_LEV parameter (in the abstract table) is equal to 1 or 2 (and HEIGHT_WALL > 10m) then apply the rule. Else, the NB_LEV is equal to 1
-UPDATE $BUILDING SET NB_LEV = CASE WHEN TYPE in (SELECT TERM FROM $BUILDING_ABSTRACT_PARAMETERS WHERE NB_LEV=1) or (TYPE in (SELECT TERM FROM $BUILDING_ABSTRACT_PARAMETERS WHERE NB_LEV=2) and HEIGHT_WALL>$H_THRESHOLD_LEV2) THEN (
-                                    CASE WHEN NB_LEV is null or NB_LEV = 0 THEN (
-                                        CASE WHEN HEIGHT_WALL is null or HEIGHT_WALL = 0 THEN (
-                                            CASE WHEN HEIGHT_ROOF is null or HEIGHT_ROOF = 0 THEN 1
-                                            ELSE TRUNCATE(HEIGHT_ROOF /$H_LEV_MIN) END)
-                                        ELSE TRUNCATE(HEIGHT_WALL /$H_LEV_MIN) END)
-                                    ELSE NB_LEV END)
-                               ELSE 1 END;
+UPDATE $BUILDING SET NB_LEV = CASE WHEN TYPE in (SELECT TERM FROM $BUILDING_ABSTRACT_PARAMETERS WHERE NB_LEV=1) or
+(TYPE in (SELECT TERM FROM $BUILDING_ABSTRACT_PARAMETERS WHERE NB_LEV=2) and HEIGHT_WALL>$H_THRESHOLD_LEV2) THEN
+(CASE WHEN NB_LEV is null or NB_LEV = 0 THEN (CASE WHEN HEIGHT_WALL is null or HEIGHT_WALL = 0 THEN (CASE WHEN HEIGHT_ROOF is null or HEIGHT_ROOF = 0 THEN 1
+ELSE TRUNCATE(HEIGHT_ROOF /$H_LEV_MIN) END)
+ ELSE TRUNCATE(HEIGHT_WALL /$H_LEV_MIN) END) ELSE NB_LEV END) ELSE 1 END;
 
 -- Control of heights and number of levels
 ---------------------------------------------------------
 
 -- Check if HEIGHT_ROOF is lower than HEIGHT_WALL. If yes, then correct HEIGHT_ROOF
-UPDATE $BUILDING SET HEIGHT_ROOF = 	CASE WHEN HEIGHT_WALL > HEIGHT_ROOF THEN HEIGHT_WALL
-									ELSE HEIGHT_ROOF END;
+UPDATE $BUILDING SET HEIGHT_ROOF = 	CASE WHEN HEIGHT_WALL > HEIGHT_ROOF THEN HEIGHT_WALL ELSE HEIGHT_ROOF END;
 -- Check if there is a high difference beetween the "real" and "theorical (based on the level number) roof heights
-UPDATE $BUILDING SET HEIGHT_ROOF = 	CASE WHEN (NB_LEV * $H_LEV_MIN) > HEIGHT_ROOF THEN (NB_LEV * $H_LEV_MIN)
-									ELSE HEIGHT_ROOF END;
+UPDATE $BUILDING SET HEIGHT_ROOF = 	CASE WHEN (NB_LEV * $H_LEV_MIN) > HEIGHT_ROOF THEN (NB_LEV * $H_LEV_MIN) ELSE HEIGHT_ROOF END;
 -- Check if there is a high difference beetween the "real" and "theorical" (based on the level number) wall heights
 UPDATE $BUILDING SET NB_LEV = 	CASE WHEN TYPE in (SELECT TERM FROM $BUILDING_ABSTRACT_PARAMETERS WHERE NB_LEV=1) or (TYPE in (SELECT TERM FROM $BUILDING_ABSTRACT_PARAMETERS WHERE NB_LEV=2) and HEIGHT_WALL>$H_THRESHOLD_LEV2) THEN (
 									CASE WHEN (NB_LEV * $H_LEV_MAX) < HEIGHT_WALL THEN (HEIGHT_WALL / $H_LEV_MAX) ELSE NB_LEV END)

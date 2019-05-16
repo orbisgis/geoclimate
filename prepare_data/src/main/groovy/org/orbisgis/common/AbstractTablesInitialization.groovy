@@ -46,7 +46,7 @@ static IProcess initParametersAbstract(){
                 def vegetAbstractType = 'VEGET_ABSTRACT_TYPE_' + uuid
                 def vegetAbstractParam = 'VEGET_ABSTRACT_PARAMETERS_' + uuid
 
-                datasource.executeScript(this.class.getResource('parametersAndAbstractTables.sql').toString(),
+                datasource.executeScript(getClass().getResource('parametersAndAbstractTables.sql').toString(),
                         [BUILDING_ABSTRACT_USE_TYPE: buildingAbstractUseType,
                          BUILDING_ABSTRACT_PARAMETERS: buildingAbstractParam,
                          ROAD_ABSTRACT_TYPE: roadAbstractType,
@@ -59,12 +59,14 @@ static IProcess initParametersAbstract(){
 
                 logger.info('The parametersAndAbstractTables.sql script has been executed')
 
-                [outputBuildingAbstractUseType: 'BUILDING_ABSTRACT_USE_TYPE',
-                 outputBuildingAbstractParameters: 'BUILDING_ABSTRACT_PARAMETERS',
-                 outputRoadAbstractType: 'ROAD_ABSTRACT_TYPE', outputRoadAbstractSurface: 'ROAD_ABSTRACT_SURFACE',
-                 outputRoadAbstractParameters: 'ROAD_ABSTRACT_PARAMETERS',
-                 outputRailAbstractType: 'RAIL_ABSTRACT_TYPE', outputVegetAbstractType: 'VEGET_ABSTRACT_TYPE',
-                 outputVegetAbstractParameters: 'VEGET_ABSTRACT_PARAMETERS'
+                [outputBuildingAbstractUseType: buildingAbstractUseType,
+                 outputBuildingAbstractParameters: buildingAbstractParam,
+                 outputRoadAbstractType: roadAbstractType,
+                 outputRoadAbstractSurface: roadAbstractSurface,
+                 outputRoadAbstractParameters: roadAbstractParam,
+                 outputRailAbstractType: railAbstractType,
+                 outputVegetAbstractType: vegetAbstractType,
+                 outputVegetAbstractParameters: vegetAbstractParam
                 ]
             }
     )
