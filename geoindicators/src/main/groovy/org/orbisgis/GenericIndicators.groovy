@@ -199,7 +199,7 @@ static IProcess geometryProperties() {
                 String baseName = "geometry_properties"
                 String outputTableName = prefixName + "_" + baseName
 
-                String query = "CREATE TABLE $outputTableName AS SELECT "
+                String query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
 
                 // The operation names are transformed into lower case
                 operations.replaceAll({s -> s.toLowerCase()})
