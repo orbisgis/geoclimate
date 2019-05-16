@@ -229,17 +229,55 @@ abstract class ProcessingChains extends Script {
                     logger.info("End of the OSM extract transform process.")
 
                     if(saveResults){
+
+                        logger.info("Saving GIS layers in geojson format")
                         String finalBuildings = inputDataFormatting.getResults().outputBuilding
-                        datasource.save(finalBuildings, dirFile.absolutePath+File.separator+"${finalBuildings}.geojson")
+                        datasource.save(finalBuildings, dirFile.absolutePath+File.separator+"${finalBuildings}_${idZone}.geojson")
 
-                        //String finalRoads = inputDataFormatting.getResults().outputRoad
+                        String finalRoads = inputDataFormatting.getResults().outputRoad
+                        datasource.save(finalRoads, dirFile.absolutePath+File.separator+"${finalRoads}_${idZone}.geojson")
 
-                        /outputBuilding: String, outputBuildingStatZone: String, outputBuildingStatZoneBuff: String,
-                        outputRoad: String, outputRoadStatZone: String, outputRoadStatZoneBuff: String,
-                        outputRail: String, outputRailStatZone: String,
-                        outputHydro: String, outputHydroStatZone: String, outputHydroStatZoneExt: String,
-                        outputVeget: String, outputVegetStatZone: String, outputVegetStatZoneExt: String,
-                        outputZone: String*/
+                        String finalRails= inputDataFormatting.getResults().outputRail
+                        datasource.save(finalRails, dirFile.absolutePath+File.separator+"${finalRails}_${idZone}.geojson")
+
+                        String finalHydro = inputDataFormatting.getResults().outputHydro
+                        datasource.save(finalHydro, dirFile.absolutePath+File.separator+"${finalHydro}_${idZone}.geojson")
+
+                        String finalVeget = inputDataFormatting.getResults().outputVeget
+                        datasource.save(finalVeget, dirFile.absolutePath+File.separator+"${finalVeget}_${idZone}.geojson")
+
+                        String finalZone = inputDataFormatting.getResults().outputZone
+                        datasource.save(finalZone, dirFile.absolutePath+File.separator+"${finalZone}_${idZone}.geojson")
+
+                        logger.info("Saving statistic tables in csv format")
+
+                        String finalOutputBuildingStatZone = inputDataFormatting.getResults().outputBuildingStatZone
+                        datasource.save(finalOutputBuildingStatZone, dirFile.absolutePath+File.separator+"${finalOutputBuildingStatZone}_${idZone}.csv")
+
+                        String finalOutputBuildingStatZoneBuff = inputDataFormatting.getResults().outputBuildingStatZoneBuff
+                        datasource.save(finalOutputBuildingStatZoneBuff, dirFile.absolutePath+File.separator+"${finalOutputBuildingStatZoneBuff}_${idZone}.csv")
+
+                        String finalOutputRoadStatZone = inputDataFormatting.getResults().outputRoadStatZone
+                        datasource.save(finalOutputRoadStatZone, dirFile.absolutePath+File.separator+"${finalOutputRoadStatZone}_${idZone}.csv")
+
+                        String finalOutputRoadStatZoneBuff = inputDataFormatting.getResults().outputRoadStatZoneBuff
+                        datasource.save(finalOutputRoadStatZoneBuff, dirFile.absolutePath+File.separator+"${finalOutputRoadStatZoneBuff}_${idZone}.csv")
+
+                        String finalOutputRailStatZone = inputDataFormatting.getResults().outputRailStatZone
+                        datasource.save(finalOutputRailStatZone, dirFile.absolutePath+File.separator+"${finalOutputRailStatZone}_${idZone}.csv")
+
+                        String finalOutputHydroStatZone = inputDataFormatting.getResults().outputHydroStatZone
+                        datasource.save(finalOutputHydroStatZone, dirFile.absolutePath+File.separator+"${finalOutputHydroStatZone}_${idZone}.csv")
+
+                        String finalOutputHydroStatZoneExt= inputDataFormatting.getResults().outputHydroStatZoneExt
+                        datasource.save(finalOutputHydroStatZoneExt, dirFile.absolutePath+File.separator+"${finalOutputHydroStatZoneExt}_${idZone}.csv")
+
+                        String finalOutputVegetStatZone = inputDataFormatting.getResults().outputVegetStatZone
+                        datasource.save(finalOutputVegetStatZone, dirFile.absolutePath+File.separator+"${finalOutputVegetStatZone}_${idZone}.csv")
+
+                        String finalOutputVegetStatZoneExt = inputDataFormatting.getResults().outputVegetStatZoneExt
+                        datasource.save(finalOutputVegetStatZoneExt, dirFile.absolutePath+File.separator+"${finalOutputVegetStatZoneExt}_${idZone}.csv")
+
                     }
 
                     [message: "Sucess"]
