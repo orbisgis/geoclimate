@@ -22,4 +22,6 @@ abstract class Geoclimate extends Script {
 
     public  static SpatialUnits = new SpatialUnits()
 
+    public  static DataUtils = new DataUtils()
+
 }

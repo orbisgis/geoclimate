@@ -155,7 +155,7 @@ class BuildingIndicatorsTests {
                 " FROM tempo_build a, test_building_neighbors_properties b WHERE a.id_build = b.id_build")
 
         def  p =  Geoclimate.BuildingIndicators.likelihoodLargeBuilding()
-        p.execute([buildingTableName: "tempo_build2", nbOfBuildNeighbors: "building_number_building_neighbor",
+        p.execute([inputBuildingTableName: "tempo_build2", nbOfBuildNeighbors: "building_number_building_neighbor",
                   prefixName : "test", datasource:h2GIS])
         def concat = ""
         h2GIS.eachRow("SELECT * FROM test_building_likelihood_large_building WHERE id_build = 4 OR id_build = 7 OR " +

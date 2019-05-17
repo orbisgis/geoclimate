@@ -1,8 +1,9 @@
-package org.orbisgis.processingchains
+package org.orbisgis.processingchain
 
 import groovy.transform.BaseScript
 import org.orbisgis.SpatialUnits
 import org.orbisgis.datamanager.JdbcDataSource
+import org.orbisgis.processingchain.ProcessingChain
 import org.orbisgis.processmanager.ProcessManager
 import org.orbisgis.processmanager.ProcessMapper
 import org.orbisgis.processmanagerapi.IProcess
@@ -10,10 +11,8 @@ import org.orbisgis.processmanagerapi.IProcessFactory
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-abstract class ProcessingChains extends Script {
-    public static IProcessFactory processFactory = ProcessManager.getProcessManager().factory("processingchains")
 
-    public static Logger logger = LoggerFactory.getLogger(ProcessingChains.class)
+@BaseScript ProcessingChain processingChain
 
     /**
      * This process chains a set of subprocesses to extract and transform the OSM data into
@@ -25,13 +24,13 @@ abstract class ProcessingChains extends Script {
      *
      * @return
      */
-    static IProcess prepareOSMDefaultConfig() {
+    public static IProcess prepareOSMDefaultConfig() {
         return processFactory.create("Extract and transform OSM data to Geoclimate model",
                 [directory : String,
                  idZone : String,
                  saveResults : boolean],
                 [datasource: JdbcDataSource],
-                { directory, idZone , saveResults -> ;
+                { directory, idZone , saveResults ->
                     def mappingTypeAndUse = [
                             terminal: [aeroway : ["terminal", "airport_terminal"],
                                        amenity : ["terminal", "airport_terminal"],
@@ -335,7 +334,6 @@ abstract class ProcessingChains extends Script {
                             mappingForVegetType : mappingVegetType,
                             saveResults : saveResults
                     ])
-
                     [datasource: prepareOSMData.getResults().datasource]
 
                 });
@@ -354,7 +352,7 @@ abstract class ProcessingChains extends Script {
      * @param saveResults Set to true to save the result files in geojson and json in the @directory
      * @return
      */
-    static IProcess prepareOSM() {
+    public static IProcess prepareOSM() {
         return processFactory.create("Extract and transform OSM data to Geoclimate model",
                 [directory : String,
                  osmTablesPrefix: String,
@@ -415,7 +413,7 @@ abstract class ProcessingChains extends Script {
                     mappingForSurface,
                     mappingForRailType,
                     mappingForVegetType,
-                    saveResults -> ;
+                    saveResults ->
 
                     if(directory==null){
                         logger.info("The directory to save the data cannot be null")
@@ -642,7 +640,7 @@ abstract class ProcessingChains extends Script {
      * @return outputTableBlockName Table name where are stored the blocks and the RSU ID
      * @return outputTableRsuName Table name where are stored the RSU
      */
-    static IProcess createUnitsOfAnalysis(){
+    public static IProcess createUnitsOfAnalysis(){
         return processFactory.create("Merge the geometries that touch each other",
                 [datasource: JdbcDataSource, zoneTable : String, roadTable : String, railTable : String,
                  vegetationTable: String, hydrographicTable: String, surface_vegetation: Double,
@@ -706,5 +704,5 @@ abstract class ProcessingChains extends Script {
                 }
         )
     }
-}
+
 

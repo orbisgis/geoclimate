@@ -6,8 +6,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.orbisgis.datamanager.h2gis.H2GIS
 
-import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 class ProcessingChainsTest {
@@ -17,7 +15,7 @@ class ProcessingChainsTest {
     @Test
     void PrepareOSMTest() {
 
-        IProcess prepareOSMData = org.orbisgis.processingchains.ProcessingChains.prepareOSM()
+        IProcess prepareOSMData = org.orbisgis.processingchains.PrepareOSM.prepareOSM()
 
         def mappingTypeAndUse = [
                 terminal: [aeroway : ["terminal", "airport_terminal"],
@@ -326,7 +324,7 @@ class ProcessingChainsTest {
 
     @Test
     void PrepareOSMDefaultConfigTest() {
-        IProcess prepareOSMData = org.orbisgis.processingchains.ProcessingChains.prepareOSMDefaultConfig()
+        IProcess prepareOSMData = org.orbisgis.processingchains.PrepareOSM.prepareOSMDefaultConfig()
         prepareOSMData.execute([
                 directory : "./target/osm_processchain",
                 idZone : "56223",
@@ -350,7 +348,7 @@ class ProcessingChainsTest {
 
 
 
-        IProcess pm =  org.orbisgis.processingchains.ProcessingChains.createUnitsOfAnalysis()
+        IProcess pm =  org.orbisgis.processingchains.PrepareOSM.createUnitsOfAnalysis()
         pm.execute([datasource: h2GIS, zoneTable : "tempo_zone", roadTable : "tempo_road", railTable : "tempo_road",
                     vegetationTable: "tempo_veget", hydrographicTable: "tempo_hydro", surface_vegetation: null,
                     surface_hydro: null, inputTableName: "tempo_build", distance: 0.0,
