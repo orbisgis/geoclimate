@@ -1,13 +1,12 @@
 package org.orbisgis.processingchain
 
 import org.junit.jupiter.api.Test
+import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.processmanagerapi.IProcess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.orbisgis.datamanager.h2gis.H2GIS
 
-import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertNull
+import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 class ProcessingChainsTest {
@@ -17,7 +16,7 @@ class ProcessingChainsTest {
     @Test
     void PrepareOSMTest() {
 
-        IProcess prepareOSMData = org.orbisgis.processingchains.ProcessingChains.prepareOSM()
+        IProcess prepareOSMData = ProcessingChains.prepareOSM()
 
         def mappingTypeAndUse = [
                 terminal: [aeroway : ["terminal", "airport_terminal"],
@@ -260,7 +259,7 @@ class ProcessingChainsTest {
                 "sugar cane":["produce":["sugar_cane"],"crop":["sugar_cane"]]
         ]
 
-        prepareOSMData.execute([
+        assertTrue prepareOSMData.execute([
                 hLevMin: 3,
                 hLevMax: 15,
                 hThresholdLev2: 10,
@@ -326,8 +325,8 @@ class ProcessingChainsTest {
 
     @Test
     void PrepareOSMDefaultConfigTest() {
-        IProcess prepareOSMData = org.orbisgis.processingchains.ProcessingChains.prepareOSMDefaultConfig()
-        prepareOSMData.execute([
+        IProcess prepareOSMData = ProcessingChains.prepareOSMDefaultConfig()
+        assertTrue prepareOSMData.execute([
                 directory : "./target/osm_processchain",
                 idZone : "56223",
                 saveResults : true])
@@ -337,10 +336,12 @@ class ProcessingChainsTest {
     void CreateUnitsOfAnalysisTest(){
         H2GIS h2GIS = H2GIS.open("./target/processingchainscales")
         String sqlString = new File(getClass().getResource("data_for_tests.sql").toURI()).text
-        h2GIS.execute(sqlString)
+
+        assertFalse h2GIS.execute(sqlString)
+
 
         // Only the first 6 first created buildings are selected since any new created building may alter the results
-        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, tempo_road, tempo_zone, tempo_veget, tempo_hydro; " +
+        assertFalse h2GIS.execute("DROP TABLE IF EXISTS tempo_build, tempo_road, tempo_zone, tempo_veget, tempo_hydro; " +
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 9; CREATE TABLE " +
                 "tempo_road AS SELECT id_road, the_geom, zindex FROM road_test WHERE id_road < 5 UNION ALL " +
                 "(SELECT 6, st_tomultiline(the_geom) as the_geom, 0 FROM rsu_test WHERE id_rsu < 5);" +
@@ -350,8 +351,8 @@ class ProcessingChainsTest {
 
 
 
-        IProcess pm =  org.orbisgis.processingchains.ProcessingChains.createUnitsOfAnalysis()
-        pm.execute([datasource: h2GIS, zoneTable : "tempo_zone", roadTable : "tempo_road", railTable : "tempo_road",
+        IProcess pm = ProcessingChains.createUnitsOfAnalysis()
+        assertTrue pm.execute([datasource: h2GIS, zoneTable : "tempo_zone", roadTable : "tempo_road", railTable : "tempo_road",
                     vegetationTable: "tempo_veget", hydrographicTable: "tempo_hydro", surface_vegetation: null,
                     surface_hydro: null, inputTableName: "tempo_build", distance: 0.0,
                     inputLowerScaleTableName: "tempo_build",  prefixName: "test"])
@@ -365,6 +366,6 @@ class ProcessingChainsTest {
         def row_bu8 = h2GIS.firstRow(("SELECT id_block AS id_block FROM ${pm.results.outputTableBuildingName} " +
                 "WHERE id_build = 8 AND id_rsu = 2").toString())
         assertTrue(4 == row_nb.nb_blocks)
-        assertTrue(row_bu4.id_block ==row_bu8.id_block)
+        assertTrue(row_bu4.id_block == row_bu8.id_block)
     }
 }

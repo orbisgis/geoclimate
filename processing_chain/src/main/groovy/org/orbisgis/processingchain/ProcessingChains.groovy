@@ -1,10 +1,9 @@
-package org.orbisgis.processingchains
+package org.orbisgis.processingchain
 
-import groovy.transform.BaseScript
+
 import org.orbisgis.SpatialUnits
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanager.ProcessManager
-import org.orbisgis.processmanager.ProcessMapper
 import org.orbisgis.processmanagerapi.IProcess
 import org.orbisgis.processmanagerapi.IProcessFactory
 import org.slf4j.Logger
@@ -31,7 +30,7 @@ abstract class ProcessingChains extends Script {
                  idZone : String,
                  saveResults : boolean],
                 [datasource: JdbcDataSource],
-                { directory, idZone , saveResults -> ;
+                { directory, idZone , saveResults ->
                     def mappingTypeAndUse = [
                             terminal: [aeroway : ["terminal", "airport_terminal"],
                                        amenity : ["terminal", "airport_terminal"],
@@ -338,7 +337,7 @@ abstract class ProcessingChains extends Script {
 
                     [datasource: prepareOSMData.getResults().datasource]
 
-                });
+                })
     }
 
     /**
@@ -415,10 +414,10 @@ abstract class ProcessingChains extends Script {
                     mappingForSurface,
                     mappingForRailType,
                     mappingForVegetType,
-                    saveResults -> ;
+                    saveResults ->
 
                     if(directory==null){
-                        logger.info("The directory to save the data cannot be null")
+                        logger.error("The directory to save the data cannot be null")
                         return
                     }
                     File dirFile = new File(directory)
@@ -428,7 +427,7 @@ abstract class ProcessingChains extends Script {
                         logger.info("The folder ${directory} has been created")
                     }
                     else if (!dirFile.isDirectory()){
-                        logger.info("Invalid directory path")
+                        logger.error("Invalid directory path")
                         return
                     }
 
