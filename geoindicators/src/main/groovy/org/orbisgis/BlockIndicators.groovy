@@ -17,8 +17,7 @@ import org.orbisgis.processmanagerapi.IProcess
  *
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
- * @param buildingTableName the name of the input ITable where are stored the geometry field and the block ID
- * @param correlationTableName the name of the input ITable where are stored the relationships between blocks and buildings
+ * @param buildingTableName the name of the input ITable where are stored the geometry field, the building and the block ID
  * @param angleRangeSize the range size (in °) of each interval angle used to calculate the distribution of building direction
  * (should be a divisor of 180 - default 15°)
  * @param prefixName String use as prefix to name the output table
@@ -29,10 +28,9 @@ import org.orbisgis.processmanagerapi.IProcess
 static IProcess perkinsSkillScoreBuildingDirection() {
     return processFactory.create(
             "Block Perkins skill score building direction",
-            [buildingTableName: String,correlationTableName: String,
-             angleRangeSize: int, prefixName: String, datasource: JdbcDataSource],
+            [buildingTableName: String, angleRangeSize: int, prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { buildingTableName, correlationTableName, angleRangeSize = 15, prefixName, datasource->
+            { buildingTableName, angleRangeSize = 15, prefixName, datasource->
 
                 def geometricField = "the_geom"
                 def idFieldBu = "id_build"
@@ -54,19 +52,16 @@ static IProcess perkinsSkillScoreBuildingDirection() {
                     def build_dir_dist = "build_dir_dist"+uid_out
                     def build_dir_tot = "build_dir_tot"+uid_out
 
-
                     // The minimum diameter of the minimum rectangle is created for each building
-                    datasource.execute(("CREATE INDEX IF NOT EXISTS id_bua ON $buildingTableName($idFieldBu); "+
-                                        "CREATE INDEX IF NOT EXISTS id_bub ON $correlationTableName($idFieldBu); "+
-                                        "DROP TABLE IF EXISTS $build_min_rec; CREATE TABLE $build_min_rec AS "+
-                                        "SELECT b.$idFieldBu, b.$idFieldBl, ST_MINIMUMDIAMETER(ST_MINIMUMRECTANGLE(a.$geometricField)) "+
-                                        "AS the_geom FROM $buildingTableName a, $correlationTableName b "+
-                                        "WHERE a.$idFieldBu = b.$idFieldBu").toString())
+                    datasource.execute(("DROP TABLE IF EXISTS $build_min_rec; CREATE TABLE $build_min_rec AS "+
+                                        "SELECT $idFieldBu, $idFieldBl, ST_MINIMUMDIAMETER(ST_MINIMUMRECTANGLE($geometricField)) "+
+                                        "AS the_geom FROM $buildingTableName").toString())
 
                     // The length and direction of the smallest and the longest sides of the Minimum rectangle are calculated
-                    datasource.execute(("CREATE INDEX IF NOT EXISTS id_bua ON $build_min_rec($idFieldBu);" +
+                    datasource.execute(("CREATE INDEX IF NOT EXISTS id_bua ON $buildingTableName($idFieldBu);" +
+                                        "CREATE INDEX IF NOT EXISTS id_bua ON $build_min_rec($idFieldBu);" +
                                         "DROP TABLE IF EXISTS $build_dir360; CREATE TABLE $build_dir360 AS "+
-                                        "SELECT $idFieldBl, ST_LENGTH(a.the_geom) AS LEN_L, "+
+                                        "SELECT a.$idFieldBl, ST_LENGTH(a.the_geom) AS LEN_L, "+
                                         "ST_AREA(b.the_geom)/ST_LENGTH(a.the_geom) AS LEN_H, "+
                                         "ROUND(DEGREES(ST_AZIMUTH(ST_STARTPOINT(a.the_geom), ST_ENDPOINT(a.the_geom)))) AS ANG_L, "+
                                         "ROUND(DEGREES(ST_AZIMUTH(ST_STARTPOINT(ST_ROTATE(a.the_geom, pi()/2)), "+
@@ -153,8 +148,8 @@ static IProcess holeAreaDensity() {
  *
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
- * @param buildTable the name of the input ITable where are stored the "building_volume", the "building_contiguity" and
- * the geometry field
+ * @param buildTable the name of the input ITable where are stored the "building_volume", the "building_contiguity",
+ * the geometry field and the block id
  * @param correlationTableName the name of the input ITable where are stored the relationships between blocks and buildings
  * @param buildingVolumeField the name of the input field where are stored the "building_volume" values within the "buildTable"
  * @param buildingContiguityField the name of the input field where are stored the "building_contiguity"
@@ -167,12 +162,11 @@ static IProcess holeAreaDensity() {
 static IProcess netCompacity() {
     return processFactory.create(
             "Block net compacity",
-            [buildTable: String, correlationTableName: String, buildingVolumeField: String, buildingContiguityField: String,
+            [buildTable: String, buildingVolumeField: String, buildingContiguityField: String,
              prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { buildTable, correlationTableName, buildingVolumeField, buildingContiguityField, prefixName, datasource ->
+            { buildTable, buildingVolumeField, buildingContiguityField, prefixName, datasource ->
                 def geometryFieldBu = "the_geom"
-                def idColumnBu = "id_build"
                 def idColumnBl = "id_block"
                 def height_wall = "height_wall"
 
@@ -180,14 +174,12 @@ static IProcess netCompacity() {
                 String baseName = "block_net_compacity"
                 String outputTableName = prefixName + "_" + baseName
 
-                String query = "CREATE INDEX IF NOT EXISTS id_bu ON $buildTable($idColumnBu); CREATE INDEX IF NOT EXISTS" +
-                        " id_bubl ON $correlationTableName($idColumnBu); CREATE INDEX IF NOT EXISTS id_b " +
-                        "ON $correlationTableName($idColumnBl); DROP TABLE IF EXISTS $outputTableName;" +
-                        " CREATE TABLE $outputTableName AS SELECT b.$idColumnBl, " +
-                        "SUM(a.$buildingContiguityField*(ST_PERIMETER(a.$geometryFieldBu)+" +
-                        "ST_PERIMETER(ST_HOLES(a.$geometryFieldBu)))*a.$height_wall)/POWER(SUM($buildingVolumeField)," +
-                        " 2./3) AS $baseName FROM $buildTable a, $correlationTableName b " +
-                        "WHERE a.$idColumnBu = b.$idColumnBu GROUP BY b.$idColumnBl"
+                String query = "CREATE INDEX IF NOT EXISTS id_b " +
+                        "ON $buildTable($idColumnBl); DROP TABLE IF EXISTS $outputTableName;" +
+                        " CREATE TABLE $outputTableName AS SELECT $idColumnBl, " +
+                        "SUM($buildingContiguityField*(ST_PERIMETER($geometryFieldBu)+" +
+                        "ST_PERIMETER(ST_HOLES($geometryFieldBu)))*$height_wall)/POWER(SUM($buildingVolumeField)," +
+                        " 2./3) AS $baseName FROM $buildTable GROUP BY $idColumnBl"
 
                 logger.info("Executing $query")
                 datasource.execute query
@@ -212,7 +204,7 @@ static IProcess netCompacity() {
  *
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
- * @param buildTable the name of the input ITable where are stored the geometry field and the block ID
+ * @param blockTable the name of the input ITable where are stored the geometry field and the block ID
  * @param correlationTableName the name of the input ITable where are stored the relationships between blocks and buildings
  * @param prefixName String use as prefix to name the output table
  *
