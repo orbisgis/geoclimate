@@ -7,55 +7,52 @@ import org.orbisgis.processmanagerapi.IProcess
 @BaseScript Geoclimate geoclimate
 
 /**
- * An utility process to join all tables in one table using an id column
- * The id column must be same in all input tables.
- * @param  inputTableNames list of table names
- * @param columnId identified for the tables
+ * An utility process to join all tables in one table
+ * @param  inputTableNamesWithId list of table names with a identifier column name
  * @prefixName for the output table
  * @datasource connection to the database
  *
  * @return
  */
 static IProcess joinTables(){
-    processFactory.create("", [inputTableNames: String[],columnId: String
+    processFactory.create("", [inputTableNamesWithId: Map
                                 , prefixName: String, datasource: JdbcDataSource], [outputTableName: String],
-            { inputTableNames, columnId, prefixName, JdbcDataSource datasource ->
-
-                if(columnId==null){
-                    logger.error("The column id cannot be null")
-                    return
-                }
-                if(columnId.isEmpty()){
-                    logger.error("The column id cannot be empty")
-                    return
-                }
-
+            { inputTableNamesWithId, prefixName, JdbcDataSource datasource ->
                 // The name of the outputTableName is constructed
                 String baseName = "joined"
                 String outputTableName = prefixName + "_" + baseName
-                String columnsAsString = "*"
-                String columnKey = "a.${columnId}"
+                String columnKey
                 String a = "a"
                 def leftQuery = ""
-                def indexes = "CREATE INDEX IF NOT EXISTS ${inputTableNames[0]}_ids ON ${inputTableNames[0]}($columnId);"
+                def indexes = ""
 
-                def columns = datasource.getTable(inputTableNames[0]).columnNames.collect{
-                    a+"."+it
-                }
-                inputTableNames[1..-1].each{
-                    a++
-                    datasource.getTable(it).columnNames.collect {item->
-                        if(!item.equalsIgnoreCase(columnId)){
-                           columns.add(a+"."+item)}
+                def columns = []
+
+                inputTableNamesWithId.eachWithIndex{ key, value , i->
+                    if(i==0){
+                        columnKey = "a.${value}"
+                        indexes += "CREATE INDEX IF NOT EXISTS ${key}_ids ON ${key}($value);"
+                        columns = datasource.getTable(key).columnNames.collect{
+                            a+"."+it
+                        }
+                        leftQuery+=" FROM ${key} as a "
                     }
-                    leftQuery+= " LEFT JOIN ${it} as ${a} ON ${a}.${columnId} = ${columnKey} "
-                    indexes+= "CREATE INDEX IF NOT EXISTS ${it}_ids ON ${it}($columnId);"
+                    else {
+                        a++
+                        datasource.getTable(key).columnNames.collect { item ->
+                            if (!item.equalsIgnoreCase(value)) {
+                                columns.add(a + "." + item)
+                            }
+                        }
+                        leftQuery += " LEFT JOIN ${key} as ${a} ON ${a}.${value} = ${columnKey} "
+                        indexes += "CREATE INDEX IF NOT EXISTS ${key}_ids ON ${key}($value);"
+                    }
                 }
 
                 def setOfColumns = columns as Set
-                columnsAsString = setOfColumns.join(",")
+                def columnsAsString = setOfColumns.join(",")
 
-                def query = "CREATE TABLE ${outputTableName} AS SELECT ${columnsAsString} FROM ${inputTableNames[0]} as a ${leftQuery}"
+                def query = "CREATE TABLE ${outputTableName} AS SELECT ${columnsAsString} ${leftQuery}"
 
                 datasource.execute("DROP TABLE IF EXISTS ${outputTableName}".toString())
                 datasource.execute(indexes.toString())
