@@ -342,8 +342,7 @@ class ProcessingChainsTest {
         // Only the first 6 first created buildings are selected since any new created building may alter the results
         h2GIS.execute("DROP TABLE IF EXISTS tempo_build, tempo_road, tempo_zone, tempo_veget, tempo_hydro; " +
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 9; CREATE TABLE " +
-                "tempo_road AS SELECT id_road, the_geom, zindex FROM road_test WHERE id_road < 5 UNION ALL " +
-                "(SELECT 6, st_tomultiline(the_geom) as the_geom, 0 FROM rsu_test WHERE id_rsu < 5);" +
+                "tempo_road AS SELECT id_road, the_geom, zindex FROM road_test WHERE id_road < 5 OR id_road > 6;" +
                 "CREATE TABLE tempo_zone AS SELECT * FROM zone_test;" +
                 "CREATE TABLE tempo_veget AS SELECT id_veget, the_geom FROM veget_test WHERE id_veget < 4;" +
                 "CREATE TABLE tempo_hydro AS SELECT id_hydro, the_geom FROM hydro_test WHERE id_hydro < 2;")
@@ -366,5 +365,37 @@ class ProcessingChainsTest {
                 "WHERE id_build = 8 AND id_rsu = 2").toString())
         assertTrue(4 == row_nb.nb_blocks)
         assertTrue(row_bu4.id_block ==row_bu8.id_block)
+    }
+
+    @Test
+    void createLCZTest(){
+        H2GIS h2GIS = H2GIS.open("./target/processingchainscales")
+        String sqlString = new File(getClass().getResource("data_for_tests.sql").toURI()).text
+        h2GIS.execute(sqlString)
+
+        // Only the first 6 first created buildings are selected since any new created building may alter the results
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, tempo_road, tempo_zone, tempo_veget, tempo_hydro; " +
+                "CREATE TABLE tempo_build AS SELECT id_build, the_geom, height_wall, height_roof," +
+                "nb_lev FROM building_test WHERE id_build < 9; CREATE TABLE " +
+                "tempo_road AS SELECT * FROM road_test WHERE id_road < 5 OR id_road > 6;" +
+                "CREATE TABLE tempo_zone AS SELECT * FROM zone_test;" +
+                "CREATE TABLE tempo_veget AS SELECT * FROM veget_test WHERE id_veget < 5;" +
+                "CREATE TABLE tempo_hydro AS SELECT * FROM hydro_test WHERE id_hydro < 2;")
+
+
+        // First create the scales
+        IProcess pm_units =  org.orbisgis.processingchains.ProcessingChains.createUnitsOfAnalysis()
+        pm_units.execute([datasource: h2GIS, zoneTable : "tempo_zone", roadTable : "tempo_road", railTable : "tempo_road",
+                    vegetationTable: "tempo_veget", hydrographicTable: "tempo_hydro", surface_vegetation: null,
+                    surface_hydro: null, inputTableName: "tempo_build", distance: 0.0,
+                    inputLowerScaleTableName: "tempo_build",  prefixName: "test"])
+
+        IProcess pm_lcz =  org.orbisgis.processingchains.ProcessingChains.createLCZ()
+        pm_lcz.execute([datasource: h2GIS, prefixName: "test", buildingTable: pm_units.results.outputTableBuildingName,
+                        rsuTable: pm_units.results.outputTableRsuName, roadTable: "tempo_road", vegetationTable: "tempo_veget",
+                        hydrographicTable: "tempo_hydro", facadeDensListLayersBottom: [0, 50, 200], facadeDensNumberOfDirection: 8,
+                        svfPointDensity: 0.008, svfRayLength: 100, svfNumberOfDirection: 60,
+                        heightColumnName: "height_roof", fractionTypePervious: ["low_vegetation", "water"],
+                        fractionTypeImpervious: ["road"], inputFields: ["id_build", "the_geom"], levelForRoads: [0]])
     }
 }
