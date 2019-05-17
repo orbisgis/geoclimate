@@ -16,10 +16,8 @@ class GenericIndicatorsTests {
         // Only the first 6 first created buildings are selected since any new created building may alter the results
         h2GIS.execute("DROP TABLE IF EXISTS tempo_build0, tempo_build, unweighted_operation_from_lower_scale1, " +
                 "unweighted_operation_from_lower_scale2, unweighted_operation_from_lower_scale3; " +
-                "CREATE TABLE tempo_build0 AS SELECT a.*, b.id_rsu FROM building_test a, rsu_build_corr b WHERE " +
-                "a.id_build < 8 AND a.id_build = b.id_build;" +
-                "CREATE TABLE tempo_build AS SELECT a.*, b.id_block FROM tempo_build0 a, block_build_corr b WHERE " +
-                "a.id_build < 8 AND a.id_build = b.id_build;")
+                "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE " +
+                "id_build < 8;")
 
         def  psum =  Geoclimate.GenericIndicators.unweightedOperationFromLowerScale()
         psum.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "block_test",
@@ -34,7 +32,7 @@ class GenericIndicatorsTests {
                       inputIdUp: "id_rsu", inputVarAndOperations: ["height_roof": ["GEOM_AVG"]],
                       prefixName: "third", datasource: h2GIS])
         def  pdens =  Geoclimate.GenericIndicators.unweightedOperationFromLowerScale()
-        pavg.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "rsu_test",
+        pdens.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "rsu_test",
                       inputIdUp: "id_rsu", inputVarAndOperations: ["building_number_building_neighbor":["AVG"],
                                                                    "building_area":["SUM", "DENS", "NB_DENS"]],
                       prefixName: "fourth", datasource: h2GIS])
@@ -73,8 +71,8 @@ class GenericIndicatorsTests {
         // Only the first 6 first created buildings are selected since any new created building may alter the results
         h2GIS.execute("DROP TABLE IF EXISTS tempo_build, one_weighted_aggregated_statistics, " +
                 "two_weighted_aggregated_statistics, three_weighted_aggregated_statistics; " +
-                "CREATE TABLE tempo_build AS SELECT a.*, b.id_rsu FROM building_test a, rsu_build_corr b " +
-                "WHERE a.id_build < 8 AND a.id_build = b.id_build")
+                "CREATE TABLE tempo_build AS SELECT * FROM building_test " +
+                "WHERE id_build < 8")
 
         def  pavg =  Geoclimate.GenericIndicators.weightedAggregatedStatistics()
         pavg.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "rsu_test",

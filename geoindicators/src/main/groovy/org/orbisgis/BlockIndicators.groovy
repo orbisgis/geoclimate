@@ -204,7 +204,7 @@ static IProcess netCompacity() {
  *
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
- * @param buildTable the name of the input ITable where are stored the geometry field and the block ID
+ * @param blockTable the name of the input ITable where are stored the geometry field and the block ID
  * @param correlationTableName the name of the input ITable where are stored the relationships between blocks and buildings
  * @param prefixName String use as prefix to name the output table
  *

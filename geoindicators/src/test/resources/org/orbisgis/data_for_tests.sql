@@ -15,7 +15,7 @@ DROP TABLE IF EXISTS road_test;
 DROP TABLE IF EXISTS veget_test;
 DROP TABLE IF EXISTS hydro_test;
 
-CREATE TABLE building_test (id_build int, id_block int, the_geom geometry, height_wall float, height_roof float, building_area float, building_perimeter float, nb_lev int, building_total_facade_length float, building_number_building_neighbor int, building_contiguity float);
+CREATE TABLE building_test (id_build int, id_block int, id_rsu int, the_geom geometry, height_wall float, height_roof float, building_area float, building_perimeter float, nb_lev int, building_total_facade_length float, building_number_building_neighbor int, building_contiguity float);
 CREATE TABLE block_test (id_block int, the_geom geometry);
 CREATE TABLE block_build_corr (id_block int, id_build int);
 CREATE TABLE rsu_test (id_rsu int, the_geom geometry, rsu_area float, rsu_building_density float, rsu_free_external_facade_density float);
@@ -24,40 +24,40 @@ CREATE TABLE road_test (id_road int, the_geom geometry, width float, zindex int)
 CREATE TABLE veget_test (id_veget int, the_geom geometry, height_class varchar);
 CREATE TABLE hydro_test (id_hydro int, the_geom geometry);
 
-INSERT INTO building_test VALUES (1, 1, 'POLYGON((4 4, 10 4, 10 30, 4 30, 4 4))'::GEOMETRY, 8, 8, 156, 64, 2, 64, 0, 0),
- (2, 2, 'POLYGON((12 4, 20 4, 20 9, 12 9, 12 4))'::GEOMETRY, 10, 13, 40, 26, 3, 26, 0, 0),
- (3, 3, 'POLYGON((25 4, 45 4, 45 9, 25 9, 25 4))'::GEOMETRY, 8, 14, 100, 50, 4, 50, 0, 0),
- (4, 4, 'POLYGON((25 25, 40 25, 40 37, 25 37, 25 25))'::GEOMETRY, 5, 8, 180, 54, 2, 54, 1, 0.18518518518518517),
- (5, 4, 'POLYGON((12 25, 25 25, 25 35, 12 35, 12 25))'::GEOMETRY, 12, 12, 130, 46, 4, 46, 1, 0.09057971014492754),
- (6, 5, 'POLYGON((52 2, 54 2, 54 10, 52 10, 52 2))'::GEOMETRY, 15, 18, 16, 20, 5, 20, 0, 0),
- (7, 6, 'POLYGON((0 -5, 10 -5, 10 0, 0 0, 0 -5), (1 -4, 2 -4, 2 -1, 1 -1, 1 -4))'::GEOMETRY, 3, 3, 47, 30, 1, 38, 0, 0),
- (8, 4, 'POLYGON((30 25, 40 15, 45 20, 40 25, 30 25))'::GEOMETRY, 4, 4, 75, 38.284, 1, 38.284, 1, null),
- (9, null, 'POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 20, 20, null, null, null, null, null, null),
- (10, null, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 40, 0), 20, 20, null, null, null, null, null, null),
- (11, null, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 100, 0), 20, 20, null, null, null, null, null, null),
- (12, null, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 140, 0), 20, 20, null, null, null, null, null, null),
- (13, null, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 200, 0), 20, 20, null, null, null, null, null, null),
- (14, null, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 240, 0), 20, 20, null, null, null, null, null, null),
- (15, null, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 0, 100), 20, 20, null, null, null, null, null, null),
- (16, null, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 40, 100), 20, 20, null, null, null, null, null, null),
- (17, null, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 100, 100), 20, 20, null, null, null, null, null, null),
- (18, null, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 140, 100), 20, 20, null, null, null, null, null, null),
- (19, null, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 200, 100), 20, 20, null, null, null, null, null, null),
- (20, null, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 240, 100), 20, 20, null, null, null, null, null, null),
- (21, null, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 0, 200), 20, 20, null, null, null, null, null, null),
- (22, null, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 40, 200), 20, 20, null, null, null, null, null, null),
- (23, null, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 100, 200), 20, 20, null, null, null, null, null, null),
- (24, null, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 140, 200), 20, 20, null, null, null, null, null, null),
- (25, null, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 200, 200), 20, 20, null, null, null, null, null, null),
- (26, null, st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 240, 200), 20, 20, null, null, null, null, null, null),
- (27, null, st_translate('POLYGON((1210 1190, 1230 1210, 1230 1230, 1210 1230, 1210 1190))'::GEOMETRY, 200, 200), 5, 15, 600, 108.2842712474619, 4, 108.2842712474619, 0, null),
- (28, null, st_translate('POLYGON((1310 1190, 1330 1210, 1330 1230, 1280 1230, 1310 1190))'::GEOMETRY, 200, 200), 18, 32, 1200, 148.2842712474619, 10, 148.2842712474619, 0, null),
- (29, 7, 'POLYGON((20 -2, 21 -2, 21 1, 20 1, 20 -2))'::GEOMETRY, 3, 5, 3, 8, 1, 8, 0, 0),
- (30, null, 'POLYGON((4 36, 6 36, 6 40, 4 40, 4 39, 5 39, 5 38, 4 38, 4 36))'::GEOMETRY, 3, 5, 7, 14, null, null, null, null),
- (31, 8, 'POLYGON((5 -145, 20 -145, 20 -105, 5 -105, 5 -145),(10 -130, 15 -130, 15 -110, 10 -110, 10 -130))'::GEOMETRY, 10, 10, null, null, null, null, null, null),
- (32, 8, 'POLYGON((20 -110, 45 -110, 45 -105, 20 -105, 20 -110))'::GEOMETRY, 15, 17, null, null, null, null, null, null),
- (33, 8, 'POLYGON((35 -145, 45 -145, 45 -110, 35 -110, 35 -145))'::GEOMETRY, 12, 12, null, null, null, null, null, null),
- (34, 8, 'POLYGON((20 -145, 35 -145, 35 -140, 15 -130, 20 -145))'::GEOMETRY, 12, 15, null, null, null, null, null, null);
+INSERT INTO building_test VALUES (1, 1, 1,'POLYGON((4 4, 10 4, 10 30, 4 30, 4 4))'::GEOMETRY, 8, 8, 156, 64, 2, 64, 0, 0),
+ (2, 2, 1, 'POLYGON((12 4, 20 4, 20 9, 12 9, 12 4))'::GEOMETRY, 10, 13, 40, 26, 3, 26, 0, 0),
+ (3, 3, 1,'POLYGON((25 4, 45 4, 45 9, 25 9, 25 4))'::GEOMETRY, 8, 14, 100, 50, 4, 50, 0, 0),
+ (4, 4, 1,'POLYGON((25 25, 40 25, 40 37, 25 37, 25 25))'::GEOMETRY, 5, 8, 180, 54, 2, 54, 1, 0.18518518518518517),
+ (5, 4, 1,'POLYGON((12 25, 25 25, 25 35, 12 35, 12 25))'::GEOMETRY, 12, 12, 130, 46, 4, 46, 1, 0.09057971014492754),
+ (6, 5, 2,'POLYGON((52 2, 54 2, 54 10, 52 10, 52 2))'::GEOMETRY, 15, 18, 16, 20, 5, 20, 0, 0),
+ (7, 6, 3,'POLYGON((0 -5, 10 -5, 10 0, 0 0, 0 -5), (1 -4, 2 -4, 2 -1, 1 -1, 1 -4))'::GEOMETRY, 3, 3, 47, 30, 1, 38, 0, 0),
+ (8, 4, 1,'POLYGON((30 25, 40 15, 45 20, 40 25, 30 25))'::GEOMETRY, 4, 4, 75, 38.284, 1, 38.284, 1, null),
+ (9, null, 4,'POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 20, 20, null, null, null, null, null, null),
+ (10, null, 4,st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 40, 0), 20, 20, null, null, null, null, null, null),
+ (11, null, 5,st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 100, 0), 20, 20, null, null, null, null, null, null),
+ (12, null, 5,st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 140, 0), 20, 20, null, null, null, null, null, null),
+ (13, null, 6,st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 200, 0), 20, 20, null, null, null, null, null, null),
+ (14, null, 6,st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 240, 0), 20, 20, null, null, null, null, null, null),
+ (15, null, 7,st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 0, 100), 20, 20, null, null, null, null, null, null),
+ (16, null, 7,st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 40, 100), 20, 20, null, null, null, null, null, null),
+ (17, null, 8,st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 100, 100), 20, 20, null, null, null, null, null, null),
+ (18, null, 8,st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 140, 100), 20, 20, null, null, null, null, null, null),
+ (19, null, 9,st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 200, 100), 20, 20, null, null, null, null, null, null),
+ (20, null, 9,st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 240, 100), 20, 20, null, null, null, null, null, null),
+ (21, null, 10,st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 0, 200), 20, 20, null, null, null, null, null, null),
+ (22, null, 10,st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 40, 200), 20, 20, null, null, null, null, null, null),
+ (23, null, 11,st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 100, 200), 20, 20, null, null, null, null, null, null),
+ (24, null, 11,st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 140, 200), 20, 20, null, null, null, null, null, null),
+ (25, null, 12,st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 200, 200), 20, 20, null, null, null, null, null, null),
+ (26, null, 12,st_translate('POLYGON((1020 1000, 1040 1000, 1040 1100, 1020 1100, 1020 1000))'::GEOMETRY, 240, 200), 20, 20, null, null, null, null, null, null),
+ (27, null, 13,st_translate('POLYGON((1210 1190, 1230 1210, 1230 1230, 1210 1230, 1210 1190))'::GEOMETRY, 200, 200), 5, 15, 600, 108.2842712474619, 4, 108.2842712474619, 0, null),
+ (28, null, 13,st_translate('POLYGON((1310 1190, 1330 1210, 1330 1230, 1280 1230, 1310 1190))'::GEOMETRY, 200, 200), 18, 32, 1200, 148.2842712474619, 10, 148.2842712474619, 0, null),
+ (29, 7, 3,'POLYGON((20 -2, 21 -2, 21 1, 20 1, 20 -2))'::GEOMETRY, 3, 5, 3, 8, 1, 8, 0, 0),
+ (30, null, null, 'POLYGON((4 36, 6 36, 6 40, 4 40, 4 39, 5 39, 5 38, 4 38, 4 36))'::GEOMETRY, 3, 5, 7, 14, null, null, null, null),
+ (31, 8, null, 'POLYGON((5 -145, 20 -145, 20 -105, 5 -105, 5 -145),(10 -130, 15 -130, 15 -110, 10 -110, 10 -130))'::GEOMETRY, 10, 10, null, null, null, null, null, null),
+ (32, 8, null, 'POLYGON((20 -110, 45 -110, 45 -105, 20 -105, 20 -110))'::GEOMETRY, 15, 17, null, null, null, null, null, null),
+ (33, 8, null, 'POLYGON((35 -145, 45 -145, 45 -110, 35 -110, 35 -145))'::GEOMETRY, 12, 12, null, null, null, null, null, null),
+ (34, 8, null, 'POLYGON((20 -145, 35 -145, 35 -140, 15 -130, 20 -145))'::GEOMETRY, 12, 15, null, null, null, null, null, null);
 
 INSERT INTO block_test VALUES (1, 'POLYGON((4 4, 10 4, 10 30, 4 30, 4 4))'::GEOMETRY),
  (2, 'POLYGON((12 4, 20 4, 20 9, 12 9, 12 4))'::GEOMETRY),

@@ -87,7 +87,7 @@ class BlockIndicatorsTests {
         // Only the first 6 first created buildings are selected since any new created building may alter the results
         h2GIS.execute("DROP TABLE IF EXISTS tempo_block, tempo_build; " +
                 "CREATE TABLE tempo_block AS SELECT * FROM block_test WHERE id_block = 8; CREATE TABLE tempo_build AS" +
-                " SELECT a.*, b.id_block FROM building_test a, block_build_corr b WHERE a.id_build = b.id_build AND b.id_block = 8")
+                " SELECT * FROM building_test WHERE id_block = 8")
 
         def p = Geoclimate.BlockIndicators.closingness()
         p.execute([correlationTableName: "tempo_build", blockTable: "tempo_block", prefixName: "test", datasource: h2GIS])
