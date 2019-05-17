@@ -764,7 +764,8 @@ abstract class ProcessingChains extends Script {
                     def rsu_indic2 = "rsu_indic2" + uid_out
                     def rsu_indic3 = "rsu_indic3" + uid_out
                     def buAndIdRsu = "buAndIdRsu" + uid_out
-                    def corr_tempo = "corr_tempo" + uid_out
+                    def bu_tempo0 = "bu_tempo0" + uid_out
+                    def bu_tempo1 = "bu_tempo1" + uid_out
                     def rsu_all_indic = "rsu_all_indic" + uid_out
                     def rsu_4_aspectratio = "rsu_4_aspectratio" + uid_out
                     def rsu_4_roughness0 = "rsu_4_roughness0" + uid_out
@@ -848,12 +849,16 @@ abstract class ProcessingChains extends Script {
                                                       datasource:datasource])
 
                                 // This SQL query should not be done if the following IProcess were normally coded...
-                    datasource.execute(("DROP TABLE IF EXISTS $corr_tempo; CREATE TABLE $corr_tempo AS SELECT a.*," +
-                            "b.$columnIdBu FROM $rsuTable a, $buildingTable b WHERE a.$columnIdRsu = b.$columnIdRsu").toString())
+                    datasource.execute(("DROP TABLE IF EXISTS $bu_tempo0; CREATE TABLE $bu_tempo0 AS SELECT a.*," +
+                            "b.building_contiguity FROM $buildingTable a, ${calc_build_contiguity.results.outputTableName} b " +
+                            "WHERE a.$columnIdBu = b.$columnIdBu; DROP TABLE IF EXISTS $bu_tempo1; " +
+                            "CREATE TABLE $bu_tempo1 AS SELECT a.*," +
+                            "b.building_total_facade_length FROM $bu_tempo0 a, ${calc_build_facade_length.results.outputTableName} b " +
+                            "WHERE a.$columnIdBu = b.$columnIdBu;").toString())
                     IProcess  calc_free_ext_density =  Geoclimate.RsuIndicators.freeExternalFacadeDensity()
-                    calc_free_ext_density.execute([buildingTable: buildingTable, correlationTable: corr_tempo,
+                    calc_free_ext_density.execute([buildingTable: bu_tempo1, rsuTable: rsuTable,
                                                    buContiguityColumn: "building_contiguity", buTotalFacadeLengthColumn:
-                                                           "building_total_facade_length", prefixName: prefixName, datasource: datasource])
+                                                   "building_total_facade_length", prefixName: prefixName, datasource: datasource])
 
                     // calc_proj_facade_dist --> calc_effective_roughness_height
                     IProcess  calc_proj_facade_dist =  Geoclimate.RsuIndicators.projectedFacadeAreaDistribution()
