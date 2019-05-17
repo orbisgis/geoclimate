@@ -15,4 +15,9 @@ abstract class ProcessingChain extends Script {
 
     public static  PrepareOSM prepareOSM = new PrepareOSM()
 
+    public static  BuildGeoIndicators buildGeoIndicators = new BuildGeoIndicators()
+
+    public BuildSpatialUnits buildSpatialUnits = new BuildSpatialUnits()
+
+    public BuildLCZ buildLCZ = new BuildLCZ()
 }

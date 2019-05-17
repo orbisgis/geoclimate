@@ -68,9 +68,9 @@ public static IProcess computeBuildingsIndicators(){
 
 
                 IProcess buildingTableJoin = org.orbisgis.DataUtils.joinTables()
-                buildingTableJoin.execute([inputTableNames: [buildTableGeometryProperties,buildTableSizeProperties,buildTableFormProperties
-                                                             buildTableComputeNeighborsProperties,buildTableComputeMinimumBuildingSpacing,buildTableComputeRoadDistance
-                                                             buildTableComputeLikelihoodLargeBuilding],columnId: id_build
+                buildingTableJoin.execute([inputTableNamesWithId: [buildTableGeometryProperties : id_build,buildTableSizeProperties:id_build,buildTableFormProperties:id_build,
+                                                             buildTableComputeNeighborsProperties:id_build,buildTableComputeMinimumBuildingSpacing:id_build,buildTableComputeRoadDistance:id_build,
+                                                             buildTableComputeLikelihoodLargeBuilding:id_build]
                                            , prefixName: buildingPrefixName, datasource: datasource])
 
                 [outputTableName:buildingTableJoin.results.outputTableName]
