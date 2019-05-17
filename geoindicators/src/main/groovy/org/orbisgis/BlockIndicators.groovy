@@ -175,7 +175,7 @@ static IProcess netCompacity() {
                 String outputTableName = prefixName + "_" + baseName
 
                 String query = "CREATE INDEX IF NOT EXISTS id_b " +
-                        "ON $correlationTableName($idColumnBl); DROP TABLE IF EXISTS $outputTableName;" +
+                        "ON $buildTable($idColumnBl); DROP TABLE IF EXISTS $outputTableName;" +
                         " CREATE TABLE $outputTableName AS SELECT $idColumnBl, " +
                         "SUM($buildingContiguityField*(ST_PERIMETER($geometryFieldBu)+" +
                         "ST_PERIMETER(ST_HOLES($geometryFieldBu)))*$height_wall)/POWER(SUM($buildingVolumeField)," +
