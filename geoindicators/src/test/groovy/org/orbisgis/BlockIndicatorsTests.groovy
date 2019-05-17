@@ -19,8 +19,7 @@ class BlockIndicatorsTests {
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 9")
 
         def  p =  Geoclimate.BlockIndicators.perkinsSkillScoreBuildingDirection()
-        p.execute([buildingTableName: "tempo_build",correlationTableName: "block_build_corr",
-                   angleRangeSize: 15, prefixName: "test", datasource: h2GIS])
+        p.execute([buildingTableName: "tempo_build", angleRangeSize: 15, prefixName: "test", datasource: h2GIS])
         def concat = 0
         h2GIS.eachRow("SELECT * FROM test_block_perkins_skill_score_building_direction WHERE id_block = 4"){
             row ->
@@ -69,7 +68,7 @@ class BlockIndicatorsTests {
                 " LEFT JOIN test_building_size_properties b ON a.id_build = b.id_build")
 
         def  p =  Geoclimate.BlockIndicators.netCompacity()
-        p.execute([buildTable: "tempo_build2", correlationTableName: "block_build_corr", buildingVolumeField: "building_volume",
+        p.execute([buildTable: "tempo_build2", buildingVolumeField: "building_volume",
                    buildingContiguityField: "building_contiguity", prefixName: "test", datasource: h2GIS])
         def concat = 0
         h2GIS.eachRow("SELECT * FROM test_block_net_compacity WHERE id_block = 4"){
