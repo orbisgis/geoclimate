@@ -75,7 +75,7 @@ class SpatialUnitsTests {
         String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
         h2GIS.execute("DROP TABLE IF EXISTS build_tempo; " +
-                "CREATE TABLE build_tempo AS SELECT * FROM building_test WHERE id_build < 9 "+
+                "CREATE TABLE build_tempo AS SELECT id_build, the_geom FROM building_test WHERE id_build < 9 "+
                 "OR id_build > 28 AND id_build < 30")
         def pRsu =  Geoclimate.SpatialUnits.createScalesRelations()
         pRsu.execute([inputLowerScaleTableName: "build_tempo", inputUpperScaleTableName : "rsu_test",
