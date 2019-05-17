@@ -912,11 +912,6 @@ abstract class ProcessingChains extends Script {
                                                                                                                      imp_type],
                                                     prefixName: prefixName, datasource: datasource])
 
-                    datasource.eachRow("SELECT * FROM ${calc_perviousness_frac.results.outputTableName}".toString()){
-                        row ->
-                            println(row)
-                    }
-
                     // Calculate the TERRAIN ROUGHNESS CLASS
                     // Merge the geometric average and the projected facade area distribution into the RSU table
                     datasource.execute(("DROP TABLE IF EXISTS $rsu_4_roughness0; CREATE TABLE $rsu_4_roughness0 AS SELECT a.*, " +

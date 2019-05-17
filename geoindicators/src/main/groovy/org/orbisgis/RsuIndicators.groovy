@@ -982,7 +982,7 @@ static IProcess vegetationFraction() {
                 def finalQuery = buffQuery + "DROP TABLE IF EXISTS $outputTableName; " +
                         "CREATE INDEX IF NOT EXISTS ids_r ON $buffTable($idColumnRsu); " +
                         "CREATE TABLE $outputTableName($idColumnRsu INTEGER, ${names.join(" DOUBLE DEFAULT 0,")} " +
-                        " DOUBLE DEFAULT 0) AS (SELECT a.$idColumnRsu, b.${names.join(", b.")} " +
+                        " DOUBLE DEFAULT 0) AS (SELECT a.$idColumnRsu, COALESCE(b.${names.join(",0), COALESCE(b.")},0) " +
                         "FROM $rsuTable a LEFT JOIN $buffTable b ON a.$idColumnRsu = b.$idColumnRsu)"
 
                 datasource.execute finalQuery
@@ -1067,7 +1067,7 @@ static IProcess roadFraction() {
                 def finalQuery = "DROP TABLE IF EXISTS $outputTableName; " +
                         "CREATE INDEX IF NOT EXISTS ids_r ON $buffTable($idColumnRsu); " +
                         "CREATE TABLE $outputTableName($idColumnRsu INTEGER, ${names.join(" DOUBLE DEFAULT 0,")} " +
-                        " DOUBLE DEFAULT 0) AS (SELECT a.$idColumnRsu, b.${names.join(", b.")} " +
+                        " DOUBLE DEFAULT 0) AS (SELECT a.$idColumnRsu, COALESCE(b.${names.join(",0), COALESCE(b.")},0) " +
                         "FROM $rsuTable a LEFT JOIN $buffTable b ON a.$idColumnRsu = b.$idColumnRsu)"
 
                 datasource.execute((surfQuery+interQuery+buffQuery+finalQuery).toString())
@@ -1112,7 +1112,7 @@ static IProcess waterFraction() {
                 // Temporary table names
                 def buffTable = "buffTable" + uid_out
 
-                // Intersections between vegetation and RSU are calculated
+                // Intersections between water and RSU are calculated
                 def buffQuery = "DROP TABLE IF EXISTS $buffTable; " +
                         "CREATE INDEX IF NOT EXISTS ids_r ON $rsuTable($geometricColumnRsu) USING RTREE; " +
                         "CREATE INDEX IF NOT EXISTS ids_v ON $waterTable($geometricColumnWater) USING RTREE;" +
@@ -1126,7 +1126,7 @@ static IProcess waterFraction() {
                 def finalQuery = "DROP TABLE IF EXISTS $outputTableName; " +
                         "CREATE INDEX IF NOT EXISTS ids_r ON $buffTable($idColumnRsu); " +
                         "CREATE TABLE $outputTableName($idColumnRsu INTEGER, water_fraction DOUBLE DEFAULT 0) AS " +
-                        "(SELECT a.$idColumnRsu, b.water_fraction FROM $rsuTable a LEFT JOIN $buffTable b ON " +
+                        "(SELECT a.$idColumnRsu, COALESCE(b.water_fraction,0) FROM $rsuTable a LEFT JOIN $buffTable b ON " +
                         "a.$idColumnRsu = b.$idColumnRsu)"
                 datasource.execute((buffQuery+finalQuery).toString())
 

@@ -378,7 +378,7 @@ class ProcessingChainsTest {
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 9; CREATE TABLE " +
                 "tempo_road AS SELECT * FROM road_test WHERE id_road < 5 OR id_road > 6;" +
                 "CREATE TABLE tempo_zone AS SELECT * FROM zone_test;" +
-                "CREATE TABLE tempo_veget AS SELECT * FROM veget_test WHERE id_veget < 4;" +
+                "CREATE TABLE tempo_veget AS SELECT * FROM veget_test WHERE id_veget < 5;" +
                 "CREATE TABLE tempo_hydro AS SELECT * FROM hydro_test WHERE id_hydro < 2;")
 
 
