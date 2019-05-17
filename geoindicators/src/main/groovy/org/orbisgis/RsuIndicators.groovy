@@ -14,9 +14,9 @@ import org.orbisgis.processmanagerapi.IProcess
  *
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
- * @param buildingTable The name of the input ITable where are stored the buildings
- * @param correlationTable The name of the input ITable where are stored the rsu and the relationships
- * between buildings and RSU
+ * @param buildingTable The name of the input ITable where are stored the buildings, the building contiguity values,
+ * the building total facade length values and the building and rsu id
+ * @param correlationTable The name of the input ITable where are stored the rsu geometries and the id_rsu
  * @param buContiguityColumn The name of the column where are stored the building contiguity values (within the building Table)
  * @param buTotalFacadeLengthColumn The name of the column where are stored the building total facade length values
  * (within the building Table)
@@ -28,10 +28,10 @@ import org.orbisgis.processmanagerapi.IProcess
 static IProcess freeExternalFacadeDensity() {
 return processFactory.create(
         "RSU free external facade density",
-        [buildingTable: String,correlationTable: String,
+        [buildingTable: String,rsuTable: String,
          buContiguityColumn: String, buTotalFacadeLengthColumn: String, prefixName: String, datasource: JdbcDataSource],
         [outputTableName : String],
-        { buildingTable, correlationTable, buContiguityColumn, buTotalFacadeLengthColumn,
+        { buildingTable, rsuTable, buContiguityColumn, buTotalFacadeLengthColumn,
           prefixName, datasource ->
             def geometricFieldRsu = "the_geom"
             def idFieldBu = "id_build"
@@ -42,15 +42,14 @@ return processFactory.create(
             String baseName = "rsu_free_external_facade_density"
             String outputTableName = prefixName + "_" + baseName
 
-            String query = "CREATE INDEX IF NOT EXISTS id_bua ON $buildingTable($idFieldBu); "+
-                            "CREATE INDEX IF NOT EXISTS id_bub ON $correlationTable($idFieldBu); "+
-                            "CREATE INDEX IF NOT EXISTS id_blb ON $correlationTable($idFieldRsu); "+
+            String query = "CREATE INDEX IF NOT EXISTS id_bua ON $buildingTable($idFieldRsu); "+
+                            "CREATE INDEX IF NOT EXISTS id_blb ON $rsuTable($idFieldRsu); "+
                             "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS "+
                             "SELECT SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$height_wall)/"+
-                            "st_area(b.$geometricFieldRsu) AS rsu_free_external_facade_density, b.$idFieldRsu "
+                            "st_area(b.$geometricFieldRsu) AS rsu_free_external_facade_density, a.$idFieldRsu "
 
-            query += " FROM $buildingTable a, $correlationTable b "+
-                        "WHERE a.$idFieldBu = b.$idFieldBu GROUP BY b.$idFieldRsu, b.$geometricFieldRsu;"
+            query += " FROM $buildingTable a, $rsuTable b "+
+                        "WHERE a.$idFieldRsu = b.$idFieldRsu GROUP BY b.$idFieldRsu, b.$geometricFieldRsu;"
 
             logger.info("Executing $query")
             datasource.execute query
@@ -181,6 +180,8 @@ static IProcess groundSkyViewFactor() {
                 // The temporary tables are deleted
                 datasource.execute(("DROP TABLE IF EXISTS $ptsRSUtot, $ptsRSUGrid, $ptsRSUtempo, $ptsRSUbu, "+
                         "$ptsRSUfreeall, $randomSample, $svfPts").toString())
+
+                [outputTableName: outputTableName]
             }
     )}
 
@@ -433,7 +434,7 @@ static IProcess projectedFacadeAreaDistribution() {
  *
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
- * @param correlationBuildingTable the name of the input ITable where are stored the buildings and the relationships
+ * @param buildingTable the name of the input ITable where are stored the buildings and the relationships
  * between buildings and RSU
  * @param rsuTable the name of the input ITable where are stored the RSU
  * @param prefixName String use as prefix to name the output table
@@ -446,10 +447,10 @@ static IProcess projectedFacadeAreaDistribution() {
 static IProcess roofAreaDistribution() {
     return processFactory.create(
             "RSU roof area distribution",
-            [rsuTable: String, correlationBuildingTable: String, listLayersBottom: double[],
+            [rsuTable: String, buildingTable: String, listLayersBottom: double[],
              prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { rsuTable, correlationBuildingTable, listLayersBottom = [0, 10, 20, 30, 40, 50],
+            { rsuTable, buildingTable, listLayersBottom = [0, 10, 20, 30, 40, 50],
               prefixName, datasource ->
 
                 def geometricColumnRsu = "the_geom"
@@ -479,7 +480,7 @@ static IProcess roofAreaDistribution() {
                         " AS building_total_facade_length, $height_roof-$height_wall AS delta_h, POWER(POWER(ST_AREA($geometricColumnBu),2)+4*"+
                         "ST_AREA($geometricColumnBu)*POWER($height_roof-$height_wall,2),0.5) AS non_vertical_roof_area,"+
                         "POWER(ST_AREA($geometricColumnBu), 0.5)*($height_roof-$height_wall) AS vertical_roof_area"+
-                        " FROM $correlationBuildingTable;").toString())
+                        " FROM $buildingTable;").toString())
 
 
                 // Indexes and spatial indexes are created on rsu and building Tables

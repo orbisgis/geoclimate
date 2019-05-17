@@ -17,11 +17,11 @@ class RsuIndicatorsTests {
         h2GIS.execute("DROP TABLE IF EXISTS tempo_build, rsu_free_external_facade_density; CREATE TABLE tempo_build AS SELECT * " +
                 "FROM building_test WHERE id_build < 8")
         // The geometry of the RSU is useful for the calculation, then it is inserted inside the build/rsu correlation table
-        h2GIS.execute("DROP TABLE IF EXISTS corr_tempo; CREATE TABLE corr_tempo AS SELECT a.*, b.the_geom " +
-                "FROM rsu_build_corr a, rsu_test b WHERE a.id_rsu = b.id_rsu")
+        h2GIS.execute("DROP TABLE IF EXISTS rsu_tempo; CREATE TABLE rsu_tempo AS SELECT * " +
+                "FROM rsu_test")
 
         def  p =  Geoclimate.RsuIndicators.freeExternalFacadeDensity()
-        p.execute([buildingTable: "tempo_build",correlationTable: "corr_tempo",
+        p.execute([buildingTable: "tempo_build",rsuTable: "rsu_tempo",
                    buContiguityColumn: "building_contiguity", buTotalFacadeLengthColumn: "building_total_facade_length",
                    prefixName: "test", datasource: h2GIS])
         def concat = 0
@@ -123,13 +123,13 @@ class RsuIndicatorsTests {
 
         // Only the first 5 first created buildings are selected for the tests
         h2GIS.execute("DROP TABLE IF EXISTS tempo_build, test_rsu_roof_area_distribution; " +
-                "CREATE TABLE tempo_build AS SELECT a.*, b.id_rsu " +
-                "FROM building_test a, rsu_build_corr b WHERE a.id_build = b.id_build AND a.id_build < 6 OR " +
-                "a.id_build = b.id_build AND a.id_build < 29 AND a.id_build > 26")
+                "CREATE TABLE tempo_build AS SELECT * " +
+                "FROM building_test WHERE id_build < 6 OR " +
+                "id_build < 29 AND id_build > 26")
 
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def  p =  Geoclimate.RsuIndicators.roofAreaDistribution()
-        p.execute([rsuTable: "rsu_test", correlationBuildingTable: "tempo_build",
+        p.execute([rsuTable: "rsu_test", buildingTable: "tempo_build",
                    listLayersBottom: listLayersBottom, prefixName: "test",
                    datasource: h2GIS])
         def concat1 = ""
@@ -175,8 +175,8 @@ class RsuIndicatorsTests {
         h2GIS.execute(sqlString)
 
         // Only the first 5 first created buildings are selected for the tests
-        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, rsu_table; CREATE TABLE tempo_build AS SELECT a.*, b.id_rsu " +
-                "FROM building_test a, rsu_build_corr b WHERE a.id_build < 6 AND a.id_build = b.id_build")
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, rsu_table; CREATE TABLE tempo_build AS SELECT * " +
+                "FROM building_test WHERE id_build < 6")
 
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def numberOfDirection = 4
