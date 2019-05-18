@@ -2,11 +2,7 @@ package org.orbisgis.processingchain
 
 import groovy.transform.BaseScript
 import org.orbisgis.datamanager.JdbcDataSource
-import org.orbisgis.processingchain.ProcessingChain
 import org.orbisgis.processmanagerapi.IProcess
-import org.orbisgis.processmanagerapi.IProcessFactory
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 
 @BaseScript ProcessingChain processingChain
@@ -48,8 +44,8 @@ public static IProcess createUnitsOfAnalysis(){
                 logger.info("Create the units of analysis...")
 
                 // Create the RSU
-                IProcess prepareRSUData = SpatialUnits.prepareRSUData()
-                IProcess createRSU = SpatialUnits.createRSU()
+                IProcess prepareRSUData = org.orbisgis.Geoclimate.SpatialUnits.prepareRSUData()
+                IProcess createRSU = org.orbisgis.Geoclimate.SpatialUnits.createRSU()
                 prepareRSUData.execute([datasource: datasource, zoneTable : zoneTable, roadTable : roadTable,
                                         railTable : railTable, vegetationTable: vegetationTable,
                                         hydrographicTable: hydrographicTable, surface_vegetation: surface_vegetation,
@@ -58,13 +54,13 @@ public static IProcess createUnitsOfAnalysis(){
                                    prefixName: prefixName])
 
                 // Create the blocks
-                IProcess createBlocks = SpatialUnits.createBlocks()
+                IProcess createBlocks = org.orbisgis.Geoclimate.SpatialUnits.createBlocks()
                 createBlocks.execute([datasource: datasource, inputTableName : inputTableName,
                                       prefixName: prefixName, distance: distance])
 
 
                 // Create the relations between RSU and blocks (store in the block table)
-                IProcess createScalesRelationsRsuBl = SpatialUnits.createScalesRelations()
+                IProcess createScalesRelationsRsuBl = org.orbisgis.Geoclimate.SpatialUnits.createScalesRelations()
                 createScalesRelationsRsuBl.execute([datasource: datasource,
                                                     inputLowerScaleTableName: createBlocks.results.outputTableName,
                                                     inputUpperScaleTableName: createRSU.results.outputTableName,
@@ -73,7 +69,7 @@ public static IProcess createUnitsOfAnalysis(){
 
 
                 // Create the relations between buildings and blocks (store in the buildings table)
-                IProcess createScalesRelationsBlBu = SpatialUnits.createScalesRelations()
+                IProcess createScalesRelationsBlBu = org.orbisgis.Geoclimate.SpatialUnits.createScalesRelations()
                 createScalesRelationsBlBu.execute([datasource: datasource,
                                                    inputLowerScaleTableName: inputLowerScaleTableName,
                                                    inputUpperScaleTableName: createBlocks.results.outputTableName,
@@ -85,7 +81,7 @@ public static IProcess createUnitsOfAnalysis(){
                 // WARNING : the building table will contain the id_block and id_rsu for each of its
                 // id_build but the relations between id_block and i_rsu should not been consider in this Table
                 // the relationships may indeed be different from the one in the block Table
-                IProcess createScalesRelationsRsuBlBu = SpatialUnits.createScalesRelations()
+                IProcess createScalesRelationsRsuBlBu = org.orbisgis.Geoclimate.SpatialUnits.createScalesRelations()
                 createScalesRelationsRsuBlBu.execute([datasource: datasource,
                                                       inputLowerScaleTableName:
                                                               createScalesRelationsBlBu.results.outputTableName,

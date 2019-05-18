@@ -37,7 +37,7 @@ import org.orbisgis.processmanagerapi.IProcess
  *
  * @return outputTableName Table name where are stored the resulting RSU
  */
-public static IProcess createLCZ(){
+public static createLCZ() {
     return processFactory.create("Create the LCZ",
             [datasource                 : JdbcDataSource, prefixName: String, buildingTable: String, rsuTable: String, roadTable: String,
              vegetationTable            : String, hydrographicTable: String, facadeDensListLayersBottom: double[],
@@ -52,7 +52,6 @@ public static IProcess createLCZ(){
               heightColumnName = "height_roof", fractionTypePervious = ["low_vegetation", "water"],
               fractionTypeImpervious = ["road"], inputFields = ["id_build", "the_geom"], levelForRoads = [0] ->
                 logger.info("Create the LCZ...")
-
 
                 // To avoid overwriting the output files of this step, a unique identifier is created
                 def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
@@ -83,26 +82,24 @@ public static IProcess createLCZ(){
                 // I. Calculate preliminary indicators needed for the other calculations (the relations of chaining between
                 // the indicators are illustrated with the scheme IProcessA --> IProcessB)
                 // calc_building_area --> calc_build_densityNroughness
-                IProcess  calc_building_area =  Geoclimate.GenericIndicators.geometryProperties()
-                calc_building_area.execute([inputTableName: buildingTable, inputFields:inputFields,
-                                            operations: ["st_area"], prefixName : prefixName, datasource:datasource])
+                IProcess calc_building_area = Geoclimate.GenericIndicators.geometryProperties()
+                calc_building_area.execute([inputTableName: buildingTable, inputFields: inputFields,
+                                            operations    : ["st_area"], prefixName: prefixName, datasource: datasource])
 
                 // calc_veg_frac --> calc_perviousness_frac  (calculate only if vegetation considered as pervious)
-                if(fractionTypePervious.contains("low_vegetation") | fractionTypePervious.contains("high_vegetation")){
-                    if(fractionTypePervious.contains("low_vegetation") & fractionTypePervious.contains("high_vegetation")){
+                if (fractionTypePervious.contains("low_vegetation") | fractionTypePervious.contains("high_vegetation")) {
+                    if (fractionTypePervious.contains("low_vegetation") & fractionTypePervious.contains("high_vegetation")) {
                         veg_type.add("all")
                         perv_type.add("all_vegetation_fraction")
-                    }
-                    else if(fractionTypePervious.contains("low_vegetation")){
+                    } else if (fractionTypePervious.contains("low_vegetation")) {
                         veg_type.add("low")
                         perv_type.add("low_vegetation_fraction")
-                    }
-                    else if(fractionTypePervious.contains("high_vegetation")){
+                    } else if (fractionTypePervious.contains("high_vegetation")) {
                         veg_type.add("high")
                         perv_type.add("high_vegetation_fraction")
                     }
-                    IProcess  calc_veg_frac =  Geoclimate.RsuIndicators.vegetationFraction()
-                    calc_veg_frac.execute([rsuTable: rsuTable, vegetTable: vegetationTable, fractionType: veg_type,
+                    IProcess calc_veg_frac = Geoclimate.RsuIndicators.vegetationFraction()
+                    calc_veg_frac.execute([rsuTable  : rsuTable, vegetTable: vegetationTable, fractionType: veg_type,
                                            prefixName: prefixName, datasource: datasource])
                     // Add the vegetation field in the surface fraction tables used for pervious and impervious fractions
                     datasource.execute(("ALTER TABLE $rsu_surf_fractions ADD COLUMN ${perv_type[0]} DOUBLE; " +
@@ -111,11 +108,11 @@ public static IProcess createLCZ(){
                 }
 
                 // calc_road_frac --> calc_perviousness_frac  (calculate only if road considered as impervious)
-                if(fractionTypeImpervious.contains("road")){
+                if (fractionTypeImpervious.contains("road")) {
                     imp_type.add("ground_road_fraction")
-                    IProcess  calc_road_frac =  Geoclimate.RsuIndicators.roadFraction()
-                    calc_road_frac.execute([rsuTable: rsuTable, roadTable: roadTable, levelToConsiders:
-                            ["ground" : levelForRoads], prefixName: prefixName, datasource: datasource])
+                    IProcess calc_road_frac = Geoclimate.RsuIndicators.roadFraction()
+                    calc_road_frac.execute([rsuTable             : rsuTable, roadTable: roadTable, levelToConsiders:
+                            ["ground": levelForRoads], prefixName: prefixName, datasource: datasource])
                     // Add the road field in the surface fraction tables used for pervious and impervious fractions
                     datasource.execute(("ALTER TABLE $rsu_surf_fractions ADD COLUMN ground_road_fraction DOUBLE; " +
                             "UPDATE $rsu_surf_fractions SET ground_road_fraction = (SELECT b.ground_road_fraction" +
@@ -124,10 +121,10 @@ public static IProcess createLCZ(){
                 }
 
                 // calc_water_frac --> calc_perviousness_frac  (calculate only if water considered as pervious)
-                if(fractionTypePervious.contains("water")){
+                if (fractionTypePervious.contains("water")) {
                     perv_type.add("water_fraction")
-                    IProcess  calc_water_frac =  Geoclimate.RsuIndicators.waterFraction()
-                    calc_water_frac.execute([rsuTable: rsuTable, waterTable: hydrographicTable, prefixName: "test",
+                    IProcess calc_water_frac = Geoclimate.RsuIndicators.waterFraction()
+                    calc_water_frac.execute([rsuTable  : rsuTable, waterTable: hydrographicTable, prefixName: "test",
                                              datasource: datasource])
                     // Add the water field in the surface fraction tables used for pervious and impervious fractions
                     datasource.execute(("ALTER TABLE $rsu_surf_fractions ADD COLUMN water_fraction DOUBLE; " +
@@ -139,14 +136,14 @@ public static IProcess createLCZ(){
                 // calc_build_contiguity    -->
                 //                                  calc_free_ext_density --> calc_aspect_ratio
                 // calc_build_facade_length -->
-                IProcess  calc_build_contiguity =  Geoclimate.BuildingIndicators.neighborsProperties()
+                IProcess calc_build_contiguity = Geoclimate.BuildingIndicators.neighborsProperties()
                 calc_build_contiguity.execute([inputBuildingTableName: buildingTable,
-                                               operations:["building_contiguity"], prefixName : prefixName,datasource:datasource])
+                                               operations            : ["building_contiguity"], prefixName: prefixName, datasource: datasource])
 
-                IProcess  calc_build_facade_length =  Geoclimate.BuildingIndicators.sizeProperties()
+                IProcess calc_build_facade_length = Geoclimate.BuildingIndicators.sizeProperties()
                 calc_build_facade_length.execute([inputBuildingTableName: buildingTable,
-                                                  operations:["building_total_facade_length"], prefixName : prefixName,
-                                                  datasource:datasource])
+                                                  operations            : ["building_total_facade_length"], prefixName: prefixName,
+                                                  datasource            : datasource])
 
                 // This SQL query should not be done if the following IProcess were normally coded...
                 datasource.execute(("DROP TABLE IF EXISTS $bu_tempo0; CREATE TABLE $bu_tempo0 AS SELECT a.*," +
@@ -155,55 +152,55 @@ public static IProcess createLCZ(){
                         "CREATE TABLE $bu_tempo1 AS SELECT a.*," +
                         "b.building_total_facade_length FROM $bu_tempo0 a, ${calc_build_facade_length.results.outputTableName} b " +
                         "WHERE a.$columnIdBu = b.$columnIdBu;").toString())
-                IProcess  calc_free_ext_density =  Geoclimate.RsuIndicators.freeExternalFacadeDensity()
-                calc_free_ext_density.execute([buildingTable: bu_tempo1, rsuTable: rsuTable,
-                                               buContiguityColumn: "building_contiguity", buTotalFacadeLengthColumn:
+                IProcess calc_free_ext_density = Geoclimate.RsuIndicators.freeExternalFacadeDensity()
+                calc_free_ext_density.execute([buildingTable                                     : bu_tempo1, rsuTable: rsuTable,
+                                               buContiguityColumn                                : "building_contiguity", buTotalFacadeLengthColumn:
                                                        "building_total_facade_length", prefixName: prefixName, datasource: datasource])
 
                 // calc_proj_facade_dist --> calc_effective_roughness_height
-                IProcess  calc_proj_facade_dist =  Geoclimate.RsuIndicators.projectedFacadeAreaDistribution()
-                calc_proj_facade_dist.execute([buildingTable: buildingTable, rsuTable: rsuTable,
+                IProcess calc_proj_facade_dist = Geoclimate.RsuIndicators.projectedFacadeAreaDistribution()
+                calc_proj_facade_dist.execute([buildingTable   : buildingTable, rsuTable: rsuTable,
                                                listLayersBottom: facadeDensListLayersBottom, numberOfDirection: facadeDensNumberOfDirection,
-                                               prefixName: "test", datasource: datasource])
+                                               prefixName      : "test", datasource: datasource])
 
                 // II. Calculate the LCZ indicators
                 // Calculate the BUILDING SURFACE FRACTION from the building area
                 // AND the HEIGHT OF ROUGHNESS ELEMENTS from the building roof height
                 // calc_build_densityNroughness --> calcSVF (which needs building_density)
                 // calc_build_densityNroughness --> calc_effective_roughness_height (which needs geometric_height)
-                IProcess  calc_build_densityNroughness =  Geoclimate.GenericIndicators.unweightedOperationFromLowerScale()
+                IProcess calc_build_densityNroughness = Geoclimate.GenericIndicators.unweightedOperationFromLowerScale()
                 datasource.execute(("DROP TABLE IF EXISTS $buAndIdRsu; CREATE TABLE $buAndIdRsu AS SELECT a.*," +
                         "b.$columnIdRsu, b.$heightColumnName FROM ${calc_building_area.results.outputTableName} a, $buildingTable b " +
                         "WHERE a.$columnIdBu = b.$columnIdBu").toString())
                 calc_build_densityNroughness.execute([inputLowerScaleTableName: buAndIdRsu,
                                                       inputUpperScaleTableName: rsuTable, inputIdUp: columnIdRsu,
-                                                      inputVarAndOperations: [(heightColumnName): ["GEOM_AVG"], "st_area":["DENS"]],
-                                                      prefixName: prefixName, datasource: datasource])
+                                                      inputVarAndOperations   : [(heightColumnName): ["GEOM_AVG"], "st_area": ["DENS"]],
+                                                      prefixName              : prefixName, datasource: datasource])
 
                 // Calculate the SKY VIEW FACTOR from the RSU building density
                 // Merge the geometric average and the building density into the RSU table
                 datasource.execute(("DROP TABLE IF EXISTS $rsu_indic0; CREATE TABLE $rsu_indic0 AS SELECT a.*, " +
                         "b.dens_st_area, b.geom_avg_$heightColumnName FROM $rsuTable a INNER JOIN " +
                         "${calc_build_densityNroughness.results.outputTableName} b ON a.$columnIdRsu = b.$columnIdRsu").toString())
-                IProcess  calcSVF =  Geoclimate.RsuIndicators.groundSkyViewFactor()
-                calcSVF.execute([rsuTable: rsu_indic0, correlationBuildingTable: buildingTable, rsuBuildingDensityColumn:
+                IProcess calcSVF = Geoclimate.RsuIndicators.groundSkyViewFactor()
+                calcSVF.execute([rsuTable           : rsu_indic0, correlationBuildingTable: buildingTable, rsuBuildingDensityColumn:
                         "dens_st_area", pointDensity: svfPointDensity, rayLength: svfRayLength,
-                                 numberOfDirection: svfNumberOfDirection, prefixName: prefixName, datasource: datasource])
+                                 numberOfDirection  : svfNumberOfDirection, prefixName: prefixName, datasource: datasource])
 
                 // Calculate the ASPECT RATIO from the building fraction and the free external facade density
                 // Merge the free external facade density into the RSU table containing the other indicators
                 datasource.execute(("DROP TABLE IF EXISTS $rsu_4_aspectratio; CREATE TABLE $rsu_4_aspectratio AS SELECT a.*, " +
                         "b.rsu_free_external_facade_density FROM $rsu_indic0 a INNER JOIN " +
                         "${calc_free_ext_density.results.outputTableName} b ON a.$columnIdRsu = b.$columnIdRsu").toString())
-                IProcess  calc_aspect_ratio =  Geoclimate.RsuIndicators.aspectRatio()
-                calc_aspect_ratio.execute([rsuTable: rsu_4_aspectratio, rsuFreeExternalFacadeDensityColumn:
+                IProcess calc_aspect_ratio = Geoclimate.RsuIndicators.aspectRatio()
+                calc_aspect_ratio.execute([rsuTable                                 : rsu_4_aspectratio, rsuFreeExternalFacadeDensityColumn:
                         "rsu_free_external_facade_density", rsuBuildingDensityColumn: "dens_st_area",
-                                           prefixName: prefixName, datasource: datasource])
+                                           prefixName                               : prefixName, datasource: datasource])
 
                 // Calculate the PERVIOUS AND IMPERVIOUS SURFACE FRACTIONS
                 // Add the building density field in the surface fraction tables used for pervious and impervious fractions
                 // if the buildings are considered in the impervious fractions
-                if(fractionTypeImpervious.contains("building")) {
+                if (fractionTypeImpervious.contains("building")) {
                     imp_type.add("dens_st_area")
                     datasource.execute("ALTER TABLE $rsu_surf_fractions ADD COLUMN dens_st_area DOUBLE; " +
                             "UPDATE $rsu_surf_fractions SET dens_st_area = (SELECT b.dens_st_area" +
@@ -211,10 +208,10 @@ public static IProcess createLCZ(){
                             "WHERE $rsu_surf_fractions.$columnIdRsu = b.$columnIdRsu)")
                 }
                 IProcess calc_perviousness_frac = Geoclimate.RsuIndicators.perviousnessFraction()
-                calc_perviousness_frac.execute([rsuTable: rsu_surf_fractions, operationsAndComposition: ["pervious_fraction" :
-                                                                                                                 perv_type,
-                                                                                                         "impervious_fraction" :
-                                                                                                                 imp_type],
+                calc_perviousness_frac.execute([rsuTable  : rsu_surf_fractions, operationsAndComposition: ["pervious_fraction"  :
+                                                                                                                   perv_type,
+                                                                                                           "impervious_fraction":
+                                                                                                                   imp_type],
                                                 prefixName: prefixName, datasource: datasource])
 
                 // Calculate the TERRAIN ROUGHNESS CLASS
@@ -226,15 +223,14 @@ public static IProcess createLCZ(){
                         "a.$geometricColumn, a.geom_avg_$heightColumnName  FROM $rsu_4_roughness0 a INNER JOIN " +
                         "${calc_proj_facade_dist.results.outputTableName} b ON a.$columnIdRsu = b.$columnIdRsu").toString())
                 // calc_effective_roughness_height --> calc_roughness_class
-                IProcess  calc_effective_roughness_height =  Geoclimate.RsuIndicators.effectiveTerrainRoughnessHeight()
-                calc_effective_roughness_height.execute([rsuTable: rsu_4_roughness1, projectedFacadeAreaName:
-                        "rsu_projected_facade_area_distribution", geometricMeanBuildingHeightName: "geom_avg_$heightColumnName",
-                                                         prefixName: prefixName, listLayersBottom: facadeDensListLayersBottom, numberOfDirection:
+                IProcess calc_effective_roughness_height = Geoclimate.RsuIndicators.effectiveTerrainRoughnessHeight()
+                calc_effective_roughness_height.execute([rsuTable                                       : rsu_4_roughness1, projectedFacadeAreaName:
+                        "rsu_projected_facade_area_distribution", geometricMeanBuildingHeightName       : "geom_avg_$heightColumnName",
+                                                         prefixName                                     : prefixName, listLayersBottom: facadeDensListLayersBottom, numberOfDirection:
                                                                  facadeDensNumberOfDirection, datasource: datasource])
-                IProcess calc_roughness_class =  Geoclimate.RsuIndicators.effectiveTerrainRoughnessClass()
-                calc_roughness_class.execute([datasource: datasource, rsuTable: calc_effective_roughness_height.results.outputTableName,
+                IProcess calc_roughness_class = Geoclimate.RsuIndicators.effectiveTerrainRoughnessClass()
+                calc_roughness_class.execute([datasource                     : datasource, rsuTable: calc_effective_roughness_height.results.outputTableName,
                                               effectiveTerrainRoughnessHeight: "rsu_effective_terrain_roughness", prefixName: prefixName])
-
 
                 // III. Define the LCZ of each RSU according to their 7 geometric and surface cover properties
                 // Merge all indicator columns in one table
@@ -253,7 +249,7 @@ public static IProcess createLCZ(){
 
                 datasource.execute("DROP TABLE IF EXISTS $rsu_indic0, $rsu_indic1, $rsu_indic2, $rsu_indic3".toString())
 
-                datasource.eachRow("SELECT * FROM ${rsu_all_indic}".toString()){
+                datasource.eachRow("SELECT * FROM ${rsu_all_indic}".toString()) {
                     row ->
                         println(row)
                 }

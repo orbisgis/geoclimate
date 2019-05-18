@@ -47,7 +47,7 @@ class ProcessingChainTest {
     @Test
     void PrepareOSMTest() {
 
-        IProcess prepareOSMData = org.orbisgis.processingchain.PrepareOSM.prepareOSM()
+        IProcess prepareOSMData = ProcessingChain.PrepareOSM.prepareOSM()
 
         def mappingTypeAndUse = [
                 terminal: [aeroway : ["terminal", "airport_terminal"],
@@ -290,7 +290,7 @@ class ProcessingChainTest {
                 "sugar cane":["produce":["sugar_cane"],"crop":["sugar_cane"]]
         ]
 
-        prepareOSMData.execute([
+        assertTrue prepareOSMData.execute([
                 hLevMin: 3,
                 hLevMax: 15,
                 hThresholdLev2: 10,
@@ -356,8 +356,8 @@ class ProcessingChainTest {
 
     @Test
     void PrepareOSMDefaultConfigTest() {
-        IProcess prepareOSMData = org.orbisgis.processingchain.PrepareOSM.prepareOSMDefaultConfig()
-        prepareOSMData.execute([
+        IProcess prepareOSMData = ProcessingChain.PrepareOSM.prepareOSMDefaultConfig()
+        assertTrue prepareOSMData.execute([
                 directory : "./target/osm_processchain",
                 idZone : "56223",
                 saveResults : true])
@@ -379,7 +379,7 @@ class ProcessingChainTest {
 
 
 
-        IProcess pm =  org.orbisgis.processingchain.PrepareOSM.createUnitsOfAnalysis()
+        IProcess pm =  ProcessingChain.PrepareOSM.createUnitsOfAnalysis()
         pm.execute([datasource: h2GIS, zoneTable : "tempo_zone", roadTable : "tempo_road", railTable : "tempo_road",
                     vegetationTable: "tempo_veget", hydrographicTable: "tempo_hydro", surface_vegetation: null,
                     surface_hydro: null, inputTableName: "tempo_build", distance: 0.0,
@@ -414,13 +414,13 @@ class ProcessingChainTest {
 
 
         // First create the scales
-        IProcess pm_units =  org.orbisgis.processingchain.ProcessingChain.createUnitsOfAnalysis()
+        IProcess pm_units = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
         pm_units.execute([datasource: h2GIS, zoneTable : "tempo_zone", roadTable : "tempo_road", railTable : "tempo_road",
                           vegetationTable: "tempo_veget", hydrographicTable: "tempo_hydro", surface_vegetation: null,
                           surface_hydro: null, inputTableName: "tempo_build", distance: 0.0,
                           inputLowerScaleTableName: "tempo_build",  prefixName: "test"])
 
-        IProcess pm_lcz =  org.orbisgis.processingchain.ProcessingChain.createLCZ()
+        IProcess pm_lcz =  ProcessingChain.BuildLCZ.createLCZ()
         pm_lcz.execute([datasource: h2GIS, prefixName: "test", buildingTable: pm_units.results.outputTableBuildingName,
                         rsuTable: pm_units.results.outputTableRsuName, roadTable: "tempo_road", vegetationTable: "tempo_veget",
                         hydrographicTable: "tempo_hydro", facadeDensListLayersBottom: [0, 50, 200], facadeDensNumberOfDirection: 8,
