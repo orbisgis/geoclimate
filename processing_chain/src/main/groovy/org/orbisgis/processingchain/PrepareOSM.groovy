@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory
      * @return
      */
     public static IProcess prepareOSMDefaultConfig() {
-        return processFactory.create("Extract and transform OSM data to Geoclimate model",
+        return processFactory.create("Extract and transform OSM data to Geoclimate model (default configuration)",
                 [directory : String,
                  idZone : String,
                  saveResults : boolean],
