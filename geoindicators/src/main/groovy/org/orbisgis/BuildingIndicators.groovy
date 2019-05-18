@@ -404,9 +404,9 @@ static IProcess roadDistance() {
 static IProcess likelihoodLargeBuilding() {
     return processFactory.create(
             "Building closeness to a 50 m wide building",
-            [buildingTableName: String, nbOfBuildNeighbors: String, prefixName: String, datasource: JdbcDataSource],
+            [inputBuildingTableName: String, nbOfBuildNeighbors: String, prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { buildingTableName, nbOfBuildNeighbors, prefixName, datasource ->
+            { inputBuildingTableName, nbOfBuildNeighbors, prefixName, datasource ->
                 def geometricField = "the_geom"
                 def idFieldBu = "id_build"
 
@@ -420,11 +420,11 @@ static IProcess likelihoodLargeBuilding() {
                 String outputTableName = prefixName + "_" + baseName
 
                 // The calculation of the logistic function is performed only for buildings having no neighbors
-                datasource.execute(("CREATE INDEX ON $buildingTableName($idFieldBu); DROP TABLE IF EXISTS $outputTableName; "+
+                datasource.execute(("CREATE INDEX ON $inputBuildingTableName($idFieldBu); DROP TABLE IF EXISTS $outputTableName; "+
                         "CREATE TABLE $outputTableName AS SELECT a.$idFieldBu, " +
                         "CASEWHEN(a.$nbOfBuildNeighbors>0, 0," +
                         " 1/(1+$a*exp(-$r*st_maxdistance(a.$geometricField, b.$geometricField)))) AS $baseName " +
-                        "FROM $buildingTableName a LEFT JOIN $buildingTableName b "+
+                        "FROM $inputBuildingTableName a LEFT JOIN $inputBuildingTableName b "+
                         "ON a.$idFieldBu = b.$idFieldBu").toString())
 
                 [outputTableName: outputTableName]

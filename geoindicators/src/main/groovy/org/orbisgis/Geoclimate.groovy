@@ -11,7 +11,6 @@ abstract class Geoclimate extends Script {
 
     public static Logger logger = LoggerFactory.getLogger(Geoclimate.class)
 
-
     public static BuildingIndicators = new BuildingIndicators()
 
     public static RsuIndicators = new RsuIndicators()
@@ -21,5 +20,7 @@ abstract class Geoclimate extends Script {
     public  static GenericIndicators = new GenericIndicators()
 
     public  static SpatialUnits = new SpatialUnits()
+
+    public  static DataUtils = new DataUtils()
 
 }
