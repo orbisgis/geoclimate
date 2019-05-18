@@ -290,7 +290,7 @@ class ProcessingChainTest {
                 "sugar cane":["produce":["sugar_cane"],"crop":["sugar_cane"]]
         ]
 
-        assertTrue prepareOSMData.execute([
+         prepareOSMData.execute([
                 hLevMin: 3,
                 hLevMax: 15,
                 hThresholdLev2: 10,
@@ -357,7 +357,7 @@ class ProcessingChainTest {
     @Test
     void PrepareOSMDefaultConfigTest() {
         IProcess prepareOSMData = ProcessingChain.PrepareOSM.prepareOSMDefaultConfig()
-        assertTrue prepareOSMData.execute([
+        prepareOSMData.execute([
                 directory : "./target/osm_processchain",
                 idZone : "56223",
                 saveResults : true])
