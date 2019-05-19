@@ -278,8 +278,8 @@ import org.slf4j.LoggerFactory
                             directory : directory,
                             osmTablesPrefix: "EXT",
                             idZone : idZone,
-                            expand : 500,
-                            distBuffer:1000,
+                            expand : 0,//500
+                            distBuffer:0,//1000
                             buildingTableColumnsNames:
                                     ['height':'height','building:height':'b_height','roof:height':'r_height','building:roof:height':'b_r_height',
                                      'building:levels':'b_lev','roof:levels':'r_lev','building:roof:levels':'b_r_lev','building':'building',
@@ -332,7 +332,13 @@ import org.slf4j.LoggerFactory
                             mappingForVegetType : mappingVegetType,
                             saveResults : saveResults
                     ])
-                    [prepareOSMData.getResults()]
+                    [datasource: prepareOSMData.getResults().datasource,
+                     outputBuilding : prepareOSMData.getResults().outputBuilding,
+                     outputRoad:prepareOSMData.getResults().outputRoad,
+                     outputRail : prepareOSMData.getResults().outputRail,
+                     outputHydro:prepareOSMData.getResults().outputHydro,
+                     outputVeget:prepareOSMData.getResults().outputVeget,
+                     outputZone:prepareOSMData.getResults().outputZone]
 
                 });
     }

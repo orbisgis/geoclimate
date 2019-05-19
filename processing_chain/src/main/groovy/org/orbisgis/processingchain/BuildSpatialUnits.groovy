@@ -32,7 +32,7 @@ import org.orbisgis.processmanagerapi.IProcess
  * @return outputTableRsuName Table name where are stored the RSU
  */
 public static IProcess createUnitsOfAnalysis(){
-    return processFactory.create("Merge the geometries that touch each other",
+    return processFactory.create("Create all new spatial units and their relations : building, block and RSU",
             [datasource: JdbcDataSource, zoneTable : String, buildingTable:String, roadTable : String, railTable : String,
              vegetationTable: String, hydrographicTable: String, surface_vegetation: double,
              surface_hydro: double, distance: double, prefixName: String],
@@ -69,7 +69,7 @@ public static IProcess createUnitsOfAnalysis(){
                 // Create the relations between buildings and blocks (store in the buildings table)
                 IProcess createScalesRelationsBlBu = org.orbisgis.Geoclimate.SpatialUnits.createScalesRelations()
                 createScalesRelationsBlBu.execute([datasource: datasource,
-                                                   inputLowerScaleTableName: inputLowerScaleTableName,
+                                                   inputLowerScaleTableName: buildingTable,
                                                    inputUpperScaleTableName: createBlocks.results.outputTableName,
                                                    idColumnUp: createBlocks.results.outputIdBlock,
                                                    prefixName: prefixName])

@@ -413,10 +413,9 @@ class ProcessingChainTest {
 
         // First create the scales
         IProcess pm_units = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
-        pm_units.execute([datasource: h2GIS, zoneTable : "tempo_zone", roadTable : "tempo_road", railTable : "tempo_road",
+        pm_units.execute([datasource: h2GIS, zoneTable : "tempo_zone", buildingTable:"tempo_build", roadTable : "tempo_road", railTable : "tempo_road",
                           vegetationTable: "tempo_veget", hydrographicTable: "tempo_hydro", surface_vegetation: null,
-                          surface_hydro: null, inputTableName: "tempo_build", distance: 0.0,
-                          inputLowerScaleTableName: "tempo_build",  prefixName: "test"])
+                          surface_hydro: null, distance: 0.0, prefixName: "test"])
 
         IProcess pm_lcz =  ProcessingChain.BuildLCZ.createLCZ()
         pm_lcz.execute([datasource: h2GIS, prefixName: "test", buildingTable: pm_units.results.outputTableBuildingName,
@@ -432,6 +431,8 @@ class ProcessingChainTest {
         String dir = "./target/osm_processchain_full"
         String id_zone = "56223"
         boolean saveResults = true
+
+        //Extract and transform OSM data
         IProcess prepareOSMData = ProcessingChain.PrepareOSM.prepareOSMDefaultConfig()
         prepareOSMData.execute([
                 directory  : dir,
@@ -452,22 +453,48 @@ class ProcessingChainTest {
 
         String zoneTable = prepareOSMData.getResults().outputZone
 
+
+        //Create spatial units and relations : building, block, rsu
         IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
-        spatialUnits.execute([datasource     : datasource, zoneTable: zoneTable, buildingTable: buildingTable, roadTable: roadTable, railTable: railTable,
-                              vegetationTable: vegetationTable, hydrographicTable: hydrographicTable, surface_vegetation: 100000,
-                              surface_hydro  : 2500, distance: 0.01, prefixName: "test"])
+        spatialUnits.execute([datasource : datasource, zoneTable: zoneTable, buildingTable: buildingTable,
+                              roadTable: roadTable, railTable: railTable, vegetationTable: vegetationTable,
+                              hydrographicTable: hydrographicTable, surface_vegetation: 100000,
+                              surface_hydro  : 2500, distance: 0.01, prefixName: "spatial_units"])
+
+        String finalBuildings = spatialUnits.getResults().outputTableBuildingName
+        String finalBlocks = spatialUnits.getResults().outputTableBlockName
+        String finalRSU = spatialUnits.getResults().outputTableRsuName
 
         if (saveResults) {
-            logger.info("Saving spatial units")
+            println("Saving spatial units")
 
-            String finalBuildings = spatialUnits.getResults().outputTableBuildingName
-            datasource.save(finalBuildings, dir + File.separator + "${finalBlocks}_${id_zone}.geojson")
-
-            String finalBlocks = spatialUnits.getResults().outputTableBlockName
+            datasource.save(finalBuildings, dir + File.separator + "${finalBuildings}_${id_zone}.geojson")
             datasource.save(finalBlocks, dir + File.separator + "${finalBlocks}_${id_zone}.geojson")
-
-            String finalRSU = spatialUnits.getResults().outputTableRsuName
             datasource.save(finalRSU, dir + File.separator + "${finalRSU}_${id_zone}.geojson")
+        }
+
+        //Compute building indicators
+        def computeBuildingsIndicators = ProcessingChain.BuildGeoIndicators.computeBuildingsIndicators()
+        computeBuildingsIndicators.execute([datasource            : datasource,
+                                            inputBuildingTableName: finalBuildings,
+                                            inputRoadTableName    : roadTable,
+                                            saveResults           : false])
+        String buildingIndicators = computeBuildingsIndicators.getResults().outputTableName
+        if(saveResults){
+            println("Saving building indicators")
+            datasource.save(buildingIndicators, dir + File.separator + "${buildingIndicators}_${id_zone}.geojson")
+        }
+
+        //Compute block indicators
+        def computeBlockIndicators = ProcessingChain.BuildGeoIndicators.computeBlockIndicators()
+        computeBlockIndicators.execute([datasource: datasource,
+                                        inputBuildingTableName: finalBuildings,
+                                        inputBlockTableName: finalBlocks,
+                                        saveResults : false])
+        String blockIndicators = computeBlockIndicators.getResults().outputTableName
+        if(saveResults){
+            println("Saving block indicators")
+            datasource.save(blockIndicators, dir + File.separator + "${blockIndicators}_${id_zone}.geojson")
         }
 
     }

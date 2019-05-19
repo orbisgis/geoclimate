@@ -17,12 +17,12 @@ public static IProcess computeBuildingsIndicators() {
                                                                                  inputBuildingTableName: String,
                                                                                  inputRoadTableName    : String,
                                                                                  saveResults           : boolean],
-            [outputTableName: String], { datasource, buildingTableName, inputRoadTableName, saveResults ->
+            [outputTableName: String], { datasource, inputBuildingTableName, inputRoadTableName, saveResults ->
         
         String buildingPrefixName = "building_indicators"
 
         IProcess computeGeometryProperties = org.orbisgis.GenericIndicators.geometryProperties()
-        computeGeometryProperties.execute([inputTableName: inputBuildingTableName, inputFields: String["id_build", "the_geom"], operations: ["st_length", "st_perimeter", "st_area"]
+        computeGeometryProperties.execute([inputTableName: inputBuildingTableName, inputFields: ["id_build", "the_geom"], operations: ["st_length", "st_perimeter", "st_area"]
                                            , prefixName  : buildingPrefixName, datasource: datasource])
 
         def buildTableGeometryProperties = computeGeometryProperties.results.outputTableName
@@ -32,7 +32,7 @@ public static IProcess computeBuildingsIndicators() {
                                        operations            : ["building_volume", "building_floor_area", "building_total_facade_length"]
                                        , prefixName          : buildingPrefixName, datasource: datasource])
 
-        def buildTableSizeProperties = computeSizeProperties.getResults.outputTableName
+        def buildTableSizeProperties = computeSizeProperties.results.outputTableName
 
 
         IProcess computeFormProperties = org.orbisgis.BuildingIndicators.formProperties()
@@ -55,11 +55,13 @@ public static IProcess computeBuildingsIndicators() {
 
         def buildTableComputeMinimumBuildingSpacing = computeMinimumBuildingSpacing.results.outputTableName
 
+        /*Road distance must be fixed
         IProcess computeRoadDistance = org.orbisgis.BuildingIndicators.roadDistance()
         computeRoadDistance.execute([inputBuildingTableName: inputBuildingTableName, inputRoadTableName: inputRoadTableName, bufferDist: 100
                                      , prefixName          : buildingPrefixName, datasource: datasource])
 
         def buildTableComputeRoadDistance = computeRoadDistance.results.outputTableName
+        */
 
 
         IProcess computeLikelihoodLargeBuilding = org.orbisgis.BuildingIndicators.likelihoodLargeBuilding()
@@ -70,7 +72,7 @@ public static IProcess computeBuildingsIndicators() {
 
         IProcess buildingTableJoin = org.orbisgis.DataUtils.joinTables()
         buildingTableJoin.execute([inputTableNamesWithId: [buildTableGeometryProperties            : id_build, buildTableSizeProperties: id_build, buildTableFormProperties: id_build,
-                                                           buildTableComputeNeighborsProperties    : id_build, buildTableComputeMinimumBuildingSpacing: id_build, buildTableComputeRoadDistance: id_build,
+                                                           buildTableComputeNeighborsProperties    : id_build, buildTableComputeMinimumBuildingSpacing: id_build, //buildTableComputeRoadDistance: id_build,
                                                            buildTableComputeLikelihoodLargeBuilding: id_build]
                                    , prefixName         : buildingPrefixName, datasource: datasource])
 
@@ -122,7 +124,7 @@ public static IProcess computeBuildingsIndicators() {
 
             //Block net compacity
             IProcess computeNetCompacity = Geoclimate.BlockIndicators.netCompacity()
-            computeNetCompacity.execute([buildTable: inputBuildingTableName, buildingVolumeField: String, buildingContiguityField: String,
+            computeNetCompacity.execute([buildTable: inputBuildingTableName, buildingVolumeField: "building_volume", buildingContiguityField: "building_contiguity",
                                          prefixName: blockPrefixName, datasource: datasource])
 
             //Block mean building height
@@ -140,7 +142,7 @@ public static IProcess computeBuildingsIndicators() {
                         computeClosingness:id_block,
                         computeNetCompacity:id_block,
                         computeWeightedAggregatedStatistics:id_block]
-                                       , prefixName: blockPrefixName, datasource: datasource])
+                         , prefixName: blockPrefixName, datasource: datasource])
             [outputTableName: bblockTableJoin]
         })
 
