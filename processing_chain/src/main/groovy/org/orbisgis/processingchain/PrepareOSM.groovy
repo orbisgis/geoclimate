@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory
                 [directory : String,
                  idZone : String,
                  saveResults : boolean],
-                [datasource: JdbcDataSource],
+                [datasource: JdbcDataSource,outputBuilding : String, outputRoad:String, outputRail : String, outputHydro:String, outputVeget:String, outputZone:String],
                 { directory, idZone , saveResults ->
                     def mappingTypeAndUse = [
                             terminal: [aeroway : ["terminal", "airport_terminal"],
@@ -332,7 +332,7 @@ import org.slf4j.LoggerFactory
                             mappingForVegetType : mappingVegetType,
                             saveResults : saveResults
                     ])
-                    [datasource: prepareOSMData.getResults().datasource]
+                    [prepareOSMData.getResults()]
 
                 });
     }
@@ -386,7 +386,7 @@ import org.slf4j.LoggerFactory
                  mappingForRailType : Map,
                  mappingForVegetType : Map,
                  saveResults : boolean],
-                [datasource: JdbcDataSource],
+                [datasource: JdbcDataSource,outputBuilding : String, outputRoad:String, outputRail : String, outputHydro:String, outputVeget:String, outputZone:String],
                 { directory, osmTablesPrefix, idZone , expand, distBuffer,  hLevMin, hLevMax,hThresholdLev2, buildingTableColumnsNames,
                     buildingTagKeys,buildingTagValues,
                     tablesPrefix,
@@ -557,25 +557,26 @@ import org.slf4j.LoggerFactory
 
                     logger.info("End of the OSM extract transform process.")
 
+                    String finalBuildings = inputDataFormatting.getResults().outputBuilding
+                    String finalRoads = inputDataFormatting.getResults().outputRoad
+                    String finalRails= inputDataFormatting.getResults().outputRail
+                    String finalHydro = inputDataFormatting.getResults().outputHydro
+                    String finalVeget = inputDataFormatting.getResults().outputVeget
+                    String finalZone = inputDataFormatting.getResults().outputZone
+
                     if(saveResults){
 
                         logger.info("Saving GIS layers in geojson format")
-                        String finalBuildings = inputDataFormatting.getResults().outputBuilding
                         datasource.save(finalBuildings, dirFile.absolutePath+File.separator+"${finalBuildings}_${idZone}.geojson")
 
-                        String finalRoads = inputDataFormatting.getResults().outputRoad
                         datasource.save(finalRoads, dirFile.absolutePath+File.separator+"${finalRoads}_${idZone}.geojson")
 
-                        String finalRails= inputDataFormatting.getResults().outputRail
                         datasource.save(finalRails, dirFile.absolutePath+File.separator+"${finalRails}_${idZone}.geojson")
 
-                        String finalHydro = inputDataFormatting.getResults().outputHydro
                         datasource.save(finalHydro, dirFile.absolutePath+File.separator+"${finalHydro}_${idZone}.geojson")
 
-                        String finalVeget = inputDataFormatting.getResults().outputVeget
                         datasource.save(finalVeget, dirFile.absolutePath+File.separator+"${finalVeget}_${idZone}.geojson")
 
-                        String finalZone = inputDataFormatting.getResults().outputZone
                         datasource.save(finalZone, dirFile.absolutePath+File.separator+"${finalZone}_${idZone}.geojson")
 
                         logger.info("Saving statistic tables in csv format")
@@ -609,7 +610,8 @@ import org.slf4j.LoggerFactory
 
                     }
 
-                    [datasource: datasource]
+                    [datasource: datasource, outputBuilding : finalBuildings, outputRoad:finalRoads,
+                     outputRail : finalRails, outputHydro:finalHydro, outputVeget:finalVeget, outputZone:finalZone]
 
                 })
     }

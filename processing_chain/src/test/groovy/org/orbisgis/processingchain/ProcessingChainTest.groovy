@@ -3,6 +3,7 @@ package org.orbisgis.processingchain
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
+import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.processmanager.ProcessMapper
 import org.orbisgis.processmanagerapi.IProcess
@@ -376,9 +377,6 @@ class ProcessingChainTest {
                 "CREATE TABLE tempo_zone AS SELECT * FROM zone_test;" +
                 "CREATE TABLE tempo_veget AS SELECT id_veget, the_geom FROM veget_test WHERE id_veget < 4;" +
                 "CREATE TABLE tempo_hydro AS SELECT id_hydro, the_geom FROM hydro_test WHERE id_hydro < 2;")
-
-
-
         IProcess pm =  ProcessingChain.PrepareOSM.createUnitsOfAnalysis()
         pm.execute([datasource: h2GIS, zoneTable : "tempo_zone", roadTable : "tempo_road", railTable : "tempo_road",
                     vegetationTable: "tempo_veget", hydrographicTable: "tempo_hydro", surface_vegetation: null,
@@ -427,5 +425,50 @@ class ProcessingChainTest {
                         svfPointDensity: 0.008, svfRayLength: 100, svfNumberOfDirection: 60,
                         heightColumnName: "height_roof", fractionTypePervious: ["low_vegetation", "water"],
                         fractionTypeImpervious: ["road"], inputFields: ["id_build", "the_geom"], levelForRoads: [0]])
+    }
+
+    @Test
+    void osmChainWithIndicators() {
+        String dir = "./target/osm_processchain_full"
+        String id_zone = "56223"
+        boolean saveResults = true
+        IProcess prepareOSMData = ProcessingChain.PrepareOSM.prepareOSMDefaultConfig()
+        prepareOSMData.execute([
+                directory  : dir,
+                idZone     : id_zone,
+                saveResults: saveResults])
+
+        JdbcDataSource datasource = prepareOSMData.getResults().datasource
+
+        String buildingTable = prepareOSMData.getResults().outputBuilding
+
+        String roadTable = prepareOSMData.getResults().outputRoad
+
+        String railTable = prepareOSMData.getResults().outputRail
+
+        String hydrographicTable = prepareOSMData.getResults().outputHydro
+
+        String vegetationTable = prepareOSMData.getResults().outputVeget
+
+        String zoneTable = prepareOSMData.getResults().outputZone
+
+        IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
+        spatialUnits.execute([datasource     : datasource, zoneTable: zoneTable, buildingTable: buildingTable, roadTable: roadTable, railTable: railTable,
+                              vegetationTable: vegetationTable, hydrographicTable: hydrographicTable, surface_vegetation: 100000,
+                              surface_hydro  : 2500, distance: 0.01, prefixName: "test"])
+
+        if (saveResults) {
+            logger.info("Saving spatial units")
+
+            String finalBuildings = spatialUnits.getResults().outputTableBuildingName
+            datasource.save(finalBuildings, dir + File.separator + "${finalBlocks}_${id_zone}.geojson")
+
+            String finalBlocks = spatialUnits.getResults().outputTableBlockName
+            datasource.save(finalBlocks, dir + File.separator + "${finalBlocks}_${id_zone}.geojson")
+
+            String finalRSU = spatialUnits.getResults().outputTableRsuName
+            datasource.save(finalRSU, dir + File.separator + "${finalRSU}_${id_zone}.geojson")
+        }
+
     }
 }

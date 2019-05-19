@@ -99,7 +99,6 @@ public static IProcess computeBuildingsIndicators() {
             //Sum of the building area
             //Sum of the building volume composing the block
             //Sum of block floor area
-
             def  computeSimpleStats =  Geoclimate.GenericIndicators.unweightedOperationFromLowerScale()
             psum.execute([inputLowerScaleTableName: inputBuildingTableName,inputUpperScaleTableName: inputBlockTableName,
                           inputIdUp: id_block, inputVarAndOperations: ["area":["SUM"],"building_floor_area":["SUM"],
@@ -142,8 +141,6 @@ public static IProcess computeBuildingsIndicators() {
                         computeNetCompacity:id_block,
                         computeWeightedAggregatedStatistics:id_block]
                                        , prefixName: blockPrefixName, datasource: datasource])
-
-
             [outputTableName: bblockTableJoin]
         })
 

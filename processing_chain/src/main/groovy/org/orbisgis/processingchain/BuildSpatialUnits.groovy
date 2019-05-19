@@ -15,16 +15,15 @@ import org.orbisgis.processmanagerapi.IProcess
  * Then the relationships between each scale is initialized in each unit table: the RSU ID is stored in
  * the block and in the building tables whereas the block ID is stored only in the building table.
  *
- * @param zoneTable The area of zone to be processed
+ * @param zoneTable The area of zone to be processed *
+ * @param buildingTable The building table to be processed
  * @param roadTable The road table to be processed
  * @param railTable The rail table to be processed
  * @param vegetationTable The vegetation table to be processed
  * @param hydrographicTable The hydrographic table to be processed
  * @param surface_vegetation The minimum area of vegetation that will be considered to delineate the RSU (default 100,000 m²)
  * @param surface_hydro  The minimum area of water that will be considered to delineate the RSU (default 2,500 m²)
- * @param inputTableName The input table where are stored the geometries used to create the block (e.g. buildings...)
  * @param distance A distance to group two geometries (e.g. two buildings in a block - default 0.01 m)
- * @param inputLowerScaleTableName The input table where are stored the lowerScale objects (buildings)
  * @param prefixName A prefix used to name the output table
  * @param datasource A connection to a database
  *
@@ -34,13 +33,12 @@ import org.orbisgis.processmanagerapi.IProcess
  */
 public static IProcess createUnitsOfAnalysis(){
     return processFactory.create("Merge the geometries that touch each other",
-            [datasource: JdbcDataSource, zoneTable : String, roadTable : String, railTable : String,
+            [datasource: JdbcDataSource, zoneTable : String, buildingTable:String, roadTable : String, railTable : String,
              vegetationTable: String, hydrographicTable: String, surface_vegetation: double,
-             surface_hydro: double, inputTableName: String, distance: double,
-             inputLowerScaleTableName: String,  prefixName: String],
+             surface_hydro: double, distance: double, prefixName: String],
             [outputTableBuildingName : String, outputTableBlockName: String, outputTableRsuName: String],
-            { datasource, zoneTable, roadTable, railTable, vegetationTable, hydrographicTable,
-              surface_vegetation, surface_hydro, inputTableName, distance, inputLowerScaleTableName,  prefixName ->
+            { datasource, zoneTable,buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
+              surface_vegetation, surface_hydro, distance,  prefixName ->
                 logger.info("Create the units of analysis...")
 
                 // Create the RSU
@@ -55,7 +53,7 @@ public static IProcess createUnitsOfAnalysis(){
 
                 // Create the blocks
                 IProcess createBlocks = org.orbisgis.Geoclimate.SpatialUnits.createBlocks()
-                createBlocks.execute([datasource: datasource, inputTableName : inputTableName,
+                createBlocks.execute([datasource: datasource, inputTableName : buildingTable,
                                       prefixName: prefixName, distance: distance])
 
 
