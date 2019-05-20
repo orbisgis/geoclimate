@@ -439,12 +439,15 @@ import org.slf4j.LoggerFactory
 
                     IProcess loadInitialData = org.orbisgis.osm.OSMGISLayers.loadInitialData()
 
-                    loadInitialData.execute([
+                    if(!loadInitialData.execute([
                             dbPath : dbPath,
                             osmTablesPrefix: osmTablesPrefix,
                             idZone : idZone,
                             expand : expand,
-                            distBuffer:distBuffer])
+                            distBuffer:distBuffer])){
+                        logger.info("Cannot downloaded for OSM data for the zone id : ${idZone}.")
+                        return
+                    }
 
                     logger.info("The OSM data has been downloaded for the zone id : ${idZone}.")
 
@@ -457,7 +460,10 @@ import org.slf4j.LoggerFactory
                     }
                     //Init model
                     IProcess initParametersAbstract = org.orbisgis.common.AbstractTablesInitialization.initParametersAbstract()
-                    initParametersAbstract.execute(datasource:datasource)
+                    if(!initParametersAbstract.execute(datasource:datasource)){
+                        logger.info("Cannot initialize the geoclimate data model.")
+                        return
+                    }
 
                     logger.info("The geoclimate data model has been initialized.")
 
@@ -465,78 +471,108 @@ import org.slf4j.LoggerFactory
 
                     IProcess prepareBuildings = org.orbisgis.osm.OSMGISLayers.prepareBuildings()
 
-                    prepareBuildings.execute([datasource:datasource, osmTablesPrefix:osmTablesPrefix,
+                    if(!prepareBuildings.execute([datasource:datasource, osmTablesPrefix:osmTablesPrefix,
                                               buildingTableColumnsNames : buildingTableColumnsNames,
                                               buildingTagKeys:buildingTagKeys,
                                               buildingTagValues:buildingTagValues,
                                               buildingTagValues:buildingTagValues,
                                               tablesPrefix:tablesPrefix,
                                               buildingFilter:buildingFilter,
-                    ]);
+                    ])){
+                        logger.info("Cannot prepare the building table.")
+                        return
+                    }
                     IProcess prepareRoads = org.orbisgis.osm.OSMGISLayers.prepareRoads()
-                    prepareRoads.execute([datasource: datasource,
+                    if(!prepareRoads.execute([datasource: datasource,
                                           osmTablesPrefix: osmTablesPrefix,
                                           roadTableColumnsNames: roadTableColumnsNames,
                                           roadTagKeys: roadTagKeys,
                                           roadTagValues: roadTagValues,
                                           tablesPrefix: tablesPrefix,
-                                          roadFilter: roadFilter])
+                                          roadFilter: roadFilter])){
+                        logger.info("Cannot prepare the road table.")
+                        return
+                    }
 
                     IProcess prepareRails = org.orbisgis.osm.OSMGISLayers.prepareRails()
-                    prepareRails.execute([datasource: datasource,
+                    if(!prepareRails.execute([datasource: datasource,
                                           osmTablesPrefix: osmTablesPrefix,
                                           railTableColumnsNames: railTableColumnsNames,
                                           railTagKeys: railTagKeys,
                                           railTagValues: railTagValues,
                                           tablesPrefix: tablesPrefix,
-                                          railFilter: railFilter])
+                                          railFilter: railFilter])){
+                        logger.info("Cannot prepare the rail table.")
+                        return
+                    }
 
                     IProcess prepareVeget = org.orbisgis.osm.OSMGISLayers.prepareVeget()
-                    prepareVeget.execute([datasource: datasource,
+                    if(!prepareVeget.execute([datasource: datasource,
                                           osmTablesPrefix: osmTablesPrefix,
                                           vegetTableColumnsNames: vegetTableColumnsNames,
                                           vegetTagKeys: vegetTagKeys,
                                           vegetTagValues: vegetTagValues,
                                           tablesPrefix: tablesPrefix,
-                                          vegetFilter: vegetFilter])
+                                          vegetFilter: vegetFilter])){
+                        logger.info("Cannot prepare the vegetation table.")
+                        return
+                    }
 
                     IProcess prepareHydro = org.orbisgis.osm.OSMGISLayers.prepareHydro()
-                    prepareHydro.execute([datasource: datasource,
+                    if(!prepareHydro.execute([datasource: datasource,
                                           osmTablesPrefix: osmTablesPrefix,
                                           hydroTableColumnsNames: hydroTableColumnsNames,
                                           hydroTags: hydroTags,
                                           tablesPrefix: tablesPrefix,
-                                          hydroFilter: hydroFilter])
+                                          hydroFilter: hydroFilter])){
+                        logger.info("Cannot prepare the hydrographic table.")
+                        return
+                    }
 
                     IProcess transformBuildings = org.orbisgis.osm.FormattingForAbstractModel.transformBuildings()
-                    transformBuildings.execute([datasource : datasource,
+                    if(!transformBuildings.execute([datasource : datasource,
                             inputTableName      : prepareBuildings.getResults().buildingTableName,
-                            mappingForTypeAndUse: mappingForTypeAndUse])
+                            mappingForTypeAndUse: mappingForTypeAndUse])){
+                        logger.info("Cannot transform the building table to geoclimate model.")
+                        return
+                    }
                     def inputBuilding =  transformBuildings.getResults().outputTableName
 
                     IProcess transformRoads = org.orbisgis.osm.FormattingForAbstractModel.transformRoads()
-                    transformRoads.execute([datasource : datasource,
+                    if(!transformRoads.execute([datasource : datasource,
                             inputTableName      : prepareRoads.getResults().roadTableName,
                             mappingForRoadType: mappingForRoadType,
-                            mappingForSurface: mappingForSurface])
+                            mappingForSurface: mappingForSurface])){
+                        logger.info("Cannot transform the road table to geoclimate model.")
+                        return
+                    }
                     def inputRoads =  transformRoads.getResults().outputTableName
 
 
                     IProcess transformRails = org.orbisgis.osm.FormattingForAbstractModel.transformRails()
-                    transformRails.execute([datasource          : datasource,
+                    if(!transformRails.execute([datasource          : datasource,
                             inputTableName : prepareRails.getResults().railTableName,
-                            mappingForRailType: mappingForRailType])
+                            mappingForRailType: mappingForRailType])){
+                        logger.info("Cannot transform the rail table to geoclimate model.")
+                        return
+                    }
                     def inputRail =  transformRails.getResults().outputTableName
 
                     IProcess transformVeget = org.orbisgis.osm.FormattingForAbstractModel.transformVeget()
-                    transformVeget.execute([datasource    : datasource,
+                    if(!transformVeget.execute([datasource    : datasource,
                                             inputTableName: prepareVeget.getResults().vegetTableName,
-                                            mappingForVegetType: mappingForVegetType])
+                                            mappingForVegetType: mappingForVegetType])){
+                        logger.info("Cannot transform the vegetation table to geoclimate model.")
+                        return
+                    }
                     def inputVeget =  transformVeget.getResults().outputTableName
 
                     IProcess transformHydro = org.orbisgis.osm.FormattingForAbstractModel.transformHydro()
-                    transformHydro.execute([datasource    : datasource,
-                                            inputTableName: prepareHydro.getResults().hydroTableName])
+                    if(!transformHydro.execute([datasource    : datasource,
+                                            inputTableName: prepareHydro.getResults().hydroTableName])){
+                        logger.info("Cannot transform the hydrographic table to geoclimate model.")
+                        return
+                    }
                     def inputHydro =  transformHydro.getResults().outputTableName
 
                     logger.info("All OSM data have been tranformed to GIS tables.")
@@ -550,7 +586,7 @@ import org.slf4j.LoggerFactory
 
                     IProcess inputDataFormatting = org.orbisgis.common.InputDataFormatting.inputDataFormatting()
 
-                    inputDataFormatting.execute([datasource: datasource,
+                    if(!inputDataFormatting.execute([datasource: datasource,
                                      inputBuilding: inputBuilding, inputRoad: inputRoads, inputRail: inputRail,
                                      inputHydro: inputHydro, inputVeget: inputVeget,
                                      inputZone: inputZone, inputZoneNeighbors: inputZoneNeighbors,
@@ -559,7 +595,10 @@ import org.slf4j.LoggerFactory
                                      roadAbstractType: initResults.outputRoadAbstractType, roadAbstractParameters: initResults.outputRoadAbstractParameters,
                                      railAbstractType: initResults.outputRailAbstractType,
                                      vegetAbstractType: initResults.outputVegetAbstractType,
-                                                 vegetAbstractParameters: initResults.outputVegetAbstractParameters])
+                                                 vegetAbstractParameters: initResults.outputVegetAbstractParameters])){
+                        logger.info("Cannot format the tables to geoclimate model.")
+                        return
+                    }
 
                     logger.info("End of the OSM extract transform process.")
 
