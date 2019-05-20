@@ -25,67 +25,91 @@ public static IProcess computeBuildingsIndicators() {
         String buildingPrefixName = "building_indicators"
 
         IProcess computeGeometryProperties = org.orbisgis.GenericIndicators.geometryProperties()
-        computeGeometryProperties.execute([inputTableName: inputBuildingTableName, inputFields: ["id_build"], operations: ["st_length", "st_perimeter", "st_area"]
-                                           , prefixName  : buildingPrefixName, datasource: datasource])
+        if(!computeGeometryProperties.execute([inputTableName: inputBuildingTableName, inputFields: ["id_build"], operations: ["st_length", "st_perimeter", "st_area"]
+                                           , prefixName  : buildingPrefixName, datasource: datasource])){
+            logger.info("Cannot compute the length,perimeter,area properties of the buildings")
+            return
+        }
 
         def buildTableGeometryProperties = computeGeometryProperties.results.outputTableName
 
         IProcess computeSizeProperties = org.orbisgis.BuildingIndicators.sizeProperties()
-        computeSizeProperties.execute([inputBuildingTableName: inputBuildingTableName,
+        if(!computeSizeProperties.execute([inputBuildingTableName: inputBuildingTableName,
                                        operations            : ["building_volume", "building_floor_area", "building_total_facade_length"]
-                                       , prefixName          : buildingPrefixName, datasource: datasource])
+                                       , prefixName          : buildingPrefixName, datasource: datasource])){
+            logger.info("Cannot compute the building_volume, building_floor_area, building_total_facade_length indicators for the buildings")
+            return
+        }
 
         def buildTableSizeProperties = computeSizeProperties.results.outputTableName
 
 
         IProcess computeFormProperties = org.orbisgis.BuildingIndicators.formProperties()
-        computeFormProperties.execute([inputBuildingTableName: inputBuildingTableName, operations: ["building_concavity", "building_form_factor",
+        if(!computeFormProperties.execute([inputBuildingTableName: inputBuildingTableName, operations: ["building_concavity", "building_form_factor",
                                                                                                     "building_raw_compacity", "building_convexhull_perimeter_density"]
-                                       , prefixName          : buildingPrefixName, datasource: datasource])
+                                       , prefixName          : buildingPrefixName, datasource: datasource])){
+            logger.info("Cannot compute the building_concavity, building_form_factor, building_raw_compacity, building_convexhull_perimeter_density indicators for the buildings")
+            return
+        }
 
         def buildTableFormProperties = computeFormProperties.results.outputTableName
 
 
         IProcess computeNeighborsProperties = org.orbisgis.BuildingIndicators.neighborsProperties()
-        computeNeighborsProperties.execute([inputBuildingTableName: inputBuildingTableName, operations: ["building_contiguity", "building_common_wall_fraction",
+        if(!computeNeighborsProperties.execute([inputBuildingTableName: inputBuildingTableName, operations: ["building_contiguity", "building_common_wall_fraction",
                                                                                                          "building_number_building_neighbor"]
-                                            , prefixName          : buildingPrefixName, datasource: datasource])
+                                            , prefixName          : buildingPrefixName, datasource: datasource])){
+            logger.info("Cannot compute the building_contiguity, building_common_wall_fraction,building_number_building_neighbor indicators for the buildings")
+            return
+        }
         def buildTableComputeNeighborsProperties = computeNeighborsProperties.results.outputTableName
 
         IProcess computeMinimumBuildingSpacing = org.orbisgis.BuildingIndicators.minimumBuildingSpacing()
-        computeMinimumBuildingSpacing.execute([inputBuildingTableName: inputBuildingTableName, bufferDist: 100
-                                               , prefixName          : buildingPrefixName, datasource: datasource])
+        if(!computeMinimumBuildingSpacing.execute([inputBuildingTableName: inputBuildingTableName, bufferDist: 100
+                                               , prefixName          : buildingPrefixName, datasource: datasource])){
+            logger.info("Cannot compute the minimum building spacing indicator")
+            return
+        }
 
         def buildTableComputeMinimumBuildingSpacing = computeMinimumBuildingSpacing.results.outputTableName
 
 
         IProcess computeRoadDistance = org.orbisgis.BuildingIndicators.roadDistance()
-        computeRoadDistance.execute([inputBuildingTableName: inputBuildingTableName, inputRoadTableName: inputRoadTableName, bufferDist: 100
-                                     , prefixName          : buildingPrefixName, datasource: datasource])
+        if(!computeRoadDistance.execute([inputBuildingTableName: inputBuildingTableName, inputRoadTableName: inputRoadTableName, bufferDist: 100
+                                     , prefixName          : buildingPrefixName, datasource: datasource])){
+            logger.info("Cannot compute the closest minimum distance to a road at 100 meters. ")
+            return
+        }
 
         def buildTableComputeRoadDistance = computeRoadDistance.results.outputTableName
 
 
         // Need the number of neighbors in the input Table in order to calculate the following indicator
         IProcess computeJoinNeighbors = org.orbisgis.DataUtils.joinTables()
-        computeJoinNeighbors.execute([inputTableNamesWithId: [(buildTableComputeNeighborsProperties)    : idColumnBu,
+        if(!computeJoinNeighbors.execute([inputTableNamesWithId: [(buildTableComputeNeighborsProperties)    : idColumnBu,
                                                               (inputBuildingTableName)                  : idColumnBu],
                                             outputTableName           : buildingPrefixName+"_neighbors",
-                                            datasource           : datasource])
+                                            datasource           : datasource])){
+            logger.info("Cannot compute number of neighbors of a building. ")
+            return
+        }
 
         def buildTableJoinNeighbors = computeJoinNeighbors.results.outputTableName
 
         IProcess computeLikelihoodLargeBuilding = org.orbisgis.BuildingIndicators.likelihoodLargeBuilding()
-        computeLikelihoodLargeBuilding.execute([inputBuildingTableName: buildTableJoinNeighbors,
+        if(!computeLikelihoodLargeBuilding.execute([inputBuildingTableName: buildTableJoinNeighbors,
                                                 nbOfBuildNeighbors    : "building_number_building_neighbor",
                                                 prefixName            : buildingPrefixName,
-                                                datasource            : datasource])
+                                                datasource            : datasource])){
+            logger.info("Cannot compute the like lihood large building indicator. ")
+            return
+        }
 
         def buildTableComputeLikelihoodLargeBuilding = computeLikelihoodLargeBuilding.results.outputTableName
 
 
         IProcess buildingTableJoin = org.orbisgis.DataUtils.joinTables()
-        buildingTableJoin.execute([inputTableNamesWithId: [(buildTableGeometryProperties)            : idColumnBu,
+        if(!buildingTableJoin.execute([inputTableNamesWithId: [(buildTableGeometryProperties)            : idColumnBu,
                                                            (buildTableSizeProperties)                : idColumnBu,
                                                            (buildTableFormProperties)                : idColumnBu,
                                                            (buildTableJoinNeighbors)                 : idColumnBu,
@@ -93,7 +117,10 @@ public static IProcess computeBuildingsIndicators() {
                                                            (buildTableComputeRoadDistance)           : idColumnBu,
                                                            (buildTableComputeLikelihoodLargeBuilding): idColumnBu],
                                    outputTableName           : buildingPrefixName,
-                                   datasource           : datasource])
+                                   datasource           : datasource])){
+            logger.info("Cannot merge all indicator in the table $buildingPrefixName.")
+            return
+        }
 
         [outputTableName: buildingTableJoin.results.outputTableName]
 
