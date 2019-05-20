@@ -21,7 +21,7 @@ class DataUtilsTests {
 
         IProcess joinProcess = Geoclimate.DataUtils.joinTables()
         assertTrue joinProcess.execute([inputTableNamesWithId: [tablea:"ida", tableb:"idb", tablec:"idc"]
-                                        , prefixName: "test", datasource: h2GIS])
+                                        , outputTableName: "test", datasource: h2GIS])
 
         assertTrue("IDA,NAME,LAB,LOCATION".equals(h2GIS.getTable(joinProcess.getResults().outputTableName).columnNames.join(",")))
         assertEquals(1,h2GIS.getTable(joinProcess.getResults().outputTableName.toString().toUpperCase()).rowCount)

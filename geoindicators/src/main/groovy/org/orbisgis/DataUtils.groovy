@@ -16,11 +16,8 @@ import org.orbisgis.processmanagerapi.IProcess
  */
 static IProcess joinTables(){
     processFactory.create("", [inputTableNamesWithId: Map
-                                , prefixName: String, datasource: JdbcDataSource], [outputTableName: String],
-            { inputTableNamesWithId, prefixName, JdbcDataSource datasource ->
-                // The name of the outputTableName is constructed
-                String baseName = "joined"
-                String outputTableName = prefixName + "_" + baseName
+                                , outputTableName: String, datasource: JdbcDataSource], [outputTableName: String],
+            { inputTableNamesWithId, outputTableName, JdbcDataSource datasource ->
                 String columnKey
                 String a = "a"
                 def leftQuery = ""

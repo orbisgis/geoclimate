@@ -70,7 +70,7 @@ public static IProcess computeBuildingsIndicators() {
         IProcess computeJoinNeighbors = org.orbisgis.DataUtils.joinTables()
         computeJoinNeighbors.execute([inputTableNamesWithId: [(buildTableComputeNeighborsProperties)    : idColumnBu,
                                                               (inputBuildingTableName)                  : idColumnBu],
-                                            prefixName           : buildingPrefixName+"_neighbors",
+                                            outputTableName           : buildingPrefixName+"_neighbors",
                                             datasource           : datasource])
 
         def buildTableJoinNeighbors = computeJoinNeighbors.results.outputTableName
@@ -92,7 +92,7 @@ public static IProcess computeBuildingsIndicators() {
                                                            (buildTableComputeMinimumBuildingSpacing) : idColumnBu,
                                                            (buildTableComputeRoadDistance)           : idColumnBu,
                                                            (buildTableComputeLikelihoodLargeBuilding): idColumnBu],
-                                   prefixName           : buildingPrefixName,
+                                   outputTableName           : buildingPrefixName,
                                    datasource           : datasource])
 
         [outputTableName: buildingTableJoin.results.outputTableName]
@@ -161,9 +161,70 @@ public static IProcess computeBuildingsIndicators() {
                         computeClosingness:id_block,
                         computeNetCompacity:id_block,
                         computeWeightedAggregatedStatistics:id_block]
-                         , prefixName: blockPrefixName, datasource: datasource])
+                         , outputTableName: blockPrefixName, datasource: datasource])
             [outputTableName: blockTableJoin]
         })
 
     }
+    
+/**
+ * Compute the geoindicators at RSU scale
+ *
+ * @return
+ */
+public static IProcess computeRSUIndicators() {
+    return processFactory.create("Compute the geoindicators at block scale", [datasource            : JdbcDataSource,
+                                                                              inputBuildingTableName: String,
+                                                                              inputBlockTableName   : String,
+                                                                              inputRSUTableName   : String,
+                                                                              saveResults           : boolean],
+            [outputTableName: String], { datasource, inputBuildingTableName, inputBlockTableName, inputRSUTableName, saveResults ->
+
+        //rsu_area
+        //rsu_free_external_facade_density Building free external facade density
+
+        //rsu_free_vertical_roof_density The sum of all vertical facades areas located above the building gutter height (wall height) divided by the RSU area.
+
+        //rsu_free_non_vertical_roof_density Building non vertical roof density considering that all buildings have either flat or gable roof
+
+        //rsu_building_density
+
+        //rsu_mean_building_neighbor_number RSU mean number of neighbors
+
+        //rsu_mean_building_height The mean height of the buildings included within a RSU, weighted by their area.
+
+        //rsu_std_building_height -pondéré par la surface
+
+        //rsu_building_number RSU number of buildings
+
+        //rsu_building_volume_density
+
+        //rsu_mean_building_volume RSU mean building volume
+
+        //rsu_aspect_ratio
+
+        //rsu_road_fraction
+
+        //rsu_high_vegetation_fraction
+        //rsu_low_vegetation_fraction
+        //rsu_linear_road_density
+        //rsu_water_fraction
+        //rsu_vegetation_fraction
+        //rsu_house_floor_area
+        //rsu_ground_sky_view_factor
+        //rsu_impervious_fraction
+        //rsu_pervious_fraction
+        //rsu_roughness_height
+        //rsu_terrain_roughness_class
+        //rsu_road_direction_distribution
+        //rsu_free_vertical_roof_area_distribution
+        //rsu_free_non_vertical_roof_area_distribution
+        //rsu_effective_terrain_roughness
+        //rsu_perkins_skill_score_building_direction_variability
+        //rsu_building_floor_density
+        //rsu_mean_minimum_building_spacing
+        //rsu_projected_facade_area_distribution
+
+    })
+}
 
