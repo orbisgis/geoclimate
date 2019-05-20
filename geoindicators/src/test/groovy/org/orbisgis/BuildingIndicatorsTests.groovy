@@ -122,17 +122,17 @@ class BuildingIndicatorsTests {
 
         // Only the first 1 first created buildings are selected for the tests
         h2GIS.execute("DROP TABLE IF EXISTS tempo_road, test_building_road_distance; CREATE TABLE tempo_road AS SELECT * " +
-                "FROM road_test WHERE id_road = 1")
+                "FROM road_test WHERE id_road < 5")
 
         def  p =  Geoclimate.BuildingIndicators.roadDistance()
         p.execute([inputBuildingTableName: "building_test", inputRoadTableName: "tempo_road", bufferDist:100,
                    prefixName : "test",datasource:h2GIS])
         def concat = ""
-        h2GIS.eachRow("SELECT * FROM test_building_road_distance WHERE id_build = 1 OR id_build = 6 ORDER BY id_build ASC"){
+        h2GIS.eachRow("SELECT * FROM test_building_road_distance WHERE id_build = 6 OR id_build = 33 ORDER BY id_build ASC"){
             row ->
-                concat+= "${row.building_road_distance}\n"
+                concat+= "${row.building_road_distance.round(4)}\n"
         }
-        assertEquals("100.0\n61.0\n", concat)
+        assertEquals("23.9556\n100.0\n", concat)
     }
 
     @Test

@@ -18,11 +18,14 @@ public static IProcess computeBuildingsIndicators() {
                                                                                  inputRoadTableName    : String,
                                                                                  saveResults           : boolean],
             [outputTableName: String], { datasource, inputBuildingTableName, inputRoadTableName, saveResults ->
-        
+
+        def idColumnBu = "id_build"
+
+
         String buildingPrefixName = "building_indicators"
 
         IProcess computeGeometryProperties = org.orbisgis.GenericIndicators.geometryProperties()
-        computeGeometryProperties.execute([inputTableName: inputBuildingTableName, inputFields: ["id_build", "the_geom"], operations: ["st_length", "st_perimeter", "st_area"]
+        computeGeometryProperties.execute([inputTableName: inputBuildingTableName, inputFields: ["id_build"], operations: ["st_length", "st_perimeter", "st_area"]
                                            , prefixName  : buildingPrefixName, datasource: datasource])
 
         def buildTableGeometryProperties = computeGeometryProperties.results.outputTableName
@@ -55,26 +58,42 @@ public static IProcess computeBuildingsIndicators() {
 
         def buildTableComputeMinimumBuildingSpacing = computeMinimumBuildingSpacing.results.outputTableName
 
-        /*Road distance must be fixed
+
         IProcess computeRoadDistance = org.orbisgis.BuildingIndicators.roadDistance()
         computeRoadDistance.execute([inputBuildingTableName: inputBuildingTableName, inputRoadTableName: inputRoadTableName, bufferDist: 100
                                      , prefixName          : buildingPrefixName, datasource: datasource])
 
         def buildTableComputeRoadDistance = computeRoadDistance.results.outputTableName
-        */
 
+
+        // Need the number of neighbors in the input Table in order to calculate the following indicator
+        IProcess computeJoinNeighbors = org.orbisgis.DataUtils.joinTables()
+        computeJoinNeighbors.execute([inputTableNamesWithId: [(buildTableComputeNeighborsProperties)    : idColumnBu,
+                                                              (inputBuildingTableName)                  : idColumnBu],
+                                            prefixName           : buildingPrefixName+"_neighbors",
+                                            datasource           : datasource])
+
+        def buildTableJoinNeighbors = computeJoinNeighbors.results.outputTableName
 
         IProcess computeLikelihoodLargeBuilding = org.orbisgis.BuildingIndicators.likelihoodLargeBuilding()
-        computeLikelihoodLargeBuilding.execute([inputBuildingTableName: inputBuildingTableName, nbOfBuildNeighbors: buildTableComputeNeighborsProperties, prefixName: buildingPrefixName, datasource: datasource])
+        computeLikelihoodLargeBuilding.execute([inputBuildingTableName: buildTableJoinNeighbors,
+                                                nbOfBuildNeighbors    : "building_number_building_neighbor",
+                                                prefixName            : buildingPrefixName,
+                                                datasource            : datasource])
 
         def buildTableComputeLikelihoodLargeBuilding = computeLikelihoodLargeBuilding.results.outputTableName
 
 
         IProcess buildingTableJoin = org.orbisgis.DataUtils.joinTables()
-        buildingTableJoin.execute([inputTableNamesWithId: [buildTableGeometryProperties            : id_build, buildTableSizeProperties: id_build, buildTableFormProperties: id_build,
-                                                           buildTableComputeNeighborsProperties    : id_build, buildTableComputeMinimumBuildingSpacing: id_build, //buildTableComputeRoadDistance: id_build,
-                                                           buildTableComputeLikelihoodLargeBuilding: id_build]
-                                   , prefixName         : buildingPrefixName, datasource: datasource])
+        buildingTableJoin.execute([inputTableNamesWithId: [(buildTableGeometryProperties)            : idColumnBu,
+                                                           (buildTableSizeProperties)                : idColumnBu,
+                                                           (buildTableFormProperties)                : idColumnBu,
+                                                           (buildTableJoinNeighbors)                 : idColumnBu,
+                                                           (buildTableComputeMinimumBuildingSpacing) : idColumnBu,
+                                                           (buildTableComputeRoadDistance)           : idColumnBu,
+                                                           (buildTableComputeLikelihoodLargeBuilding): idColumnBu],
+                                   prefixName           : buildingPrefixName,
+                                   datasource           : datasource])
 
         [outputTableName: buildingTableJoin.results.outputTableName]
 
@@ -102,7 +121,7 @@ public static IProcess computeBuildingsIndicators() {
             //Sum of the building volume composing the block
             //Sum of block floor area
             def  computeSimpleStats =  Geoclimate.GenericIndicators.unweightedOperationFromLowerScale()
-            psum.execute([inputLowerScaleTableName: inputBuildingTableName,inputUpperScaleTableName: inputBlockTableName,
+            computeSimpleStats.execute([inputLowerScaleTableName: inputBuildingTableName,inputUpperScaleTableName: inputBlockTableName,
                           inputIdUp: id_block, inputVarAndOperations: ["area":["SUM"],"building_floor_area":["SUM"],
                                                                          "building_volume" :["SUM"]],
                           prefixName: blockPrefixName, datasource: datasource])
@@ -120,7 +139,7 @@ public static IProcess computeBuildingsIndicators() {
 
             //Block closingness
             IProcess computeClosingness = Geoclimate.BlockIndicators.closingness()
-            computeClosingness.execute(correlationTableName: inputBuildingTableName, blockTable: inputBlockTable, prefixName: blockPrefixName, datasource: datasource)
+            computeClosingness.execute(correlationTableName: inputBuildingTableName, blockTable: inputBlockTableName, prefixName: blockPrefixName, datasource: datasource)
 
             //Block net compacity
             IProcess computeNetCompacity = Geoclimate.BlockIndicators.netCompacity()
@@ -135,15 +154,15 @@ public static IProcess computeBuildingsIndicators() {
                                                                                      , prefixName: blockPrefixName, datasource: datasource])
 
             //Merge all in one table
-            IProcess bblockTableJoin = org.orbisgis.DataUtils.joinTables()
-            bblockTableJoin.execute([inputTableNamesWithId: [computeSimpleStats: id_block,
+            IProcess blockTableJoin = org.orbisgis.DataUtils.joinTables()
+            blockTableJoin.execute([inputTableNamesWithId: [computeSimpleStats: id_block,
                         computeHoleAreaDensity:id_block ,
                         computePerkinsSkillScoreBuildingDirection: id_block,
                         computeClosingness:id_block,
                         computeNetCompacity:id_block,
                         computeWeightedAggregatedStatistics:id_block]
                          , prefixName: blockPrefixName, datasource: datasource])
-            [outputTableName: bblockTableJoin]
+            [outputTableName: blockTableJoin]
         })
 
     }

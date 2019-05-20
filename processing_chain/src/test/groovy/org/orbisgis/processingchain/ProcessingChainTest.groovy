@@ -488,7 +488,7 @@ class ProcessingChainTest {
         //Compute block indicators
         def computeBlockIndicators = ProcessingChain.BuildGeoIndicators.computeBlockIndicators()
         computeBlockIndicators.execute([datasource: datasource,
-                                        inputBuildingTableName: finalBuildings,
+                                        inputBuildingTableName: buildingIndicators,
                                         inputBlockTableName: finalBlocks,
                                         saveResults : false])
         String blockIndicators = computeBlockIndicators.getResults().outputTableName
