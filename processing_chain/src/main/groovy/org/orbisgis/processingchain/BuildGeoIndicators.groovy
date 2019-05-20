@@ -25,7 +25,7 @@ public static IProcess computeBuildingsIndicators() {
         String buildingPrefixName = "building_indicators"
 
         IProcess computeGeometryProperties = org.orbisgis.GenericIndicators.geometryProperties()
-        computeGeometryProperties.execute([inputTableName: inputBuildingTableName, inputFields: ["id_build", "the_geom"], operations: ["st_length", "st_perimeter", "st_area"]
+        computeGeometryProperties.execute([inputTableName: inputBuildingTableName, inputFields: ["id_build"], operations: ["st_length", "st_perimeter", "st_area"]
                                            , prefixName  : buildingPrefixName, datasource: datasource])
 
         def buildTableGeometryProperties = computeGeometryProperties.results.outputTableName
@@ -70,7 +70,7 @@ public static IProcess computeBuildingsIndicators() {
         IProcess computeJoinNeighbors = org.orbisgis.DataUtils.joinTables()
         computeJoinNeighbors.execute([inputTableNamesWithId: [(buildTableComputeNeighborsProperties)    : idColumnBu,
                                                               (inputBuildingTableName)                  : idColumnBu],
-                                            prefixName           : buildingPrefixName,
+                                            prefixName           : buildingPrefixName+"_neighbors",
                                             datasource           : datasource])
 
         def buildTableJoinNeighbors = computeJoinNeighbors.results.outputTableName
