@@ -155,7 +155,7 @@ public static IProcess computeBuildingsIndicators() {
 
             //Merge all in one table
             IProcess blockTableJoin = org.orbisgis.DataUtils.joinTables()
-            blockTableJoin.execute([inputTableNamesWithId: [inputBlockTableName: id_block,
+            blockTableJoin.execute([inputTableNamesWithId: [(inputBlockTableName): id_block,
                                                             (computeSimpleStats.results.outputTableName): id_block,
                                                             (computeHoleAreaDensity.results.outputTableName):id_block ,
                                                             (computePerkinsSkillScoreBuildingDirection.results.outputTableName): id_block,
@@ -163,7 +163,7 @@ public static IProcess computeBuildingsIndicators() {
                                                             (computeNetCompacity.results.outputTableName):id_block,
                                                             (computeWeightedAggregatedStatistics.results.outputTableName):id_block]
                          , outputTableName: blockPrefixName, datasource: datasource])
-            [outputTableName: blockTableJoin]
+            [outputTableName: blockTableJoin.results.outputTableName]
         })
 
     }
