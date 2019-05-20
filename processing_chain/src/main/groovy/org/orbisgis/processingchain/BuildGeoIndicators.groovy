@@ -120,7 +120,7 @@ public static IProcess computeBuildingsIndicators() {
             //Sum of the building area
             //Sum of the building volume composing the block
             //Sum of block floor area
-            def  computeSimpleStats =  Geoclimate.GenericIndicators.unweightedOperationFromLowerScale()
+            IProcess  computeSimpleStats =  Geoclimate.GenericIndicators.unweightedOperationFromLowerScale()
             computeSimpleStats.execute([inputLowerScaleTableName: inputBuildingTableName,inputUpperScaleTableName: inputBlockTableName,
                           inputIdUp: id_block, inputVarAndOperations: ["area":["SUM"],"building_floor_area":["SUM"],
                                                                          "building_volume" :["SUM"]],
@@ -128,12 +128,12 @@ public static IProcess computeBuildingsIndicators() {
 
             //Ratio between the holes area and the blocks area
             // block_hole_area_density
-            def computeHoleAreaDensity = Geoclimate.BlockIndicators.holeAreaDensity()
+            IProcess computeHoleAreaDensity = Geoclimate.BlockIndicators.holeAreaDensity()
             computeHoleAreaDensity.execute(blockTable: inputBlockTableName, prefixName: blockPrefixName, datasource: datasource)
 
             //Perkins SKill Score of the distribution of building direction within a block
             // block_perkins_skill_score_building_direction
-            def computePerkinsSkillScoreBuildingDirection = Geoclimate.BlockIndicators.perkinsSkillScoreBuildingDirection()
+            IProcess computePerkinsSkillScoreBuildingDirection = Geoclimate.BlockIndicators.perkinsSkillScoreBuildingDirection()
             computePerkinsSkillScoreBuildingDirection.execute([buildingTableName: inputBuildingTableName, angleRangeSize: 15, prefixName: blockPrefixName, datasource: datasource])
 
 
@@ -155,12 +155,13 @@ public static IProcess computeBuildingsIndicators() {
 
             //Merge all in one table
             IProcess blockTableJoin = org.orbisgis.DataUtils.joinTables()
-            blockTableJoin.execute([inputTableNamesWithId: [computeSimpleStats: id_block,
-                        computeHoleAreaDensity:id_block ,
-                        computePerkinsSkillScoreBuildingDirection: id_block,
-                        computeClosingness:id_block,
-                        computeNetCompacity:id_block,
-                        computeWeightedAggregatedStatistics:id_block]
+            blockTableJoin.execute([inputTableNamesWithId: [inputBlockTableName: id_block,
+                                                            (computeSimpleStats.results.outputTableName): id_block,
+                                                            (computeHoleAreaDensity.results.outputTableName):id_block ,
+                                                            (computePerkinsSkillScoreBuildingDirection.results.outputTableName): id_block,
+                                                            (computeClosingness.results.outputTableName):id_block,
+                                                            (computeNetCompacity.results.outputTableName):id_block,
+                                                            (computeWeightedAggregatedStatistics.results.outputTableName):id_block]
                          , outputTableName: blockPrefixName, datasource: datasource])
             [outputTableName: blockTableJoin]
         })
