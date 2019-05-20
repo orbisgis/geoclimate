@@ -19,6 +19,8 @@ public static IProcess computeBuildingsIndicators() {
                                                                                  saveResults           : boolean],
             [outputTableName: String], { datasource, inputBuildingTableName, inputRoadTableName, saveResults ->
 
+        logger.info("Start computing building indicators...")
+
         def idColumnBu = "id_build"
 
 
@@ -140,6 +142,7 @@ public static IProcess computeBuildingsIndicators() {
                                                                               saveResults : boolean],
                 [outputTableName: String], { datasource, inputBuildingTableName, inputBlockTableName, saveResults ->
 
+            logger.info("Start computing block indicators...")
             String blockPrefixName = "block_indicators"            
             String id_block = "id_block"
 
@@ -148,48 +151,69 @@ public static IProcess computeBuildingsIndicators() {
             //Sum of the building volume composing the block
             //Sum of block floor area
             IProcess  computeSimpleStats =  Geoclimate.GenericIndicators.unweightedOperationFromLowerScale()
-            computeSimpleStats.execute([inputLowerScaleTableName: inputBuildingTableName,inputUpperScaleTableName: inputBlockTableName,
+            if(!computeSimpleStats.execute([inputLowerScaleTableName: inputBuildingTableName,inputUpperScaleTableName: inputBlockTableName,
                           inputIdUp: id_block, inputVarAndOperations: ["area":["SUM"],"building_floor_area":["SUM"],
                                                                          "building_volume" :["SUM"]],
-                          prefixName: blockPrefixName, datasource: datasource])
+                          prefixName: blockPrefixName, datasource: datasource])){
+                logger.info("Cannot compute the sum of of the building area, building volume and block floor area.")
+                return
+            }
 
             //Ratio between the holes area and the blocks area
             // block_hole_area_density
             IProcess computeHoleAreaDensity = Geoclimate.BlockIndicators.holeAreaDensity()
-            computeHoleAreaDensity.execute(blockTable: inputBlockTableName, prefixName: blockPrefixName, datasource: datasource)
+            if(!computeHoleAreaDensity.execute(blockTable: inputBlockTableName, prefixName: blockPrefixName, datasource: datasource)){
+                logger.info("Cannot compute the hole area density.")
+                return
+            }
 
             //Perkins SKill Score of the distribution of building direction within a block
             // block_perkins_skill_score_building_direction
             IProcess computePerkinsSkillScoreBuildingDirection = Geoclimate.BlockIndicators.perkinsSkillScoreBuildingDirection()
-            computePerkinsSkillScoreBuildingDirection.execute([buildingTableName: inputBuildingTableName, angleRangeSize: 15, prefixName: blockPrefixName, datasource: datasource])
+            if(!computePerkinsSkillScoreBuildingDirection.execute([buildingTableName: inputBuildingTableName, angleRangeSize: 15, prefixName: blockPrefixName, datasource: datasource])){
+                logger.info("Cannot compute perkins skill indicator. ")
+                return
+            }
 
 
             //Block closingness
             IProcess computeClosingness = Geoclimate.BlockIndicators.closingness()
-            computeClosingness.execute(correlationTableName: inputBuildingTableName, blockTable: inputBlockTableName, prefixName: blockPrefixName, datasource: datasource)
+            if(!computeClosingness.execute(correlationTableName: inputBuildingTableName, blockTable: inputBlockTableName, prefixName: blockPrefixName, datasource: datasource)){
+                logger.info("Cannot compute closingness indicator. ")
+                return
+            }
 
             //Block net compacity
             IProcess computeNetCompacity = Geoclimate.BlockIndicators.netCompacity()
-            computeNetCompacity.execute([buildTable: inputBuildingTableName, buildingVolumeField: "building_volume", buildingContiguityField: "building_contiguity",
-                                         prefixName: blockPrefixName, datasource: datasource])
+            if(!computeNetCompacity.execute([buildTable: inputBuildingTableName, buildingVolumeField: "building_volume", buildingContiguityField: "building_contiguity",
+                                         prefixName: blockPrefixName, datasource: datasource])){
+                logger.info("Cannot compute the net compacity indicator. ")
+                return
+            }
 
             //Block mean building height
             //Block standard deviation building height
             IProcess computeWeightedAggregatedStatistics = Geoclimate.GenericIndicators.weightedAggregatedStatistics()
-            computeWeightedAggregatedStatistics.execute([inputLowerScaleTableName: inputBuildingTableName,inputUpperScaleTableName: inputBlockTableName, inputIdUp: id_block,
+            if(!computeWeightedAggregatedStatistics.execute([inputLowerScaleTableName: inputBuildingTableName,inputUpperScaleTableName: inputBlockTableName, inputIdUp: id_block,
                                                          inputVarWeightsOperations: ["height_roof": ["area": ["AVG", "STD"]]]
-                                                                                     , prefixName: blockPrefixName, datasource: datasource])
+                                                                                     , prefixName: blockPrefixName, datasource: datasource])){
+                logger.info("Cannot compute the block mean building height and standard deviation building height indicators. ")
+                return
+            }
 
             //Merge all in one table
             IProcess blockTableJoin = org.orbisgis.DataUtils.joinTables()
-            blockTableJoin.execute([inputTableNamesWithId: [(inputBlockTableName): id_block,
+            if(!blockTableJoin.execute([inputTableNamesWithId: [(inputBlockTableName): id_block,
                                                             (computeSimpleStats.results.outputTableName): id_block,
                                                             (computeHoleAreaDensity.results.outputTableName):id_block ,
                                                             (computePerkinsSkillScoreBuildingDirection.results.outputTableName): id_block,
                                                             (computeClosingness.results.outputTableName):id_block,
                                                             (computeNetCompacity.results.outputTableName):id_block,
                                                             (computeWeightedAggregatedStatistics.results.outputTableName):id_block]
-                         , outputTableName: blockPrefixName, datasource: datasource])
+                         , outputTableName: blockPrefixName, datasource: datasource])){
+                logger.info("Cannot merge all tables in $blockPrefixName. ")
+                return
+            }
             [outputTableName: blockTableJoin.results.outputTableName]
         })
 
