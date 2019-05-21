@@ -263,7 +263,7 @@ public static IProcess computeRSUIndicators() {
         IProcess computeRSUStatistics = Geoclimate.GenericIndicators.unweightedOperationFromLowerScale()
         if(!computeRSUStatistics.execute([inputLowerScaleTableName: inputBuildingTableName,inputUpperScaleTableName: inputRSUTableName, inputIdUp: id_rsu,
                                inputVarAndOperations: ["building_volume":["DENS"],
-                                                       "building_area":["DENS"]],
+                                                       "area":["DENS"]],
                                    prefixName: rsuPrefixName, datasource: datasource])){
             logger.info("Cannot compute the statistics : building density for the RSU")
             return

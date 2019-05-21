@@ -505,7 +505,7 @@ class ProcessingChainTest {
                                       inputRSUTableName   : finalRSU,
                                       inputVegetTableName :vegetationTable,
                                       inputRoadTableName:roadTable,
-                                                 inputWaterTableName:hydrographicTable])
+                                      inputWaterTableName:hydrographicTable])
 
         String rsuIndicators = computeRSUIndicators.getResults().outputTableName
         if(saveResults){
