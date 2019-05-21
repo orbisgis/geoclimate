@@ -497,5 +497,18 @@ class ProcessingChainTest {
             datasource.save(blockIndicators, directory + File.separator + "${blockIndicators}_${id_zone}.geojson")
         }
 
+        //Compute RSU indicators
+        def computeRSUIndicators = ProcessingChain.BuildGeoIndicators.computeRSUIndicators()
+        assertTrue computeRSUIndicators.execute([datasource            : datasource,
+                                      inputBuildingTableName: buildingIndicators,
+                                      inputBlockTableName   : blockIndicators,
+                                      inputRSUTableName   : finalRSU])
+
+        String rsuIndicators = computeRSUIndicators.getResults().outputTableName
+        if(saveResults){
+            println("Saving block indicators")
+            datasource.save(rsuIndicators, directory + File.separator + "${rsuIndicators}_${id_zone}.geojson")
+        }
+
     }
 }
