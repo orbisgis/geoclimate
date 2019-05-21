@@ -291,11 +291,13 @@ class ProcessingChainTest {
                 "sugar cane":["produce":["sugar_cane"],"crop":["sugar_cane"]]
         ]
 
+         H2GIS h2GIS = H2GIS.open("./target/osm_processchain")
+
          prepareOSMData.execute([
                 hLevMin: 3,
                 hLevMax: 15,
                 hThresholdLev2: 10,
-                directory : "./target/osm_processchain",
+                datasource : h2GIS,
                 osmTablesPrefix: "EXT",
                 idZone : "56223",
                 expand : 100,
@@ -357,9 +359,10 @@ class ProcessingChainTest {
 
     @Test
     void PrepareOSMDefaultConfigTest() {
+        H2GIS h2GIS = H2GIS.open("./target/osm_processchain")
         IProcess prepareOSMData = ProcessingChain.PrepareOSM.prepareOSMDefaultConfig()
         prepareOSMData.execute([
-                directory : "./target/osm_processchain",
+                datasource : h2GIS,
                 idZone : "56223",
                 saveResults : true])
     }
@@ -428,18 +431,17 @@ class ProcessingChainTest {
 
     @Test
     void osmChainWithIndicators() {
-        String dir = "./target/osm_processchain_full"
         String id_zone = "56223"
         boolean saveResults = true
 
+        H2GIS datasource = H2GIS.open("./target/osm_processchain_full")
+
         //Extract and transform OSM data
         IProcess prepareOSMData = ProcessingChain.PrepareOSM.prepareOSMDefaultConfig()
-        prepareOSMData.execute([
-                directory  : dir,
+        assertTrue prepareOSMData.execute([
+                datasource  : datasource,
                 idZone     : id_zone,
                 saveResults: saveResults])
-
-        JdbcDataSource datasource = prepareOSMData.getResults().datasource
 
         String buildingTable = prepareOSMData.getResults().outputBuilding
 
@@ -456,10 +458,10 @@ class ProcessingChainTest {
 
         //Create spatial units and relations : building, block, rsu
         IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
-        spatialUnits.execute([datasource : datasource, zoneTable: zoneTable, buildingTable: buildingTable,
+        assertTrue spatialUnits.execute([datasource : datasource, zoneTable: zoneTable, buildingTable: buildingTable,
                               roadTable: roadTable, railTable: railTable, vegetationTable: vegetationTable,
                               hydrographicTable: hydrographicTable, surface_vegetation: 100000,
-                              surface_hydro  : 2500, distance: 0.01, prefixName: "spatial_units"])
+                              surface_hydro  : 2500, distance: 0.01, prefixName: "geounits"])
 
         String finalBuildings = spatialUnits.getResults().outputTableBuildingName
         String finalBlocks = spatialUnits.getResults().outputTableBlockName
@@ -475,7 +477,7 @@ class ProcessingChainTest {
 
         //Compute building indicators
         def computeBuildingsIndicators = ProcessingChain.BuildGeoIndicators.computeBuildingsIndicators()
-        computeBuildingsIndicators.execute([datasource            : datasource,
+        assertTrue computeBuildingsIndicators.execute([datasource            : datasource,
                                             inputBuildingTableName: finalBuildings,
                                             inputRoadTableName    : roadTable,
                                             saveResults           : false])
@@ -487,7 +489,7 @@ class ProcessingChainTest {
 
         //Compute block indicators
         def computeBlockIndicators = ProcessingChain.BuildGeoIndicators.computeBlockIndicators()
-        computeBlockIndicators.execute([datasource: datasource,
+        assertTrue computeBlockIndicators.execute([datasource: datasource,
                                         inputBuildingTableName: buildingIndicators,
                                         inputBlockTableName: finalBlocks,
                                         saveResults : false])

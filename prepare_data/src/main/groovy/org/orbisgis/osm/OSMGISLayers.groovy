@@ -423,7 +423,7 @@ static String zoneSQLScript(def prefix, def idZone, def bboxSize, def bufferSize
 static String zoneNeighborsSQLScript(def prefix){
     def script = """
         DROP TABLE IF EXISTS ZONE_NEIGHBORS;
-        CREATE TABLE ZONE_NEIGHBORS AS
+        CREATE TABLE ZONE_NEIGHBORS AS 
         SELECT a.id_zone, st_polygonize(st_union(b.the_geom)) the_geom
         from (
                 select tag_value as id_zone, a.id_relation
@@ -431,7 +431,7 @@ static String zoneNeighborsSQLScript(def prefix){
                     join (select id_relation
                             from ${prefix}_relation_tag rt 
                                 join ${prefix}_tag t ON (rt.id_tag = t.id_tag)
-                            WHERE tag_key = 'admin_level 
+                            WHERE tag_key = 'admin_level' 
                             AND tag_value = '8') b on (a.id_relation=b.id_relation)
                     join ${prefix}_tag T on (a.id_tag = T.id_tag)
                 WHERE tag_key='ref:INSEE') a
@@ -454,7 +454,7 @@ static String zoneNeighborsSQLScript(def prefix){
                                 FROM ${prefix}_relation_tag rt
                                 JOIN ${prefix}_tag t ON (rt.id_tag = t.id_tag)
                                 JOIN ${prefix}_way_member wm ON(rt.id_relation = wm.id_relation)
-                                WHERE tag_key = 'admin_level 
+                                WHERE tag_key = 'admin_level' 
                                 AND tag_value = '8' 
                         ) br ON (w.id_way = br.id_way)) geom_table
                         WHERE st_numgeometries(the_geom)>=2)
