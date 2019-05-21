@@ -1,5 +1,6 @@
 package org.orbisgis.processingchain
 
+import org.orbisgis.DataUtils
 import org.orbisgis.processmanager.ProcessManager
 import org.orbisgis.processmanagerapi.IProcessFactory
 import org.slf4j.Logger
@@ -22,4 +23,6 @@ abstract class ProcessingChain extends Script {
     public static BuildSpatialUnits  = new BuildSpatialUnits()
 
     public static BuildLCZ  = new BuildLCZ()
+
+    public static DataUtils  = new DataUtils()
 }

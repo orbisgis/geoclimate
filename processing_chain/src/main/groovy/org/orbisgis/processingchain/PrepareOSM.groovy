@@ -18,17 +18,15 @@ import org.slf4j.LoggerFactory
      *
      *  @param datasource a connection to the database where the result files should be stored
      *  @param idZone A string representing the inseeCode of the administrative level8 zone
-     *  @param saveResults Set to true to save the result files in geojson and json in the @directory
      *
      * @return
      */
     public static IProcess prepareOSMDefaultConfig() {
         return processFactory.create("Extract and transform OSM data to Geoclimate model (default configuration)",
-                [directory : String,
-                 idZone : String,
-                 saveResults : boolean],
-                [datasource: JdbcDataSource,outputBuilding : String, outputRoad:String, outputRail : String, outputHydro:String, outputVeget:String, outputZone:String],
-                { directory, idZone , saveResults ->
+                [datasource : JdbcDataSource,
+                 idZone : String],
+                [outputBuilding : String, outputRoad:String, outputRail : String, outputHydro:String, outputVeget:String, outputZone:String,outputStats : String[]],
+                { datasource, idZone  ->
                     def mappingTypeAndUse = [
                             terminal: [aeroway : ["terminal", "airport_terminal"],
                                        amenity : ["terminal", "airport_terminal"],
@@ -330,15 +328,14 @@ import org.slf4j.LoggerFactory
                             mappingForRailType : mappingRailType,
 
                             mappingForVegetType : mappingVegetType,
-                            saveResults : saveResults
                     ])
-                    [datasource: prepareOSMData.getResults().datasource,
-                     outputBuilding : prepareOSMData.getResults().outputBuilding,
+                    [outputBuilding : prepareOSMData.getResults().outputBuilding,
                      outputRoad:prepareOSMData.getResults().outputRoad,
                      outputRail : prepareOSMData.getResults().outputRail,
                      outputHydro:prepareOSMData.getResults().outputHydro,
                      outputVeget:prepareOSMData.getResults().outputVeget,
-                     outputZone:prepareOSMData.getResults().outputZone]
+                     outputZone:prepareOSMData.getResults().outputZone,
+                     outputStats : prepareOSMData.getResults().outputStats]
 
                 });
     }
@@ -348,12 +345,10 @@ import org.slf4j.LoggerFactory
      * the geoclimate model
      *
      * @param datasource a connection to the database where the result files should be stored
-     * @param osmTablesPrefix The prefix used for naming the 11 OSM tables build from the OSM file     *
+     * @param osmTablesPrefix The prefix used for naming the 11 OSM tables build from the OSM file
      * @param idZone A string representing the inseeCode of the administrative level8 zone
      * @param expand The integer value of the Extended Zone
      * @param distBuffer The integer value of the Zone buffer
-     *
-     * @param saveResults Set to true to save the result files in geojson and json in the @directory
      * @return
      */
     public static IProcess prepareOSM() {
@@ -390,10 +385,9 @@ import org.slf4j.LoggerFactory
                  mappingForRoadType : Map,
                  mappingForSurface : Map,
                  mappingForRailType : Map,
-                 mappingForVegetType : Map,
-                 saveResults : boolean],
-                [datasource: JdbcDataSource,outputBuilding : String, outputRoad:String, outputRail : String, outputHydro:String, outputVeget:String, outputZone:String],
-                { directory, osmTablesPrefix, idZone , expand, distBuffer,  hLevMin, hLevMax,hThresholdLev2, buildingTableColumnsNames,
+                 mappingForVegetType : Map],
+                [outputBuilding : String, outputRoad:String, outputRail : String, outputHydro:String, outputVeget:String, outputZone:String,outputStats : String[]],
+                { datasource, osmTablesPrefix, idZone , expand, distBuffer,  hLevMin, hLevMax,hThresholdLev2, buildingTableColumnsNames,
                     buildingTagKeys,buildingTagValues,
                     tablesPrefix,
                     buildingFilter,
@@ -416,8 +410,7 @@ import org.slf4j.LoggerFactory
                     mappingForRoadType,
                     mappingForSurface,
                     mappingForRailType,
-                    mappingForVegetType,
-                    saveResults ->
+                    mappingForVegetType ->
 
                     if(datasource==null){
                         logger.error("Cannot create the database to store the osm data")
@@ -590,53 +583,21 @@ import org.slf4j.LoggerFactory
                     String finalVeget = inputDataFormatting.getResults().outputVeget
                     String finalZone = inputDataFormatting.getResults().outputZone
 
-                    if(saveResults){
+                    String finalOutputBuildingStatZone = inputDataFormatting.getResults().outputBuildingStatZone
+                    String finalOutputBuildingStatZoneBuff = inputDataFormatting.getResults().outputBuildingStatZoneBuff
+                    String finalOutputRoadStatZone = inputDataFormatting.getResults().outputRoadStatZone
+                    String finalOutputRoadStatZoneBuff = inputDataFormatting.getResults().outputRoadStatZoneBuff
+                    String finalOutputRailStatZone = inputDataFormatting.getResults().outputRailStatZone
+                    String finalOutputHydroStatZone = inputDataFormatting.getResults().outputHydroStatZone
+                    String finalOutputHydroStatZoneExt= inputDataFormatting.getResults().outputHydroStatZoneExt
+                    String finalOutputVegetStatZone = inputDataFormatting.getResults().outputVegetStatZone
+                    String finalOutputVegetStatZoneExt = inputDataFormatting.getResults().outputVegetStatZoneExt
 
-                        logger.info("Saving GIS layers in geojson format")
-                        datasource.save(finalBuildings, dirFile.absolutePath+File.separator+"${finalBuildings}_${idZone}.geojson")
-
-                        datasource.save(finalRoads, dirFile.absolutePath+File.separator+"${finalRoads}_${idZone}.geojson")
-
-                        datasource.save(finalRails, dirFile.absolutePath+File.separator+"${finalRails}_${idZone}.geojson")
-
-                        datasource.save(finalHydro, dirFile.absolutePath+File.separator+"${finalHydro}_${idZone}.geojson")
-
-                        datasource.save(finalVeget, dirFile.absolutePath+File.separator+"${finalVeget}_${idZone}.geojson")
-
-                        datasource.save(finalZone, dirFile.absolutePath+File.separator+"${finalZone}_${idZone}.geojson")
-
-                        logger.info("Saving statistic tables in csv format")
-
-                        String finalOutputBuildingStatZone = inputDataFormatting.getResults().outputBuildingStatZone
-                        datasource.save(finalOutputBuildingStatZone, dirFile.absolutePath+File.separator+"${finalOutputBuildingStatZone}_${idZone}.csv")
-
-                        String finalOutputBuildingStatZoneBuff = inputDataFormatting.getResults().outputBuildingStatZoneBuff
-                        datasource.save(finalOutputBuildingStatZoneBuff, dirFile.absolutePath+File.separator+"${finalOutputBuildingStatZoneBuff}_${idZone}.csv")
-
-                        String finalOutputRoadStatZone = inputDataFormatting.getResults().outputRoadStatZone
-                        datasource.save(finalOutputRoadStatZone, dirFile.absolutePath+File.separator+"${finalOutputRoadStatZone}_${idZone}.csv")
-
-                        String finalOutputRoadStatZoneBuff = inputDataFormatting.getResults().outputRoadStatZoneBuff
-                        datasource.save(finalOutputRoadStatZoneBuff, dirFile.absolutePath+File.separator+"${finalOutputRoadStatZoneBuff}_${idZone}.csv")
-
-                        String finalOutputRailStatZone = inputDataFormatting.getResults().outputRailStatZone
-                        datasource.save(finalOutputRailStatZone, dirFile.absolutePath+File.separator+"${finalOutputRailStatZone}_${idZone}.csv")
-
-                        String finalOutputHydroStatZone = inputDataFormatting.getResults().outputHydroStatZone
-                        datasource.save(finalOutputHydroStatZone, dirFile.absolutePath+File.separator+"${finalOutputHydroStatZone}_${idZone}.csv")
-
-                        String finalOutputHydroStatZoneExt= inputDataFormatting.getResults().outputHydroStatZoneExt
-                        datasource.save(finalOutputHydroStatZoneExt, dirFile.absolutePath+File.separator+"${finalOutputHydroStatZoneExt}_${idZone}.csv")
-
-                        String finalOutputVegetStatZone = inputDataFormatting.getResults().outputVegetStatZone
-                        datasource.save(finalOutputVegetStatZone, dirFile.absolutePath+File.separator+"${finalOutputVegetStatZone}_${idZone}.csv")
-
-                        String finalOutputVegetStatZoneExt = inputDataFormatting.getResults().outputVegetStatZoneExt
-                        datasource.save(finalOutputVegetStatZoneExt, dirFile.absolutePath+File.separator+"${finalOutputVegetStatZoneExt}_${idZone}.csv")
-
-                    }
-                    [datasource: datasource, outputBuilding : finalBuildings, outputRoad:finalRoads,
-                     outputRail : finalRails, outputHydro:finalHydro, outputVeget:finalVeget, outputZone:finalZone]
+                    [outputBuilding : finalBuildings, outputRoad:finalRoads,
+                     outputRail : finalRails, outputHydro:finalHydro, outputVeget:finalVeget, outputZone:finalZone,
+                     outputStats :[finalOutputBuildingStatZone,finalOutputBuildingStatZoneBuff,finalOutputRoadStatZone,
+                                   finalOutputRoadStatZoneBuff,finalOutputRailStatZone,finalOutputHydroStatZone,finalOutputHydroStatZoneExt,
+                                   finalOutputVegetStatZone,finalOutputVegetStatZoneExt]]
 
                 })
     }

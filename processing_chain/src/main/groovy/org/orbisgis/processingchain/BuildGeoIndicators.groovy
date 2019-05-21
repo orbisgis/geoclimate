@@ -13,11 +13,9 @@ import org.orbisgis.processmanagerapi.IProcess
  * @return
  */
 public static IProcess computeBuildingsIndicators() {
-    return processFactory.create("Compute the geoindicators at building scale", [datasource            : JdbcDataSource,
-                                                                                 inputBuildingTableName: String,
-                                                                                 inputRoadTableName    : String,
-                                                                                 saveResults           : boolean],
-            [outputTableName: String], { datasource, inputBuildingTableName, inputRoadTableName, saveResults ->
+    return processFactory.create("Compute the geoindicators at building scale",
+            [datasource : JdbcDataSource,inputBuildingTableName: String,inputRoadTableName : String],
+            [outputTableName: String], { datasource, inputBuildingTableName, inputRoadTableName ->
 
         logger.info("Start computing building indicators...")
 
@@ -138,9 +136,8 @@ public static IProcess computeBuildingsIndicators() {
     public static IProcess computeBlockIndicators(){
         return processFactory.create("Compute the geoindicators at block scale", [datasource: JdbcDataSource,
                                                                               inputBuildingTableName: String,
-                                                                              inputBlockTableName: String,
-                                                                              saveResults : boolean],
-                [outputTableName: String], { datasource, inputBuildingTableName, inputBlockTableName, saveResults ->
+                                                                              inputBlockTableName: String],
+                [outputTableName: String], { datasource, inputBuildingTableName, inputBlockTableName ->
 
             logger.info("Start computing block indicators...")
             String blockPrefixName = "block_indicators"            
