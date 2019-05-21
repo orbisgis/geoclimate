@@ -256,6 +256,8 @@ class FormattingForAbstractModelTests {
         assertTrue(h2GIS.getTable("INPUT_ROAD").getColumnNames().contains("TYPE"))
         assertTrue(h2GIS.getTable("INPUT_ROAD").getColumnNames().contains("SURFACE"))
         assertTrue(h2GIS.getTable("INPUT_ROAD").getColumnNames().contains("ZINDEX"))
+
+        h2GIS.save("INPUT_ROAD", '/home/ebocher/Autres/codes/geoclimate/processing_chain/target/road.geojson')
     }
 
     @Test

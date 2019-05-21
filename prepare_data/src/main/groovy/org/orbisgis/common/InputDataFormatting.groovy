@@ -149,7 +149,7 @@ static IProcess inputDataFormatting(){
                 def VEGET_STATS_EXT_ZONE='VEGET_STATS_EXT_ZONE'
 
                 //Run the sql script
-                datasource.executeScript(getClass().getResource('inputDataFormatting.sql').toString(),
+                datasource.executeScript(getClass().getResourceAsStream('inputDataFormatting.sql'),
                             [INPUT_BUILDING : inputBuilding, INPUT_ROAD: inputRoad, INPUT_RAIL: inputRail,
                              INPUT_HYDRO  : inputHydro, INPUT_VEGET: inputVeget, ZONE: inputZone, ZONE_NEIGHBORS: inputZoneNeighbors,
                              H_LEV_MIN : hLevMin, H_LEV_MAX: hLevMax, H_THRESHOLD_LEV2: hThresholdLev2, ID_ZONE: idZone,

@@ -242,21 +242,18 @@ static IProcess prepareHydro() {
 static IProcess loadInitialData() {
     return processFactory.create(
             "Import the data concerning a given zone and generate the 4 associated zone tables",
-            [dbPath : String,
+            [datasource: JdbcDataSource,
              osmTablesPrefix: String,
              idZone : String,
              expand : int,
              distBuffer : int
             ],
             [success : boolean,
-             outDatasource : JdbcDataSource,
              outputZone : String,
              outputZoneNeighbors : String],
-            { dbPath, osmTablesPrefix, idZone, expand, distBuffer ->
+            { datasource, osmTablesPrefix, idZone, expand, distBuffer ->
                 boolean success = true
-                def datasource
-                if (dbPath != null) {
-                    datasource = H2GIS.open([databaseName: dbPath])
+                if (datasource != null) {
                     def tmpOSMFile = File.createTempFile("zone", ".osm")
                     //zone download : relation, ways and nodes corresponding to the targeted zone limit
                     def initQuery = "[timeout:900];(relation[\"ref:INSEE\"=\"$idZone\"][\"boundary\"=\"administrative\"][\"admin_level\"=\"8\"];>;);out;"
@@ -288,7 +285,6 @@ static IProcess loadInitialData() {
 
                         //If the osm file is downloaded do the job
                         if (tmpOSMFile2.exists()) {
-
                             //Import the OSM file
                             datasource.load(tmpOSMFile2.absolutePath, osmTablesPrefix, true)
                             datasource.execute createIndexesOnOSMTables(osmTablesPrefix)
@@ -304,10 +300,10 @@ static IProcess loadInitialData() {
                         success = false
                     }
                 } else {
-                    logger.error("The database path must be provided.")
+                    logger.error("The connection of the database cannot be null.")
                     success = false
                 }
-                [success: success, outDatasource: datasource,
+                [success: success,
                  outputZone : "ZONE", outputZoneNeighbors : "ZONE_NEIGHBORS"]
             }
     )
@@ -342,54 +338,49 @@ static boolean executeOverPassQuery(def query, def outputOSMFile) {
 
 /**
  ** Function to drop the temp tables coming from the OSM extraction
+ * @param prefix prefix of the OSM tables
  **/
-
 static String dropOSMTables (String prefix) {
-    String script = '        DROP TABLE IF EXISTS '+prefix+'_NODE;\n' +
-            '        DROP TABLE IF EXISTS '+prefix+'_NODE_MEMBER;\n' +
-            '        DROP TABLE IF EXISTS '+prefix+'_NODE_TAG;\n' +
-            '        DROP TABLE IF EXISTS '+prefix+'_RELATION;\n' +
-            '        DROP TABLE IF EXISTS '+prefix+'_RELATION_MEMBER;\n' +
-            '        DROP TABLE IF EXISTS '+prefix+'_RELATION_TAG;\n' +
-            '        DROP TABLE IF EXISTS '+prefix+'_TAG;\n' +
-            '        DROP TABLE IF EXISTS '+prefix+'_WAY;\n' +
-            '        DROP TABLE IF EXISTS '+prefix+'_WAY_MEMBER;\n' +
-            '        DROP TABLE IF EXISTS '+prefix+'_WAY_NODE;\n' +
-            '        DROP TABLE IF EXISTS '+prefix+'_WAY_TAG;'
-    return script
+    def script = """DROP TABLE IF EXISTS ${prefix}_NODE, ${prefix}_NODE_MEMBER, ${prefix}_NODE_TAG,
+    ${prefix}_RELATION,${prefix}_RELATION_MEMBER,${prefix}_RELATION_TAG,${prefix}_TAG, ${prefix}_WAY,
+    ${prefix}_WAY_MEMBER,${prefix}_WAY_NODE,${prefix}_WAY_TAG"""
+    return script.toString()
 }
 /**
  ** Function to prepare the script to index the tables from OSM
+ * @param prefix prefix of the OSM tables
  **/
 static String createIndexesOnOSMTables(def prefix){
-    def script = ''
-    script = '''
-            CREATE INDEX IF NOT EXISTS map_node_index on map_node(id_node);
-            CREATE INDEX IF NOT EXISTS map_way_node_index on map_way_node(id_node);
-            CREATE INDEX IF NOT EXISTS map_way_node_index2 on map_way_node(node_order);
-            CREATE INDEX IF NOT EXISTS map_way_node_index3 ON map_way_node(id_way);
-            CREATE INDEX IF NOT EXISTS map_way_index on map_way(id_way);
-            CREATE INDEX IF NOT EXISTS map_way_tag_id_index on map_way_tag(id_tag);
-            CREATE INDEX IF NOT EXISTS map_way_tag_va_index on map_way_tag(id_way);
-            CREATE INDEX IF NOT EXISTS map_tag_id_index on map_tag(id_tag);
-            CREATE INDEX IF NOT EXISTS map_tag_key_index on map_tag(tag_key);
-            CREATE INDEX IF NOT EXISTS map_relation_tag_tag_index ON map_relation_tag(id_tag);
-            CREATE INDEX IF NOT EXISTS map_relation_tag_tag_index2 ON map_relation_tag(id_relation);
-            CREATE INDEX IF NOT EXISTS map_relation_tag_tag_index ON map_relation_tag(tag_value);
-            CREATE INDEX IF NOT EXISTS map_relation_tag_rel_index ON map_relation(id_relation);
-            CREATE INDEX IF NOT EXISTS map_way_member_index ON map_way_member(id_relation);
-            '''
-    return script.replaceAll('map',prefix)
+    def script = """
+            CREATE INDEX IF NOT EXISTS ${prefix}_node_index on ${prefix}_node(id_node);
+            CREATE INDEX IF NOT EXISTS ${prefix}_way_node_index on ${prefix}_way_node(id_node);
+            CREATE INDEX IF NOT EXISTS ${prefix}_way_node_index2 on ${prefix}_way_node(node_order);
+            CREATE INDEX IF NOT EXISTS ${prefix}_way_node_index3 ON ${prefix}_way_node(id_way);
+            CREATE INDEX IF NOT EXISTS ${prefix}_way_index on ${prefix}_way(id_way);
+            CREATE INDEX IF NOT EXISTS ${prefix}_way_tag_id_index on ${prefix}_way_tag(id_tag);
+            CREATE INDEX IF NOT EXISTS ${prefix}_way_tag_va_index on ${prefix}_way_tag(id_way);
+            CREATE INDEX IF NOT EXISTS ${prefix}_tag_id_index on ${prefix}_tag(id_tag);
+            CREATE INDEX IF NOT EXISTS ${prefix}_tag_key_index on ${prefix}_tag(tag_key);
+            CREATE INDEX IF NOT EXISTS ${prefix}_relation_tag_tag_index ON ${prefix}_relation_tag(id_tag);
+            CREATE INDEX IF NOT EXISTS ${prefix}_relation_tag_tag_index2 ON ${prefix}_relation_tag(id_relation);
+            CREATE INDEX IF NOT EXISTS ${prefix}_relation_tag_tag_index ON ${prefix}_relation_tag(tag_value);
+            CREATE INDEX IF NOT EXISTS ${prefix}_relation_tag_rel_index ON ${prefix}_relation(id_relation);
+            CREATE INDEX IF NOT EXISTS ${prefix}_way_member_index ON ${prefix}_way_member(id_relation);
+            """
+    return script.toString()
 }
 
 /**
  ** Function to create the script for the selected zone
+ * @param prefix prefix of the OSM tables
+ * @param idZone identifier for the processed area
+ * @param bboxSize integer value of the Extended Zone
+ * @param bufferSize integer value of the Zone buffer
  **/
 static String zoneSQLScript(def prefix, def idZone, def bboxSize, def bufferSize) {
-    def script = 'DROP TABLE IF EXISTS ZONE;\n' +
-            'CREATE TABLE ZONE (ID_ZONE VARCHAR, THE_GEOM GEOMETRY, ID_RELATION INTEGER) AS\n' +
-            '        SELECT '+ idZone + ', ST_Polygonize(ST_UNION(ST_ACCUM(the_geom))) the_geom, id_relation'
-    script += '''
+    def script = """DROP TABLE IF EXISTS ZONE;
+    CREATE TABLE ZONE (ID_ZONE VARCHAR, THE_GEOM GEOMETRY, ID_RELATION INTEGER) AS
+     SELECT ${idZone}, ST_Polygonize(ST_UNION(ST_ACCUM(the_geom))) the_geom, id_relation     
         FROM (
                 SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(the_geom), 4326), 2154) the_geom, id_relation, id_way
                 FROM (
@@ -397,60 +388,52 @@ static String zoneSQLScript(def prefix, def idZone, def bboxSize, def bufferSize
                                 SELECT ST_ACCUM(the_geom) the_geom
                                 FROM (
                                         SELECT n.id_node, n.the_geom, wn.id_way idway
-                                        FROM map_node n, map_way_node wn
+                                        FROM ${prefix}_node n, ${prefix}_way_node wn
                                         WHERE n.id_node = wn.id_node ORDER BY wn.node_order
                                 )
                                 WHERE  idway = w.id_way) the_geom
                         , w.id_way, br.id_relation
-                        FROM map_way w JOIN (
+                        FROM ${prefix}_way w JOIN (
                         SELECT rt.id_relation, wm.id_way
-                        FROM map_relation_tag rt
-                        JOIN map_tag t ON (rt.id_tag = t.id_tag)
-                        JOIN map_way_member wm ON(rt.id_relation = wm.id_relation)
+                        FROM ${prefix}_relation_tag rt
+                        JOIN ${prefix}_tag t ON (rt.id_tag = t.id_tag)
+                        JOIN ${prefix}_way_member wm ON(rt.id_relation = wm.id_relation)
                         WHERE tag_key = 'admin_level'
                         AND tag_value = '8'
                 ) br ON (w.id_way = br.id_way)) geom_table
                 WHERE st_numgeometries(the_geom)>=2)
-        GROUP BY id_relation;
-    
+        GROUP BY id_relation;    
         -- Generation of a rectangular area (bbox) around the studied zone
         DROP TABLE IF EXISTS ZONE_EXTENDED;
         CREATE TABLE ZONE_EXTENDED AS
-        SELECT ST_EXPAND( the_geom , '''
-    script += bboxSize+') as the_geom'
-    script += '''
-        FROM zone;
-        CREATE SPATIAL INDEX ON ZONE_EXTENDED(the_geom) ;
-
+        SELECT ST_EXPAND( the_geom , ${bboxSize}) as the_geom FROM zone;
+        CREATE SPATIAL INDEX ON ZONE_EXTENDED(the_geom);
         -- Generation of a buffer around the studied zone
         DROP TABLE IF EXISTS ZONE_BUFFER;
-        CREATE TABLE ZONE_BUFFER AS
-        SELECT ST_BUFFER( the_geom , '''
-    script += bboxSize+') as the_geom'
-    script += '''
-        FROM zone;
+        CREATE TABLE ZONE_BUFFER AS SELECT ST_BUFFER( the_geom , ${bufferSize}) as the_geom FROM zone;
         CREATE SPATIAL INDEX ON ZONE_BUFFER(the_geom) ;
-    '''
-    return script.replaceAll('map',prefix)
+    """
+    return script.toString()
 }
 
 /**
  ** Function to create the script for the zone neighbors
+ * @param prefix prefix of the OSM tables
  **/
 static String zoneNeighborsSQLScript(def prefix){
-    def script = '''
+    def script = """
         DROP TABLE IF EXISTS ZONE_NEIGHBORS;
-        CREATE TABLE ZONE_NEIGHBORS AS
+        CREATE TABLE ZONE_NEIGHBORS AS 
         SELECT a.id_zone, st_polygonize(st_union(b.the_geom)) the_geom
         from (
                 select tag_value as id_zone, a.id_relation
-                from map_relation_tag a 
+                from ${prefix}_relation_tag a 
                     join (select id_relation
-                            from map_relation_tag rt 
-                                join map_tag t ON (rt.id_tag = t.id_tag)
-                            WHERE tag_key = 'admin_level\'
+                            from ${prefix}_relation_tag rt 
+                                join ${prefix}_tag t ON (rt.id_tag = t.id_tag)
+                            WHERE tag_key = 'admin_level' 
                             AND tag_value = '8') b on (a.id_relation=b.id_relation)
-                    join map_tag T on (a.id_tag = T.id_tag)
+                    join ${prefix}_tag T on (a.id_tag = T.id_tag)
                 WHERE tag_key='ref:INSEE') a
             join (
                 SELECT ST_LINEMERGE(ST_UNION(ST_ACCUM(the_geom))) the_geom, id_relation
@@ -461,24 +444,24 @@ static String zoneNeighborsSQLScript(def prefix){
                                         SELECT ST_ACCUM(the_geom) the_geom
                                         FROM (
                                                 SELECT n.id_node, n.the_geom, wn.id_way idway
-                                                FROM map_node n, map_way_node wn
+                                                FROM ${prefix}_node n, ${prefix}_way_node wn
                                                 WHERE n.id_node = wn.id_node ORDER BY wn.node_order
                                         )
                                         WHERE  idway = w.id_way) the_geom
                                 , w.id_way, br.id_relation
-                                FROM map_way w JOIN (
+                                FROM ${prefix}_way w JOIN (
                                 SELECT rt.id_relation, wm.id_way
-                                FROM map_relation_tag rt
-                                JOIN map_tag t ON (rt.id_tag = t.id_tag)
-                                JOIN map_way_member wm ON(rt.id_relation = wm.id_relation)
-                                WHERE tag_key = 'admin_level\'
-                                AND tag_value = '8\'
+                                FROM ${prefix}_relation_tag rt
+                                JOIN ${prefix}_tag t ON (rt.id_tag = t.id_tag)
+                                JOIN ${prefix}_way_member wm ON(rt.id_relation = wm.id_relation)
+                                WHERE tag_key = 'admin_level' 
+                                AND tag_value = '8' 
                         ) br ON (w.id_way = br.id_way)) geom_table
                         WHERE st_numgeometries(the_geom)>=2)
                 GROUP BY id_relation) b on a.id_relation = b.id_relation;
         CREATE SPATIAL INDEX ON ZONE_NEIGHBORS( the_geom) ;  
-    '''
-    return script.replaceAll('map',prefix)
+    """
+    return script.toString()
 }
 
 /**

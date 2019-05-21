@@ -213,7 +213,7 @@ static IProcess formProperties() {
                 String baseName = "building_form_properties"
                 String outputTableName = prefixName + "_" + baseName
 
-                String query = " CREATE TABLE $outputTableName AS SELECT "
+                String query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
 
                 // The operation names are transformed into lower case
                 operations.replaceAll({s -> s.toLowerCase()})
@@ -348,11 +348,12 @@ static IProcess roadDistance() {
                 String outputTableName = prefixName + "_" + baseName
 
                 // The buffer is created
-                datasource.execute(("CREATE TABLE $build_buffer AS SELECT $idFieldBu, ST_BUFFER($geometricField, $bufferDist)"+
+                datasource.execute(("DROP TABLE IF EXISTS $build_buffer; CREATE TABLE $build_buffer AS SELECT $idFieldBu," +
+                                " ST_BUFFER($geometricField, $bufferDist)"+
                                 " AS $geometricField FROM $inputBuildingTableName; "+
                                 "CREATE INDEX IF NOT EXISTS buff_ids ON $build_buffer($geometricField) USING RTREE").toString())
                 // The road surfaces are created
-                datasource.execute(("CREATE TABLE $road_surf AS SELECT ST_BUFFER($geometricField, $road_width/2) "+
+                datasource.execute(("CREATE TABLE $road_surf AS SELECT ST_BUFFER($geometricField, $road_width/2,'endcap=flat') "+
                                     "AS $geometricField FROM $inputRoadTableName; "+
                                     "CREATE INDEX IF NOT EXISTS buff_ids ON $road_surf($geometricField) USING RTREE").toString())
                 // The roads located within the buffer are identified
@@ -365,8 +366,8 @@ static IProcess roadDistance() {
                 // The minimum distance is calculated between each building and the surrounding roads (he minimum distance
                 // is set to the bufferDist value for buildings having no road within a bufferDist meters distance)
                 datasource.execute(("DROP TABLE IF EXISTS $outputTableName; CREATE TABLE " +
-                        "$outputTableName(building_road_distance DOUBLE, $idFieldBu INTEGER) AS "+
-                                    "(SELECT COALESCE(LEAST(st_distance(a.$geometricField, b.$geometricField)), $bufferDist), "+
+                                    "$outputTableName(building_road_distance DOUBLE, $idFieldBu INTEGER) AS "+
+                                    "(SELECT COALESCE(MIN(st_distance(a.$geometricField, b.$geometricField)), $bufferDist), "+
                                     "a.$idFieldBu FROM $road_within_buffer b RIGHT JOIN $inputBuildingTableName a "+
                                     "ON a.$idFieldBu = b.$idFieldBu GROUP BY a.$idFieldBu)").toString())
 

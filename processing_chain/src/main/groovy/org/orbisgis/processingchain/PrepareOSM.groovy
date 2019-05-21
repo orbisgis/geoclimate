@@ -2,7 +2,9 @@ package org.orbisgis.processingchain
 
 import groovy.transform.BaseScript
 import org.orbisgis.SpatialUnits
+import org.orbisgis.common.AbstractTablesInitialization
 import org.orbisgis.datamanager.JdbcDataSource
+import org.orbisgis.osm.OSMGISLayers
 import org.orbisgis.processingchain.ProcessingChain
 import org.orbisgis.processmanagerapi.IProcess
 import org.orbisgis.processmanagerapi.IProcessFactory
@@ -16,19 +18,17 @@ import org.slf4j.LoggerFactory
      * This process chains a set of subprocesses to extract and transform the OSM data into
      * the geoclimate model. It uses a set of default values.
      *
-     *  @param directory the path of the directory where the DB and result files should be stored
+     *  @param datasource a connection to the database where the result files should be stored
      *  @param idZone A string representing the inseeCode of the administrative level8 zone
-     *  @param saveResults Set to true to save the result files in geojson and json in the @directory
      *
      * @return
      */
     public static IProcess prepareOSMDefaultConfig() {
         return processFactory.create("Extract and transform OSM data to Geoclimate model (default configuration)",
-                [directory : String,
-                 idZone : String,
-                 saveResults : boolean],
-                [datasource: JdbcDataSource],
-                { directory, idZone , saveResults ->
+                [datasource : JdbcDataSource,
+                 idZone : String],
+                [outputBuilding : String, outputRoad:String, outputRail : String, outputHydro:String, outputVeget:String, outputZone:String,outputStats : String[]],
+                { datasource, idZone  ->
                     def mappingTypeAndUse = [
                             terminal: [aeroway : ["terminal", "airport_terminal"],
                                        amenity : ["terminal", "airport_terminal"],
@@ -275,7 +275,7 @@ import org.slf4j.LoggerFactory
                             hLevMin: 3,
                             hLevMax: 15,
                             hThresholdLev2: 10,
-                            directory : directory,
+                            datasource : datasource,
                             osmTablesPrefix: "EXT",
                             idZone : idZone,
                             expand : 500,
@@ -330,9 +330,14 @@ import org.slf4j.LoggerFactory
                             mappingForRailType : mappingRailType,
 
                             mappingForVegetType : mappingVegetType,
-                            saveResults : saveResults
                     ])
-                    [datasource: prepareOSMData.getResults().datasource]
+                    [outputBuilding : prepareOSMData.getResults().outputBuilding,
+                     outputRoad:prepareOSMData.getResults().outputRoad,
+                     outputRail : prepareOSMData.getResults().outputRail,
+                     outputHydro:prepareOSMData.getResults().outputHydro,
+                     outputVeget:prepareOSMData.getResults().outputVeget,
+                     outputZone:prepareOSMData.getResults().outputZone,
+                     outputStats : prepareOSMData.getResults().outputStats]
 
                 });
     }
@@ -341,18 +346,16 @@ import org.slf4j.LoggerFactory
      * This process chains a set of subprocesses to extract and transform the OSM data into
      * the geoclimate model
      *
-     * @param directory the path of the directory where the DB and result files should be stored
-     * @param osmTablesPrefix The prefix used for naming the 11 OSM tables build from the OSM file     *
+     * @param datasource a connection to the database where the result files should be stored
+     * @param osmTablesPrefix The prefix used for naming the 11 OSM tables build from the OSM file
      * @param idZone A string representing the inseeCode of the administrative level8 zone
      * @param expand The integer value of the Extended Zone
      * @param distBuffer The integer value of the Zone buffer
-     *
-     * @param saveResults Set to true to save the result files in geojson and json in the @directory
      * @return
      */
     public static IProcess prepareOSM() {
         return processFactory.create("Extract and transform OSM data to Geoclimate model",
-                [directory : String,
+                [datasource : JdbcDataSource,
                  osmTablesPrefix: String,
                  idZone : String,
                  expand : int,
@@ -384,10 +387,9 @@ import org.slf4j.LoggerFactory
                  mappingForRoadType : Map,
                  mappingForSurface : Map,
                  mappingForRailType : Map,
-                 mappingForVegetType : Map,
-                 saveResults : boolean],
-                [datasource: JdbcDataSource],
-                { directory, osmTablesPrefix, idZone , expand, distBuffer,  hLevMin, hLevMax,hThresholdLev2, buildingTableColumnsNames,
+                 mappingForVegetType : Map],
+                [outputBuilding : String, outputRoad:String, outputRail : String, outputHydro:String, outputVeget:String, outputZone:String,outputStats : String[]],
+                { datasource, osmTablesPrefix, idZone , expand, distBuffer,  hLevMin, hLevMax,hThresholdLev2, buildingTableColumnsNames,
                     buildingTagKeys,buildingTagValues,
                     tablesPrefix,
                     buildingFilter,
@@ -410,127 +412,143 @@ import org.slf4j.LoggerFactory
                     mappingForRoadType,
                     mappingForSurface,
                     mappingForRailType,
-                    mappingForVegetType,
-                    saveResults ->
-
-                    if(directory==null){
-                        logger.info("The directory to save the data cannot be null")
-                        return
-                    }
-                    File dirFile = new File(directory)
-
-                    if(!dirFile.exists()){
-                        dirFile.mkdir()
-                        logger.info("The folder ${directory} has been created")
-                    }
-                    else if (!dirFile.isDirectory()){
-                        logger.info("Invalid directory path")
-                        return
-                    }
-
-
-                    String dbPath = dirFile.absolutePath+ File.separator+ "osmdb"
-
-                    IProcess loadInitialData = org.orbisgis.osm.OSMGISLayers.loadInitialData()
-
-                    loadInitialData.execute([
-                            dbPath : dbPath,
-                            osmTablesPrefix: osmTablesPrefix,
-                            idZone : idZone,
-                            expand : expand,
-                            distBuffer:distBuffer])
-
-                    logger.info("The OSM data has been downloaded for the zone id : ${idZone}.")
-
-                    //The connection to the database
-                    JdbcDataSource datasource = loadInitialData.getResults().outDatasource
+                    mappingForVegetType ->
 
                     if(datasource==null){
                         logger.error("Cannot create the database to store the osm data")
                         return
                     }
+
+                    IProcess loadInitialData = org.orbisgis.osm.OSMGISLayers.loadInitialData()
+
+                    if(!loadInitialData.execute([
+                            datasource : datasource,
+                            osmTablesPrefix: osmTablesPrefix,
+                            idZone : idZone,
+                            expand : expand,
+                            distBuffer:distBuffer])){
+                        logger.info("Cannot downloaded for OSM data for the zone id : ${idZone}.")
+                        return
+                    }
+
+                    logger.info("The OSM data has been downloaded for the zone id : ${idZone}.")
+
+
                     //Init model
-                    IProcess initParametersAbstract = org.orbisgis.common.AbstractTablesInitialization.initParametersAbstract()
-                    initParametersAbstract.execute(datasource:datasource)
+                    IProcess initParametersAbstract = AbstractTablesInitialization.initParametersAbstract()
+                    if(!initParametersAbstract.execute(datasource:datasource)){
+                        logger.info("Cannot initialize the geoclimate data model.")
+                        return
+                    }
 
                     logger.info("The geoclimate data model has been initialized.")
 
                     logger.info("Transform OSM data to GIS tables.")
 
-                    IProcess prepareBuildings = org.orbisgis.osm.OSMGISLayers.prepareBuildings()
+                    IProcess prepareBuildings = OSMGISLayers.prepareBuildings()
 
-                    prepareBuildings.execute([datasource:datasource, osmTablesPrefix:osmTablesPrefix,
+                    if(!prepareBuildings.execute([datasource:datasource, osmTablesPrefix:osmTablesPrefix,
                                               buildingTableColumnsNames : buildingTableColumnsNames,
                                               buildingTagKeys:buildingTagKeys,
                                               buildingTagValues:buildingTagValues,
                                               buildingTagValues:buildingTagValues,
                                               tablesPrefix:tablesPrefix,
                                               buildingFilter:buildingFilter,
-                    ]);
+                    ])){
+                        logger.info("Cannot prepare the building table.")
+                        return
+                    }
                     IProcess prepareRoads = org.orbisgis.osm.OSMGISLayers.prepareRoads()
-                    prepareRoads.execute([datasource: datasource,
+                    if(!prepareRoads.execute([datasource: datasource,
                                           osmTablesPrefix: osmTablesPrefix,
                                           roadTableColumnsNames: roadTableColumnsNames,
                                           roadTagKeys: roadTagKeys,
                                           roadTagValues: roadTagValues,
                                           tablesPrefix: tablesPrefix,
-                                          roadFilter: roadFilter])
+                                          roadFilter: roadFilter])){
+                        logger.info("Cannot prepare the road table.")
+                        return
+                    }
 
                     IProcess prepareRails = org.orbisgis.osm.OSMGISLayers.prepareRails()
-                    prepareRails.execute([datasource: datasource,
+                    if(!prepareRails.execute([datasource: datasource,
                                           osmTablesPrefix: osmTablesPrefix,
                                           railTableColumnsNames: railTableColumnsNames,
                                           railTagKeys: railTagKeys,
                                           railTagValues: railTagValues,
                                           tablesPrefix: tablesPrefix,
-                                          railFilter: railFilter])
+                                          railFilter: railFilter])){
+                        logger.info("Cannot prepare the rail table.")
+                        return
+                    }
 
                     IProcess prepareVeget = org.orbisgis.osm.OSMGISLayers.prepareVeget()
-                    prepareVeget.execute([datasource: datasource,
+                    if(!prepareVeget.execute([datasource: datasource,
                                           osmTablesPrefix: osmTablesPrefix,
                                           vegetTableColumnsNames: vegetTableColumnsNames,
                                           vegetTagKeys: vegetTagKeys,
                                           vegetTagValues: vegetTagValues,
                                           tablesPrefix: tablesPrefix,
-                                          vegetFilter: vegetFilter])
+                                          vegetFilter: vegetFilter])){
+                        logger.info("Cannot prepare the vegetation table.")
+                        return
+                    }
 
                     IProcess prepareHydro = org.orbisgis.osm.OSMGISLayers.prepareHydro()
-                    prepareHydro.execute([datasource: datasource,
+                    if(!prepareHydro.execute([datasource: datasource,
                                           osmTablesPrefix: osmTablesPrefix,
                                           hydroTableColumnsNames: hydroTableColumnsNames,
                                           hydroTags: hydroTags,
                                           tablesPrefix: tablesPrefix,
-                                          hydroFilter: hydroFilter])
+                                          hydroFilter: hydroFilter])){
+                        logger.info("Cannot prepare the hydrographic table.")
+                        return
+                    }
 
                     IProcess transformBuildings = org.orbisgis.osm.FormattingForAbstractModel.transformBuildings()
-                    transformBuildings.execute([datasource : datasource,
+                    if(!transformBuildings.execute([datasource : datasource,
                             inputTableName      : prepareBuildings.getResults().buildingTableName,
-                            mappingForTypeAndUse: mappingForTypeAndUse])
+                            mappingForTypeAndUse: mappingForTypeAndUse])){
+                        logger.info("Cannot transform the building table to geoclimate model.")
+                        return
+                    }
                     def inputBuilding =  transformBuildings.getResults().outputTableName
 
                     IProcess transformRoads = org.orbisgis.osm.FormattingForAbstractModel.transformRoads()
-                    transformRoads.execute([datasource : datasource,
+                    if(!transformRoads.execute([datasource : datasource,
                             inputTableName      : prepareRoads.getResults().roadTableName,
                             mappingForRoadType: mappingForRoadType,
-                            mappingForSurface: mappingForSurface])
+                            mappingForSurface: mappingForSurface])){
+                        logger.info("Cannot transform the road table to geoclimate model.")
+                        return
+                    }
                     def inputRoads =  transformRoads.getResults().outputTableName
 
 
                     IProcess transformRails = org.orbisgis.osm.FormattingForAbstractModel.transformRails()
-                    transformRails.execute([datasource          : datasource,
+                    if(!transformRails.execute([datasource          : datasource,
                             inputTableName : prepareRails.getResults().railTableName,
-                            mappingForRailType: mappingForRailType])
+                            mappingForRailType: mappingForRailType])){
+                        logger.info("Cannot transform the rail table to geoclimate model.")
+                        return
+                    }
                     def inputRail =  transformRails.getResults().outputTableName
 
                     IProcess transformVeget = org.orbisgis.osm.FormattingForAbstractModel.transformVeget()
-                    transformVeget.execute([datasource    : datasource,
+                    if(!transformVeget.execute([datasource    : datasource,
                                             inputTableName: prepareVeget.getResults().vegetTableName,
-                                            mappingForVegetType: mappingForVegetType])
+                                            mappingForVegetType: mappingForVegetType])){
+                        logger.info("Cannot transform the vegetation table to geoclimate model.")
+                        return
+                    }
                     def inputVeget =  transformVeget.getResults().outputTableName
 
                     IProcess transformHydro = org.orbisgis.osm.FormattingForAbstractModel.transformHydro()
-                    transformHydro.execute([datasource    : datasource,
-                                            inputTableName: prepareHydro.getResults().hydroTableName])
+                    if(!transformHydro.execute([datasource    : datasource,
+                                            inputTableName: prepareHydro.getResults().hydroTableName])){
+                        logger.info("Cannot transform the hydrographic table to geoclimate model.")
+                        return
+                    }
                     def inputHydro =  transformHydro.getResults().outputTableName
 
                     logger.info("All OSM data have been tranformed to GIS tables.")
@@ -544,7 +562,7 @@ import org.slf4j.LoggerFactory
 
                     IProcess inputDataFormatting = org.orbisgis.common.InputDataFormatting.inputDataFormatting()
 
-                    inputDataFormatting.execute([datasource: datasource,
+                    if(!inputDataFormatting.execute([datasource: datasource,
                                      inputBuilding: inputBuilding, inputRoad: inputRoads, inputRail: inputRail,
                                      inputHydro: inputHydro, inputVeget: inputVeget,
                                      inputZone: inputZone, inputZoneNeighbors: inputZoneNeighbors,
@@ -553,63 +571,35 @@ import org.slf4j.LoggerFactory
                                      roadAbstractType: initResults.outputRoadAbstractType, roadAbstractParameters: initResults.outputRoadAbstractParameters,
                                      railAbstractType: initResults.outputRailAbstractType,
                                      vegetAbstractType: initResults.outputVegetAbstractType,
-                                                 vegetAbstractParameters: initResults.outputVegetAbstractParameters])
+                                                 vegetAbstractParameters: initResults.outputVegetAbstractParameters])){
+                        logger.info("Cannot format the tables to geoclimate model.")
+                        return
+                    }
 
                     logger.info("End of the OSM extract transform process.")
 
-                    if(saveResults){
+                    String finalBuildings = inputDataFormatting.getResults().outputBuilding
+                    String finalRoads = inputDataFormatting.getResults().outputRoad
+                    String finalRails= inputDataFormatting.getResults().outputRail
+                    String finalHydro = inputDataFormatting.getResults().outputHydro
+                    String finalVeget = inputDataFormatting.getResults().outputVeget
+                    String finalZone = inputDataFormatting.getResults().outputZone
 
-                        logger.info("Saving GIS layers in geojson format")
-                        String finalBuildings = inputDataFormatting.getResults().outputBuilding
-                        datasource.save(finalBuildings, dirFile.absolutePath+File.separator+"${finalBuildings}_${idZone}.geojson")
+                    String finalOutputBuildingStatZone = inputDataFormatting.getResults().outputBuildingStatZone
+                    String finalOutputBuildingStatZoneBuff = inputDataFormatting.getResults().outputBuildingStatZoneBuff
+                    String finalOutputRoadStatZone = inputDataFormatting.getResults().outputRoadStatZone
+                    String finalOutputRoadStatZoneBuff = inputDataFormatting.getResults().outputRoadStatZoneBuff
+                    String finalOutputRailStatZone = inputDataFormatting.getResults().outputRailStatZone
+                    String finalOutputHydroStatZone = inputDataFormatting.getResults().outputHydroStatZone
+                    String finalOutputHydroStatZoneExt= inputDataFormatting.getResults().outputHydroStatZoneExt
+                    String finalOutputVegetStatZone = inputDataFormatting.getResults().outputVegetStatZone
+                    String finalOutputVegetStatZoneExt = inputDataFormatting.getResults().outputVegetStatZoneExt
 
-                        String finalRoads = inputDataFormatting.getResults().outputRoad
-                        datasource.save(finalRoads, dirFile.absolutePath+File.separator+"${finalRoads}_${idZone}.geojson")
-
-                        String finalRails= inputDataFormatting.getResults().outputRail
-                        datasource.save(finalRails, dirFile.absolutePath+File.separator+"${finalRails}_${idZone}.geojson")
-
-                        String finalHydro = inputDataFormatting.getResults().outputHydro
-                        datasource.save(finalHydro, dirFile.absolutePath+File.separator+"${finalHydro}_${idZone}.geojson")
-
-                        String finalVeget = inputDataFormatting.getResults().outputVeget
-                        datasource.save(finalVeget, dirFile.absolutePath+File.separator+"${finalVeget}_${idZone}.geojson")
-
-                        String finalZone = inputDataFormatting.getResults().outputZone
-                        datasource.save(finalZone, dirFile.absolutePath+File.separator+"${finalZone}_${idZone}.geojson")
-
-                        logger.info("Saving statistic tables in csv format")
-
-                        String finalOutputBuildingStatZone = inputDataFormatting.getResults().outputBuildingStatZone
-                        datasource.save(finalOutputBuildingStatZone, dirFile.absolutePath+File.separator+"${finalOutputBuildingStatZone}_${idZone}.csv")
-
-                        String finalOutputBuildingStatZoneBuff = inputDataFormatting.getResults().outputBuildingStatZoneBuff
-                        datasource.save(finalOutputBuildingStatZoneBuff, dirFile.absolutePath+File.separator+"${finalOutputBuildingStatZoneBuff}_${idZone}.csv")
-
-                        String finalOutputRoadStatZone = inputDataFormatting.getResults().outputRoadStatZone
-                        datasource.save(finalOutputRoadStatZone, dirFile.absolutePath+File.separator+"${finalOutputRoadStatZone}_${idZone}.csv")
-
-                        String finalOutputRoadStatZoneBuff = inputDataFormatting.getResults().outputRoadStatZoneBuff
-                        datasource.save(finalOutputRoadStatZoneBuff, dirFile.absolutePath+File.separator+"${finalOutputRoadStatZoneBuff}_${idZone}.csv")
-
-                        String finalOutputRailStatZone = inputDataFormatting.getResults().outputRailStatZone
-                        datasource.save(finalOutputRailStatZone, dirFile.absolutePath+File.separator+"${finalOutputRailStatZone}_${idZone}.csv")
-
-                        String finalOutputHydroStatZone = inputDataFormatting.getResults().outputHydroStatZone
-                        datasource.save(finalOutputHydroStatZone, dirFile.absolutePath+File.separator+"${finalOutputHydroStatZone}_${idZone}.csv")
-
-                        String finalOutputHydroStatZoneExt= inputDataFormatting.getResults().outputHydroStatZoneExt
-                        datasource.save(finalOutputHydroStatZoneExt, dirFile.absolutePath+File.separator+"${finalOutputHydroStatZoneExt}_${idZone}.csv")
-
-                        String finalOutputVegetStatZone = inputDataFormatting.getResults().outputVegetStatZone
-                        datasource.save(finalOutputVegetStatZone, dirFile.absolutePath+File.separator+"${finalOutputVegetStatZone}_${idZone}.csv")
-
-                        String finalOutputVegetStatZoneExt = inputDataFormatting.getResults().outputVegetStatZoneExt
-                        datasource.save(finalOutputVegetStatZoneExt, dirFile.absolutePath+File.separator+"${finalOutputVegetStatZoneExt}_${idZone}.csv")
-
-                    }
-
-                    [datasource: datasource]
+                    [outputBuilding : finalBuildings, outputRoad:finalRoads,
+                     outputRail : finalRails, outputHydro:finalHydro, outputVeget:finalVeget, outputZone:finalZone,
+                     outputStats :[finalOutputBuildingStatZone,finalOutputBuildingStatZoneBuff,finalOutputRoadStatZone,
+                                   finalOutputRoadStatZoneBuff,finalOutputRailStatZone,finalOutputHydroStatZone,finalOutputHydroStatZoneExt,
+                                   finalOutputVegetStatZone,finalOutputVegetStatZoneExt]]
 
                 })
     }
@@ -652,35 +642,51 @@ import org.slf4j.LoggerFactory
                     // Create the RSU
                     IProcess prepareRSUData = SpatialUnits.prepareRSUData()
                     IProcess createRSU = SpatialUnits.createRSU()
-                    prepareRSUData.execute([datasource: datasource, zoneTable : zoneTable, roadTable : roadTable,
+                    if(!prepareRSUData.execute([datasource: datasource, zoneTable : zoneTable, roadTable : roadTable,
                                             railTable : railTable, vegetationTable: vegetationTable,
                                             hydrographicTable: hydrographicTable, surface_vegetation: surface_vegetation,
-                                            surface_hydro: surface_hydro, prefixName: prefixName])
-                    createRSU.execute([datasource: datasource, inputTableName : prepareRSUData.results.outputTableName,
-                                       prefixName: prefixName])
+                                            surface_hydro: surface_hydro, prefixName: prefixName])){
+                        logger.info("Cannot prepare the data to compute the RSU")
+                        return
+                    }
+
+                    if(!createRSU.execute([datasource: datasource, inputTableName : prepareRSUData.results.outputTableName,
+                                       prefixName: prefixName])){
+                        logger.info("Cannot compute the RSU")
+                        return
+                    }
 
                     // Create the blocks
                     IProcess createBlocks = SpatialUnits.createBlocks()
-                    createBlocks.execute([datasource: datasource, inputTableName : inputTableName,
-                                          prefixName: prefixName, distance: distance])
+                    if(!createBlocks.execute([datasource: datasource, inputTableName : inputTableName,
+                                          prefixName: prefixName, distance: distance])){
+                        logger.info("Cannot compute the block")
+                        return
+                    }
 
 
                     // Create the relations between RSU and blocks (store in the block table)
                     IProcess createScalesRelationsRsuBl = SpatialUnits.createScalesRelations()
-                    createScalesRelationsRsuBl.execute([datasource: datasource,
+                    if(!createScalesRelationsRsuBl.execute([datasource: datasource,
                                                         inputLowerScaleTableName: createBlocks.results.outputTableName,
                                                         inputUpperScaleTableName: createRSU.results.outputTableName,
                                                         idColumnUp: createRSU.results.outputIdRsu,
-                                                        prefixName: prefixName])
+                                                        prefixName: prefixName])){
+                        logger.info("Cannot create the relations between RSU and blocks")
+                        return
+                    }
 
 
                     // Create the relations between buildings and blocks (store in the buildings table)
                     IProcess createScalesRelationsBlBu = SpatialUnits.createScalesRelations()
-                    createScalesRelationsBlBu.execute([datasource: datasource,
+                    if(!createScalesRelationsBlBu.execute([datasource: datasource,
                                                        inputLowerScaleTableName: inputLowerScaleTableName,
                                                        inputUpperScaleTableName: createBlocks.results.outputTableName,
                                                        idColumnUp: createBlocks.results.outputIdBlock,
-                                                       prefixName: prefixName])
+                                                       prefixName: prefixName])){
+                        logger.info("Cannot create the relations between buildings and blocks")
+                        return
+                    }
 
 
                     // Create the relations between buildings and RSU (store in the buildings table)
@@ -688,12 +694,15 @@ import org.slf4j.LoggerFactory
                     // id_build but the relations between id_block and i_rsu should not been consider in this Table
                     // the relationships may indeed be different from the one in the block Table
                     IProcess createScalesRelationsRsuBlBu = SpatialUnits.createScalesRelations()
-                    createScalesRelationsRsuBlBu.execute([datasource: datasource,
+                    if(!createScalesRelationsRsuBlBu.execute([datasource: datasource,
                                                           inputLowerScaleTableName:
                                                                   createScalesRelationsBlBu.results.outputTableName,
                                                           inputUpperScaleTableName: createRSU.results.outputTableName,
                                                           idColumnUp: createRSU.results.outputIdRsu,
-                                                          prefixName: prefixName])
+                                                          prefixName: prefixName])){
+                        logger.info("Cannot create the relations between buildings and RSU")
+                        return
+                    }
 
 
                     [outputTableBuildingName : createScalesRelationsRsuBlBu.results.outputTableName,

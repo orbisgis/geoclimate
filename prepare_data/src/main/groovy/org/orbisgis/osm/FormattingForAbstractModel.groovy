@@ -34,7 +34,14 @@ static IProcess transformBuildings() {
                     def heightRoof = getHeightRoof(row)
                     def nbLevels = getNbLevels(row)
                     def typeAndUseValues = getTypeAndUse(row, mappingForTypeAndUse)
-                    datasource.execute("insert into input_building values('${row.the_geom}','${row.id_way}',${heightWall},${heightRoof},${nbLevels},'${typeAndUseValues[0]}','${typeAndUseValues[1]}',${row.zindex})".toString())
+                    def type =typeAndUseValues[0]
+                    if(null == type){
+                        type =  'building'
+                    }
+                    else if(type.isEmpty()){
+                        type =  'building'
+                    }
+                    datasource.execute("insert into input_building values('${row.the_geom}','${row.id_way}',${heightWall},${heightRoof},${nbLevels},'${type}','${typeAndUseValues[1]}',${row.zindex})".toString())
                 }
                 logger.info('Buildings transformation finishes')
                 [outputTableName: "INPUT_BUILDING"]
@@ -67,14 +74,20 @@ static IProcess transformRoads() {
                 datasource.execute("    drop table if exists input_road;\n" +
                         "CREATE TABLE input_road (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR,\n" +
                         "SURFACE VARCHAR, SIDEWALK VARCHAR, ZINDEX INTEGER)")
-                inputTable.eachRow { row ->
-                    Float width = getWidth(row.width)
-                    String type = getAbstractValue(row, mappingForRoadType)
-                    String surface = getAbstractValue(row, mappingForSurface)
-                    String sidewalk = getSidewalk(row.sidewalk)
-                    Integer zIndex = getZIndex(row.zindex)
-                    datasource.execute ("insert into input_road values('${row.the_geom}','${row.id_way}',${width},'${type}','${surface}','${sidewalk}',${zIndex})".toString())
-                }
+                        inputTable.eachRow { row ->
+                            Float width = getWidth(row.width)
+                            String type = getAbstractValue(row, mappingForRoadType)
+                            if(null == type){
+                                type =  'unclassified'
+                            }
+                            else if(type.isEmpty()){
+                                type =  'unclassified'
+                            }
+                            String surface = getAbstractValue(row, mappingForSurface)
+                            String sidewalk = getSidewalk(row.sidewalk)
+                            Integer zIndex = getZIndex(row.zindex)
+                            datasource.execute "insert into input_road values('${row.the_geom}','${row.id_way}',${width},'${type}','${surface}','${sidewalk}',${zIndex})".toString()
+                        }
                 logger.info('Roads transformation finishes')
                 [outputTableName: "INPUT_ROAD"]
             }
