@@ -415,7 +415,7 @@ class ProcessingChainTest {
                         hydrographicTable: "tempo_hydro", facadeDensListLayersBottom: [0, 50, 200], facadeDensNumberOfDirection: 8,
                         svfPointDensity: 0.008, svfRayLength: 100, svfNumberOfDirection: 60,
                         heightColumnName: "height_roof", fractionTypePervious: ["low_vegetation", "water"],
-                        fractionTypeImpervious: ["road"], inputFields: ["id_build", "the_geom"], levelForRoads: [0]])
+                        fractionTypeImpervious: ["road"], inputFields: ["id_build"], levelForRoads: [0]])
     }
 
     @Test
