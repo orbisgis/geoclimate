@@ -63,18 +63,15 @@ public static createLCZ() {
                 def rsu_indic2 = "rsu_indic2" + uid_out
                 def rsu_indic3 = "rsu_indic3" + uid_out
                 def buAndIdRsu = "buAndIdRsu" + uid_out
-                def bu_tempo0 = "bu_tempo0" + uid_out
-                def bu_tempo1 = "bu_tempo1" + uid_out
                 def rsu_all_indic = "rsu_all_indic" + uid_out
                 def rsu_4_aspectratio = "rsu_4_aspectratio" + uid_out
                 def rsu_4_roughness0 = "rsu_4_roughness0" + uid_out
                 def rsu_4_roughness1 = "rsu_4_roughness1" + uid_out
-                datasource.execute(("DROP TABLE IF EXISTS $rsu_surf_fractions; CREATE TABLE $rsu_surf_fractions " +
-                        "AS SELECT * FROM $rsuTable").toString())
 
                 def veg_type = []
                 def perv_type = []
                 def imp_type = []
+                def surf_fractions = [:]
                 def columnIdRsu = "id_rsu"
                 def columnIdBu = "id_build"
                 def geometricColumn = "the_geom"
@@ -101,23 +98,20 @@ public static createLCZ() {
                     IProcess calc_veg_frac = Geoclimate.RsuIndicators.vegetationFraction()
                     calc_veg_frac.execute([rsuTable  : rsuTable, vegetTable: vegetationTable, fractionType: veg_type,
                                            prefixName: prefixName, datasource: datasource])
-                    // Add the vegetation field in the surface fraction tables used for pervious and impervious fractions
-                    datasource.execute(("ALTER TABLE $rsu_surf_fractions ADD COLUMN ${perv_type[0]} DOUBLE; " +
-                            "UPDATE $rsu_surf_fractions SET ${perv_type[0]} = (SELECT b.${perv_type[0]} FROM " +
-                            "${calc_veg_frac.results.outputTableName} b WHERE $rsu_surf_fractions.$columnIdRsu = b.$columnIdRsu)").toString())
+                    // Add the table in the map that will be used to join the vegetation field with the RSU table
+                    // in order to be used to calculate the pervious and impervious surface fractions
+                    surf_fractions[calc_veg_frac.results.outputTableName]=columnIdRsu
                 }
 
                 // calc_road_frac --> calc_perviousness_frac  (calculate only if road considered as impervious)
                 if (fractionTypeImpervious.contains("road")) {
                     imp_type.add("ground_road_fraction")
                     IProcess calc_road_frac = Geoclimate.RsuIndicators.roadFraction()
-                    calc_road_frac.execute([rsuTable             : rsuTable, roadTable: roadTable, levelToConsiders:
+                    calc_road_frac.execute([rsuTable: rsuTable, roadTable: roadTable, levelToConsiders:
                             ["ground": levelForRoads], prefixName: prefixName, datasource: datasource])
-                    // Add the road field in the surface fraction tables used for pervious and impervious fractions
-                    datasource.execute(("ALTER TABLE $rsu_surf_fractions ADD COLUMN ground_road_fraction DOUBLE; " +
-                            "UPDATE $rsu_surf_fractions SET ground_road_fraction = (SELECT b.ground_road_fraction" +
-                            " FROM ${calc_road_frac.results.outputTableName} b " +
-                            "WHERE $rsu_surf_fractions.$columnIdRsu = b.$columnIdRsu)").toString())
+                    // Add the table in the map that will be used to join the vegetation field with the RSU table
+                    // in order to be used to calculate the pervious and impervious surface fractions
+                    surf_fractions[calc_road_frac.results.outputTableName]=columnIdRsu
                 }
 
                 // calc_water_frac --> calc_perviousness_frac  (calculate only if water considered as pervious)
@@ -126,11 +120,9 @@ public static createLCZ() {
                     IProcess calc_water_frac = Geoclimate.RsuIndicators.waterFraction()
                     calc_water_frac.execute([rsuTable  : rsuTable, waterTable: hydrographicTable, prefixName: "test",
                                              datasource: datasource])
-                    // Add the water field in the surface fraction tables used for pervious and impervious fractions
-                    datasource.execute(("ALTER TABLE $rsu_surf_fractions ADD COLUMN water_fraction DOUBLE; " +
-                            "UPDATE $rsu_surf_fractions SET water_fraction = (SELECT b.water_fraction" +
-                            " FROM ${calc_water_frac.results.outputTableName} b " +
-                            "WHERE $rsu_surf_fractions.$columnIdRsu = b.$columnIdRsu)").toString())
+                    // Add the table in the map that will be used to join the vegetation field with the RSU table
+                    // in order to be used to calculate the pervious and impervious surface fractions
+                    surf_fractions[calc_water_frac.results.outputTableName]=columnIdRsu
                 }
 
                 // calc_build_contiguity    -->
@@ -139,23 +131,21 @@ public static createLCZ() {
                 IProcess calc_build_contiguity = Geoclimate.BuildingIndicators.neighborsProperties()
                 calc_build_contiguity.execute([inputBuildingTableName: buildingTable,
                                                operations            : ["building_contiguity"], prefixName: prefixName, datasource: datasource])
-
                 IProcess calc_build_facade_length = Geoclimate.BuildingIndicators.sizeProperties()
                 calc_build_facade_length.execute([inputBuildingTableName: buildingTable,
                                                   operations            : ["building_total_facade_length"], prefixName: prefixName,
                                                   datasource            : datasource])
+                IProcess join_for_input_facade_dens = Geoclimate.DataUtils.joinTables()
+                join_for_input_facade_dens.execute([inputTableNamesWithId: [(buildingTable)                                     : columnIdBu,
+                                                                          (calc_build_facade_length.results.outputTableName): columnIdBu,
+                                                                          (calc_build_contiguity.results.outputTableName)   : columnIdBu],
+                                                  prefixName           : prefixName, datasource: datasource])
 
-                // This SQL query should not be done if the following IProcess were normally coded...
-                datasource.execute(("DROP TABLE IF EXISTS $bu_tempo0; CREATE TABLE $bu_tempo0 AS SELECT a.*," +
-                        "b.building_contiguity FROM $buildingTable a, ${calc_build_contiguity.results.outputTableName} b " +
-                        "WHERE a.$columnIdBu = b.$columnIdBu; DROP TABLE IF EXISTS $bu_tempo1; " +
-                        "CREATE TABLE $bu_tempo1 AS SELECT a.*," +
-                        "b.building_total_facade_length FROM $bu_tempo0 a, ${calc_build_facade_length.results.outputTableName} b " +
-                        "WHERE a.$columnIdBu = b.$columnIdBu;").toString())
                 IProcess calc_free_ext_density = Geoclimate.RsuIndicators.freeExternalFacadeDensity()
-                calc_free_ext_density.execute([buildingTable                                     : bu_tempo1, rsuTable: rsuTable,
-                                               buContiguityColumn                                : "building_contiguity", buTotalFacadeLengthColumn:
-                                                       "building_total_facade_length", prefixName: prefixName, datasource: datasource])
+                calc_free_ext_density.execute([buildingTable            : join_for_input_facade_dens.results.outputTableName,
+                                               rsuTable                 : rsuTable, buContiguityColumn : "building_contiguity",
+                                               buTotalFacadeLengthColumn: "building_total_facade_length",
+                                               prefixName               : prefixName, datasource: datasource])
 
                 // calc_proj_facade_dist --> calc_effective_roughness_height
                 IProcess calc_proj_facade_dist = Geoclimate.RsuIndicators.projectedFacadeAreaDistribution()
@@ -168,50 +158,54 @@ public static createLCZ() {
                 // AND the HEIGHT OF ROUGHNESS ELEMENTS from the building roof height
                 // calc_build_densityNroughness --> calcSVF (which needs building_density)
                 // calc_build_densityNroughness --> calc_effective_roughness_height (which needs geometric_height)
+                IProcess join_for_densityNroughness = Geoclimate.DataUtils.joinTables()
+                join_for_densityNroughness.execute([inputTableNamesWithId: [(calc_building_area.results.outputTableName): columnIdBu,
+                                                                            (buildingTable): columnIdBu]
+                                      , prefixName: prefixName, datasource: datasource])
                 IProcess calc_build_densityNroughness = Geoclimate.GenericIndicators.unweightedOperationFromLowerScale()
-                datasource.execute(("DROP TABLE IF EXISTS $buAndIdRsu; CREATE TABLE $buAndIdRsu AS SELECT a.*," +
-                        "b.$columnIdRsu, b.$heightColumnName FROM ${calc_building_area.results.outputTableName} a, $buildingTable b " +
-                        "WHERE a.$columnIdBu = b.$columnIdBu").toString())
-                calc_build_densityNroughness.execute([inputLowerScaleTableName: buAndIdRsu,
+                calc_build_densityNroughness.execute([inputLowerScaleTableName: join_for_densityNroughness.results.outputTableName,
                                                       inputUpperScaleTableName: rsuTable, inputIdUp: columnIdRsu,
                                                       inputVarAndOperations   : [(heightColumnName): ["GEOM_AVG"], "st_area": ["DENS"]],
                                                       prefixName              : prefixName, datasource: datasource])
 
                 // Calculate the SKY VIEW FACTOR from the RSU building density
                 // Merge the geometric average and the building density into the RSU table
-                datasource.execute(("DROP TABLE IF EXISTS $rsu_indic0; CREATE TABLE $rsu_indic0 AS SELECT a.*, " +
-                        "b.dens_st_area, b.geom_avg_$heightColumnName FROM $rsuTable a INNER JOIN " +
-                        "${calc_build_densityNroughness.results.outputTableName} b ON a.$columnIdRsu = b.$columnIdRsu").toString())
+                IProcess join_for_SVF = Geoclimate.DataUtils.joinTables()
+                join_for_SVF.execute([inputTableNamesWithId: [(calc_build_densityNroughness.results.outputTableName): columnIdRsu,
+                                                                            (rsuTable): columnIdRsu]
+                                                    , prefixName: prefixName, datasource: datasource])
                 IProcess calcSVF = Geoclimate.RsuIndicators.groundSkyViewFactor()
-                calcSVF.execute([rsuTable           : rsu_indic0, correlationBuildingTable: buildingTable, rsuBuildingDensityColumn:
+                calcSVF.execute([rsuTable           : join_for_SVF.results.outputTableName, correlationBuildingTable: buildingTable, rsuBuildingDensityColumn:
                         "dens_st_area", pointDensity: svfPointDensity, rayLength: svfRayLength,
                                  numberOfDirection  : svfNumberOfDirection, prefixName: prefixName, datasource: datasource])
 
                 // Calculate the ASPECT RATIO from the building fraction and the free external facade density
                 // Merge the free external facade density into the RSU table containing the other indicators
-                datasource.execute(("DROP TABLE IF EXISTS $rsu_4_aspectratio; CREATE TABLE $rsu_4_aspectratio AS SELECT a.*, " +
-                        "b.rsu_free_external_facade_density FROM $rsu_indic0 a INNER JOIN " +
-                        "${calc_free_ext_density.results.outputTableName} b ON a.$columnIdRsu = b.$columnIdRsu").toString())
+                IProcess join_for_aspect_ratio = Geoclimate.DataUtils.joinTables()
+                join_for_aspect_ratio.execute([inputTableNamesWithId: [(join_for_SVF.results.outputTableName): columnIdRsu,
+                                                              (calc_free_ext_density.results.outputTableName): columnIdRsu]
+                                      , prefixName: prefixName+"_asp", datasource: datasource])
                 IProcess calc_aspect_ratio = Geoclimate.RsuIndicators.aspectRatio()
-                calc_aspect_ratio.execute([rsuTable                                 : rsu_4_aspectratio, rsuFreeExternalFacadeDensityColumn:
-                        "rsu_free_external_facade_density", rsuBuildingDensityColumn: "dens_st_area",
+                calc_aspect_ratio.execute([rsuTable                                 : join_for_aspect_ratio.results.outputTableName,
+                                           rsuFreeExternalFacadeDensityColumn       : "rsu_free_external_facade_density",
+                                           rsuBuildingDensityColumn                 : "dens_st_area",
                                            prefixName                               : prefixName, datasource: datasource])
 
                 // Calculate the PERVIOUS AND IMPERVIOUS SURFACE FRACTIONS
                 // Add the building density field in the surface fraction tables used for pervious and impervious fractions
                 // if the buildings are considered in the impervious fractions
                 if (fractionTypeImpervious.contains("building")) {
-                    imp_type.add("dens_st_area")
-                    datasource.execute("ALTER TABLE $rsu_surf_fractions ADD COLUMN dens_st_area DOUBLE; " +
-                            "UPDATE $rsu_surf_fractions SET dens_st_area = (SELECT b.dens_st_area" +
-                            " FROM ${calc_build_densityNroughness.results.outputTableName} b " +
-                            "WHERE $rsu_surf_fractions.$columnIdRsu = b.$columnIdRsu)")
+                    // Add the table in the map that will be used to join the vegetation field with the RSU table
+                    // in order to be used to calculate the pervious and impervious surface fractions
+                    surf_fractions[calc_build_densityNroughness.results.outputTableName]=columnIdRsu
                 }
+                IProcess joinFracSurf = Geoclimate.DataUtils.joinTables()
+                joinFracSurf.execute([inputTableNamesWithId: surf_fractions
+                                     , prefixName: prefixName, datasource: datasource])
                 IProcess calc_perviousness_frac = Geoclimate.RsuIndicators.perviousnessFraction()
-                calc_perviousness_frac.execute([rsuTable  : rsu_surf_fractions, operationsAndComposition: ["pervious_fraction"  :
-                                                                                                                   perv_type,
-                                                                                                           "impervious_fraction":
-                                                                                                                   imp_type],
+                calc_perviousness_frac.execute([rsuTable  : joinFracSurf.results.outputTableName,
+                                                operationsAndComposition: ["pervious_fraction": perv_type,
+                                                                           "impervious_fraction": imp_type],
                                                 prefixName: prefixName, datasource: datasource])
 
                 // Calculate the TERRAIN ROUGHNESS CLASS
@@ -234,22 +228,18 @@ public static createLCZ() {
 
                 // III. Define the LCZ of each RSU according to their 7 geometric and surface cover properties
                 // Merge all indicator columns in one table
-                datasource.execute(("DROP TABLE IF EXISTS $rsu_indic1; CREATE TABLE $rsu_indic1 AS SELECT a.*, " +
-                        "b.rsu_aspect_ratio FROM $rsu_indic0 a INNER JOIN " +
-                        "${calc_aspect_ratio.results.outputTableName} b ON a.$columnIdRsu = b.$columnIdRsu").toString())
-                datasource.execute(("DROP TABLE IF EXISTS $rsu_indic2; CREATE TABLE $rsu_indic2 AS SELECT a.*, " +
-                        "b.rsu_ground_sky_view_factor FROM $rsu_indic1 a INNER JOIN " +
-                        "${calcSVF.results.outputTableName} b ON a.$columnIdRsu = b.$columnIdRsu").toString())
-                datasource.execute(("DROP TABLE IF EXISTS $rsu_indic3; CREATE TABLE $rsu_indic3 AS SELECT a.*, " +
-                        "b.pervious_fraction, b.impervious_fraction FROM $rsu_indic2 a INNER JOIN " +
-                        "${calc_perviousness_frac.results.outputTableName} b ON a.$columnIdRsu = b.$columnIdRsu").toString())
-                datasource.execute(("DROP TABLE IF EXISTS $rsu_all_indic; CREATE TABLE $rsu_all_indic AS SELECT a.*, " +
-                        "b.effective_terrain_roughness_class FROM $rsu_indic3 a INNER JOIN " +
-                        "${calc_roughness_class.results.outputTableName} b ON a.$columnIdRsu = b.$columnIdRsu").toString())
+                IProcess join_final_table = Geoclimate.DataUtils.joinTables()
+                join_final_table.execute([inputTableNamesWithId:
+                        [(join_for_SVF.results.outputTableName)       : columnIdRsu,
+                         (calc_aspect_ratio.results.outputTableName)  : columnIdRsu,
+                         (calcSVF.results.outputTableName)  : columnIdRsu,
+                         (calc_perviousness_frac.results.outputTableName)  : columnIdRsu,
+                         (calc_roughness_class.results.outputTableName)  : columnIdRsu]
+                                      , prefixName: prefixName+"_allindic", datasource: datasource])
 
                 datasource.execute("DROP TABLE IF EXISTS $rsu_indic0, $rsu_indic1, $rsu_indic2, $rsu_indic3".toString())
 
-                datasource.eachRow("SELECT * FROM ${rsu_all_indic}".toString()) {
+                datasource.eachRow("SELECT * FROM ${join_final_table.results.outputTableName}".toString()) {
                     row ->
                         println(row)
                 }
