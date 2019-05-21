@@ -349,11 +349,11 @@ class ProcessingChainTest {
 
     @Test
     void PrepareOSMDefaultConfigTest() {
-        H2GIS h2GIS = H2GIS.open("./target/osm_processchain")
+        H2GIS h2GIS = H2GIS.open("./target/default_osm_processchain")
         IProcess prepareOSMData = ProcessingChain.PrepareOSM.prepareOSMDefaultConfig()
         prepareOSMData.execute([
                 datasource : h2GIS,
-                idZone : "56223"])
+                idZone : "22390"])
     }
 
     @Test
@@ -389,7 +389,7 @@ class ProcessingChainTest {
 
     @Test
     void createLCZTest(){
-        H2GIS h2GIS = H2GIS.open("./target/processingchainscales")
+        H2GIS h2GIS = H2GIS.open("./target/processinglcz")
         String sqlString = new File(getClass().getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
 
@@ -420,7 +420,7 @@ class ProcessingChainTest {
 
     @Test
     void osmChainWithIndicators() {
-        String id_zone = "56223"
+        String id_zone = "22233"
         boolean saveResults = true
         String directory ="./target/osm_processchain_full"
 
