@@ -2,7 +2,9 @@ package org.orbisgis.processingchain
 
 import groovy.transform.BaseScript
 import org.orbisgis.SpatialUnits
+import org.orbisgis.common.AbstractTablesInitialization
 import org.orbisgis.datamanager.JdbcDataSource
+import org.orbisgis.osm.OSMGISLayers
 import org.orbisgis.processingchain.ProcessingChain
 import org.orbisgis.processmanagerapi.IProcess
 import org.orbisgis.processmanagerapi.IProcessFactory
@@ -433,7 +435,7 @@ import org.slf4j.LoggerFactory
 
 
                     //Init model
-                    IProcess initParametersAbstract = org.orbisgis.common.AbstractTablesInitialization.initParametersAbstract()
+                    IProcess initParametersAbstract = AbstractTablesInitialization.initParametersAbstract()
                     if(!initParametersAbstract.execute(datasource:datasource)){
                         logger.info("Cannot initialize the geoclimate data model.")
                         return
@@ -443,7 +445,7 @@ import org.slf4j.LoggerFactory
 
                     logger.info("Transform OSM data to GIS tables.")
 
-                    IProcess prepareBuildings = org.orbisgis.osm.OSMGISLayers.prepareBuildings()
+                    IProcess prepareBuildings = OSMGISLayers.prepareBuildings()
 
                     if(!prepareBuildings.execute([datasource:datasource, osmTablesPrefix:osmTablesPrefix,
                                               buildingTableColumnsNames : buildingTableColumnsNames,
