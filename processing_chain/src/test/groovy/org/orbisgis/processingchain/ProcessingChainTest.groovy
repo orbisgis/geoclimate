@@ -502,7 +502,10 @@ class ProcessingChainTest {
         assertTrue computeRSUIndicators.execute([datasource            : datasource,
                                       inputBuildingTableName: buildingIndicators,
                                       inputBlockTableName   : blockIndicators,
-                                      inputRSUTableName   : finalRSU])
+                                      inputRSUTableName   : finalRSU,
+                                      inputVegetTableName :vegetationTable,
+                                      inputRoadTableName:roadTable,
+                                                 inputWaterTableName:hydrographicTable])
 
         String rsuIndicators = computeRSUIndicators.getResults().outputTableName
         if(saveResults){
