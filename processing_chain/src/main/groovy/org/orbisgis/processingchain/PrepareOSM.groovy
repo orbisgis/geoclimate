@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory
      * This process chains a set of subprocesses to extract and transform the OSM data into
      * the geoclimate model. It uses a set of default values.
      *
-     *  @param directory the path of the directory where the DB and result files should be stored
+     *  @param datasource a connection to the database where the result files should be stored
      *  @param idZone A string representing the inseeCode of the administrative level8 zone
      *  @param saveResults Set to true to save the result files in geojson and json in the @directory
      *
@@ -275,7 +275,7 @@ import org.slf4j.LoggerFactory
                             hLevMin: 3,
                             hLevMax: 15,
                             hThresholdLev2: 10,
-                            directory : directory,
+                            datasource : datasource,
                             osmTablesPrefix: "EXT",
                             idZone : idZone,
                             expand : 500,
@@ -347,7 +347,7 @@ import org.slf4j.LoggerFactory
      * This process chains a set of subprocesses to extract and transform the OSM data into
      * the geoclimate model
      *
-     * @param directory the path of the directory where the DB and result files should be stored
+     * @param datasource a connection to the database where the result files should be stored
      * @param osmTablesPrefix The prefix used for naming the 11 OSM tables build from the OSM file     *
      * @param idZone A string representing the inseeCode of the administrative level8 zone
      * @param expand The integer value of the Extended Zone
@@ -358,7 +358,7 @@ import org.slf4j.LoggerFactory
      */
     public static IProcess prepareOSM() {
         return processFactory.create("Extract and transform OSM data to Geoclimate model",
-                [directory : String,
+                [datasource : JdbcDataSource,
                  osmTablesPrefix: String,
                  idZone : String,
                  expand : int,
@@ -419,28 +419,15 @@ import org.slf4j.LoggerFactory
                     mappingForVegetType,
                     saveResults ->
 
-                    if(directory==null){
-                        logger.info("The directory to save the data cannot be null")
+                    if(datasource==null){
+                        logger.error("Cannot create the database to store the osm data")
                         return
                     }
-                    File dirFile = new File(directory)
-
-                    if(!dirFile.exists()){
-                        dirFile.mkdir()
-                        logger.info("The folder ${directory} has been created")
-                    }
-                    else if (!dirFile.isDirectory()){
-                        logger.info("Invalid directory path")
-                        return
-                    }
-
-
-                    String dbPath = dirFile.absolutePath+ File.separator+ "osmdb"
 
                     IProcess loadInitialData = org.orbisgis.osm.OSMGISLayers.loadInitialData()
 
                     if(!loadInitialData.execute([
-                            dbPath : dbPath,
+                            datasource : datasource,
                             osmTablesPrefix: osmTablesPrefix,
                             idZone : idZone,
                             expand : expand,
@@ -451,13 +438,7 @@ import org.slf4j.LoggerFactory
 
                     logger.info("The OSM data has been downloaded for the zone id : ${idZone}.")
 
-                    //The connection to the database
-                    JdbcDataSource datasource = loadInitialData.getResults().outDatasource
 
-                    if(datasource==null){
-                        logger.error("Cannot create the database to store the osm data")
-                        return
-                    }
                     //Init model
                     IProcess initParametersAbstract = org.orbisgis.common.AbstractTablesInitialization.initParametersAbstract()
                     if(!initParametersAbstract.execute(datasource:datasource)){
