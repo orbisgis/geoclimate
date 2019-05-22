@@ -260,15 +260,17 @@ public static IProcess computeRSUIndicators() {
         
         //rsu_building_density
         //rsu_building_volume_density
-        IProcess computeRSUStatistics = Geoclimate.GenericIndicators.unweightedOperationFromLowerScale()
-        if(!computeRSUStatistics.execute([inputLowerScaleTableName: inputBuildingTableName,inputUpperScaleTableName: inputRSUTableName, inputIdUp: id_rsu,
+        //rsu_mean_building_neighbor_number
+        //rsu_building_floor_density
+        IProcess computeRSUStatisticsUnweighted = Geoclimate.GenericIndicators.unweightedOperationFromLowerScale()
+        if(!computeRSUStatisticsUnweighted.execute([inputLowerScaleTableName: inputBuildingTableName,inputUpperScaleTableName: inputRSUTableName, inputIdUp: id_rsu,
                                inputVarAndOperations: ["building_volume":["DENS"],
-                                                       "area":["DENS"]],
+                                                       "area":["DENS"],"building_number_building_neighbor":["AVG"], "building_floor_area":["DENS"]],
                                    prefixName: rsuPrefixName, datasource: datasource])){
-            logger.info("Cannot compute the statistics : building density for the RSU")
+            logger.info("Cannot compute the statistics : building, building volume densities and mean building neighbor number for the RSU")
             return
         }
-        def rsuStatistics = computeRSUStatistics.results.outputTableName
+        def rsuStatisticsUnweighted = computeRSUStatisticsUnweighted.results.outputTableName
 
         //rsu_road_fraction
         IProcess computeRoadFraction = Geoclimate.RsuIndicators.roadFraction()
@@ -294,14 +296,58 @@ public static IProcess computeRSUIndicators() {
 
 
         //rsu_vegetation_fraction
+        //rsu_high_vegetation_fraction
+        //rsu_low_vegetation_fraction ????
         IProcess computeVegetationFraction = Geoclimate.RsuIndicators.vegetationFraction()
-        if(!computeVegetationFraction.execute([rsuTable: inputRSUTableName, vegetTable: inputVegetTableName, fractionType: ["all"],
+        if(!computeVegetationFraction.execute([rsuTable: inputRSUTableName, vegetTable: inputVegetTableName, fractionType: ["high","all"],
                                            prefixName: rsuPrefixName, datasource: datasource])){
             logger.info("Cannot compute the fraction of all vegetation for the RSU")
             return
         }
 
         def vegetationFraction = computeVegetationFraction.results.outputTableName
+
+
+        //rsu_mean_building_height weighted by their area.
+        //rsu_std_building_height weighted by their area.
+        //rsu_building_number_density RSU number of buildings weighted by RSU area. 
+        //rsu_mean_building_volume RSU mean building volume weighted.
+        IProcess computeRSUStatisticsWeighted  = Geoclimate.GenericIndicators.weightedAggregatedStatistics()
+        if(!computeRSUStatisticsWeighted.execute([inputLowerScaleTableName: inputBuildingTableName,inputUpperScaleTableName: inputRSUTableName,
+                                                  inputIdUp: id_rsu, inputVarWeightsOperations: ["height_roof" : ["area": ["AVG", "STD"]]
+                                                      ,"building_number_building_neighbor" : ["area": ["AVG"]],
+                                                  "building_volume" : ["area": ["AVG"]]],
+                                                  prefixName: rsuPrefixName, datasource: datasource])){
+            logger.info("Cannot compute the weighted indicators mean, std height building, building number density and \n\
+            mean volume building.")
+            return
+        }
+
+        def rsuStatisticsWeighted  = computeRSUStatisticsWeighted.results.outputTableName
+
+
+        //rsu_linear_road_density
+        //rsu_road_direction_distribution
+        IProcess computeLinearRoadOperations = Geoclimate.RsuIndicators.linearRoadOperations()
+        if(!computeLinearRoadOperations.execute([rsuTable: inputRSUTableName, roadTable: inputRoadTableName, operations: ["rsu_road_direction_distribution",
+                                              "rsu_linear_road_density"],
+                                             prefixName: rsuPrefixName, angleRangeSize: 30,
+                                             levelConsiderated: [0], datasource: datasource])){
+            logger.info("Cannot compute the linear road density and road direction distribution")
+            return
+        }
+        def linearRoadOperations  = computeLinearRoadOperations.results.outputTableName
+
+
+        //rsu_free_vertical_roof_density
+        //rsu_free_non_vertical_roof_density
+        IProcess computeRoofAreaDistribution= Geoclimate.RsuIndicators.roofAreaDistribution()
+        if(!computeRoofAreaDistribution.execute([rsuTable: inputRSUTableName, buildingTable: inputBuildingTableName, listLayersBottom: [0, 10, 20, 30, 40, 50],
+                                             prefixName: rsuPrefixName, datasource: datasource])){
+            logger.info("Cannot compute the free and non free vertical roof density")
+        }
+
+        def roofAreaDistribution  = computeRoofAreaDistribution.results.outputTableName
 
 
         //rsu_pervious_fraction
@@ -321,29 +367,8 @@ public static IProcess computeRSUIndicators() {
         //computeAspectRatio.execute([rsuTable: inputRSUTableName, rsuFreeExternalFacadeDensityColumn: String,
         //                           rsuBuildingDensityColumn: String, prefixName: rsuPrefixName, datasource: datasource])
 
-        //rsu_free_vertical_roof_density The sum of all vertical facades areas located above the building gutter height (wall height) divided by the RSU area.
-
-        //rsu_free_non_vertical_roof_density Building non vertical roof density considering that all buildings have either flat or gable roof
 
 
-        //rsu_mean_building_neighbor_number
-
-        //rsu_mean_building_height The mean height of the buildings included within a RSU, weighted by their area.
-
-        //rsu_std_building_height -pondéré par la surface
-
-        //rsu_building_number RSU number of buildings
-
-        //rsu_mean_building_volume RSU mean building volume
-
-        //rsu_high_vegetation_fraction
-
-        //rsu_low_vegetation_fraction
-
-        //rsu_linear_road_density
-
-
-        //rsu_house_floor_area
 
         //rsu_ground_sky_view_factor
 
@@ -354,8 +379,6 @@ public static IProcess computeRSUIndicators() {
 
         //rsu_terrain_roughness_class
 
-        //rsu_road_direction_distribution
-
         //rsu_free_vertical_roof_area_distribution
 
         //rsu_free_non_vertical_roof_area_distribution
@@ -363,8 +386,6 @@ public static IProcess computeRSUIndicators() {
         //rsu_effective_terrain_roughness
 
         //rsu_perkins_skill_score_building_direction_variability
-
-        //rsu_building_floor_density
 
         //rsu_mean_minimum_building_spacing
 
@@ -376,7 +397,7 @@ public static IProcess computeRSUIndicators() {
                                                           (vegetationFraction):id_rsu,
                                                         (rsuTableGeometryProperties): id_rsu,
                                                         (rsu_free_ext_density): id_rsu,
-                                                        (rsuStatistics):id_rsu,
+                                                        (rsuStatisticsUnweighted):id_rsu,
                                                           (roadFraction):id_rsu,
                                                           (waterFraction):id_rsu]
                                     , outputTableName: rsuPrefixName, datasource: datasource])){
