@@ -375,7 +375,7 @@ public static IProcess computeRSUIndicators() {
         if(!rsuTableJoin.execute([inputTableNamesWithId: [(inputRSUTableName): id_rsu,
                                                           (vegetationFraction):id_rsu,
                                                         (rsuTableGeometryProperties): id_rsu,
-                                                        (crsu_free_ext_density): id_rsu,
+                                                        (rsu_free_ext_density): id_rsu,
                                                         (rsuStatistics):id_rsu,
                                                           (roadFraction):id_rsu,
                                                           (waterFraction):id_rsu]

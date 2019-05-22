@@ -583,7 +583,7 @@ class ProcessingChainTest {
 
         String rsuIndicators = computeRSUIndicators.getResults().outputTableName
         if(saveResults){
-            println("Saving block indicators")
+            println("Saving RSU indicators")
             datasource.save(rsuIndicators, directory + File.separator + "${rsuIndicators}.geojson")
         }
 
