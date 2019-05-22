@@ -54,7 +54,7 @@ class GenericIndicatorsTests {
                 concat[3]+= "${row.avg_building_number_building_neighbor}\n"
                 concat[3]+= "${row.sum_building_area}\n"
                 concat[3]+= "${row.dens_building_area}\n"
-                concat[3]+= "${row.bui_nb_dens}\n"
+                concat[3]+= "${row.nb_dens_building_area}\n"
         }
         assertEquals("156.0\n310.0\n", concat[0])
         assertEquals("0.4\n0.0\n", concat[1])
@@ -120,9 +120,9 @@ class GenericIndicatorsTests {
         assert p.results.outputTableName == "test_geometry_properties"
         h2GIS.getTable("test_geometry_properties").eachRow {
             row -> assert row.the_geom!=null
-                assert row.st_issimple==true
-                assertEquals(0,row.st_area)
-                assertEquals(1, row.st_dimension)
+                assert row.issimple==true
+                assertEquals(0,row.area)
+                assertEquals(1, row.dimension)
                 assertEquals(1,  row.id)
         }
     }

@@ -46,7 +46,7 @@ static IProcess initParametersAbstract(){
                 def vegetAbstractType = 'VEGET_ABSTRACT_TYPE_' + uuid
                 def vegetAbstractParam = 'VEGET_ABSTRACT_PARAMETERS_' + uuid
 
-                datasource.executeScript(getClass().getResource('parametersAndAbstractTables.sql').toString(),
+                datasource.executeScript(getClass().getResourceAsStream('parametersAndAbstractTables.sql'),
                         [BUILDING_ABSTRACT_USE_TYPE: buildingAbstractUseType,
                          BUILDING_ABSTRACT_PARAMETERS: buildingAbstractParam,
                          ROAD_ABSTRACT_TYPE: roadAbstractType,

@@ -35,7 +35,7 @@ static IProcess unweightedOperationFromLowerScale() {
 return processFactory.create(
         "Unweighted statistical operations from lower scale",
         [inputLowerScaleTableName: String,inputUpperScaleTableName: String, inputIdUp: String,
-         inputVarAndOperations: String[], prefixName: String, datasource: JdbcDataSource],
+         inputVarAndOperations: Map, prefixName: String, datasource: JdbcDataSource],
         [outputTableName : String],
         { inputLowerScaleTableName, inputUpperScaleTableName, inputIdUp,
           inputVarAndOperations, prefixName, datasource ->
@@ -65,7 +65,7 @@ return processFactory.create(
                             query += "SUM(a.$var::float)/ST_AREA(b.$geometricFieldUp) AS ${op+"_"+var},"
                         }
                         else if(op=="NB_DENS"){
-                            query += "COUNT(a.*)/ST_AREA(b.$geometricFieldUp) AS ${var[0..2]+"_"+op},"
+                            query += "COUNT(a.*)/ST_AREA(b.$geometricFieldUp) AS ${op+"_"+var},"
                         }
                         else{
                             query += "$op(a.$var::float) AS ${op+"_"+var},"
@@ -106,7 +106,7 @@ static IProcess weightedAggregatedStatistics() {
     return processFactory.create(
             "Weighted statistical operations from lower scale",
             [inputLowerScaleTableName: String,inputUpperScaleTableName: String, inputIdUp: String,
-             inputVarWeightsOperations: String, prefixName: String, datasource: JdbcDataSource],
+             inputVarWeightsOperations: Map, prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { inputLowerScaleTableName, inputUpperScaleTableName, inputIdUp,
               inputVarWeightsOperations, prefixName, datasource ->
@@ -206,7 +206,7 @@ static IProcess geometryProperties() {
 
                 operations.each {operation ->
                     if(ops.contains(operation)){
-                        query += "$operation($geometricField) as $operation,"
+                        query += "$operation($geometricField) as ${operation.substring(3)},"
                     }
                 }
                 query+= "${inputFields.join(",")} from $inputTableName"

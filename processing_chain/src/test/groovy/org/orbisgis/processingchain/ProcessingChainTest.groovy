@@ -3,6 +3,7 @@ package org.orbisgis.processingchain
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
+import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.processmanager.ProcessMapper
 import org.orbisgis.processmanagerapi.IProcess
@@ -290,16 +291,17 @@ class ProcessingChainTest {
                 "sugar cane":["produce":["sugar_cane"],"crop":["sugar_cane"]]
         ]
 
+         H2GIS h2GIS = H2GIS.open("./target/osm_processchain")
+
          prepareOSMData.execute([
                 hLevMin: 3,
                 hLevMax: 15,
                 hThresholdLev2: 10,
-                directory : "./target/osm_processchain",
+                datasource : h2GIS,
                 osmTablesPrefix: "EXT",
                 idZone : "56223",
                 expand : 100,
                 distBuffer:100,
-
                 buildingTableColumnsNames:
                         ['height':'height','building:height':'b_height','roof:height':'r_height','building:roof:height':'b_r_height',
                          'building:levels':'b_lev','roof:levels':'r_lev','building:roof:levels':'b_r_lev','building':'building',
@@ -313,7 +315,6 @@ class ProcessingChainTest {
                 buildingTagValues: null,
                 tablesPrefix: "RAW_",
                 buildingFilter: "ZONE_BUFFER",
-
                 roadTableColumnsNames: ['width':'width','highway':'highway', 'surface':'surface', 'sidewalk':'sidewalk',
                                         'lane':'lane','layer':'zindex','maxspeed':'maxspeed','oneway':'oneway',
                                         'h_ref':'h_ref','route':'route','cycleway':'cycleway',
@@ -321,13 +322,11 @@ class ProcessingChainTest {
                 roadTagKeys: ['highway','cycleway','bicycle_road','cyclestreet','route','junction'],
                 roadTagValues: null,
                 roadFilter: "ZONE_BUFFER",
-
                 railTableColumnsNames: ['highspeed':'highspeed','railway':'railway','service':'service',
                                         'tunnel':'tunnel','layer':'layer','bridge':'bridge'],
                 railTagKeys: ['railway'],
                 railTagValues: null,
                 railFilter: "ZONE",
-
                 vegetTableColumnsNames: ['natural':'natural','landuse':'landuse','landcover':'landcover',
                                          'vegetation':'vegetation','barrier':'barrier','fence_type':'fence_type',
                                          'hedge':'hedge','wetland':'wetland','vineyard':'vineyard','trees':'trees',
@@ -337,30 +336,24 @@ class ProcessingChainTest {
                                  'forest','grass','grassland','greenfield','meadow','orchard','plant_nursery',
                                  'vineyard','hedge','hedge_bank','mangrove','banana_plants','banana','sugar_cane'],
                 vegetFilter: "ZONE_EXTENDED",
-
                 hydroTableColumnsNames: ['natural':'natural','water':'water','waterway':'waterway'],
                 hydroTags: ['natural':['water','waterway','bay'],'water':[],'waterway':[]],
                 hydroFilter: "ZONE_EXTENDED",
-
                 mappingForTypeAndUse : mappingTypeAndUse,
-
                 mappingForRoadType : mappingRoadType,
                 mappingForSurface : mappingSurface,
-
                 mappingForRailType : mappingRailType,
-
-                mappingForVegetType : mappingVegetType,
-                saveResults : true
+                mappingForVegetType : mappingVegetType
         ])
     }
 
     @Test
     void PrepareOSMDefaultConfigTest() {
+        H2GIS h2GIS = H2GIS.open("./target/default_osm_processchain")
         IProcess prepareOSMData = ProcessingChain.PrepareOSM.prepareOSMDefaultConfig()
         prepareOSMData.execute([
-                directory : "./target/osm_processchain",
-                idZone : "56223",
-                saveResults : true])
+                datasource : h2GIS,
+                idZone : "22390"])
     }
 
     @Test
@@ -376,9 +369,6 @@ class ProcessingChainTest {
                 "CREATE TABLE tempo_zone AS SELECT * FROM zone_test;" +
                 "CREATE TABLE tempo_veget AS SELECT id_veget, the_geom FROM veget_test WHERE id_veget < 4;" +
                 "CREATE TABLE tempo_hydro AS SELECT id_hydro, the_geom FROM hydro_test WHERE id_hydro < 2;")
-
-
-
         IProcess pm =  ProcessingChain.PrepareOSM.createUnitsOfAnalysis()
         pm.execute([datasource: h2GIS, zoneTable : "tempo_zone", roadTable : "tempo_road", railTable : "tempo_road",
                     vegetationTable: "tempo_veget", hydrographicTable: "tempo_hydro", surface_vegetation: null,
@@ -399,7 +389,7 @@ class ProcessingChainTest {
 
     @Test
     void createLCZTest(){
-        H2GIS h2GIS = H2GIS.open("./target/processingchainscales")
+        H2GIS h2GIS = H2GIS.open("./target/processinglcz")
         String sqlString = new File(getClass().getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
 
@@ -415,10 +405,9 @@ class ProcessingChainTest {
 
         // First create the scales
         IProcess pm_units = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
-        pm_units.execute([datasource: h2GIS, zoneTable : "tempo_zone", roadTable : "tempo_road", railTable : "tempo_road",
+        pm_units.execute([datasource: h2GIS, zoneTable : "tempo_zone", buildingTable:"tempo_build", roadTable : "tempo_road", railTable : "tempo_road",
                           vegetationTable: "tempo_veget", hydrographicTable: "tempo_hydro", surface_vegetation: null,
-                          surface_hydro: null, inputTableName: "tempo_build", distance: 0.0,
-                          inputLowerScaleTableName: "tempo_build",  prefixName: "test"])
+                          surface_hydro: null, distance: 0.0, prefixName: "test"])
 
         IProcess pm_lcz =  ProcessingChain.BuildLCZ.createLCZ()
         pm_lcz.execute([datasource: h2GIS, prefixName: "test", buildingTable: pm_units.results.outputTableBuildingName,
@@ -427,5 +416,86 @@ class ProcessingChainTest {
                         svfPointDensity: 0.008, svfRayLength: 100, svfNumberOfDirection: 60,
                         heightColumnName: "height_roof", fractionTypePervious: ["low_vegetation", "water"],
                         fractionTypeImpervious: ["road"], inputFields: ["id_build"], levelForRoads: [0]])
+    }
+
+    @Test
+    void osmChainWithIndicators() {
+        String id_zone = "22233"
+        boolean saveResults = true
+        String directory ="./target/osm_processchain_full"
+
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+
+        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osmchain_indicators")
+
+        //Extract and transform OSM data
+        IProcess prepareOSMData = ProcessingChain.PrepareOSM.prepareOSMDefaultConfig()
+        assertTrue prepareOSMData.execute([
+                datasource  : datasource,
+                idZone     : id_zone])
+
+        String buildingTable = prepareOSMData.getResults().outputBuilding
+
+        String roadTable = prepareOSMData.getResults().outputRoad
+
+        String railTable = prepareOSMData.getResults().outputRail
+
+        String hydrographicTable = prepareOSMData.getResults().outputHydro
+
+        String vegetationTable = prepareOSMData.getResults().outputVeget
+
+        String zoneTable = prepareOSMData.getResults().outputZone
+
+        if(saveResults){
+            println("Saving OSM GIS layers")
+            IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
+            saveTables.execute( [inputTableNames: [buildingTable,roadTable,railTable,hydrographicTable,vegetationTable,zoneTable]
+                                 , directory: directory, datasource: datasource])
+        }
+
+
+        //Create spatial units and relations : building, block, rsu
+        IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
+        assertTrue spatialUnits.execute([datasource : datasource, zoneTable: zoneTable, buildingTable: buildingTable,
+                              roadTable: roadTable, railTable: railTable, vegetationTable: vegetationTable,
+                              hydrographicTable: hydrographicTable, surface_vegetation: 100000,
+                              surface_hydro  : 2500, distance: 0.01, prefixName: "geounits"])
+
+        String finalBuildings = spatialUnits.getResults().outputTableBuildingName
+        String finalBlocks = spatialUnits.getResults().outputTableBlockName
+        String finalRSU = spatialUnits.getResults().outputTableRsuName
+
+        if (saveResults) {
+            println("Saving spatial units")
+            IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
+            saveTables.execute( [inputTableNames: spatialUnits.getResults().values()
+                                 , directory: directory, datasource: datasource])
+        }
+
+        //Compute building indicators
+        def computeBuildingsIndicators = ProcessingChain.BuildGeoIndicators.computeBuildingsIndicators()
+        assertTrue computeBuildingsIndicators.execute([datasource            : datasource,
+                                            inputBuildingTableName: finalBuildings,
+                                            inputRoadTableName    : roadTable])
+
+        String buildingIndicators = computeBuildingsIndicators.getResults().outputTableName
+        if(saveResults){
+            println("Saving building indicators")
+            datasource.save(buildingIndicators, directory + File.separator + "${buildingIndicators}_${id_zone}.geojson")
+        }
+
+        //Compute block indicators
+        def computeBlockIndicators = ProcessingChain.BuildGeoIndicators.computeBlockIndicators()
+        assertTrue computeBlockIndicators.execute([datasource: datasource,
+                                        inputBuildingTableName: buildingIndicators,
+                                        inputBlockTableName: finalBlocks])
+        String blockIndicators = computeBlockIndicators.getResults().outputTableName
+        if(saveResults){
+            println("Saving block indicators")
+            datasource.save(blockIndicators, directory + File.separator + "${blockIndicators}_${id_zone}.geojson")
+        }
+
     }
 }

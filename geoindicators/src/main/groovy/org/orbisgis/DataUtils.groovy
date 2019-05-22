@@ -9,18 +9,15 @@ import org.orbisgis.processmanagerapi.IProcess
 /**
  * An utility process to join all tables in one table
  * @param  inputTableNamesWithId list of table names with a identifier column name
- * @prefixName for the output table
- * @datasource connection to the database
+ * @param prefixName for the output table
+ * @param datasource connection to the database
  *
  * @return
  */
 static IProcess joinTables(){
-    processFactory.create("", [inputTableNamesWithId: Map
-                                , prefixName: String, datasource: JdbcDataSource], [outputTableName: String],
-            { inputTableNamesWithId, prefixName, JdbcDataSource datasource ->
-                // The name of the outputTableName is constructed
-                String baseName = "joined"
-                String outputTableName = prefixName + "_" + baseName
+    processFactory.create("Utility process to join tables in one", [inputTableNamesWithId: Map
+                                , outputTableName: String, datasource: JdbcDataSource], [outputTableName: String],
+            { inputTableNamesWithId, outputTableName, JdbcDataSource datasource ->
                 String columnKey
                 String a = "a"
                 def leftQuery = ""
@@ -60,4 +57,47 @@ static IProcess joinTables(){
                 [outputTableName:outputTableName]
 
             })
+}
+
+/**
+ * An utility process to save several tables in a folder
+ * @param  inputTableNames to be stored in the directory.
+ * Note : A spatial table is saved in a geojson file and the other in csv
+ * @param directory folder to save the tables
+ * @param datasource connection to the database
+ *
+ * @return
+ */
+static IProcess saveTablesAsFiles(){
+    processFactory.create("Utility process to save tables in geojson or csv files", [inputTableNames: String[]
+                               , directory: String, datasource: JdbcDataSource], [directory: String],
+            { inputTableNames, directory, JdbcDataSource datasource ->
+                if(directory==null){
+                    logger.info("The directory to save the data cannot be null")
+                    return
+                }
+                File dirFile = new File(directory)
+
+                if(!dirFile.exists()){
+                    dirFile.mkdir()
+                    logger.info("The folder ${directory} has been created")
+                }
+                else if (!dirFile.isDirectory()){
+                    logger.info("Invalid directory path")
+                    return
+                }
+                inputTableNames.each{tableName ->
+                    if(datasource.getTable(tableName).isSpatial()){
+                        def fileToSave =dirFile.absolutePath+File.separator+tableName+".geojson"
+                        datasource.save(tableName, fileToSave)
+                        logger.info("The table ${tableName} has been saved in file ${fileToSave}")
+                    }
+                    else{
+                        def fileToSave =dirFile.absolutePath+File.separator+tableName+".csv"
+                        datasource.save(tableName, fileToSave)
+                        logger.info("The table ${tableName} has been saved in file ${fileToSave}")
+                    }
+                }
+                [directory:directory]
+})
 }

@@ -47,7 +47,7 @@ class SpatialUnitsTests {
         rsu.execute([inputTableName: outputTableGeoms,
                      prefixName: "rsu", datasource: h2GIS])
         String outputTable = rsu.results.outputTableName
-        h2GIS.save("rsu",'/tmp/rsu.shp')
+        h2GIS.save(outputTable,'/tmp/rsu.shp')
         def countRows =  h2GIS.firstRow("select count(*) as numberOfRows from $outputTable".toString())
 
         assertEquals 213 , countRows.numberOfRows
