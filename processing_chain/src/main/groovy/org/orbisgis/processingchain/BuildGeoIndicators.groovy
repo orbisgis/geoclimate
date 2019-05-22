@@ -280,7 +280,7 @@ public static IProcess computeRSUIndicators() {
             return
         }
 
-        def roadFraction = computeRoadFraction.getResults().results.outputTableName
+        def roadFraction = computeRoadFraction.results.outputTableName
 
         //rsu_water_fraction
         IProcess computeWaterFraction= Geoclimate.RsuIndicators.waterFraction()
@@ -290,7 +290,7 @@ public static IProcess computeRSUIndicators() {
             return
         }
 
-        def waterFraction = computeWaterFraction.getResults().results.outputTableName
+        def waterFraction = computeWaterFraction.results.outputTableName
 
 
         //rsu_vegetation_fraction
@@ -301,7 +301,7 @@ public static IProcess computeRSUIndicators() {
             return
         }
 
-        def vegetationFraction = computeVegetationFraction.getResults().results.outputTableName
+        def vegetationFraction = computeVegetationFraction.results.outputTableName
 
 
         //rsu_pervious_fraction
