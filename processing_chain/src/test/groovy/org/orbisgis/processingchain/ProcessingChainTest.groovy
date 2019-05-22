@@ -8,6 +8,7 @@ import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.processmanager.ProcessMapper
 import org.orbisgis.processmanagerapi.IProcess
 
+import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.junit.jupiter.api.Assertions.assertTrue
@@ -420,7 +421,7 @@ class ProcessingChainTest {
 
     @Test
     void osmChainWithIndicators() {
-        String id_zone = "22233"
+        String id_zone = "56195"
         boolean saveResults = true
         String directory ="./target/osm_processchain_full"
 
@@ -512,6 +513,73 @@ class ProcessingChainTest {
             println("Saving block indicators")
             datasource.save(rsuIndicators, directory + File.separator + "${rsuIndicators}_${id_zone}.geojson")
         }
+
+    }
+
+    @Test
+    void osmGeoIndicators() {
+        String urlBuilding = new File(getClass().getResource("BUILDING.geojson").toURI()).absolutePath
+        String urlRoad= new File(getClass().getResource("ROAD.geojson").toURI()).absolutePath
+        String urlRail = new File(getClass().getResource("RAIL.geojson").toURI()).absolutePath
+        String urlVeget = new File(getClass().getResource("VEGET.geojson").toURI()).absolutePath
+        String urlHydro = new File(getClass().getResource("HYDRO.geojson").toURI()).absolutePath
+        String urlZone = new File(getClass().getResource("ZONE.geojson").toURI()).absolutePath
+
+        boolean saveResults = true
+        String directory ="./target/osm_processchain_geoindicators"
+
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+
+        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osmchain_geoindicators")
+
+        String zoneTableName="zone"
+        String buildingTableName="building"
+        String roadTableName="road"
+        String railTableName="rails"
+        String vegetationTableName="veget"
+        String hydrographicTableName="hydro"
+
+        datasource.load(urlBuilding, buildingTableName)
+        datasource.load(urlRoad, roadTableName)
+        datasource.load(urlRail, railTableName)
+        datasource.load(urlVeget, vegetationTableName)
+        datasource.load(urlHydro, hydrographicTableName)
+        datasource.load(urlZone, zoneTableName)
+
+
+
+        //Create spatial units and relations : building, block, rsu
+        IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
+        assertTrue spatialUnits.execute([datasource : datasource, zoneTable: zoneTableName, buildingTable: buildingTableName,
+                                         roadTable: roadTableName, railTable: railTableName, vegetationTable: vegetationTableName,
+                                         hydrographicTable: hydrographicTableName, surface_vegetation: 100000,
+                                         surface_hydro  : 2500, distance: 0.01, prefixName: "geounits"])
+
+        String relationBuildings = spatialUnits.getResults().outputTableBuildingName
+        String relationBlocks = spatialUnits.getResults().outputTableBlockName
+        String relationRSU = spatialUnits.getResults().outputTableRsuName
+
+        if (saveResults) {
+            println("Saving spatial units")
+            IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
+            saveTables.execute( [inputTableNames: spatialUnits.getResults().values()
+                                 , directory: directory, datasource: datasource])
+        }
+
+        def maxBlocks = datasource.firstRow("select max(id_block) as max from ${relationBuildings}".toString())
+        def countBlocks = datasource.firstRow("select count(*) as count from ${relationBlocks}".toString())
+        assertEquals(countBlocks.count,maxBlocks.max)
+
+        datasource.eachRow("select count(distinct id_block) as count_block , count(id_build) as count_building from ${relationBuildings} where id_rsu = 42".toString()) {
+            row ->
+                assertEquals(7,row.count_block )
+                assertEquals(14,row.count_building)
+        }
+
+
+
 
     }
 }
