@@ -349,15 +349,6 @@ class ProcessingChainTest {
     }
 
     @Test
-    void PrepareOSMDefaultConfigTest() {
-        H2GIS h2GIS = H2GIS.open("./target/default_osm_processchain")
-        IProcess prepareOSMData = ProcessingChain.PrepareOSM.prepareOSMDefaultConfig()
-        prepareOSMData.execute([
-                datasource : h2GIS,
-                idZone : "22390"])
-    }
-
-    @Test
     void CreateUnitsOfAnalysisTest(){
         H2GIS h2GIS = H2GIS.open("./target/processingchainscales")
         String sqlString = new File(getClass().getResource("data_for_tests.sql").toURI()).text
@@ -444,17 +435,17 @@ class ProcessingChainTest {
 
         String railTableName = prepareOSMData.getResults().outputRail
 
-        String hydroTableName = prepareOSMData.getResults().outputHydro
+        String hydrographicTableName = prepareOSMData.getResults().outputHydro
 
         String vegetationTableName = prepareOSMData.getResults().outputVeget
 
-        String hydrographicTableName = prepareOSMData.getResults().outputZone
+        String zoneTableName = prepareOSMData.getResults().outputZone
 
         if(saveResults){
             println("Saving OSM GIS layers")
             IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
             saveTables.execute( [inputTableNames: [buildingTableName,roadTableName,railTableName,hydrographicTableName,
-                                                   vegetationTableName,zoneTable]
+                                                   vegetationTableName,zoneTableName]
                                  , directory: directory, datasource: datasource])
         }
 
