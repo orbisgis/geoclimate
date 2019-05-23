@@ -59,13 +59,13 @@ return processFactory.create(
                     op = op.toUpperCase()
                     if(ops.contains(op)){
                         if(op=="GEOM_AVG"){
-                            query += "EXP(1.0/COUNT(*)*SUM(LOG(a.$var))) AS ${op+"_"+var},"
+                            query += "COALESCE(EXP(1.0/COUNT(*)*SUM(LOG(a.$var))),0) AS ${op+"_"+var},"
                         }
                         else if(op=="DENS"){
-                            query += "SUM(a.$var::float)/ST_AREA(b.$geometricFieldUp) AS ${op+"_"+var},"
+                            query += "COALESCE(SUM(a.$var::float)/ST_AREA(b.$geometricFieldUp),0) AS ${op+"_"+var},"
                         }
                         else if(op=="NB_DENS"){
-                            query += "COUNT(a.*)/ST_AREA(b.$geometricFieldUp) AS ${op+"_"+var},"
+                            query += "COALESCE(COUNT(a.*)/ST_AREA(b.$geometricFieldUp),0) AS ${op+"_"+var},"
                         }
                         else{
                             query += "$op(a.$var::float) AS ${op+"_"+var},"
@@ -74,8 +74,8 @@ return processFactory.create(
                 }
 
             }
-            query += "b.$inputIdUp FROM $inputLowerScaleTableName a, $inputUpperScaleTableName b " +
-                    "WHERE a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp"
+            query += "b.$inputIdUp FROM $inputLowerScaleTableName a RIGHT JOIN $inputUpperScaleTableName b " +
+                    "ON a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp"
             logger.info("Executing $query")
             datasource.execute query
             [outputTableName: outputTableName]
@@ -135,8 +135,8 @@ static IProcess weightedAggregatedStatistics() {
                     }
                 }
                 weightedMeanQuery += nameAndType[0..-2] + ") AS (SELECT b.$inputIdUp, ${weightedMean[0..-2]}" +
-                        " FROM $inputLowerScaleTableName a, $inputUpperScaleTableName b " +
-                        "WHERE a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp)"
+                        " FROM $inputLowerScaleTableName a RIGHT JOIN $inputUpperScaleTableName b " +
+                        "ON a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp)"
                 datasource.execute(weightedMeanQuery.toString())
 
                 // The weighted std is calculated if needed and only the needed fields are returned
@@ -155,8 +155,8 @@ static IProcess weightedAggregatedStatistics() {
                         }
                     }
                 }
-                weightedStdQuery = weightedStdQuery[0..-2] +" FROM $inputLowerScaleTableName a, $weighted_mean b " +
-                        "WHERE a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp"
+                weightedStdQuery = weightedStdQuery[0..-2] +" FROM $inputLowerScaleTableName a RIGHT JOIN $weighted_mean b " +
+                        "ON a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp"
 
                 logger.info("Executing $weightedStdQuery")
                 datasource.execute weightedStdQuery

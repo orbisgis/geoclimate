@@ -34,7 +34,6 @@ return processFactory.create(
         { buildingTable, rsuTable, buContiguityColumn, buTotalFacadeLengthColumn,
           prefixName, datasource ->
             def geometricFieldRsu = "the_geom"
-            def idFieldBu = "id_build"
             def idFieldRsu = "id_rsu"
             def height_wall = "height_wall"
 
@@ -45,11 +44,11 @@ return processFactory.create(
             String query = "CREATE INDEX IF NOT EXISTS id_bua ON $buildingTable($idFieldRsu); "+
                             "CREATE INDEX IF NOT EXISTS id_blb ON $rsuTable($idFieldRsu); "+
                             "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS "+
-                            "SELECT SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$height_wall)/"+
-                            "st_area(b.$geometricFieldRsu) AS rsu_free_external_facade_density, a.$idFieldRsu "
+                            "SELECT COALESCE(SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$height_wall)/"+
+                            "st_area(b.$geometricFieldRsu),0) AS rsu_free_external_facade_density, b.$idFieldRsu "
 
-            query += " FROM $buildingTable a, $rsuTable b "+
-                        "WHERE a.$idFieldRsu = b.$idFieldRsu GROUP BY b.$idFieldRsu, b.$geometricFieldRsu;"
+            query += " FROM $buildingTable a RIGHT JOIN $rsuTable b "+
+                        "ON a.$idFieldRsu = b.$idFieldRsu GROUP BY b.$idFieldRsu, b.$geometricFieldRsu;"
 
             logger.info("Executing $query")
             datasource.execute query
@@ -143,8 +142,8 @@ static IProcess groundSkyViewFactor() {
                             "ST_INTERSECTS(a.the_geom, '${row[geometricColumnRsu]}')").toString())
                     // The grid points intersecting buildings are identified
                     datasource.execute(("CREATE INDEX IF NOT EXISTS ids_temp ON $ptsRSUtempo(the_geom) USING RTREE; "+
-                            "DROP TABLE IF EXISTS $ptsRSUbu; CREATE TABLE $ptsRSUbu AS SELECT a.pk FROM $ptsRSUtempo a, "+
-                            "$correlationBuildingTable b WHERE ${row[idColumnRsu]} = b.$idColumnRsu AND "+
+                            "DROP TABLE IF EXISTS $ptsRSUbu; CREATE TABLE $ptsRSUbu AS SELECT a.pk FROM $ptsRSUtempo a "+
+                            "LEFT JOIN $correlationBuildingTable b ON ${row[idColumnRsu]} = b.$idColumnRsu WHERE "+
                             "a.the_geom && b.$geometricColumnBu AND ST_INTERSECTS(a.the_geom, b.$geometricColumnBu)").toString())
                     // The grid points intersecting buildings are then deleted
                     datasource.execute(("CREATE INDEX IF NOT EXISTS id_temp ON $ptsRSUtempo(pk); "+
@@ -171,11 +170,14 @@ static IProcess groundSkyViewFactor() {
                         "AS b WHERE ST_EXPAND(a.the_geom, $rayLength) && b.$geometricColumnBu AND "+
                         "ST_DWITHIN(b.$geometricColumnBu, a.the_geom, $rayLength) GROUP BY a.the_geom").toString())
 
-                // The result of the SVF calculation is averaged at RSU scale
-                datasource.execute(("CREATE INDEX IF NOT EXISTS id_svf ON $svfPts(id_rsu); "+
+                // The result of the SVF calculation is averaged at RSU scale and the rsu that do not have
+                // buildings in the area of calculation are considered "free sky" (SV = 1)
+                datasource.execute(("CREATE INDEX IF NOT EXISTS id_svf ON $svfPts(id_rsu); " +
+                        "CREATE INDEX IF NOT EXISTS id_pts ON $ptsRSUtot(id_rsu);"+
                         "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS "+
-                        "SELECT AVG(SVF) AS rsu_ground_sky_view_factor, id_rsu AS $idColumnRsu FROM $svfPts "+
-                        "GROUP BY id_rsu").toString())
+                        "SELECT COALESCE(AVG(a.SVF),1.0) AS rsu_ground_sky_view_factor, b.id_rsu AS $idColumnRsu " +
+                        "FROM $svfPts a RIGHT JOIN $ptsRSUtot b ON a.id_rsu = b.id_rsu "+
+                        "GROUP BY b.id_rsu").toString())
 
                 // The temporary tables are deleted
                 datasource.execute(("DROP TABLE IF EXISTS $ptsRSUtot, $ptsRSUGrid, $ptsRSUtempo, $ptsRSUbu, "+
