@@ -505,4 +505,71 @@ class ProcessingChainTest {
         }
 
     }
-}
+
+    @Test
+    void osmChainWithLCZ() {
+        String id_zone = "22233"
+        boolean saveResults = true
+        String directory = "./target/osm_processchain_full"
+
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+
+        H2GIS datasource = H2GIS.open(dirFile.absolutePath + File.separator + "osmchain_indicators")
+
+        //Extract and transform OSM data
+        IProcess prepareOSMData = ProcessingChain.PrepareOSM.prepareOSMDefaultConfig()
+        assertTrue prepareOSMData.execute([
+                datasource: datasource,
+                idZone    : id_zone])
+
+        String buildingTable = prepareOSMData.getResults().outputBuilding
+
+        String roadTable = prepareOSMData.getResults().outputRoad
+
+        String railTable = prepareOSMData.getResults().outputRail
+
+        String hydrographicTable = prepareOSMData.getResults().outputHydro
+
+        String vegetationTable = prepareOSMData.getResults().outputVeget
+
+        String zoneTable = prepareOSMData.getResults().outputZone
+
+        if (saveResults) {
+            println("Saving OSM GIS layers")
+            IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
+            saveTables.execute([inputTableNames: [buildingTable, roadTable, railTable, hydrographicTable, vegetationTable, zoneTable]
+                                , directory    : directory, datasource: datasource])
+        }
+
+        //Create spatial units and relations : building, block, rsu
+        IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
+        assertTrue spatialUnits.execute([datasource       : datasource, zoneTable: zoneTable, buildingTable: buildingTable,
+                                         roadTable        : roadTable, railTable: railTable, vegetationTable: vegetationTable,
+                                         hydrographicTable: hydrographicTable, surface_vegetation: 100000,
+                                         surface_hydro    : 2500, distance: 0.01, prefixName: "geounits"])
+
+        String finalBuildings = spatialUnits.getResults().outputTableBuildingName
+        String finalBlocks = spatialUnits.getResults().outputTableBlockName
+        String finalRSU = spatialUnits.getResults().outputTableRsuName
+
+        if (saveResults) {
+            println("Saving spatial units")
+            IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
+            saveTables.execute([inputTableNames: spatialUnits.getResults().values()
+                                , directory    : directory, datasource: datasource])
+        }
+
+        IProcess pm_lcz =  ProcessingChain.BuildLCZ.createLCZ()
+        assertTrue pm_lcz.execute([datasource: h2GIS, prefixName: "test", buildingTable: finalBuildings,
+                        rsuTable: finalRSU, roadTable: roadTable, vegetationTable: vegetationTable,
+                        hydrographicTable: hydrographicTable, facadeDensListLayersBottom: [0, 50, 200],
+                        facadeDensNumberOfDirection: 8, svfPointDensity: 0.008, svfRayLength: 100,
+                        svfNumberOfDirection: 60, heightColumnName: "height_roof",
+                        fractionTypePervious: ["low_vegetation", "water"],
+                        fractionTypeImpervious: ["road"], inputFields: ["id_build"], levelForRoads: [0]])
+
+
+    }
+    }
