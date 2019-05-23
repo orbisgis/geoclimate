@@ -14,6 +14,7 @@ DROP TABLE IF EXISTS rsu_build_corr;
 DROP TABLE IF EXISTS road_test;
 DROP TABLE IF EXISTS veget_test;
 DROP TABLE IF EXISTS hydro_test;
+DROP TABLE IF EXISTS rsu_test_for_lcz;
 
 CREATE TABLE building_test (id_build int, id_block int, id_rsu int, the_geom geometry, height_wall float, height_roof float, building_area float, building_perimeter float, nb_lev int, building_total_facade_length float, building_number_building_neighbor int, building_contiguity float);
 CREATE TABLE block_test (id_block int, the_geom geometry);
@@ -23,6 +24,9 @@ CREATE TABLE rsu_build_corr (id_rsu int, id_build int, rsu_mean_building_height 
 CREATE TABLE road_test (id_road int, the_geom geometry, width float, zindex int);
 CREATE TABLE veget_test (id_veget int, the_geom geometry, height_class varchar);
 CREATE TABLE hydro_test (id_hydro int, the_geom geometry);
+CREATE TABLE rsu_test_for_lcz(id_rsu int, sky_view_factor float, aspect_ratio float, building_surface_fraction float,
+impervious_surface_fraction float, pervious_surface_fraction float, height_of_roughness_elements float,
+terrain_roughness_class float);
 
 INSERT INTO building_test VALUES (1, 1, 1,'POLYGON((4 4, 10 4, 10 30, 4 30, 4 4))'::GEOMETRY, 8, 8, 156, 64, 2, 64, 0, 0),
  (2, 2, 1, 'POLYGON((12 4, 20 4, 20 9, 12 9, 12 4))'::GEOMETRY, 10, 13, 40, 26, 3, 26, 0, 0),
@@ -99,4 +103,5 @@ INSERT INTO veget_test VALUES (1, 'POLYGON((35 98, 36 98, 36 104, 35 104, 35 98)
 (2, 'POLYGON((20 140, 25 140, 25 145, 20 145, 20 140))'::GEOMETRY, 'high'),
 (3, 'POLYGON((45 130, 55 130, 55 135, 45 135, 45 130))'::GEOMETRY, 'high');
 INSERT INTO hydro_test VALUES (1, 'POLYGON((-2 95, 2 95, 2 105, -2 105, -2 95))'::GEOMETRY);
-
+INSERT INTO rsu_test_for_lcz VALUES (1, 0.3, 4, 0.5, 0.5, 0.05, 30, 8),
+(2, 0.9, 0.4, 0.4, 0.45, 0.1, 5.5, 5);

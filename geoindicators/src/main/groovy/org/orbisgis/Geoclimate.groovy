@@ -23,4 +23,6 @@ abstract class Geoclimate extends Script {
 
     public  static DataUtils = new DataUtils()
 
+    public  static TypologyClassification = new TypologyClassification()
+
 }

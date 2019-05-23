@@ -3,7 +3,6 @@ package org.orbisgis.processingchain
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
-import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.processmanager.ProcessMapper
 import org.orbisgis.processmanagerapi.IProcess
@@ -11,7 +10,7 @@ import org.orbisgis.processmanagerapi.IProcess
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertNull
 import static org.junit.jupiter.api.Assertions.assertTrue
-import static org.junit.jupiter.api.Assertions.assertTrue
+import static org.junit.jupiter.api.Assertions.assertEquals
 
 class ProcessingChainTest {
 
@@ -408,6 +407,14 @@ class ProcessingChainTest {
                         svfPointDensity: 0.008, svfRayLength: 100, svfNumberOfDirection: 60,
                         heightColumnName: "height_roof", fractionTypePervious: ["low_vegetation", "water"],
                         fractionTypeImpervious: ["road"], inputFields: ["id_build"], levelForRoads: [0]])
+        h2GIS.eachRow("SELECT * FROM ${pm_lcz.results.outputTableName}".toString()){row ->
+            assertTrue(row.id_rsu != null)
+            assertEquals("LCZ", row.lcz1[0..2])
+            assertEquals("LCZ", row.lcz2[0..2])
+            assertTrue(row.min_distance != null)
+            assertTrue(row.pss <= 1)
+
+        }
     }
 
     @Test
