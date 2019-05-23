@@ -215,6 +215,214 @@ public static IProcess computeBuildingsIndicators() {
         })
 
     }
+
+/**
+ * Compute the geoindicators at RSU scale
+ *
+ * @return
+ */
+public static IProcess computeRSUIndicators() {
+    return processFactory.create("Compute the geoindicators at block scale", [datasource            : JdbcDataSource,
+                                                                              inputBuildingTableName: String,
+                                                                              inputBlockTableName   : String,
+                                                                              inputRSUTableName   : String,
+                                                                              inputVegetTableName :String,
+                                                                              inputRoadTableName:String,
+                                                                              inputWaterTableName:String],
+            [outputTableName: String], { datasource, inputBuildingTableName, inputBlockTableName, inputRSUTableName,
+                                         inputVegetTableName,inputRoadTableName,inputWaterTableName ->
+
+
+        logger.info("Start computing RSU indicators...")
+        def id_rsu = "id_rsu"
+
+        String rsuPrefixName = "rsu_indicators"
+
+        def finalTablesToJoin = [:]
+
+        finalTablesToJoin.put(inputRSUTableName, id_rsu)
+
+        //rsu_area
+        IProcess computeGeometryProperties = Geoclimate.GenericIndicators.geometryProperties()
+        if(!computeGeometryProperties.execute([inputTableName: inputRSUTableName, inputFields: ["id_rsu"], operations: ["st_area"]
+                                               , prefixName  : rsuPrefixName, datasource: datasource])){
+            logger.info("Cannot compute the area of the RSU")
+            return
+        }
+        def rsuTableGeometryProperties = computeGeometryProperties.results.outputTableName
+
+        finalTablesToJoin.put(rsuTableGeometryProperties, id_rsu)
+
+        //Building free external facade density
+        IProcess computeFreeExtDensity = Geoclimate.RsuIndicators.freeExternalFacadeDensity()
+        if(!computeFreeExtDensity.execute([buildingTable: inputBuildingTableName,rsuTable: inputRSUTableName,
+                                       buContiguityColumn: "building_contiguity", buTotalFacadeLengthColumn: "building_total_facade_length",
+                                       prefixName: rsuPrefixName, datasource: datasource])){
+            logger.info("Cannot compute the free external facade density for the RSU")
+            return
+        }
+
+        def rsu_free_ext_density = computeFreeExtDensity.results.outputTableName
+
+        finalTablesToJoin.put(rsu_free_ext_density, id_rsu)
+        
+        //rsu_building_density
+        //rsu_building_volume_density
+        //rsu_mean_building_neighbor_number
+        //rsu_building_floor_density
+        IProcess computeRSUStatisticsUnweighted = Geoclimate.GenericIndicators.unweightedOperationFromLowerScale()
+        if(!computeRSUStatisticsUnweighted.execute([inputLowerScaleTableName: inputBuildingTableName,inputUpperScaleTableName: inputRSUTableName, inputIdUp: id_rsu,
+                               inputVarAndOperations: ["building_volume":["DENS"],
+                                                       "area":["DENS"],"building_number_building_neighbor":["AVG"], "building_floor_area":["DENS"]],
+                                   prefixName: rsuPrefixName, datasource: datasource])){
+            logger.info("Cannot compute the statistics : building, building volume densities and mean building neighbor number for the RSU")
+            return
+        }
+        def rsuStatisticsUnweighted = computeRSUStatisticsUnweighted.results.outputTableName
+
+        finalTablesToJoin.put(rsuStatisticsUnweighted, id_rsu)
+
+        //rsu_road_fraction
+        IProcess computeRoadFraction = Geoclimate.RsuIndicators.roadFraction()
+        if(!computeRoadFraction.execute([rsuTable: inputRSUTableName, roadTable: inputRoadTableName,
+                                     levelToConsiders: ["underground":[-4, -3, -2, -1],
+                                      "ground":[0]],
+                                     prefixName: rsuPrefixName, datasource: datasource])){
+            logger.info("Cannot compute the fraction of road for the RSU")
+            return
+        }
+
+        def roadFraction = computeRoadFraction.results.outputTableName
+
+        finalTablesToJoin.put(roadFraction, id_rsu)
+
+        //rsu_water_fraction
+        IProcess computeWaterFraction= Geoclimate.RsuIndicators.waterFraction()
+        if(!computeWaterFraction.execute([rsuTable: inputRSUTableName, waterTable: inputWaterTableName,
+                                               prefixName: rsuPrefixName, datasource: datasource])){
+            logger.info("Cannot compute the fraction of water for the RSU")
+            return
+        }
+
+        def waterFraction = computeWaterFraction.results.outputTableName
+
+        finalTablesToJoin.put(waterFraction, id_rsu)
+
+        //rsu_vegetation_fraction
+        //rsu_high_vegetation_fraction
+        //rsu_low_vegetation_fraction ????
+        IProcess computeVegetationFraction = Geoclimate.RsuIndicators.vegetationFraction()
+        if(!computeVegetationFraction.execute([rsuTable: inputRSUTableName, vegetTable: inputVegetTableName, fractionType: ["high","all"],
+                                           prefixName: rsuPrefixName, datasource: datasource])){
+            logger.info("Cannot compute the fraction of all vegetation for the RSU")
+            return
+        }
+
+        def vegetationFraction = computeVegetationFraction.results.outputTableName
+
+        finalTablesToJoin.put(vegetationFraction, id_rsu)
+
+
+        //rsu_mean_building_height weighted by their area.
+        //rsu_std_building_height weighted by their area.
+        //rsu_building_number_density RSU number of buildings weighted by RSU area. 
+        //rsu_mean_building_volume RSU mean building volume weighted.
+        IProcess computeRSUStatisticsWeighted  = Geoclimate.GenericIndicators.weightedAggregatedStatistics()
+        if(!computeRSUStatisticsWeighted.execute([inputLowerScaleTableName: inputBuildingTableName,inputUpperScaleTableName: inputRSUTableName,
+                                                  inputIdUp: id_rsu, inputVarWeightsOperations: ["height_roof" : ["area": ["AVG", "STD"]]
+                                                      ,"building_number_building_neighbor" : ["area": ["AVG"]],
+                                                  "building_volume" : ["area": ["AVG"]]],
+                                                  prefixName: rsuPrefixName, datasource: datasource])){
+            logger.info("Cannot compute the weighted indicators mean, std height building, building number density and \n\
+            mean volume building.")
+            return
+        }
+
+        def rsuStatisticsWeighted  = computeRSUStatisticsWeighted.results.outputTableName
+
+        finalTablesToJoin.put(rsuStatisticsWeighted, id_rsu)
+
+
+        //rsu_linear_road_density
+        //rsu_road_direction_distribution
+        IProcess computeLinearRoadOperations = Geoclimate.RsuIndicators.linearRoadOperations()
+        if(!computeLinearRoadOperations.execute([rsuTable: inputRSUTableName, roadTable: inputRoadTableName, operations: ["rsu_road_direction_distribution",
+                                              "rsu_linear_road_density"],
+                                             prefixName: rsuPrefixName, angleRangeSize: 30,
+                                             levelConsiderated: [0], datasource: datasource])){
+            logger.info("Cannot compute the linear road density and road direction distribution")
+            return
+        }
+        def linearRoadOperations  = computeLinearRoadOperations.results.outputTableName
+
+        finalTablesToJoin.put(linearRoadOperations, id_rsu)
+
+
+        //rsu_free_vertical_roof_density
+        //rsu_free_non_vertical_roof_density
+        IProcess computeRoofAreaDistribution= Geoclimate.RsuIndicators.roofAreaDistribution()
+        if(!computeRoofAreaDistribution.execute([rsuTable: inputRSUTableName, buildingTable: inputBuildingTableName, listLayersBottom: [0, 10, 20, 30, 40, 50],
+                                             prefixName: rsuPrefixName, datasource: datasource])){
+            logger.info("Cannot compute the free and non free vertical roof density")
+        }
+
+        def roofAreaDistribution  = computeRoofAreaDistribution.results.outputTableName
+
+        finalTablesToJoin.put(roofAreaDistribution, id_rsu)
+
+
+        //rsu_pervious_fraction
+        /*IProcess computePerviousnessFraction = Geoclimate.RsuIndicators.perviousnessFraction()
+        if(!computePerviousnessFraction.execute([rsuTable: inputRSUTableName, operationsAndComposition: String[],
+                                               prefixName: rsuPrefixName, datasource: datasource])){
+            logger.info("Cannot compute the fraction of all vegetation for the RSU")
+            return
+        }
+
+        def perviousnessFraction = computePerviousnessFraction.getResults().results.outputTableName*/
+
+
+        //rsu_aspect_ratio
+
+        //IProcess computeAspectRatio = Geoclimate.RsuIndicators.aspectRatio()
+        //computeAspectRatio.execute([rsuTable: inputRSUTableName, rsuFreeExternalFacadeDensityColumn: String,
+        //                           rsuBuildingDensityColumn: String, prefixName: rsuPrefixName, datasource: datasource])
+
+
+
+
+        //rsu_ground_sky_view_factor
+
+        //rsu_impervious_fraction
+
+
+        //rsu_roughness_height
+
+        //rsu_terrain_roughness_class
+
+        //rsu_free_vertical_roof_area_distribution
+
+        //rsu_free_non_vertical_roof_area_distribution
+
+        //rsu_effective_terrain_roughness
+
+        //rsu_perkins_skill_score_building_direction_variability
+
+        //rsu_mean_minimum_building_spacing
+
+        //rsu_projected_facade_area_distribution
+
+        //Merge all in one table
+        IProcess rsuTableJoin = org.orbisgis.DataUtils.joinTables()
+        if(!rsuTableJoin.execute([inputTableNamesWithId: finalTablesToJoin
+                                    , outputTableName: rsuPrefixName, datasource: datasource])){
+            logger.info("Cannot merge all tables in $rsuPrefixName. ")
+            return
+        }
+        [outputTableName: rsuTableJoin.results.outputTableName]
+
+    })
+}
     
 
 

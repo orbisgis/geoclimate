@@ -3,10 +3,12 @@ package org.orbisgis.processingchain
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
+import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.processmanager.ProcessMapper
 import org.orbisgis.processmanagerapi.IProcess
 
+import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.junit.jupiter.api.Assertions.assertEquals
@@ -347,15 +349,6 @@ class ProcessingChainTest {
     }
 
     @Test
-    void PrepareOSMDefaultConfigTest() {
-        H2GIS h2GIS = H2GIS.open("./target/default_osm_processchain")
-        IProcess prepareOSMData = ProcessingChain.PrepareOSM.prepareOSMDefaultConfig()
-        prepareOSMData.execute([
-                datasource : h2GIS,
-                idZone : "22390"])
-    }
-
-    @Test
     void CreateUnitsOfAnalysisTest(){
         H2GIS h2GIS = H2GIS.open("./target/processingchainscales")
         String sqlString = new File(getClass().getResource("data_for_tests.sql").toURI()).text
@@ -426,8 +419,9 @@ class ProcessingChainTest {
     }
 
     @Test
-    void osmChainWithIndicators() {
-        String id_zone = "22233"
+    void osmGeoIndicatorsFromApi() {
+        //Do not change this code
+        String id_zone = "56195"
         boolean saveResults = true
         String directory ="./target/osm_processchain_full"
 
@@ -443,36 +437,84 @@ class ProcessingChainTest {
                 datasource  : datasource,
                 idZone     : id_zone])
 
-        String buildingTable = prepareOSMData.getResults().outputBuilding
+        String buildingTableName = prepareOSMData.getResults().outputBuilding
 
-        String roadTable = prepareOSMData.getResults().outputRoad
+        String roadTableName = prepareOSMData.getResults().outputRoad
 
-        String railTable = prepareOSMData.getResults().outputRail
+        String railTableName = prepareOSMData.getResults().outputRail
 
-        String hydrographicTable = prepareOSMData.getResults().outputHydro
+        String hydrographicTableName = prepareOSMData.getResults().outputHydro
 
-        String vegetationTable = prepareOSMData.getResults().outputVeget
+        String vegetationTableName = prepareOSMData.getResults().outputVeget
 
-        String zoneTable = prepareOSMData.getResults().outputZone
+        String zoneTableName = prepareOSMData.getResults().outputZone
 
         if(saveResults){
             println("Saving OSM GIS layers")
             IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
-            saveTables.execute( [inputTableNames: [buildingTable,roadTable,railTable,hydrographicTable,vegetationTable,zoneTable]
+            saveTables.execute( [inputTableNames: [buildingTableName,roadTableName,railTableName,hydrographicTableName,
+                                                   vegetationTableName,zoneTableName]
                                  , directory: directory, datasource: datasource])
         }
 
+        //Run tests
+        osmGeoIndicators(directory, datasource, zoneTableName, buildingTableName,roadTableName,railTableName,vegetationTableName,
+                hydrographicTableName,saveResults)
 
+    }
+
+    @Test
+    void osmGeoIndicatorsFromTestFiles() {
+        String urlBuilding = new File(getClass().getResource("BUILDING.geojson").toURI()).absolutePath
+        String urlRoad= new File(getClass().getResource("ROAD.geojson").toURI()).absolutePath
+        String urlRail = new File(getClass().getResource("RAIL.geojson").toURI()).absolutePath
+        String urlVeget = new File(getClass().getResource("VEGET.geojson").toURI()).absolutePath
+        String urlHydro = new File(getClass().getResource("HYDRO.geojson").toURI()).absolutePath
+        String urlZone = new File(getClass().getResource("ZONE.geojson").toURI()).absolutePath
+
+        boolean saveResults = true
+        String directory ="./target/osm_processchain_geoindicators"
+
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+
+        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osmchain_geoindicators")
+
+        String zoneTableName="zone"
+        String buildingTableName="building"
+        String roadTableName="road"
+        String railTableName="rails"
+        String vegetationTableName="veget"
+        String hydrographicTableName="hydro"
+
+        datasource.load(urlBuilding, buildingTableName)
+        datasource.load(urlRoad, roadTableName)
+        datasource.load(urlRail, railTableName)
+        datasource.load(urlVeget, vegetationTableName)
+        datasource.load(urlHydro, hydrographicTableName)
+        datasource.load(urlZone, zoneTableName)
+
+        //Run tests
+        osmGeoIndicators(directory, datasource, zoneTableName, buildingTableName,roadTableName,railTableName,vegetationTableName,
+        hydrographicTableName,saveResults)
+
+    }
+
+
+    void osmGeoIndicators(String directory, JdbcDataSource datasource, String zoneTableName, String buildingTableName,
+                          String roadTableName, String railTableName, String vegetationTableName,
+                          String hydrographicTableName, boolean saveResults ) {
         //Create spatial units and relations : building, block, rsu
         IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
-        assertTrue spatialUnits.execute([datasource : datasource, zoneTable: zoneTable, buildingTable: buildingTable,
-                              roadTable: roadTable, railTable: railTable, vegetationTable: vegetationTable,
-                              hydrographicTable: hydrographicTable, surface_vegetation: 100000,
-                              surface_hydro  : 2500, distance: 0.01, prefixName: "geounits"])
+        assertTrue spatialUnits.execute([datasource : datasource, zoneTable: zoneTableName, buildingTable: buildingTableName,
+                                         roadTable: roadTableName, railTable: railTableName, vegetationTable: vegetationTableName,
+                                         hydrographicTable: hydrographicTableName, surface_vegetation: 100000,
+                                         surface_hydro  : 2500, distance: 0.01, prefixName: "geounits"])
 
-        String finalBuildings = spatialUnits.getResults().outputTableBuildingName
-        String finalBlocks = spatialUnits.getResults().outputTableBlockName
-        String finalRSU = spatialUnits.getResults().outputTableRsuName
+        String relationBuildings = spatialUnits.getResults().outputTableBuildingName
+        String relationBlocks = spatialUnits.getResults().outputTableBlockName
+        String relationRSU = spatialUnits.getResults().outputTableRsuName
 
         if (saveResults) {
             println("Saving spatial units")
@@ -481,28 +523,74 @@ class ProcessingChainTest {
                                  , directory: directory, datasource: datasource])
         }
 
+        def maxBlocks = datasource.firstRow("select max(id_block) as max from ${relationBuildings}".toString())
+        def countBlocks = datasource.firstRow("select count(*) as count from ${relationBlocks}".toString())
+        assertEquals(countBlocks.count,maxBlocks.max)
+
+        datasource.eachRow("select count(distinct id_block) as count_block , count(id_build) as count_building from ${relationBuildings} where id_rsu = 42".toString()) {
+            row ->
+                assertEquals(7,row.count_block )
+                assertEquals(14,row.count_building)
+        }
+
+        def maxRSUBlocks = datasource.firstRow("select count(distinct id_block) as max from ${relationBuildings} where id_rsu is not null".toString())
+        def countRSU = datasource.firstRow("select count(*) as count from ${relationBlocks} where id_rsu is not null".toString())
+        assertEquals(countRSU.count,maxRSUBlocks.max)
+
+
         //Compute building indicators
         def computeBuildingsIndicators = ProcessingChain.BuildGeoIndicators.computeBuildingsIndicators()
         assertTrue computeBuildingsIndicators.execute([datasource            : datasource,
-                                            inputBuildingTableName: finalBuildings,
-                                            inputRoadTableName    : roadTable])
-
+                                                       inputBuildingTableName: relationBuildings,
+                                                       inputRoadTableName    : roadTableName])
         String buildingIndicators = computeBuildingsIndicators.getResults().outputTableName
         if(saveResults){
             println("Saving building indicators")
-            datasource.save(buildingIndicators, directory + File.separator + "${buildingIndicators}_${id_zone}.geojson")
+            datasource.save(buildingIndicators, directory + File.separator + "${buildingIndicators}.geojson")
         }
+
+        //Check we have the same number of buildings
+        def countRelationBuilding = datasource.firstRow("select count(*) as count from ${relationBuildings}".toString())
+        def countBuildingIndicators = datasource.firstRow("select count(*) as count from ${buildingIndicators}".toString())
+        assertEquals(countRelationBuilding.count,countBuildingIndicators.count)
 
         //Compute block indicators
         def computeBlockIndicators = ProcessingChain.BuildGeoIndicators.computeBlockIndicators()
         assertTrue computeBlockIndicators.execute([datasource: datasource,
-                                        inputBuildingTableName: buildingIndicators,
-                                        inputBlockTableName: finalBlocks])
+                                                   inputBuildingTableName: buildingIndicators,
+                                                   inputBlockTableName: relationBlocks])
         String blockIndicators = computeBlockIndicators.getResults().outputTableName
         if(saveResults){
             println("Saving block indicators")
-            datasource.save(blockIndicators, directory + File.separator + "${blockIndicators}_${id_zone}.geojson")
+            datasource.save(blockIndicators, directory + File.separator + "${blockIndicators}.geojson")
         }
+
+        //Check we have the same number of blocks
+        def countRelationBlocks= datasource.firstRow("select count(*) as count from ${relationBlocks}".toString())
+        def countBlocksIndicators = datasource.firstRow("select count(*) as count from ${blockIndicators}".toString())
+        assertEquals(countRelationBlocks.count,countBlocksIndicators.count)
+
+        //Compute RSU indicators
+        def computeRSUIndicators = ProcessingChain.BuildGeoIndicators.computeRSUIndicators()
+        assertTrue computeRSUIndicators.execute([datasource            : datasource,
+                                                 inputBuildingTableName: buildingIndicators,
+                                                 inputBlockTableName   : blockIndicators,
+                                                 inputRSUTableName   : relationRSU,
+                                                 inputVegetTableName :vegetationTableName,
+                                                 inputRoadTableName:roadTableName,
+                                                 inputWaterTableName:hydrographicTableName])
+
+        String rsuIndicators = computeRSUIndicators.getResults().outputTableName
+        if(saveResults){
+            println("Saving RSU indicators")
+            datasource.save(rsuIndicators, directory + File.separator + "${rsuIndicators}.geojson")
+        }
+
+        //Check we have the same number of RSU
+        def countRelationRSU= datasource.firstRow("select count(*) as count from ${relationRSU}".toString())
+        def countRSUIndicators = datasource.firstRow("select count(*) as count from ${rsuIndicators}".toString())
+        assertEquals(countRelationRSU.count,countRSUIndicators.count)
+
 
     }
 

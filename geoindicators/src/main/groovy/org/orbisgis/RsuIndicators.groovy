@@ -536,7 +536,7 @@ static IProcess roofAreaDistribution() {
                         "WHERE a.id_rsu=b.$idColumnRsu GROUP BY a.id_build, a.id_rsu, a.z_max, a.z_min, a.delta_h);").toString())
 
                 // The roof area is calculated for each level except the last one (> 50 m in the default case)
-                String finalQuery = "CREATE TABLE $outputTableName AS SELECT id_rsu, "
+                String finalQuery = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT id_rsu, "
                 String nonVertQuery = ""
                 String vertQuery = ""
                 for (i in 1..(listLayersBottom.size()-1)){
