@@ -238,6 +238,8 @@ public static IProcess computeRSUIndicators() {
 
         String rsuPrefixName = "rsu_indicators"
 
+        def finalTablesToJoin = [:]
+
         //rsu_area
         IProcess computeGeometryProperties = Geoclimate.GenericIndicators.geometryProperties()
         if(!computeGeometryProperties.execute([inputTableName: inputRSUTableName, inputFields: ["id_rsu"], operations: ["st_area"]
@@ -246,6 +248,8 @@ public static IProcess computeRSUIndicators() {
             return
         }
         def rsuTableGeometryProperties = computeGeometryProperties.results.outputTableName
+
+        finalTablesToJoin.put(rsuTableGeometryProperties, id_rsu)
 
         //Building free external facade density
         IProcess computeFreeExtDensity = Geoclimate.RsuIndicators.freeExternalFacadeDensity()
@@ -257,6 +261,8 @@ public static IProcess computeRSUIndicators() {
         }
 
         def rsu_free_ext_density = computeFreeExtDensity.results.outputTableName
+
+        finalTablesToJoin.put(rsu_free_ext_density, id_rsu)
         
         //rsu_building_density
         //rsu_building_volume_density
@@ -272,6 +278,8 @@ public static IProcess computeRSUIndicators() {
         }
         def rsuStatisticsUnweighted = computeRSUStatisticsUnweighted.results.outputTableName
 
+        finalTablesToJoin.put(rsuStatisticsUnweighted, id_rsu)
+
         //rsu_road_fraction
         IProcess computeRoadFraction = Geoclimate.RsuIndicators.roadFraction()
         if(!computeRoadFraction.execute([rsuTable: inputRSUTableName, roadTable: inputRoadTableName,
@@ -284,6 +292,8 @@ public static IProcess computeRSUIndicators() {
 
         def roadFraction = computeRoadFraction.results.outputTableName
 
+        finalTablesToJoin.put(roadFraction, id_rsu)
+
         //rsu_water_fraction
         IProcess computeWaterFraction= Geoclimate.RsuIndicators.waterFraction()
         if(!computeWaterFraction.execute([rsuTable: inputRSUTableName, waterTable: inputWaterTableName,
@@ -294,6 +304,7 @@ public static IProcess computeRSUIndicators() {
 
         def waterFraction = computeWaterFraction.results.outputTableName
 
+        finalTablesToJoin.put(waterFraction, id_rsu)
 
         //rsu_vegetation_fraction
         //rsu_high_vegetation_fraction
@@ -306,6 +317,8 @@ public static IProcess computeRSUIndicators() {
         }
 
         def vegetationFraction = computeVegetationFraction.results.outputTableName
+
+        finalTablesToJoin.put(vegetationFraction, id_rsu)
 
 
         //rsu_mean_building_height weighted by their area.
@@ -325,6 +338,8 @@ public static IProcess computeRSUIndicators() {
 
         def rsuStatisticsWeighted  = computeRSUStatisticsWeighted.results.outputTableName
 
+        finalTablesToJoin.put(rsuStatisticsWeighted, id_rsu)
+
 
         //rsu_linear_road_density
         //rsu_road_direction_distribution
@@ -338,6 +353,8 @@ public static IProcess computeRSUIndicators() {
         }
         def linearRoadOperations  = computeLinearRoadOperations.results.outputTableName
 
+        finalTablesToJoin.put(linearRoadOperations, id_rsu)
+
 
         //rsu_free_vertical_roof_density
         //rsu_free_non_vertical_roof_density
@@ -348,6 +365,8 @@ public static IProcess computeRSUIndicators() {
         }
 
         def roofAreaDistribution  = computeRoofAreaDistribution.results.outputTableName
+
+        finalTablesToJoin.put(roofAreaDistribution, id_rsu)
 
 
         //rsu_pervious_fraction
@@ -393,13 +412,7 @@ public static IProcess computeRSUIndicators() {
 
         //Merge all in one table
         IProcess rsuTableJoin = org.orbisgis.DataUtils.joinTables()
-        if(!rsuTableJoin.execute([inputTableNamesWithId: [(inputRSUTableName): id_rsu,
-                                                          (vegetationFraction):id_rsu,
-                                                        (rsuTableGeometryProperties): id_rsu,
-                                                        (rsu_free_ext_density): id_rsu,
-                                                        (rsuStatisticsUnweighted):id_rsu,
-                                                          (roadFraction):id_rsu,
-                                                          (waterFraction):id_rsu]
+        if(!rsuTableJoin.execute([inputTableNamesWithId: finalTablesToJoin
                                     , outputTableName: rsuPrefixName, datasource: datasource])){
             logger.info("Cannot merge all tables in $rsuPrefixName. ")
             return
