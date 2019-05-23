@@ -61,7 +61,6 @@ public static createLCZ() {
                 def rsu_indic1 = "rsu_indic1" + uid_out
                 def rsu_indic2 = "rsu_indic2" + uid_out
                 def rsu_indic3 = "rsu_indic3" + uid_out
-                def rsu_all_indic = "rsu_all_indic" + uid_out
                 def rsu_4_roughness0 = "rsu_4_roughness0" + uid_out
                 def rsu_4_roughness1 = "rsu_4_roughness1" + uid_out
 
