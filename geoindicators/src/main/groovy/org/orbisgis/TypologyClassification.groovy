@@ -112,20 +112,19 @@ return processFactory.create(
                         centerValue[indicCol]=datasource.firstRow(("SELECT ${normalisationType}(all_val) AS $centerName " +
                                 "FROM " +
                                 "(SELECT ${indicCol}_low AS all_val FROM $LCZ_classes WHERE ${indicCol}_low IS NOT NULL UNION ALL " +
-                                "SELECT ${indicCol}_low AS all_val FROM $LCZ_classes WHERE ${indicCol}_upp IS NOT NULL)").toString())[centerName]
+                                "SELECT ${indicCol}_upp AS all_val FROM $LCZ_classes WHERE ${indicCol}_upp IS NOT NULL)").toString())[centerName]
                         if(normalisationType == "AVG"){
                             variabilityValue[indicCol]=datasource.firstRow(("SELECT STDDEV_POP(all_val) AS $variabilityName " +
                                     "FROM " +
                                     "(SELECT ${indicCol}_low AS all_val FROM $LCZ_classes WHERE ${indicCol}_low IS NOT NULL UNION ALL " +
-                                    "SELECT ${indicCol}_low AS all_val FROM $LCZ_classes WHERE ${indicCol}_upp IS NOT NULL)").toString())[variabilityName]
+                                    "SELECT ${indicCol}_upp AS all_val FROM $LCZ_classes WHERE ${indicCol}_upp IS NOT NULL)").toString())[variabilityName]
                         }
                         else{
                             variabilityValue[indicCol]=datasource.firstRow(("SELECT MEDIAN(ABS(all_val-${centerValue[indicCol]})) AS $variabilityName " +
                                     "FROM " +
                                     "(SELECT ${indicCol}_low AS all_val FROM $LCZ_classes WHERE ${indicCol}_low IS NOT NULL UNION ALL " +
-                                    "SELECT ${indicCol}_low AS all_val FROM $LCZ_classes WHERE ${indicCol}_upp IS NOT NULL)").toString())[variabilityName]
+                                    "SELECT ${indicCol}_upp AS all_val FROM $LCZ_classes WHERE ${indicCol}_upp IS NOT NULL)").toString())[variabilityName]
                         }
-                        println(centerValue)
                         // Piece of query useful for normalizing the LCZ indicator intervals
                         queryRangeNorm += " (${indicCol}_low-${centerValue[indicCol]})/${variabilityValue[indicCol]} AS " +
                                 "${indicCol}_low, (${indicCol}_upp-${centerValue[indicCol]})/${variabilityValue[indicCol]} AS " +
