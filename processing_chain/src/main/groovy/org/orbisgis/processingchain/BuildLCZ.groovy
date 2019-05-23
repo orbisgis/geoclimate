@@ -257,10 +257,14 @@ public static createLCZ() {
                                                            "building_surface_fraction": 1, "impervious_surface_fraction" : 1,
                                                            "pervious_surface_fraction": 1, "height_of_roughness_elements": 1,
                                                            "terrain_roughness_class"  : 1],
-                                     prefixName         : "test",
+                                     prefixName         : prefixName,
                                      datasource         : datasource])
 
                 datasource.execute("DROP TABLE IF EXISTS $rsu_indic0, $rsu_indic1, $rsu_indic2, $rsu_indic3".toString())
+
+                IProcess computeLCZWithGeom  = Geoclimate.DataUtils.joinTables()
+                computeLCZWithGeom.execute([inputTableNamesWithId: [(classifyLCZ.results.outputTableName):columnIdRsu,
+                            rsuTable:columnIdRsu ], outputTableName: prefixName+"_lcz_type", datasource: JdbcDataSource])
 
                 [outputTableName: classifyLCZ.results.outputTableName]
             }
