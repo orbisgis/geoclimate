@@ -182,6 +182,8 @@ return processFactory.create(
                             "SELECT null, $idFieldRsu, '${LCZ.name}', SQRT(${queryLczDistance[0..-2]}) FROM $normalizedValues)").toString())
                 }
 
+                //
+
                 // The name of the two closest LCZ types are conserved
                 datasource.execute(("DROP TABLE IF EXISTS $mainLczTable;" +
                         "CREATE INDEX IF NOT EXISTS all_id ON $allLczTable($idFieldRsu); " +
