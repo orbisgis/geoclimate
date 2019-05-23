@@ -240,6 +240,8 @@ public static IProcess computeRSUIndicators() {
 
         def finalTablesToJoin = [:]
 
+        finalTablesToJoin.put(inputRSUTableName, id_rsu)
+
         //rsu_area
         IProcess computeGeometryProperties = Geoclimate.GenericIndicators.geometryProperties()
         if(!computeGeometryProperties.execute([inputTableName: inputRSUTableName, inputFields: ["id_rsu"], operations: ["st_area"]
