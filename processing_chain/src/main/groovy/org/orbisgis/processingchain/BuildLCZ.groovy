@@ -61,9 +61,9 @@ public static createLCZ() {
                 def rsu_indic1 = "rsu_indic1" + uid_out
                 def rsu_indic2 = "rsu_indic2" + uid_out
                 def rsu_indic3 = "rsu_indic3" + uid_out
-                def rsu_all_indic = "rsu_all_indic" + uid_out
-                def rsu_4_roughness0 = "rsu_4_roughness0" + uid_out
-                def rsu_4_roughness1 = "rsu_4_roughness1" + uid_out
+
+                // Output table name
+                def outputTableName = "lczTable"
 
                 def veg_type = []
                 def perv_type = []
@@ -213,21 +213,26 @@ public static createLCZ() {
 
                 // Calculate the TERRAIN ROUGHNESS CLASS
                 // Merge the geometric average and the projected facade area distribution into the RSU table
-                datasource.execute(("DROP TABLE IF EXISTS $rsu_4_roughness0; CREATE TABLE $rsu_4_roughness0 AS SELECT a.*, " +
-                        "b.geom_avg_$heightColumnName FROM $rsuTable a INNER JOIN " +
-                        "${calc_build_densityNroughness.results.outputTableName} b ON a.$columnIdRsu = b.$columnIdRsu").toString())
-                datasource.execute(("DROP TABLE IF EXISTS $rsu_4_roughness1; CREATE TABLE $rsu_4_roughness1 AS SELECT b.*, " +
-                        "a.$geometricColumn, a.geom_avg_$heightColumnName  FROM $rsu_4_roughness0 a INNER JOIN " +
-                        "${calc_proj_facade_dist.results.outputTableName} b ON a.$columnIdRsu = b.$columnIdRsu").toString())
+                IProcess join4Roughness = Geoclimate.DataUtils.joinTables()
+                join4Roughness.execute([inputTableNamesWithId   : [(rsuTable)                                              :columnIdRsu,
+                                                                   (calc_build_densityNroughness.results.outputTableName)  :columnIdRsu,
+                                                                   (calc_proj_facade_dist.results.outputTableName)         :columnIdRsu],
+                                        outputTableName         : "tab4perv",
+                                        datasource              : datasource])
                 // calc_effective_roughness_height --> calc_roughness_class
                 IProcess calc_effective_roughness_height = Geoclimate.RsuIndicators.effectiveTerrainRoughnessHeight()
-                calc_effective_roughness_height.execute([rsuTable                                       : rsu_4_roughness1, projectedFacadeAreaName:
-                        "rsu_projected_facade_area_distribution", geometricMeanBuildingHeightName       : "geom_avg_$heightColumnName",
-                                                         prefixName                                     : prefixName, listLayersBottom: facadeDensListLayersBottom, numberOfDirection:
-                                                                 facadeDensNumberOfDirection, datasource: datasource])
+                calc_effective_roughness_height.execute([rsuTable                           : join4Roughness.results.outputTableName,
+                                                         projectedFacadeAreaName            : "rsu_projected_facade_area_distribution",
+                                                         geometricMeanBuildingHeightName    : "geom_avg_$heightColumnName",
+                                                         prefixName                         : prefixName,
+                                                         listLayersBottom                   : facadeDensListLayersBottom,
+                                                         numberOfDirection                  : facadeDensNumberOfDirection,
+                                                         datasource                         : datasource])
                 IProcess calc_roughness_class = Geoclimate.RsuIndicators.effectiveTerrainRoughnessClass()
-                calc_roughness_class.execute([datasource                     : datasource, rsuTable: calc_effective_roughness_height.results.outputTableName,
-                                              effectiveTerrainRoughnessHeight: "rsu_effective_terrain_roughness", prefixName: prefixName])
+                calc_roughness_class.execute([datasource                        : datasource,
+                                              rsuTable                          : calc_effective_roughness_height.results.outputTableName,
+                                              effectiveTerrainRoughnessHeight   : "rsu_effective_terrain_roughness",
+                                              prefixName                        : prefixName])
 
                 // III. Define the LCZ of each RSU according to their 7 geometric and surface cover properties
                 // Merge all indicator columns in one table
@@ -260,9 +265,18 @@ public static createLCZ() {
                                      prefixName         : prefixName,
                                      datasource         : datasource])
 
+                // Add the geometry field to the resulting table
+                datasource.execute("DROP TABLE IF EXISTS $outputTableName; " +
+                        "CREATE INDEX IF NOT EXISTS idx_lcz ON ${classifyLCZ.results.outputTableName}($columnIdRsu);"+
+                        "CREATE TABLE $outputTableName AS SELECT a.*, b.$geometricColumn FROM " +
+                        "${classifyLCZ.results.outputTableName} AS a, $rsuTable AS b WHERE a.$columnIdRsu=b.$columnIdRsu;")
+
+
                 datasource.execute("DROP TABLE IF EXISTS $rsu_indic0, $rsu_indic1, $rsu_indic2, $rsu_indic3".toString())
 
-                [outputTableName: classifyLCZ.results.outputTableName]
+
+
+                [outputTableName: outputTableName]
             }
     )
 }
