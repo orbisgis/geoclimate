@@ -408,14 +408,19 @@ class ProcessingChainTest {
                         svfPointDensity: 0.008, svfRayLength: 100, svfNumberOfDirection: 60,
                         heightColumnName: "height_roof", fractionTypePervious: ["low_vegetation", "water"],
                         fractionTypeImpervious: ["road"], inputFields: ["id_build"], levelForRoads: [0]])
+
         h2GIS.eachRow("SELECT * FROM ${pm_lcz.results.outputTableName}".toString()){row ->
             assertTrue(row.id_rsu != null)
             assertEquals("LCZ", row.lcz1[0..2])
             assertEquals("LCZ", row.lcz2[0..2])
-            assertTrue(row.min_distance != null)
+            // Two RSU are really too small (< 5 m²) to have a SVF calculation, then they should not been taken into account
+            if(!(row.id_rsu == 12 | row.id_rsu == 13)){
+                assertTrue(row.min_distance != null)
+            }
             assertTrue(row.pss <= 1)
-
         }
+        def nb_rsu = h2GIS.firstRow("SELECT COUNT(*) AS nb FROM ${pm_lcz.results.outputTableName}".toString())
+        assertEquals(14, nb_rsu.nb)
     }
 
     @Test
