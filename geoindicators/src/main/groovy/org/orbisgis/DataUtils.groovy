@@ -18,6 +18,9 @@ static IProcess joinTables(){
     processFactory.create("Utility process to join tables in one", [inputTableNamesWithId: Map
                                 , outputTableName: String, datasource: JdbcDataSource], [outputTableName: String],
             { inputTableNamesWithId, outputTableName, JdbcDataSource datasource ->
+
+                logger.info("Executing Utility process to join tables in one")
+
                 String columnKey
                 String a = "a"
                 def leftQuery = ""

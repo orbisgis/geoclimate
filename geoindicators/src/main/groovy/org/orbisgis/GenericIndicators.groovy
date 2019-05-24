@@ -40,6 +40,8 @@ return processFactory.create(
         { inputLowerScaleTableName, inputUpperScaleTableName, inputIdUp,
           inputVarAndOperations, prefixName, datasource ->
 
+            logger.info("Executing Unweighted statistical operations from lower scale")
+
             def geometricFieldUp = "the_geom"
 
             // The name of the outputTableName is constructed
@@ -76,7 +78,7 @@ return processFactory.create(
             }
             query += "b.$inputIdUp FROM $inputLowerScaleTableName a RIGHT JOIN $inputUpperScaleTableName b " +
                     "ON a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp"
-            logger.info("Executing $query")
+
             datasource.execute query
             [outputTableName: outputTableName]
             }
@@ -110,6 +112,9 @@ static IProcess weightedAggregatedStatistics() {
             [outputTableName : String],
             { inputLowerScaleTableName, inputUpperScaleTableName, inputIdUp,
               inputVarWeightsOperations, prefixName, datasource ->
+
+                logger.info("Executing Weighted statistical operations from lower scale")
+
                 def ops = ["AVG", "STD"]
 
                 // The name of the outputTableName is constructed
@@ -158,7 +163,6 @@ static IProcess weightedAggregatedStatistics() {
                 weightedStdQuery = weightedStdQuery[0..-2] +" FROM $inputLowerScaleTableName a RIGHT JOIN $weighted_mean b " +
                         "ON a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp"
 
-                logger.info("Executing $weightedStdQuery")
                 datasource.execute weightedStdQuery
 
                 // The temporary tables are deleted
@@ -191,6 +195,8 @@ static IProcess geometryProperties() {
             [outputTableName : String],
             { inputTableName,inputFields, operations, prefixName, datasource ->
 
+                logger.info("Executing Geometry properties")
+
                 def geometricField = "the_geom";
                 def ops = ["st_geomtype","st_srid", "st_length","st_perimeter","st_area", "st_dimension",
                            "st_coorddim", "st_num_geoms", "st_num_pts", "st_issimple", "st_isvalid", "st_isempty"]
@@ -210,7 +216,7 @@ static IProcess geometryProperties() {
                     }
                 }
                 query+= "${inputFields.join(",")} from $inputTableName"
-                logger.info("Executing $query")
+
                 datasource.execute query
                 [outputTableName: outputTableName]
             }
@@ -241,6 +247,8 @@ static IProcess perkinsSkillScoreBuildingDirection() {
             [buildingTableName: String, inputIdUp: String, angleRangeSize: int, prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { buildingTableName, inputIdUp, angleRangeSize = 15, prefixName, datasource->
+
+                logger.info("Executing Block Perkins skill score building direction")
 
                 def geometricField = "the_geom"
                 def idFieldBu = "id_build"

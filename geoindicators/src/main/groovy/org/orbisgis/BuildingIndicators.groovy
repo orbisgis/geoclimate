@@ -38,6 +38,8 @@ static IProcess sizeProperties() {
             [outputTableName : String],
             { inputBuildingTableName, operations, prefixName, datasource ->
 
+                logger.info("Executing Building size properties")
+
                 def geometricField = "the_geom"
                 def columnIdBu ="id_build"
                 def dist_passiv = 3
@@ -70,7 +72,7 @@ static IProcess sizeProperties() {
                     }
                 }
                 query+= "$columnIdBu FROM $inputBuildingTableName"
-                logger.info("Executing $query")
+
                 datasource.execute query
                 [outputTableName: outputTableName]
             }
@@ -106,6 +108,9 @@ static IProcess neighborsProperties() {
              , prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { inputBuildingTableName, operations, prefixName, datasource ->
+
+                logger.info("Executing Building interactions properties")
+
                 def geometricField = "the_geom"
                 def idField = "id_build"
                 def height_wall = "height_wall"
@@ -163,7 +168,6 @@ static IProcess neighborsProperties() {
                 // The temporary tables are deleted
                 query+= "DROP TABLE IF EXISTS $build_intersec"
 
-                logger.info("Executing $query")
                 datasource.execute query
                 [outputTableName: outputTableName]
             }
@@ -202,6 +206,9 @@ static IProcess formProperties() {
              , prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { inputBuildingTableName, operations, prefixName, datasource ->
+
+                logger.info("Executing Building form properties")
+
                 def geometricField = "the_geom"
                 def idField = "id_build"
                 def height_wall = "height_wall"
@@ -239,7 +246,6 @@ static IProcess formProperties() {
                 }
                 query+= "$idField FROM $inputBuildingTableName"
 
-                logger.info("Executing $query")
                 datasource.execute query
                 [outputTableName: outputTableName]
             }
@@ -266,6 +272,8 @@ static IProcess minimumBuildingSpacing() {
              , prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { inputBuildingTableName, bufferDist = 100, prefixName, datasource ->
+                logger.info("Executing Building minimum building spacing")
+
                 def geometricField = "the_geom"
                 def idField = "id_build"
 
@@ -331,6 +339,9 @@ static IProcess roadDistance() {
              , prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { inputBuildingTableName, inputRoadTableName, bufferDist = 100, prefixName, datasource ->
+
+                logger.info("Executing Building road distance")
+
                 def geometricField = "the_geom"
                 def idFieldBu = "id_build"
                 def road_width = "width"
@@ -408,6 +419,9 @@ static IProcess likelihoodLargeBuilding() {
             [inputBuildingTableName: String, nbOfBuildNeighbors: String, prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { inputBuildingTableName, nbOfBuildNeighbors, prefixName, datasource ->
+
+                logger.info("Executing Building closeness to a 50 m wide building")
+
                 def geometricField = "the_geom"
                 def idFieldBu = "id_build"
 

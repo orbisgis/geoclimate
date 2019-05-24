@@ -42,6 +42,8 @@ return processFactory.create(
                 "aspect_ratio": 1, "building_surface_fraction": 1, "impervious_surface_fraction": 1, "pervious_surface_fraction": 1,
                 "height_of_roughness_elements": 1, "terrain_roughness_class": 1], prefixName, datasource ->
 
+            logger.info("Set the LCZ type of each RSU")
+
             // List of possible operations
             def ops = ["AVG", "MEDIAN"]
 

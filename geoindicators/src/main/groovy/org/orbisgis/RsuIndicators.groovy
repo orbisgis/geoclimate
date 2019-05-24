@@ -33,6 +33,9 @@ return processFactory.create(
         [outputTableName : String],
         { buildingTable, rsuTable, buContiguityColumn, buTotalFacadeLengthColumn,
           prefixName, datasource ->
+
+            logger.info("Executing RSU free external facade density")
+
             def geometricFieldRsu = "the_geom"
             def idFieldRsu = "id_rsu"
             def height_wall = "height_wall"
@@ -50,7 +53,6 @@ return processFactory.create(
             query += " FROM $buildingTable a RIGHT JOIN $rsuTable b "+
                         "ON a.$idFieldRsu = b.$idFieldRsu GROUP BY b.$idFieldRsu, b.$geometricFieldRsu;"
 
-            logger.info("Executing $query")
             datasource.execute query
             [outputTableName: outputTableName]
         }
@@ -96,6 +98,9 @@ static IProcess groundSkyViewFactor() {
             [outputTableName : String],
             { rsuTable, correlationBuildingTable, rsuBuildingDensityColumn,
               pointDensity = 0.008, rayLength = 100, numberOfDirection = 60, prefixName, datasource ->
+
+                logger.info("Executing RSU ground sky view factor")
+
                 def geometricColumnRsu = "the_geom"
                 def geometricColumnBu = "the_geom"
                 def idColumnRsu = "id_rsu"
@@ -214,6 +219,8 @@ static IProcess aspectRatio() {
             { rsuTable, rsuFreeExternalFacadeDensityColumn, rsuBuildingDensityColumn,
               prefixName, datasource ->
 
+                logger.info("Executing RSU aspect ratio")
+
                 def columnIdRsu = "id_rsu"
 
                 // The name of the outputTableName is constructed
@@ -226,7 +233,6 @@ static IProcess aspectRatio() {
 
                 query += ", $columnIdRsu FROM $rsuTable"
 
-                logger.info("Executing $query")
                 datasource.execute query
                 [outputTableName: outputTableName]
             }
@@ -264,6 +270,8 @@ static IProcess projectedFacadeAreaDistribution() {
             [outputTableName : String],
             { buildingTable, rsuTable, listLayersBottom = [0, 10, 20, 30, 40, 50], numberOfDirection = 12,
               prefixName, datasource ->
+
+                logger.info("Executing RSU projected facade area distribution")
 
                 // The name of the outputTableName is constructed
                 String baseName = "rsu_projected_facade_area_distribution"
@@ -456,6 +464,8 @@ static IProcess roofAreaDistribution() {
             { rsuTable, buildingTable, listLayersBottom = [0, 10, 20, 30, 40, 50],
               prefixName, datasource ->
 
+                logger.info("Executing RSU roof area distribution")
+
                 def geometricColumnRsu = "the_geom"
                 def geometricColumnBu = "the_geom"
                 def idColumnRsu = "id_rsu"
@@ -622,6 +632,8 @@ static IProcess effectiveTerrainRoughnessHeight() {
             { rsuTable, projectedFacadeAreaName = "rsu_projected_facade_area_distribution", geometricMeanBuildingHeightName,
               prefixName, listLayersBottom = [0, 10, 20, 30, 40, 50], numberOfDirection = 12, datasource ->
 
+                logger.info("Executing RSU effective terrain roughness height")
+
                 def geometricColumn = "the_geom"
                 def idColumnRsu = "id_rsu"
 
@@ -701,6 +713,8 @@ static IProcess linearRoadOperations() {
             [outputTableName : String],
             { rsuTable, roadTable, operations, prefixName, angleRangeSize = 30, levelConsiderated = [0, 1],
               datasource ->
+
+                logger.info("Executing Operations on the linear of road")
 
                 def ops = ["rsu_road_direction_distribution", "rsu_linear_road_density"]
                 // Test whether the angleRangeSize is a divisor of 180°
@@ -884,6 +898,8 @@ static IProcess effectiveTerrainRoughnessClass() {
             [outputTableName : String],
             { datasource, rsuTable, effectiveTerrainRoughnessHeight, prefixName ->
 
+                logger.info("Executing RSU effective terrain roughness class")
+
                 def idColumnRsu = "id_rsu"
 
                 // The name of the outputTableName is constructed
@@ -932,6 +948,8 @@ static IProcess vegetationFraction() {
             [rsuTable: String, vegetTable: String, fractionType: String[], prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { rsuTable, vegetTable, fractionType, prefixName, datasource ->
+
+                logger.info("Executing vegetation fraction")
 
                 def geometricColumnRsu = "the_geom"
                 def geometricColumnVeget = "the_geom"
@@ -1016,6 +1034,8 @@ static IProcess roadFraction() {
             [outputTableName : String],
             { rsuTable, roadTable, levelToConsiders, prefixName, datasource ->
 
+                logger.info("Executing road fraction")
+
                 def geometricColumnRsu = "the_geom"
                 def geometricColumnRoad = "the_geom"
                 def idColumnRsu = "id_rsu"
@@ -1099,6 +1119,8 @@ static IProcess waterFraction() {
             [outputTableName : String],
             { rsuTable, waterTable, prefixName, datasource ->
 
+                logger.info("Executing water fraction")
+
                 def geometricColumnRsu = "the_geom"
                 def geometricColumnWater = "the_geom"
                 def idColumnRsu = "id_rsu"
@@ -1161,7 +1183,11 @@ static IProcess perviousnessFraction() {
             [rsuTable: String, operationsAndComposition: String[], prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { rsuTable, operationsAndComposition = ["pervious_fraction" : ["low_vegetation_fraction",
-                                                                           "water_fraction"], "impervious_fraction" : ["road_fraction"]], prefixName, datasource ->
+                                                                           "water_fraction"],
+                                                    "impervious_fraction" : ["road_fraction"]],
+              prefixName, datasource ->
+
+                logger.info("Executing Perviousness fraction")
 
                 def idColumnRsu = "id_rsu"
                 def ops = ["pervious_fraction", "impervious_fraction"]
@@ -1187,7 +1213,6 @@ static IProcess perviousnessFraction() {
                 }
                 query = query[0..-2] + " FROM $rsuTable;"
 
-                logger.info("Executing $query")
                 datasource.execute query
                 [outputTableName: outputTableName]
             }

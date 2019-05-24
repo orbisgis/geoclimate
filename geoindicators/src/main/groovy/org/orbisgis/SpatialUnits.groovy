@@ -225,6 +225,8 @@ static IProcess createScalesRelations(){
             [outputTableName: String, outputIdColumnUp: String],
             { inputLowerScaleTableName, inputUpperScaleTableName, idColumnUp, prefixName, datasource ->
 
+                logger.info("Creating the Tables of relations between two scales")
+
                 def geometricColumnLow = "the_geom"
                 def geometricColumnUp = "the_geom"
 
