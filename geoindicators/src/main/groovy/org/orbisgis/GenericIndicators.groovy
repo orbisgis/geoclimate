@@ -215,3 +215,104 @@ static IProcess geometryProperties() {
                 [outputTableName: outputTableName]
             }
     )}
+
+
+/**
+ * This process is used to compute the Perkins SKill Score (included within a [0 - 1] interval) of the distribution
+ * of building direction within a block or a RSU. This indicator gives an idea of the building direction variability within
+ * each block / RSU. The length of the building SMBR sides is considered to calculate a distribution of building orientation.
+ * Then the distribution is used to calculate the Perkins SKill Score. The distribution has an "angle_range_size"
+ * interval that has to be defined by the user (default 15).
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param buildingTableName the name of the input ITable where are stored the geometry field, the building and the block/RSU ID
+ * @param inputIdUp the ID of the upper scale
+ * @param angleRangeSize the range size (in °) of each interval angle used to calculate the distribution of building direction
+ * (should be a divisor of 180 - default 15°)
+ * @param prefixName String use as prefix to name the output table
+ *
+ * @return A database table name.
+ * @author Jérémy Bernard
+ */
+static IProcess perkinsSkillScoreBuildingDirection() {
+    return processFactory.create(
+            "Block Perkins skill score building direction",
+            [buildingTableName: String, inputIdUp: String, angleRangeSize: int, prefixName: String, datasource: JdbcDataSource],
+            [outputTableName : String],
+            { buildingTableName, inputIdUp, angleRangeSize = 15, prefixName, datasource->
+
+                def geometricField = "the_geom"
+                def idFieldBu = "id_build"
+
+                // The name of the outputTableName is constructed
+                String baseName = inputIdUp[3..-1]+"_perkins_skill_score_building_direction"
+                String outputTableName = prefixName + "_" + baseName
+
+                // Test whether the angleRangeSize is a divisor of 180°
+                if (180%angleRangeSize==0 & 180/angleRangeSize>1){
+                    // To avoid overwriting the output files of this step, a unique identifier is created
+                    def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
+
+                    // Temporary table names
+                    def build_min_rec = "build_min_rec"+uid_out
+                    def build_dir360 = "build_dir360"+uid_out
+                    def build_dir180 = "build_dir180"+uid_out
+                    def build_dir_dist = "build_dir_dist"+uid_out
+                    def build_dir_tot = "build_dir_tot"+uid_out
+
+                    // The minimum diameter of the minimum rectangle is created for each building
+                    datasource.execute(("DROP TABLE IF EXISTS $build_min_rec; CREATE TABLE $build_min_rec AS "+
+                            "SELECT $idFieldBu, $inputIdUp, ST_MINIMUMDIAMETER(ST_MINIMUMRECTANGLE($geometricField)) "+
+                            "AS the_geom FROM $buildingTableName").toString())
+
+                    // The length and direction of the smallest and the longest sides of the Minimum rectangle are calculated
+                    datasource.execute(("CREATE INDEX IF NOT EXISTS id_bua ON $buildingTableName($idFieldBu);" +
+                            "CREATE INDEX IF NOT EXISTS id_bua ON $build_min_rec($idFieldBu);" +
+                            "DROP TABLE IF EXISTS $build_dir360; CREATE TABLE $build_dir360 AS "+
+                            "SELECT a.$inputIdUp, ST_LENGTH(a.the_geom) AS LEN_L, "+
+                            "ST_AREA(b.the_geom)/ST_LENGTH(a.the_geom) AS LEN_H, "+
+                            "ROUND(DEGREES(ST_AZIMUTH(ST_STARTPOINT(a.the_geom), ST_ENDPOINT(a.the_geom)))) AS ANG_L, "+
+                            "ROUND(DEGREES(ST_AZIMUTH(ST_STARTPOINT(ST_ROTATE(a.the_geom, pi()/2)), "+
+                            "ST_ENDPOINT(ST_ROTATE(a.the_geom, pi()/2))))) AS ANG_H FROM $build_min_rec a  "+
+                            "LEFT JOIN $buildingTableName b ON a.$idFieldBu=b.$idFieldBu").toString())
+
+                    // The angles are transformed in the [0, 180]° interval
+                    datasource.execute(("DROP TABLE IF EXISTS $build_dir180; CREATE TABLE $build_dir180 AS "+
+                            "SELECT $inputIdUp, LEN_L, LEN_H, CASEWHEN(ANG_L>=180, ANG_L-180, ANG_L) AS ANG_L, "+
+                            "CASEWHEN(ANG_H>180, ANG_H-180, ANG_H) AS ANG_H FROM $build_dir360").toString())
+
+                    // The query aiming to create the building direction distribution is created
+                    String sqlQueryDist = "DROP TABLE IF EXISTS $build_dir_dist; CREATE TABLE $build_dir_dist AS SELECT "
+                    for (int i=angleRangeSize; i<180; i+=angleRangeSize){
+                        sqlQueryDist += "SUM(CASEWHEN(ANG_L>=${i-angleRangeSize} AND ANG_L<$i, LEN_L, " +
+                                "CASEWHEN(ANG_H>=${i-angleRangeSize} AND ANG_H<$i, LEN_H, 0))) AS ANG$i, "
+                    }
+                    sqlQueryDist += "$inputIdUp FROM $build_dir180 GROUP BY $inputIdUp;"
+                    datasource.execute(sqlQueryDist)
+
+                    // The total of building linear of direction is calculated for each block/RSU
+                    String sqlQueryTot = "DROP TABLE IF EXISTS $build_dir_tot; CREATE TABLE $build_dir_tot AS SELECT *, "
+                    for (int i=angleRangeSize; i<180; i+=angleRangeSize){
+                        sqlQueryTot += "ANG$i + "
+                    }
+                    sqlQueryTot = sqlQueryTot[0..-3] + "AS ANG_TOT FROM $build_dir_dist;"
+                    datasource.execute(sqlQueryTot)
+
+                    // The Perkings Skill score is finally calculated using a last query
+                    String sqlQueryPerkins = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT $inputIdUp, "
+                    for (int i=angleRangeSize; i<180; i+=angleRangeSize){
+                        sqlQueryPerkins += "LEAST(1./(${180/angleRangeSize}), ANG$i::float/ANG_TOT) + "
+                    }
+                    sqlQueryPerkins = sqlQueryPerkins[0..-3] + "AS block_perkins_skill_score_building_direction" +
+                            " FROM $build_dir_tot;"
+                    datasource.execute(sqlQueryPerkins)
+
+                    // The temporary tables are deleted
+                    datasource.execute(("DROP TABLE IF EXISTS $build_min_rec, $build_dir360, $build_dir180, "+
+                            "$build_dir_dist, $build_dir_tot").toString())
+
+                    [outputTableName: outputTableName]
+                }
+            }
+    )}

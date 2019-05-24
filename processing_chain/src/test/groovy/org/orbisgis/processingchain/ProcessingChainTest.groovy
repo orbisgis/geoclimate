@@ -575,16 +575,15 @@ class ProcessingChainTest {
         def countBlocksIndicators = datasource.firstRow("select count(*) as count from ${blockIndicators}".toString())
         assertEquals(countRelationBlocks.count,countBlocksIndicators.count)
 
+
         //Compute RSU indicators
         def computeRSUIndicators = ProcessingChain.BuildGeoIndicators.computeRSUIndicators()
-        assertTrue computeRSUIndicators.execute([datasource            : datasource,
-                                                 inputBuildingTableName: buildingIndicators,
-                                                 inputBlockTableName   : blockIndicators,
-                                                 inputRSUTableName   : relationRSU,
-                                                 inputVegetTableName :vegetationTableName,
-                                                 inputRoadTableName:roadTableName,
-                                                 inputWaterTableName:hydrographicTableName])
-
+        assertTrue computeRSUIndicators.execute([datasource             : datasource,
+                                                 buildingTable          : buildingIndicators,
+                                                 rsuTable               : relationRSU,
+                                                 vegetationTable        : vegetationTableName,
+                                                 roadTable              : roadTableName,
+                                                 hydrographicTable      : hydrographicTableName])
         String rsuIndicators = computeRSUIndicators.getResults().outputTableName
         if(saveResults){
             println("Saving RSU indicators")

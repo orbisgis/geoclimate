@@ -134,4 +134,24 @@ class GenericIndicatorsTests {
                 assertEquals(1,  row.id)
         }
     }
+
+    @Test
+    void perkinsSkillScoreBuildingDirectionTest() {
+        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
+        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
+        h2GIS.execute(sqlString)
+
+        // Only the first 6 first created buildings are selected since any new created building may alter the results
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, block_perkins_skill_score_building_direction; " +
+                "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 9")
+
+        def  p =  Geoclimate.GenericIndicators.perkinsSkillScoreBuildingDirection()
+        p.execute([buildingTableName: "tempo_build", inputIdUp: "id_block", angleRangeSize: 15, prefixName: "test", datasource: h2GIS])
+        def concat = 0
+        h2GIS.eachRow("SELECT * FROM test_block_perkins_skill_score_building_direction WHERE id_block = 4"){
+            row ->
+                concat+= row.block_perkins_skill_score_building_direction
+        }
+        assertEquals(4.0/12, concat, 0.0001)
+    }
 }
