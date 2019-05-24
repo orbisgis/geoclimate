@@ -262,7 +262,7 @@ public static createLCZ() {
                                                            "building_surface_fraction": 1, "impervious_surface_fraction" : 1,
                                                            "pervious_surface_fraction": 1, "height_of_roughness_elements": 1,
                                                            "terrain_roughness_class"  : 1],
-                                     prefixName         : "test",
+                                     prefixName         : prefixName,
                                      datasource         : datasource])
 
                 // Add the geometry field to the resulting table
