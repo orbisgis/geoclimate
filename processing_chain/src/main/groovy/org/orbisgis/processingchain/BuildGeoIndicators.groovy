@@ -391,15 +391,16 @@ public static IProcess computeRSUIndicators() {
                 finalTablesToJoin.put(linearRoadOperations, columnIdRsu)
 
 
-                // rsu_free_vertical_roof_density + rsu_free_non_vertical_roof_density
-                IProcess computeRoofAreaDistribution= Geoclimate.RsuIndicators.roofAreaDistribution()
-                if(!computeRoofAreaDistribution.execute([rsuTable        : rsuTable,                buildingTable: buildingTable,
-                                                         listLayersBottom: facadeDensListLayersBottom,
-                                                         prefixName      : prefixName,           datasource   : datasource])){
-                    logger.info("Cannot compute the free and non free vertical roof density")
+                // rsu_free_vertical_roof_area_distribution + rsu_free_non_vertical_roof_area_distribution
+                IProcess  computeRoofAreaDist =  Geoclimate.RsuIndicators.roofAreaDistribution()
+                if(!computeRoofAreaDist.execute([rsuTable        : rsuTable,                    buildingTable: buildingTable,
+                                                 listLayersBottom: facadeDensListLayersBottom,  prefixName   : prefixName,
+                                                 datasource      : datasource])){
+                    logger.info("Cannot compute the roof area distribution in $prefixName. ")
+                    return
                 }
-                def roofAreaDistribution  = computeRoofAreaDistribution.results.outputTableName
-                finalTablesToJoin.put(roofAreaDistribution, columnIdRsu)
+                def roofAreaDist = computeRoofAreaDist.results.outputTableName
+                finalTablesToJoin.put(roofAreaDist, columnIdRsu)
 
 
                 // rsu_projected_facade_area_distribution
@@ -500,18 +501,6 @@ public static IProcess computeRSUIndicators() {
                 finalTablesToJoin.put(roughClass, columnIdRsu)
 
 
-                // rsu_free_vertical_roof_area_distribution + rsu_free_non_vertical_roof_area_distribution
-                IProcess  computeRoofAreaDist =  Geoclimate.RsuIndicators.roofAreaDistribution()
-                if(!computeRoofAreaDist.execute([rsuTable        : rsuTable,                    buildingTable: buildingTable,
-                                                 listLayersBottom: facadeDensListLayersBottom,  prefixName   : prefixName,
-                                                 datasource      : datasource])){
-                    logger.info("Cannot compute the roof area distribution in $prefixName. ")
-                    return
-                }
-                def roofAreaDist = computeRoofAreaDist.results.outputTableName
-                finalTablesToJoin.put(roofAreaDist, columnIdRsu)
-
-
                 // rsu_perkins_skill_score_building_direction_variability
                 IProcess  computePerkinsDirection =  Geoclimate.GenericIndicators.perkinsSkillScoreBuildingDirection()
                 if(!computePerkinsDirection.execute([buildingTableName  : buildingTable,                inputIdUp   : columnIdRsu,
@@ -525,7 +514,7 @@ public static IProcess computeRSUIndicators() {
 
 
                 // Merge all in one table
-                // To avoid duplicae the_geom in the join table, remove it from the intermediate table
+                // To avoid duplicate the_geom in the join table, remove it from the intermediate table
                 datasource.execute("ALTER TABLE $intermediateJoinTable DROP COLUMN the_geom;")
                 IProcess rsuTableJoin = org.orbisgis.DataUtils.joinTables()
                 if(!rsuTableJoin.execute([inputTableNamesWithId: finalTablesToJoin,
