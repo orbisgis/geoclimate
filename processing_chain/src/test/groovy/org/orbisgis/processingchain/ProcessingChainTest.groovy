@@ -680,7 +680,5 @@ class ProcessingChainTest {
             saveTables.execute([inputTableNames: [pm_lcz.results.outputTableName]
                                 , directory    : directory, datasource: datasource])
         }
-
-
     }
     }
