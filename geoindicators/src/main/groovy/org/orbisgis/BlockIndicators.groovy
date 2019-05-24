@@ -26,6 +26,9 @@ static IProcess holeAreaDensity() {
             [blockTable: String, prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { blockTable, prefixName, datasource ->
+
+                logger.info("Executing Hole area ratio")
+
                 def geometricField = "the_geom"
                 def idColumnBl = "id_block"
 
@@ -37,7 +40,6 @@ static IProcess holeAreaDensity() {
                         "SELECT $idColumnBl, ST_AREA(ST_HOLES($geometricField))/ST_AREA($geometricField) " +
                         "AS $baseName FROM $blockTable"
 
-                logger.info("Executing $query")
                 datasource.execute query
                 [outputTableName: outputTableName]
             }
@@ -67,6 +69,9 @@ static IProcess netCompacity() {
              prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { buildTable, buildingVolumeField, buildingContiguityField, prefixName, datasource ->
+
+                logger.info("Executing Block net compacity")
+
                 def geometryFieldBu = "the_geom"
                 def idColumnBl = "id_block"
                 def height_wall = "height_wall"
@@ -82,7 +87,6 @@ static IProcess netCompacity() {
                         "ST_PERIMETER(ST_HOLES($geometryFieldBu)))*$height_wall)/POWER(SUM($buildingVolumeField)," +
                         " 2./3) AS $baseName FROM $buildTable GROUP BY $idColumnBl"
 
-                logger.info("Executing $query")
                 datasource.execute query
                 [outputTableName: outputTableName]
             }
@@ -118,6 +122,9 @@ static IProcess closingness() {
             [correlationTableName: String, blockTable: String, prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
             { correlationTableName, blockTable, prefixName, datasource ->
+
+                logger.info("Executing Closingness of a block")
+
                 def geometryFieldBu = "the_geom"
                 def geometryFieldBl = "the_geom"
                 def idColumnBl = "id_block"
@@ -134,7 +141,6 @@ static IProcess closingness() {
                         "FROM $correlationTableName a, $blockTable b WHERE a.$idColumnBl = b.$idColumnBl " +
                         "GROUP BY b.$idColumnBl"
 
-                logger.info("Executing $query")
                 datasource.execute query
                 [outputTableName: outputTableName]
             }
