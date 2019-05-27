@@ -2,6 +2,7 @@ package org.orbisgis
 
 import groovy.transform.BaseScript
 import org.orbisgis.datamanager.JdbcDataSource
+import org.orbisgis.datamanager.h2gis.H2gisSpatialTable
 import org.orbisgis.processmanagerapi.IProcess
 
 @BaseScript Geoclimate geoclimate
@@ -122,13 +123,16 @@ static IProcess groundSkyViewFactor() {
                 String baseName = "rsu_ground_sky_view_factor"
                 String outputTableName = prefixName + "_" + baseName
 
-                // Other local variables
-                // Size of the grid mesh used to sample each RSU (according to the point density, we take a factor 10
-                // in order to consider that for some LCZ(7), 90% of the surfaces may be covered by buildings and
-                // then will not be used for the SVF calculation)
-                def gms = Math.pow((1.0/pointDensity)/10,0.5)
-
                 // Create the needed index on input tables and the table that will contain the SVF calculation points
+                /*H2gisSpatialTable rsuSpatialTable = datasource.getSpatialTable(rsuTable)
+                if(!rsuSpatialTable[geometricColumnRsu].spatialIndexed){
+                    rsuSpatialTable[geometricColumnRsu].createSpatialIndex()
+                }
+                if(!rsuSpatialTable[idColumnRsu].indexed){
+                    rsuSpatialTable[idColumnRsu].createIndex()
+                }*/
+                def to_start = System.currentTimeMillis()
+
                 datasource.execute(("CREATE INDEX IF NOT EXISTS ids_inI ON $rsuTable($geometricColumnRsu) USING RTREE; "+
                         "CREATE INDEX IF NOT EXISTS ids_inA ON $correlationBuildingTable($geometricColumnBu) USING RTREE; "+
                         "CREATE INDEX IF NOT EXISTS id_inA ON $correlationBuildingTable($idColumnRsu); "+
@@ -137,6 +141,10 @@ static IProcess groundSkyViewFactor() {
 
                 // The points used for the SVF calculation should be selected within each RSU
                 datasource.eachRow("SELECT * FROM $rsuTable".toString()) { row ->
+                    // Size of the grid mesh used to sample each RSU (based on the building density + 10%) - if the
+                    // building density exceeds 90%, the LCZ 7 building density is then set to 90%
+                    def freeAreaDens = Math.max(1-(row[rsuBuildingDensityColumn]+0.1), 0.1)
+                    def gms = Math.pow(freeAreaDens/pointDensity,0.5)
                     // A grid of point is created for each RSU
                     datasource.execute(("DROP TABLE IF EXISTS $ptsRSUGrid; CREATE TABLE $ptsRSUGrid(pk SERIAL, the_geom GEOMETRY) AS (SELECT null, "+
                             "the_geom FROM ST_MAKEGRIDPOINTS('${row[geometricColumnRsu]}'::GEOMETRY, $gms, $gms))").toString())
@@ -147,8 +155,9 @@ static IProcess groundSkyViewFactor() {
                             "ST_INTERSECTS(a.the_geom, '${row[geometricColumnRsu]}')").toString())
                     // The grid points intersecting buildings are identified
                     datasource.execute(("CREATE INDEX IF NOT EXISTS ids_temp ON $ptsRSUtempo(the_geom) USING RTREE; "+
+                            "CREATE INDEX IF NOT EXISTS id_temp ON $ptsRSUtempo(id_rsu);"+
                             "DROP TABLE IF EXISTS $ptsRSUbu; CREATE TABLE $ptsRSUbu AS SELECT a.pk FROM $ptsRSUtempo a "+
-                            "LEFT JOIN $correlationBuildingTable b ON ${row[idColumnRsu]} = b.$idColumnRsu WHERE "+
+                            "LEFT JOIN $correlationBuildingTable b ON a.id_rsu = b.$idColumnRsu WHERE "+
                             "a.the_geom && b.$geometricColumnBu AND ST_INTERSECTS(a.the_geom, b.$geometricColumnBu)").toString())
                     // The grid points intersecting buildings are then deleted
                     datasource.execute(("CREATE INDEX IF NOT EXISTS id_temp ON $ptsRSUtempo(pk); "+
@@ -156,15 +165,11 @@ static IProcess groundSkyViewFactor() {
                             "CREATE TABLE $ptsRSUfreeall(pk SERIAL, the_geom GEOMETRY, id_rsu INT) AS (SELECT null, a.the_geom, a.id_rsu FROM "+
                             "$ptsRSUtempo a LEFT JOIN $ptsRSUbu b ON a.pk=b.pk WHERE b.pk IS NULL)").toString())
                     // A random sample of points (of size corresponding to the point density defined by $pointDensity)
-                    // is drawn in order to have the same density of point in each RSU
-                    datasource.execute(("DROP TABLE IF EXISTS $randomSample; CREATE TABLE $randomSample AS "+
-                            "SELECT pk FROM $ptsRSUfreeall ORDER BY RANDOM() LIMIT "+
+                    // is drawn in order to have the same density of point in each RSU. It is directly
+                    // inserted into the Table gathering the SVF points used for all RSU
+                    datasource.execute(("DROP TABLE IF EXISTS $randomSample; INSERT INTO $ptsRSUtot(pk, the_geom, id_rsu) "+
+                            "SELECT null, the_geom, id_rsu FROM $ptsRSUfreeall ORDER BY RANDOM() LIMIT "+
                             "(TRUNC(${pointDensity}*ST_AREA('${row[geometricColumnRsu]}'::GEOMETRY)*${(1.0-row[rsuBuildingDensityColumn])})+1);").toString())
-                    // The sample of point is inserted into the Table gathering the SVF points used for all RSU
-                    datasource.execute(("CREATE INDEX IF NOT EXISTS id_temp ON $ptsRSUfreeall(pk); "+
-                            "CREATE INDEX IF NOT EXISTS id_temp ON $randomSample(pk); "+
-                            "INSERT INTO $ptsRSUtot(pk, the_geom, id_rsu) SELECT NULL, a.the_geom, a.id_rsu "+
-                            "FROM $ptsRSUfreeall a, $randomSample b WHERE a.pk = b.pk").toString())
                 }
 
                 // The SVF calculation is performed at point scale
@@ -176,13 +181,17 @@ static IProcess groundSkyViewFactor() {
                         "ST_DWITHIN(b.$geometricColumnBu, a.the_geom, $rayLength) GROUP BY a.the_geom").toString())
 
                 // The result of the SVF calculation is averaged at RSU scale and the rsu that do not have
-                // buildings in the area of calculation are considered "free sky" (SV = 1)
+                // buildings in the area of calculation are considered "free sky" (SVF = 1)
                 datasource.execute(("CREATE INDEX IF NOT EXISTS id_svf ON $svfPts(id_rsu); " +
                         "CREATE INDEX IF NOT EXISTS id_pts ON $ptsRSUtot(id_rsu);"+
                         "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS "+
                         "SELECT COALESCE(AVG(a.SVF),1.0) AS rsu_ground_sky_view_factor, b.id_rsu AS $idColumnRsu " +
                         "FROM $svfPts a RIGHT JOIN $ptsRSUtot b ON a.id_rsu = b.id_rsu "+
                         "GROUP BY b.id_rsu").toString())
+                def tObis = System.currentTimeMillis()-to_start
+
+                println "OrbisGIS calculation time: ${tObis/1000} s"
+
 
                 // The temporary tables are deleted
                 datasource.execute(("DROP TABLE IF EXISTS $ptsRSUtot, $ptsRSUGrid, $ptsRSUtempo, $ptsRSUbu, "+
