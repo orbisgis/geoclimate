@@ -126,10 +126,10 @@ static IProcess groundSkyViewFactor() {
                 // Create the needed index on input tables and the table that will contain the SVF calculation points
                 H2gisSpatialTable rsuSpatialTable = datasource.getSpatialTable(rsuTable)
                 H2gisSpatialTable buildingSpatialTable = datasource.getSpatialTable(correlationBuildingTable)
-                if(!rsuSpatialTable[geometricColumnRsu].spatialIndexed){rsuSpatialTable[geometricColumnRsu].createSpatialIndex()}
-                if(!rsuSpatialTable[idColumnRsu].indexed){rsuSpatialTable[idColumnRsu].createIndex()}
-                if(!buildingSpatialTable[geometricColumnRsu].spatialIndexed){buildingSpatialTable[geometricColumnRsu].createSpatialIndex()}
-                if(!buildingSpatialTable[idColumnRsu].indexed){buildingSpatialTable[idColumnRsu].createIndex()}
+                rsuSpatialTable[geometricColumnRsu].createSpatialIndex()
+                rsuSpatialTable[idColumnRsu].createIndex()
+                buildingSpatialTable[geometricColumnRsu].createSpatialIndex()
+                buildingSpatialTable[idColumnRsu].createIndex()
 
                 def to_start = System.currentTimeMillis()
 
@@ -141,8 +141,7 @@ static IProcess groundSkyViewFactor() {
                     // Size of the grid mesh used to sample each RSU (based on the building density + 10%) - if the
                     // building density exceeds 90%, the LCZ 7 building density is then set to 90%
                     def freeAreaDens = Math.max(1-(row[rsuBuildingDensityColumn]+0.1), 0.1)
-                    def gms = Math.pow(freeAreaDens/pointDensity,0.5)
-                    println(gms)
+                    def gms = (freeAreaDens/pointDensity)**0.5
                     // A grid of point is created for each RSU
                     datasource.execute(("DROP TABLE IF EXISTS $ptsRSUGrid; CREATE TABLE $ptsRSUGrid(pk SERIAL, the_geom GEOMETRY) AS (SELECT null, "+
                             "the_geom FROM ST_MAKEGRIDPOINTS('${row[geometricColumnRsu]}'::GEOMETRY, $gms, $gms))").toString())
@@ -175,7 +174,6 @@ static IProcess groundSkyViewFactor() {
                             "SELECT null, the_geom, id_rsu FROM $ptsRSUfreeall ORDER BY RANDOM() LIMIT "+
                             "(TRUNC(${pointDensity}*ST_AREA('${row[geometricColumnRsu]}'::GEOMETRY)*${(1.0-row[rsuBuildingDensityColumn])})+1);").toString())
                 }
-
                 // The SVF calculation is performed at point scale
                 datasource.execute(("CREATE INDEX IF NOT EXISTS ids_pts ON $ptsRSUtot(the_geom) USING RTREE; "+
                         "DROP TABLE IF EXISTS $svfPts; CREATE TABLE $svfPts AS SELECT a.pk, a.id_rsu, "+
@@ -194,7 +192,7 @@ static IProcess groundSkyViewFactor() {
                         "GROUP BY b.id_rsu").toString())
                 def tObis = System.currentTimeMillis()-to_start
 
-                println "OrbisGIS calculation time: ${tObis/1000} s"
+                logger.info("SVF calculation time: ${tObis/1000} s")
 
 
                 // The temporary tables are deleted
