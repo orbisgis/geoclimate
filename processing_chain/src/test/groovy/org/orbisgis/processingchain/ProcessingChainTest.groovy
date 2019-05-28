@@ -492,6 +492,7 @@ class ProcessingChainTest {
         String railTableName="rails"
         String vegetationTableName="veget"
         String hydrographicTableName="hydro"
+        def indicatorUse = ["LCZ", "URBAN_TYPOLOGY", "TEB"]
 
         datasource.load(urlBuilding, buildingTableName)
         datasource.load(urlRoad, roadTableName)
@@ -502,7 +503,7 @@ class ProcessingChainTest {
 
         //Run tests
         osmGeoIndicators(directory, datasource, zoneTableName, buildingTableName,roadTableName,railTableName,vegetationTableName,
-        hydrographicTableName,saveResults)
+        hydrographicTableName,saveResults, indicatorUse)
 
     }
 
@@ -520,7 +521,7 @@ class ProcessingChainTest {
  */
     void osmGeoIndicators(String directory, JdbcDataSource datasource, String zoneTableName, String buildingTableName,
                           String roadTableName, String railTableName, String vegetationTableName,
-                          String hydrographicTableName, boolean saveResults ) {
+                          String hydrographicTableName, boolean saveResults, indicatorUse ) {
         //Create spatial units and relations : building, block, rsu
         IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
         assertTrue spatialUnits.execute([datasource : datasource, zoneTable: zoneTableName, buildingTable: buildingTableName,
@@ -594,7 +595,8 @@ class ProcessingChainTest {
                                                  rsuTable               : relationRSU,
                                                  vegetationTable        : vegetationTableName,
                                                  roadTable              : roadTableName,
-                                                 hydrographicTable      : hydrographicTableName])
+                                                 hydrographicTable      : hydrographicTableName,
+                                                 indicatorUse           : indicatorUse])
         String rsuIndicators = computeRSUIndicators.getResults().outputTableName
         if(saveResults){
             println("Saving RSU indicators")
