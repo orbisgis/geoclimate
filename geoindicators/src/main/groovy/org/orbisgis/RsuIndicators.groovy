@@ -142,6 +142,7 @@ static IProcess groundSkyViewFactor() {
                     // building density exceeds 90%, the LCZ 7 building density is then set to 90%
                     def freeAreaDens = Math.max(1-(row[rsuBuildingDensityColumn]+0.1), 0.1)
                     def gms = Math.pow(freeAreaDens/pointDensity,0.5)
+                    println(gms)
                     // A grid of point is created for each RSU
                     datasource.execute(("DROP TABLE IF EXISTS $ptsRSUGrid; CREATE TABLE $ptsRSUGrid(pk SERIAL, the_geom GEOMETRY) AS (SELECT null, "+
                             "the_geom FROM ST_MAKEGRIDPOINTS('${row[geometricColumnRsu]}'::GEOMETRY, $gms, $gms))").toString())
@@ -150,6 +151,12 @@ static IProcess groundSkyViewFactor() {
                             "DROP TABLE IF EXISTS $ptsRSUtempo; CREATE TABLE $ptsRSUtempo AS SELECT a.pk, a.the_geom, "+
                             "${row[idColumnRsu]} AS id_rsu FROM $ptsRSUGrid a WHERE a.the_geom && '${row[geometricColumnRsu]}' AND "+
                             "ST_INTERSECTS(a.the_geom, '${row[geometricColumnRsu]}')").toString())
+                    // If there is no point within the RSU (which could be the case for a long and thin RSU), the SVF
+                    // is calculated for the centroid of the RSU
+                    if(datasource.firstRow("SELECT COUNT(*) AS NB FROM $ptsRSUtempo".toString())["NB"]==0){
+                        datasource.execute(("DROP TABLE IF EXISTS $ptsRSUtempo; CREATE TABLE $ptsRSUtempo AS SELECT " +
+                                "1 AS pk, ST_CENTROID('${row[geometricColumnRsu]}') AS the_geom, ${row[idColumnRsu]} AS id_rsu").toString())
+                    }
                     // The grid points intersecting buildings are identified
                     datasource.execute(("CREATE INDEX IF NOT EXISTS ids_temp ON $ptsRSUtempo(the_geom) USING RTREE; "+
                             "CREATE INDEX IF NOT EXISTS id_temp ON $ptsRSUtempo(id_rsu);"+
