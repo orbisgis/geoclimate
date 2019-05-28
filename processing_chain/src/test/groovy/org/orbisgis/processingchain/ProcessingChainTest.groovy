@@ -401,6 +401,8 @@ class ProcessingChainTest {
                           vegetationTable: "tempo_veget", hydrographicTable: "tempo_hydro", surface_vegetation: null,
                           surface_hydro: null, distance: 0.0, prefixName: "test"])
 
+        println(h2GIS.firstRow("SELECT count(*) AS nb FROM ${pm_units.results.outputTableBuildingName}".toString()))
+
         IProcess pm_lcz =  ProcessingChain.BuildLCZ.createLCZ()
         pm_lcz.execute([datasource: h2GIS, prefixName: "test", buildingTable: pm_units.results.outputTableBuildingName,
                         rsuTable: pm_units.results.outputTableRsuName, roadTable: "tempo_road", vegetationTable: "tempo_veget",
@@ -410,6 +412,7 @@ class ProcessingChainTest {
                         fractionTypeImpervious: ["road"], inputFields: ["id_build"], levelForRoads: [0]])
 
         h2GIS.eachRow("SELECT * FROM ${pm_lcz.results.outputTableName}".toString()){row ->
+            println(row)
             assertTrue(row.id_rsu != null)
             assertEquals("LCZ", row.lcz1[0..2])
             assertEquals("LCZ", row.lcz2[0..2])

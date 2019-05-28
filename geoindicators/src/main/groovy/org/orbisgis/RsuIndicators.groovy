@@ -124,19 +124,16 @@ static IProcess groundSkyViewFactor() {
                 String outputTableName = prefixName + "_" + baseName
 
                 // Create the needed index on input tables and the table that will contain the SVF calculation points
-                /*H2gisSpatialTable rsuSpatialTable = datasource.getSpatialTable(rsuTable)
-                if(!rsuSpatialTable[geometricColumnRsu].spatialIndexed){
-                    rsuSpatialTable[geometricColumnRsu].createSpatialIndex()
-                }
-                if(!rsuSpatialTable[idColumnRsu].indexed){
-                    rsuSpatialTable[idColumnRsu].createIndex()
-                }*/
+                H2gisSpatialTable rsuSpatialTable = datasource.getSpatialTable(rsuTable)
+                H2gisSpatialTable buildingSpatialTable = datasource.getSpatialTable(correlationBuildingTable)
+                if(!rsuSpatialTable[geometricColumnRsu].spatialIndexed){rsuSpatialTable[geometricColumnRsu].createSpatialIndex()}
+                if(!rsuSpatialTable[idColumnRsu].indexed){rsuSpatialTable[idColumnRsu].createIndex()}
+                if(!buildingSpatialTable[geometricColumnRsu].spatialIndexed){buildingSpatialTable[geometricColumnRsu].createSpatialIndex()}
+                if(!buildingSpatialTable[idColumnRsu].indexed){buildingSpatialTable[idColumnRsu].createIndex()}
+
                 def to_start = System.currentTimeMillis()
 
-                datasource.execute(("CREATE INDEX IF NOT EXISTS ids_inI ON $rsuTable($geometricColumnRsu) USING RTREE; "+
-                        "CREATE INDEX IF NOT EXISTS ids_inA ON $correlationBuildingTable($geometricColumnBu) USING RTREE; "+
-                        "CREATE INDEX IF NOT EXISTS id_inA ON $correlationBuildingTable($idColumnRsu); "+
-                        "DROP TABLE IF EXISTS $ptsRSUtot; CREATE TABLE $ptsRSUtot (pk serial, "+
+                datasource.execute(("DROP TABLE IF EXISTS $ptsRSUtot; CREATE TABLE $ptsRSUtot (pk serial, "+
                         "the_geom geometry, id_rsu int)").toString())
 
                 // The points used for the SVF calculation should be selected within each RSU
