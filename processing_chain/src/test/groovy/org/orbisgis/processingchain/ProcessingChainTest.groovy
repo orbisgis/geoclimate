@@ -413,10 +413,7 @@ class ProcessingChainTest {
             assertTrue(row.id_rsu != null)
             assertEquals("LCZ", row.lcz1[0..2])
             assertEquals("LCZ", row.lcz2[0..2])
-            // Two RSU are really too small (< 5 m²) to have a SVF calculation, then they should not been taken into account
-            if(!(row.id_rsu == 12 | row.id_rsu == 13)){
-                assertTrue(row.min_distance != null)
-            }
+            assertTrue(row.min_distance != null)
             assertTrue(row.pss <= 1)
         }
         def nb_rsu = h2GIS.firstRow("SELECT COUNT(*) AS nb FROM ${pm_lcz.results.outputTableName}".toString())
@@ -507,18 +504,7 @@ class ProcessingChainTest {
 
     }
 
-/**
- * A class to test the chain to extract and transform OSM data and build the geoindicators
- * @param directory
- * @param datasource
- * @param zoneTableName
- * @param buildingTableName
- * @param roadTableName
- * @param railTableName
- * @param vegetationTableName
- * @param hydrographicTableName
- * @param saveResults
- */
+
     void osmGeoIndicators(String directory, JdbcDataSource datasource, String zoneTableName, String buildingTableName,
                           String roadTableName, String railTableName, String vegetationTableName,
                           String hydrographicTableName, boolean saveResults, indicatorUse ) {
@@ -607,79 +593,7 @@ class ProcessingChainTest {
         def countRelationRSU= datasource.firstRow("select count(*) as count from ${relationRSU}".toString())
         def countRSUIndicators = datasource.firstRow("select count(*) as count from ${rsuIndicators}".toString())
         assertEquals(countRelationRSU.count,countRSUIndicators.count)
+
+
     }
-
-    @Test
-    void osmLCZFromTestFiles(){
-        String urlBuilding = new File(getClass().getResource("BUILDING.geojson").toURI()).absolutePath
-        String urlRoad= new File(getClass().getResource("ROAD.geojson").toURI()).absolutePath
-        String urlRail = new File(getClass().getResource("RAIL.geojson").toURI()).absolutePath
-        String urlVeget = new File(getClass().getResource("VEGET.geojson").toURI()).absolutePath
-        String urlHydro = new File(getClass().getResource("HYDRO.geojson").toURI()).absolutePath
-        String urlZone = new File(getClass().getResource("ZONE.geojson").toURI()).absolutePath
-
-        boolean saveResults = true
-        String directory ="./target/osm_processchain_lcz"
-
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
-
-        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osmchain_geoindicators")
-
-        String zoneTableName="zone"
-        String buildingTableName="building"
-        String roadTableName="road"
-        String railTableName="rails"
-        String vegetationTableName="veget"
-        String hydrographicTableName="hydro"
-
-        datasource.load(urlBuilding, buildingTableName)
-        datasource.load(urlRoad, roadTableName)
-        datasource.load(urlRail, railTableName)
-        datasource.load(urlVeget, vegetationTableName)
-        datasource.load(urlHydro, hydrographicTableName)
-        datasource.load(urlZone, zoneTableName)
-
-        if (saveResults) {
-            println("Saving OSM GIS layers")
-            IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
-            saveTables.execute([inputTableNames: [buildingTableName, roadTableName, railTableName,
-                                                  hydrographicTableName, vegetationTableName, zoneTableName]
-                                , directory    : directory, datasource: datasource])
-        }
-
-        //Create spatial units and relations : building, block, rsu
-        IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
-        assertTrue spatialUnits.execute([datasource       : datasource, zoneTable: zoneTableName, buildingTable: buildingTableName,
-                                         roadTable        : roadTableName, railTable: railTableName, vegetationTable: vegetationTableName,
-                                         hydrographicTable: hydrographicTableName, surface_vegetation: 100000,
-                                         surface_hydro    : 2500, distance: 0.01, prefixName: "geounits"])
-
-        String finalBuildings = spatialUnits.getResults().outputTableBuildingName
-        String finalRSU = spatialUnits.getResults().outputTableRsuName
-
-        if (saveResults) {
-            println("Saving spatial units")
-            IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
-            saveTables.execute([inputTableNames: spatialUnits.getResults().values()
-                                , directory    : directory, datasource: datasource])
-        }
-
-        IProcess pm_lcz =  ProcessingChain.BuildLCZ.createLCZ()
-        assertTrue pm_lcz.execute([datasource: datasource, prefixName: "zone", buildingTable: finalBuildings,
-                        rsuTable: finalRSU, roadTable: roadTableName, vegetationTable: vegetationTableName,
-                        hydrographicTable: hydrographicTableName, facadeDensListLayersBottom: [0, 50, 200],
-                        facadeDensNumberOfDirection: 8, svfPointDensity: 0.008, svfRayLength: 100,
-                        svfNumberOfDirection: 60, heightColumnName: "height_roof",
-                        fractionTypePervious: ["low_vegetation", "water"],
-                        fractionTypeImpervious: ["road"], inputFields: ["id_build"], levelForRoads: [0]])
-                
-        if (saveResults) {
-            println("Saving LCZ")
-            IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
-            saveTables.execute([inputTableNames: [pm_lcz.results.outputTableName]
-                                , directory    : directory, datasource: datasource])
-        }
-    }
-    }
+}
