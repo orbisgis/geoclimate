@@ -459,20 +459,31 @@ class ProcessingChainTest {
                                  , directory: directory, datasource: datasource])
         }
 
+        String indicatorUse = ["TEB", "URBAN_TYPOLOGY", "LCZ"]
+
         //Run tests
         osmGeoIndicators(directory, datasource, zoneTableName, buildingTableName,roadTableName,railTableName,vegetationTableName,
-                hydrographicTableName,saveResults)
+                hydrographicTableName,saveResults, indicatorUse)
 
     }
 
     @Test
     void osmGeoIndicatorsFromTestFiles() {
-        String urlBuilding = new File(getClass().getResource("BUILDING.geojson").toURI()).absolutePath
+    /*    String urlBuilding = new File(getClass().getResource("BUILDING.geojson").toURI()).absolutePath
         String urlRoad= new File(getClass().getResource("ROAD.geojson").toURI()).absolutePath
         String urlRail = new File(getClass().getResource("RAIL.geojson").toURI()).absolutePath
         String urlVeget = new File(getClass().getResource("VEGET.geojson").toURI()).absolutePath
         String urlHydro = new File(getClass().getResource("HYDRO.geojson").toURI()).absolutePath
-        String urlZone = new File(getClass().getResource("ZONE.geojson").toURI()).absolutePath
+        String urlZone = new File(getClass().getResource("ZONE.geojson").toURI()).absolutePath*/
+
+        String directory2load ="target/osm_processchain_full"
+
+        String urlBuilding = new File((directory2load+File.separator+"BUILDING.geojson")).absolutePath
+        String urlRoad= new File((directory2load+File.separator+"ROAD.geojson")).absolutePath
+        String urlRail = new File((directory2load+File.separator+"RAIL.geojson")).absolutePath
+        String urlVeget = new File((directory2load+File.separator+"VEGET.geojson")).absolutePath
+        String urlHydro = new File((directory2load+File.separator+"HYDRO.geojson")).absolutePath
+        String urlZone = new File((directory2load+File.separator+"ZONE.geojson")).absolutePath
 
         boolean saveResults = true
         String directory ="./target/osm_processchain_geoindicators"
@@ -489,7 +500,7 @@ class ProcessingChainTest {
         String railTableName="rails"
         String vegetationTableName="veget"
         String hydrographicTableName="hydro"
-        def indicatorUse = ["LCZ", "URBAN_TYPOLOGY", "TEB"]
+        def indicatorUse = ["LCZ"]
 
         datasource.load(urlBuilding, buildingTableName)
         datasource.load(urlRoad, roadTableName)
@@ -558,21 +569,21 @@ class ProcessingChainTest {
         assertEquals(countRelationBuilding.count,countBuildingIndicators.count)
 
         //Compute block indicators
-        def computeBlockIndicators = ProcessingChain.BuildGeoIndicators.computeBlockIndicators()
-        assertTrue computeBlockIndicators.execute([datasource: datasource,
-                                                   inputBuildingTableName: buildingIndicators,
-                                                   inputBlockTableName: relationBlocks])
-        String blockIndicators = computeBlockIndicators.getResults().outputTableName
-        if(saveResults){
-            println("Saving block indicators")
-            datasource.save(blockIndicators, directory + File.separator + "${blockIndicators}.geojson")
-        }
-
+        if (indicatorUse.contains("URBAN_TYPOLOGY")) {
+            def computeBlockIndicators = ProcessingChain.BuildGeoIndicators.computeBlockIndicators()
+            assertTrue computeBlockIndicators.execute([datasource            : datasource,
+                                                       inputBuildingTableName: buildingIndicators,
+                                                       inputBlockTableName   : relationBlocks])
+            String blockIndicators = computeBlockIndicators.getResults().outputTableName
+            if (saveResults) {
+                println("Saving block indicators")
+                datasource.save(blockIndicators, directory + File.separator + "${blockIndicators}.geojson")
+            }
         //Check we have the same number of blocks
         def countRelationBlocks= datasource.firstRow("select count(*) as count from ${relationBlocks}".toString())
         def countBlocksIndicators = datasource.firstRow("select count(*) as count from ${blockIndicators}".toString())
         assertEquals(countRelationBlocks.count,countBlocksIndicators.count)
-
+        }
 
         //Compute RSU indicators
         def computeRSUIndicators = ProcessingChain.BuildGeoIndicators.computeRSUIndicators()

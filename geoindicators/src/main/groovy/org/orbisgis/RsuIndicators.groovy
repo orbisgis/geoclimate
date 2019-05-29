@@ -719,10 +719,10 @@ static IProcess effectiveTerrainRoughnessHeight() {
 static IProcess linearRoadOperations() {
     return processFactory.create(
             "Operations on the linear of road",
-            [rsuTable: String, roadTable: String, operations: String[], prefixName: String, angleRangeSize: int,
-             levelConsiderated: int[], datasource: JdbcDataSource],
+            [rsuTable: String, roadTable: String, operations: String[], prefixName: String, angleRangeSize: 30,
+             levelConsiderated: [0], datasource: JdbcDataSource],
             [outputTableName : String],
-            { rsuTable, roadTable, operations, prefixName, angleRangeSize = 30, levelConsiderated = [0, 1],
+            { rsuTable, roadTable, operations, prefixName, angleRangeSize, levelConsiderated,
               datasource ->
 
                 logger.info("Executing Operations on the linear of road")
