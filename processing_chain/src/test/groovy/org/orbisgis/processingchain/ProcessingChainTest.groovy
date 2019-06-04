@@ -3,6 +3,7 @@ package org.orbisgis.processingchain
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
+import org.orbisgis.Geoclimate
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.processmanager.ProcessMapper
@@ -605,5 +606,99 @@ class ProcessingChainTest {
         def countRelationRSU= datasource.firstRow("select count(*) as count from ${relationRSU}".toString())
         def countRSUIndicators = datasource.firstRow("select count(*) as count from ${rsuIndicators}".toString())
         assertEquals(countRelationRSU.count,countRSUIndicators.count)
+    }
+
+    @Test
+    void osmLczFromTestFiles() {
+        /*    String urlBuilding = new File(getClass().getResource("BUILDING.geojson").toURI()).absolutePath
+            String urlRoad= new File(getClass().getResource("ROAD.geojson").toURI()).absolutePath
+            String urlRail = new File(getClass().getResource("RAIL.geojson").toURI()).absolutePath
+            String urlVeget = new File(getClass().getResource("VEGET.geojson").toURI()).absolutePath
+            String urlHydro = new File(getClass().getResource("HYDRO.geojson").toURI()).absolutePath
+            String urlZone = new File(getClass().getResource("ZONE.geojson").toURI()).absolutePath*/
+
+        String directory2load ="target/osm_processchain_full"
+
+        String urlBuilding = new File((directory2load+File.separator+"BUILDING.geojson")).absolutePath
+        String urlRoad= new File((directory2load+File.separator+"ROAD.geojson")).absolutePath
+        String urlRail = new File((directory2load+File.separator+"RAIL.geojson")).absolutePath
+        String urlVeget = new File((directory2load+File.separator+"VEGET.geojson")).absolutePath
+        String urlHydro = new File((directory2load+File.separator+"HYDRO.geojson")).absolutePath
+        String urlZone = new File((directory2load+File.separator+"ZONE.geojson")).absolutePath
+
+        boolean saveResults = true
+        String directory ="./target/osm_processchain_geoindicators"
+
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+
+        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osmchain_geoindicators")
+
+        String zoneTableName="zone"
+        String buildingTableName="building"
+        String roadTableName="road"
+        String railTableName="rails"
+        String vegetationTableName="veget"
+        String hydrographicTableName="hydro"
+
+        datasource.load(urlBuilding, buildingTableName)
+        datasource.load(urlRoad, roadTableName)
+        datasource.load(urlRail, railTableName)
+        datasource.load(urlVeget, vegetationTableName)
+        datasource.load(urlHydro, hydrographicTableName)
+        datasource.load(urlZone, zoneTableName)
+
+        //Run tests
+        osmLcz(directory, datasource, zoneTableName, buildingTableName,roadTableName,railTableName,vegetationTableName,
+                hydrographicTableName,saveResults)
+    }
+
+    void osmLcz(String directory, JdbcDataSource datasource, String zoneTableName, String buildingTableName,
+                          String roadTableName, String railTableName, String vegetationTableName,
+                          String hydrographicTableName, boolean saveResults ) {
+
+        // Create the RSU
+        IProcess prepareRSUData = Geoclimate.SpatialUnits.prepareRSUData()
+        IProcess createRSU = Geoclimate.SpatialUnits.createRSU()
+        prepareRSUData.execute([datasource          : datasource,           zoneTable           : zoneTableName,
+                                roadTable           : roadTableName,        railTable           : railTableName,
+                                vegetationTable     : vegetationTableName,  hydrographicTable   : hydrographicTableName,
+                                surface_vegetation  : 100000,               surface_hydro       : 2500,
+                                prefixName          : ""])
+        createRSU.execute([datasource: datasource, inputTableName : prepareRSUData.results.outputTableName,
+                           prefixName: ""])
+        String createdRsu = createRSU.results.outputTableName
+
+
+        // Create the relations between buildings and RSU
+        IProcess createScalesRelationsRsuBu = Geoclimate.SpatialUnits.createScalesRelations()
+        createScalesRelationsRsuBu.execute([datasource                : datasource,
+                                            inputLowerScaleTableName  : buildingTableName,
+                                            inputUpperScaleTableName  : createdRsu,
+                                            idColumnUp                : createRSU.results.outputIdRsu,
+                                            prefixName                : "test"])
+
+        String relationBuildingsRSU = createScalesRelationsRsuBu.results.outputTableName
+
+        // Calculate the LCZ indicators and the corresponding LCZ class of each RSU
+        IProcess pm_lcz =  ProcessingChain.BuildLCZ.createLCZ()
+        pm_lcz.execute([datasource: datasource, prefixName: "test", buildingTable: relationBuildingsRSU,
+                        rsuTable: createdRsu, roadTable: roadTableName, vegetationTable: vegetationTableName,
+                        hydrographicTable: hydrographicTableName, facadeDensListLayersBottom: [0, 50, 200], facadeDensNumberOfDirection: 8,
+                        svfPointDensity: 0.008, svfRayLength: 100, svfNumberOfDirection: 60,
+                        heightColumnName: "height_roof", fractionTypePervious: ["low_vegetation", "water"],
+                        fractionTypeImpervious: ["road"], inputFields: ["id_build"], levelForRoads: [0]])
+        String lczResults = pm_lcz.results.outputTableName
+
+        // Check if we have the same number of RSU
+        def countRelationRSU= datasource.firstRow("select count(*) as count from $createdRsu".toString())
+        def countRSULcz = datasource.firstRow("select count(*) as count from $lczResults".toString())
+        assertEquals(countRelationRSU.count,countRSULcz.count)
+
+        if (saveResults) {
+            println("Saving LCZ classes")
+            datasource.save(lczResults, directory + File.separator + "${lczResults}.geojson")
+        }
     }
 }

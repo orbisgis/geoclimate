@@ -585,7 +585,7 @@ public static IProcess computeRSUIndicators() {
                 // Merge all in one table
                 // To avoid duplicate the_geom in the join table, remove it from the intermediate table
                 datasource.execute("ALTER TABLE $intermediateJoinTable DROP COLUMN the_geom;")
-                IProcess rsuTableJoin = org.orbisgis.DataUtils.joinTables()
+                IProcess rsuTableJoin = DataUtils.joinTables()
                 if(!rsuTableJoin.execute([inputTableNamesWithId: finalTablesToJoin,
                                           outputTableName      : prefixName,
                                           datasource           : datasource])){

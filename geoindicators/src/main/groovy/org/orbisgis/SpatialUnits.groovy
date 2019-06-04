@@ -60,10 +60,10 @@ static IProcess createRSU(){
 static IProcess prepareRSUData(){
     return processFactory.create("Prepare the abstract model to build the RSU",
             [zoneTable: String, roadTable: String,  railTable: String, vegetationTable : String, hydrographicTable :String,
-             surface_vegetation : double, surface_hydro : double, prefixName: String, datasource: JdbcDataSource],
+             surface_vegetation : 100000, surface_hydro : 2500, prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { zoneTable ,roadTable, railTable, vegetationTable , hydrographicTable, surface_vegetation =100000,
-              surface_hydrographic=2500 ,prefixName="unified_abstract_model", datasource ->
+            { zoneTable ,roadTable, railTable, vegetationTable , hydrographicTable, surface_vegetation,
+              surface_hydrographic ,prefixName="unified_abstract_model", datasource ->
                 logger.info("Creating the reference spatial units")
                 String uuid_tmp =  UUID.randomUUID().toString().replaceAll("-", "_")+"_"
 

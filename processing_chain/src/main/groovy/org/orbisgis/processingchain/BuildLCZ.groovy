@@ -53,10 +53,12 @@ public static createLCZ() {
               fractionTypeImpervious = ["road"], inputFields = ["id_build", "the_geom"], levelForRoads = [0] ->
                 logger.info("Create the LCZ...")
 
+
                 // To avoid overwriting the output files of this step, a unique identifier is created
                 def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
 
                 // Temporary table names
+                def lczIndicTable = "lczIndicTable" + uid_out
                 def rsu_indic0 = "rsu_indic0" + uid_out
                 def rsu_indic1 = "rsu_indic1" + uid_out
                 def rsu_indic2 = "rsu_indic2" + uid_out
@@ -80,6 +82,26 @@ public static createLCZ() {
                                      "IMPERVIOUS_FRACTION": "impervious_surface_fraction",
                                      "EFFECTIVE_TERRAIN_ROUGHNESS_CLASS": "terrain_roughness_class"]
 
+
+                //Compute building indicators
+                def computeBuildingsIndicators = ProcessingChain.BuildGeoIndicators.computeBuildingsIndicators()
+                computeBuildingsIndicators.execute([datasource               : datasource,
+                                                    inputBuildingTableName   : buildingTable,
+                                                    inputRoadTableName       : roadTable,
+                                                    indicatorUse             : ["LCZ"]])
+                String buildingIndicators = computeBuildingsIndicators.getResults().outputTableName
+
+                //Compute RSU indicators
+                def computeRSUIndicators = ProcessingChain.BuildGeoIndicators.computeRSUIndicators()
+                computeRSUIndicators.execute([datasource             : datasource,
+                                              buildingTable          : buildingIndicators,
+                                              rsuTable               : rsuTable,
+                                              vegetationTable        : vegetationTable,
+                                              roadTable              : roadTable,
+                                              hydrographicTable      : hydrographicTable,
+                                              indicatorUse           : ["LCZ"]])
+                String rsuIndicators = computeRSUIndicators.getResults().outputTableName
+                /*
                 // I. Calculate preliminary indicators needed for the other calculations (the relations of chaining between
                 // the indicators are illustrated with the scheme IProcessA --> IProcessB)
                 // calc_building_area --> calc_build_densityNroughness
@@ -243,20 +265,20 @@ public static createLCZ() {
                          (calcSVF.results.outputTableName)               : columnIdRsu,
                          (calc_perviousness_frac.results.outputTableName): columnIdRsu,
                          (calc_roughness_class.results.outputTableName)  : columnIdRsu],
-                                          outputTableName      : "_allindic", datasource: datasource])
+                                          outputTableName      : "_allindic", datasource: datasource])*/
 
                 // Rename the indicators in order to be consistent with the LCZ ones
                 String queryReplaceNames = ""
                 lczIndicNames.each{oldIndic, newIndic ->
-                    queryReplaceNames += "ALTER TABLE ${join_final_table.results.outputTableName} "+
+                    queryReplaceNames += "ALTER TABLE $rsuIndicators "+
                             "RENAME COLUMN $oldIndic TO $newIndic;"
                 }
-                datasource.execute(("$queryReplaceNames ALTER TABLE ${join_final_table.results.outputTableName} " +
-                        "DROP COLUMN the_geom;").toString())
+                datasource.execute(("$queryReplaceNames CREATE TABLE $lczIndicTable AS SELECT $columnIdRsu, $geometricColumn, " +
+                        "${lczIndicNames.values().join(",")} FROM $rsuIndicators").toString())
 
                 // The classification algorithm is called
                 IProcess classifyLCZ = Geoclimate.TypologyClassification.identifyLczType()
-                classifyLCZ.execute([rsuLczIndicators   : join_final_table.results.outputTableName,
+                classifyLCZ.execute([rsuLczIndicators   : lczIndicTable,
                                      normalisationType  : "AVG",
                                      mapOfWeights       : ["sky_view_factor"          : 1, "aspect_ratio"                : 1,
                                                            "building_surface_fraction": 1, "impervious_surface_fraction" : 1,
@@ -265,18 +287,12 @@ public static createLCZ() {
                                      prefixName         : prefixName,
                                      datasource         : datasource])
 
-                // Add the geometry field to the resulting table
-                datasource.execute("DROP TABLE IF EXISTS $outputTableName; " +
-                        "CREATE INDEX IF NOT EXISTS idx_lcz ON ${classifyLCZ.results.outputTableName}($columnIdRsu);"+
-                        "CREATE TABLE $outputTableName AS SELECT a.*, b.$geometricColumn FROM " +
-                        "${classifyLCZ.results.outputTableName} AS a, $rsuTable AS b WHERE a.$columnIdRsu=b.$columnIdRsu;")
-
 
                 datasource.execute("DROP TABLE IF EXISTS $rsu_indic0, $rsu_indic1, $rsu_indic2, $rsu_indic3".toString())
 
 
 
-                [outputTableName: outputTableName]
+                [outputTableName: classifyLCZ.results.outputTableName]
             }
     )
 }

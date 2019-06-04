@@ -17,7 +17,7 @@ import org.orbisgis.processmanagerapi.IProcess
  * for the LCZ identification. In order to manage this point, a map containing weights may be passed and will be
  * used to multiply the distance due to a given indicator.
  *
- * @param rsuLczIndicators The table name where are stored ONLY the LCZ indicator values and the RSU id
+ * @param rsuLczIndicators The table name where are stored ONLY the LCZ indicator values, the RSU id and the RSU geometries
  * @param normalisationType The indicators used for normalisation of the indicators
  *          --> "AVG": the mean and the standard deviation are used
  *          --> "MEDIAN": the median and the mediane absolute deviation are used
@@ -50,6 +50,7 @@ return processFactory.create(
             if(ops.contains(normalisationType)){
 
                 def idFieldRsu = "id_rsu"
+                def geometryField = "the_geom"
                 def centerName = "center"
                 def variabilityName = "variability"
                 def centerValue = [:]
@@ -108,7 +109,7 @@ return processFactory.create(
 
                 // For each LCZ indicator...
                 datasource.getTable(rsuLczIndicators).columnNames.collect { indicCol ->
-                    if (!indicCol.equalsIgnoreCase(idFieldRsu)) {
+                    if (!indicCol.equalsIgnoreCase(idFieldRsu) & !indicCol.equalsIgnoreCase(geometryField)) {
                         // The values used for normalization ("mean" and "standard deviation") are calculated
                         // (for each column) and stored into maps
                         centerValue[indicCol]=datasource.firstRow(("SELECT ${normalisationType}(all_val) AS $centerName " +
@@ -143,7 +144,7 @@ return processFactory.create(
 
                 // The input indicator values are normalized according to "center" and "variability" values
                 datasource.execute(("DROP TABLE IF EXISTS $normalizedValues; CREATE TABLE $normalizedValues " +
-                        "AS SELECT $idFieldRsu, ${queryValuesNorm[0..-3]} FROM $rsuLczIndicators").toString())
+                        "AS SELECT $idFieldRsu, $geometryField, ${queryValuesNorm[0..-3]} FROM $rsuLczIndicators").toString())
 
 
                 // II. The distance of each RSU to each of the LCZ types is calculated in the normalized interval.
@@ -152,14 +153,14 @@ return processFactory.create(
 
                 // Create the table where will be stored the distance to each LCZ for each RSU
                 datasource.execute(("DROP TABLE IF EXISTS $allLczTable; CREATE TABLE $allLczTable(" +
-                        "pk serial, $idFieldRsu integer, lcz varchar, distance float);").toString())
+                        "pk serial, $geometryField GEOMETRY, $idFieldRsu integer, lcz varchar, distance float);").toString())
 
                 // For each LCZ type...
                 datasource.eachRow("SELECT * FROM $normalizedRange".toString()) { LCZ ->
                     String queryLczDistance = ""
                     // For each indicator...
                     datasource.getTable(rsuLczIndicators).columnNames.collect { indic ->
-                        if (!indic.equalsIgnoreCase(idFieldRsu)) {
+                        if (!indic.equalsIgnoreCase(idFieldRsu) & !indic.equalsIgnoreCase(geometryField)) {
                             // Define columns names where are stored lower and upper range values of the current LCZ
                             // and current indicator
                             String valLow = indic + "_low"
@@ -179,9 +180,9 @@ return processFactory.create(
                     // Fill the table where are stored the distance of each RSU to each LCZ type
                     datasource.execute(("DROP TABLE IF EXISTS $buffLczTable; ALTER TABLE $allLczTable RENAME TO $buffLczTable;" +
                             "DROP TABLE IF EXISTS $allLczTable; " +
-                            "CREATE TABLE $allLczTable(pk serial, $idFieldRsu integer, lcz varchar, distance float) " +
-                            "AS (SELECT pk, $idFieldRsu, lcz, distance FROM $buffLczTable UNION ALL " +
-                            "SELECT null, $idFieldRsu, '${LCZ.name}', SQRT(${queryLczDistance[0..-2]}) FROM $normalizedValues)").toString())
+                            "CREATE TABLE $allLczTable(pk serial, $geometryField GEOMETRY, $idFieldRsu integer, lcz varchar, distance float) " +
+                            "AS (SELECT pk, $geometryField, $idFieldRsu, lcz, distance FROM $buffLczTable UNION ALL " +
+                            "SELECT null, $geometryField, $idFieldRsu, '${LCZ.name}', SQRT(${queryLczDistance[0..-2]}) FROM $normalizedValues)").toString())
                 }
 
                 //
@@ -189,7 +190,7 @@ return processFactory.create(
                 // The name of the two closest LCZ types are conserved
                 datasource.execute(("DROP TABLE IF EXISTS $mainLczTable;" +
                         "CREATE INDEX IF NOT EXISTS all_id ON $allLczTable($idFieldRsu); " +
-                        "CREATE TABLE $mainLczTable AS SELECT a.$idFieldRsu, " +
+                        "CREATE TABLE $mainLczTable AS SELECT a.$idFieldRsu, a.$geometryField, " +
                                                                 "(SELECT b.lcz FROM $allLczTable b " +
                                                                                       "WHERE a.$idFieldRsu = b.$idFieldRsu " +
                                                                                       "ORDER BY b.distance ASC LIMIT 1) AS LCZ1," +
