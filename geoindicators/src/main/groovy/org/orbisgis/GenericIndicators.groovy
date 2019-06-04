@@ -70,7 +70,7 @@ return processFactory.create(
                             query += "COALESCE(COUNT(a.*)/ST_AREA(b.$geometricFieldUp),0) AS ${op+"_"+var},"
                         }
                         else{
-                            query += "$op(a.$var::float) AS ${op+"_"+var},"
+                            query += "COALESCE($op(a.$var::float),0) AS ${op+"_"+var},"
                         }
                     }
                 }
@@ -136,7 +136,7 @@ static IProcess weightedAggregatedStatistics() {
                 inputVarWeightsOperations.each{var, weights ->
                     weights.each{weight, operations ->
                         nameAndType += "weighted_avg_${var}_$weight DOUBLE DEFAULT 0,"
-                        weightedMean += "SUM(a.$var*a.$weight) / SUM(a.$weight) AS weighted_avg_${var}_$weight,"
+                        weightedMean += "COALESCE(SUM(a.$var*a.$weight) / SUM(a.$weight),0) AS weighted_avg_${var}_$weight,"
                     }
                 }
                 weightedMeanQuery += nameAndType[0..-2] + ") AS (SELECT b.$inputIdUp, ${weightedMean[0..-2]}" +
@@ -152,11 +152,11 @@ static IProcess weightedAggregatedStatistics() {
                         // The operation names are transformed into upper case
                         operations.replaceAll({s -> s.toUpperCase()})
                         if(operations.contains("AVG")) {
-                            weightedStdQuery += "b.weighted_avg_${var}_$weight,"
+                            weightedStdQuery += "COALESCE(b.weighted_avg_${var}_$weight,0) AS weighted_avg_${var}_$weight,"
                         }
                         if(operations.contains("STD")) {
-                            weightedStdQuery += "POWER(SUM(a.$weight*POWER(a.$var-b.weighted_avg_${var}_$weight,2))/" +
-                                    "SUM(a.$weight),0.5) AS weighted_std_${var}_$weight,"
+                            weightedStdQuery += "COALESCE(POWER(SUM(a.$weight*POWER(a.$var-b.weighted_avg_${var}_$weight,2))/" +
+                                    "SUM(a.$weight),0.5),0) AS weighted_std_${var}_$weight,"
                         }
                     }
                 }

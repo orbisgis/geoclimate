@@ -353,7 +353,7 @@ static IProcess projectedFacadeAreaDistribution() {
                             "GROUP BY b.ID_build_a) UNION ALL (SELECT NULL, ST_TOMULTISEGMENTS(the_geom) " +
                             "AS the_geom, z_max, z_min FROM $buildingIntersectionExpl WHERE ID_build_a<ID_build_b)").toString())
 
-                    // The height of wall is calculated for each level
+                    // The height of wall is calculated for each intermediate level...
                     String layerQuery = "CREATE TABLE $buildingLayer AS SELECT pk, the_geom, "
                     for (i in 1..(listLayersBottom.size() - 1)) {
                         names[i - 1] = "rsu_projected_facade_area_distribution${listLayersBottom[i - 1]}" +
@@ -363,7 +363,7 @@ static IProcess projectedFacadeAreaDistribution() {
                                 "-GREATEST(z_min-${listLayersBottom[i - 1]},0))) AS ${names[i - 1]} ,"
                     }
 
-
+                    // ...and for the final level
                     names[listLayersBottom.size() - 1] = "rsu_projected_facade_area_distribution${listLayersBottom[listLayersBottom.size() - 1]}_"
                     layerQuery += "CASEWHEN(z_max >= ${listLayersBottom[listLayersBottom.size() - 1]}, " +
                             "z_max-GREATEST(z_min,${listLayersBottom[listLayersBottom.size() - 1]}), 0) " +
@@ -380,7 +380,7 @@ static IProcess projectedFacadeAreaDistribution() {
                         onlyNamesB += " b." + n + ","
                     }
 
-                    // Free facades are exploded to multisegments
+                    // Free facades are exploded into multisegments
                     datasource.execute(("CREATE TABLE $buildingFreeExpl(pk SERIAL, the_geom GEOMETRY, $namesAndType) AS " +
                             "(SELECT NULL, the_geom, ${onlyNames[0..-2]} FROM ST_EXPLODE('$buildingLayer'))").toString())
 
@@ -422,7 +422,7 @@ static IProcess projectedFacadeAreaDistribution() {
                         // for each vertical layer for this specific direction "d"
                         String calcQuery = ""
                         for (n in names) {
-                            calcQuery += "sum((st_xmax(b.the_geom) - st_xmin(b.the_geom))*b.$n)/2 AS " +
+                            calcQuery += "COALESCE(sum((st_xmax(b.the_geom) - st_xmin(b.the_geom))*b.$n)/2,0) AS " +
                                     "${n}D${dirDeg + dirMedDeg}, "
                         }
                         datasource.execute(("CREATE INDEX IF NOT EXISTS id_rint ON $rsuInterRot(id_rsu); " +
@@ -551,40 +551,41 @@ static IProcess roofAreaDistribution() {
                 // are considered as vertical roofs, the other to "normal roof".
                 datasource.execute(("CREATE TABLE $buildRoofSurfTot(id_build INTEGER,"+
                         "id_rsu INTEGER, z_max DOUBLE, z_min DOUBLE, delta_h DOUBLE, non_vertical_roof_area DOUBLE, " +
-                        "vertical_roof_area DOUBLE) AS (SELECT a.id_build, a.id_rsu, a.z_max, a.z_min, a.delta_h, " +
+                        "vertical_roof_area DOUBLE) AS (SELECT a.id_build, b.id_rsu, a.z_max, a.z_min, a.delta_h, " +
                         "a.non_vertical_roof_area*ST_AREA(ST_INTERSECTION(a.the_geom, b.$geometricColumnRsu))/a.building_area " +
                         "AS non_vertical_roof_area, (a.vertical_roof_area-a.vert_roof_to_remove)*" +
                         "(1-0.5*(1-ST_LENGTH(ST_ACCUM(ST_INTERSECTION(ST_TOMULTILINE(a.the_geom), b.$geometricColumnRsu)))/" +
-                        "a.building_total_facade_length)) FROM $buildVertRoofAll a, $rsuTable b " +
-                        "WHERE a.id_rsu=b.$idColumnRsu GROUP BY a.id_build, a.id_rsu, a.z_max, a.z_min, a.delta_h);").toString())
+                        "a.building_total_facade_length)) FROM $buildVertRoofAll a RIGHT JOIN $rsuTable b " +
+                        "ON a.id_rsu=b.$idColumnRsu GROUP BY b.$geometricColumnRsu, a.id_build, b.id_rsu, a.z_max, " +
+                        "a.z_min, a.delta_h);").toString())
 
                 // The roof area is calculated for each level except the last one (> 50 m in the default case)
                 String finalQuery = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT id_rsu, "
                 String nonVertQuery = ""
                 String vertQuery = ""
                 for (i in 1..(listLayersBottom.size()-1)){
-                    nonVertQuery += " SUM(CASEWHEN(z_max <= ${listLayersBottom[i-1]}, 0, CASEWHEN(" +
+                    nonVertQuery += " COALESCE(SUM(CASEWHEN(z_max <= ${listLayersBottom[i-1]}, 0, CASEWHEN(" +
                             "z_max <= ${listLayersBottom[i]}, CASEWHEN(delta_h=0, non_vertical_roof_area, " +
                             "non_vertical_roof_area*(z_max-GREATEST(${listLayersBottom[i-1]},z_min))/delta_h), " +
                             "CASEWHEN(z_min < ${listLayersBottom[i]}, non_vertical_roof_area*(${listLayersBottom[i]}-" +
-                            "GREATEST(${listLayersBottom[i-1]},z_min))/delta_h, 0)))) AS rsu_non_vert_roof_area" +
+                            "GREATEST(${listLayersBottom[i-1]},z_min))/delta_h, 0)))),0) AS rsu_non_vert_roof_area" +
                             "${listLayersBottom[i-1]}_${listLayersBottom[i]},"
-                    vertQuery += " SUM(CASEWHEN(z_max <= ${listLayersBottom[i-1]}, 0, CASEWHEN(" +
+                    vertQuery += " COALESCE(SUM(CASEWHEN(z_max <= ${listLayersBottom[i-1]}, 0, CASEWHEN(" +
                             "z_max <= ${listLayersBottom[i]}, CASEWHEN(delta_h=0, 0, " +
                             "vertical_roof_area*POWER((z_max-GREATEST(${listLayersBottom[i-1]}," +
                             "z_min))/delta_h, 2)), CASEWHEN(z_min < ${listLayersBottom[i]}, " +
                             "CASEWHEN(z_min>${listLayersBottom[i-1]}, vertical_roof_area*(1-" +
                             "POWER((z_max-${listLayersBottom[i]})/delta_h,2)),vertical_roof_area*(" +
                             "POWER((z_max-${listLayersBottom[i-1]})/delta_h,2)-POWER((z_max-${listLayersBottom[i]})/" +
-                            "delta_h,2))), 0)))) AS rsu_vert_roof_area${listLayersBottom[i-1]}_${listLayersBottom[i]},"
+                            "delta_h,2))), 0)))),0) AS rsu_vert_roof_area${listLayersBottom[i-1]}_${listLayersBottom[i]},"
                 }
                 // The roof area is calculated for the last level (> 50 m in the default case)
                 def valueLastLevel = listLayersBottom[listLayersBottom.size()-1]
-                nonVertQuery += " SUM(CASEWHEN(z_max <= $valueLastLevel, 0, CASEWHEN(delta_h=0, non_vertical_roof_area, " +
-                        "non_vertical_roof_area*(z_max-GREATEST($valueLastLevel,z_min))/delta_h))) AS rsu_non_vert_roof_area" +
+                nonVertQuery += " COALESCE(SUM(CASEWHEN(z_max <= $valueLastLevel, 0, CASEWHEN(delta_h=0, non_vertical_roof_area, " +
+                        "non_vertical_roof_area*(z_max-GREATEST($valueLastLevel,z_min))/delta_h))),0) AS rsu_non_vert_roof_area" +
                         "${valueLastLevel}_,"
-                vertQuery += " SUM(CASEWHEN(z_max <= $valueLastLevel, 0, CASEWHEN(delta_h=0, vertical_roof_area, " +
-                        "vertical_roof_area*(z_max-GREATEST($valueLastLevel,z_min))/delta_h))) AS rsu_vert_roof_area" +
+                vertQuery += " COALESCE(SUM(CASEWHEN(z_max <= $valueLastLevel, 0, CASEWHEN(delta_h=0, vertical_roof_area, " +
+                        "vertical_roof_area*(z_max-GREATEST($valueLastLevel,z_min))/delta_h))),0) AS rsu_vert_roof_area" +
                         "${valueLastLevel}_,"
 
                 String endQuery = " FROM $buildRoofSurfTot GROUP BY id_rsu;"
@@ -707,7 +708,7 @@ static IProcess effectiveTerrainRoughnessHeight() {
  *      -> "rsu_linear_road_density": linear of road within an area divided by the rsu_area.
  * @param levelConsiderated the indicators can be calculated independantly for each level (0 indicates that the object
  * is on the ground. 1 to 4 indicates that the object is in the air. -4 to -1 value indicates that the object is
- * underground) or not (null). Default [0, 1]
+ * underground) or not (null). Default [0]
  * @param prefixName String use as prefix to name the output table
  * @param angleRangeSize the range size (in °) of each interval angle used to calculate the distribution of road per
  * direction (should be a divisor of 180 - default 30°)
@@ -775,6 +776,7 @@ static IProcess linearRoadOperations() {
                                     "b.$geometricColumnRoad) "
                             def filtering = baseFiltering
                             def nameDens = []
+                            def nameDistrib = []
                             def caseQueryDistrib = ""
                             def caseQueryDens = ""
 
@@ -802,6 +804,7 @@ static IProcess linearRoadOperations() {
                                 for (int d = angleRangeSize; d <= 180; d += angleRangeSize) {
                                     caseQueryDistrib += "SUM(CASEWHEN(azimuth>=${d - angleRangeSize} AND azimuth<$d, length, 0)) AS " +
                                             "rsu_road_direction_distribution_d${d - angleRangeSize}_$d,"
+                                    nameDistrib.add("rsu_road_direction_distribution_d${d - angleRangeSize}_$d")
                                 }
                             }
                             // If only certain levels are considered independantly
@@ -816,6 +819,8 @@ static IProcess linearRoadOperations() {
                                                 "zindex = $lev, length, 0)) AS " +
                                                 "rsu_road_direction_distribution_h${lev.toString().replaceAll("-", "minus")}" +
                                                 "_d${d - angleRangeSize}_$d,"
+                                        nameDistrib.add("rsu_road_direction_distribution_h${lev.toString().replaceAll("-", "minus")}"+
+                                                "_d${d - angleRangeSize}_$d")
                                     }
                                 }
                             }
@@ -836,33 +841,36 @@ static IProcess linearRoadOperations() {
                                         " FROM $roadExpl GROUP BY id_rsu;" +
                                         "CREATE INDEX IF NOT EXISTS id_u ON $rsuTable($idColumnRsu);" +
                                         "CREATE INDEX IF NOT EXISTS id_d ON $roadDistrib(id_rsu);" +
-                                        "DROP TABLE IF EXISTS $roadDistTot; CREATE TABLE $roadDistTot AS SELECT b.* " +
-                                        "FROM $rsuTable a LEFT JOIN $roadDistrib b ON a.$idColumnRsu=b.id_rsu;"
+                                        "DROP TABLE IF EXISTS $roadDistTot; CREATE TABLE $roadDistTot($idColumnRsu INTEGER," +
+                                        "${nameDistrib.join(" double,")} double) AS (SELECT a.$idColumnRsu," +
+                                        "COALESCE(b.${nameDistrib.join(",0),COALESCE(b.")},0)  " +
+                                        "FROM $rsuTable a LEFT JOIN $roadDistrib b ON a.$idColumnRsu=b.id_rsu);"
                                 datasource.execute(queryDistrib.toString())
                                 if (!operations.contains("rsu_linear_road_density")) {
                                     datasource.execute("ALTER TABLE $roadDistTot RENAME TO $outputTableName".toString())
                                 }
                             }
+
                             // If the rsu linear density should be calculated
                             if (operations.contains("rsu_linear_road_density")) {
                                 String queryDensity = "CREATE TABLE $roadDens AS SELECT id_rsu, " + caseQueryDens[0..-2] +
-                                        " FROM $roadInter GROUP BY id_rsu;" +
+                                        " FROM $roadInter GROUP BY id_rsu;"+
                                         "CREATE INDEX IF NOT EXISTS id_u ON $rsuTable($idColumnRsu);" +
                                         "CREATE INDEX IF NOT EXISTS id_d ON $roadDens(id_rsu);" +
-                                        "DROP TABLE IF EXISTS $roadDensTot; CREATE TABLE $roadDensTot AS SELECT b.* " +
-                                        "FROM $rsuTable a LEFT JOIN $roadDens b ON a.$idColumnRsu=b.id_rsu"
+                                        "DROP TABLE IF EXISTS $roadDensTot; CREATE TABLE $roadDensTot($idColumnRsu INTEGER," +
+                                        "${nameDens.join(" double,")} double) AS (SELECT a.$idColumnRsu," +
+                                        "COALESCE(b.${nameDens.join(",0),COALESCE(b.")},0) " +
+                                        "FROM $rsuTable a LEFT JOIN $roadDens b ON a.$idColumnRsu=b.id_rsu)"
                                 datasource.execute(queryDensity.toString())
                                 if (!operations.contains("rsu_road_direction_distribution")) {
                                     datasource.execute("ALTER TABLE $roadDensTot RENAME TO $outputTableName".toString())
                                 }
                             }
                             if (operations.contains("rsu_road_direction_distribution") && operations.contains("rsu_linear_road_density")) {
-                                datasource.execute(("CREATE TABLE $outputTableName AS SELECT a.*," +
+                                datasource.execute(("CREATE TABLE $outputTableName AS SELECT a.*, " +
                                         "b.${nameDens.join(",b.")} FROM $roadDistTot a LEFT JOIN $roadDensTot b " +
                                         "ON a.id_rsu=b.id_rsu").toString())
                             }
-
-                            // NOTE THAT NONE OF THE POTENTIAL NULL VALUES ARE FILLED FOR THE MOMENT...
 
                             datasource.execute(("DROP TABLE IF EXISTS $roadInter, $roadExpl, $roadDistrib," +
                                     "$roadDens, $roadDistTot, $roadDensTot").toString())

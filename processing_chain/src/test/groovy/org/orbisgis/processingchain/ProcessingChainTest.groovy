@@ -500,7 +500,7 @@ class ProcessingChainTest {
         String railTableName="rails"
         String vegetationTableName="veget"
         String hydrographicTableName="hydro"
-        def indicatorUse = ["LCZ"]
+        def indicatorUse = ["URBAN_TYPOLOGY", "LCZ", "TEB"]
 
         datasource.load(urlBuilding, buildingTableName)
         datasource.load(urlRoad, roadTableName)
@@ -554,9 +554,10 @@ class ProcessingChainTest {
 
         //Compute building indicators
         def computeBuildingsIndicators = ProcessingChain.BuildGeoIndicators.computeBuildingsIndicators()
-        assertTrue computeBuildingsIndicators.execute([datasource            : datasource,
-                                                       inputBuildingTableName: relationBuildings,
-                                                       inputRoadTableName    : roadTableName])
+        assertTrue computeBuildingsIndicators.execute([datasource               : datasource,
+                                                       inputBuildingTableName   : relationBuildings,
+                                                       inputRoadTableName       : roadTableName,
+                                                       indicatorUse             : indicatorUse])
         String buildingIndicators = computeBuildingsIndicators.getResults().outputTableName
         if(saveResults){
             println("Saving building indicators")
@@ -579,10 +580,10 @@ class ProcessingChainTest {
                 println("Saving block indicators")
                 datasource.save(blockIndicators, directory + File.separator + "${blockIndicators}.geojson")
             }
-        //Check we have the same number of blocks
-        def countRelationBlocks= datasource.firstRow("select count(*) as count from ${relationBlocks}".toString())
-        def countBlocksIndicators = datasource.firstRow("select count(*) as count from ${blockIndicators}".toString())
-        assertEquals(countRelationBlocks.count,countBlocksIndicators.count)
+            //Check if we have the same number of blocks
+            def countRelationBlocks= datasource.firstRow("select count(*) as count from ${relationBlocks}".toString())
+            def countBlocksIndicators = datasource.firstRow("select count(*) as count from ${blockIndicators}".toString())
+            assertEquals(countRelationBlocks.count,countBlocksIndicators.count)
         }
 
         //Compute RSU indicators
@@ -600,11 +601,9 @@ class ProcessingChainTest {
             datasource.save(rsuIndicators, directory + File.separator + "${rsuIndicators}.geojson")
         }
 
-        //Check we have the same number of RSU
+        //Check if we have the same number of RSU
         def countRelationRSU= datasource.firstRow("select count(*) as count from ${relationRSU}".toString())
         def countRSUIndicators = datasource.firstRow("select count(*) as count from ${rsuIndicators}".toString())
         assertEquals(countRelationRSU.count,countRSUIndicators.count)
-
-
     }
 }

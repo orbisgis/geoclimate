@@ -1,6 +1,9 @@
 package org.orbisgis.processingchain
 
 import groovy.transform.BaseScript
+import org.orbisgis.BuildingIndicators
+import org.orbisgis.DataUtils
+import org.orbisgis.GenericIndicators
 import org.orbisgis.Geoclimate
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanagerapi.IProcess
@@ -30,10 +33,10 @@ public static IProcess computeBuildingsIndicators() {
 
         String buildingPrefixName = "building_indicators"
 
-
-        if (indicatorUse.contains("LCZ") | indicatorUse.contains("TEB")) {def geometryOperations = ["st_area"]}
-        else {def geometryOperations = ["st_length", "st_perimeter", "st_area"]}
-        IProcess computeGeometryProperties = org.orbisgis.GenericIndicators.geometryProperties()
+        // building_area + building_perimeter
+        def geometryOperations = ["st_perimeter", "st_area"]
+        if (indicatorUse.contains("LCZ") | indicatorUse.contains("TEB")) {geometryOperations = ["st_area"]}
+        IProcess computeGeometryProperties = GenericIndicators.geometryProperties()
         if (!computeGeometryProperties.execute([inputTableName: inputBuildingTableName, inputFields: ["id_build"],
                                                 operations    : geometryOperations, prefixName: buildingPrefixName,
                                                 datasource    : datasource])) {
@@ -43,108 +46,101 @@ public static IProcess computeBuildingsIndicators() {
         def buildTableGeometryProperties = computeGeometryProperties.results.outputTableName
         finalTablesToJoin.put(buildTableGeometryProperties, idColumnBu)
 
-
+        // For indicators that are useful for urban_typology OR for LCZ classification
         if(indicatorUse.contains("LCZ") | indicatorUse.contains("URBAN_TYPOLOGY")) {
-            if (indicatorUse.contains("LCZ")) {def sizeOperations = ["building_total_facade_length"]}
-            else {def sizeOperations = ["building_volume", "building_floor_area", "building_total_facade_length"]}
-            IProcess computeSizeProperties = org.orbisgis.BuildingIndicators.sizeProperties()
-            if (!computeSizeProperties.execute([inputBuildingTableName  : inputBuildingTableName,
-                                                operations              : sizeOperations,
-                                                prefixName              : buildingPrefixName,
-                                                datasource              : datasource])) {
+            // building_volume + building_floor_area + building_total_facade_length
+            def sizeOperations = ["building_volume", "building_floor_area", "building_total_facade_length"]
+            if (!indicatorUse.contains("URBAN_TYPOLOGY")) {
+                sizeOperations = ["building_total_facade_length"]
+            }
+            IProcess computeSizeProperties = BuildingIndicators.sizeProperties()
+            if (!computeSizeProperties.execute([inputBuildingTableName: inputBuildingTableName,
+                                                operations            : sizeOperations,
+                                                prefixName            : buildingPrefixName,
+                                                datasource            : datasource])) {
                 logger.info("Cannot compute the building_volume, building_floor_area, building_total_facade_length indicators for the buildings")
                 return
             }
             def buildTableSizeProperties = computeSizeProperties.results.outputTableName
             finalTablesToJoin.put(buildTableSizeProperties, idColumnBu)
-        }
 
-        if(indicatorUse.contains("URBAN_TYPOLOGY")) {
-            IProcess computeFormProperties = org.orbisgis.BuildingIndicators.formProperties()
-            if (!computeFormProperties.execute([inputBuildingTableName: inputBuildingTableName, operations: ["building_concavity", "building_form_factor",
-                                                                                                             "building_raw_compacity", "building_convexhull_perimeter_density"]
-                                                , prefixName          : buildingPrefixName, datasource: datasource])) {
-                logger.info("Cannot compute the building_concavity, building_form_factor, building_raw_compacity, building_convexhull_perimeter_density indicators for the buildings")
-                return
+            // building_contiguity + building_common_wall_fraction + building_number_building_neighbor
+            def neighborOperations = ["building_contiguity", "building_common_wall_fraction", "building_number_building_neighbor"]
+            if (indicatorUse.contains("LCZ") & !indicatorUse.contains("URBAN_TYPOLOGY")) {
+                neighborOperations = ["building_contiguity"]
             }
-            def buildTableFormProperties = computeFormProperties.results.outputTableName
-            finalTablesToJoin.put(buildTableFormProperties, idColumnBu)
-        }
-
-        if(indicatorUse.contains("LCZ") | indicatorUse.contains("URBAN_TYPOLOGY")) {
-            if (indicatorUse.contains("LCZ")) {def neighborOperations = ["building_contiguity"]}
-            else {def neighborOperations = ["building_contiguity", "building_common_wall_fraction", "building_number_building_neighbor"]}
-            IProcess computeNeighborsProperties = org.orbisgis.BuildingIndicators.neighborsProperties()
-            if (!computeNeighborsProperties.execute([inputBuildingTableName : inputBuildingTableName,
-                                                     operations             : neighborOperations,
-                                                     prefixName             : buildingPrefixName,
-                                                     datasource             : datasource])) {
+            IProcess computeNeighborsProperties = BuildingIndicators.neighborsProperties()
+            if (!computeNeighborsProperties.execute([inputBuildingTableName: inputBuildingTableName,
+                                                     operations            : neighborOperations,
+                                                     prefixName            : buildingPrefixName,
+                                                     datasource            : datasource])) {
                 logger.info("Cannot compute the building_contiguity, building_common_wall_fraction,building_number_building_neighbor indicators for the buildings")
                 return
             }
             def buildTableComputeNeighborsProperties = computeNeighborsProperties.results.outputTableName
             finalTablesToJoin.put(buildTableComputeNeighborsProperties, idColumnBu)
-        }
 
-        if(indicatorUse.contains("URBAN_TYPOLOGY")) {
-            IProcess computeMinimumBuildingSpacing = org.orbisgis.BuildingIndicators.minimumBuildingSpacing()
-            if (!computeMinimumBuildingSpacing.execute([inputBuildingTableName: inputBuildingTableName, bufferDist: 100
-                                                        , prefixName          : buildingPrefixName, datasource: datasource])) {
-                logger.info("Cannot compute the minimum building spacing indicator")
-                return
+            if (indicatorUse.contains("URBAN_TYPOLOGY")) {
+                // building_concavity + building_form_factor + building_raw_compacity + building_convex_hull_perimeter_density
+                IProcess computeFormProperties = BuildingIndicators.formProperties()
+                if (!computeFormProperties.execute([inputBuildingTableName: inputBuildingTableName, operations: ["building_concavity", "building_form_factor",
+                                                                                                                 "building_raw_compacity", "building_convexhull_perimeter_density"]
+                                                    , prefixName          : buildingPrefixName, datasource: datasource])) {
+                    logger.info("Cannot compute the building_concavity, building_form_factor, building_raw_compacity, building_convexhull_perimeter_density indicators for the buildings")
+                    return
+                }
+                def buildTableFormProperties = computeFormProperties.results.outputTableName
+                finalTablesToJoin.put(buildTableFormProperties, idColumnBu)
+
+                // building_minimum_building_spacing
+                IProcess computeMinimumBuildingSpacing = BuildingIndicators.minimumBuildingSpacing()
+                if (!computeMinimumBuildingSpacing.execute([inputBuildingTableName: inputBuildingTableName, bufferDist: 100
+                                                            , prefixName          : buildingPrefixName, datasource: datasource])) {
+                    logger.info("Cannot compute the minimum building spacing indicator")
+                    return
+                }
+                def buildTableComputeMinimumBuildingSpacing = computeMinimumBuildingSpacing.results.outputTableName
+                finalTablesToJoin.put(buildTableComputeMinimumBuildingSpacing, idColumnBu)
+
+                // building_road_distance
+                IProcess computeRoadDistance = BuildingIndicators.roadDistance()
+                if (!computeRoadDistance.execute([inputBuildingTableName: inputBuildingTableName, inputRoadTableName: inputRoadTableName, bufferDist: 100
+                                                  , prefixName          : buildingPrefixName, datasource: datasource])) {
+                    logger.info("Cannot compute the closest minimum distance to a road at 100 meters. ")
+                    return
+                }
+                def buildTableComputeRoadDistance = computeRoadDistance.results.outputTableName
+                finalTablesToJoin.put(buildTableComputeRoadDistance, idColumnBu)
+
+                // Join for building_likelihood
+                IProcess computeJoinNeighbors = DataUtils.joinTables()
+                if (!computeJoinNeighbors.execute([inputTableNamesWithId: [(buildTableComputeNeighborsProperties): idColumnBu,
+                                                                           (inputBuildingTableName)              : idColumnBu],
+                                                   outputTableName      : buildingPrefixName + "_neighbors",
+                                                   datasource           : datasource])) {
+                    logger.info("Cannot join the number of neighbors of a building. ")
+                    return
+                }
+                def buildTableJoinNeighbors = computeJoinNeighbors.results.outputTableName
+
+                // building_likelihood_large_building
+                IProcess computeLikelihoodLargeBuilding = BuildingIndicators.likelihoodLargeBuilding()
+                if (!computeLikelihoodLargeBuilding.execute([inputBuildingTableName: buildTableJoinNeighbors,
+                                                             nbOfBuildNeighbors    : "building_number_building_neighbor",
+                                                             prefixName            : buildingPrefixName,
+                                                             datasource            : datasource])) {
+                    logger.info("Cannot compute the like lihood large building indicator. ")
+                    return
+                }
+                def buildTableComputeLikelihoodLargeBuilding = computeLikelihoodLargeBuilding.results.outputTableName
+                finalTablesToJoin.put(buildTableComputeLikelihoodLargeBuilding, idColumnBu)
             }
-            def buildTableComputeMinimumBuildingSpacing = computeMinimumBuildingSpacing.results.outputTableName
-            finalTablesToJoin.put(buildTableComputeMinimumBuildingSpacing, idColumnBu)
         }
 
-        if(indicatorUse.contains("URBAN_TYPOLOGY")) {
-            IProcess computeRoadDistance = org.orbisgis.BuildingIndicators.roadDistance()
-            if (!computeRoadDistance.execute([inputBuildingTableName: inputBuildingTableName, inputRoadTableName: inputRoadTableName, bufferDist: 100
-                                              , prefixName          : buildingPrefixName, datasource: datasource])) {
-                logger.info("Cannot compute the closest minimum distance to a road at 100 meters. ")
-                return
-            }
-            def buildTableComputeRoadDistance = computeRoadDistance.results.outputTableName
-            finalTablesToJoin.put(buildTableComputeRoadDistance, idColumnBu)
-        }
-
-        // Need the number of neighbors in the input Table in order to calculate the following indicator
-        if(indicatorUse.contains("URBAN_TYPOLOGY")) {
-            IProcess computeJoinNeighbors = org.orbisgis.DataUtils.joinTables()
-            if (!computeJoinNeighbors.execute([inputTableNamesWithId: [(buildTableComputeNeighborsProperties): idColumnBu,
-                                                                       (inputBuildingTableName)              : idColumnBu],
-                                               outputTableName      : buildingPrefixName + "_neighbors",
-                                               datasource           : datasource])) {
-                logger.info("Cannot compute number of neighbors of a building. ")
-                return
-            }
-            def buildTableJoinNeighbors = computeJoinNeighbors.results.outputTableName
-            finalTablesToJoin.put(buildTableJoinNeighbors, idColumnBu)
-        }
-
-        if(indicatorUse.contains("URBAN_TYPOLOGY")) {
-            IProcess computeLikelihoodLargeBuilding = org.orbisgis.BuildingIndicators.likelihoodLargeBuilding()
-            if (!computeLikelihoodLargeBuilding.execute([inputBuildingTableName: buildTableJoinNeighbors,
-                                                         nbOfBuildNeighbors    : "building_number_building_neighbor",
-                                                         prefixName            : buildingPrefixName,
-                                                         datasource            : datasource])) {
-                logger.info("Cannot compute the like lihood large building indicator. ")
-                return
-            }
-            def buildTableComputeLikelihoodLargeBuilding = computeLikelihoodLargeBuilding.results.outputTableName
-            finalTablesToJoin.put(buildTableComputeLikelihoodLargeBuilding, idColumnBu)
-        }
-
-        IProcess buildingTableJoin = org.orbisgis.DataUtils.joinTables()
-        if(!buildingTableJoin.execute([inputTableNamesWithId: [(buildTableGeometryProperties)            : idColumnBu,
-                                                           (buildTableSizeProperties)                : idColumnBu,
-                                                           (buildTableFormProperties)                : idColumnBu,
-                                                           (buildTableJoinNeighbors)                 : idColumnBu,
-                                                           (buildTableComputeMinimumBuildingSpacing) : idColumnBu,
-                                                           (buildTableComputeRoadDistance)           : idColumnBu,
-                                                           (buildTableComputeLikelihoodLargeBuilding): idColumnBu],
-                                   outputTableName           : buildingPrefixName,
-                                   datasource           : datasource])){
+        IProcess buildingTableJoin = DataUtils.joinTables()
+        if(!buildingTableJoin.execute([inputTableNamesWithId: finalTablesToJoin,
+                                       outputTableName      : buildingPrefixName,
+                                       datasource           : datasource])){
             logger.info("Cannot merge all indicator in the table $buildingPrefixName.")
             return
         }
@@ -434,13 +430,8 @@ public static IProcess computeRSUIndicators() {
 
                 // rsu_linear_road_density + rsu_road_direction_distribution
                 if (indicatorUse.contains("URBAN_TYPOLOGY") | indicatorUse.contains("TEB")){
-                    def roadOperations = []
-                    if (indicatorUse.contains("URBAN_TYPOLOGY")) {
-                        roadOperations.add("rsu_road_direction_distribution")
-                    }
-                    if (indicatorUse.contains("TEB")) {
-                        roadOperations.add("rsu_linear_road_density")
-                    }
+                    def roadOperations = ["rsu_road_direction_distribution", "rsu_linear_road_density"]
+                    if (indicatorUse.contains("URBAN_TYPOLOGY")) {roadOperations=["rsu_road_direction_distribution"]}
                     IProcess computeLinearRoadOperations = Geoclimate.RsuIndicators.linearRoadOperations()
                     if (!computeLinearRoadOperations.execute([rsuTable  : rsuTable, roadTable: roadTable,
                                                               operations: roadOperations, levelConsiderated: [0],
