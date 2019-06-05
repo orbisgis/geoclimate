@@ -17,12 +17,14 @@ abstract class Geoclimate extends Script {
 
     public static BlockIndicators = new BlockIndicators()
 
-    public  static GenericIndicators = new GenericIndicators()
+    public static GenericIndicators = new GenericIndicators()
 
-    public  static SpatialUnits = new SpatialUnits()
+    public static SpatialUnits = new SpatialUnits()
 
-    public  static DataUtils = new DataUtils()
+    public static DataUtils = new DataUtils()
 
-    public  static TypologyClassification = new TypologyClassification()
+    public static TypologyClassification = new TypologyClassification()
+
+    static def uuid(){UUID.randomUUID().toString().replaceAll("-", "_")}
 
 }
