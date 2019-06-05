@@ -424,7 +424,7 @@ class ProcessingChainTest {
     @Test
     void osmGeoIndicatorsFromApi() {
         //Do not change this code
-        String id_zone = "56195"
+        String id_zone = "91458"
         boolean saveResults = true
         String directory ="./target/osm_processchain_full"
 
@@ -461,6 +461,11 @@ class ProcessingChainTest {
         }
 
         String indicatorUse = ["TEB", "URBAN_TYPOLOGY", "LCZ"]
+
+        // Run LCZ
+        osmLcz(directory, datasource, zoneTableName, buildingTableName,
+                roadTableName, railTableName, vegetationTableName,
+                hydrographicTableName, saveResults )
 
         //Run tests
         osmGeoIndicators(directory, datasource, zoneTableName, buildingTableName,roadTableName,railTableName,vegetationTableName,

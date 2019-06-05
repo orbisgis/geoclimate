@@ -273,6 +273,8 @@ public static createLCZ() {
                     queryReplaceNames += "ALTER TABLE $rsuIndicators "+
                             "RENAME COLUMN $oldIndic TO $newIndic;"
                 }
+
+                // Keep only the ID, geometry column and the 7 indicators useful for LCZ classification
                 datasource.execute(("$queryReplaceNames CREATE TABLE $lczIndicTable AS SELECT $columnIdRsu, $geometricColumn, " +
                         "${lczIndicNames.values().join(",")} FROM $rsuIndicators").toString())
 

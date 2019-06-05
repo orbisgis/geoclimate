@@ -309,8 +309,8 @@ public static IProcess computeRSUIndicators() {
                 // rsu_area
                 if (indicatorUse.contains("URBAN_TYPOLOGY")) {
                     IProcess computeGeometryProperties = Geoclimate.GenericIndicators.geometryProperties()
-                    if (!computeGeometryProperties.execute([inputTableName: rsuTable, inputFields: [columnIdRsu],
-                                                            operations    : ["st_area"], prefixName: prefixName,
+                    if (!computeGeometryProperties.execute([inputTableName: rsuTable,       inputFields : [columnIdRsu],
+                                                            operations    : ["st_area"],    prefixName  : prefixName,
                                                             datasource    : datasource])) {
                         logger.info("Cannot compute the area of the RSU")
                         return
@@ -370,9 +370,9 @@ public static IProcess computeRSUIndicators() {
                 // rsu_road_fraction
                 if (indicatorUse.contains("URBAN_TYPOLOGY") | indicatorUse.contains("LCZ")) {
                     IProcess computeRoadFraction = Geoclimate.RsuIndicators.roadFraction()
-                    if (!computeRoadFraction.execute([rsuTable        : rsuTable, roadTable: roadTable,
-                                                      levelToConsiders: ["ground": [0]],
-                                                      prefixName      : prefixName, datasource: datasource])) {
+                    if (!computeRoadFraction.execute([rsuTable          : rsuTable,           roadTable   : roadTable,
+                                                      levelToConsiders  : ["ground": [0]],    prefixName  : prefixName,
+                                                      datasource        : datasource])) {
                         logger.info("Cannot compute the fraction of road for the RSU")
                         return
                     }
@@ -383,8 +383,8 @@ public static IProcess computeRSUIndicators() {
                 // rsu_water_fraction
                 if (indicatorUse.contains("URBAN_TYPOLOGY") | indicatorUse.contains("LCZ")) {
                     IProcess computeWaterFraction = Geoclimate.RsuIndicators.waterFraction()
-                    if (!computeWaterFraction.execute([rsuTable  : rsuTable, waterTable: hydrographicTable,
-                                                       prefixName: prefixName, datasource: datasource])) {
+                    if (!computeWaterFraction.execute([rsuTable  : rsuTable,    waterTable: hydrographicTable,
+                                                       prefixName: prefixName,  datasource: datasource])) {
                         logger.info("Cannot compute the fraction of water for the RSU")
                         return
                     }
@@ -399,8 +399,8 @@ public static IProcess computeRSUIndicators() {
                     fractionTypeVeg = ["all"]
                 }
                 IProcess computeVegetationFraction = Geoclimate.RsuIndicators.vegetationFraction()
-                if (!computeVegetationFraction.execute([rsuTable    : rsuTable, vegetTable: vegetationTable,
-                                                        fractionType: fractionTypeVeg, prefixName: prefixName,
+                if (!computeVegetationFraction.execute([rsuTable    : rsuTable,         vegetTable: vegetationTable,
+                                                        fractionType: fractionTypeVeg,  prefixName: prefixName,
                                                         datasource  : datasource])) {
                     logger.info("Cannot compute the fraction of all vegetation for the RSU")
                     return
@@ -415,11 +415,14 @@ public static IProcess computeRSUIndicators() {
                 // + rsu_mean_building_volume RSU mean building volume weighted.
                 if (indicatorUse.contains("URBAN_TYPOLOGY")) {
                     IProcess computeRSUStatisticsWeighted = Geoclimate.GenericIndicators.weightedAggregatedStatistics()
-                    if (!computeRSUStatisticsWeighted.execute([inputLowerScaleTableName: buildingTable, inputUpperScaleTableName: rsuTable,
-                                                               inputIdUp               : columnIdRsu, inputVarWeightsOperations: ["height_roof"                        : ["area": ["AVG", "STD"]]
-                                                                                                                                  , "building_number_building_neighbor": ["area": ["AVG"]],
-                                                                                                                                  "building_volume"                    : ["area": ["AVG"]]],
-                                                               prefixName              : prefixName, datasource: datasource])) {
+                    if (!computeRSUStatisticsWeighted.execute([inputLowerScaleTableName : buildingTable,
+                                                               inputUpperScaleTableName : rsuTable,
+                                                               inputIdUp                : columnIdRsu,
+                                                               inputVarWeightsOperations: ["height_roof": ["area": ["AVG", "STD"]],
+                                                                                           "building_number_building_neighbor": ["area": ["AVG"]],
+                                                                                           "building_volume": ["area": ["AVG"]]],
+                                                               prefixName               : prefixName,
+                                                               datasource               : datasource])) {
                         logger.info("Cannot compute the weighted indicators mean, std height building, building number density and \n\
                     mean volume building.")
                         return
@@ -433,9 +436,9 @@ public static IProcess computeRSUIndicators() {
                     def roadOperations = ["rsu_road_direction_distribution", "rsu_linear_road_density"]
                     if (indicatorUse.contains("URBAN_TYPOLOGY")) {roadOperations=["rsu_road_direction_distribution"]}
                     IProcess computeLinearRoadOperations = Geoclimate.RsuIndicators.linearRoadOperations()
-                    if (!computeLinearRoadOperations.execute([rsuTable  : rsuTable, roadTable: roadTable,
-                                                              operations: roadOperations, levelConsiderated: [0],
-                                                              datasource: datasource, prefixName: prefixName])) {
+                    if (!computeLinearRoadOperations.execute([rsuTable  : rsuTable,         roadTable           : roadTable,
+                                                              operations: roadOperations,   levelConsiderated   : [0],
+                                                              datasource: datasource,       prefixName          : prefixName])) {
                         logger.info("Cannot compute the linear road density and road direction distribution")
                         return
                     }
@@ -446,9 +449,11 @@ public static IProcess computeRSUIndicators() {
                 // rsu_free_vertical_roof_area_distribution + rsu_free_non_vertical_roof_area_distribution
                 if (indicatorUse.contains("TEB")) {
                     IProcess computeRoofAreaDist = Geoclimate.RsuIndicators.roofAreaDistribution()
-                    if (!computeRoofAreaDist.execute([rsuTable        : rsuTable, buildingTable: buildingTable,
-                                                      listLayersBottom: facadeDensListLayersBottom, prefixName: prefixName,
-                                                      datasource      : datasource])) {
+                    if (!computeRoofAreaDist.execute([rsuTable          : rsuTable,
+                                                      buildingTable     : buildingTable,
+                                                      listLayersBottom  : facadeDensListLayersBottom,
+                                                      prefixName        : prefixName,
+                                                      datasource        : datasource])) {
                         logger.info("Cannot compute the roof area distribution in $prefixName. ")
                         return
                     }
@@ -458,14 +463,17 @@ public static IProcess computeRSUIndicators() {
 
                 // rsu_projected_facade_area_distribution
                 if (indicatorUse.contains("LCZ") | indicatorUse.contains("TEB")) {
-                    if(indicatorUse.contains("LCZ") & !indicatorUse.contains("TEB")){
+                    if(!indicatorUse.contains("TEB")){
                         facadeDensListLayersBottom: [0, 50, 200]
                         facadeDensNumberOfDirection: 8
                     }
                     IProcess computeProjFacadeDist = Geoclimate.RsuIndicators.projectedFacadeAreaDistribution()
-                    if (!computeProjFacadeDist.execute([buildingTable   : buildingTable, rsuTable: rsuTable,
-                                                        listLayersBottom: facadeDensListLayersBottom, numberOfDirection: facadeDensNumberOfDirection,
-                                                        prefixName      : "test", datasource: datasource])) {
+                    if (!computeProjFacadeDist.execute([buildingTable       : buildingTable,
+                                                        rsuTable            : rsuTable,
+                                                        listLayersBottom    : facadeDensListLayersBottom,
+                                                        numberOfDirection   : facadeDensNumberOfDirection,
+                                                        prefixName          : "test",
+                                                        datasource          : datasource])) {
                         logger.info("Cannot compute the projected facade distribution in $prefixName. ")
                         return
                     }
@@ -503,10 +511,14 @@ public static IProcess computeRSUIndicators() {
                 // rsu_ground_sky_view_factor
                 if (indicatorUse.contains("LCZ")) {
                     IProcess computeSVF = Geoclimate.RsuIndicators.groundSkyViewFactor()
-                    if (!computeSVF.execute([rsuTable                : intermediateJoinTable, correlationBuildingTable: buildingTable,
-                                             rsuBuildingDensityColumn: "dens_area", pointDensity: svfPointDensity,
-                                             rayLength               : svfRayLength, numberOfDirection: svfNumberOfDirection,
-                                             prefixName              : prefixName, datasource: datasource])) {
+                    if (!computeSVF.execute([rsuTable                   : intermediateJoinTable,
+                                             correlationBuildingTable   : buildingTable,
+                                             rsuBuildingDensityColumn   : "dens_area",
+                                             pointDensity               : svfPointDensity,
+                                             rayLength                  : svfRayLength,
+                                             numberOfDirection          : svfNumberOfDirection,
+                                             prefixName                 : prefixName,
+                                             datasource                 : datasource])) {
                         logger.info("Cannot compute the SVF calculation in $prefixName. ")
                         return
                     }
@@ -572,8 +584,8 @@ public static IProcess computeRSUIndicators() {
                 // rsu_perkins_skill_score_building_direction_variability
                 if (indicatorUse.contains("URBAN_TYPOLOGY")) {
                     IProcess computePerkinsDirection = Geoclimate.GenericIndicators.perkinsSkillScoreBuildingDirection()
-                    if (!computePerkinsDirection.execute([buildingTableName: buildingTable, inputIdUp: columnIdRsu,
-                                                          angleRangeSize   : angleRangeSizeBuDirection, prefixName: prefixName,
+                    if (!computePerkinsDirection.execute([buildingTableName: buildingTable,             inputIdUp   : columnIdRsu,
+                                                          angleRangeSize   : angleRangeSizeBuDirection, prefixName  : prefixName,
                                                           datasource       : datasource])) {
                         logger.info("Cannot compute the perkins Skill Score building direction distribution in $prefixName. ")
                         return
