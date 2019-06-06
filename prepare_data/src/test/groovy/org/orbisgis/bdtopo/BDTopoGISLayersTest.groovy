@@ -12,9 +12,9 @@ class BDTopoGISLayersTest {
 
     @Test
     void importPreprocessTest(){
-        H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb")
+        H2GIS h2GISDatabase = H2GIS.open("/tmp/myh2gisbdtopodb", "sa", "")
         def process = PrepareData.BDTopoGISLayers.importPreprocess()
-        process.execute([h2gis: h2GISDatabase, tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+        process.execute([datasource: h2GISDatabase, tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                          tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
                          tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
                          tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
@@ -26,7 +26,7 @@ class BDTopoGISLayersTest {
                          veget_bd_topo_type: 'VEGET_BD_TOPO_TYPE', veget_abstract_type: 'VEGET_ABSTRACT_TYPE'
         ])
         process.getResults().each {
-            entry -> assertNull h2GISDatabase.getTable(entry.getValue())
+            entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
         }
     }
 

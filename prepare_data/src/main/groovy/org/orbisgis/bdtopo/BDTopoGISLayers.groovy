@@ -77,6 +77,21 @@ static IProcess importPreprocess(){
                 def input_hydro = 'INPUT_HYDRO_' + uuid
                 def input_veget = 'INPUT_VEGET_' + uuid
 
+                /*--------------------------------------------------------------------------------------------------
+                -- 2- Create (spatial) indexes if not already exists on the input layers
+                --------------------------------------------------------------------------------------------------*/
+
+                datasource.execute("CREATE INDEX IF NOT EXISTS idx_geom ON $tableIrisName(the_geom) USING RTREE;"+
+                        "CREATE INDEX IF NOT EXISTS idx_insee ON $tableIrisName(INSEE_COM);"+
+                        "CREATE INDEX IF NOT EXISTS idx_geom ON $tableBuildIndifName(the_geom) USING RTREE;"+
+                        "CREATE INDEX IF NOT EXISTS idx_geom ON $tableBuildIndusName(the_geom) USING RTREE;"+
+                        "CREATE INDEX IF NOT EXISTS idx_geom ON $tableBuildRemarqName(the_geom) USING RTREE;"+
+                        "CREATE INDEX IF NOT EXISTS idx_geom ON $tableRoadName(the_geom) USING RTREE;"+
+                        "CREATE INDEX IF NOT EXISTS idx_geom ON $tableRailName(the_geom) USING RTREE;"+
+                        "CREATE INDEX IF NOT EXISTS idx_geom ON $tableHydroName(the_geom) USING RTREE;"+
+                        "CREATE INDEX IF NOT EXISTS idx_geom ON $tableVegetName(the_geom) USING RTREE;")
+
+
                 datasource.executeScript(this.class.getResource('importPreprocess.sql').toString(),
                         [ID_ZONE: idZone, DIST_BUFFER: distBuffer, EXPAND: expand, IRIS_GE: tableIrisName,
                          BATI_INDIFFERENCIE: tableBuildIndifName, BATI_INDUSTRIEL: tableBuildIndusName,
