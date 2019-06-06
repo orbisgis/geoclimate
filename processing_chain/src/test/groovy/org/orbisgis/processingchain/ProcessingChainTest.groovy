@@ -424,7 +424,7 @@ class ProcessingChainTest {
     @Test
     void osmGeoIndicatorsFromApi() {
         //Do not change this code
-        String id_zone = "91458"
+        String id_zone = "56195"
         boolean saveResults = true
         String directory ="./target/osm_processchain_full"
 
