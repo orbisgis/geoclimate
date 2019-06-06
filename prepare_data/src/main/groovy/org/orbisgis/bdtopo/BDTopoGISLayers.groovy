@@ -92,7 +92,7 @@ static IProcess importPreprocess(){
                         "CREATE INDEX IF NOT EXISTS idx_geom ON $tableVegetName(the_geom) USING RTREE;")
 
 
-                datasource.executeScript(this.class.getResource('importPreprocess.sql').toString(),
+                datasource.executeScript(getClass().getResourceAsStream('importPreprocess.sql'),
                         [ID_ZONE: idZone, DIST_BUFFER: distBuffer, EXPAND: expand, IRIS_GE: tableIrisName,
                          BATI_INDIFFERENCIE: tableBuildIndifName, BATI_INDUSTRIEL: tableBuildIndusName,
                          BATI_REMARQUABLE: tableBuildRemarqName, ROUTE: tableRoadName, TRONCON_VOIE_FERREE: tableRailName,
@@ -150,7 +150,7 @@ static IProcess initTypes(){
                 def railBDTopoType = 'RAIL_BD_TOPO_TYPE_' + uuid
                 def vegetBDTopoType = 'VEGET_BD_TOPO_TYPE_' + uuid
 
-                datasource.executeScript(this.class.getResource('typesMatching.sql').toString(),
+                datasource.executeScript(getClass().getResourceAsStream('typesMatching.sql'),
                         [BUILDING_ABSTRACT_USE_TYPE: buildingAbstractUseType,
                          ROAD_ABSTRACT_TYPE: roadAbstractType,
                          RAIL_ABSTRACT_TYPE: railAbstractType,
