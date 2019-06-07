@@ -1,98 +1,95 @@
 package org.orbisgis
 
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.orbisgis.datamanager.h2gis.H2GIS
 
 import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertTrue
 
 class RsuIndicatorsTests {
 
+    private static H2GIS h2GIS
+
+    @BeforeAll
+    static void init(){
+        h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
+    }
+
+    @BeforeEach
+    void initData(){
+        h2GIS.executeScript(getClass().getResourceAsStream("data_for_tests.sql"))
+    }
+
     @Test
     void freeExternalFacadeDensityTest() {
-        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
-        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
-        h2GIS.execute(sqlString)
-
         // Only the first 1 first created buildings are selected for the tests
-        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, rsu_free_external_facade_density; CREATE TABLE tempo_build AS SELECT * " +
-                "FROM building_test WHERE id_build < 8")
+        h2GIS.execute "DROP TABLE IF EXISTS tempo_build, rsu_free_external_facade_density; CREATE TABLE tempo_build AS SELECT * " +
+                "FROM building_test WHERE id_build < 8"
         // The geometry of the RSU is useful for the calculation, then it is inserted inside the build/rsu correlation table
-        h2GIS.execute("DROP TABLE IF EXISTS rsu_tempo; CREATE TABLE rsu_tempo AS SELECT * " +
-                "FROM rsu_test")
+        h2GIS.execute "DROP TABLE IF EXISTS rsu_tempo; CREATE TABLE rsu_tempo AS SELECT * " +
+                "FROM rsu_test"
 
         def  p =  Geoclimate.RsuIndicators.freeExternalFacadeDensity()
-        p.execute([buildingTable: "tempo_build",rsuTable: "rsu_tempo",
-                   buContiguityColumn: "building_contiguity", buTotalFacadeLengthColumn: "building_total_facade_length",
+        assertTrue p.execute([buildingTable: "tempo_build",
+                   rsuTable: "rsu_tempo",
+                   buContiguityColumn: "building_contiguity",
+                   buTotalFacadeLengthColumn: "building_total_facade_length",
                    prefixName: "test", datasource: h2GIS])
         def concat = 0
         h2GIS.eachRow("SELECT * FROM test_rsu_free_external_facade_density WHERE id_rsu = 1"){
-            row ->
-                concat+= row.rsu_free_external_facade_density
+            row -> concat+= row.rsu_free_external_facade_density
         }
         assertEquals(0.947, concat)
     }
 
     @Test
     void groundSkyViewFactorTest() {
-        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
-        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
-        h2GIS.execute(sqlString)
-
         // Only the first 1 first created buildings are selected for the tests
-        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, rsu_free_external_facade_density; CREATE TABLE tempo_build AS SELECT * " +
-                "FROM building_test WHERE id_build > 8 AND id_build < 27")
+        h2GIS.execute "DROP TABLE IF EXISTS tempo_build, rsu_free_external_facade_density; CREATE TABLE tempo_build AS SELECT * " +
+                "FROM building_test WHERE id_build > 8 AND id_build < 27"
         // The geometry of the buildings are useful for the calculation, then they are inserted inside
         // the build/rsu correlation table
-        h2GIS.execute("DROP TABLE IF EXISTS corr_tempo; CREATE TABLE corr_tempo AS SELECT a.*, b.the_geom, b.height_wall " +
-                "FROM rsu_build_corr a, tempo_build b WHERE a.id_build = b.id_build")
+        h2GIS.execute "DROP TABLE IF EXISTS corr_tempo; CREATE TABLE corr_tempo AS SELECT a.*, b.the_geom, b.height_wall " +
+                "FROM rsu_build_corr a, tempo_build b WHERE a.id_build = b.id_build"
 
         def  p =  Geoclimate.RsuIndicators.groundSkyViewFactor()
-        p.execute([rsuTable: "rsu_test",correlationBuildingTable: "corr_tempo", rsuBuildingDensityColumn:
+        assertTrue p.execute([rsuTable: "rsu_test",correlationBuildingTable: "corr_tempo", rsuBuildingDensityColumn:
                 "rsu_building_density", pointDensity: 0.008, rayLength: 100, numberOfDirection: 60, prefixName: "test",
                    datasource: h2GIS])
         def concat = 0
         h2GIS.eachRow("SELECT * FROM test_rsu_ground_sky_view_factor WHERE id_rsu = 8"){
-            row ->
-                concat+= row.rsu_ground_sky_view_factor
+            row -> concat+= row.rsu_ground_sky_view_factor
         }
         assertEquals(0.54, concat, 0.05)
     }
 
     @Test
     void aspectRatioTest() {
-        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
-        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
-        h2GIS.execute(sqlString)
-
         def  p =  Geoclimate.RsuIndicators.aspectRatio()
-        p.execute([rsuTable: "rsu_test", rsuFreeExternalFacadeDensityColumn:
+        assertTrue p.execute([rsuTable: "rsu_test", rsuFreeExternalFacadeDensityColumn:
                 "rsu_free_external_facade_density", rsuBuildingDensityColumn: "rsu_building_density",
                    prefixName: "test", datasource: h2GIS])
         def concat = 0
         h2GIS.eachRow("SELECT * FROM test_rsu_aspect_ratio WHERE id_rsu = 1"){
-            row ->
-                concat+= row.rsu_aspect_ratio
+            row -> concat+= row.rsu_aspect_ratio
         }
         assertEquals(1.344, concat, 0.001)
     }
 
     @Test
     void projectedFacadeAreaDistributionTest() {
-        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
-        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
-        h2GIS.execute(sqlString)
-
         // Only the first 5 first created buildings are selected for the tests
-        h2GIS.execute("DROP TABLE IF EXISTS tempo_build; CREATE TABLE tempo_build AS SELECT * " +
-                "FROM building_test WHERE id_build < 6")
+        h2GIS.execute "DROP TABLE IF EXISTS tempo_build; CREATE TABLE tempo_build AS SELECT * " +
+                "FROM building_test WHERE id_build < 6"
 
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def numberOfDirection = 4
         def dirMedDeg = 180/numberOfDirection
-        def  p =  Geoclimate.RsuIndicators.projectedFacadeAreaDistribution()
-        p.execute([buildingTable: "tempo_build", rsuTable: "rsu_test", listLayersBottom: listLayersBottom,
-                   numberOfDirection: numberOfDirection, prefixName: "test",
-                   datasource: h2GIS])
+        def p = Geoclimate.RsuIndicators.projectedFacadeAreaDistribution()
+        assertTrue p.execute([buildingTable: "tempo_build", rsuTable: "rsu_test", listLayersBottom: listLayersBottom,
+                              numberOfDirection: numberOfDirection, prefixName: "test", datasource: h2GIS])
         def concat = ""
         h2GIS.eachRow("SELECT * FROM test_rsu_projected_facade_area_distribution WHERE id_rsu = 1"){
             row ->
@@ -117,19 +114,15 @@ class RsuIndicatorsTests {
 
     @Test
     void roofAreaDistributionTest() {
-        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
-        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
-        h2GIS.execute(sqlString)
-
         // Only the first 5 first created buildings are selected for the tests
-        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, test_rsu_roof_area_distribution; " +
+        h2GIS.execute "DROP TABLE IF EXISTS tempo_build, test_rsu_roof_area_distribution; " +
                 "CREATE TABLE tempo_build AS SELECT * " +
                 "FROM building_test WHERE id_build < 6 OR " +
-                "id_build < 29 AND id_build > 26")
+                "id_build < 29 AND id_build > 26"
 
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
-        def  p =  Geoclimate.RsuIndicators.roofAreaDistribution()
-        p.execute([rsuTable: "rsu_test", buildingTable: "tempo_build",
+        def p = Geoclimate.RsuIndicators.roofAreaDistribution()
+        assertTrue p.execute([rsuTable: "rsu_test", buildingTable: "tempo_build",
                    listLayersBottom: listLayersBottom, prefixName: "test",
                    datasource: h2GIS])
         def concat1 = ""
@@ -170,61 +163,65 @@ class RsuIndicatorsTests {
 
     @Test
     void effectiveTerrainRoughnessHeightTest() {
-        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
-        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
-        h2GIS.execute(sqlString)
-
         // Only the first 5 first created buildings are selected for the tests
         h2GIS.execute("DROP TABLE IF EXISTS tempo_build, rsu_table; CREATE TABLE tempo_build AS SELECT * " +
                 "FROM building_test WHERE id_build < 6")
 
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def numberOfDirection = 4
-        def pFacadeDistrib =  Geoclimate.RsuIndicators.projectedFacadeAreaDistribution()
-        pFacadeDistrib.execute([buildingTable: "tempo_build",
-                                rsuTable: "rsu_test", listLayersBottom: listLayersBottom, numberOfDirection:
-                                numberOfDirection, prefixName: "test",
-                                datasource: h2GIS])
+        def pFacadeDistrib = Geoclimate.RsuIndicators.projectedFacadeAreaDistribution()
+        assertTrue pFacadeDistrib.execute([buildingTable: "tempo_build",
+                                           rsuTable: "rsu_test",
+                                           listLayersBottom: listLayersBottom,
+                                           numberOfDirection: numberOfDirection,
+                                           prefixName: "test",
+                                           datasource: h2GIS])
         def  pGeomAvg =  Geoclimate.GenericIndicators.unweightedOperationFromLowerScale()
-        pGeomAvg.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "rsu_build_corr",
-                          inputIdUp: "id_rsu", inputVarAndOperations: ["height_roof": ["GEOM_AVG"]],
-                          prefixName: "test", datasource: h2GIS])
+        assertTrue pGeomAvg.execute([inputLowerScaleTableName: "tempo_build",
+                                     inputUpperScaleTableName: "rsu_build_corr",
+                                     inputIdUp: "id_rsu",
+                                     inputVarAndOperations: ["height_roof": ["GEOM_AVG"]],
+                                     prefixName: "test",
+                                     datasource: h2GIS])
 
         // Add the geometry field in the previous resulting Tables
-        h2GIS.execute("ALTER TABLE test_unweighted_operation_from_lower_scale add column the_geom GEOMETRY;" +
+        h2GIS.execute "ALTER TABLE test_unweighted_operation_from_lower_scale add column the_geom GEOMETRY;" +
                 "UPDATE test_unweighted_operation_from_lower_scale set the_geom = (SELECT a.the_geom FROM " +
-                "rsu_test a WHERE a.id_rsu = test_unweighted_operation_from_lower_scale.id_rsu);")
+                "rsu_test a WHERE a.id_rsu = test_unweighted_operation_from_lower_scale.id_rsu);"
 
-        h2GIS.execute("CREATE TABLE rsu_table AS SELECT a.*, b.geom_avg_height_roof, b.the_geom " +
+        h2GIS.execute "CREATE TABLE rsu_table AS SELECT a.*, b.geom_avg_height_roof, b.the_geom " +
                 "FROM test_rsu_projected_facade_area_distribution a, test_unweighted_operation_from_lower_scale b " +
-                "WHERE a.id_rsu = b.id_rsu")
+                "WHERE a.id_rsu = b.id_rsu"
         def  p =  Geoclimate.RsuIndicators.effectiveTerrainRoughnessHeight()
-        p.execute([rsuTable: "rsu_table", projectedFacadeAreaName: "rsu_projected_facade_area_distribution",
-                   geometricMeanBuildingHeightName: "geom_avg_height_roof", prefixName: "test", listLayersBottom: listLayersBottom,
-                   numberOfDirection: numberOfDirection, datasource: h2GIS])
+        assertTrue p.execute([rsuTable: "rsu_table",
+                              projectedFacadeAreaName: "rsu_projected_facade_area_distribution",
+                              geometricMeanBuildingHeightName: "geom_avg_height_roof",
+                              prefixName: "test",
+                              listLayersBottom: listLayersBottom,
+                              numberOfDirection: numberOfDirection,
+                              datasource: h2GIS])
 
         def concat = 0
         h2GIS.eachRow("SELECT * FROM test_rsu_effective_terrain_roughness WHERE id_rsu = 1"){
-            row ->
-                concat += row["rsu_effective_terrain_roughness"].round(2)
-                }
+            row -> concat += row["rsu_effective_terrain_roughness"].round(2)
+        }
         assertEquals(1.6, concat)
     }
 
     @Test
     void linearRoadOperationsTest() {
-        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
-        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
-        h2GIS.execute(sqlString)
-
         // Only the first 5 first created buildings are selected for the tests
-        h2GIS.execute("DROP TABLE IF EXISTS road_tempo; CREATE TABLE road_tempo AS SELECT * " +
-                "FROM road_test WHERE id_road < 7")
+        h2GIS.execute "DROP TABLE IF EXISTS road_tempo; CREATE TABLE road_tempo AS SELECT * " +
+                "FROM road_test WHERE id_road < 7"
 
         def p1 =  Geoclimate.RsuIndicators.linearRoadOperations()
-        p1.execute([rsuTable: "rsu_test", roadTable: "road_test", operations: ["rsu_road_direction_distribution",
-                                                                               "rsu_linear_road_density"], prefixName: "test", angleRangeSize: 30, levelConsiderated: null,
-                    datasource: h2GIS])
+        assertTrue p1.execute([rsuTable: "rsu_test",
+                               roadTable: "road_test",
+                               operations: ["rsu_road_direction_distribution", "rsu_linear_road_density"],
+                               prefixName: "test",
+                               angleRangeSize: 30,
+                               levelConsiderated: null,
+                               datasource: h2GIS])
         def t0 = h2GIS.firstRow("SELECT rsu_road_direction_distribution_d0_30 " +
                 "FROM test_rsu_road_linear_properties WHERE id_rsu = 14")
         def t1 = h2GIS.firstRow("SELECT rsu_road_direction_distribution_d90_120 " +
@@ -236,14 +233,14 @@ class RsuIndicatorsTests {
         assertEquals(0.0142, t2.rsu_linear_road_density.round(4))
 
         def p2 =  Geoclimate.RsuIndicators.linearRoadOperations()
-        p2.execute([rsuTable: "rsu_test", roadTable: "road_test", operations: ["rsu_road_direction_distribution"],
+        assertTrue p2.execute([rsuTable: "rsu_test", roadTable: "road_test", operations: ["rsu_road_direction_distribution"],
                     prefixName: "test", angleRangeSize: 30, levelConsiderated: [0], datasource: h2GIS])
         def t01 = h2GIS.firstRow("SELECT rsu_road_direction_distribution_h0_d0_30 " +
                 "FROM test_rsu_road_linear_properties WHERE id_rsu = 14")
         assertEquals(20, t01.rsu_road_direction_distribution_h0_d0_30)
 
         def p3 =  Geoclimate.RsuIndicators.linearRoadOperations()
-        p3.execute([rsuTable: "rsu_test", roadTable: "road_test", operations: ["rsu_linear_road_density"],
+        assertTrue p3.execute([rsuTable: "rsu_test", roadTable: "road_test", operations: ["rsu_linear_road_density"],
                     prefixName: "test", angleRangeSize: 30, levelConsiderated: [-1], datasource: h2GIS])
         def t001 = h2GIS.firstRow("SELECT rsu_linear_road_density_hminus1 " +
                 "FROM test_rsu_road_linear_properties WHERE id_rsu = 14")
@@ -252,45 +249,35 @@ class RsuIndicatorsTests {
 
     @Test
     void effectiveTerrainRoughnessClassTest() {
-        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
-        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
-        h2GIS.execute(sqlString)
-
         // Only the first 5 first created buildings are selected for the tests
-        h2GIS.execute("DROP TABLE IF EXISTS rsu_tempo; CREATE TABLE rsu_tempo AS SELECT *, CASEWHEN(id_rsu = 1, 2.3," +
-                "CASEWHEN(id_rsu = 2, 0.1, null)) AS rsu_effective_terrain_roughness_height FROM rsu_test")
+        h2GIS.execute "DROP TABLE IF EXISTS rsu_tempo; CREATE TABLE rsu_tempo AS SELECT *, CASEWHEN(id_rsu = 1, 2.3," +
+                "CASEWHEN(id_rsu = 2, 0.1, null)) AS rsu_effective_terrain_roughness_height FROM rsu_test"
 
         def p =  Geoclimate.RsuIndicators.effectiveTerrainRoughnessClass()
-        p.execute([datasource: h2GIS, rsuTable: "rsu_tempo", effectiveTerrainRoughnessHeight: "rsu_effective_terrain_roughness_height",
+        assertTrue p.execute([datasource: h2GIS, rsuTable: "rsu_tempo", effectiveTerrainRoughnessHeight: "rsu_effective_terrain_roughness_height",
                    prefixName: "test"])
         def concat = ""
         h2GIS.eachRow("SELECT * FROM test_effective_terrain_roughness_class WHERE id_rsu < 4 ORDER BY id_rsu ASC"){
-            row ->
-                concat += "${row["effective_terrain_roughness_class"]}\n".toString()
+            row -> concat += "${row["effective_terrain_roughness_class"]}\n".toString()
         }
         assertEquals("8\n4\nnull\n", concat)
     }
 
     @Test
     void vegetationFractionTest() {
-        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
-        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
-        h2GIS.execute(sqlString)
-
         // Only the first 4 first created vegetation areas are selected for the tests
-        h2GIS.execute("DROP TABLE IF EXISTS tempo_veget; CREATE TABLE tempo_veget AS SELECT * " +
-                "FROM veget_test WHERE id_veget < 4")
+        h2GIS.execute "DROP TABLE IF EXISTS tempo_veget; CREATE TABLE tempo_veget AS SELECT * " +
+                "FROM veget_test WHERE id_veget < 4"
 
         def  p0 =  Geoclimate.RsuIndicators.vegetationFraction()
-        p0.execute([rsuTable: "rsu_test", vegetTable: "tempo_veget", fractionType: ["low"], prefixName: "zero",
-                    datasource: h2GIS])
+        assertTrue p0.execute([rsuTable: "rsu_test", vegetTable: "tempo_veget", fractionType: ["low"],
+                               prefixName: "zero", datasource: h2GIS])
         def concat = ["",""]
         h2GIS.eachRow("SELECT * FROM zero_vegetation_fraction WHERE id_rsu = 14 OR id_rsu = 15"){
-            row ->
-                concat[0]+= "${row.low_vegetation_fraction}\n"
+            row -> concat[0]+= "${row.low_vegetation_fraction}\n"
         }
         def  p1 =  Geoclimate.RsuIndicators.vegetationFraction()
-        p1.execute([rsuTable: "rsu_test", vegetTable: "tempo_veget", fractionType: ["high", "all"], prefixName: "one",
+        assertTrue p1.execute([rsuTable: "rsu_test", vegetTable: "tempo_veget", fractionType: ["high", "all"], prefixName: "one",
                     datasource: h2GIS])
         h2GIS.eachRow("SELECT * FROM one_vegetation_fraction WHERE id_rsu = 14 OR id_rsu = 15"){
             row ->
@@ -303,27 +290,23 @@ class RsuIndicatorsTests {
 
     @Test
     void roadFractionTest() {
-        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
-        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
-        h2GIS.execute(sqlString)
-
         // Only the first 4 first created vegetation areas are selected for the tests
-        h2GIS.execute("DROP TABLE IF EXISTS tempo_road; CREATE TABLE tempo_road AS SELECT * " +
-                "FROM road_test WHERE id_road < 7")
+        h2GIS.execute "DROP TABLE IF EXISTS tempo_road; CREATE TABLE tempo_road AS SELECT * " +
+                "FROM road_test WHERE id_road < 7"
 
         def  p0 =  Geoclimate.RsuIndicators.roadFraction()
-        p0.execute([rsuTable: "rsu_test", roadTable: "tempo_road", levelToConsiders: ["underground":[-4, -3, -2, -1]],
+        assertTrue p0.execute([rsuTable: "rsu_test", roadTable: "tempo_road", levelToConsiders: ["underground":[-4, -3, -2, -1]],
                     prefixName: "zero",
                     datasource: h2GIS])
         def concat = ["",""]
         h2GIS.eachRow("SELECT * FROM zero_road_fraction WHERE id_rsu = 14 OR id_rsu = 15"){
-            row ->
-                concat[0]+= "${row.underground_road_fraction.round(5)}\n"
+            row -> concat[0]+= "${row.underground_road_fraction.round(5)}\n"
         }
         def  p1 =  Geoclimate.RsuIndicators.roadFraction()
-        p1.execute([rsuTable: "rsu_test", roadTable: "tempo_road", levelToConsiders: ["underground":[-4, -3, -2, -1],
-                                                                                      "ground":[0]], prefixName: "one",
-                    datasource: h2GIS])
+        assertTrue p1.execute([rsuTable: "rsu_test", roadTable: "tempo_road",
+                               levelToConsiders: ["underground":[-4, -3, -2, -1], "ground":[0]],
+                               prefixName: "one",
+                               datasource: h2GIS])
         h2GIS.eachRow("SELECT * FROM one_road_fraction WHERE id_rsu = 14 OR id_rsu = 15"){
             row ->
                 concat[1]+= "${row.underground_road_fraction.round(5)}\n"
@@ -335,48 +318,39 @@ class RsuIndicatorsTests {
 
     @Test
     void waterFractionTest() {
-        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
-        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
-        h2GIS.execute(sqlString)
-
         // Only the first 4 first created vegetation areas are selected for the tests
-        h2GIS.execute("DROP TABLE IF EXISTS tempo_hydro; CREATE TABLE tempo_hydro AS SELECT * " +
-                "FROM hydro_test WHERE id_hydro < 2")
+        h2GIS.execute "DROP TABLE IF EXISTS tempo_hydro; CREATE TABLE tempo_hydro AS SELECT * " +
+                "FROM hydro_test WHERE id_hydro < 2"
 
         def  p =  Geoclimate.RsuIndicators.waterFraction()
-        p.execute([rsuTable: "rsu_test", waterTable: "tempo_hydro", prefixName: "test",
+        assertTrue p.execute([rsuTable: "rsu_test", waterTable: "tempo_hydro", prefixName: "test",
                    datasource: h2GIS])
         def concat = [""]
         h2GIS.eachRow("SELECT * FROM test_water_fraction WHERE id_rsu = 14 OR id_rsu = 15"){
-            row ->
-                concat[0]+= "${row.water_fraction}\n"
+            row -> concat[0]+= "${row.water_fraction}\n"
         }
         assertEquals("0.004\n0.04\n", concat[0])
     }
 
     @Test
     void perviousnessFractionTest() {
-        def h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
-        String sqlString = new File(this.class.getResource("data_for_tests.sql").toURI()).text
-        h2GIS.execute(sqlString)
-
         // Only the first created vegetation, road and water areas are selected for the tests
-        h2GIS.execute("DROP TABLE IF EXISTS tempo_hydro, tempo_veget, tempo_road; CREATE TABLE tempo_hydro AS SELECT * " +
+        h2GIS.execute "DROP TABLE IF EXISTS tempo_hydro, tempo_veget, tempo_road; CREATE TABLE tempo_hydro AS SELECT * " +
                 "FROM hydro_test WHERE id_hydro < 2; CREATE TABLE tempo_veget AS SELECT * " +
                 "FROM veget_test WHERE id_veget < 4; CREATE TABLE tempo_road AS SELECT * " +
-                "FROM road_test WHERE id_road < 7")
+                "FROM road_test WHERE id_road < 7"
 
         // The corresponding fractions are calculated
         def  pveg =  Geoclimate.RsuIndicators.vegetationFraction()
-        pveg.execute([rsuTable: "rsu_test", vegetTable: "tempo_veget", fractionType: ["low"], prefixName: "test",
-                      datasource: h2GIS])
+        assertTrue pveg.execute([rsuTable: "rsu_test", vegetTable: "tempo_veget", fractionType: ["low"],
+                                 prefixName: "test", datasource: h2GIS])
         def  pwat =  Geoclimate.RsuIndicators.waterFraction()
-        pwat.execute([rsuTable: "rsu_test", waterTable: "tempo_hydro", prefixName: "test",
-                      datasource: h2GIS])
+        assertTrue pwat.execute([rsuTable: "rsu_test", waterTable: "tempo_hydro", prefixName: "test",
+                                 datasource: h2GIS])
         def  proad =  Geoclimate.RsuIndicators.roadFraction()
-        proad.execute([rsuTable: "rsu_test", roadTable: "tempo_road", levelToConsiders: ["underground":[-4, -3, -2, -1],
-                                                                                         "ground":[0]], prefixName: "test",
-                       datasource: h2GIS])
+        assertTrue proad.execute([rsuTable: "rsu_test", roadTable: "tempo_road",
+                                  levelToConsiders: ["underground":[-4, -3, -2, -1], "ground":[0]],
+                                  prefixName: "test", datasource: h2GIS])
 
         // The data useful for pervious fraction calculation are gathered in a same Table
         h2GIS.execute("DROP TABLE IF EXISTS needed_data; CREATE TABLE needed_data AS SELECT a.*, " +
@@ -384,10 +358,11 @@ class RsuIndicatorsTests {
                 "test_road_fraction c WHERE a.id_rsu = b.id_rsu AND a.id_rsu = c.id_rsu;")
 
         def pfin = Geoclimate.RsuIndicators.perviousnessFraction()
-        pfin.execute([rsuTable: "needed_data", operationsAndComposition: ["pervious_fraction" : ["low_vegetation_fraction",
-                                                                                                 "water_fraction"], "impervious_fraction" :
-                                                                                  ["ground_road_fraction"]], prefixName: "test",
-                      datasource: h2GIS])
+        assertTrue pfin.execute([rsuTable: "needed_data",
+                                 operationsAndComposition: [
+                                         "pervious_fraction" : ["low_vegetation_fraction", "water_fraction"],
+                                         "impervious_fraction" : ["ground_road_fraction"]],
+                                 prefixName: "test", datasource: h2GIS])
         def concat = ["", ""]
         h2GIS.eachRow("SELECT * FROM test_perviousness_fraction WHERE id_rsu = 14 OR id_rsu = 15"){
             row ->
