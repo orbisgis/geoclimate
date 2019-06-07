@@ -36,15 +36,14 @@ static IProcess initParametersAbstract(){
             ],
             {JdbcDataSource datasource ->
                 logger.info('Executing the parametersAndAbstractTables.sql script')
-                def uuid = UUID.randomUUID().toString().replaceAll('-', '_')
-                def buildingAbstractUseType = 'BUILDING_ABSTRACT_USE_TYPE_' + uuid
-                def buildingAbstractParam = 'BUILDING_ABSTRACT_PARAMETERS_' + uuid
-                def roadAbstractType = 'ROAD_ABSTRACT_TYPE_' + uuid
-                def roadAbstractSurface = 'ROAD_ABSTRACT_SURFACE_' + uuid
-                def roadAbstractParam = 'ROAD_ABSTRACT_PARAMETERS_' + uuid
-                def railAbstractType = 'RAIL_ABSTRACT_TYPE_' + uuid
-                def vegetAbstractType = 'VEGET_ABSTRACT_TYPE_' + uuid
-                def vegetAbstractParam = 'VEGET_ABSTRACT_PARAMETERS_' + uuid
+                def buildingAbstractUseType = 'BUILDING_ABSTRACT_USE_TYPE'
+                def buildingAbstractParam = 'BUILDING_ABSTRACT_PARAMETERS'
+                def roadAbstractType = 'ROAD_ABSTRACT_TYPE'
+                def roadAbstractSurface = 'ROAD_ABSTRACT_SURFACE'
+                def roadAbstractParam = 'ROAD_ABSTRACT_PARAMETERS'
+                def railAbstractType = 'RAIL_ABSTRACT_TYPE'
+                def vegetAbstractType = 'VEGET_ABSTRACT_TYPE'
+                def vegetAbstractParam = 'VEGET_ABSTRACT_PARAMETERS'
 
                 datasource.executeScript(getClass().getResourceAsStream('parametersAndAbstractTables.sql'),
                         [BUILDING_ABSTRACT_USE_TYPE: buildingAbstractUseType,
