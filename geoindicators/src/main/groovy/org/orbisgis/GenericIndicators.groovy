@@ -146,7 +146,7 @@ static IProcess weightedAggregatedStatistics() {
                 weightedMeanQuery += nameAndType[0..-2] + ") AS (SELECT b.$inputIdUp, ${weightedMean[0..-2]}" +
                         " FROM $inputLowerScaleTableName a RIGHT JOIN $inputUpperScaleTableName b " +
                         "ON a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp)"
-                datasource.execute(weightedMeanQuery.toString())
+                datasource.execute weightedMeanQuery
 
                 // The weighted std is calculated if needed and only the needed fields are returned
                 def weightedStdQuery = "CREATE INDEX IF NOT EXISTS id_lcorr ON $weighted_mean($inputIdUp); " +

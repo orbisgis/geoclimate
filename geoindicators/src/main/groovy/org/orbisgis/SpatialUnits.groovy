@@ -75,7 +75,7 @@ static IProcess prepareRSUData(){
                 // The name of the outputTableName is constructed
                 def outputTableName = prefixName + "_" + BASE_NAME
 
-                def numberZone = datasource.firstRow("select count(*) as nb from $zoneTable".toString()).nb
+                def numberZone = datasource.firstRow("select count(*) as nb from $zoneTable").nb
 
                 if(numberZone==1){
                     logger.info("Preparing vegetation...")

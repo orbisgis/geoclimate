@@ -138,7 +138,7 @@ static IProcess groundSkyViewFactor() {
                         "the_geom geometry, id_rsu int)"
 
                 // The points used for the SVF calculation should be selected within each RSU
-                datasource.eachRow("SELECT * FROM $rsuTable".toString()) { row ->
+                datasource.eachRow("SELECT * FROM $rsuTable") { row ->
                     // Size of the grid mesh used to sample each RSU (based on the building density + 10%) - if the
                     // building density exceeds 90%, the LCZ 7 building density is then set to 90%
                     def freeAreaDens = Math.max(1 - (row[rsuBuildingDensityColumn] + 0.1), 0.1)
@@ -155,7 +155,7 @@ static IProcess groundSkyViewFactor() {
                             "ST_INTERSECTS(a.the_geom, '${row[GEOMETRIC_COLUMN_RSU]}')"
                     // If there is no point within the RSU (which could be the case for a long and thin RSU), the SVF
                     // is calculated for the centroid of the RSU
-                    if(datasource.firstRow("SELECT COUNT(*) AS NB FROM $ptsRSUtempo".toString())["NB"] == 0){
+                    if(datasource.firstRow("SELECT COUNT(*) AS NB FROM $ptsRSUtempo")["NB"] == 0){
                         datasource.execute "DROP TABLE IF EXISTS $ptsRSUtempo; CREATE TABLE $ptsRSUtempo AS SELECT " +
                                 "1 AS pk, ST_CENTROID('${row[GEOMETRIC_COLUMN_RSU]}') AS the_geom, " +
                                 "${row[ID_COLUMN_RSU]} AS id_rsu"
@@ -383,7 +383,7 @@ static IProcess projectedFacadeAreaDistribution() {
                     layerQuery += "CASEWHEN(z_max >= ${listLayersBottom[listLayersBottom.size() - 1]}, " +
                             "z_max-GREATEST(z_min,${listLayersBottom[listLayersBottom.size() - 1]}), 0) " +
                             "AS ${names[listLayersBottom.size() - 1]} FROM $buildingFree"
-                    datasource.execute(layerQuery.toString())
+                    datasource.execute layerQuery
 
                     // Names and types of all columns are then useful when calling sql queries
                     def namesAndType = ""
@@ -423,9 +423,9 @@ static IProcess projectedFacadeAreaDistribution() {
                         def onlyNamesDir = ""
                         def onlyNamesDirB = ""
                         for (n in names) {
-                            namesAndTypeDir += " " + n + "D" + (dirDeg + dirMedDeg).toString() + " double,"
-                            onlyNamesDir += " " + n + "D" + (dirDeg + dirMedDeg).toString() + ","
-                            onlyNamesDirB += " b." + n + "D" + (dirDeg + dirMedDeg).toString() + ","
+                            namesAndTypeDir += " " + n + "D" + (dirDeg + dirMedDeg) + " double,"
+                            onlyNamesDir += " " + n + "D" + (dirDeg + dirMedDeg) + ","
+                            onlyNamesDirB += " b." + n + "D" + (dirDeg + dirMedDeg) + ","
                         }
 
                         // To calculate the indicator for a new wind direction, the free facades are rotated
