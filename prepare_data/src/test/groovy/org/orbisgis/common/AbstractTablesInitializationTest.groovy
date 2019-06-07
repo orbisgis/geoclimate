@@ -7,7 +7,6 @@ import org.orbisgis.PrepareData
 import org.orbisgis.datamanager.h2gis.H2GIS
 
 import static org.junit.jupiter.api.Assertions.assertNotNull
-import static org.junit.jupiter.api.Assertions.assertNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 class AbstractTablesInitializationTest {
@@ -24,10 +23,11 @@ class AbstractTablesInitializationTest {
     @Test
     @EnabledIfSystemProperty(named = "test.bdtopo", matches = "true")
     void initParametersAbstract(){
-        H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb")
+        H2GIS h2GISDatabase = H2GIS.open(bdTopoDb-".mv.db", "sa", "")
         def process = PrepareData.AbstractTablesInitialization.initParametersAbstract()
         assertTrue process.execute([datasource: h2GISDatabase])
         process.getResults().each {entry ->
+            println(entry)
             assertNotNull h2GISDatabase.getTable(entry.getValue())
         }
     }

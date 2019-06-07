@@ -64,18 +64,18 @@ static IProcess importPreprocess(){
                 logger.info('Executing the importPreprocess.sql script')
                 def uuid = UUID.randomUUID().toString().replaceAll('-', '_')
                 def tmpIris = 'TMP_IRIS_' + uuid
-                def zone = 'ZONE_' + uuid
+                def zone = 'ZONE'
                 def zoneBuffer = 'ZONE_BUFFER_' + uuid
                 def zoneExtended = 'ZONE_EXTENDED_' + uuid
-                def zoneNeighbors = 'ZONE_NEIGHBORS_' + uuid
+                def zoneNeighbors = 'ZONE_NEIGHBORS'
                 def bu_zone_indif = 'BU_ZONE_INDIF_' + uuid
                 def bu_zone_indus = 'BU_ZONE_INDUS_' + uuid
                 def bu_zone_remarq = 'BU_ZONE_REMARQ_' + uuid
-                def input_building = 'INPUT_BUILDING_' + uuid
-                def input_road = 'INPUT_ROAD_' + uuid
-                def input_rail = 'INPUT_RAIL_' + uuid
-                def input_hydro = 'INPUT_HYDRO_' + uuid
-                def input_veget = 'INPUT_VEGET_' + uuid
+                def input_building = 'INPUT_BUILDING'
+                def input_road = 'INPUT_ROAD'
+                def input_rail = 'INPUT_RAIL'
+                def input_hydro = 'INPUT_HYDRO'
+                def input_veget = 'INPUT_VEGET'
 
                 datasource.executeScript(getClass().getResourceAsStream('importPreprocess.sql'),
                         [ID_ZONE: idZone, DIST_BUFFER: distBuffer, EXPAND: expand, IRIS_GE: tableIrisName,
@@ -95,9 +95,9 @@ static IProcess importPreprocess(){
 
                 logger.info('The importPreprocess.sql script has been executed')
 
-                        [outputBuildingName: 'INPUT_BUILDING', outputRoadName: 'INPUT_ROAD',
-                         outputRailName: 'INPUT_RAIL', outputHydroName: 'INPUT_HYDRO', outputVegetName: 'INPUT_VEGET',
-                         outputZoneName: 'ZONE', outputZoneNeighborsName: 'ZONE_NEIGHBORS'
+                        [outputBuildingName: input_building, outputRoadName: input_road,
+                         outputRailName: input_rail, outputHydroName: input_hydro, outputVegetName: input_veget,
+                         outputZoneName: zone, outputZoneNeighborsName: zoneNeighbors
                         ]
             }
     )
@@ -129,11 +129,10 @@ static IProcess initTypes(){
             ],
             {JdbcDataSource datasource, buildingAbstractUseType, roadAbstractType, railAbstractType, vegetAbstractType ->
                 logger.info('Executing the typesMatching.sql script')
-                def uuid = UUID.randomUUID().toString().replaceAll('-', '_')
-                def buildingBDTopoUseType = 'BUILDING_BD_TOPO_USE_TYPE_' + uuid
-                def roadBDTopoType = 'ROAD_BD_TOPO_TYPE_' + uuid
-                def railBDTopoType = 'RAIL_BD_TOPO_TYPE_' + uuid
-                def vegetBDTopoType = 'VEGET_BD_TOPO_TYPE_' + uuid
+                def buildingBDTopoUseType = 'BUILDING_BD_TOPO_USE_TYPE'
+                def roadBDTopoType = 'ROAD_BD_TOPO_TYPE'
+                def railBDTopoType = 'RAIL_BD_TOPO_TYPE'
+                def vegetBDTopoType = 'VEGET_BD_TOPO_TYPE'
 
                 datasource.executeScript(getClass().getResourceAsStream('typesMatching.sql'),
                         [BUILDING_ABSTRACT_USE_TYPE: buildingAbstractUseType,
@@ -148,8 +147,8 @@ static IProcess initTypes(){
 
                 logger.info('The typesMatching.sql script has been executed')
 
-                [outputBuildingBDTopoUseType: 'BUILDING_BD_TOPO_USE_TYPE', outputroadBDTopoType: 'ROAD_BD_TOPO_TYPE',
-                 outputrailBDTopoType: 'RAIL_BD_TOPO_TYPE', outputvegetBDTopoType:'VEGET_BD_TOPO_TYPE'
+                [outputBuildingBDTopoUseType: buildingBDTopoUseType, outputroadBDTopoType: roadBDTopoType,
+                 outputrailBDTopoType: railBDTopoType, outputvegetBDTopoType: vegetBDTopoType
                 ]
             }
     )
