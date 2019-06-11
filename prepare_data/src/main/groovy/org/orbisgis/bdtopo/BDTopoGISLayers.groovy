@@ -75,7 +75,6 @@ static IProcess importPreprocess(){
                 def input_hydro = 'INPUT_HYDRO'
                 def input_veget = 'INPUT_VEGET'
 
-<<<<<<< HEAD
                 datasource.executeScript(getClass().getResourceAsStream('importPreprocess.sql'),
                         [ID_ZONE                    : idZone,                   DIST_BUFFER                 : distBuffer,
                          EXPAND                     : expand,                   IRIS_GE                     : tableIrisName,
@@ -93,37 +92,6 @@ static IProcess importPreprocess(){
                          ROAD_BD_TOPO_TYPE          : road_bd_topo_type,        ROAD_ABSTRACT_TYPE          : road_abstract_type,
                          RAIL_BD_TOPO_TYPE          : rail_bd_topo_type,        RAIL_ABSTRACT_TYPE          : rail_abstract_type,
                          VEGET_BD_TOPO_TYPE         : veget_bd_topo_type,       VEGET_ABSTRACT_TYPE         : veget_abstract_type
-=======
-                /*--------------------------------------------------------------------------------------------------
-                -- 2- Create (spatial) indexes if not already exists on the input layers
-                --------------------------------------------------------------------------------------------------*/
-
-                datasource.execute("CREATE INDEX IF NOT EXISTS idx_geom ON $tableIrisName(the_geom) USING RTREE;"+
-                        "CREATE INDEX IF NOT EXISTS idx_insee ON $tableIrisName(INSEE_COM);"+
-                        "CREATE INDEX IF NOT EXISTS idx_geom ON $tableBuildIndifName(the_geom) USING RTREE;"+
-                        "CREATE INDEX IF NOT EXISTS idx_geom ON $tableBuildIndusName(the_geom) USING RTREE;"+
-                        "CREATE INDEX IF NOT EXISTS idx_geom ON $tableBuildRemarqName(the_geom) USING RTREE;"+
-                        "CREATE INDEX IF NOT EXISTS idx_geom ON $tableRoadName(the_geom) USING RTREE;"+
-                        "CREATE INDEX IF NOT EXISTS idx_geom ON $tableRailName(the_geom) USING RTREE;"+
-                        "CREATE INDEX IF NOT EXISTS idx_geom ON $tableHydroName(the_geom) USING RTREE;"+
-                        "CREATE INDEX IF NOT EXISTS idx_geom ON $tableVegetName(the_geom) USING RTREE;")
-
-
-                datasource.executeScript(getClass().getResourceAsStream('importPreprocess.sql'),
-                        [ID_ZONE: idZone, DIST_BUFFER: distBuffer, EXPAND: expand, IRIS_GE: tableIrisName,
-                         BATI_INDIFFERENCIE: tableBuildIndifName, BATI_INDUSTRIEL: tableBuildIndusName,
-                         BATI_REMARQUABLE: tableBuildRemarqName, ROUTE: tableRoadName, TRONCON_VOIE_FERREE: tableRailName,
-                         SURFACE_EAU: tableHydroName,ZONE_VEGETATION: tableVegetName,
-                         TMP_IRIS: tmpIris, ZONE: zone, ZONE_BUFFER: zoneBuffer, ZONE_EXTENDED: zoneExtended,
-                         ZONE_NEIGHBORS: zoneNeighbors, BU_ZONE_INDIF: bu_zone_indif, BU_ZONE_INDUS: bu_zone_indus,
-                         BU_ZONE_REMARQ: bu_zone_remarq, INPUT_BUILDING: input_building, INPUT_ROAD: input_road,
-                         INPUT_RAIL: input_rail, INPUT_HYDRO: input_hydro, INPUT_VEGET: input_veget,
-                         BUILDING_BD_TOPO_USE_TYPE: building_bd_topo_use_type,
-                         BUILDING_ABSTRACT_USE_TYPE: building_abstract_use_type, ROAD_BD_TOPO_TYPE: road_bd_topo_type,
-                         ROAD_ABSTRACT_TYPE: road_abstract_type, RAIL_BD_TOPO_TYPE: rail_bd_topo_type,
-                         RAIL_ABSTRACT_TYPE: rail_abstract_type, VEGET_BD_TOPO_TYPE: veget_bd_topo_type,
-                         VEGET_ABSTRACT_TYPE: veget_abstract_type
->>>>>>> 65f89ef2b413b2b61c08ccf1528a3fec617893e1
                         ])
 
                 logger.info('The importPreprocess.sql script has been executed')

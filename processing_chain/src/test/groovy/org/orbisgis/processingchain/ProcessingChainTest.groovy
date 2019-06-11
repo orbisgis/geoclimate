@@ -21,10 +21,11 @@ class ProcessingChainTest {
                 Boolean.toString(ProcessingChainTest.getResource("geoclimate_bdtopo_data_test") != null))
     }
 
+    /*
     @EnabledIfSystemProperty(named = "test.processingchain", matches = "true")
     @Test
     void BDTopoProcessingChainTest(){
-        H2GIS h2GIS = H2GIS.open("./target/processingchaindb")
+        H2GIS h2GIS = H2GIS.open("./target/processingchaindb", "sa", "")
 
         h2GIS.load(new File(this.class.getResource("geoclimate_bdtopo_data_test/IRIS_GE.geojson").toURI()).getAbsolutePath(),"IRIS_GE",true)
         h2GIS.load(new File(this.class.getResource("geoclimate_bdtopo_data_test/BATI_INDIFFERENCIE.geojson").toURI()).getAbsolutePath(),"BATI_INDIFFERENCIE",true)
@@ -45,6 +46,7 @@ class ProcessingChainTest {
             entry -> assertNull h2GIS.getTable(entry.getValue())
         }
     }
+*/
 
     @Test
     void PrepareOSMTest() {
@@ -292,7 +294,7 @@ class ProcessingChainTest {
                 "sugar cane":["produce":["sugar_cane"],"crop":["sugar_cane"]]
         ]
 
-         H2GIS h2GIS = H2GIS.open("./target/osm_processchain")
+         H2GIS h2GIS = H2GIS.open("./target/osm_processchain", "sa", "")
 
          prepareOSMData.execute([
                 hLevMin: 3,
@@ -350,7 +352,7 @@ class ProcessingChainTest {
 
     @Test
     void CreateUnitsOfAnalysisTest(){
-        H2GIS h2GIS = H2GIS.open("./target/processingchainscales")
+        H2GIS h2GIS = H2GIS.open("./target/processingchainscales", "sa", "")
         String sqlString = new File(getClass().getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
 
@@ -381,7 +383,7 @@ class ProcessingChainTest {
 
     @Test
     void createLCZTest(){
-        H2GIS h2GIS = H2GIS.open("./target/processinglcz")
+        H2GIS h2GIS = H2GIS.open("./target/processinglcz", "sa", "")
         String sqlString = new File(getClass().getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
 
@@ -431,7 +433,7 @@ class ProcessingChainTest {
         dirFile.delete()
         dirFile.mkdir()
 
-        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osmchain_indicators")
+        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osmchain_indicators", "sa", "")
 
         //Extract and transform OSM data
         IProcess prepareOSMData = ProcessingChain.PrepareOSM.prepareOSMDefaultConfig()
@@ -497,7 +499,7 @@ class ProcessingChainTest {
         dirFile.delete()
         dirFile.mkdir()
 
-        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osmchain_geoindicators")
+        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osmchain_geoindicators", "sa", "")
 
         String zoneTableName="zone"
         String buildingTableName="building"
@@ -637,7 +639,7 @@ class ProcessingChainTest {
         dirFile.delete()
         dirFile.mkdir()
 
-        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osmchain_geoindicators")
+        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osmchain_geoindicators", "sa", "")
 
         String zoneTableName="zone"
         String buildingTableName="building"
