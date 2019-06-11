@@ -133,20 +133,20 @@ static IProcess inputDataFormatting(){
                 def vegetTypeRange = 'VEGET_TYPE_RANGE_' + uuid
 
                 //Final output table names
-                def BUILDING = 'BUILDING'
-                def BUILDING_STATS_ZONE = 'BUILDING_STATS_ZONE'
-                def BUILDING_STATS_EXT_ZONE = 'BUILDING_STATS_EXT_ZONE'
-                def ROAD='ROAD'
-                def ROAD_STATS_ZONE='ROAD_STATS_ZONE'
-                def ROAD_STATS_EXT_ZONE='ROAD_STATS_EXT_ZONE'
-                def RAIL ='RAIL'
-                def RAIL_STATS_ZONE='RAIL_STATS_ZONE'
-                def HYDRO ='HYDRO'
-                def HYDRO_STATS_ZONE = 'HYDRO_STATS_ZONE'
-                def HYDRO_STATS_EXT_ZONE='HYDRO_STATS_EXT_ZONE'
-                def VEGET ='VEGET'
-                def VEGET_STATS_ZONE='VEGET_STATS_ZONE'
-                def VEGET_STATS_EXT_ZONE='VEGET_STATS_EXT_ZONE'
+                def building = 'BUILDING'
+                def buildingStatsZone = 'BUILDING_STATS_ZONE'
+                def buildingStatsExtZone = 'BUILDING_STATS_EXT_ZONE'
+                def road='ROAD'
+                def roadStatsZone='ROAD_STATS_ZONE'
+                def roadStatsExtZone='ROAD_STATS_EXT_ZONE'
+                def rail ='RAIL'
+                def railStatsZone='RAIL_STATS_ZONE'
+                def hydro ='HYDRO'
+                def hydroStatsZone = 'HYDRO_STATS_ZONE'
+                def hydroStatsExtZone='HYDRO_STATS_EXT_ZONE'
+                def veget ='VEGET'
+                def vegetStatsZone='VEGET_STATS_ZONE'
+                def vegetStatsExtZone='VEGET_STATS_EXT_ZONE'
 
                 //Run the sql script
                 datasource.executeScript(getClass().getResourceAsStream('inputDataFormatting.sql'),
@@ -178,22 +178,22 @@ static IProcess inputDataFormatting(){
                              VEGET_NUM_ZONE            : vegetNumZone, VEGET_VALID: vegetValid, VEGET_EMPTY: vegetEmpty,
                              VEGET_EQUALS              : vegetEquals, VEGET_OVERLAP: vegetOverlap, VEGET_TYPE: vegetType,
                              VEGET_TYPE_RANGE          : vegetTypeRange,
-                             BUILDING                  : BUILDING, BUILDING_STATS_ZONE: BUILDING_STATS_ZONE,
-                             BUILDING_STATS_EXT_ZONE   : BUILDING_STATS_EXT_ZONE, ROAD: ROAD, ROAD_STATS_ZONE: ROAD_STATS_ZONE,
-                             ROAD_STATS_EXT_ZONE       : ROAD_STATS_EXT_ZONE, RAIL: RAIL,
-                             RAIL_STATS_ZONE           : RAIL_STATS_ZONE, HYDRO: HYDRO, HYDRO_STATS_ZONE: HYDRO_STATS_ZONE,
-                             HYDRO_STATS_EXT_ZONE      : HYDRO_STATS_EXT_ZONE, VEGET: VEGET, VEGET_STATS_ZONE: VEGET_STATS_ZONE,
-                             VEGET_STATS_EXT_ZONE      : VEGET_STATS_EXT_ZONE,FC_BUILD_H_RANGE:fcBuildHRange
+                             BUILDING                  : building, BUILDING_STATS_ZONE: buildingStatsZone,
+                             BUILDING_STATS_EXT_ZONE   : buildingStatsExtZone, ROAD: road, ROAD_STATS_ZONE: roadStatsZone,
+                             ROAD_STATS_EXT_ZONE       : roadStatsExtZone, RAIL: rail,
+                             RAIL_STATS_ZONE           : railStatsZone, HYDRO: hydro, HYDRO_STATS_ZONE: hydroStatsZone,
+                             HYDRO_STATS_EXT_ZONE      : hydroStatsExtZone, VEGET: veget, VEGET_STATS_ZONE: vegetStatsZone,
+                             VEGET_STATS_EXT_ZONE      : vegetStatsExtZone,FC_BUILD_H_RANGE:fcBuildHRange
                             ])
 
                 logger.info('The inputDataFormatting.sql script has been executed')
 
-                [outputBuilding: BUILDING,
-                 outputBuildingStatZone: BUILDING_STATS_ZONE, outputBuildingStatZoneBuff: BUILDING_STATS_EXT_ZONE,
-                 outputRoad: ROAD, outputRoadStatZone: ROAD_STATS_ZONE, outputRoadStatZoneBuff: ROAD_STATS_EXT_ZONE,
-                 outputRail: RAIL, outputRailStatZone: RAIL_STATS_ZONE,
-                 outputHydro: HYDRO, outputHydroStatZone: HYDRO_STATS_ZONE, outputHydroStatZoneExt: HYDRO_STATS_EXT_ZONE,
-                 outputVeget: VEGET, outputVegetStatZone: VEGET_STATS_ZONE, outputVegetStatZoneExt: VEGET_STATS_EXT_ZONE,
+                [outputBuilding: building,
+                 outputBuildingStatZone: buildingStatsZone, outputBuildingStatZoneBuff: buildingStatsExtZone,
+                 outputRoad: road, outputRoadStatZone: roadStatsZone, outputRoadStatZoneBuff: roadStatsExtZone,
+                 outputRail: rail, outputRailStatZone: railStatsZone,
+                 outputHydro: hydro, outputHydroStatZone: hydroStatsZone, outputHydroStatZoneExt: hydroStatsExtZone,
+                 outputVeget: veget, outputVegetStatZone: vegetStatsZone, outputVegetStatZoneExt: vegetStatsExtZone,
                  outputZone: inputZone
                 ]
             }
