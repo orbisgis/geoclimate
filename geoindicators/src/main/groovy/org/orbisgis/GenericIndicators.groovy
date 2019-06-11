@@ -2,7 +2,6 @@ package org.orbisgis
 
 import groovy.transform.BaseScript
 import org.orbisgis.datamanager.JdbcDataSource
-import org.orbisgis.datamanagerapi.dataset.ITable
 import org.orbisgis.processmanagerapi.IProcess
 
 
@@ -32,57 +31,63 @@ import org.orbisgis.processmanagerapi.IProcess
  * @author Jérémy Bernard
  */
 static IProcess unweightedOperationFromLowerScale() {
-return processFactory.create(
-        "Unweighted statistical operations from lower scale",
-        [inputLowerScaleTableName: String,inputUpperScaleTableName: String, inputIdUp: String,
-         inputVarAndOperations: Map, prefixName: String, datasource: JdbcDataSource],
-        [outputTableName : String],
-        { inputLowerScaleTableName, inputUpperScaleTableName, inputIdUp,
-          inputVarAndOperations, prefixName, datasource ->
+    def final GEOMETRIC_FIELD_UP = "the_geom"
+    def final BASE_NAME = "unweighted_operation_from_lower_scale"
+    def final SUM = "SUM"
+    def final AVG = "AVG"
+    def final GEOM_AVG = "GEOM_AVG"
+    def final DENS = "DENS"
+    def final NB_DENS = "NB_DENS"
 
-            logger.info("Executing Unweighted statistical operations from lower scale")
+    return processFactory.create(
+            "Unweighted statistical operations from lower scale",
+            [inputLowerScaleTableName: String,inputUpperScaleTableName: String, inputIdUp: String,
+                    inputVarAndOperations: Map, prefixName: String, datasource: JdbcDataSource],
+            [outputTableName : String],
+            { inputLowerScaleTableName, inputUpperScaleTableName, inputIdUp, inputVarAndOperations, prefixName,
+                    datasource ->
 
-            def geometricFieldUp = "the_geom"
+                logger.info("Executing Unweighted statistical operations from lower scale")
 
-            // The name of the outputTableName is constructed
-            String baseName = "unweighted_operation_from_lower_scale"
-            String outputTableName = prefixName + "_" + baseName
+                // The name of the outputTableName is constructed
+                def outputTableName = prefixName + "_" + BASE_NAME
 
-            // List of possible operations
-            def ops = ["SUM","AVG", "GEOM_AVG", "DENS", "NB_DENS"]
+                def query = "CREATE INDEX IF NOT EXISTS id_l ON $inputLowerScaleTableName($inputIdUp); "+
+                                "CREATE INDEX IF NOT EXISTS id_ucorr ON $inputUpperScaleTableName($inputIdUp); "+
+                                "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
 
-            String query = "CREATE INDEX IF NOT EXISTS id_l ON $inputLowerScaleTableName($inputIdUp); "+
-                            "CREATE INDEX IF NOT EXISTS id_ucorr ON $inputUpperScaleTableName($inputIdUp); "+
-                            "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
-
-
-            inputVarAndOperations.each {var, operations ->
-                operations.each{op ->
-                    op = op.toUpperCase()
-                    if(ops.contains(op)){
-                        if(op=="GEOM_AVG"){
-                            query += "COALESCE(EXP(1.0/COUNT(*)*SUM(LOG(a.$var))),0) AS ${op+"_"+var},"
-                        }
-                        else if(op=="DENS"){
-                            query += "COALESCE(SUM(a.$var::float)/ST_AREA(b.$geometricFieldUp),0) AS ${op+"_"+var},"
-                        }
-                        else if(op=="NB_DENS"){
-                            query += "COALESCE(COUNT(a.*)/ST_AREA(b.$geometricFieldUp),0) AS ${op+"_"+var},"
-                        }
-                        else{
-                            query += "$op(a.$var::float) AS ${op+"_"+var},"
+                inputVarAndOperations.each {var, operations ->
+                    operations.each{op ->
+                        op = op.toUpperCase()
+                        switch(op){
+                            case GEOM_AVG:
+                                query += "COALESCE(EXP(1.0/COUNT(*)*SUM(LOG(a.$var))),0) AS ${op+"_"+var},"
+                                break
+                            case DENS:
+                                query += "COALESCE(SUM(a.$var::float)/ST_AREA(b.$GEOMETRIC_FIELD_UP),0) AS ${op+"_"+var},"
+                                break
+                            case NB_DENS:
+                                query += "COALESCE(COUNT(a.*)/ST_AREA(b.$GEOMETRIC_FIELD_UP),0) AS ${op+"_"+var},"
+                                break
+                            case SUM:
+                            case AVG:
+                                query += "$op(a.$var::float) AS ${op+"_"+var},"
+                                break
+                            default:
+                                break
                         }
                     }
+
                 }
+                query += "b.$inputIdUp FROM $inputLowerScaleTableName a RIGHT JOIN $inputUpperScaleTableName b " +
+                        "ON a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp"
 
-            }
-            query += "b.$inputIdUp FROM $inputLowerScaleTableName a RIGHT JOIN $inputUpperScaleTableName b " +
-                    "ON a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp"
+                datasource.execute query
 
-            datasource.execute query
-            [outputTableName: outputTableName]
+                [outputTableName: outputTableName]
             }
-    )}
+    )
+}
 
 /**
  * This process is used to compute weighted average and standard deviation on a specific variable from a lower scale (for
@@ -105,27 +110,26 @@ return processFactory.create(
  * @author Jérémy Bernard
  */
 static IProcess weightedAggregatedStatistics() {
+    def final AVG = "AVG"
+    def final STD = "STD"
+    def final BASE_NAME = "weighted_aggregated_statistics"
+
     return processFactory.create(
             "Weighted statistical operations from lower scale",
             [inputLowerScaleTableName: String,inputUpperScaleTableName: String, inputIdUp: String,
-             inputVarWeightsOperations: Map, prefixName: String, datasource: JdbcDataSource],
+                    inputVarWeightsOperations: Map, prefixName: String, datasource: JdbcDataSource],
             [outputTableName : String],
-            { inputLowerScaleTableName, inputUpperScaleTableName, inputIdUp,
-              inputVarWeightsOperations, prefixName, datasource ->
+            { inputLowerScaleTableName, inputUpperScaleTableName, inputIdUp, inputVarWeightsOperations, prefixName,
+                    datasource ->
 
                 logger.info("Executing Weighted statistical operations from lower scale")
 
-                def ops = ["AVG", "STD"]
-
                 // The name of the outputTableName is constructed
-                String baseName = "weighted_aggregated_statistics"
-                String outputTableName = prefixName + "_" + baseName
+                String outputTableName = prefixName + "_" + BASE_NAME
 
                 // To avoid overwriting the output files of this step, a unique identifier is created
-                def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
-
                 // Temporary table names
-                def weighted_mean = "weighted_mean"+uid_out
+                def weighted_mean = "weighted_mean" + uuid()
 
                 // The weighted mean is calculated in all cases since it is useful for the STD calculation
                 def weightedMeanQuery = "CREATE INDEX IF NOT EXISTS id_l ON $inputLowerScaleTableName($inputIdUp); "+
@@ -142,7 +146,7 @@ static IProcess weightedAggregatedStatistics() {
                 weightedMeanQuery += nameAndType[0..-2] + ") AS (SELECT b.$inputIdUp, ${weightedMean[0..-2]}" +
                         " FROM $inputLowerScaleTableName a RIGHT JOIN $inputUpperScaleTableName b " +
                         "ON a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp)"
-                datasource.execute(weightedMeanQuery.toString())
+                datasource.execute weightedMeanQuery
 
                 // The weighted std is calculated if needed and only the needed fields are returned
                 def weightedStdQuery = "CREATE INDEX IF NOT EXISTS id_lcorr ON $weighted_mean($inputIdUp); " +
@@ -151,10 +155,10 @@ static IProcess weightedAggregatedStatistics() {
                     weights.each{weight, operations ->
                         // The operation names are transformed into upper case
                         operations.replaceAll({s -> s.toUpperCase()})
-                        if(operations.contains("AVG")) {
+                        if(operations.contains(AVG)) {
                             weightedStdQuery += "b.weighted_avg_${var}_$weight,"
                         }
-                        if(operations.contains("STD")) {
+                        if(operations.contains(STD)) {
                             weightedStdQuery += "POWER(SUM(a.$weight*POWER(a.$var-b.weighted_avg_${var}_$weight,2))/" +
                                     "SUM(a.$weight),0.5) AS weighted_std_${var}_$weight,"
                         }
@@ -166,11 +170,12 @@ static IProcess weightedAggregatedStatistics() {
                 datasource.execute weightedStdQuery
 
                 // The temporary tables are deleted
-                datasource.execute("DROP TABLE IF EXISTS $weighted_mean".toString())
+                datasource.execute "DROP TABLE IF EXISTS $weighted_mean"
 
                 [outputTableName: outputTableName]
             }
-    )}
+    )
+}
 
 /**
  * This process extract geometry properties.
@@ -188,39 +193,40 @@ static IProcess weightedAggregatedStatistics() {
  * @author Erwan Bocher
  */
 static IProcess geometryProperties() {
+    def final GEOMETRIC_FIELD = "the_geom"
+    def final OPS = ["st_geomtype","st_srid", "st_length","st_perimeter","st_area", "st_dimension",
+               "st_coorddim", "st_num_geoms", "st_num_pts", "st_issimple", "st_isvalid", "st_isempty"]
+    def final BASE_NAME = "geometry_properties"
+
     return processFactory.create(
             "Geometry properties",
-            [inputTableName: String,inputFields:String[],operations: String[]
-             , prefixName: String, datasource: JdbcDataSource],
+            [inputTableName: String,inputFields:String[],operations: String[], prefixName: String,
+                    datasource: JdbcDataSource],
             [outputTableName : String],
             { inputTableName,inputFields, operations, prefixName, datasource ->
 
                 logger.info("Executing Geometry properties")
 
-                def geometricField = "the_geom";
-                def ops = ["st_geomtype","st_srid", "st_length","st_perimeter","st_area", "st_dimension",
-                           "st_coorddim", "st_num_geoms", "st_num_pts", "st_issimple", "st_isvalid", "st_isempty"]
-
                 // The name of the outputTableName is constructed
-                String baseName = "geometry_properties"
-                String outputTableName = prefixName + "_" + baseName
+                def outputTableName = prefixName + "_" + BASE_NAME
 
-                String query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
+                def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
 
                 // The operation names are transformed into lower case
-                operations.replaceAll({s -> s.toLowerCase()})
-
+                operations.replaceAll {s -> s.toLowerCase()}
                 operations.each {operation ->
-                    if(ops.contains(operation)){
-                        query += "$operation($geometricField) as ${operation.substring(3)},"
+                    if(OPS.contains(operation)){
+                        query += "$operation($GEOMETRIC_FIELD) as ${operation.substring(3)},"
                     }
                 }
-                query+= "${inputFields.join(",")} from $inputTableName"
+                query += "${inputFields.join(",")} from $inputTableName"
 
                 datasource.execute query
+
                 [outputTableName: outputTableName]
             }
-    )}
+    )
+}
 
 
 /**
@@ -242,85 +248,83 @@ static IProcess geometryProperties() {
  * @author Jérémy Bernard
  */
 static IProcess perkinsSkillScoreBuildingDirection() {
+    def final GEOMETIC_FIELD = "the_geom"
+    def final ID_FIELD_BU = "id_build"
+
     return processFactory.create(
             "Block Perkins skill score building direction",
-            [buildingTableName: String, inputIdUp: String, angleRangeSize: int, prefixName: String, datasource: JdbcDataSource],
+            [buildingTableName: String, inputIdUp: String, angleRangeSize: 15, prefixName: String,
+                    datasource: JdbcDataSource],
             [outputTableName : String],
-            { buildingTableName, inputIdUp, angleRangeSize = 15, prefixName, datasource->
+            { buildingTableName, inputIdUp, angleRangeSize, prefixName, datasource->
 
                 logger.info("Executing Block Perkins skill score building direction")
-
-                def geometricField = "the_geom"
-                def idFieldBu = "id_build"
 
                 // The name of the outputTableName is constructed
                 String baseName = inputIdUp[3..-1]+"_perkins_skill_score_building_direction"
                 String outputTableName = prefixName + "_" + baseName
 
                 // Test whether the angleRangeSize is a divisor of 180°
-                if (180%angleRangeSize==0 & 180/angleRangeSize>1){
+                if ((180 % angleRangeSize) == 0 && (180 / angleRangeSize) > 1){
                     // To avoid overwriting the output files of this step, a unique identifier is created
-                    def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
-
                     // Temporary table names
-                    def build_min_rec = "build_min_rec"+uid_out
-                    def build_dir360 = "build_dir360"+uid_out
-                    def build_dir180 = "build_dir180"+uid_out
-                    def build_dir_dist = "build_dir_dist"+uid_out
-                    def build_dir_tot = "build_dir_tot"+uid_out
+                    def build_min_rec = "build_min_rec" + uuid()
+                    def build_dir360 = "build_dir360" + uuid()
+                    def build_dir180 = "build_dir180" + uuid()
+                    def build_dir_dist = "build_dir_dist" + uuid()
+                    def build_dir_tot = "build_dir_tot" + uuid()
 
                     // The minimum diameter of the minimum rectangle is created for each building
-                    datasource.execute(("DROP TABLE IF EXISTS $build_min_rec; CREATE TABLE $build_min_rec AS "+
-                            "SELECT $idFieldBu, $inputIdUp, ST_MINIMUMDIAMETER(ST_MINIMUMRECTANGLE($geometricField)) "+
-                            "AS the_geom FROM $buildingTableName").toString())
+                    datasource.execute "DROP TABLE IF EXISTS $build_min_rec; CREATE TABLE $build_min_rec AS "+
+                            "SELECT $ID_FIELD_BU, $inputIdUp, ST_MINIMUMDIAMETER(ST_MINIMUMRECTANGLE($GEOMETIC_FIELD)) "+
+                            "AS the_geom FROM $buildingTableName"
 
                     // The length and direction of the smallest and the longest sides of the Minimum rectangle are calculated
-                    datasource.execute(("CREATE INDEX IF NOT EXISTS id_bua ON $buildingTableName($idFieldBu);" +
-                            "CREATE INDEX IF NOT EXISTS id_bua ON $build_min_rec($idFieldBu);" +
+                    datasource.execute "CREATE INDEX IF NOT EXISTS id_bua ON $buildingTableName($ID_FIELD_BU);" +
+                            "CREATE INDEX IF NOT EXISTS id_bua ON $build_min_rec($ID_FIELD_BU);" +
                             "DROP TABLE IF EXISTS $build_dir360; CREATE TABLE $build_dir360 AS "+
                             "SELECT a.$inputIdUp, ST_LENGTH(a.the_geom) AS LEN_L, "+
                             "ST_AREA(b.the_geom)/ST_LENGTH(a.the_geom) AS LEN_H, "+
                             "ROUND(DEGREES(ST_AZIMUTH(ST_STARTPOINT(a.the_geom), ST_ENDPOINT(a.the_geom)))) AS ANG_L, "+
                             "ROUND(DEGREES(ST_AZIMUTH(ST_STARTPOINT(ST_ROTATE(a.the_geom, pi()/2)), "+
                             "ST_ENDPOINT(ST_ROTATE(a.the_geom, pi()/2))))) AS ANG_H FROM $build_min_rec a  "+
-                            "LEFT JOIN $buildingTableName b ON a.$idFieldBu=b.$idFieldBu").toString())
+                            "LEFT JOIN $buildingTableName b ON a.$ID_FIELD_BU=b.$ID_FIELD_BU"
 
                     // The angles are transformed in the [0, 180]° interval
-                    datasource.execute(("DROP TABLE IF EXISTS $build_dir180; CREATE TABLE $build_dir180 AS "+
+                    datasource.execute "DROP TABLE IF EXISTS $build_dir180; CREATE TABLE $build_dir180 AS "+
                             "SELECT $inputIdUp, LEN_L, LEN_H, CASEWHEN(ANG_L>=180, ANG_L-180, ANG_L) AS ANG_L, "+
-                            "CASEWHEN(ANG_H>180, ANG_H-180, ANG_H) AS ANG_H FROM $build_dir360").toString())
+                            "CASEWHEN(ANG_H>180, ANG_H-180, ANG_H) AS ANG_H FROM $build_dir360"
 
                     // The query aiming to create the building direction distribution is created
+                    // The total of building linear of direction is calculated for each block/RSU
+                    // The Perkings Skill score is finally calculated using a last query
+
                     String sqlQueryDist = "DROP TABLE IF EXISTS $build_dir_dist; CREATE TABLE $build_dir_dist AS SELECT "
+                    String sqlQueryTot = "DROP TABLE IF EXISTS $build_dir_tot; CREATE TABLE $build_dir_tot AS SELECT *, "
+                    String sqlQueryPerkins = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT $inputIdUp, "
+
                     for (int i=angleRangeSize; i<180; i+=angleRangeSize){
                         sqlQueryDist += "SUM(CASEWHEN(ANG_L>=${i-angleRangeSize} AND ANG_L<$i, LEN_L, " +
                                 "CASEWHEN(ANG_H>=${i-angleRangeSize} AND ANG_H<$i, LEN_H, 0))) AS ANG$i, "
-                    }
-                    sqlQueryDist += "$inputIdUp FROM $build_dir180 GROUP BY $inputIdUp;"
-                    datasource.execute(sqlQueryDist)
-
-                    // The total of building linear of direction is calculated for each block/RSU
-                    String sqlQueryTot = "DROP TABLE IF EXISTS $build_dir_tot; CREATE TABLE $build_dir_tot AS SELECT *, "
-                    for (int i=angleRangeSize; i<180; i+=angleRangeSize){
                         sqlQueryTot += "ANG$i + "
-                    }
-                    sqlQueryTot = sqlQueryTot[0..-3] + "AS ANG_TOT FROM $build_dir_dist;"
-                    datasource.execute(sqlQueryTot)
-
-                    // The Perkings Skill score is finally calculated using a last query
-                    String sqlQueryPerkins = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT $inputIdUp, "
-                    for (int i=angleRangeSize; i<180; i+=angleRangeSize){
                         sqlQueryPerkins += "LEAST(1./(${180/angleRangeSize}), ANG$i::float/ANG_TOT) + "
                     }
+
+                    sqlQueryDist += "$inputIdUp FROM $build_dir180 GROUP BY $inputIdUp;"
+                    sqlQueryTot = sqlQueryTot[0..-3] + "AS ANG_TOT FROM $build_dir_dist;"
                     sqlQueryPerkins = sqlQueryPerkins[0..-3] + "AS block_perkins_skill_score_building_direction" +
                             " FROM $build_dir_tot;"
+
+                    datasource.execute(sqlQueryDist)
+                    datasource.execute(sqlQueryTot)
                     datasource.execute(sqlQueryPerkins)
 
                     // The temporary tables are deleted
-                    datasource.execute(("DROP TABLE IF EXISTS $build_min_rec, $build_dir360, $build_dir180, "+
-                            "$build_dir_dist, $build_dir_tot").toString())
+                    datasource.execute "DROP TABLE IF EXISTS $build_min_rec, $build_dir360, $build_dir180, "+
+                            "$build_dir_dist, $build_dir_tot"
 
                     [outputTableName: outputTableName]
                 }
             }
-    )}
+    )
+}
