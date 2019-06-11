@@ -8,17 +8,44 @@ import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.processmanager.ProcessMapper
 import org.orbisgis.processmanagerapi.IProcess
 
-import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.junit.jupiter.api.Assertions.assertEquals
 
 class ProcessingChainTest {
 
+    private final static String bdTopoDb = System.getProperty("user.home") + "/myh2gisbdtopodb.mv.db"
+
     @BeforeAll
     static void init(){
         System.setProperty("test.processingchain",
                 Boolean.toString(ProcessingChainTest.getResource("geoclimate_bdtopo_data_test") != null))
+    }
+
+    @Test
+    @EnabledIfSystemProperty(named = "test.bdtopo", matches = "true")
+    void prepareBDTopoTest(){
+        H2GIS h2GISDatabase = H2GIS.open(bdTopoDb-".mv.db", "sa", "")
+        def process = ProcessingChain.PrepareBDTopo.prepareBDTopo()
+        assertTrue process.execute([datasource : h2GISDatabase,
+                                    distBuffer : 500,
+                                    expand : 1000,
+                                    idZone : "56195",
+                                    tableIrisName : "IRIS_GE",
+                                    tableBuildIndifName : "BATI_INDIFFERENCIE",
+                                    tableBuildIndusName : "BATI_INDUSTRIEL",
+                                    tableBuildRemarqName : "BATI_REMARQUABLE",
+                                    tableRoadName : "ROUTE",
+                                    tableRailName : "TRONCON_VOIE_FERREE",
+                                    tableHydroName : "SURFACE_EAU",
+                                    tableVegetName : "ZONE_VEGETATION",
+                                    hLevMin : 3,
+                                    hLevMax : 15,
+                                    hThresholdLev2 : 10])
+        process.getResults().each {
+            entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
+        }
     }
 
     @EnabledIfSystemProperty(named = "test.processingchain", matches = "true")
