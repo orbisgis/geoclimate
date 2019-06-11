@@ -16,23 +16,12 @@ class BDTopoGISLayersTest {
 
     @BeforeAll
     static void init(){
+        //Check if the resource database exists
         boolean isFile = InputDataFormattingTest.getResource("myh2gisbdtopodb.mv.db") != null
         System.setProperty("test.bdtopo", Boolean.toString(isFile))
+        //If the resource exists, copy it into the target folder to avoid working on the original database
         if(isFile) {
-            InputStream is = null
-            OutputStream os = null
-            try {
-                is = InputDataFormattingTest.getResourceAsStream("myh2gisbdtopodb.mv.db")
-                os = new FileOutputStream(bdTopoDb)
-                byte[] buffer = new byte[1024]
-                int length
-                while ((length = is.read(buffer)) > 0) {
-                    os.write(buffer, 0, length)
-                }
-            } finally {
-                is.close()
-                os.close()
-            }
+            bdTopoDb << InputDataFormattingTest.getResourceAsStream("myh2gisbdtopodb.mv.db")
         }
     }
 
