@@ -9,30 +9,32 @@ import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.processmanager.ProcessMapper
 import org.orbisgis.processmanagerapi.IProcess
 
-<<<<<<< HEAD
-=======
+
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertNotNull
->>>>>>> 356d80c11d1ef20886f3797ec4ffa37f2281a0f1
 import static org.junit.jupiter.api.Assertions.assertNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.junit.jupiter.api.Assertions.assertEquals
 
 class ProcessingChainTest {
 
-    private final static String bdTopoDb = System.getProperty("user.home") + "/myh2gisbdtopodb.mv.db"
+    private final static File bdTopoDb = new File("./target/myh2gisbdtopodb.mv.db")
 
     @BeforeAll
     static void init(){
-        System.setProperty("test.processingchain",
-                Boolean.toString(ProcessingChainTest.getResource("geoclimate_bdtopo_data_test") != null))
+        //Check if the resource database exists
+        boolean isFile = ProcessingChain.getResource("myh2gisbdtopodb.mv.db") != null
+        System.setProperty("test.bdtopo", Boolean.toString(isFile))
+        //If the resource exists, copy it into the target folder to avoid working on the original database
+        if(isFile) {
+            bdTopoDb << ProcessingChain.getResourceAsStream("myh2gisbdtopodb.mv.db")
+        }
     }
-
 
     @Test
     @EnabledIfSystemProperty(named = "test.bdtopo", matches = "true")
     void prepareBDTopoTest(){
-        H2GIS h2GISDatabase = H2GIS.open(bdTopoDb-".mv.db", "sa", "")
+        H2GIS h2GISDatabase = H2GIS.open(bdTopoDb.absolutePath-".mv.db", "sa", "")
         def process = ProcessingChain.PrepareBDTopo.prepareBDTopo()
         assertTrue process.execute([datasource: h2GISDatabase, tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -41,8 +43,11 @@ class ProcessingChainTest {
                                     distBuffer: 500, expand: 1000, idZone: '56195',
                                     hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
         ])
-        process.getResults().each {
-            entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
+        process.getResults().each {entry ->
+            if(entry.key == 'outputStats') {
+                entry.value.each{tab -> assertNotNull(h2GISDatabase.getTable(tab))}
+            }
+            else{assertNotNull(h2GISDatabase.getTable(entry.getValue()))}
         }
     }
 
@@ -502,21 +507,12 @@ class ProcessingChainTest {
 
     @Test
     void osmGeoIndicatorsFromTestFiles() {
-    /*    String urlBuilding = new File(getClass().getResource("BUILDING.geojson").toURI()).absolutePath
+        String urlBuilding = new File(getClass().getResource("BUILDING.geojson").toURI()).absolutePath
         String urlRoad= new File(getClass().getResource("ROAD.geojson").toURI()).absolutePath
         String urlRail = new File(getClass().getResource("RAIL.geojson").toURI()).absolutePath
         String urlVeget = new File(getClass().getResource("VEGET.geojson").toURI()).absolutePath
         String urlHydro = new File(getClass().getResource("HYDRO.geojson").toURI()).absolutePath
-        String urlZone = new File(getClass().getResource("ZONE.geojson").toURI()).absolutePath*/
-
-        String directory2load ="target/osm_processchain_full"
-
-        String urlBuilding = new File((directory2load+File.separator+"BUILDING.geojson")).absolutePath
-        String urlRoad= new File((directory2load+File.separator+"ROAD.geojson")).absolutePath
-        String urlRail = new File((directory2load+File.separator+"RAIL.geojson")).absolutePath
-        String urlVeget = new File((directory2load+File.separator+"VEGET.geojson")).absolutePath
-        String urlHydro = new File((directory2load+File.separator+"HYDRO.geojson")).absolutePath
-        String urlZone = new File((directory2load+File.separator+"ZONE.geojson")).absolutePath
+        String urlZone = new File(getClass().getResource("ZONE.geojson").toURI()).absolutePath
 
         boolean saveResults = true
         String directory ="./target/osm_processchain_geoindicators"
@@ -642,21 +638,12 @@ class ProcessingChainTest {
 
     @Test
     void osmLczFromTestFiles() {
-        /*    String urlBuilding = new File(getClass().getResource("BUILDING.geojson").toURI()).absolutePath
-            String urlRoad= new File(getClass().getResource("ROAD.geojson").toURI()).absolutePath
-            String urlRail = new File(getClass().getResource("RAIL.geojson").toURI()).absolutePath
-            String urlVeget = new File(getClass().getResource("VEGET.geojson").toURI()).absolutePath
-            String urlHydro = new File(getClass().getResource("HYDRO.geojson").toURI()).absolutePath
-            String urlZone = new File(getClass().getResource("ZONE.geojson").toURI()).absolutePath*/
-
-        String directory2load ="target/osm_processchain_full"
-
-        String urlBuilding = new File((directory2load+File.separator+"BUILDING.geojson")).absolutePath
-        String urlRoad= new File((directory2load+File.separator+"ROAD.geojson")).absolutePath
-        String urlRail = new File((directory2load+File.separator+"RAIL.geojson")).absolutePath
-        String urlVeget = new File((directory2load+File.separator+"VEGET.geojson")).absolutePath
-        String urlHydro = new File((directory2load+File.separator+"HYDRO.geojson")).absolutePath
-        String urlZone = new File((directory2load+File.separator+"ZONE.geojson")).absolutePath
+        String urlBuilding = new File(getClass().getResource("BUILDING.geojson").toURI()).absolutePath
+        String urlRoad= new File(getClass().getResource("ROAD.geojson").toURI()).absolutePath
+        String urlRail = new File(getClass().getResource("RAIL.geojson").toURI()).absolutePath
+        String urlVeget = new File(getClass().getResource("VEGET.geojson").toURI()).absolutePath
+        String urlHydro = new File(getClass().getResource("HYDRO.geojson").toURI()).absolutePath
+        String urlZone = new File(getClass().getResource("ZONE.geojson").toURI()).absolutePath
 
         boolean saveResults = true
         String directory ="./target/osm_processchain_geoindicators"

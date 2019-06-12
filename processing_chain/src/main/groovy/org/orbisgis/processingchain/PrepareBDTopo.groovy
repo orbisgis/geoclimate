@@ -10,7 +10,6 @@ import org.orbisgis.osm.OSMGISLayers
 import org.orbisgis.processmanager.ProcessMapper
 import org.orbisgis.processmanagerapi.IProcess
 
-import static org.junit.jupiter.api.Assertions.assertTrue
 
 @BaseScript ProcessingChain processingChain
 
@@ -97,7 +96,7 @@ public static IProcess prepareBDTopo() {
                                               tableRoadName: tableRoadName, tableRailName: tableRailName,
                                               tableHydroName: tableHydroName, tableVegetName: tableVegetName,
                                               distBuffer: distBuffer, expand: expand, idZone: idZone,
-                                              building_bd_topo_use_type: initTables.buildingAbstractUseType ,
+                                              building_bd_topo_use_type: initTables.outputBuildingBDTopoUseType ,
                                               building_abstract_use_type: abstractTables.outputBuildingAbstractUseType ,
                                               road_bd_topo_type: initTables.outputroadBDTopoType,
                                               road_abstract_type: abstractTables.outputRoadAbstractType,
