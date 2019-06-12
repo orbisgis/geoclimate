@@ -49,7 +49,7 @@ class BDTopoGISLayersTest {
     @Test
     @EnabledIfSystemProperty(named = "test.bdtopo", matches = "true")
     void initTypes(){
-        H2GIS h2GISDatabase = H2GIS.open(bdTopoDb-".mv.db", "sa", "")
+        H2GIS h2GISDatabase = H2GIS.open(bdTopoDb.absolutePath-".mv.db", "sa", "")
         def process = PrepareData.BDTopoGISLayers.initTypes()
         assertTrue process.execute([datasource: h2GISDatabase, buildingAbstractUseType: 'BUILDING_ABSTRACT_USE_TYPE',
                          roadAbstractType: 'ROAD_ABSTRACT_TYPE',  railAbstractType: 'RAIL_ABSTRACT_TYPE',
