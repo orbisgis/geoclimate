@@ -325,7 +325,7 @@ class ProcessingChainTest {
                 "sugar cane":["produce":["sugar_cane"],"crop":["sugar_cane"]]
         ]
 
-         H2GIS h2GIS = H2GIS.open("./target/osm_processchain", "sa", "")
+         H2GIS h2GIS = H2GIS.open("./target/osm_processchain")
 
          prepareOSMData.execute([
                 hLevMin: 3,
@@ -414,7 +414,7 @@ class ProcessingChainTest {
 
     @Test
     void createLCZTest(){
-        H2GIS h2GIS = H2GIS.open("./target/processinglcz", "sa", "")
+        H2GIS h2GIS = H2GIS.open("./target/processinglcz")
         String sqlString = new File(getClass().getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
 
@@ -464,7 +464,7 @@ class ProcessingChainTest {
         dirFile.delete()
         dirFile.mkdir()
 
-        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osmchain_indicators", "sa", "")
+        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osmchain_indicators")
 
         //Extract and transform OSM data
         IProcess prepareOSMData = ProcessingChain.PrepareOSM.prepareOSMDefaultConfig()
@@ -521,7 +521,7 @@ class ProcessingChainTest {
         dirFile.delete()
         dirFile.mkdir()
 
-        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osmchain_geoindicators", "sa", "")
+        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osmchain_geoindicators")
 
         String zoneTableName="zone"
         String buildingTableName="building"
@@ -652,7 +652,7 @@ class ProcessingChainTest {
         dirFile.delete()
         dirFile.mkdir()
 
-        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osmchain_geoindicators", "sa", "")
+        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osmchain_geoindicators")
 
         String zoneTableName="zone"
         String buildingTableName="building"
