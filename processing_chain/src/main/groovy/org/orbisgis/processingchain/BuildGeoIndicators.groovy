@@ -35,7 +35,7 @@ public static IProcess computeBuildingsIndicators() {
 
         // building_area + building_perimeter
         def geometryOperations = ["st_perimeter", "st_area"]
-        if (indicatorUse.contains("LCZ") | indicatorUse.contains("TEB")) {geometryOperations = ["st_area"]}
+        if (indicatorUse.contains("LCZ") || indicatorUse.contains("TEB")) {geometryOperations = ["st_area"]}
         IProcess computeGeometryProperties = GenericIndicators.geometryProperties()
         if (!computeGeometryProperties.execute([inputTableName: inputBuildingTableName, inputFields: ["id_build"],
                                                 operations    : geometryOperations, prefixName: buildingPrefixName,
@@ -47,7 +47,7 @@ public static IProcess computeBuildingsIndicators() {
         finalTablesToJoin.put(buildTableGeometryProperties, idColumnBu)
 
         // For indicators that are useful for urban_typology OR for LCZ classification
-        if(indicatorUse.contains("LCZ") | indicatorUse.contains("URBAN_TYPOLOGY")) {
+        if(indicatorUse.contains("LCZ") || indicatorUse.contains("URBAN_TYPOLOGY")) {
             // building_volume + building_floor_area + building_total_facade_length
             def sizeOperations = ["building_volume", "building_floor_area", "building_total_facade_length"]
             if (!indicatorUse.contains("URBAN_TYPOLOGY")) {
@@ -66,7 +66,7 @@ public static IProcess computeBuildingsIndicators() {
 
             // building_contiguity + building_common_wall_fraction + building_number_building_neighbor
             def neighborOperations = ["building_contiguity", "building_common_wall_fraction", "building_number_building_neighbor"]
-            if (indicatorUse.contains("LCZ") & !indicatorUse.contains("URBAN_TYPOLOGY")) {
+            if (indicatorUse.contains("LCZ") && !indicatorUse.contains("URBAN_TYPOLOGY")) {
                 neighborOperations = ["building_contiguity"]
             }
             IProcess computeNeighborsProperties = BuildingIndicators.neighborsProperties()
@@ -321,7 +321,7 @@ public static IProcess computeRSUIndicators() {
 
 
                 // Building free external facade density
-                if (indicatorUse.contains("URBAN_TYPOLOGY") | indicatorUse.contains("LCZ")) {
+                if (indicatorUse.contains("URBAN_TYPOLOGY") || indicatorUse.contains("LCZ")) {
                     IProcess computeFreeExtDensity = Geoclimate.RsuIndicators.freeExternalFacadeDensity()
                     if (!computeFreeExtDensity.execute([buildingTable               : buildingTable, rsuTable: rsuTable,
                                                         buContiguityColumn          : "building_contiguity",
@@ -368,7 +368,7 @@ public static IProcess computeRSUIndicators() {
 
 
                 // rsu_road_fraction
-                if (indicatorUse.contains("URBAN_TYPOLOGY") | indicatorUse.contains("LCZ")) {
+                if (indicatorUse.contains("URBAN_TYPOLOGY") || indicatorUse.contains("LCZ")) {
                     IProcess computeRoadFraction = Geoclimate.RsuIndicators.roadFraction()
                     if (!computeRoadFraction.execute([rsuTable          : rsuTable,           roadTable   : roadTable,
                                                       levelToConsiders  : ["ground": [0]],    prefixName  : prefixName,
@@ -381,7 +381,7 @@ public static IProcess computeRSUIndicators() {
                 }
 
                 // rsu_water_fraction
-                if (indicatorUse.contains("URBAN_TYPOLOGY") | indicatorUse.contains("LCZ")) {
+                if (indicatorUse.contains("URBAN_TYPOLOGY") || indicatorUse.contains("LCZ")) {
                     IProcess computeWaterFraction = Geoclimate.RsuIndicators.waterFraction()
                     if (!computeWaterFraction.execute([rsuTable  : rsuTable,    waterTable: hydrographicTable,
                                                        prefixName: prefixName,  datasource: datasource])) {
@@ -395,7 +395,7 @@ public static IProcess computeRSUIndicators() {
 
                 // rsu_vegetation_fraction + rsu_high_vegetation_fraction + rsu_low_vegetation_fraction
                 def fractionTypeVeg = ["low", "high", "all"]
-                if (!indicatorUse.contains("LCZ") & !indicatorUse.contains("TEB")) {
+                if (!indicatorUse.contains("LCZ") && !indicatorUse.contains("TEB")) {
                     fractionTypeVeg = ["all"]
                 }
                 IProcess computeVegetationFraction = Geoclimate.RsuIndicators.vegetationFraction()
@@ -432,7 +432,7 @@ public static IProcess computeRSUIndicators() {
                 }
 
                 // rsu_linear_road_density + rsu_road_direction_distribution
-                if (indicatorUse.contains("URBAN_TYPOLOGY") | indicatorUse.contains("TEB")){
+                if (indicatorUse.contains("URBAN_TYPOLOGY") || indicatorUse.contains("TEB")){
                     def roadOperations = ["rsu_road_direction_distribution", "rsu_linear_road_density"]
                     if (indicatorUse.contains("URBAN_TYPOLOGY")) {roadOperations=["rsu_road_direction_distribution"]}
                     IProcess computeLinearRoadOperations = Geoclimate.RsuIndicators.linearRoadOperations()
@@ -462,7 +462,7 @@ public static IProcess computeRSUIndicators() {
                 }
 
                 // rsu_projected_facade_area_distribution
-                if (indicatorUse.contains("LCZ") | indicatorUse.contains("TEB")) {
+                if (indicatorUse.contains("LCZ") || indicatorUse.contains("TEB")) {
                     if(!indicatorUse.contains("TEB")){
                         facadeDensListLayersBottom: [0, 50, 200]
                         facadeDensNumberOfDirection: 8

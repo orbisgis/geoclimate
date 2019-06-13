@@ -110,7 +110,7 @@ static IProcess identifyLczType() {
 
                 // For each LCZ indicator...
                 datasource.getTable(rsuLczIndicators).columnNames.collect { indicCol ->
-                    if (!indicCol.equalsIgnoreCase(ID_FIELD_RSU) & !indicCol.equalsIgnoreCase(GEOMETRIC_FIELD)) {
+                    if (!indicCol.equalsIgnoreCase(ID_FIELD_RSU) && !indicCol.equalsIgnoreCase(GEOMETRIC_FIELD)) {
                         // The values used for normalization ("mean" and "standard deviation") are calculated
                         // (for each column) and stored into maps
                         centerValue[indicCol]=datasource.firstRow("SELECT ${normalisationType}(all_val) " +
@@ -146,8 +146,8 @@ static IProcess identifyLczType() {
                         "AS SELECT name, ${queryRangeNorm[0..-3]} FROM $LCZ_classes"
 
                 // The input indicator values are normalized according to "center" and "variability" values
-                datasource.execute(("DROP TABLE IF EXISTS $normalizedValues; CREATE TABLE $normalizedValues " +
-                        "AS SELECT $ID_FIELD_RSU, $GEOMETRIC_FIELD, ${queryValuesNorm[0..-3]} FROM $rsuLczIndicators").toString())
+                datasource.execute "DROP TABLE IF EXISTS $normalizedValues; CREATE TABLE $normalizedValues " +
+                        "AS SELECT $ID_FIELD_RSU, $GEOMETRIC_FIELD, ${queryValuesNorm[0..-3]} FROM $rsuLczIndicators"
 
 
                 // II. The distance of each RSU to each of the LCZ types is calculated in the normalized interval.
@@ -155,8 +155,8 @@ static IProcess identifyLczType() {
                 // of uncertainty based on the Perkin Skill Score method is also associated to this "assignment".
 
                 // Create the table where will be stored the distance to each LCZ for each RSU
-                datasource.execute(("DROP TABLE IF EXISTS $allLczTable; CREATE TABLE $allLczTable(" +
-                        "pk serial, $GEOMETRIC_FIELD GEOMETRY, $ID_FIELD_RSU integer, lcz varchar, distance float);").toString())
+                datasource.execute "DROP TABLE IF EXISTS $allLczTable; CREATE TABLE $allLczTable(" +
+                        "pk serial, $GEOMETRIC_FIELD GEOMETRY, $ID_FIELD_RSU integer, lcz varchar, distance float);"
 
 
                 // For each LCZ type...
@@ -164,7 +164,7 @@ static IProcess identifyLczType() {
                     def queryLczDistance = ""
                     // For each indicator...
                     datasource.getTable(rsuLczIndicators).columnNames.collect { indic ->
-                        if (!indic.equalsIgnoreCase(ID_FIELD_RSU) & !indic.equalsIgnoreCase(GEOMETRIC_FIELD)) {
+                        if (!indic.equalsIgnoreCase(ID_FIELD_RSU) && !indic.equalsIgnoreCase(GEOMETRIC_FIELD)) {
                             // Define columns names where are stored lower and upper range values of the current LCZ
                             // and current indicator
                             def valLow = indic + "_low"

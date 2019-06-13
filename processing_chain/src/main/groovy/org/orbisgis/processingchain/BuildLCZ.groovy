@@ -85,21 +85,27 @@ public static createLCZ() {
 
                 //Compute building indicators
                 def computeBuildingsIndicators = ProcessingChain.BuildGeoIndicators.computeBuildingsIndicators()
-                computeBuildingsIndicators.execute([datasource               : datasource,
+                if(!computeBuildingsIndicators.execute([datasource               : datasource,
                                                     inputBuildingTableName   : buildingTable,
                                                     inputRoadTableName       : roadTable,
-                                                    indicatorUse             : ["LCZ"]])
+                                                    indicatorUse             : ["LCZ"]])){
+                    logger.info("Cannot compute building indicators.")
+                    return
+                }
                 String buildingIndicators = computeBuildingsIndicators.getResults().outputTableName
 
                 //Compute RSU indicators
                 def computeRSUIndicators = ProcessingChain.BuildGeoIndicators.computeRSUIndicators()
-                computeRSUIndicators.execute([datasource             : datasource,
+                if(!computeRSUIndicators.execute([datasource             : datasource,
                                               buildingTable          : buildingIndicators,
                                               rsuTable               : rsuTable,
                                               vegetationTable        : vegetationTable,
                                               roadTable              : roadTable,
                                               hydrographicTable      : hydrographicTable,
-                                              indicatorUse           : ["LCZ"]])
+                                              indicatorUse           : ["LCZ"]])){
+                    logger.info("Cannot compute the RSU indicators.")
+                    return
+                }
                 String rsuIndicators = computeRSUIndicators.getResults().outputTableName
                 /*
                 // I. Calculate preliminary indicators needed for the other calculations (the relations of chaining between
@@ -275,19 +281,22 @@ public static createLCZ() {
                 }
 
                 // Keep only the ID, geometry column and the 7 indicators useful for LCZ classification
-                datasource.execute(("$queryReplaceNames CREATE TABLE $lczIndicTable AS SELECT $columnIdRsu, $geometricColumn, " +
-                        "${lczIndicNames.values().join(",")} FROM $rsuIndicators").toString())
+                datasource.execute "$queryReplaceNames CREATE TABLE $lczIndicTable AS SELECT $columnIdRsu, $geometricColumn, " +
+                        "${lczIndicNames.values().join(",")} FROM $rsuIndicators"
 
                 // The classification algorithm is called
                 IProcess classifyLCZ = Geoclimate.TypologyClassification.identifyLczType()
-                classifyLCZ.execute([rsuLczIndicators   : lczIndicTable,
+                if(!classifyLCZ.execute([rsuLczIndicators   : lczIndicTable,
                                      normalisationType  : "AVG",
                                      mapOfWeights       : ["sky_view_factor"          : 1, "aspect_ratio"                : 1,
                                                            "building_surface_fraction": 1, "impervious_surface_fraction" : 1,
                                                            "pervious_surface_fraction": 1, "height_of_roughness_elements": 1,
                                                            "terrain_roughness_class"  : 1],
                                      prefixName         : prefixName,
-                                     datasource         : datasource])
+                                     datasource         : datasource])){
+                    logger.info("Cannot compute the LCZ classification.")
+                    return
+                }
 
 
                 datasource.execute("DROP TABLE IF EXISTS $rsu_indic0, $rsu_indic1, $rsu_indic2, $rsu_indic3".toString())

@@ -366,7 +366,7 @@ static IProcess projectedFacadeAreaDistribution() {
                             "AS the_geom, z_max, z_min FROM $buildingIntersectionExpl WHERE ID_build_a<ID_build_b)"
 
                     // The height of wall is calculated for each intermediate level...
-                    String layerQuery = "CREATE TABLE $buildingLayer AS SELECT pk, the_geom, "
+                    def layerQuery = "CREATE TABLE $buildingLayer AS SELECT pk, the_geom, "
                     for (i in 1..(listLayersBottom.size() - 1)) {
                         names[i - 1] = "rsu_projected_facade_area_distribution${listLayersBottom[i - 1]}" +
                                 "_${listLayersBottom[i]}"
@@ -868,7 +868,7 @@ static IProcess linearRoadOperations() {
                                         "${nameDistrib.join(" double,")} double) AS (SELECT a.$ID_COLUMN_RSU," +
                                         "COALESCE(b.${nameDistrib.join(",0),COALESCE(b.")},0)  " +
                                         "FROM $rsuTable a LEFT JOIN $roadDistrib b ON a.$ID_COLUMN_RSU=b.id_rsu);"
-                                datasource.execute(queryDistrib.toString())
+                                datasource.execute queryDistrib
 
                                 if (!operations.contains("rsu_linear_road_density")) {
                                     datasource.execute "ALTER TABLE $roadDistTot RENAME TO $outputTableName"
@@ -885,7 +885,7 @@ static IProcess linearRoadOperations() {
                                         "${nameDens.join(" double,")} double) AS (SELECT a.$ID_COLUMN_RSU," +
                                         "COALESCE(b.${nameDens.join(",0),COALESCE(b.")},0) " +
                                         "FROM $rsuTable a LEFT JOIN $roadDens b ON a.$ID_COLUMN_RSU=b.id_rsu)"
-                                datasource.execute(queryDensity.toString())
+                                datasource.execute queryDensity
                                 if (!operations.contains("rsu_road_direction_distribution")) {
                                     datasource.execute "ALTER TABLE $roadDensTot RENAME TO $outputTableName"
                                 }
@@ -897,8 +897,8 @@ static IProcess linearRoadOperations() {
                                         "ON a.id_rsu=b.id_rsu"
                             }
 
-                            datasource.execute(("DROP TABLE IF EXISTS $roadInter, $roadExpl, $roadDistrib," +
-                                    "$roadDens, $roadDistTot, $roadDensTot").toString())
+                            datasource.execute "DROP TABLE IF EXISTS $roadInter, $roadExpl, $roadDistrib," +
+                                    "$roadDens, $roadDistTot, $roadDensTot"
 
                             [outputTableName: outputTableName]
 

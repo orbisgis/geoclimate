@@ -155,10 +155,10 @@ static IProcess weightedAggregatedStatistics() {
                     weights.each{weight, operations ->
                         // The operation names are transformed into upper case
                         operations.replaceAll({s -> s.toUpperCase()})
-                        if(operations.contains("AVG")) {
+                        if(operations.contains(AVG)) {
                             weightedStdQuery += "COALESCE(b.weighted_avg_${var}_$weight,0) AS weighted_avg_${var}_$weight,"
                         }
-                        if(operations.contains("STD")) {
+                        if(operations.contains(STD)) {
                             weightedStdQuery += "COALESCE(POWER(SUM(a.$weight*POWER(a.$var-b.weighted_avg_${var}_$weight,2))/" +
                                     "SUM(a.$weight),0.5),0) AS weighted_std_${var}_$weight,"
 

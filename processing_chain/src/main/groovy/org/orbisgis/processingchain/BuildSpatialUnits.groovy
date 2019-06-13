@@ -45,35 +45,50 @@ public static IProcess createUnitsOfAnalysis(){
                 // Create the RSU
                 IProcess prepareRSUData = Geoclimate.SpatialUnits.prepareRSUData()
                 IProcess createRSU = Geoclimate.SpatialUnits.createRSU()
-                prepareRSUData.execute([datasource: datasource, zoneTable : zoneTable, roadTable : roadTable,
+                if(!prepareRSUData.execute([datasource: datasource, zoneTable : zoneTable, roadTable : roadTable,
                                         railTable : railTable, vegetationTable: vegetationTable,
                                         hydrographicTable: hydrographicTable, surface_vegetation: surface_vegetation,
-                                        surface_hydro: surface_hydro, prefixName: prefixName])
-                createRSU.execute([datasource: datasource, inputTableName : prepareRSUData.results.outputTableName,
-                                   prefixName: prefixName])
+                                        surface_hydro: surface_hydro, prefixName: prefixName])){
+                    logger.info("Cannot prepare the data for RSU calculation.")
+                    return
+                }
+                if(!createRSU.execute([datasource: datasource, inputTableName : prepareRSUData.results.outputTableName,
+                                   prefixName: prefixName])){
+                    logger.info("Cannot compute the RSU.")
+                    return
+                }
 
                 // Create the blocks
                 IProcess createBlocks = Geoclimate.SpatialUnits.createBlocks()
-                createBlocks.execute([datasource: datasource, inputTableName : buildingTable,
-                                      prefixName: prefixName, distance: distance])
+                if(!createBlocks.execute([datasource: datasource, inputTableName : buildingTable,
+                                      prefixName: prefixName, distance: distance])){
+                    logger.info("Cannot create the blocks.")
+                    return
+                }
 
 
                 // Create the relations between RSU and blocks (store in the block table)
                 IProcess createScalesRelationsRsuBl = Geoclimate.SpatialUnits.createScalesRelations()
-                createScalesRelationsRsuBl.execute([datasource: datasource,
+                if(!createScalesRelationsRsuBl.execute([datasource: datasource,
                                                     inputLowerScaleTableName: createBlocks.results.outputTableName,
                                                     inputUpperScaleTableName: createRSU.results.outputTableName,
                                                     idColumnUp: createRSU.results.outputIdRsu,
-                                                    prefixName: prefixName])
+                                                    prefixName: prefixName])){
+                    logger.info("Cannot compute the scales relations between blocks and RSU.")
+                    return
+                }
 
 
                 // Create the relations between buildings and blocks (store in the buildings table)
                 IProcess createScalesRelationsBlBu = Geoclimate.SpatialUnits.createScalesRelations()
-                createScalesRelationsBlBu.execute([datasource: datasource,
+                if(!createScalesRelationsBlBu.execute([datasource: datasource,
                                                    inputLowerScaleTableName: buildingTable,
                                                    inputUpperScaleTableName: createBlocks.results.outputTableName,
                                                    idColumnUp: createBlocks.results.outputIdBlock,
-                                                   prefixName: prefixName])
+                                                   prefixName: prefixName])){
+                    logger.info("Cannot compute the scales relations between blocks and buildings.")
+                    return
+                }
 
 
                 // Create the relations between buildings and RSU (store in the buildings table)
@@ -81,12 +96,15 @@ public static IProcess createUnitsOfAnalysis(){
                 // id_build but the relations between id_block and i_rsu should not been consider in this Table
                 // the relationships may indeed be different from the one in the block Table
                 IProcess createScalesRelationsRsuBlBu = Geoclimate.SpatialUnits.createScalesRelations()
-                createScalesRelationsRsuBlBu.execute([datasource: datasource,
+                if(!createScalesRelationsRsuBlBu.execute([datasource: datasource,
                                                       inputLowerScaleTableName:
                                                               createScalesRelationsBlBu.results.outputTableName,
                                                       inputUpperScaleTableName: createRSU.results.outputTableName,
                                                       idColumnUp: createRSU.results.outputIdRsu,
-                                                      prefixName: prefixName])
+                                                      prefixName: prefixName])){
+                    logger.info("Cannot compute the scales relations between buildings and RSU.")
+                    return
+                }
 
 
                 [outputTableBuildingName : createScalesRelationsRsuBlBu.results.outputTableName,
