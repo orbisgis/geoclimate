@@ -498,7 +498,7 @@ class ProcessingChainTest {
         String indicatorUse = ["TEB", "URBAN_TYPOLOGY", "LCZ"]
 
         // Run LCZ
-        osmLcz(directory, datasource, zoneTableName, buildingTableName,
+        calcLcz(directory, datasource, zoneTableName, buildingTableName,
                 roadTableName, railTableName, vegetationTableName,
                 hydrographicTableName, saveResults )
 
