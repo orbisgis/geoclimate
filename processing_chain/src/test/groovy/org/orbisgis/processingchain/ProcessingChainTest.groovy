@@ -386,7 +386,7 @@ class ProcessingChainTest {
 
     @Test
     void CreateUnitsOfAnalysisTest(){
-        H2GIS h2GIS = H2GIS.open("./target/processingchainscales", "sa", "")
+        H2GIS h2GIS = H2GIS.open("./target/processingchainscales")
         String sqlString = new File(getClass().getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
 
@@ -397,11 +397,13 @@ class ProcessingChainTest {
                 "CREATE TABLE tempo_zone AS SELECT * FROM zone_test;" +
                 "CREATE TABLE tempo_veget AS SELECT id_veget, the_geom FROM veget_test WHERE id_veget < 4;" +
                 "CREATE TABLE tempo_hydro AS SELECT id_hydro, the_geom FROM hydro_test WHERE id_hydro < 2;")
-        IProcess pm =  ProcessingChain.PrepareOSM.createUnitsOfAnalysis()
-        pm.execute([datasource: h2GIS, zoneTable : "tempo_zone", roadTable : "tempo_road", railTable : "tempo_road",
-                    vegetationTable: "tempo_veget", hydrographicTable: "tempo_hydro", surface_vegetation: null,
-                    surface_hydro: null, inputTableName: "tempo_build", distance: 0.0,
-                    inputLowerScaleTableName: "tempo_build",  prefixName: "test"])
+        IProcess pm =  ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
+        pm.execute([datasource          : h2GIS,        zoneTable               : "tempo_zone",     roadTable           : "tempo_road",
+                    railTable           : "tempo_road", vegetationTable         : "tempo_veget",    hydrographicTable   : "tempo_hydro",
+                    surface_vegetation  : null,         surface_hydro           : null,             buildingTable       : "tempo_build",
+                    distance            : 0.0,          prefixName              : "test",           indicatorUse        :["LCZ",
+                                                                                                                          "URBAN_TYPOLOGY",
+                                                                                                                          "TEB"]])
 
         // Test the number of blocks within RSU ID 2, whether id_build 4 and 8 belongs to the same block and are both
         // within id_rsu = 2
@@ -435,7 +437,7 @@ class ProcessingChainTest {
         IProcess pm_units = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
         pm_units.execute([datasource: h2GIS, zoneTable : "tempo_zone", buildingTable:"tempo_build", roadTable : "tempo_road", railTable : "tempo_road",
                           vegetationTable: "tempo_veget", hydrographicTable: "tempo_hydro", surface_vegetation: null,
-                          surface_hydro: null, distance: 0.0, prefixName: "test"])
+                          surface_hydro: null, distance: 0.0, prefixName: "test", indicatorUse :["LCZ"]])
 
         IProcess pm_lcz =  ProcessingChain.BuildLCZ.createLCZ()
         pm_lcz.execute([datasource: h2GIS, prefixName: "test", buildingTable: pm_units.results.outputTableBuildingName,
@@ -680,33 +682,28 @@ class ProcessingChainTest {
                           String roadTableName, String railTableName, String vegetationTableName,
                           String hydrographicTableName, boolean saveResults ) {
 
-        // Create the RSU
-        IProcess prepareRSUData = Geoclimate.SpatialUnits.prepareRSUData()
-        IProcess createRSU = Geoclimate.SpatialUnits.createRSU()
-        prepareRSUData.execute([datasource          : datasource,           zoneTable           : zoneTableName,
-                                roadTable           : roadTableName,        railTable           : railTableName,
-                                vegetationTable     : vegetationTableName,  hydrographicTable   : hydrographicTableName,
-                                surface_vegetation  : 100000,               surface_hydro       : 2500,
-                                prefixName          : ""])
-        createRSU.execute([datasource: datasource, inputTableName : prepareRSUData.results.outputTableName,
-                           prefixName: ""])
-        String createdRsu = createRSU.results.outputTableName
 
+        //Create spatial units and relations : building, block, rsu
+        IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
+        assertTrue spatialUnits.execute([datasource : datasource, zoneTable: zoneTableName, buildingTable: buildingTableName,
+                                         roadTable: roadTableName, railTable: railTableName, vegetationTable: vegetationTableName,
+                                         hydrographicTable: hydrographicTableName, surface_vegetation: 100000,
+                                         surface_hydro  : 2500, distance: 0.01, prefixName: "geounits", indicatorUse: ["LCZ"]])
 
-        // Create the relations between buildings and RSU
-        IProcess createScalesRelationsRsuBu = Geoclimate.SpatialUnits.createScalesRelations()
-        createScalesRelationsRsuBu.execute([datasource                : datasource,
-                                            inputLowerScaleTableName  : buildingTableName,
-                                            inputUpperScaleTableName  : createdRsu,
-                                            idColumnUp                : createRSU.results.outputIdRsu,
-                                            prefixName                : "test"])
+        String relationBuildings = spatialUnits.getResults().outputTableBuildingName
+        String relationRSU = spatialUnits.getResults().outputTableRsuName
 
-        String relationBuildingsRSU = createScalesRelationsRsuBu.results.outputTableName
+        if (saveResults) {
+            logger.info("Saving spatial units")
+            IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
+            saveTables.execute( [inputTableNames: spatialUnits.getResults().values()
+                                 , directory: directory, datasource: datasource])
+        }
 
         // Calculate the LCZ indicators and the corresponding LCZ class of each RSU
         IProcess pm_lcz =  ProcessingChain.BuildLCZ.createLCZ()
-        if(!pm_lcz.execute([datasource: datasource, prefixName: "test", buildingTable: relationBuildingsRSU,
-                        rsuTable: createdRsu, roadTable: roadTableName, vegetationTable: vegetationTableName,
+        if(!pm_lcz.execute([datasource: datasource, prefixName: "test", buildingTable: relationBuildings,
+                        rsuTable: relationRSU, roadTable: roadTableName, vegetationTable: vegetationTableName,
                         hydrographicTable: hydrographicTableName, facadeDensListLayersBottom: [0, 50, 200], facadeDensNumberOfDirection: 8,
                         svfPointDensity: 0.008, svfRayLength: 100, svfNumberOfDirection: 60,
                         heightColumnName: "height_roof", fractionTypePervious: ["low_vegetation", "water"],
@@ -717,7 +714,7 @@ class ProcessingChainTest {
         String lczResults = pm_lcz.results.outputTableName
 
         // Check if we have the same number of RSU
-        def countRelationRSU= datasource.firstRow("select count(*) as count from $createdRsu")
+        def countRelationRSU= datasource.firstRow("select count(*) as count from $relationRSU")
         def countRSULcz = datasource.firstRow("select count(*) as count from $lczResults")
         assertEquals(countRelationRSU.count,countRSULcz.count)
 
