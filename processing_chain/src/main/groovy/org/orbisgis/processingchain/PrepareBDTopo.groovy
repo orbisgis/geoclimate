@@ -10,6 +10,7 @@ import org.orbisgis.osm.OSMGISLayers
 import org.orbisgis.processmanager.ProcessMapper
 import org.orbisgis.processmanagerapi.IProcess
 
+
 @BaseScript ProcessingChain processingChain
 
 /** The processing chain creates the Table from the Abstract model and feed them with the BDTopo data according to some
@@ -35,19 +36,20 @@ import org.orbisgis.processmanagerapi.IProcess
  * @param hThresholdLev2 Threshold on the building height, used to determine the number of levels
  *
  * @return outputBuilding Table name in which the (ready to be used in the GeoIndicators part) buildings are stored
- * @return outputStats List that stores the names of the statistics table for each layer at different scales
  * @return outputRoad Table name in which the (ready to be used in the GeoIndicators part) roads are stored
  * @return outputRail Table name in which the (ready to be used in the GeoIndicators part) rail ways are stored
  * @return outputHydro Table name in which the (ready to be used in the GeoIndicators part) hydrographic areas are stored
  * @return outputVeget Table name in which the (ready to be used in the GeoIndicators part) vegetation areas are stored
  * @return outputZone Table name in which the (ready to be used in the GeoIndicators part) zone is stored
+ * @return outputStats List that stores the name of the statistic tables for each layer at different scales
+ *
  */
 public static IProcess prepareBDTopo() {
-    return processFactory.create("Extract and transform BDTopo data to Geoclimate model",
+    return processFactory.create("Extract and transform BD Topo data to Geoclimate model",
             [datasource : JdbcDataSource,
              distBuffer : 500,
              expand : 1000,
-             idZone : String
+             idZone : String,
              tableIrisName : String,
              tableBuildIndifName : String,
              tableBuildIndusName : String,
@@ -59,38 +61,34 @@ public static IProcess prepareBDTopo() {
              hLevMin : 3,
              hLevMax : 15,
              hThresholdLev2 : 10],
-            [outputBuilding : String, outputRoad:String, outputRail : String, outputHydro:String,
-             outputVeget:String, outputZone:String,outputStats : String[]],
-            { datasource , distBuffer, expand,  idZone, tableIrisName, tableBuildIndifName, tableBuildIndusName,
-              tableBuildRemarqName, tableRoadName, tableRailName,  tableHydroName, tableVegetName,  hLevMin,
-              hLevMax, hThresholdLev2 ->
+            [outputBuilding : String, outputRoad:String, outputRail : String, outputHydro:String, outputVeget:String, outputZone:String,outputStats : String[]],
+            { datasource, distBuffer, expand, idZone, tableIrisName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName, tableRoadName, tableRailName,
+              tableHydroName, tableVegetName, hLevMin, hLevMax, hThresholdLev2 ->
 
                 if(datasource==null){
-                    logger.error("Cannot create the database to store the BDTopo data")
+                    logger.error("Cannot create the database to store the BD Topo data")
                     return
                 }
 
                 //Init model
                 IProcess initParametersAbstract = AbstractTablesInitialization.initParametersAbstract()
-                if(!initParametersAbstract.execute(datasource:datasource)){
+                if(!initParametersAbstract.execute(datasource: datasource)){
                     logger.info("Cannot initialize the geoclimate data model.")
                     return
                 }
                 def abstractTables = initParametersAbstract.getResults()
 
-                // Initialise BDTopo parameters initialisation
+                //Init BD Topo parameters
                 IProcess initTypes = PrepareData.BDTopoGISLayers.initTypes()
-                if(!initTypes.execute([datasource: datasource,
-                                       buildingAbstractUseType: abstractTables.outputBuildingAbstractUseType,
-                                       roadAbstractType: abstractTables.outputRoadAbstractType,
-                                       railAbstractType: abstractTables.outputRailAbstractType,
-                                       vegetAbstractType: abstractTables.outputVegetAbstractType])){
-                    logger.info("Cannot initialize the BDTopo parameters.")
+                if(!initTypes.execute([datasource: datasource, buildingAbstractUseType: abstractTables.outputBuildingAbstractUseType,
+                                       roadAbstractType: abstractTables.outputRoadAbstractType, railAbstractType: abstractTables.outputRailAbstractType,
+                                       vegetAbstractType: abstractTables.outputVegetAbstractType])) {
+                    logger.info("Cannot initialize the BD Topo parameters.")
                     return
                 }
                 def initTables = initTypes.getResults()
 
-                // Import pre-process
+                //Import preprocess
                 IProcess importPreprocess = PrepareData.BDTopoGISLayers.importPreprocess()
                 if(!importPreprocess.execute([datasource: datasource, tableIrisName: tableIrisName,
                                               tableBuildIndifName: tableBuildIndifName,
@@ -98,7 +96,7 @@ public static IProcess prepareBDTopo() {
                                               tableRoadName: tableRoadName, tableRailName: tableRailName,
                                               tableHydroName: tableHydroName, tableVegetName: tableVegetName,
                                               distBuffer: distBuffer, expand: expand, idZone: idZone,
-                                              building_bd_topo_use_type: initTables.buildingAbstractUseType ,
+                                              building_bd_topo_use_type: initTables.outputBuildingBDTopoUseType ,
                                               building_abstract_use_type: abstractTables.outputBuildingAbstractUseType ,
                                               road_bd_topo_type: initTables.outputroadBDTopoType,
                                               road_abstract_type: abstractTables.outputRoadAbstractType,
@@ -106,7 +104,7 @@ public static IProcess prepareBDTopo() {
                                               rail_abstract_type: abstractTables.outputRailAbstractType,
                                               veget_bd_topo_type: initTables.outputvegetBDTopoType,
                                               veget_abstract_type: abstractTables.outputVegetAbstractType])){
-                    logger.info("Cannot import preprocesses.")
+                    logger.info("Cannot import preprocess.")
                     return
                 }
                 def preprocessTables = importPreprocess.getResults()
@@ -114,26 +112,20 @@ public static IProcess prepareBDTopo() {
                 // Input data formatting and statistics
                 IProcess inputDataFormatting = InputDataFormatting.inputDataFormatting()
                 if(!inputDataFormatting.execute([datasource: datasource,
-                                                 inputBuilding: preprocessTables.outputBuildingName,
-                                                 inputRoad: preprocessTables.outputRoadName,
-                                                 inputRail: preprocessTables.outputRailName,
-                                                 inputHydro: preprocessTables.outputHydroName,
-                                                 inputVeget: preprocessTables.outputVegetName,
-                                                 inputZone: preprocessTables.outputZoneName,
-                                                 inputZoneNeighbors: preprocessTables.outputZoneNeighborsName,
+                                                 inputBuilding: preprocessTables.outputBuildingName, inputRoad: preprocessTables.outputRoadName, inputRail: preprocessTables.outputRailName,
+                                                 inputHydro: preprocessTables.outputHydroName, inputVeget: preprocessTables.outputVegetName,
+                                                 inputZone: preprocessTables.outputZoneName, inputZoneNeighbors: preprocessTables.outputZoneNeighborsName,
                                                  hLevMin: hLevMin, hLevMax: hLevMax, hThresholdLev2: hThresholdLev2, idZone: idZone,
-                                                 buildingAbstractUseType: abstractTables.outputBuildingAbstractUseType,
-                                                 buildingAbstractParameters: abstractTables.outputBuildingAbstractParameters,
-                                                 roadAbstractType: abstractTables.outputRoadAbstractType,
-                                                 roadAbstractParameters: abstractTables.outputRoadAbstractParameters,
+                                                 buildingAbstractUseType: abstractTables.outputBuildingAbstractUseType, buildingAbstractParameters: abstractTables.outputBuildingAbstractParameters,
+                                                 roadAbstractType: abstractTables.outputRoadAbstractType, roadAbstractParameters: abstractTables.outputRoadAbstractParameters,
                                                  railAbstractType: abstractTables.outputRailAbstractType,
                                                  vegetAbstractType: abstractTables.outputVegetAbstractType,
                                                  vegetAbstractParameters: abstractTables.outputVegetAbstractParameters])){
-                    logger.info("Cannot format the tables and compute the statistics of the geoclimate model.")
+                    logger.info("Cannot format data and compute statistics.")
                     return
                 }
 
-                logger.info("End of the BDTopo extract transform process.")
+                logger.info("End of the BD Topo extract transform process.")
 
                 String finalBuildings = inputDataFormatting.getResults().outputBuilding
                 String finalRoads = inputDataFormatting.getResults().outputRoad
@@ -160,6 +152,29 @@ public static IProcess prepareBDTopo() {
 
             })
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
