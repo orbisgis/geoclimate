@@ -56,9 +56,7 @@ class InputDataFormattingTest {
                          railAbstractType: 'RAIL_ABSTRACT_TYPE',
                          vegetAbstractType: 'VEGET_ABSTRACT_TYPE', vegetAbstractParameters: 'VEGET_ABSTRACT_PARAMETERS'])
         process.getResults().each {
-            entry ->
-            println(entry)
-                assertNotNull h2GISDatabase.getTable(entry.getValue())
+            entry -> assertNotNull h2GISDatabase.getTable(entry.getValue())
         }
     }
 }
