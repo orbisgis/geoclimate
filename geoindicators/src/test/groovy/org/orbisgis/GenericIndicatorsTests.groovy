@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.orbisgis.datamanager.h2gis.H2GIS
+import org.orbisgis.geoindicators.Geoindicators
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertTrue
@@ -30,19 +31,19 @@ class GenericIndicatorsTests {
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE " +
                 "id_build < 8; CREATE TABLE tempo_rsu AS SELECT * FROM rsu_test WHERE id_rsu < 17"
 
-        def  psum =  Geoclimate.GenericIndicators.unweightedOperationFromLowerScale()
+        def  psum =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
         assertTrue psum.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "block_test",
                    inputIdUp: "id_block", inputVarAndOperations: ["building_area":["SUM"]],
                    prefixName: "first", datasource: h2GIS])
-        def  pavg =  Geoclimate.GenericIndicators.unweightedOperationFromLowerScale()
+        def  pavg =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
         assertTrue pavg.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "tempo_rsu",
                       inputIdUp: "id_rsu", inputVarAndOperations: ["building_number_building_neighbor":["AVG"]],
                       prefixName: "second", datasource: h2GIS])
-        def  pgeom_avg =  Geoclimate.GenericIndicators.unweightedOperationFromLowerScale()
+        def  pgeom_avg =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
         assertTrue pgeom_avg.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "tempo_rsu",
                       inputIdUp: "id_rsu", inputVarAndOperations: ["height_roof": ["GEOM_AVG"]],
                       prefixName: "third", datasource: h2GIS])
-        def  pdens =  Geoclimate.GenericIndicators.unweightedOperationFromLowerScale()
+        def  pdens =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
         assertTrue pdens.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "tempo_rsu",
                       inputIdUp: "id_rsu", inputVarAndOperations: ["building_number_building_neighbor":["AVG"],
                                                                    "building_area":["SUM", "DENS", "NB_DENS"]],
@@ -84,15 +85,15 @@ class GenericIndicatorsTests {
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test " +
                 "WHERE id_build < 8; CREATE TABLE tempo_rsu AS SELECT * FROM rsu_test WHERE id_rsu < 17;"
 
-        def  pavg =  Geoclimate.GenericIndicators.weightedAggregatedStatistics()
+        def  pavg =  Geoindicators.GenericIndicators.weightedAggregatedStatistics()
         assertTrue pavg.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "tempo_rsu",
                       inputIdUp: "id_rsu", inputVarWeightsOperations: ["height_roof" : ["building_area": ["AVG"]]],
                       prefixName: "one", datasource: h2GIS])
-        def  pstd =  Geoclimate.GenericIndicators.weightedAggregatedStatistics()
+        def  pstd =  Geoindicators.GenericIndicators.weightedAggregatedStatistics()
         assertTrue pstd.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "tempo_rsu",
                       inputIdUp: "id_rsu", inputVarWeightsOperations: ["height_roof": ["building_area": ["STD"]]],
                       prefixName: "two", datasource: h2GIS])
-        def  pall =  Geoclimate.GenericIndicators.weightedAggregatedStatistics()
+        def  pall =  Geoindicators.GenericIndicators.weightedAggregatedStatistics()
         assertTrue pall.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "tempo_rsu",
                       inputIdUp: "id_rsu", inputVarWeightsOperations: ["height_wall": ["building_area": ["STD"]],
                                                                        "height_roof": ["building_area": ["AVG", "STD"]]],
@@ -124,7 +125,7 @@ class GenericIndicatorsTests {
                 CREATE TABLE spatial_table (id int, the_geom LINESTRING);
                 INSERT INTO spatial_table VALUES (1, 'LINESTRING(0 0, 0 10)'::GEOMETRY);
         """
-        def  p =  Geoclimate.GenericIndicators.geometryProperties()
+        def  p =  Geoindicators.GenericIndicators.geometryProperties()
         assertTrue p.execute([inputTableName: "spatial_table",
                               inputFields:["id", "the_geom"],
                               operations:["st_issimple","st_area", "area", "st_dimension"],
@@ -146,7 +147,7 @@ class GenericIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS tempo_build, block_perkins_skill_score_building_direction; " +
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 9"
 
-        def  p =  Geoclimate.GenericIndicators.perkinsSkillScoreBuildingDirection()
+        def  p =  Geoindicators.GenericIndicators.perkinsSkillScoreBuildingDirection()
         assertTrue p.execute([buildingTableName: "tempo_build", inputIdUp: "id_block", angleRangeSize: 15, prefixName: "test", datasource: h2GIS])
         def concat = 0
         h2GIS.eachRow("SELECT * FROM test_block_perkins_skill_score_building_direction WHERE id_block = 4"){

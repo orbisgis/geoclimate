@@ -1,4 +1,4 @@
-package org.orbisgis
+package org.orbisgis.geoindicators
 
 import org.orbisgis.processmanager.ProcessManager
 import org.orbisgis.processmanagerapi.IProcessFactory
@@ -6,12 +6,12 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 /**
- * Root access point to the Geoclimate processes.
+ * Root access point to the Geoindicators processes.
  */
-abstract class Geoclimate extends Script {
+abstract class Geoindicators extends Script {
 
     public static IProcessFactory processFactory = ProcessManager.getProcessManager().factory("geoclimate")
-    public static Logger logger = LoggerFactory.getLogger(Geoclimate.class)
+    public static Logger logger = LoggerFactory.getLogger(Geoindicators.class)
 
     static def uuid(){UUID.randomUUID().toString().replaceAll("-", "_")}
 

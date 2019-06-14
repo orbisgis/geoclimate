@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.orbisgis.datamanager.h2gis.H2GIS
+import org.orbisgis.geoindicators.Geoindicators
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertTrue
@@ -28,7 +29,7 @@ class BlockIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS tempo_block; " +
                 "CREATE TABLE tempo_block AS SELECT * FROM block_test WHERE id_block = 6"
 
-        def  p =  Geoclimate.BlockIndicators.holeAreaDensity()
+        def  p =  Geoindicators.BlockIndicators.holeAreaDensity()
         assertTrue p.execute([blockTable: "tempo_block", prefixName: "test", datasource: h2GIS])
 
         def sum = 0
@@ -44,7 +45,7 @@ class BlockIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS tempo_build, building_size_properties, building_contiguity; " +
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 8"
 
-        def  p_size =  Geoclimate.BuildingIndicators.sizeProperties()
+        def  p_size =  Geoindicators.BuildingIndicators.sizeProperties()
         assertTrue p_size.execute([inputBuildingTableName: "tempo_build",
                         operations:["building_volume"], prefixName : "test", datasource:h2GIS])
 
@@ -53,7 +54,7 @@ class BlockIndicatorsTests {
                 "CREATE TABLE tempo_build2 AS SELECT a.*, b.building_volume FROM tempo_build a" +
                 " LEFT JOIN test_building_size_properties b ON a.id_build = b.id_build"
 
-        def  p =  Geoclimate.BlockIndicators.netCompacity()
+        def  p =  Geoindicators.BlockIndicators.netCompacity()
         assertTrue p.execute([buildTable: "tempo_build2", buildingVolumeField: "building_volume",
                    buildingContiguityField: "building_contiguity", prefixName: "test", datasource: h2GIS])
         def sum = 0
@@ -70,7 +71,7 @@ class BlockIndicatorsTests {
                 "CREATE TABLE tempo_block AS SELECT * FROM block_test WHERE id_block = 8; CREATE TABLE tempo_build AS" +
                 " SELECT * FROM building_test WHERE id_block = 8")
 
-        def p = Geoclimate.BlockIndicators.closingness()
+        def p = Geoindicators.BlockIndicators.closingness()
         assertTrue p.execute([correlationTableName: "tempo_build", blockTable: "tempo_block", prefixName: "test",
                               datasource: h2GIS])
         def sum = 0

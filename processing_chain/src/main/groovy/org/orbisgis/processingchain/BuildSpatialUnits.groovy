@@ -1,7 +1,7 @@
 package org.orbisgis.processingchain
 
 import groovy.transform.BaseScript
-import org.orbisgis.Geoclimate
+import org.orbisgis.geoindicators.Geoindicators
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanagerapi.IProcess
 
@@ -48,8 +48,8 @@ public static IProcess createUnitsOfAnalysis(){
                 logger.info("Create the units of analysis...")
 
                 // Create the RSU
-                IProcess prepareRSUData = Geoclimate.SpatialUnits.prepareRSUData()
-                IProcess createRSU = Geoclimate.SpatialUnits.createRSU()
+                IProcess prepareRSUData = Geoindicators.SpatialUnits.prepareRSUData()
+                IProcess createRSU = Geoindicators.SpatialUnits.createRSU()
                 if(!prepareRSUData.execute([datasource: datasource, zoneTable : zoneTable, roadTable : roadTable,
                                         railTable : railTable, vegetationTable: vegetationTable,
                                         hydrographicTable: hydrographicTable, surface_vegetation: surface_vegetation,
@@ -70,7 +70,7 @@ public static IProcess createUnitsOfAnalysis(){
                 // If the urban typology is needed
                 if (indicatorUse.contains("URBAN_TYPOLOGY")) {
                     // Create the blocks
-                    IProcess createBlocks = Geoclimate.SpatialUnits.createBlocks()
+                    IProcess createBlocks = Geoindicators.SpatialUnits.createBlocks()
                     if (!createBlocks.execute([datasource: datasource, inputTableName: buildingTable,
                                                prefixName: prefixName, distance: distance])) {
                         logger.info("Cannot create the blocks.")
@@ -78,7 +78,7 @@ public static IProcess createUnitsOfAnalysis(){
                     }
 
                     // Create the relations between RSU and blocks (store in the block table)
-                    IProcess createScalesRelationsRsuBl = Geoclimate.SpatialUnits.createScalesRelations()
+                    IProcess createScalesRelationsRsuBl = Geoindicators.SpatialUnits.createScalesRelations()
                     if(!createScalesRelationsRsuBl.execute([datasource: datasource,
                                                             inputLowerScaleTableName: createBlocks.results.outputTableName,
                                                             inputUpperScaleTableName: createRSU.results.outputTableName,
@@ -89,7 +89,7 @@ public static IProcess createUnitsOfAnalysis(){
                     }
 
                     // Create the relations between buildings and blocks (store in the buildings table)
-                    IProcess createScalesRelationsBlBu = Geoclimate.SpatialUnits.createScalesRelations()
+                    IProcess createScalesRelationsBlBu = Geoindicators.SpatialUnits.createScalesRelations()
                     if(!createScalesRelationsBlBu.execute([datasource: datasource,
                                                            inputLowerScaleTableName: buildingTable,
                                                            inputUpperScaleTableName: createBlocks.results.outputTableName,
@@ -107,7 +107,7 @@ public static IProcess createUnitsOfAnalysis(){
                 // WARNING : if the blocks are used, the building table will contain the id_block and id_rsu for each of its
                 // id_build but the relations between id_block and i_rsu should not been consider in this Table
                 // the relationships may indeed be different from the one in the block Table
-                IProcess createScalesRelationsRsuBlBu = Geoclimate.SpatialUnits.createScalesRelations()
+                IProcess createScalesRelationsRsuBlBu = Geoindicators.SpatialUnits.createScalesRelations()
                 if(!createScalesRelationsRsuBlBu.execute([datasource: datasource,
                                                       inputLowerScaleTableName: inputLowerScaleBuRsu,
                                                       inputUpperScaleTableName: createRSU.results.outputTableName,
