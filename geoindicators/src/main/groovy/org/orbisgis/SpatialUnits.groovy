@@ -219,12 +219,8 @@ static IProcess createBlocks(){
 
                 //Find all neighbors for each building
                 logger.info("Building index to perform the process...")
-                if(!datasource.getSpatialTable(inputTableName).the_geom.indexed){
-                    datasource.getSpatialTable(inputTableName).the_geom.createSpatialIndex()
-                }
-                if(!datasource.getSpatialTable(inputTableName).id_build.indexed){
-                    datasource.getSpatialTable(inputTableName).id_build.createIndex()
-                }
+                datasource.getSpatialTable(inputTableName).the_geom.createSpatialIndex()
+                datasource.getSpatialTable(inputTableName).id_build.createIndex()
 
                 logger.info("Building spatial clusters...")
 
