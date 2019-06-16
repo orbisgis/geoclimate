@@ -1,11 +1,15 @@
 package org.orbisgis.processingchain
 
 import groovy.transform.BaseScript
+import org.orbisgis.PrepareData
 import org.orbisgis.bdtopo.BDTopoGISLayers
 import org.orbisgis.common.AbstractTablesInitialization
 import org.orbisgis.common.InputDataFormatting
+import org.orbisgis.datamanager.JdbcDataSource
+import org.orbisgis.osm.OSMGISLayers
 import org.orbisgis.processmanager.ProcessMapper
 import org.orbisgis.processmanagerapi.IProcess
+
 
 @BaseScript ProcessingChain processingChain
 
@@ -32,21 +36,151 @@ import org.orbisgis.processmanagerapi.IProcess
  * @param hThresholdLev2 Threshold on the building height, used to determine the number of levels
  *
  * @return outputBuilding Table name in which the (ready to be used in the GeoIndicators part) buildings are stored
- * @return outputBuildingStatZone Table that store the building statistics at the zone level
- * @return outputBuildingStatZoneBuff Table that store the building statistics at the zone_buffer level
  * @return outputRoad Table name in which the (ready to be used in the GeoIndicators part) roads are stored
- * @return outputRoadStatZone Table that store the road statistics at the zone level
- * @return outputRoadStatZoneBuff Table that store the road statistics at the zone_buffer level
  * @return outputRail Table name in which the (ready to be used in the GeoIndicators part) rail ways are stored
- * @return outputRailStatZone Table that store the rail ways statistics at the zone level
  * @return outputHydro Table name in which the (ready to be used in the GeoIndicators part) hydrographic areas are stored
- * @return outputHydroStatZone Table that store the hydrographic areas statistics at the zone level
- * @return outputHydroStatZoneExt Table that store the hydrographic areas statistics at the zone_extended level
  * @return outputVeget Table name in which the (ready to be used in the GeoIndicators part) vegetation areas are stored
- * @return outputVegetStatZone Table that store the vegetation areas statistics at the zone level
- * @return outputVegetStatZoneExt Table that store the vegetation areas statistics at the zone_extended level
  * @return outputZone Table name in which the (ready to be used in the GeoIndicators part) zone is stored
+ * @return outputStats List that stores the name of the statistic tables for each layer at different scales
+ *
  */
+public static IProcess prepareBDTopo() {
+    return processFactory.create("Extract and transform BD Topo data to Geoclimate model",
+            [datasource : JdbcDataSource,
+            distBuffer : 500,
+            expand : 1000,
+            idZone : String,
+            tableIrisName : String,
+            tableBuildIndifName : String,
+            tableBuildIndusName : String,
+            tableBuildRemarqName : String,
+            tableRoadName : String,
+            tableRailName : String,
+            tableHydroName : String,
+            tableVegetName : String,
+            hLevMin : 3,
+            hLevMax : 15,
+            hThresholdLev2 : 10],
+            [outputBuilding : String, outputRoad:String, outputRail : String, outputHydro:String, outputVeget:String, outputZone:String,outputStats : String[]],
+            { datasource, distBuffer, expand, idZone, tableIrisName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName, tableRoadName, tableRailName,
+              tableHydroName, tableVegetName, hLevMin, hLevMax, hThresholdLev2 ->
+
+                if(datasource==null){
+                    logger.error("Cannot create the database to store the BD Topo data")
+                    return
+                }
+
+                //Init model
+                IProcess initParametersAbstract = AbstractTablesInitialization.initParametersAbstract()
+                if(!initParametersAbstract.execute(datasource: datasource)){
+                    logger.info("Cannot initialize the geoclimate data model.")
+                    return
+                }
+                def abstractTables = initParametersAbstract.getResults()
+
+                //Init BD Topo parameters
+                IProcess initTypes = PrepareData.BDTopoGISLayers.initTypes()
+                if(!initTypes.execute([datasource: datasource, buildingAbstractUseType: abstractTables.outputBuildingAbstractUseType,
+                                       roadAbstractType: abstractTables.outputRoadAbstractType, railAbstractType: abstractTables.outputRailAbstractType,
+                                       vegetAbstractType: abstractTables.outputVegetAbstractType])) {
+                    logger.info("Cannot initialize the BD Topo parameters.")
+                    return
+                }
+                def initTables = initTypes.getResults()
+
+                //Import preprocess
+                IProcess importPreprocess = PrepareData.BDTopoGISLayers.importPreprocess()
+                if(!importPreprocess.execute([datasource: datasource, tableIrisName: tableIrisName,
+                                              tableBuildIndifName: tableBuildIndifName,
+                                              tableBuildIndusName: tableBuildIndusName, tableBuildRemarqName: tableBuildRemarqName,
+                                              tableRoadName: tableRoadName, tableRailName: tableRailName,
+                                              tableHydroName: tableHydroName, tableVegetName: tableVegetName,
+                                              distBuffer: distBuffer, expand: expand, idZone: idZone,
+                                              building_bd_topo_use_type: initTables.outputBuildingBDTopoUseType ,
+                                              building_abstract_use_type: abstractTables.outputBuildingAbstractUseType ,
+                                              road_bd_topo_type: initTables.outputroadBDTopoType,
+                                              road_abstract_type: abstractTables.outputRoadAbstractType,
+                                              rail_bd_topo_type: initTables.outputrailBDTopoType,
+                                              rail_abstract_type: abstractTables.outputRailAbstractType,
+                                              veget_bd_topo_type: initTables.outputvegetBDTopoType,
+                                              veget_abstract_type: abstractTables.outputVegetAbstractType])){
+                    logger.info("Cannot import preprocess.")
+                    return
+                }
+                def preprocessTables = importPreprocess.getResults()
+
+                // Input data formatting and statistics
+                IProcess inputDataFormatting = InputDataFormatting.inputDataFormatting()
+                if(!inputDataFormatting.execute([datasource: datasource,
+                                                 inputBuilding: preprocessTables.outputBuildingName, inputRoad: preprocessTables.outputRoadName, inputRail: preprocessTables.outputRailName,
+                                                 inputHydro: preprocessTables.outputHydroName, inputVeget: preprocessTables.outputVegetName,
+                                                 inputZone: preprocessTables.outputZoneName, inputZoneNeighbors: preprocessTables.outputZoneNeighborsName,
+                                                 hLevMin: hLevMin, hLevMax: hLevMax, hThresholdLev2: hThresholdLev2, idZone: idZone,
+                                                 buildingAbstractUseType: abstractTables.outputBuildingAbstractUseType, buildingAbstractParameters: abstractTables.outputBuildingAbstractParameters,
+                                                 roadAbstractType: abstractTables.outputRoadAbstractType, roadAbstractParameters: abstractTables.outputRoadAbstractParameters,
+                                                 railAbstractType: abstractTables.outputRailAbstractType,
+                                                 vegetAbstractType: abstractTables.outputVegetAbstractType,
+                                                 vegetAbstractParameters: abstractTables.outputVegetAbstractParameters])){
+                    logger.info("Cannot format data and compute statistics.")
+                    return
+                }
+
+                logger.info("End of the BD Topo extract transform process.")
+
+                String finalBuildings = inputDataFormatting.getResults().outputBuilding
+                String finalRoads = inputDataFormatting.getResults().outputRoad
+                String finalRails= inputDataFormatting.getResults().outputRail
+                String finalHydro = inputDataFormatting.getResults().outputHydro
+                String finalVeget = inputDataFormatting.getResults().outputVeget
+                String finalZone = inputDataFormatting.getResults().outputZone
+
+                String finalOutputBuildingStatZone = inputDataFormatting.getResults().outputBuildingStatZone
+                String finalOutputBuildingStatZoneBuff = inputDataFormatting.getResults().outputBuildingStatZoneBuff
+                String finalOutputRoadStatZone = inputDataFormatting.getResults().outputRoadStatZone
+                String finalOutputRoadStatZoneBuff = inputDataFormatting.getResults().outputRoadStatZoneBuff
+                String finalOutputRailStatZone = inputDataFormatting.getResults().outputRailStatZone
+                String finalOutputHydroStatZone = inputDataFormatting.getResults().outputHydroStatZone
+                String finalOutputHydroStatZoneExt= inputDataFormatting.getResults().outputHydroStatZoneExt
+                String finalOutputVegetStatZone = inputDataFormatting.getResults().outputVegetStatZone
+                String finalOutputVegetStatZoneExt = inputDataFormatting.getResults().outputVegetStatZoneExt
+
+                [outputBuilding : finalBuildings, outputRoad:finalRoads,
+                 outputRail : finalRails, outputHydro:finalHydro, outputVeget:finalVeget, outputZone:finalZone,
+                 outputStats :[finalOutputBuildingStatZone,finalOutputBuildingStatZoneBuff,finalOutputRoadStatZone,
+                               finalOutputRoadStatZoneBuff,finalOutputRailStatZone,finalOutputHydroStatZone,finalOutputHydroStatZoneExt,
+                               finalOutputVegetStatZone,finalOutputVegetStatZoneExt]]
+
+            })
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 public static ProcessMapper createMapper(){
     def abstractTablesInit = AbstractTablesInitialization.initParametersAbstract()
     def bdTopoInitTypes = BDTopoGISLayers.initTypes()

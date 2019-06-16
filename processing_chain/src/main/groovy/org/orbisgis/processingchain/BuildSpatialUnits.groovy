@@ -1,6 +1,7 @@
 package org.orbisgis.processingchain
 
 import groovy.transform.BaseScript
+import org.orbisgis.Geoclimate
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanagerapi.IProcess
 
@@ -26,6 +27,8 @@ import org.orbisgis.processmanagerapi.IProcess
  * @param distance A distance to group two geometries (e.g. two buildings in a block - default 0.01 m)
  * @param prefixName A prefix used to name the output table
  * @param datasource A connection to a database
+ * @param indicatorUse The use defined for the indicator. Depending on this use, only a part of the indicators could
+ * be calculated (default is all indicators : ["LCZ", "URBAN_TYPOLOGY", "TEB"])
  *
  * @return outputTableBuildingName Table name where are stored the buildings and the RSU and block ID
  * @return outputTableBlockName Table name where are stored the blocks and the RSU ID
@@ -33,63 +36,90 @@ import org.orbisgis.processmanagerapi.IProcess
  */
 public static IProcess createUnitsOfAnalysis(){
     return processFactory.create("Create all new spatial units and their relations : building, block and RSU",
-            [datasource: JdbcDataSource, zoneTable : String, buildingTable:String, roadTable : String, railTable : String,
-             vegetationTable: String, hydrographicTable: String, surface_vegetation: double,
-             surface_hydro: double, distance: double, prefixName: String],
+            [datasource:        JdbcDataSource,     zoneTable           : String,       buildingTable   : String,
+             roadTable :        String,             railTable           : String,       vegetationTable : String,
+             hydrographicTable: String,             surface_vegetation  : 100000,       surface_hydro   : 2500,
+             distance:          double,             prefixName          : String,       indicatorUse    : ["LCZ",
+                                                                                                           "URBAN_TYPOLOGY",
+                                                                                                           "TEB"]],
             [outputTableBuildingName : String, outputTableBlockName: String, outputTableRsuName: String],
             { datasource, zoneTable,buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
-              surface_vegetation, surface_hydro, distance,  prefixName ->
+              surface_vegetation, surface_hydro, distance,  prefixName, indicatorUse ->
                 logger.info("Create the units of analysis...")
 
                 // Create the RSU
-                IProcess prepareRSUData = org.orbisgis.Geoclimate.SpatialUnits.prepareRSUData()
-                IProcess createRSU = org.orbisgis.Geoclimate.SpatialUnits.createRSU()
-                prepareRSUData.execute([datasource: datasource, zoneTable : zoneTable, roadTable : roadTable,
+                IProcess prepareRSUData = Geoclimate.SpatialUnits.prepareRSUData()
+                IProcess createRSU = Geoclimate.SpatialUnits.createRSU()
+                if(!prepareRSUData.execute([datasource: datasource, zoneTable : zoneTable, roadTable : roadTable,
                                         railTable : railTable, vegetationTable: vegetationTable,
                                         hydrographicTable: hydrographicTable, surface_vegetation: surface_vegetation,
-                                        surface_hydro: surface_hydro, prefixName: prefixName])
-                createRSU.execute([datasource: datasource, inputTableName : prepareRSUData.results.outputTableName,
-                                   prefixName: prefixName])
+                                        surface_hydro: surface_hydro, prefixName: prefixName])){
+                    logger.info("Cannot prepare the data for RSU calculation.")
+                    return
+                }
+                if(!createRSU.execute([datasource: datasource, inputTableName : prepareRSUData.results.outputTableName,
+                                   prefixName: prefixName])){
+                    logger.info("Cannot compute the RSU.")
+                    return
+                }
 
-                // Create the blocks
-                IProcess createBlocks = org.orbisgis.Geoclimate.SpatialUnits.createBlocks()
-                createBlocks.execute([datasource: datasource, inputTableName : buildingTable,
-                                      prefixName: prefixName, distance: distance])
+                // By default, the building table is used to calculate the relations between buildings and RSU
+                def inputLowerScaleBuRsu = buildingTable
+                // And the block / RSU table does not exists
+                def tableRsuBlocks = null
+                // If the urban typology is needed
+                if (indicatorUse.contains("URBAN_TYPOLOGY")) {
+                    // Create the blocks
+                    IProcess createBlocks = Geoclimate.SpatialUnits.createBlocks()
+                    if (!createBlocks.execute([datasource: datasource, inputTableName: buildingTable,
+                                               prefixName: prefixName, distance: distance])) {
+                        logger.info("Cannot create the blocks.")
+                        return
+                    }
 
+                    // Create the relations between RSU and blocks (store in the block table)
+                    IProcess createScalesRelationsRsuBl = Geoclimate.SpatialUnits.createScalesRelations()
+                    if(!createScalesRelationsRsuBl.execute([datasource: datasource,
+                                                            inputLowerScaleTableName: createBlocks.results.outputTableName,
+                                                            inputUpperScaleTableName: createRSU.results.outputTableName,
+                                                            idColumnUp: createRSU.results.outputIdRsu,
+                                                            prefixName: prefixName])){
+                        logger.info("Cannot compute the scales relations between blocks and RSU.")
+                        return
+                    }
 
-                // Create the relations between RSU and blocks (store in the block table)
-                IProcess createScalesRelationsRsuBl = org.orbisgis.Geoclimate.SpatialUnits.createScalesRelations()
-                createScalesRelationsRsuBl.execute([datasource: datasource,
-                                                    inputLowerScaleTableName: createBlocks.results.outputTableName,
-                                                    inputUpperScaleTableName: createRSU.results.outputTableName,
-                                                    idColumnUp: createRSU.results.outputIdRsu,
-                                                    prefixName: prefixName])
-
-
-                // Create the relations between buildings and blocks (store in the buildings table)
-                IProcess createScalesRelationsBlBu = org.orbisgis.Geoclimate.SpatialUnits.createScalesRelations()
-                createScalesRelationsBlBu.execute([datasource: datasource,
-                                                   inputLowerScaleTableName: buildingTable,
-                                                   inputUpperScaleTableName: createBlocks.results.outputTableName,
-                                                   idColumnUp: createBlocks.results.outputIdBlock,
-                                                   prefixName: prefixName])
+                    // Create the relations between buildings and blocks (store in the buildings table)
+                    IProcess createScalesRelationsBlBu = Geoclimate.SpatialUnits.createScalesRelations()
+                    if(!createScalesRelationsBlBu.execute([datasource: datasource,
+                                                           inputLowerScaleTableName: buildingTable,
+                                                           inputUpperScaleTableName: createBlocks.results.outputTableName,
+                                                           idColumnUp: createBlocks.results.outputIdBlock,
+                                                           prefixName: prefixName])){
+                        logger.info("Cannot compute the scales relations between blocks and buildings.")
+                        return
+                    }
+                    inputLowerScaleBuRsu = createScalesRelationsBlBu.results.outputTableName
+                    tableRsuBlocks = createScalesRelationsRsuBl.results.outputTableName
+                }
 
 
                 // Create the relations between buildings and RSU (store in the buildings table)
-                // WARNING : the building table will contain the id_block and id_rsu for each of its
+                // WARNING : if the blocks are used, the building table will contain the id_block and id_rsu for each of its
                 // id_build but the relations between id_block and i_rsu should not been consider in this Table
                 // the relationships may indeed be different from the one in the block Table
-                IProcess createScalesRelationsRsuBlBu = org.orbisgis.Geoclimate.SpatialUnits.createScalesRelations()
-                createScalesRelationsRsuBlBu.execute([datasource: datasource,
-                                                      inputLowerScaleTableName:
-                                                              createScalesRelationsBlBu.results.outputTableName,
+                IProcess createScalesRelationsRsuBlBu = Geoclimate.SpatialUnits.createScalesRelations()
+                if(!createScalesRelationsRsuBlBu.execute([datasource: datasource,
+                                                      inputLowerScaleTableName: inputLowerScaleBuRsu,
                                                       inputUpperScaleTableName: createRSU.results.outputTableName,
                                                       idColumnUp: createRSU.results.outputIdRsu,
-                                                      prefixName: prefixName])
+                                                      prefixName: prefixName])){
+                    logger.info("Cannot compute the scales relations between buildings and RSU.")
+                    return
+                }
 
 
                 [outputTableBuildingName : createScalesRelationsRsuBlBu.results.outputTableName,
-                 outputTableBlockName: createScalesRelationsRsuBl.results.outputTableName,
+                 outputTableBlockName: tableRsuBlocks,
                  outputTableRsuName: createRSU.results.outputTableName]
             }
     )

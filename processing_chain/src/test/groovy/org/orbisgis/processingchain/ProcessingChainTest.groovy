@@ -1,30 +1,65 @@
 package org.orbisgis.processingchain
 
+import groovy.transform.BaseScript
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
+import org.orbisgis.Geoclimate
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.processmanager.ProcessMapper
 import org.orbisgis.processmanagerapi.IProcess
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.junit.jupiter.api.Assertions.assertEquals
 
 class ProcessingChainTest {
 
+    public static Logger logger = LoggerFactory.getLogger(ProcessingChainTest.class)
+    private final static File bdTopoDb = new File("./target/myh2gisbdtopodb.mv.db")
+
     @BeforeAll
     static void init(){
-        System.setProperty("test.processingchain",
-                Boolean.toString(ProcessingChainTest.getResource("geoclimate_bdtopo_data_test") != null))
+        //Check if the resource database exists
+        boolean isFile = ProcessingChain.getResource("myh2gisbdtopodb.mv.db") != null
+        System.setProperty("test.bdtopo", Boolean.toString(isFile))
+        //If the resource exists, copy it into the target folder to avoid working on the original database
+        if(isFile) {
+            bdTopoDb << ProcessingChain.getResourceAsStream("myh2gisbdtopodb.mv.db")
+        }
     }
 
+    @Test
+    @EnabledIfSystemProperty(named = "test.bdtopo", matches = "true")
+    void prepareBDTopoTest(){
+        H2GIS h2GISDatabase = H2GIS.open(bdTopoDb.absolutePath-".mv.db", "sa", "")
+        def process = ProcessingChain.PrepareBDTopo.prepareBDTopo()
+        assertTrue process.execute([datasource: h2GISDatabase, tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                    tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
+                                    tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
+                                    tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
+                                    distBuffer: 500, expand: 1000, idZone: '56195',
+                                    hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
+        ])
+        process.getResults().each {entry ->
+            if(entry.key == 'outputStats') {
+                entry.value.each{tab -> assertNotNull(h2GISDatabase.getTable(tab))}
+            }
+            else{assertNotNull(h2GISDatabase.getTable(entry.getValue()))}
+        }
+    }
+
+
+    /*
     @EnabledIfSystemProperty(named = "test.processingchain", matches = "true")
     @Test
     void BDTopoProcessingChainTest(){
-        H2GIS h2GIS = H2GIS.open("./target/processingchaindb")
+        H2GIS h2GIS = H2GIS.open("./target/processingchaindb", "sa", "")
 
         h2GIS.load(new File(this.class.getResource("geoclimate_bdtopo_data_test/IRIS_GE.geojson").toURI()).getAbsolutePath(),"IRIS_GE",true)
         h2GIS.load(new File(this.class.getResource("geoclimate_bdtopo_data_test/BATI_INDIFFERENCIE.geojson").toURI()).getAbsolutePath(),"BATI_INDIFFERENCIE",true)
@@ -45,6 +80,7 @@ class ProcessingChainTest {
             entry -> assertNull h2GIS.getTable(entry.getValue())
         }
     }
+*/
 
     @Test
     void PrepareOSMTest() {
@@ -361,11 +397,13 @@ class ProcessingChainTest {
                 "CREATE TABLE tempo_zone AS SELECT * FROM zone_test;" +
                 "CREATE TABLE tempo_veget AS SELECT id_veget, the_geom FROM veget_test WHERE id_veget < 4;" +
                 "CREATE TABLE tempo_hydro AS SELECT id_hydro, the_geom FROM hydro_test WHERE id_hydro < 2;")
-        IProcess pm =  ProcessingChain.PrepareOSM.createUnitsOfAnalysis()
-        pm.execute([datasource: h2GIS, zoneTable : "tempo_zone", roadTable : "tempo_road", railTable : "tempo_road",
-                    vegetationTable: "tempo_veget", hydrographicTable: "tempo_hydro", surface_vegetation: null,
-                    surface_hydro: null, inputTableName: "tempo_build", distance: 0.0,
-                    inputLowerScaleTableName: "tempo_build",  prefixName: "test"])
+        IProcess pm =  ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
+        pm.execute([datasource          : h2GIS,        zoneTable               : "tempo_zone",     roadTable           : "tempo_road",
+                    railTable           : "tempo_road", vegetationTable         : "tempo_veget",    hydrographicTable   : "tempo_hydro",
+                    surface_vegetation  : null,         surface_hydro           : null,             buildingTable       : "tempo_build",
+                    distance            : 0.0,          prefixName              : "test",           indicatorUse        :["LCZ",
+                                                                                                                          "URBAN_TYPOLOGY",
+                                                                                                                          "TEB"]])
 
         // Test the number of blocks within RSU ID 2, whether id_build 4 and 8 belongs to the same block and are both
         // within id_rsu = 2
@@ -399,7 +437,7 @@ class ProcessingChainTest {
         IProcess pm_units = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
         pm_units.execute([datasource: h2GIS, zoneTable : "tempo_zone", buildingTable:"tempo_build", roadTable : "tempo_road", railTable : "tempo_road",
                           vegetationTable: "tempo_veget", hydrographicTable: "tempo_hydro", surface_vegetation: null,
-                          surface_hydro: null, distance: 0.0, prefixName: "test"])
+                          surface_hydro: null, distance: 0.0, prefixName: "test", indicatorUse :["LCZ"]])
 
         IProcess pm_lcz =  ProcessingChain.BuildLCZ.createLCZ()
         pm_lcz.execute([datasource: h2GIS, prefixName: "test", buildingTable: pm_units.results.outputTableBuildingName,
@@ -459,9 +497,16 @@ class ProcessingChainTest {
                                  , directory: directory, datasource: datasource])
         }
 
+        String indicatorUse = ["TEB", "URBAN_TYPOLOGY", "LCZ"]
+
+        // Run LCZ
+        calcLcz(directory, datasource, zoneTableName, buildingTableName,
+                roadTableName, railTableName, vegetationTableName,
+                hydrographicTableName, saveResults )
+
         //Run tests
         osmGeoIndicators(directory, datasource, zoneTableName, buildingTableName,roadTableName,railTableName,vegetationTableName,
-                hydrographicTableName,saveResults)
+                hydrographicTableName,saveResults, indicatorUse)
 
     }
 
@@ -489,6 +534,7 @@ class ProcessingChainTest {
         String railTableName="rails"
         String vegetationTableName="veget"
         String hydrographicTableName="hydro"
+        def indicatorUse = ["URBAN_TYPOLOGY", "LCZ", "TEB"]
 
         datasource.load(urlBuilding, buildingTableName)
         datasource.load(urlRoad, roadTableName)
@@ -499,14 +545,14 @@ class ProcessingChainTest {
 
         //Run tests
         osmGeoIndicators(directory, datasource, zoneTableName, buildingTableName,roadTableName,railTableName,vegetationTableName,
-        hydrographicTableName,saveResults)
+        hydrographicTableName,saveResults, indicatorUse)
 
     }
 
 
     void osmGeoIndicators(String directory, JdbcDataSource datasource, String zoneTableName, String buildingTableName,
                           String roadTableName, String railTableName, String vegetationTableName,
-                          String hydrographicTableName, boolean saveResults ) {
+                          String hydrographicTableName, boolean saveResults, indicatorUse ) {
         //Create spatial units and relations : building, block, rsu
         IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
         assertTrue spatialUnits.execute([datasource : datasource, zoneTable: zoneTableName, buildingTable: buildingTableName,
@@ -519,7 +565,7 @@ class ProcessingChainTest {
         String relationRSU = spatialUnits.getResults().outputTableRsuName
 
         if (saveResults) {
-            println("Saving spatial units")
+            logger.info("Saving spatial units")
             IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
             saveTables.execute( [inputTableNames: spatialUnits.getResults().values()
                                  , directory: directory, datasource: datasource])
@@ -542,12 +588,13 @@ class ProcessingChainTest {
 
         //Compute building indicators
         def computeBuildingsIndicators = ProcessingChain.BuildGeoIndicators.computeBuildingsIndicators()
-        assertTrue computeBuildingsIndicators.execute([datasource            : datasource,
-                                                       inputBuildingTableName: relationBuildings,
-                                                       inputRoadTableName    : roadTableName])
+        assertTrue computeBuildingsIndicators.execute([datasource               : datasource,
+                                                       inputBuildingTableName   : relationBuildings,
+                                                       inputRoadTableName       : roadTableName,
+                                                       indicatorUse             : indicatorUse])
         String buildingIndicators = computeBuildingsIndicators.getResults().outputTableName
         if(saveResults){
-            println("Saving building indicators")
+            logger.info("Saving building indicators")
             datasource.save(buildingIndicators, directory + File.separator + "${buildingIndicators}.geojson")
         }
 
@@ -557,21 +604,21 @@ class ProcessingChainTest {
         assertEquals(countRelationBuilding.count,countBuildingIndicators.count)
 
         //Compute block indicators
-        def computeBlockIndicators = ProcessingChain.BuildGeoIndicators.computeBlockIndicators()
-        assertTrue computeBlockIndicators.execute([datasource: datasource,
-                                                   inputBuildingTableName: buildingIndicators,
-                                                   inputBlockTableName: relationBlocks])
-        String blockIndicators = computeBlockIndicators.getResults().outputTableName
-        if(saveResults){
-            println("Saving block indicators")
-            datasource.save(blockIndicators, directory + File.separator + "${blockIndicators}.geojson")
+        if (indicatorUse.contains("URBAN_TYPOLOGY")) {
+            def computeBlockIndicators = ProcessingChain.BuildGeoIndicators.computeBlockIndicators()
+            assertTrue computeBlockIndicators.execute([datasource            : datasource,
+                                                       inputBuildingTableName: buildingIndicators,
+                                                       inputBlockTableName   : relationBlocks])
+            String blockIndicators = computeBlockIndicators.getResults().outputTableName
+            if (saveResults) {
+                logger.info("Saving block indicators")
+                datasource.save(blockIndicators, directory + File.separator + "${blockIndicators}.geojson")
+            }
+            //Check if we have the same number of blocks
+            def countRelationBlocks= datasource.firstRow("select count(*) as count from ${relationBlocks}".toString())
+            def countBlocksIndicators = datasource.firstRow("select count(*) as count from ${blockIndicators}".toString())
+            assertEquals(countRelationBlocks.count,countBlocksIndicators.count)
         }
-
-        //Check we have the same number of blocks
-        def countRelationBlocks= datasource.firstRow("select count(*) as count from ${relationBlocks}".toString())
-        def countBlocksIndicators = datasource.firstRow("select count(*) as count from ${blockIndicators}".toString())
-        assertEquals(countRelationBlocks.count,countBlocksIndicators.count)
-
 
         //Compute RSU indicators
         def computeRSUIndicators = ProcessingChain.BuildGeoIndicators.computeRSUIndicators()
@@ -580,18 +627,126 @@ class ProcessingChainTest {
                                                  rsuTable               : relationRSU,
                                                  vegetationTable        : vegetationTableName,
                                                  roadTable              : roadTableName,
-                                                 hydrographicTable      : hydrographicTableName])
+                                                 hydrographicTable      : hydrographicTableName,
+                                                 indicatorUse           : indicatorUse])
         String rsuIndicators = computeRSUIndicators.getResults().outputTableName
         if(saveResults){
-            println("Saving RSU indicators")
+            logger.info("Saving RSU indicators")
             datasource.save(rsuIndicators, directory + File.separator + "${rsuIndicators}.geojson")
         }
 
-        //Check we have the same number of RSU
+        //Check if we have the same number of RSU
         def countRelationRSU= datasource.firstRow("select count(*) as count from ${relationRSU}".toString())
         def countRSUIndicators = datasource.firstRow("select count(*) as count from ${rsuIndicators}".toString())
         assertEquals(countRelationRSU.count,countRSUIndicators.count)
+    }
+
+    @Test
+    void osmLczFromTestFiles() {
+        String urlBuilding = new File(getClass().getResource("BUILDING.geojson").toURI()).absolutePath
+        String urlRoad= new File(getClass().getResource("ROAD.geojson").toURI()).absolutePath
+        String urlRail = new File(getClass().getResource("RAIL.geojson").toURI()).absolutePath
+        String urlVeget = new File(getClass().getResource("VEGET.geojson").toURI()).absolutePath
+        String urlHydro = new File(getClass().getResource("HYDRO.geojson").toURI()).absolutePath
+        String urlZone = new File(getClass().getResource("ZONE.geojson").toURI()).absolutePath
+
+        boolean saveResults = true
+        String directory ="./target/osm_processchain_lcz"
+
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+
+        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osmchain_lcz")
+
+        String zoneTableName="zone"
+        String buildingTableName="building"
+        String roadTableName="road"
+        String railTableName="rails"
+        String vegetationTableName="veget"
+        String hydrographicTableName="hydro"
+
+        datasource.load(urlBuilding, buildingTableName)
+        datasource.load(urlRoad, roadTableName)
+        datasource.load(urlRail, railTableName)
+        datasource.load(urlVeget, vegetationTableName)
+        datasource.load(urlHydro, hydrographicTableName)
+        datasource.load(urlZone, zoneTableName)
+
+        //Run tests
+        calcLcz(directory, datasource, zoneTableName, buildingTableName,roadTableName,railTableName,vegetationTableName,
+                hydrographicTableName,saveResults)
+    }
+
+    void calcLcz(String directory, JdbcDataSource datasource, String zoneTableName, String buildingTableName,
+                          String roadTableName, String railTableName, String vegetationTableName,
+                          String hydrographicTableName, boolean saveResults ) {
 
 
+        //Create spatial units and relations : building, block, rsu
+        IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
+        assertTrue spatialUnits.execute([datasource : datasource, zoneTable: zoneTableName, buildingTable: buildingTableName,
+                                         roadTable: roadTableName, railTable: railTableName, vegetationTable: vegetationTableName,
+                                         hydrographicTable: hydrographicTableName, surface_vegetation: 100000,
+                                         surface_hydro  : 2500, distance: 0.01, prefixName: "geounits", indicatorUse: ["LCZ"]])
+
+        String relationBuildings = spatialUnits.getResults().outputTableBuildingName
+        String relationRSU = spatialUnits.getResults().outputTableRsuName
+
+        if (saveResults) {
+            logger.info("Saving spatial units")
+            IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
+            saveTables.execute( [inputTableNames: spatialUnits.getResults().values()
+                                 , directory: directory, datasource: datasource])
+        }
+
+        // Calculate the LCZ indicators and the corresponding LCZ class of each RSU
+        IProcess pm_lcz =  ProcessingChain.BuildLCZ.createLCZ()
+        if(!pm_lcz.execute([datasource: datasource, prefixName: "test", buildingTable: relationBuildings,
+                        rsuTable: relationRSU, roadTable: roadTableName, vegetationTable: vegetationTableName,
+                        hydrographicTable: hydrographicTableName, facadeDensListLayersBottom: [0, 50, 200], facadeDensNumberOfDirection: 8,
+                        svfPointDensity: 0.008, svfRayLength: 100, svfNumberOfDirection: 60,
+                        heightColumnName: "height_roof", fractionTypePervious: ["low_vegetation", "water"],
+                        fractionTypeImpervious: ["road"], inputFields: ["id_build"], levelForRoads: [0]])){
+            logger.info("Cannot create the LCZ.")
+            return
+        }
+        String lczResults = pm_lcz.results.outputTableName
+
+        // Check if we have the same number of RSU
+        def countRelationRSU= datasource.firstRow("select count(*) as count from $relationRSU")
+        def countRSULcz = datasource.firstRow("select count(*) as count from $lczResults")
+        assertEquals(countRelationRSU.count,countRSULcz.count)
+
+        if (saveResults) {
+            logger.info("Saving LCZ classes")
+            datasource.save(lczResults, directory + File.separator + "${lczResults}.geojson")
+        }
+    }
+
+    @Test
+    @EnabledIfSystemProperty(named = "test.bdtopo", matches = "true")
+    void bdtopoLczFromTestFiles() {
+        H2GIS h2GISDatabase = H2GIS.open(bdTopoDb.absolutePath-".mv.db", "sa", "")
+        def process = ProcessingChain.PrepareBDTopo.prepareBDTopo()
+        assertTrue process.execute([datasource: h2GISDatabase, tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                    tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
+                                    tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
+                                    tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
+                                    distBuffer: 500, expand: 1000, idZone: '56195',
+                                    hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
+        ])
+        def abstractTables = process.getResults()
+
+        boolean saveResults = true
+        String directory ="./target/bdtopo_processchain_lcz"
+
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+
+        //Run tests
+        calcLcz(directory, h2GISDatabase, abstractTables.outputZone, abstractTables.outputBuilding,abstractTables.outputRoad,
+                abstractTables.outputRoad, abstractTables.outputVeget, abstractTables.outputHydro,saveResults)
     }
 }

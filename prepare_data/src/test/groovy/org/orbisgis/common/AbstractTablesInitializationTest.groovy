@@ -31,7 +31,6 @@ class AbstractTablesInitializationTest {
         def process = PrepareData.AbstractTablesInitialization.initParametersAbstract()
         assertTrue process.execute([datasource: h2GISDatabase])
         process.getResults().each {entry ->
-            println(entry)
             assertNotNull h2GISDatabase.getTable(entry.getValue())
         }
     }
