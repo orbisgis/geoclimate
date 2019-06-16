@@ -71,7 +71,7 @@ class SpatialUnitsTests {
         assertTrue blockP.execute([inputTableName: "build_tempo",distance:0.01,
                      prefixName: "block", datasource: h2GIS])
         def outputTable = blockP.results.outputTableName
-        def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
+        def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable".toString()
         assertEquals 12 , countRows.numberOfRows
     }
 

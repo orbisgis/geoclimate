@@ -39,6 +39,11 @@
             <groupId>org.orbisgis</groupId>
             <artifactId>process-manager</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.orbisgis</groupId>
+            <artifactId>h2gis-network</artifactId>
+            <version>1.5.0</version>
+        </dependency>
         <!-- Test dependencies -->
         <dependency>
             <groupId>org.slf4j</groupId>
