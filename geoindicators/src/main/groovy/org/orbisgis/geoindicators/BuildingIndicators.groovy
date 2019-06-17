@@ -4,7 +4,7 @@ import groovy.transform.BaseScript
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanagerapi.IProcess
 
-@BaseScript Geoindicators Geoindicators
+@BaseScript Geoindicators geoindicators
 
 /**
  * This process extract building size properties.

@@ -5,7 +5,7 @@ import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanager.h2gis.H2gisSpatialTable
 import org.orbisgis.processmanagerapi.IProcess
 
-@BaseScript Geoindicators Geoindicators
+@BaseScript Geoindicators geoindicators
 
 /**
  * Process used to compute the sum of all building free facades (roofs are excluded) included in a

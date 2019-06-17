@@ -5,7 +5,7 @@ import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanagerapi.IProcess
 
 
-@BaseScript Geoindicators Geoindicators
+@BaseScript Geoindicators geoindicators
 
 /**
  * This process is used to compute basic statistical operations on a specific variable from a lower scale (for
