@@ -1,10 +1,10 @@
 package org.orbisgis.processingchain
 
 import groovy.transform.BaseScript
-import org.orbisgis.BuildingIndicators
-import org.orbisgis.DataUtils
-import org.orbisgis.GenericIndicators
-import org.orbisgis.Geoclimate
+import org.orbisgis.geoindicators.BuildingIndicators
+import org.orbisgis.geoindicators.DataUtils
+import org.orbisgis.geoindicators.GenericIndicators
+import org.orbisgis.geoindicators.Geoindicators
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanagerapi.IProcess
 
@@ -170,7 +170,7 @@ public static IProcess computeBuildingsIndicators() {
             //Sum of the building area
             //Sum of the building volume composing the block
             //Sum of block floor area
-            IProcess  computeSimpleStats =  Geoclimate.GenericIndicators.unweightedOperationFromLowerScale()
+            IProcess  computeSimpleStats =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
             if(!computeSimpleStats.execute([inputLowerScaleTableName: inputBuildingTableName,inputUpperScaleTableName: inputBlockTableName,
                           inputIdUp: id_block, inputVarAndOperations: ["area":["SUM"],"building_floor_area":["SUM"],
                                                                          "building_volume" :["SUM"]],
@@ -181,7 +181,7 @@ public static IProcess computeBuildingsIndicators() {
 
             //Ratio between the holes area and the blocks area
             // block_hole_area_density
-            IProcess computeHoleAreaDensity = Geoclimate.BlockIndicators.holeAreaDensity()
+            IProcess computeHoleAreaDensity = Geoindicators.BlockIndicators.holeAreaDensity()
             if(!computeHoleAreaDensity.execute(blockTable: inputBlockTableName, prefixName: blockPrefixName, datasource: datasource)){
                 logger.info("Cannot compute the hole area density.")
                 return
@@ -189,7 +189,7 @@ public static IProcess computeBuildingsIndicators() {
 
             //Perkins SKill Score of the distribution of building direction within a block
             // block_perkins_skill_score_building_direction
-            IProcess computePerkinsSkillScoreBuildingDirection = Geoclimate.GenericIndicators.perkinsSkillScoreBuildingDirection()
+            IProcess computePerkinsSkillScoreBuildingDirection = Geoindicators.GenericIndicators.perkinsSkillScoreBuildingDirection()
             if(!computePerkinsSkillScoreBuildingDirection.execute([buildingTableName: inputBuildingTableName,
                                                                    inputIdUp   : id_block,
                                                                    angleRangeSize: 15,
@@ -201,14 +201,14 @@ public static IProcess computeBuildingsIndicators() {
 
 
             //Block closingness
-            IProcess computeClosingness = Geoclimate.BlockIndicators.closingness()
+            IProcess computeClosingness = Geoindicators.BlockIndicators.closingness()
             if(!computeClosingness.execute(correlationTableName: inputBuildingTableName, blockTable: inputBlockTableName, prefixName: blockPrefixName, datasource: datasource)){
                 logger.info("Cannot compute closingness indicator. ")
                 return
             }
 
             //Block net compacity
-            IProcess computeNetCompacity = Geoclimate.BlockIndicators.netCompacity()
+            IProcess computeNetCompacity = Geoindicators.BlockIndicators.netCompacity()
             if(!computeNetCompacity.execute([buildTable: inputBuildingTableName, buildingVolumeField: "building_volume", buildingContiguityField: "building_contiguity",
                                          prefixName: blockPrefixName, datasource: datasource])){
                 logger.info("Cannot compute the net compacity indicator. ")
@@ -217,7 +217,7 @@ public static IProcess computeBuildingsIndicators() {
 
             //Block mean building height
             //Block standard deviation building height
-            IProcess computeWeightedAggregatedStatistics = Geoclimate.GenericIndicators.weightedAggregatedStatistics()
+            IProcess computeWeightedAggregatedStatistics = Geoindicators.GenericIndicators.weightedAggregatedStatistics()
             if(!computeWeightedAggregatedStatistics.execute([inputLowerScaleTableName: inputBuildingTableName,inputUpperScaleTableName: inputBlockTableName, inputIdUp: id_block,
                                                          inputVarWeightsOperations: ["height_roof": ["area": ["AVG", "STD"]]]
                                                                                      , prefixName: blockPrefixName, datasource: datasource])){
@@ -226,7 +226,7 @@ public static IProcess computeBuildingsIndicators() {
             }
 
             //Merge all in one table
-            IProcess blockTableJoin = org.orbisgis.DataUtils.joinTables()
+            IProcess blockTableJoin = DataUtils.joinTables()
             if(!blockTableJoin.execute([inputTableNamesWithId: [(inputBlockTableName): id_block,
                                                             (computeSimpleStats.results.outputTableName): id_block,
                                                             (computeHoleAreaDensity.results.outputTableName):id_block ,
@@ -308,7 +308,7 @@ public static IProcess computeRSUIndicators() {
 
                 // rsu_area
                 if (indicatorUse.contains("URBAN_TYPOLOGY")) {
-                    IProcess computeGeometryProperties = Geoclimate.GenericIndicators.geometryProperties()
+                    IProcess computeGeometryProperties = Geoindicators.GenericIndicators.geometryProperties()
                     if (!computeGeometryProperties.execute([inputTableName: rsuTable,       inputFields : [columnIdRsu],
                                                             operations    : ["st_area"],    prefixName  : prefixName,
                                                             datasource    : datasource])) {
@@ -322,7 +322,7 @@ public static IProcess computeRSUIndicators() {
 
                 // Building free external facade density
                 if (indicatorUse.contains("URBAN_TYPOLOGY") || indicatorUse.contains("LCZ")) {
-                    IProcess computeFreeExtDensity = Geoclimate.RsuIndicators.freeExternalFacadeDensity()
+                    IProcess computeFreeExtDensity = Geoindicators.RsuIndicators.freeExternalFacadeDensity()
                     if (!computeFreeExtDensity.execute([buildingTable               : buildingTable, rsuTable: rsuTable,
                                                         buContiguityColumn          : "building_contiguity",
                                                         buTotalFacadeLengthColumn   : "building_total_facade_length",
@@ -352,7 +352,7 @@ public static IProcess computeRSUIndicators() {
                 if (indicatorUse.contains("TEB")) {
                     inputVarAndOperations = inputVarAndOperations << ["area": ["DENS"]]
                 }
-                IProcess computeRSUStatisticsUnweighted = Geoclimate.GenericIndicators.unweightedOperationFromLowerScale()
+                IProcess computeRSUStatisticsUnweighted = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
                 if (!computeRSUStatisticsUnweighted.execute([inputLowerScaleTableName: buildingTable,
                                                              inputUpperScaleTableName: rsuTable,
                                                              inputIdUp               : columnIdRsu,
@@ -369,7 +369,7 @@ public static IProcess computeRSUIndicators() {
 
                 // rsu_road_fraction
                 if (indicatorUse.contains("URBAN_TYPOLOGY") || indicatorUse.contains("LCZ")) {
-                    IProcess computeRoadFraction = Geoclimate.RsuIndicators.roadFraction()
+                    IProcess computeRoadFraction = Geoindicators.RsuIndicators.roadFraction()
                     if (!computeRoadFraction.execute([rsuTable          : rsuTable,           roadTable   : roadTable,
                                                       levelToConsiders  : ["ground": [0]],    prefixName  : prefixName,
                                                       datasource        : datasource])) {
@@ -382,7 +382,7 @@ public static IProcess computeRSUIndicators() {
 
                 // rsu_water_fraction
                 if (indicatorUse.contains("URBAN_TYPOLOGY") || indicatorUse.contains("LCZ")) {
-                    IProcess computeWaterFraction = Geoclimate.RsuIndicators.waterFraction()
+                    IProcess computeWaterFraction = Geoindicators.RsuIndicators.waterFraction()
                     if (!computeWaterFraction.execute([rsuTable  : rsuTable,    waterTable: hydrographicTable,
                                                        prefixName: prefixName,  datasource: datasource])) {
                         logger.info("Cannot compute the fraction of water for the RSU")
@@ -398,7 +398,7 @@ public static IProcess computeRSUIndicators() {
                 if (!indicatorUse.contains("LCZ") && !indicatorUse.contains("TEB")) {
                     fractionTypeVeg = ["all"]
                 }
-                IProcess computeVegetationFraction = Geoclimate.RsuIndicators.vegetationFraction()
+                IProcess computeVegetationFraction = Geoindicators.RsuIndicators.vegetationFraction()
                 if (!computeVegetationFraction.execute([rsuTable    : rsuTable,         vegetTable: vegetationTable,
                                                         fractionType: fractionTypeVeg,  prefixName: prefixName,
                                                         datasource  : datasource])) {
@@ -414,7 +414,7 @@ public static IProcess computeRSUIndicators() {
                 // + rsu_building_number_density RSU number of buildings weighted by RSU area
                 // + rsu_mean_building_volume RSU mean building volume weighted.
                 if (indicatorUse.contains("URBAN_TYPOLOGY")) {
-                    IProcess computeRSUStatisticsWeighted = Geoclimate.GenericIndicators.weightedAggregatedStatistics()
+                    IProcess computeRSUStatisticsWeighted = Geoindicators.GenericIndicators.weightedAggregatedStatistics()
                     if (!computeRSUStatisticsWeighted.execute([inputLowerScaleTableName : buildingTable,
                                                                inputUpperScaleTableName : rsuTable,
                                                                inputIdUp                : columnIdRsu,
@@ -435,7 +435,7 @@ public static IProcess computeRSUIndicators() {
                 if (indicatorUse.contains("URBAN_TYPOLOGY") || indicatorUse.contains("TEB")){
                     def roadOperations = ["rsu_road_direction_distribution", "rsu_linear_road_density"]
                     if (indicatorUse.contains("URBAN_TYPOLOGY")) {roadOperations=["rsu_road_direction_distribution"]}
-                    IProcess computeLinearRoadOperations = Geoclimate.RsuIndicators.linearRoadOperations()
+                    IProcess computeLinearRoadOperations = Geoindicators.RsuIndicators.linearRoadOperations()
                     if (!computeLinearRoadOperations.execute([rsuTable  : rsuTable,         roadTable           : roadTable,
                                                               operations: roadOperations,   levelConsiderated   : [0],
                                                               datasource: datasource,       prefixName          : prefixName])) {
@@ -448,7 +448,7 @@ public static IProcess computeRSUIndicators() {
 
                 // rsu_free_vertical_roof_area_distribution + rsu_free_non_vertical_roof_area_distribution
                 if (indicatorUse.contains("TEB")) {
-                    IProcess computeRoofAreaDist = Geoclimate.RsuIndicators.roofAreaDistribution()
+                    IProcess computeRoofAreaDist = Geoindicators.RsuIndicators.roofAreaDistribution()
                     if (!computeRoofAreaDist.execute([rsuTable          : rsuTable,
                                                       buildingTable     : buildingTable,
                                                       listLayersBottom  : facadeDensListLayersBottom,
@@ -467,7 +467,7 @@ public static IProcess computeRSUIndicators() {
                         facadeDensListLayersBottom: [0, 50, 200]
                         facadeDensNumberOfDirection: 8
                     }
-                    IProcess computeProjFacadeDist = Geoclimate.RsuIndicators.projectedFacadeAreaDistribution()
+                    IProcess computeProjFacadeDist = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution()
                     if (!computeProjFacadeDist.execute([buildingTable       : buildingTable,
                                                         rsuTable            : rsuTable,
                                                         listLayersBottom    : facadeDensListLayersBottom,
@@ -482,7 +482,7 @@ public static IProcess computeRSUIndicators() {
                 }
 
                 // Create an intermediate join tables to have all needed input fields for future indicator calculation
-                IProcess computeIntermediateJoin = Geoclimate.DataUtils.joinTables()
+                IProcess computeIntermediateJoin = Geoindicators.DataUtils.joinTables()
                 if(!computeIntermediateJoin.execute([inputTableNamesWithId: intermediateJoin,
                                                      outputTableName      : "tab4aspratio",
                                                      datasource           : datasource])){
@@ -495,7 +495,7 @@ public static IProcess computeRSUIndicators() {
 
                 // rsu_aspect_ratio
                 if (indicatorUse.contains("LCZ")) {
-                    IProcess computeAspectRatio = Geoclimate.RsuIndicators.aspectRatio()
+                    IProcess computeAspectRatio = Geoindicators.RsuIndicators.aspectRatio()
                     if (!computeAspectRatio.execute([rsuTable                          : intermediateJoinTable,
                                                      rsuFreeExternalFacadeDensityColumn: "rsu_free_external_facade_density",
                                                      rsuBuildingDensityColumn          : "dens_area",
@@ -510,7 +510,7 @@ public static IProcess computeRSUIndicators() {
 
                 // rsu_ground_sky_view_factor
                 if (indicatorUse.contains("LCZ")) {
-                    IProcess computeSVF = Geoclimate.RsuIndicators.groundSkyViewFactor()
+                    IProcess computeSVF = Geoindicators.RsuIndicators.groundSkyViewFactor()
                     if (!computeSVF.execute([rsuTable                   : intermediateJoinTable,
                                              correlationBuildingTable   : buildingTable,
                                              rsuBuildingDensityColumn   : "dens_area",
@@ -538,7 +538,7 @@ public static IProcess computeRSUIndicators() {
                             "${it}_fraction"
                         }
                     }
-                    IProcess computePerviousnessFraction = Geoclimate.RsuIndicators.perviousnessFraction()
+                    IProcess computePerviousnessFraction = Geoindicators.RsuIndicators.perviousnessFraction()
                     if (!computePerviousnessFraction.execute([rsuTable                : intermediateJoinTable,
                                                               operationsAndComposition: ["pervious_fraction"  : perv_type,
                                                                                          "impervious_fraction": imp_type],
@@ -554,7 +554,7 @@ public static IProcess computeRSUIndicators() {
                 // rsu_effective_terrain_roughness
                 if (indicatorUse.contains("LCZ")) {
                     // Create the join tables to have all needed input fields for aspect ratio computation
-                    IProcess computeEffRoughHeight = Geoclimate.RsuIndicators.effectiveTerrainRoughnessHeight()
+                    IProcess computeEffRoughHeight = Geoindicators.RsuIndicators.effectiveTerrainRoughnessHeight()
                     if (!computeEffRoughHeight.execute([rsuTable                       : intermediateJoinTable,
                                                         projectedFacadeAreaName        : "rsu_projected_facade_area_distribution",
                                                         geometricMeanBuildingHeightName: "geom_avg_$heightColumnName",
@@ -569,7 +569,7 @@ public static IProcess computeRSUIndicators() {
                     finalTablesToJoin.put(effRoughHeight, columnIdRsu)
 
                      // rsu_terrain_roughness_class
-                    IProcess computeRoughClass = Geoclimate.RsuIndicators.effectiveTerrainRoughnessClass()
+                    IProcess computeRoughClass = Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass()
                     if (!computeRoughClass.execute([datasource                     : datasource,
                                                     rsuTable                       : effRoughHeight,
                                                     effectiveTerrainRoughnessHeight: "rsu_effective_terrain_roughness",
@@ -583,7 +583,7 @@ public static IProcess computeRSUIndicators() {
 
                 // rsu_perkins_skill_score_building_direction_variability
                 if (indicatorUse.contains("URBAN_TYPOLOGY")) {
-                    IProcess computePerkinsDirection = Geoclimate.GenericIndicators.perkinsSkillScoreBuildingDirection()
+                    IProcess computePerkinsDirection = Geoindicators.GenericIndicators.perkinsSkillScoreBuildingDirection()
                     if (!computePerkinsDirection.execute([buildingTableName: buildingTable,             inputIdUp   : columnIdRsu,
                                                           angleRangeSize   : angleRangeSizeBuDirection, prefixName  : prefixName,
                                                           datasource       : datasource])) {

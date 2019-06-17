@@ -1,6 +1,7 @@
 package org.orbisgis
 
 import org.orbisgis.datamanager.h2gis.H2GIS
+import org.orbisgis.geoindicators.Geoindicators
 import org.orbisgis.processmanagerapi.IProcess
 
 import static org.junit.jupiter.api.Assertions.*
@@ -17,7 +18,7 @@ class DataUtilsTests {
                 "CREATE TABLE tableb (idb integer, lab varchar); insert into tableb values(1,'CNRS');" +
                 "CREATE TABLE tablec (idc integer, location varchar); insert into tablec values(1,'Vannes');"
 
-        IProcess joinProcess = Geoclimate.DataUtils.joinTables()
+        IProcess joinProcess = Geoindicators.DataUtils.joinTables()
         assertTrue joinProcess.execute([inputTableNamesWithId: [tablea:"ida", tableb:"idb", tablec:"idc"]
                                         , outputTableName: "test", datasource: h2GIS])
 
@@ -42,7 +43,7 @@ class DataUtilsTests {
                 "CREATE TABLE tablegeom (idb integer, the_geom geometry); " +
                 "INSERT INTO tablegeom values(1,'POINT(10 10)'::GEOMETRY);"
 
-        IProcess saveTablesAsFiles = Geoclimate.DataUtils.saveTablesAsFiles()
+        IProcess saveTablesAsFiles = Geoindicators.DataUtils.saveTablesAsFiles()
         assertTrue saveTablesAsFiles.execute([inputTableNames: ["tablea","tablegeom"], directory: directory,
                                               datasource: h2GIS])
 

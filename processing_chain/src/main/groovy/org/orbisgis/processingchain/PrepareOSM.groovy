@@ -1,16 +1,10 @@
 package org.orbisgis.processingchain
 
 import groovy.transform.BaseScript
-import org.orbisgis.SpatialUnits
 import org.orbisgis.common.AbstractTablesInitialization
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.osm.OSMGISLayers
-import org.orbisgis.processingchain.ProcessingChain
 import org.orbisgis.processmanagerapi.IProcess
-import org.orbisgis.processmanagerapi.IProcessFactory
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-
 
 @BaseScript ProcessingChain processingChain
 

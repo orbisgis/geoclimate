@@ -1,11 +1,11 @@
-package org.orbisgis
+package org.orbisgis.geoindicators
 
 import groovy.transform.BaseScript
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanagerapi.IProcess
 
 
-@BaseScript Geoclimate geoclimate
+@BaseScript Geoindicators geoindicators
 
 /**
  * This process is used to assign to a Reference Spatial Unit (RSU) a Local Climate Zone type (Stewart et Oke, 2012).

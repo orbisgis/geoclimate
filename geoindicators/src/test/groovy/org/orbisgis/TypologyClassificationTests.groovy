@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.orbisgis.datamanager.h2gis.H2GIS
+import org.orbisgis.geoindicators.Geoindicators
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertTrue
@@ -29,7 +30,7 @@ class TypologyClassificationTests {
                 CREATE TABLE tempo_rsu_for_lcz AS SELECT a.*, b.the_geom FROM rsu_test_for_lcz a LEFT JOIN rsu_test b
                 ON a.id_rsu = b.id_rsu;
         """
-        def  pavg =  Geoclimate.TypologyClassification.identifyLczType()
+        def  pavg =  Geoindicators.TypologyClassification.identifyLczType()
         assertTrue pavg.execute([rsuLczIndicators: "tempo_rsu_for_lcz", normalisationType: "AVG",
                    mapOfWeights: ["sky_view_factor": 1,
                                   "aspect_ratio": 1, "building_surface_fraction": 1, "impervious_surface_fraction": 1,
@@ -48,7 +49,7 @@ class TypologyClassificationTests {
                     assertTrue(row.PSS < 1)
                 }
         }
-        def  pmed =  Geoclimate.TypologyClassification.identifyLczType()
+        def  pmed =  Geoindicators.TypologyClassification.identifyLczType()
         assertTrue pmed.execute([rsuLczIndicators: "tempo_rsu_for_lcz", normalisationType: "MEDIAN",
                    mapOfWeights: ["sky_view_factor": 1,
                                   "aspect_ratio": 1, "building_surface_fraction": 1, "impervious_surface_fraction": 1,

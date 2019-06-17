@@ -1,20 +1,16 @@
 package org.orbisgis.processingchain
 
-import groovy.transform.BaseScript
+
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
-import org.orbisgis.Geoclimate
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanager.h2gis.H2GIS
-import org.orbisgis.processmanager.ProcessMapper
 import org.orbisgis.processmanagerapi.IProcess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertNotNull
-import static org.junit.jupiter.api.Assertions.assertNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.junit.jupiter.api.Assertions.assertEquals
 
@@ -60,7 +56,6 @@ class ProcessingChainTest {
     @Test
     void BDTopoProcessingChainTest(){
         H2GIS h2GIS = H2GIS.open("./target/processingchaindb", "sa", "")
-
         h2GIS.load(new File(this.class.getResource("geoclimate_bdtopo_data_test/IRIS_GE.geojson").toURI()).getAbsolutePath(),"IRIS_GE",true)
         h2GIS.load(new File(this.class.getResource("geoclimate_bdtopo_data_test/BATI_INDIFFERENCIE.geojson").toURI()).getAbsolutePath(),"BATI_INDIFFERENCIE",true)
         h2GIS.load(new File(this.class.getResource("geoclimate_bdtopo_data_test/BATI_REMARQUABLE.geojson").toURI()).getAbsolutePath(),"BATI_REMARQUABLE",true)
@@ -68,14 +63,12 @@ class ProcessingChainTest {
         h2GIS.load(new File(this.class.getResource("geoclimate_bdtopo_data_test/TRONCON_VOIE_FERREE.geojson").toURI()).getAbsolutePath(),"TRONCON_VOIE_FERREE",true)
         h2GIS.load(new File(this.class.getResource("geoclimate_bdtopo_data_test/SURFACE_EAU.geojson").toURI()).getAbsolutePath(),"SURFACE_EAU",true)
         h2GIS.load(new File(this.class.getResource("geoclimate_bdtopo_data_test/ZONE_VEGETATION.geojson").toURI()).getAbsolutePath(),"ZONE_VEGETATION",true)
-
         ProcessMapper pm =  ProcessingChain.prepareBDTopo.createMapper()
         pm.execute([datasource: h2GIS, distBuffer : 500, expand : 1000, idZone : "56260", tableIrisName: "IRIS_GE",
                     tableBuildIndifName: "BATI_INDIFFERENCIE", tableBuildIndusName: "BATI_INDUSTRIEL",
                     tableBuildRemarqName: "BATI_REMARQUABLE", tableRoadName: "ROUTE", tableRailName: "TRONCON_VOIE_FERREE",
                     tableHydroName: "SURFACE_EAU", tableVegetName: "ZONE_VEGETATION",  hLevMin: 3,  hLevMax: 15,
                     hThresholdLev2: 10])
-
         pm.getResults().each {
             entry -> assertNull h2GIS.getTable(entry.getValue())
         }
@@ -328,9 +321,9 @@ class ProcessingChainTest {
                 "sugar cane":["produce":["sugar_cane"],"crop":["sugar_cane"]]
         ]
 
-         H2GIS h2GIS = H2GIS.open("./target/osm_processchain")
+        H2GIS h2GIS = H2GIS.open("./target/osm_processchain")
 
-         prepareOSMData.execute([
+        prepareOSMData.execute([
                 hLevMin: 3,
                 hLevMax: 15,
                 hThresholdLev2: 10,
@@ -545,7 +538,7 @@ class ProcessingChainTest {
 
         //Run tests
         osmGeoIndicators(directory, datasource, zoneTableName, buildingTableName,roadTableName,railTableName,vegetationTableName,
-        hydrographicTableName,saveResults, indicatorUse)
+                hydrographicTableName,saveResults, indicatorUse)
 
     }
 
@@ -679,8 +672,8 @@ class ProcessingChainTest {
     }
 
     void calcLcz(String directory, JdbcDataSource datasource, String zoneTableName, String buildingTableName,
-                          String roadTableName, String railTableName, String vegetationTableName,
-                          String hydrographicTableName, boolean saveResults ) {
+                 String roadTableName, String railTableName, String vegetationTableName,
+                 String hydrographicTableName, boolean saveResults ) {
 
 
         //Create spatial units and relations : building, block, rsu
@@ -703,11 +696,11 @@ class ProcessingChainTest {
         // Calculate the LCZ indicators and the corresponding LCZ class of each RSU
         IProcess pm_lcz =  ProcessingChain.BuildLCZ.createLCZ()
         if(!pm_lcz.execute([datasource: datasource, prefixName: "test", buildingTable: relationBuildings,
-                        rsuTable: relationRSU, roadTable: roadTableName, vegetationTable: vegetationTableName,
-                        hydrographicTable: hydrographicTableName, facadeDensListLayersBottom: [0, 50, 200], facadeDensNumberOfDirection: 8,
-                        svfPointDensity: 0.008, svfRayLength: 100, svfNumberOfDirection: 60,
-                        heightColumnName: "height_roof", fractionTypePervious: ["low_vegetation", "water"],
-                        fractionTypeImpervious: ["road"], inputFields: ["id_build"], levelForRoads: [0]])){
+                            rsuTable: relationRSU, roadTable: roadTableName, vegetationTable: vegetationTableName,
+                            hydrographicTable: hydrographicTableName, facadeDensListLayersBottom: [0, 50, 200], facadeDensNumberOfDirection: 8,
+                            svfPointDensity: 0.008, svfRayLength: 100, svfNumberOfDirection: 60,
+                            heightColumnName: "height_roof", fractionTypePervious: ["low_vegetation", "water"],
+                            fractionTypeImpervious: ["road"], inputFields: ["id_build"], levelForRoads: [0]])){
             logger.info("Cannot create the LCZ.")
             return
         }

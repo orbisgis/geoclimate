@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.orbisgis.datamanager.h2gis.H2GIS
+import org.orbisgis.geoindicators.Geoindicators
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertTrue
@@ -31,7 +32,7 @@ class RsuIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS rsu_tempo; CREATE TABLE rsu_tempo AS SELECT * " +
                 "FROM rsu_test"
 
-        def  p =  Geoclimate.RsuIndicators.freeExternalFacadeDensity()
+        def  p =  Geoindicators.RsuIndicators.freeExternalFacadeDensity()
         assertTrue p.execute([buildingTable: "tempo_build",
                    rsuTable: "rsu_tempo",
                    buContiguityColumn: "building_contiguity",
@@ -54,7 +55,7 @@ class RsuIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS corr_tempo; CREATE TABLE corr_tempo AS SELECT a.*, b.the_geom, b.height_wall " +
                 "FROM rsu_build_corr a, tempo_build b WHERE a.id_build = b.id_build"
 
-        def  p =  Geoclimate.RsuIndicators.groundSkyViewFactor()
+        def  p =  Geoindicators.RsuIndicators.groundSkyViewFactor()
         assertTrue p.execute([rsuTable: "rsu_test",correlationBuildingTable: "corr_tempo", rsuBuildingDensityColumn:
                 "rsu_building_density", pointDensity: 0.008, rayLength: 100, numberOfDirection: 60, prefixName: "test",
                    datasource: h2GIS])
@@ -67,7 +68,7 @@ class RsuIndicatorsTests {
 
     @Test
     void aspectRatioTest() {
-        def  p =  Geoclimate.RsuIndicators.aspectRatio()
+        def  p =  Geoindicators.RsuIndicators.aspectRatio()
         assertTrue p.execute([rsuTable: "rsu_test", rsuFreeExternalFacadeDensityColumn:
                 "rsu_free_external_facade_density", rsuBuildingDensityColumn: "rsu_building_density",
                    prefixName: "test", datasource: h2GIS])
@@ -87,7 +88,7 @@ class RsuIndicatorsTests {
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def numberOfDirection = 4
         def dirMedDeg = 180/numberOfDirection
-        def p = Geoclimate.RsuIndicators.projectedFacadeAreaDistribution()
+        def p = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution()
         assertTrue p.execute([buildingTable: "tempo_build", rsuTable: "rsu_test", listLayersBottom: listLayersBottom,
                               numberOfDirection: numberOfDirection, prefixName: "test", datasource: h2GIS])
         def concat = ""
@@ -121,7 +122,7 @@ class RsuIndicatorsTests {
                 "id_build < 29 AND id_build > 26"
 
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
-        def p = Geoclimate.RsuIndicators.roofAreaDistribution()
+        def p = Geoindicators.RsuIndicators.roofAreaDistribution()
         assertTrue p.execute([rsuTable: "rsu_test", buildingTable: "tempo_build",
                    listLayersBottom: listLayersBottom, prefixName: "test",
                    datasource: h2GIS])
@@ -169,14 +170,14 @@ class RsuIndicatorsTests {
 
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def numberOfDirection = 4
-        def pFacadeDistrib = Geoclimate.RsuIndicators.projectedFacadeAreaDistribution()
+        def pFacadeDistrib = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution()
         assertTrue pFacadeDistrib.execute([buildingTable: "tempo_build",
                                            rsuTable: "rsu_test",
                                            listLayersBottom: listLayersBottom,
                                            numberOfDirection: numberOfDirection,
                                            prefixName: "test",
                                            datasource: h2GIS])
-        def  pGeomAvg =  Geoclimate.GenericIndicators.unweightedOperationFromLowerScale()
+        def  pGeomAvg =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
         assertTrue pGeomAvg.execute([inputLowerScaleTableName: "tempo_build",
                                      inputUpperScaleTableName: "rsu_build_corr",
                                      inputIdUp: "id_rsu",
@@ -192,7 +193,7 @@ class RsuIndicatorsTests {
         h2GIS.execute "CREATE TABLE rsu_table AS SELECT a.*, b.geom_avg_height_roof, b.the_geom " +
                 "FROM test_rsu_projected_facade_area_distribution a, test_unweighted_operation_from_lower_scale b " +
                 "WHERE a.id_rsu = b.id_rsu"
-        def  p =  Geoclimate.RsuIndicators.effectiveTerrainRoughnessHeight()
+        def  p =  Geoindicators.RsuIndicators.effectiveTerrainRoughnessHeight()
         assertTrue p.execute([rsuTable: "rsu_table",
                               projectedFacadeAreaName: "rsu_projected_facade_area_distribution",
                               geometricMeanBuildingHeightName: "geom_avg_height_roof",
@@ -214,7 +215,7 @@ class RsuIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS road_tempo; CREATE TABLE road_tempo AS SELECT * " +
                 "FROM road_test WHERE id_road < 7"
 
-        def p1 =  Geoclimate.RsuIndicators.linearRoadOperations()
+        def p1 =  Geoindicators.RsuIndicators.linearRoadOperations()
         assertTrue p1.execute([rsuTable: "rsu_test",
                                roadTable: "road_test",
                                operations: ["rsu_road_direction_distribution", "rsu_linear_road_density"],
@@ -232,14 +233,14 @@ class RsuIndicatorsTests {
         assertEquals(10.0, t1.rsu_road_direction_distribution_d90_120)
         assertEquals(0.0142, t2.rsu_linear_road_density.round(4))
 
-        def p2 =  Geoclimate.RsuIndicators.linearRoadOperations()
+        def p2 =  Geoindicators.RsuIndicators.linearRoadOperations()
         assertTrue p2.execute([rsuTable: "rsu_test", roadTable: "road_test", operations: ["rsu_road_direction_distribution"],
                     prefixName: "test", angleRangeSize: 30, levelConsiderated: [0], datasource: h2GIS])
         def t01 = h2GIS.firstRow("SELECT rsu_road_direction_distribution_h0_d0_30 " +
                 "FROM test_rsu_road_linear_properties WHERE id_rsu = 14")
         assertEquals(20, t01.rsu_road_direction_distribution_h0_d0_30)
 
-        def p3 =  Geoclimate.RsuIndicators.linearRoadOperations()
+        def p3 =  Geoindicators.RsuIndicators.linearRoadOperations()
         assertTrue p3.execute([rsuTable: "rsu_test", roadTable: "road_test", operations: ["rsu_linear_road_density"],
                     prefixName: "test", angleRangeSize: 30, levelConsiderated: [-1], datasource: h2GIS])
         def t001 = h2GIS.firstRow("SELECT rsu_linear_road_density_hminus1 " +
@@ -253,7 +254,7 @@ class RsuIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS rsu_tempo; CREATE TABLE rsu_tempo AS SELECT *, CASEWHEN(id_rsu = 1, 2.3," +
                 "CASEWHEN(id_rsu = 2, 0.1, null)) AS rsu_effective_terrain_roughness_height FROM rsu_test"
 
-        def p =  Geoclimate.RsuIndicators.effectiveTerrainRoughnessClass()
+        def p =  Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass()
         assertTrue p.execute([datasource: h2GIS, rsuTable: "rsu_tempo", effectiveTerrainRoughnessHeight: "rsu_effective_terrain_roughness_height",
                    prefixName: "test"])
         def concat = ""
@@ -269,14 +270,14 @@ class RsuIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS tempo_veget; CREATE TABLE tempo_veget AS SELECT * " +
                 "FROM veget_test WHERE id_veget < 4"
 
-        def  p0 =  Geoclimate.RsuIndicators.vegetationFraction()
+        def  p0 =  Geoindicators.RsuIndicators.vegetationFraction()
         assertTrue p0.execute([rsuTable: "rsu_test", vegetTable: "tempo_veget", fractionType: ["low"],
                                prefixName: "zero", datasource: h2GIS])
         def concat = ["",""]
         h2GIS.eachRow("SELECT * FROM zero_vegetation_fraction WHERE id_rsu = 14 OR id_rsu = 15"){
             row -> concat[0]+= "${row.low_vegetation_fraction}\n"
         }
-        def  p1 =  Geoclimate.RsuIndicators.vegetationFraction()
+        def  p1 =  Geoindicators.RsuIndicators.vegetationFraction()
         assertTrue p1.execute([rsuTable: "rsu_test", vegetTable: "tempo_veget", fractionType: ["high", "all"], prefixName: "one",
                     datasource: h2GIS])
         h2GIS.eachRow("SELECT * FROM one_vegetation_fraction WHERE id_rsu = 14 OR id_rsu = 15"){
@@ -294,7 +295,7 @@ class RsuIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS tempo_road; CREATE TABLE tempo_road AS SELECT * " +
                 "FROM road_test WHERE id_road < 7"
 
-        def  p0 =  Geoclimate.RsuIndicators.roadFraction()
+        def  p0 =  Geoindicators.RsuIndicators.roadFraction()
         assertTrue p0.execute([rsuTable: "rsu_test", roadTable: "tempo_road", levelToConsiders: ["underground":[-4, -3, -2, -1]],
                     prefixName: "zero",
                     datasource: h2GIS])
@@ -302,7 +303,7 @@ class RsuIndicatorsTests {
         h2GIS.eachRow("SELECT * FROM zero_road_fraction WHERE id_rsu = 14 OR id_rsu = 15"){
             row -> concat[0]+= "${row.underground_road_fraction.round(5)}\n"
         }
-        def  p1 =  Geoclimate.RsuIndicators.roadFraction()
+        def  p1 =  Geoindicators.RsuIndicators.roadFraction()
         assertTrue p1.execute([rsuTable: "rsu_test", roadTable: "tempo_road",
                                levelToConsiders: ["underground":[-4, -3, -2, -1], "ground":[0]],
                                prefixName: "one",
@@ -322,7 +323,7 @@ class RsuIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS tempo_hydro; CREATE TABLE tempo_hydro AS SELECT * " +
                 "FROM hydro_test WHERE id_hydro < 2"
 
-        def  p =  Geoclimate.RsuIndicators.waterFraction()
+        def  p =  Geoindicators.RsuIndicators.waterFraction()
         assertTrue p.execute([rsuTable: "rsu_test", waterTable: "tempo_hydro", prefixName: "test",
                    datasource: h2GIS])
         def concat = [""]
@@ -341,13 +342,13 @@ class RsuIndicatorsTests {
                 "FROM road_test WHERE id_road < 7"
 
         // The corresponding fractions are calculated
-        def  pveg =  Geoclimate.RsuIndicators.vegetationFraction()
+        def  pveg =  Geoindicators.RsuIndicators.vegetationFraction()
         assertTrue pveg.execute([rsuTable: "rsu_test", vegetTable: "tempo_veget", fractionType: ["low"],
                                  prefixName: "test", datasource: h2GIS])
-        def  pwat =  Geoclimate.RsuIndicators.waterFraction()
+        def  pwat =  Geoindicators.RsuIndicators.waterFraction()
         assertTrue pwat.execute([rsuTable: "rsu_test", waterTable: "tempo_hydro", prefixName: "test",
                                  datasource: h2GIS])
-        def  proad =  Geoclimate.RsuIndicators.roadFraction()
+        def  proad =  Geoindicators.RsuIndicators.roadFraction()
         assertTrue proad.execute([rsuTable: "rsu_test", roadTable: "tempo_road",
                                   levelToConsiders: ["underground":[-4, -3, -2, -1], "ground":[0]],
                                   prefixName: "test", datasource: h2GIS])
@@ -357,7 +358,7 @@ class RsuIndicatorsTests {
                 "b.water_fraction, c.ground_road_fraction FROM test_vegetation_fraction a, test_water_fraction b," +
                 "test_road_fraction c WHERE a.id_rsu = b.id_rsu AND a.id_rsu = c.id_rsu;")
 
-        def pfin = Geoclimate.RsuIndicators.perviousnessFraction()
+        def pfin = Geoindicators.RsuIndicators.perviousnessFraction()
         assertTrue pfin.execute([rsuTable: "needed_data",
                                  operationsAndComposition: [
                                          "pervious_fraction" : ["low_vegetation_fraction", "water_fraction"],
