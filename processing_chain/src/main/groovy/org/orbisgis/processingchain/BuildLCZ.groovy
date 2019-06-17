@@ -1,7 +1,7 @@
 package org.orbisgis.processingchain
 
 import groovy.transform.BaseScript
-import org.orbisgis.Geoclimate
+import org.orbisgis.geoindicators.Geoindicators
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanagerapi.IProcess
 
@@ -111,7 +111,7 @@ public static createLCZ() {
                 // I. Calculate preliminary indicators needed for the other calculations (the relations of chaining between
                 // the indicators are illustrated with the scheme IProcessA --> IProcessB)
                 // calc_building_area --> calc_build_densityNroughness
-                IProcess calc_building_area = Geoclimate.GenericIndicators.geometryProperties()
+                IProcess calc_building_area = Geoindicators.GenericIndicators.geometryProperties()
                 calc_building_area.execute([inputTableName: buildingTable, inputFields: inputFields,
                                             operations    : ["st_area"], prefixName: prefixName, datasource: datasource])
 
@@ -127,7 +127,7 @@ public static createLCZ() {
                         veg_type.add("high")
                         perv_type.add("high_vegetation_fraction")
                     }
-                    IProcess calc_veg_frac = Geoclimate.RsuIndicators.vegetationFraction()
+                    IProcess calc_veg_frac = Geoindicators.RsuIndicators.vegetationFraction()
                     calc_veg_frac.execute([rsuTable  : rsuTable, vegetTable: vegetationTable, fractionType: veg_type,
                                            prefixName: prefixName, datasource: datasource])
                     // Add the table in the map that will be used to join the vegetation field with the RSU table
@@ -138,7 +138,7 @@ public static createLCZ() {
                 // calc_road_frac --> calc_perviousness_frac  (calculate only if road considered as impervious)
                 if (fractionTypeImpervious.contains("road")) {
                     imp_type.add("ground_road_fraction")
-                    IProcess calc_road_frac = Geoclimate.RsuIndicators.roadFraction()
+                    IProcess calc_road_frac = Geoindicators.RsuIndicators.roadFraction()
                     calc_road_frac.execute([rsuTable: rsuTable, roadTable: roadTable, levelToConsiders:
                             ["ground": levelForRoads], prefixName: prefixName, datasource: datasource])
                     // Add the table in the map that will be used to join the vegetation field with the RSU table
@@ -149,7 +149,7 @@ public static createLCZ() {
                 // calc_water_frac --> calc_perviousness_frac  (calculate only if water considered as pervious)
                 if (fractionTypePervious.contains("water")) {
                     perv_type.add("water_fraction")
-                    IProcess calc_water_frac = Geoclimate.RsuIndicators.waterFraction()
+                    IProcess calc_water_frac = Geoindicators.RsuIndicators.waterFraction()
                     calc_water_frac.execute([rsuTable  : rsuTable, waterTable: hydrographicTable, prefixName: "test",
                                              datasource: datasource])
                     // Add the table in the map that will be used to join the vegetation field with the RSU table
@@ -160,26 +160,26 @@ public static createLCZ() {
                 // calc_build_contiguity    -->
                 //                                  calc_free_ext_density --> calc_aspect_ratio
                 // calc_build_facade_length -->
-                IProcess calc_build_contiguity = Geoclimate.BuildingIndicators.neighborsProperties()
+                IProcess calc_build_contiguity = Geoindicators.BuildingIndicators.neighborsProperties()
                 calc_build_contiguity.execute([inputBuildingTableName: buildingTable,
                                                operations            : ["building_contiguity"], prefixName: prefixName, datasource: datasource])
-                IProcess calc_build_facade_length = Geoclimate.BuildingIndicators.sizeProperties()
+                IProcess calc_build_facade_length = Geoindicators.BuildingIndicators.sizeProperties()
                 calc_build_facade_length.execute([inputBuildingTableName: buildingTable,
                                                   operations            : ["building_total_facade_length"], prefixName: prefixName,
                                                   datasource            : datasource])
-                IProcess join_for_input_facade_dens = Geoclimate.DataUtils.joinTables()
+                IProcess join_for_input_facade_dens = Geoindicators.DataUtils.joinTables()
                 join_for_input_facade_dens.execute([inputTableNamesWithId: [(buildingTable)                                 : columnIdBu,
                                                                           (calc_build_facade_length.results.outputTableName): columnIdBu,
                                                                           (calc_build_contiguity.results.outputTableName)   : columnIdBu],
                                                   outputTableName        : "tab4facdens", datasource: datasource])
-                IProcess calc_free_ext_density = Geoclimate.RsuIndicators.freeExternalFacadeDensity()
+                IProcess calc_free_ext_density = Geoindicators.RsuIndicators.freeExternalFacadeDensity()
                 calc_free_ext_density.execute([buildingTable            : join_for_input_facade_dens.results.outputTableName,
                                                rsuTable                 : rsuTable, buContiguityColumn : "building_contiguity",
                                                buTotalFacadeLengthColumn: "building_total_facade_length",
                                                prefixName               : prefixName, datasource: datasource])
 
                 // calc_proj_facade_dist --> calc_effective_roughness_height
-                IProcess calc_proj_facade_dist = Geoclimate.RsuIndicators.projectedFacadeAreaDistribution()
+                IProcess calc_proj_facade_dist = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution()
                 calc_proj_facade_dist.execute([buildingTable   : buildingTable, rsuTable: rsuTable,
                                                listLayersBottom: facadeDensListLayersBottom, numberOfDirection: facadeDensNumberOfDirection,
                                                prefixName      : "test", datasource: datasource])
@@ -189,11 +189,11 @@ public static createLCZ() {
                 // AND the HEIGHT OF ROUGHNESS ELEMENTS from the building roof height
                 // calc_build_densityNroughness --> calcSVF (which needs building_density)
                 // calc_build_densityNroughness --> calc_effective_roughness_height (which needs geometric_height)
-                IProcess join_for_densityNroughness = Geoclimate.DataUtils.joinTables()
+                IProcess join_for_densityNroughness = Geoindicators.DataUtils.joinTables()
                 join_for_densityNroughness.execute([inputTableNamesWithId: [(calc_building_area.results.outputTableName): columnIdBu,
                                                                             (buildingTable): columnIdBu],
                                                     outputTableName      : "tab4roughness", datasource: datasource])
-                IProcess calc_build_densityNroughness = Geoclimate.GenericIndicators.unweightedOperationFromLowerScale()
+                IProcess calc_build_densityNroughness = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
                 calc_build_densityNroughness.execute([inputLowerScaleTableName: join_for_densityNroughness.results.outputTableName,
                                                       inputUpperScaleTableName: rsuTable, inputIdUp: columnIdRsu,
                                                       inputVarAndOperations   : [(heightColumnName): ["GEOM_AVG"], "AREA": ["DENS"]],
@@ -201,22 +201,22 @@ public static createLCZ() {
 
                 // Calculate the SKY VIEW FACTOR from the RSU building density
                 // Merge the geometric average and the building density into the RSU table
-                IProcess join_for_SVF = Geoclimate.DataUtils.joinTables()
+                IProcess join_for_SVF = Geoindicators.DataUtils.joinTables()
                 join_for_SVF.execute([inputTableNamesWithId: [(calc_build_densityNroughness.results.outputTableName): columnIdRsu,
                                                                             (rsuTable): columnIdRsu],
                                       outputTableName      : "tab4svf", datasource: datasource])
-                IProcess calcSVF = Geoclimate.RsuIndicators.groundSkyViewFactor()
+                IProcess calcSVF = Geoindicators.RsuIndicators.groundSkyViewFactor()
                 calcSVF.execute([rsuTable           : join_for_SVF.results.outputTableName, correlationBuildingTable: buildingTable, rsuBuildingDensityColumn:
                         "dens_area", pointDensity: svfPointDensity, rayLength: svfRayLength,
                                  numberOfDirection  : svfNumberOfDirection, prefixName: prefixName, datasource: datasource])
 
                 // Calculate the ASPECT RATIO from the building fraction and the free external facade density
                 // Merge the free external facade density into the RSU table containing the other indicators
-                IProcess join_for_aspect_ratio = Geoclimate.DataUtils.joinTables()
+                IProcess join_for_aspect_ratio = Geoindicators.DataUtils.joinTables()
                 join_for_aspect_ratio.execute([inputTableNamesWithId: [(join_for_SVF.results.outputTableName): columnIdRsu,
                                                               (calc_free_ext_density.results.outputTableName): columnIdRsu],
                                                outputTableName: "tab4aspratio", datasource: datasource])
-                IProcess calc_aspect_ratio = Geoclimate.RsuIndicators.aspectRatio()
+                IProcess calc_aspect_ratio = Geoindicators.RsuIndicators.aspectRatio()
                 calc_aspect_ratio.execute([rsuTable                                 : join_for_aspect_ratio.results.outputTableName,
                                            rsuFreeExternalFacadeDensityColumn       : "rsu_free_external_facade_density",
                                            rsuBuildingDensityColumn                 : "dens_area",
@@ -230,10 +230,10 @@ public static createLCZ() {
                     // in order to be used to calculate the pervious and impervious surface fractions
                     surf_fractions[calc_build_densityNroughness.results.outputTableName]=columnIdRsu
                 }
-                IProcess joinFracSurf = Geoclimate.DataUtils.joinTables()
+                IProcess joinFracSurf = Geoindicators.DataUtils.joinTables()
                 joinFracSurf.execute([inputTableNamesWithId: surf_fractions,
                                       outputTableName      : "tab4perv", datasource: datasource])
-                IProcess calc_perviousness_frac = Geoclimate.RsuIndicators.perviousnessFraction()
+                IProcess calc_perviousness_frac = Geoindicators.RsuIndicators.perviousnessFraction()
                 calc_perviousness_frac.execute([rsuTable  : joinFracSurf.results.outputTableName,
                                                 operationsAndComposition: ["pervious_fraction": perv_type,
                                                                            "impervious_fraction": imp_type],
@@ -241,14 +241,14 @@ public static createLCZ() {
 
                 // Calculate the TERRAIN ROUGHNESS CLASS
                 // Merge the geometric average and the projected facade area distribution into the RSU table
-                IProcess join4Roughness = Geoclimate.DataUtils.joinTables()
+                IProcess join4Roughness = Geoindicators.DataUtils.joinTables()
                 join4Roughness.execute([inputTableNamesWithId   : [(rsuTable)                                              :columnIdRsu,
                                                                    (calc_build_densityNroughness.results.outputTableName)  :columnIdRsu,
                                                                    (calc_proj_facade_dist.results.outputTableName)         :columnIdRsu],
                                         outputTableName         : "tab4perv",
                                         datasource              : datasource])
                 // calc_effective_roughness_height --> calc_roughness_class
-                IProcess calc_effective_roughness_height = Geoclimate.RsuIndicators.effectiveTerrainRoughnessHeight()
+                IProcess calc_effective_roughness_height = Geoindicators.RsuIndicators.effectiveTerrainRoughnessHeight()
                 calc_effective_roughness_height.execute([rsuTable                           : join4Roughness.results.outputTableName,
                                                          projectedFacadeAreaName            : "rsu_projected_facade_area_distribution",
                                                          geometricMeanBuildingHeightName    : "geom_avg_$heightColumnName",
@@ -256,7 +256,7 @@ public static createLCZ() {
                                                          listLayersBottom                   : facadeDensListLayersBottom,
                                                          numberOfDirection                  : facadeDensNumberOfDirection,
                                                          datasource                         : datasource])
-                IProcess calc_roughness_class = Geoclimate.RsuIndicators.effectiveTerrainRoughnessClass()
+                IProcess calc_roughness_class = Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass()
                 calc_roughness_class.execute([datasource                        : datasource,
                                               rsuTable                          : calc_effective_roughness_height.results.outputTableName,
                                               effectiveTerrainRoughnessHeight   : "rsu_effective_terrain_roughness",
@@ -264,7 +264,7 @@ public static createLCZ() {
 
                 // III. Define the LCZ of each RSU according to their 7 geometric and surface cover properties
                 // Merge all indicator columns in one table
-                IProcess join_final_table = Geoclimate.DataUtils.joinTables()
+                IProcess join_final_table = Geoindicators.DataUtils.joinTables()
                 join_final_table.execute([inputTableNamesWithId:
                         [(join_for_SVF.results.outputTableName)          : columnIdRsu,
                          (calc_aspect_ratio.results.outputTableName)     : columnIdRsu,
@@ -285,7 +285,7 @@ public static createLCZ() {
                         "${lczIndicNames.values().join(",")} FROM $rsuIndicators"
 
                 // The classification algorithm is called
-                IProcess classifyLCZ = Geoclimate.TypologyClassification.identifyLczType()
+                IProcess classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
                 if(!classifyLCZ.execute([rsuLczIndicators   : lczIndicTable,
                                      normalisationType  : "AVG",
                                      mapOfWeights       : ["sky_view_factor"          : 1, "aspect_ratio"                : 1,

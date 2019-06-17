@@ -1,6 +1,6 @@
 package org.orbisgis.processingchain
 
-import org.orbisgis.DataUtils
+import org.orbisgis.geoindicators.DataUtils
 import org.orbisgis.processmanager.ProcessManager
 import org.orbisgis.processmanagerapi.IProcessFactory
 import org.slf4j.Logger

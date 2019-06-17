@@ -1,4 +1,4 @@
-package org.orbisgis
+package org.orbisgis.geoindicators
 
 import groovy.transform.BaseScript
 import org.h2gis.network.functions.ST_ConnectedComponents
@@ -8,7 +8,7 @@ import org.orbisgis.processmanagerapi.IProcess
 import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedComponents
 
 
-@BaseScript Geoclimate geoclimate
+@BaseScript Geoindicators geoindicators
 
 /**
  * This process is used to create the reference spatial units (RSU)
