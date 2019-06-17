@@ -1,8 +1,11 @@
 package org.orbisgis.geoindicators
 
 import groovy.transform.BaseScript
+import org.h2gis.network.functions.ST_ConnectedComponents
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanagerapi.IProcess
+
+import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedComponents
 
 
 @BaseScript Geoindicators geoindicators
@@ -202,22 +205,59 @@ static IProcess prepareRSUData(){
  */
 static IProcess createBlocks(){
     return processFactory.create("Merge the geometries that touch each other",
-            [inputTableName: String, distance : double, prefixName: String, datasource: JdbcDataSource],
+            [inputTableName: String, distance : 0.0d, prefixName: "block", datasource: JdbcDataSource],
             [outputTableName : String, outputIdBlock: String],
-            { inputTableName,distance =0.0, prefixName="block", datasource ->
-                logger.info("Merging the geometries...")
-
+            { inputTableName,distance, prefixName, JdbcDataSource datasource ->
+                logger.info("Creating the blocks...")
                 def columnIdName = "id_block"
 
                 // The name of the outputTableName is constructed
                 String baseName = "created_blocks"
                 String outputTableName = prefixName + "_" + baseName
 
-                datasource.execute "DROP TABLE IF EXISTS $outputTableName"
-                datasource.execute "CREATE TABLE $outputTableName as  select  EXPLOD_ID as $columnIdName, the_geom "+
-                        "from st_explode ('(select ST_UNION(ST_ACCUM(ST_BUFFER(THE_GEOM,$distance))) as the_geom"+
-                        " from $inputTableName)')"
-                logger.info("The geometries have been merged")
+
+
+                //Find all neighbors for each building
+                logger.info("Building index to perform the process...")
+                datasource.getSpatialTable(inputTableName).the_geom.createSpatialIndex()
+                datasource.getSpatialTable(inputTableName).id_build.createIndex()
+
+                logger.info("Building spatial clusters...")
+
+                String graphTable = "spatial_clusters"+ uuid()
+
+                datasource.execute """drop table if exists $graphTable; create table $graphTable 
+                 (EDGE_ID SERIAL, START_NODE INT, END_NODE INT) as select null, a.id_build as START_NODE, b.id_build as END_NODE 
+                from  $inputTableName as a, $inputTableName as b 
+                where a.id_build<>b.id_build AND a.the_geom && b.the_geom and  
+                st_dwithin(b.the_geom,a.the_geom, $distance) ;"""
+
+
+                String subGraphTableNodes =  graphTable+ "_NODE_CC"
+                String subGraphTableEdges =  graphTable+ "_EDGE_CC"
+
+                datasource.execute"DROP TABLE IF EXISTS $subGraphTableEdges, $subGraphTableNodes;"
+
+                getConnectedComponents(datasource.getConnection(),graphTable,"undirected")
+
+                //Unify buildings that share a boundary
+                logger.info("Merging spatial clusters...")
+                String subGraphBlocks =  "subgraphblocks"+ uuid()
+                datasource.execute """
+                CREATE INDEX ON $subGraphTableNodes(NODE_ID);
+                DROP TABLE IF EXISTS $subGraphBlocks;
+                CREATE TABLE $subGraphBlocks
+                AS SELECT ST_UNION(ST_ACCUM(A.THE_GEOM)) AS THE_GEOM
+                FROM $inputTableName A, $subGraphTableNodes B
+                WHERE A.id_build=B.NODE_ID GROUP BY B.CONNECTED_COMPONENT;"""
+
+                //Create the blocks
+                logger.info("Creating the block table...")
+                datasource.execute """DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName ($columnIdName SERIAL, THE_GEOM GEOMETRY) 
+                AS (SELECT null, THE_GEOM FROM $subGraphBlocks) UNION ALL (SELECT null, a.the_geom FROM $inputTableName a 
+                LEFT JOIN $subGraphTableNodes b ON a.id_build = b.NODE_ID WHERE b.NODE_ID IS NULL);"""
+
+                logger.info("The blocks have been created")
                 [outputTableName: outputTableName, outputIdBlock: columnIdName]
             }
     )
