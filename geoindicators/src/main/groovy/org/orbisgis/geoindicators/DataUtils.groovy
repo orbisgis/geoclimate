@@ -4,7 +4,7 @@ import groovy.transform.BaseScript
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanagerapi.IProcess
 
-@BaseScript Geoindicators geoclimate
+@BaseScript Geoindicators Geoindicators
 
 /**
  * An utility process to join all tables in one table

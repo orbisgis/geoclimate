@@ -5,7 +5,7 @@ import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanagerapi.IProcess
 
 
-@BaseScript Geoindicators geoclimate
+@BaseScript Geoindicators Geoindicators
 
 /**
  * This process is used to create the reference spatial units (RSU)
