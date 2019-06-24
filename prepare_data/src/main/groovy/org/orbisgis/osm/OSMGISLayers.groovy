@@ -55,6 +55,7 @@ static IProcess prepareBuildings() {
                 defineBuildingScript(osmTablesPrefix, buildingTableColumnsNames, buildingTagKeys, buildingTagValues,
                         scriptFile, tableName, buildingFilter)
                 datasource.executeScript(scriptFile.getAbsolutePath())
+                //datasource.save(tableName,File.createTempFile(tableName,".geojson").getAbsolutePath())
                 scriptFile.delete()
                 logger.info('Buildings preparation finished')
                 [buildingTableName: tableName]
@@ -97,6 +98,7 @@ static IProcess prepareRoads() {
                 defineRoadScript(osmTablesPrefix, roadTableColumnsNames, roadTagKeys, roadTagValues,
                         scriptFile, tableName, roadFilter)
                 datasource.executeScript(scriptFile.getAbsolutePath())
+                //datasource.save(tableName,File.createTempFile(tableName,".geojson").getAbsolutePath())
                 scriptFile.delete()
                 logger.info('Roads preparation finishes')
                 [roadTableName: tableName]
@@ -139,6 +141,7 @@ static IProcess prepareRails() {
                 defineRailScript osmTablesPrefix, railTableColumnsNames, tagKeys, tagValues,
                         scriptFile, tableName, filteringZoneTableName
                 datasource.executeScript scriptFile.getAbsolutePath()
+                //datasource.save(tableName,File.createTempFile(tableName,".geojson").getAbsolutePath())
                 scriptFile.delete()
                 logger.info('Rails preparation finishes')
                 [railTableName: tableName]
@@ -181,6 +184,7 @@ static IProcess prepareVeget() {
                 defineVegetationScript osmTablesPrefix, vegetTableColumnsNames, vegetTagKeys, vegetTagValues,
                         scriptFile, tableName, vegetFilter
                 datasource.executeScript scriptFile.getAbsolutePath()
+                //datasource.save(tableName,File.createTempFile(tableName,".geojson").getAbsolutePath())
                 scriptFile.delete()
                 logger.info('Veget preparation finishes')
                 [vegetTableName: tableName]
@@ -222,6 +226,7 @@ static IProcess prepareHydro() {
                 defineHydroScript osmTablesPrefix, hydroTableColumnsNames, hydroTags,
                         scriptFile, tableName, hydroFilter
                 datasource.executeScript scriptFile.getAbsolutePath()
+                //datasource.save(tableName,File.createTempFile(tableName,".geojson").getAbsolutePath())
                 scriptFile.delete()
                 logger.info('Hydro preparation finishes')
                 [hydroTableName: tableName]
@@ -630,7 +635,7 @@ static void defineBuildingScript(prefix, options, tagKeys, tagValues, scriptFile
             CREATE SPATIAL INDEX ON buildings_rel_tot_$uid (the_geom);
             DROP TABLE IF EXISTS $buildingTableName;
             CREATE TABLE $buildingTableName AS
-            SELECT ST_MAKEVALID(a.the_geom) the_geom, id_way"""
+            SELECT ST_SETSRID(ST_MAKEVALID(a.the_geom),2154) the_geom, id_way"""
     options.each {
         script += ', ' + it.value
     }
@@ -713,7 +718,7 @@ static void defineRoadScript(prefix, options, tagKeys, tagValues, scriptFile
             DROP TABLE IF EXISTS roads_raw_${uid};
             """
     script +='DROP TABLE IF EXISTS '+roadTableName+';\n' +
-            'CREATE TABLE '+roadTableName+' AS\n    SELECT a.the_geom, a.id_way'
+            'CREATE TABLE '+roadTableName+' AS\n    SELECT ST_SETSRID(a.the_geom,2154) the_geom, a.id_way'
     options.eachWithIndex{ it, i ->
         script +=', t'+i+'."'+it.value + '"'
     }
@@ -779,17 +784,17 @@ static void defineRailScript(prefix, options, tagKeys, tagValues, scriptFile,
                 WHERE w.id_way = b.id_way) geom_table
             WHERE ST_NUMGEOMETRIES(the_geom) >= 2;
             CREATE INDEX IF NOT EXISTS rails_raw_${uid}_index ON rails_raw_${uid}(id_way);
-            
+            CREATE SPATIAL INDEX ON rails_raw_${uid}(the_geom);
             DROP TABLE IF EXISTS rails_raw_filtered_${uid};
             CREATE TABLE rails_raw_filtered_${uid} as
-            select a.*
+            select st_intersection(a.the_geom, b.the_geom) the_geom, a.id_way
             from rails_raw_${uid} a, ${filteringZoneTableName} b
             where ST_INTERSECTS(a.the_geom, b.the_geom)
             and a.the_geom && b.the_geom;
             CREATE INDEX IF NOT EXISTS rails_raw_filtered_${uid}_index ON rails_raw_filtered_${uid}(id_way);            
             """
     script +="DROP TABLE IF EXISTS ${railTableName};\n" +
-            "CREATE TABLE ${railTableName} AS\n    SELECT a.id_way, a.the_geom"
+            "CREATE TABLE ${railTableName} AS\n    SELECT ST_SETSRID(a.the_geom,2154), a.id_way"
     options.eachWithIndex{ it, i ->
         script +=', t'+i+'."'+it.value +'"'
     }
@@ -982,11 +987,11 @@ static void defineVegetationScript(String prefix, def options, def tagKeys, def 
     }
     script += ";\nDROP TABLE IF EXISTS $vegetTableName; \n" +
             "CREATE TABLE $vegetTableName\n"
-    script += ' AS\nSELECT id_way as id_source, st_intersection(ST_MAKEVALID(a.the_geom),b.the_geom) the_geom'
+    script += ' AS\nSELECT id_way as id_source, st_setsrid(st_intersection(ST_MAKEVALID(a.the_geom),b.the_geom),2154) the_geom'
     options.each {
         script += ', "' + it.value + '"'
     }
-    script += "\nFROM veget_simp_${uid} a, ${filteringZoneTableName} b \nUNION \nSELECT id_relation, st_intersection(ST_MAKEVALID(a.the_geom),b.the_geom)"
+    script += "\nFROM veget_simp_${uid} a, ${filteringZoneTableName} b \nUNION \nSELECT id_relation, st_setsrid(st_intersection(ST_MAKEVALID(a.the_geom),b.the_geom),2154)"
     options.each {
         script += ', "' + it.value + '"'
     }
@@ -1197,11 +1202,11 @@ static void defineHydroScript (def prefix, def options, def tags, def scriptFile
     }
     script += ";\nDROP TABLE IF EXISTS $hydroTableName; \n" +
             "CREATE TABLE $hydroTableName\n"
-    script += ' AS\nSELECT id_way as id_source, st_intersection(ST_MAKEVALID(a.the_geom), b.the_geom)  the_geom'
+    script += ' AS\nSELECT id_way as id_source, st_setsrid(st_intersection(ST_MAKEVALID(a.the_geom), b.the_geom),2154)  the_geom'
     options.each {
         script += ', "' + it.value + '"'
     }
-    script += "\nFROM hydro_simp_${uid} a,  $filteringZoneTableName b \nUNION \nSELECT id_relation, st_intersection(ST_MAKEVALID(a.the_geom), b.the_geom)"
+    script += "\nFROM hydro_simp_${uid} a,  $filteringZoneTableName b \nUNION \nSELECT id_relation, st_setsrid(st_intersection(ST_MAKEVALID(a.the_geom), b.the_geom),2154)"
     options.each {
         script += ', "' + it.value + '"'
     }
