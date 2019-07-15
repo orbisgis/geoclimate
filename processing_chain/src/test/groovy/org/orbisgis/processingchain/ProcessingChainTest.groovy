@@ -42,6 +42,16 @@ class ProcessingChainTest {
                                     distBuffer: 500, expand: 1000, idZone: '56195',
                                     hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
         ])
+        /*
+        H2GIS h2GISDatabase = H2GIS.open(bdTopoDb.absolutePath-".mv.db", "sa", "")
+        def process = ProcessingChain.PrepareBDTopo.prepareBDTopo()
+        assertTrue process.execute([datasource: h2GISDatabase, tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                    tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
+                                    tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
+                                    tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
+                                    distBuffer: 500, expand: 1000, idZone: '56195',
+                                    hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
+        ])*/
         process.getResults().each {entry ->
             if(entry.key == 'outputStats') {
                 entry.value.each{tab -> assertNotNull(h2GISDatabase.getTable(tab))}
@@ -437,7 +447,11 @@ class ProcessingChainTest {
                         rsuTable: pm_units.results.outputTableRsuName, roadTable: "tempo_road", vegetationTable: "tempo_veget",
                         hydrographicTable: "tempo_hydro", facadeDensListLayersBottom: [0, 50, 200], facadeDensNumberOfDirection: 8,
                         svfPointDensity: 0.008, svfRayLength: 100, svfNumberOfDirection: 60,
-                        heightColumnName: "height_roof", fractionTypePervious: ["low_vegetation", "water"],
+                        heightColumnName: "height_roof", mapsOfWeights: ["sky_view_factor"          : 1, "aspect_ratio"                : 1,
+                                                                          "building_surface_fraction": 1, "impervious_surface_fraction" : 1,
+                                                                          "pervious_surface_fraction": 1, "height_of_roughness_elements": 1,
+                                                                          "terrain_roughness_class"  : 1],
+                        fractionTypePervious: ["low_vegetation", "water"],
                         fractionTypeImpervious: ["road"], inputFields: ["id_build"], levelForRoads: [0]])
 
         h2GIS.eachRow("SELECT * FROM ${pm_lcz.results.outputTableName}".toString()){row ->
