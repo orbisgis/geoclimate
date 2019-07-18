@@ -25,6 +25,8 @@ import org.orbisgis.processmanagerapi.IProcess
  * @param rayLength The maximum distance to consider an obstacle as potential sky cover (default 100)
  * @param numberOfDirection the number of directions considered to calculate the SVF (default 60)
  * @param heightColumnName The name of the column (in the building table) used for roughness height calculation (default "height_roof")
+ * @param mapOfWeights Values that will be used to increase or decrease the weight of an indicator (which are the key
+ * of the map) for the LCZ classification step (default : all values to 1)
  * @param fractionTypePervious The type of surface that should be consider to calculate the fraction of pervious soil
  * (default ["low_vegetation", "water"] but possible parameters are ["low_vegetation", "high_vegetation", "water"])
  * @param fractionTypeImpervious The type of surface that should be consider to calculate the fraction of impervious soil
@@ -42,14 +44,18 @@ public static createLCZ() {
             [datasource                 : JdbcDataSource, prefixName: String, buildingTable: String, rsuTable: String, roadTable: String,
              vegetationTable            : String, hydrographicTable: String, facadeDensListLayersBottom: double[],
              facadeDensNumberOfDirection: int, svfPointDensity: double, svfRayLength: double,
-             svfNumberOfDirection       : int, heightColumnName: String,
+             svfNumberOfDirection       : int, heightColumnName: String, mapsOfWeights: String[],
              fractionTypePervious       : String[], fractionTypeImpervious: String[], inputFields: String[],
              levelForRoads              : String[]],
             [outputTableName: String],
             { datasource, prefixName, buildingTable, rsuTable, roadTable, vegetationTable,
               hydrographicTable, facadeDensListLayersBottom = [0, 50, 200], facadeDensNumberOfDirection = 8,
               svfPointDensity = 0.008, svfRayLength = 100, svfNumberOfDirection = 60,
-              heightColumnName = "height_roof", fractionTypePervious = ["low_vegetation", "water"],
+              heightColumnName = "height_roof", mapsOfWeights = ["sky_view_factor"          : 1, "aspect_ratio"                : 1,
+                                                                 "building_surface_fraction": 1, "impervious_surface_fraction" : 1,
+                                                                 "pervious_surface_fraction": 1, "height_of_roughness_elements": 1,
+                                                                 "terrain_roughness_class"  : 1],
+              fractionTypePervious = ["low_vegetation", "water"],
               fractionTypeImpervious = ["road"], inputFields = ["id_build", "the_geom"], levelForRoads = [0] ->
                 logger.info("Create the LCZ...")
 
@@ -288,10 +294,7 @@ public static createLCZ() {
                 IProcess classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
                 if(!classifyLCZ.execute([rsuLczIndicators   : lczIndicTable,
                                      normalisationType  : "AVG",
-                                     mapOfWeights       : ["sky_view_factor"          : 1, "aspect_ratio"                : 1,
-                                                           "building_surface_fraction": 1, "impervious_surface_fraction" : 1,
-                                                           "pervious_surface_fraction": 1, "height_of_roughness_elements": 1,
-                                                           "terrain_roughness_class"  : 1],
+                                     mapOfWeights       : mapsOfWeights,
                                      prefixName         : prefixName,
                                      datasource         : datasource])){
                     logger.info("Cannot compute the LCZ classification.")
