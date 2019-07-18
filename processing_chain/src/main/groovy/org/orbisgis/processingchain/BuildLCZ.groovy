@@ -61,7 +61,6 @@ IProcess createLCZ() {
               fractionTypeImpervious, inputFields, levelForRoads ->
             logger.info("Create the LCZ...")
 
-
             // To avoid overwriting the output files of this step, a unique identifier is created
             def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
 
@@ -292,16 +291,16 @@ IProcess createLCZ() {
             datasource.execute "CREATE TABLE $lczIndicTable AS SELECT $columnIdRsu, $geometricColumn, " +
                     "${lczIndicNames.values().join(",")} FROM $rsuIndicators"
 
-            // The classification algorithm is called
-            IProcess classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
-            if (!classifyLCZ.execute([rsuLczIndicators : lczIndicTable,
-                                      prefixName       : prefixName,
-                                      datasource       : datasource,
-                                      normalisationType: "AVG",
-                                      mapOfWeights     : mapOfWeights])) {
-                logger.info("Cannot compute the LCZ classification.")
-                return
-            }
+                // The classification algorithm is called
+                IProcess classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
+                if(!classifyLCZ.execute([rsuLczIndicators   : lczIndicTable,
+                                     normalisationType  : "AVG",
+                                     mapOfWeights       : mapsOfWeights,
+                                     prefixName         : prefixName,
+                                     datasource         : datasource])){
+                    logger.info("Cannot compute the LCZ classification.")
+                    return
+                }
 
 
             datasource.execute("DROP TABLE IF EXISTS $rsu_indic0, $rsu_indic1, $rsu_indic2, $rsu_indic3".toString())
