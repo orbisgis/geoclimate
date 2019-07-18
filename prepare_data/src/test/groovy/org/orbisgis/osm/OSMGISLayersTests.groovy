@@ -44,7 +44,7 @@ class OSMGISLayersTests {
         assertTrue(h2GIS.getTable("RAW_INPUT_BUILDING").getColumnNames().contains("OFFICE"))
     }
 
-    @Test
+    //@Test
     void prepareRoadsTest() {
         def h2GIS = H2GIS.open('./target/osmdb')
         h2GIS.load(new File(this.class.getResource("zoneExtended.osm").toURI()).getAbsolutePath(),"ext",true)
@@ -70,7 +70,7 @@ class OSMGISLayersTests {
         assertTrue(h2GIS.getTable("RAW_INPUT_ROAD").getColumnNames().contains("junction"))
     }
 
-    @Test
+    //@Test
     void prepareRailsTest() {
         def h2GIS = H2GIS.open('./target/osmdb')
         h2GIS.load(new File(this.class.getResource("zoneExtended.osm").toURI()).getAbsolutePath(),"ext",true)
@@ -94,7 +94,7 @@ class OSMGISLayersTests {
         assertTrue(h2GIS.getTable("RAW_INPUT_RAIL").getColumnNames().contains("highspeed"))
     }
 
-    @Test
+    //@Test
     void prepareVegetTest() {
         def h2GIS = H2GIS.open('./target/osmdb')
         h2GIS.load(new File(this.class.getResource("zoneExtended.osm").toURI()).getAbsolutePath(),"ext",true)
@@ -122,7 +122,7 @@ class OSMGISLayersTests {
         assertTrue h2GIS.getTable("RAW_INPUT_VEGET").getColumnNames().contains("produce")
     }
 
-    @Test
+    //@Test
     void prepareHydroTest() {
         def h2GIS = H2GIS.open('./target/osmdb')
         h2GIS.load(new File(this.class.getResource("zoneExtended.osm").toURI()).getAbsolutePath(),"ext",true)
@@ -144,7 +144,7 @@ class OSMGISLayersTests {
         assertTrue h2GIS.getTable("RAW_INPUT_HYDRO").getColumnNames().contains("waterway")
     }
 
-    @Test
+    //@Test
     void loadInitialDataTest() {
         def h2GIS = H2GIS.open('./target/osmdb')
         h2GIS.execute OSMGISLayers.dropOSMTables("EXT")
