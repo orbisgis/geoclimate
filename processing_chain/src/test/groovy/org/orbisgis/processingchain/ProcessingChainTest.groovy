@@ -2,8 +2,8 @@ package org.orbisgis.processingchain
 
 
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.processmanagerapi.IProcess
@@ -17,23 +17,39 @@ import static org.junit.jupiter.api.Assertions.assertEquals
 class ProcessingChainTest {
 
     public static Logger logger = LoggerFactory.getLogger(ProcessingChainTest.class)
-    private final static File bdTopoDb = new File("./target/myh2gisbdtopodb.mv.db")
 
     @BeforeAll
     static void init(){
-        //Check if the resource database exists
-        boolean isFile = ProcessingChain.getResource("myh2gisbdtopodb.mv.db") != null
-        System.setProperty("test.bdtopo", Boolean.toString(isFile))
-        //If the resource exists, copy it into the target folder to avoid working on the original database
-        if(isFile) {
-            bdTopoDb << ProcessingChain.getResourceAsStream("myh2gisbdtopodb.mv.db")
-        }
+        H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb;AUTO_SERVER=TRUE", "sa", "")
+        h2GISDatabase.load(ProcessingChain.class.getResource("IRIS_GE.shp"), "IRIS_GE", true)
+        h2GISDatabase.load(ProcessingChain.class.getResource("BATI_INDIFFERENCIE.shp"), "BATI_INDIFFERENCIE", true)
+        h2GISDatabase.load(ProcessingChain.class.getResource("BATI_INDUSTRIEL.shp"), "BATI_INDUSTRIEL", true)
+        h2GISDatabase.load(ProcessingChain.class.getResource("BATI_REMARQUABLE.shp"), "BATI_REMARQUABLE", true)
+        h2GISDatabase.load(ProcessingChain.class.getResource("ROUTE.shp"), "ROUTE",true)
+        h2GISDatabase.load(ProcessingChain.class.getResource("SURFACE_EAU.shp"), "SURFACE_EAU",true)
+        h2GISDatabase.load(ProcessingChain.class.getResource("ZONE_VEGETATION.shp"), "ZONE_VEGETATION",true)
+        h2GISDatabase.load(ProcessingChain.class.getResource("TRONCON_VOIE_FERREE.csv"), "TRONCON_VOIE_FERREE0",true)
+        h2GISDatabase.execute "DROP TABLE IF EXISTS TRONCON_VOIE_FERREE; CREATE TABLE TRONCON_VOIE_FERREE AS SELECT PK," +
+                "CAST(the_geom AS GEOMETRY) AS the_geom, ID, PREC_PLANI, NATURE, ELECTRIFIE, FRANCHISST, LARGEUR," +
+                "NB_VOIES, POS_SOL, ETAT, Z_INI, Z_FIN FROM TRONCON_VOIE_FERREE0;"
+        h2GISDatabase.load(ProcessingChain.class.getResource("BUILDING_ABSTRACT_PARAMETERS.csv"), "BUILDING_ABSTRACT_PARAMETERS", true)
+        h2GISDatabase.load(ProcessingChain.class.getResource("BUILDING_ABSTRACT_USE_TYPE.csv"), "BUILDING_ABSTRACT_USE_TYPE", true)
+        h2GISDatabase.load(ProcessingChain.class.getResource("BUILDING_BD_TOPO_USE_TYPE.csv"), "BUILDING_BD_TOPO_USE_TYPE", true)
+        h2GISDatabase.load(ProcessingChain.class.getResource("RAIL_ABSTRACT_TYPE.csv"), "RAIL_ABSTRACT_TYPE", true)
+        h2GISDatabase.load(ProcessingChain.class.getResource("RAIL_BD_TOPO_TYPE.csv"), "RAIL_BD_TOPO_TYPE",true)
+        h2GISDatabase.load(ProcessingChain.class.getResource("ROAD_ABSTRACT_PARAMETERS.csv"), "ROAD_ABSTRACT_PARAMETERS",true)
+        h2GISDatabase.load(ProcessingChain.class.getResource("ROAD_ABSTRACT_SURFACE.csv"), "ROAD_ABSTRACT_SURFACE",true)
+        h2GISDatabase.load(ProcessingChain.class.getResource("ROAD_ABSTRACT_TYPE.csv"), "ROAD_ABSTRACT_TYPE",true)
+        h2GISDatabase.load(ProcessingChain.class.getResource("RAIL_ABSTRACT_TYPE.csv"), "RAIL_ABSTRACT_TYPE", true)
+        h2GISDatabase.load(ProcessingChain.class.getResource("ROAD_BD_TOPO_TYPE.csv"), "ROAD_BD_TOPO_TYPE",true)
+        h2GISDatabase.load(ProcessingChain.class.getResource("VEGET_ABSTRACT_PARAMETERS.csv"), "VEGET_ABSTRACT_PARAMETERS",true)
+        h2GISDatabase.load(ProcessingChain.class.getResource("VEGET_ABSTRACT_TYPE.csv"), "VEGET_ABSTRACT_TYPE",true)
+        h2GISDatabase.load(ProcessingChain.class.getResource("VEGET_BD_TOPO_TYPE.csv"), "VEGET_BD_TOPO_TYPE",true)
     }
 
     @Test
-    @EnabledIfSystemProperty(named = "test.bdtopo", matches = "true")
     void prepareBDTopoTest(){
-        H2GIS h2GISDatabase = H2GIS.open(bdTopoDb.absolutePath-".mv.db", "sa", "")
+        H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb", "sa", "")
         def process = ProcessingChain.PrepareBDTopo.prepareBDTopo()
         assertTrue process.execute([datasource: h2GISDatabase, tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -84,7 +100,6 @@ class ProcessingChainTest {
         }
     }
 */
-
     @Test
     void PrepareOSMTest() {
 
@@ -447,15 +462,17 @@ class ProcessingChainTest {
                         rsuTable: pm_units.results.outputTableRsuName, roadTable: "tempo_road", vegetationTable: "tempo_veget",
                         hydrographicTable: "tempo_hydro", facadeDensListLayersBottom: [0, 50, 200], facadeDensNumberOfDirection: 8,
                         svfPointDensity: 0.008, svfRayLength: 100, svfNumberOfDirection: 60,
-                        heightColumnName: "height_roof", mapsOfWeights: ["sky_view_factor"          : 1, "aspect_ratio"                : 1,
-                                                                          "building_surface_fraction": 1, "impervious_surface_fraction" : 1,
-                                                                          "pervious_surface_fraction": 1, "height_of_roughness_elements": 1,
-                                                                          "terrain_roughness_class"  : 1],
+                        heightColumnName: "height_roof",
+                        mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                                       "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                                       "height_of_roughness_elements": 1, "terrain_roughness_class": 1],
+
                         fractionTypePervious: ["low_vegetation", "water"],
                         fractionTypeImpervious: ["road"], inputFields: ["id_build"], levelForRoads: [0]])
 
         h2GIS.eachRow("SELECT * FROM ${pm_lcz.results.outputTableName}".toString()){row ->
             assertTrue(row.id_rsu != null)
+            println(row.lcz1)
             assertEquals("LCZ", row.lcz1[0..2])
             assertEquals("LCZ", row.lcz2[0..2])
             assertTrue(row.min_distance != null)
@@ -732,9 +749,8 @@ class ProcessingChainTest {
     }
 
     @Test
-    @EnabledIfSystemProperty(named = "test.bdtopo", matches = "true")
     void bdtopoLczFromTestFiles() {
-        H2GIS h2GISDatabase = H2GIS.open(bdTopoDb.absolutePath-".mv.db", "sa", "")
+        H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb", "sa", "")
         def process = ProcessingChain.PrepareBDTopo.prepareBDTopo()
         assertTrue process.execute([datasource: h2GISDatabase, tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',

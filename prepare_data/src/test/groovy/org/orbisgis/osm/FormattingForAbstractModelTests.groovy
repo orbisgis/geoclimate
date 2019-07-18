@@ -1,5 +1,6 @@
 package org.orbisgis.osm
 
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.orbisgis.PrepareData
 import org.orbisgis.datamanager.h2gis.H2GIS

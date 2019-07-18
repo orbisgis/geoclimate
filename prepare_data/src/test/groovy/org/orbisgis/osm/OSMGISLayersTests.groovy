@@ -1,5 +1,6 @@
 package org.orbisgis.osm
 
+import org.junit.jupiter.api.Disabled
 import org.orbisgis.PrepareData
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
