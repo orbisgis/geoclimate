@@ -1,7 +1,6 @@
 package org.orbisgis.geoindicators
 
 import groovy.transform.BaseScript
-import org.h2gis.network.functions.ST_ConnectedComponents
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanagerapi.IProcess
 
@@ -19,29 +18,30 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
  *
  * @return A database table name and the name of the column ID
  */
-static IProcess createRSU(){
+IProcess createRSU(){
     def final COLUMN_ID_NAME = "id_rsu"
     def final BASE_NAME = "created_rsu"
 
-    return processFactory.create("Create reference spatial units (RSU)",
-            [inputTableName: String, prefixName: String, datasource: JdbcDataSource],
-            [outputTableName : String, outputIdRsu: String],
-            { inputTableName, prefixName='rsu', datasource ->
-                logger.info("Creating the reference spatial units")
+    return create({
+        title "Create reference spatial units (RSU)"
+        inputs inputTableName: String, prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String, outputIdRsu: String
+        run { inputTableName, prefixName = 'rsu', datasource ->
+            logger.info("Creating the reference spatial units")
 
-                // The name of the outputTableName is constructed
-                String outputTableName = prefixName + "_" + BASE_NAME
+            // The name of the outputTableName is constructed
+            String outputTableName = prefixName + "_" + BASE_NAME
 
-                datasource.execute "DROP TABLE IF EXISTS $outputTableName"
-                datasource.execute "CREATE TABLE $outputTableName as  select  EXPLOD_ID as $COLUMN_ID_NAME, the_geom" +
-                        " from st_explode ('(select st_polygonize(st_union(" +
-                "st_precisionreducer(st_node(st_accum(the_geom)), 3))) as the_geom from $inputTableName)')"
+            datasource.execute "DROP TABLE IF EXISTS $outputTableName"
+            datasource.execute "CREATE TABLE $outputTableName as  select  EXPLOD_ID as $COLUMN_ID_NAME, the_geom" +
+                    " from st_explode ('(select st_polygonize(st_union(" +
+                    "st_precisionreducer(st_node(st_accum(st_force2d(the_geom))), 3))) as the_geom from $inputTableName)')"
 
-                logger.info("Reference spatial units table created")
+            logger.info("Reference spatial units table created")
 
-                [outputTableName: outputTableName, outputIdRsu: COLUMN_ID_NAME]
-            }
-    )
+            [outputTableName: outputTableName, outputIdRsu: COLUMN_ID_NAME]
+        }
+    })
 }
 
 /**
@@ -62,133 +62,133 @@ static IProcess createRSU(){
  * @param outputTableName The name of the output table
  * @return A database table name.
  */
-static IProcess prepareRSUData(){
+IProcess prepareRSUData(){
     def final BASE_NAME = "prepared_rsu_data"
 
-    return processFactory.create("Prepare the abstract model to build the RSU",
-            [zoneTable: String, roadTable: String,  railTable: String, vegetationTable : String,
-                    hydrographicTable :String, surface_vegetation : 100000, surface_hydro : 2500,
-                    prefixName: "unified_abstract_model", datasource: JdbcDataSource],
-            [outputTableName : String],
-            { zoneTable ,roadTable, railTable, vegetationTable , hydrographicTable, surface_vegetation,
-                    surface_hydrographic ,prefixName, datasource ->
+    return create({
+        title "Prepare the abstract model to build the RSU"
+        inputs zoneTable: String, roadTable: String, railTable: String, vegetationTable: String,
+                hydrographicTable: String, surface_vegetation: 100000, surface_hydro: 2500,
+                prefixName: "unified_abstract_model", datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { zoneTable, roadTable, railTable, vegetationTable, hydrographicTable, surface_vegetation,
+              surface_hydrographic, prefixName, datasource ->
 
-                logger.info("Creating the reference spatial units")
+            logger.info("Creating the reference spatial units")
 
-                // The name of the outputTableName is constructed
-                def outputTableName = prefixName + "_" + BASE_NAME
+            // The name of the outputTableName is constructed
+            def outputTableName = prefixName + "_" + BASE_NAME
 
-                def numberZone = datasource.firstRow("select count(*) as nb from $zoneTable").nb
+            def numberZone = datasource.firstRow("select count(*) as nb from $zoneTable").nb
 
-                if(numberZone==1){
-                    logger.info("Preparing vegetation...")
+            if (numberZone == 1) {
+                logger.info("Preparing vegetation...")
 
-                    def  vegetation_indice = vegetationTable+"_" + uuid()
+                def vegetation_indice = vegetationTable + "_" + uuid()
 
-                    datasource.execute "DROP TABLE IF EXISTS $vegetation_indice"
-                    datasource.execute "CREATE TABLE $vegetation_indice(THE_GEOM geometry, ID serial,"+
-                            " CONTACT integer) AS (SELECT THE_GEOM, null , 0 FROM ST_EXPLODE('" +
-                            "(SELECT * FROM $vegetationTable)') " +
-                            " where st_dimension(the_geom)>0 AND st_isempty(the_geom)=false)"
-                    datasource.execute "CREATE INDEX IF NOT EXISTS veg_indice_idx ON  $vegetation_indice(THE_GEOM) " +
-                            "using rtree"
-                    datasource.execute "UPDATE $vegetation_indice SET CONTACT=1 WHERE ID IN(SELECT DISTINCT(a.ID)" +
-                            " FROM $vegetation_indice a, $vegetation_indice b WHERE a.THE_GEOM && b.THE_GEOM AND " +
-                            "ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM) AND a.ID<>b.ID)"
+                datasource.execute "DROP TABLE IF EXISTS $vegetation_indice"
+                datasource.execute "CREATE TABLE $vegetation_indice(THE_GEOM geometry, ID serial," +
+                        " CONTACT integer) AS (SELECT THE_GEOM, null , 0 FROM ST_EXPLODE('" +
+                        "(SELECT * FROM $vegetationTable)') " +
+                        " where st_dimension(the_geom)>0 AND st_isempty(the_geom)=false)"
+                datasource.execute "CREATE INDEX IF NOT EXISTS veg_indice_idx ON  $vegetation_indice(THE_GEOM) " +
+                        "using rtree"
+                datasource.execute "UPDATE $vegetation_indice SET CONTACT=1 WHERE ID IN(SELECT DISTINCT(a.ID)" +
+                        " FROM $vegetation_indice a, $vegetation_indice b WHERE a.THE_GEOM && b.THE_GEOM AND " +
+                        "ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM) AND a.ID<>b.ID)"
 
-                    def vegetation_unified ="vegetation_unified" + uuid()
+                def vegetation_unified = "vegetation_unified" + uuid()
 
-                    datasource.execute "DROP TABLE IF EXISTS $vegetation_unified"
-                    datasource.execute "CREATE TABLE $vegetation_unified AS " +
-                            "(SELECT the_geom FROM ST_EXPLODE('(SELECT ST_UNION(ST_ACCUM(THE_GEOM))"+
-                            " AS THE_GEOM FROM $vegetation_indice WHERE CONTACT=1)') " +
-                            "where st_dimension(the_geom)>0 AND st_isempty(the_geom)=false AND " +
-                            "st_area(the_geom)> $surface_vegetation) " +
-                            "UNION ALL (SELECT THE_GEOM FROM $vegetation_indice WHERE contact=0 AND " +
-                            "st_area(the_geom)> $surface_vegetation)"
+                datasource.execute "DROP TABLE IF EXISTS $vegetation_unified"
+                datasource.execute "CREATE TABLE $vegetation_unified AS " +
+                        "(SELECT the_geom FROM ST_EXPLODE('(SELECT ST_UNION(ST_ACCUM(THE_GEOM))" +
+                        " AS THE_GEOM FROM $vegetation_indice WHERE CONTACT=1)') " +
+                        "where st_dimension(the_geom)>0 AND st_isempty(the_geom)=false AND " +
+                        "st_area(the_geom)> $surface_vegetation) " +
+                        "UNION ALL (SELECT THE_GEOM FROM $vegetation_indice WHERE contact=0 AND " +
+                        "st_area(the_geom)> $surface_vegetation)"
 
-                    datasource.execute "CREATE  INDEX IF NOT EXISTS veg_unified_idx ON  $vegetation_unified(THE_GEOM)" +
-                            " using rtree"
+                datasource.execute "CREATE  INDEX IF NOT EXISTS veg_unified_idx ON  $vegetation_unified(THE_GEOM)" +
+                        " using rtree"
 
-                    def vegetation_tmp ="vegetation_tmp" + uuid()
+                def vegetation_tmp = "vegetation_tmp" + uuid()
 
-                    datasource.execute "DROP TABLE IF EXISTS $vegetation_tmp"
-                    datasource.execute "CREATE TABLE $vegetation_tmp AS SELECT a.the_geom AS THE_GEOM FROM " +
-                            "$vegetation_unified AS a, $zoneTable AS b WHERE a.the_geom && b.the_geom " +
-                            "AND ST_INTERSECTS(a.the_geom, b.the_geom)"
+                datasource.execute "DROP TABLE IF EXISTS $vegetation_tmp"
+                datasource.execute "CREATE TABLE $vegetation_tmp AS SELECT a.the_geom AS THE_GEOM FROM " +
+                        "$vegetation_unified AS a, $zoneTable AS b WHERE a.the_geom && b.the_geom " +
+                        "AND ST_INTERSECTS(a.the_geom, b.the_geom)"
 
-                    //Extract water
-                    logger.info("Preparing hydrographic...")
-                    String hydrographic_indice = hydrographicTable + uuid()
-                    datasource.execute "DROP TABLE IF EXISTS $hydrographic_indice"
-                    datasource.execute "CREATE TABLE $hydrographic_indice(THE_GEOM geometry, ID serial," +
-                            " CONTACT integer) AS (SELECT THE_GEOM, null , 0 FROM " +
-                            "ST_EXPLODE('(SELECT * FROM $zoneTable)')" +
-                            " where st_dimension(the_geom)>0 AND st_isempty(the_geom)=false)"
+                //Extract water
+                logger.info("Preparing hydrographic...")
+                String hydrographic_indice = hydrographicTable + uuid()
+                datasource.execute "DROP TABLE IF EXISTS $hydrographic_indice"
+                datasource.execute "CREATE TABLE $hydrographic_indice(THE_GEOM geometry, ID serial," +
+                        " CONTACT integer) AS (SELECT THE_GEOM, null , 0 FROM " +
+                        "ST_EXPLODE('(SELECT * FROM $zoneTable)')" +
+                        " where st_dimension(the_geom)>0 AND st_isempty(the_geom)=false)"
 
-                    datasource.execute "CREATE  INDEX IF NOT EXISTS hydro_indice_idx ON $hydrographic_indice(THE_GEOM)"
-
-
-                    datasource.execute "UPDATE $hydrographic_indice SET CONTACT=1 WHERE ID IN(SELECT DISTINCT(a.ID)" +
-                            " FROM $hydrographic_indice a, $hydrographic_indice b WHERE a.THE_GEOM && b.THE_GEOM"+
-                            " AND ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM) AND a.ID<>b.ID)"
-                    datasource.execute "CREATE INDEX ON $hydrographic_indice(contact)"
-
-                    def hydrographic_unified ="hydrographic_unified" + uuid()
-
-                    datasource.execute "DROP TABLE IF EXISTS $hydrographic_unified"
-                    datasource.execute "CREATE TABLE $hydrographic_unified AS (SELECT THE_GEOM FROM " +
-                            "ST_EXPLODE('(SELECT ST_UNION(ST_ACCUM(THE_GEOM)) AS THE_GEOM FROM" +
-                            " $hydrographic_indice  WHERE CONTACT=1)') where st_dimension(the_geom)>0" +
-                            " AND st_isempty(the_geom)=false AND st_area(the_geom)> $surface_hydrographic) " +
-                            " UNION ALL (SELECT  the_geom FROM $hydrographic_indice WHERE contact=0 AND " +
-                            " st_area(the_geom)> $surface_hydrographic)"
+                datasource.execute "CREATE  INDEX IF NOT EXISTS hydro_indice_idx ON $hydrographic_indice(THE_GEOM)"
 
 
-                    datasource.execute "CREATE INDEX IF NOT EXISTS hydro_unified_idx ON $hydrographic_unified(THE_GEOM)"
+                datasource.execute "UPDATE $hydrographic_indice SET CONTACT=1 WHERE ID IN(SELECT DISTINCT(a.ID)" +
+                        " FROM $hydrographic_indice a, $hydrographic_indice b WHERE a.THE_GEOM && b.THE_GEOM" +
+                        " AND ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM) AND a.ID<>b.ID)"
+                datasource.execute "CREATE INDEX ON $hydrographic_indice(contact)"
 
-                    def hydrographic_tmp ="hydrographic_tmp" + uuid()
+                def hydrographic_unified = "hydrographic_unified" + uuid()
 
-                    datasource.execute "DROP TABLE IF EXISTS $hydrographic_tmp"
-                    datasource.execute "CREATE TABLE $hydrographic_tmp AS SELECT a.the_geom" +
-                            " AS THE_GEOM FROM $hydrographic_unified AS a, $zoneTable AS b " +
-                            "WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)"
-
-
-                    logger.info("Preparing road...")
-
-                    def road_tmp ="road_tmp" + uuid()
-
-                    datasource.execute "DROP TABLE IF EXISTS $road_tmp"
-                    datasource.execute "CREATE TABLE $road_tmp AS SELECT the_geom AS THE_GEOM FROM $roadTable " +
-                            "where zindex=0"
+                datasource.execute "DROP TABLE IF EXISTS $hydrographic_unified"
+                datasource.execute "CREATE TABLE $hydrographic_unified AS (SELECT THE_GEOM FROM " +
+                        "ST_EXPLODE('(SELECT ST_UNION(ST_ACCUM(THE_GEOM)) AS THE_GEOM FROM" +
+                        " $hydrographic_indice  WHERE CONTACT=1)') where st_dimension(the_geom)>0" +
+                        " AND st_isempty(the_geom)=false AND st_area(the_geom)> $surface_hydrographic) " +
+                        " UNION ALL (SELECT  the_geom FROM $hydrographic_indice WHERE contact=0 AND " +
+                        " st_area(the_geom)> $surface_hydrographic)"
 
 
-                    logger.info("Preparing rail...")
+                datasource.execute "CREATE INDEX IF NOT EXISTS hydro_unified_idx ON $hydrographic_unified(THE_GEOM)"
 
-                    def rail_tmp ="rail_tmp" + uuid()
+                def hydrographic_tmp = "hydrographic_tmp" + uuid()
 
-                    datasource.execute "DROP TABLE IF EXISTS $rail_tmp"
-                    datasource.execute "CREATE TABLE $rail_tmp AS SELECT the_geom AS THE_GEOM FROM $railTable " +
-                            "where zindex=0"
+                datasource.execute "DROP TABLE IF EXISTS $hydrographic_tmp"
+                datasource.execute "CREATE TABLE $hydrographic_tmp AS SELECT a.the_geom" +
+                        " AS THE_GEOM FROM $hydrographic_unified AS a, $zoneTable AS b " +
+                        "WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)"
 
-                    // The input table that contains the geometries to be transformed as RSU
-                    logger.info("Grouping all tables...")
-                    datasource.execute "DROP TABLE if exists $outputTableName"
-                    datasource.execute "CREATE TABLE $outputTableName AS (SELECT THE_GEOM FROM $road_tmp)" +
-                            " UNION (SELECT THE_GEOM FROM $rail_tmp) " +
-                            "UNION (SELECT THE_GEOM FROM $hydrographic_tmp)" +
-                            " UNION  (SELECT THE_GEOM FROM $vegetation_tmp)"
 
-                }
-                else {
-                    logger.error("Cannot compute the RSU. The input zone table must have one row.")
-                }
+                logger.info("Preparing road...")
 
-                [outputTableName: outputTableName]
+                def road_tmp = "road_tmp" + uuid()
+
+                datasource.execute "DROP TABLE IF EXISTS $road_tmp"
+                datasource.execute "CREATE TABLE $road_tmp AS SELECT the_geom AS THE_GEOM FROM $roadTable " +
+                        "where zindex=0"
+
+
+                logger.info("Preparing rail...")
+
+                def rail_tmp = "rail_tmp" + uuid()
+
+                datasource.execute "DROP TABLE IF EXISTS $rail_tmp"
+                datasource.execute "CREATE TABLE $rail_tmp AS SELECT the_geom AS THE_GEOM FROM $railTable " +
+                        "where zindex=0"
+
+                // The input table that contains the geometries to be transformed as RSU
+                logger.info("Grouping all tables...")
+                datasource.execute "DROP TABLE if exists $outputTableName"
+                datasource.execute "CREATE TABLE $outputTableName AS (SELECT THE_GEOM FROM $road_tmp)" +
+                        " UNION (SELECT THE_GEOM FROM $rail_tmp) " +
+                        "UNION (SELECT THE_GEOM FROM $hydrographic_tmp)" +
+                        " UNION  (SELECT THE_GEOM FROM $vegetation_tmp)"
+
+            } else {
+                logger.error("Cannot compute the RSU. The input zone table must have one row.")
             }
 
-    )
+            [outputTableName: outputTableName]
+        }
+
+    })
 }
 
 
@@ -203,64 +203,65 @@ static IProcess prepareRSUData(){
  * @param outputTableName The name of the output table
  * @return A database table name and the name of the column ID
  */
-static IProcess createBlocks(){
-    return processFactory.create("Merge the geometries that touch each other",
-            [inputTableName: String, distance : 0.0d, prefixName: "block", datasource: JdbcDataSource],
-            [outputTableName : String, outputIdBlock: String],
-            { inputTableName,distance, prefixName, JdbcDataSource datasource ->
-                logger.info("Creating the blocks...")
-                def columnIdName = "id_block"
+IProcess createBlocks(){
+    return create({
+        title "Merge the geometries that touch each other"
+        inputs inputTableName: String, distance : 0.0d, prefixName: "block", datasource: JdbcDataSource
+        outputs outputTableName : String, outputIdBlock: String
+        run { inputTableName,distance, prefixName, JdbcDataSource datasource ->
+            logger.info("Creating the blocks...")
+            def columnIdName = "id_block"
 
-                // The name of the outputTableName is constructed
-                String baseName = "created_blocks"
-                String outputTableName = prefixName + "_" + baseName
-
-
-
-                //Find all neighbors for each building
-                logger.info("Building index to perform the process...")
-                datasource.getSpatialTable(inputTableName).the_geom.createSpatialIndex()
-                datasource.getSpatialTable(inputTableName).id_build.createIndex()
-
-                logger.info("Building spatial clusters...")
-
-                String graphTable = "spatial_clusters"+ uuid()
-
-                datasource.execute """drop table if exists $graphTable; create table $graphTable 
-                 (EDGE_ID SERIAL, START_NODE INT, END_NODE INT) as select null, a.id_build as START_NODE, b.id_build as END_NODE 
-                from  $inputTableName as a, $inputTableName as b 
-                where a.id_build<>b.id_build AND a.the_geom && b.the_geom and  
-                st_dwithin(b.the_geom,a.the_geom, $distance) ;"""
+            // The name of the outputTableName is constructed
+            String baseName = "created_blocks"
+            String outputTableName = prefixName + "_" + baseName
 
 
-                String subGraphTableNodes =  graphTable+ "_NODE_CC"
-                String subGraphTableEdges =  graphTable+ "_EDGE_CC"
 
-                datasource.execute"DROP TABLE IF EXISTS $subGraphTableEdges, $subGraphTableNodes;"
+            //Find all neighbors for each building
+            logger.info("Building index to perform the process...")
+            datasource.getSpatialTable(inputTableName).the_geom.createSpatialIndex()
+            datasource.getSpatialTable(inputTableName).id_build.createIndex()
 
-                getConnectedComponents(datasource.getConnection(),graphTable,"undirected")
+            logger.info("Building spatial clusters...")
 
-                //Unify buildings that share a boundary
-                logger.info("Merging spatial clusters...")
-                String subGraphBlocks =  "subgraphblocks"+ uuid()
-                datasource.execute """
-                CREATE INDEX ON $subGraphTableNodes(NODE_ID);
-                DROP TABLE IF EXISTS $subGraphBlocks;
-                CREATE TABLE $subGraphBlocks
-                AS SELECT ST_UNION(ST_ACCUM(A.THE_GEOM)) AS THE_GEOM
-                FROM $inputTableName A, $subGraphTableNodes B
-                WHERE A.id_build=B.NODE_ID GROUP BY B.CONNECTED_COMPONENT;"""
+            String graphTable = "spatial_clusters"+ uuid()
 
-                //Create the blocks
-                logger.info("Creating the block table...")
-                datasource.execute """DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName ($columnIdName SERIAL, THE_GEOM GEOMETRY) 
-                AS (SELECT null, THE_GEOM FROM $subGraphBlocks) UNION ALL (SELECT null, a.the_geom FROM $inputTableName a 
-                LEFT JOIN $subGraphTableNodes b ON a.id_build = b.NODE_ID WHERE b.NODE_ID IS NULL);"""
+            datasource.execute """drop table if exists $graphTable; create table $graphTable 
+             (EDGE_ID SERIAL, START_NODE INT, END_NODE INT) as select null, a.id_build as START_NODE, b.id_build as END_NODE 
+            from  $inputTableName as a, $inputTableName as b 
+            where a.id_build<>b.id_build AND a.the_geom && b.the_geom and  
+            st_dwithin(b.the_geom,a.the_geom, $distance) ;"""
 
-                logger.info("The blocks have been created")
-                [outputTableName: outputTableName, outputIdBlock: columnIdName]
-            }
-    )
+
+            String subGraphTableNodes =  graphTable+ "_NODE_CC"
+            String subGraphTableEdges =  graphTable+ "_EDGE_CC"
+
+            datasource.execute"DROP TABLE IF EXISTS $subGraphTableEdges, $subGraphTableNodes;"
+
+            getConnectedComponents(datasource.getConnection(),graphTable,"undirected")
+
+            //Unify buildings that share a boundary
+            logger.info("Merging spatial clusters...")
+            String subGraphBlocks =  "subgraphblocks"+ uuid()
+            datasource.execute """
+            CREATE INDEX ON $subGraphTableNodes(NODE_ID);
+            DROP TABLE IF EXISTS $subGraphBlocks;
+            CREATE TABLE $subGraphBlocks
+            AS SELECT ST_UNION(ST_ACCUM(A.THE_GEOM)) AS THE_GEOM
+            FROM $inputTableName A, $subGraphTableNodes B
+            WHERE A.id_build=B.NODE_ID GROUP BY B.CONNECTED_COMPONENT;"""
+
+            //Create the blocks
+            logger.info("Creating the block table...")
+            datasource.execute """DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName ($columnIdName SERIAL, THE_GEOM GEOMETRY) 
+            AS (SELECT null, THE_GEOM FROM $subGraphBlocks) UNION ALL (SELECT null, a.the_geom FROM $inputTableName a 
+            LEFT JOIN $subGraphTableNodes b ON a.id_build = b.NODE_ID WHERE b.NODE_ID IS NULL);"""
+
+            logger.info("The blocks have been created")
+            [outputTableName: outputTableName, outputIdBlock: columnIdName]
+        }
+    })
 }
 
 /**
@@ -277,32 +278,33 @@ static IProcess createBlocks(){
  *
  * @return A database table name and the name of its ID field
  */
-static IProcess createScalesRelations(){
+IProcess createScalesRelations(){
     def final GEOMETRIC_COLUMN_LOW = "the_geom"
     def final GEOMETRIC_COLUMN_UP = "the_geom"
 
-    return processFactory.create("Creating the Tables of relations between two scales",
-            [inputLowerScaleTableName: String, inputUpperScaleTableName : String, idColumnUp: String,
-                    prefixName: String, datasource: JdbcDataSource],
-            [outputTableName: String, outputIdColumnUp: String],
-            { inputLowerScaleTableName, inputUpperScaleTableName, idColumnUp, prefixName, datasource ->
+    return create({
+        title "Creating the Tables of relations between two scales"
+        inputs inputLowerScaleTableName: String, inputUpperScaleTableName: String, idColumnUp: String,
+                prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String, outputIdColumnUp: String
+        run { inputLowerScaleTableName, inputUpperScaleTableName, idColumnUp, prefixName, datasource ->
 
-                logger.info("Creating the Tables of relations between two scales")
+            logger.info("Creating the Tables of relations between two scales")
 
-                // The name of the outputTableName is constructed
-                def outputTableName =  prefixName+"_"+inputLowerScaleTableName+"_corr"
+            // The name of the outputTableName is constructed
+            def outputTableName = prefixName + "_" + inputLowerScaleTableName + "_corr"
 
-                datasource.execute "DROP TABLE IF EXISTS $outputTableName; CREATE INDEX IF NOT EXISTS ids_l "+
-                        "ON $inputLowerScaleTableName($GEOMETRIC_COLUMN_LOW) USING RTREE; CREATE INDEX IF NOT EXISTS "+
-                        "ids_u ON $inputUpperScaleTableName($GEOMETRIC_COLUMN_UP) USING RTREE"
-                datasource.execute"CREATE TABLE $outputTableName AS SELECT a.*, (SELECT b.$idColumnUp "+
-                        "FROM $inputUpperScaleTableName b WHERE a.$GEOMETRIC_COLUMN_LOW && b.$GEOMETRIC_COLUMN_UP AND "+
-                        "ST_INTERSECTS(a.$GEOMETRIC_COLUMN_LOW, b.$GEOMETRIC_COLUMN_UP) ORDER BY "+
-                        "ST_AREA(ST_INTERSECTION(a.$GEOMETRIC_COLUMN_LOW, b.$GEOMETRIC_COLUMN_UP)) " +
-                        "DESC LIMIT 1) AS $idColumnUp FROM $inputLowerScaleTableName a"
-                logger.info("The relations between scales have been created")
+            datasource.execute "DROP TABLE IF EXISTS $outputTableName; CREATE INDEX IF NOT EXISTS ids_l " +
+                    "ON $inputLowerScaleTableName($GEOMETRIC_COLUMN_LOW) USING RTREE; CREATE INDEX IF NOT EXISTS " +
+                    "ids_u ON $inputUpperScaleTableName($GEOMETRIC_COLUMN_UP) USING RTREE"
+            datasource.execute "CREATE TABLE $outputTableName AS SELECT a.*, (SELECT b.$idColumnUp " +
+                    "FROM $inputUpperScaleTableName b WHERE st_force2d(a.$GEOMETRIC_COLUMN_LOW) && st_force2d(b.$GEOMETRIC_COLUMN_UP) AND " +
+                    "ST_INTERSECTS(st_force2d(a.$GEOMETRIC_COLUMN_LOW), st_force2d(b.$GEOMETRIC_COLUMN_UP)) ORDER BY " +
+                    "ST_AREA(ST_INTERSECTION(st_force2d(a.$GEOMETRIC_COLUMN_LOW), st_force2d(b.$GEOMETRIC_COLUMN_UP))) " +
+                    "DESC LIMIT 1) AS $idColumnUp FROM $inputLowerScaleTableName a"
+            logger.info("The relations between scales have been created")
 
-                [outputTableName: outputTableName, outputIdColumnUp: idColumnUp]
-            }
-    )
+            [outputTableName: outputTableName, outputIdColumnUp: idColumnUp]
+        }
+    })
 }

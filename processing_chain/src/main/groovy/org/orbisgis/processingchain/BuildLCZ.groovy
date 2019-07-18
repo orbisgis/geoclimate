@@ -25,6 +25,8 @@ import org.orbisgis.processmanagerapi.IProcess
  * @param rayLength The maximum distance to consider an obstacle as potential sky cover (default 100)
  * @param numberOfDirection the number of directions considered to calculate the SVF (default 60)
  * @param heightColumnName The name of the column (in the building table) used for roughness height calculation (default "height_roof")
+ * @param mapOfWeights Values that will be used to increase or decrease the weight of an indicator (which are the key
+ * of the map) for the LCZ classification step (default : all values to 1)
  * @param fractionTypePervious The type of surface that should be consider to calculate the fraction of pervious soil
  * (default ["low_vegetation", "water"] but possible parameters are ["low_vegetation", "high_vegetation", "water"])
  * @param fractionTypeImpervious The type of surface that should be consider to calculate the fraction of impervious soil
@@ -37,77 +39,83 @@ import org.orbisgis.processmanagerapi.IProcess
  *
  * @return outputTableName Table name where are stored the resulting RSU
  */
-public static createLCZ() {
-    return processFactory.create("Create the LCZ",
-            [datasource                 : JdbcDataSource, prefixName: String, buildingTable: String, rsuTable: String, roadTable: String,
-             vegetationTable            : String, hydrographicTable: String, facadeDensListLayersBottom: double[],
-             facadeDensNumberOfDirection: int, svfPointDensity: double, svfRayLength: double,
-             svfNumberOfDirection       : int, heightColumnName: String,
-             fractionTypePervious       : String[], fractionTypeImpervious: String[], inputFields: String[],
-             levelForRoads              : String[]],
-            [outputTableName: String],
-            { datasource, prefixName, buildingTable, rsuTable, roadTable, vegetationTable,
-              hydrographicTable, facadeDensListLayersBottom = [0, 50, 200], facadeDensNumberOfDirection = 8,
-              svfPointDensity = 0.008, svfRayLength = 100, svfNumberOfDirection = 60,
-              heightColumnName = "height_roof", fractionTypePervious = ["low_vegetation", "water"],
-              fractionTypeImpervious = ["road"], inputFields = ["id_build", "the_geom"], levelForRoads = [0] ->
-                logger.info("Create the LCZ...")
+IProcess createLCZ() {
+    return create({
+        title "Create the LCZ"
+        inputs datasource: JdbcDataSource, prefixName: String, buildingTable: String, rsuTable: String, roadTable: String,
+                vegetationTable: String, hydrographicTable: String, facadeDensListLayersBottom: [0, 50, 200],
+                facadeDensNumberOfDirection: 8, svfPointDensity: 0.008, svfRayLength: 100,
+                svfNumberOfDirection: 60, heightColumnName: "height_roof",
+                mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                               "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                               "height_of_roughness_elements": 1, "terrain_roughness_class": 1],
+                fractionTypePervious: ["low_vegetation", "water"], fractionTypeImpervious: ["road"], inputFields: ["id_build", "the_geom"],
+                levelForRoads: [0]
+        outputs outputTableName: String
+        run { JdbcDataSource datasource, prefixName, buildingTable, rsuTable, roadTable, vegetationTable,
+              hydrographicTable, facadeDensListLayersBottom, facadeDensNumberOfDirection,
+              svfPointDensity, svfRayLength, svfNumberOfDirection,
+              heightColumnName,
+              mapOfWeights,
+              fractionTypePervious,
+              fractionTypeImpervious, inputFields, levelForRoads ->
+            logger.info("Create the LCZ...")
 
 
-                // To avoid overwriting the output files of this step, a unique identifier is created
-                def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
+            // To avoid overwriting the output files of this step, a unique identifier is created
+            def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
 
-                // Temporary table names
-                def lczIndicTable = "lczIndicTable" + uid_out
-                def rsu_indic0 = "rsu_indic0" + uid_out
-                def rsu_indic1 = "rsu_indic1" + uid_out
-                def rsu_indic2 = "rsu_indic2" + uid_out
-                def rsu_indic3 = "rsu_indic3" + uid_out
+            // Temporary table names
+            def lczIndicTable = "lczIndicTable" + uid_out
+            def rsu_indic0 = "rsu_indic0" + uid_out
+            def rsu_indic1 = "rsu_indic1" + uid_out
+            def rsu_indic2 = "rsu_indic2" + uid_out
+            def rsu_indic3 = "rsu_indic3" + uid_out
 
-                // Output table name
-                def outputTableName = "lczTable"
+            // Output table name
+            def outputTableName = "lczTable"
 
-                def veg_type = []
-                def perv_type = []
-                def imp_type = []
-                def surf_fractions = [:]
-                def columnIdRsu = "id_rsu"
-                def columnIdBu = "id_build"
-                def geometricColumn = "the_geom"
-                def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF": "height_of_roughness_elements",
-                                     "DENS_AREA": "building_surface_fraction",
-                                     "RSU_ASPECT_RATIO": "aspect_ratio",
-                                     "RSU_GROUND_SKY_VIEW_FACTOR": "sky_view_factor",
-                                     "PERVIOUS_FRACTION": "pervious_surface_fraction",
-                                     "IMPERVIOUS_FRACTION": "impervious_surface_fraction",
-                                     "EFFECTIVE_TERRAIN_ROUGHNESS_CLASS": "terrain_roughness_class"]
+            def veg_type = []
+            def perv_type = []
+            def imp_type = []
+            def surf_fractions = [:]
+            def columnIdRsu = "id_rsu"
+            def columnIdBu = "id_build"
+            def geometricColumn = "the_geom"
+            def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"             : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
+                                 "DENS_AREA"                        : "BUILDING_SURFACE_FRACTION",
+                                 "RSU_ASPECT_RATIO"                 : "ASPECT_RATIO",
+                                 "RSU_GROUND_SKY_VIEW_FACTOR"       : "SKY_VIEW_FACTOR",
+                                 "PERVIOUS_FRACTION"                : "PERVIOUS_SURFACE_FRACTION",
+                                 "IMPERVIOUS_FRACTION"              : "IMPERVIOUS_SURFACE_FRACTION",
+                                 "EFFECTIVE_TERRAIN_ROUGHNESS_CLASS": "TERRAIN_ROUGHNESS_CLASS"]
 
 
-                //Compute building indicators
-                def computeBuildingsIndicators = ProcessingChain.BuildGeoIndicators.computeBuildingsIndicators()
-                if(!computeBuildingsIndicators.execute([datasource               : datasource,
-                                                    inputBuildingTableName   : buildingTable,
-                                                    inputRoadTableName       : roadTable,
-                                                    indicatorUse             : ["LCZ"]])){
-                    logger.info("Cannot compute building indicators.")
-                    return
-                }
-                String buildingIndicators = computeBuildingsIndicators.getResults().outputTableName
+            //Compute building indicators
+            def computeBuildingsIndicators = ProcessingChain.BuildGeoIndicators.computeBuildingsIndicators()
+            if (!computeBuildingsIndicators.execute([datasource            : datasource,
+                                                     inputBuildingTableName: buildingTable,
+                                                     inputRoadTableName    : roadTable,
+                                                     indicatorUse          : ["LCZ"]])) {
+                logger.info("Cannot compute building indicators.")
+                return
+            }
+            String buildingIndicators = computeBuildingsIndicators.getResults().outputTableName
 
-                //Compute RSU indicators
-                def computeRSUIndicators = ProcessingChain.BuildGeoIndicators.computeRSUIndicators()
-                if(!computeRSUIndicators.execute([datasource             : datasource,
-                                              buildingTable          : buildingIndicators,
-                                              rsuTable               : rsuTable,
-                                              vegetationTable        : vegetationTable,
-                                              roadTable              : roadTable,
-                                              hydrographicTable      : hydrographicTable,
-                                              indicatorUse           : ["LCZ"]])){
-                    logger.info("Cannot compute the RSU indicators.")
-                    return
-                }
-                String rsuIndicators = computeRSUIndicators.getResults().outputTableName
-                /*
+            //Compute RSU indicators
+            def computeRSUIndicators = ProcessingChain.BuildGeoIndicators.computeRSUIndicators()
+            if (!computeRSUIndicators.execute([datasource       : datasource,
+                                               buildingTable    : buildingIndicators,
+                                               rsuTable         : rsuTable,
+                                               vegetationTable  : vegetationTable,
+                                               roadTable        : roadTable,
+                                               hydrographicTable: hydrographicTable,
+                                               indicatorUse     : ["LCZ"]])) {
+                logger.info("Cannot compute the RSU indicators.")
+                return
+            }
+            String rsuIndicators = computeRSUIndicators.getResults().outputTableName
+            /*
                 // I. Calculate preliminary indicators needed for the other calculations (the relations of chaining between
                 // the indicators are illustrated with the scheme IProcessA --> IProcessB)
                 // calc_building_area --> calc_build_densityNroughness
@@ -273,37 +281,33 @@ public static createLCZ() {
                          (calc_roughness_class.results.outputTableName)  : columnIdRsu],
                                           outputTableName      : "_allindic", datasource: datasource])*/
 
-                // Rename the indicators in order to be consistent with the LCZ ones
-                String queryReplaceNames = ""
-                lczIndicNames.each{oldIndic, newIndic ->
-                    queryReplaceNames += "ALTER TABLE $rsuIndicators "+
-                            "RENAME COLUMN $oldIndic TO $newIndic;"
-                }
+            // Rename the indicators in order to be consistent with the LCZ ones
+            String queryReplaceNames = ""
 
-                // Keep only the ID, geometry column and the 7 indicators useful for LCZ classification
-                datasource.execute "$queryReplaceNames CREATE TABLE $lczIndicTable AS SELECT $columnIdRsu, $geometricColumn, " +
-                        "${lczIndicNames.values().join(",")} FROM $rsuIndicators"
-
-                // The classification algorithm is called
-                IProcess classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
-                if(!classifyLCZ.execute([rsuLczIndicators   : lczIndicTable,
-                                     normalisationType  : "AVG",
-                                     mapOfWeights       : ["sky_view_factor"          : 1, "aspect_ratio"                : 1,
-                                                           "building_surface_fraction": 1, "impervious_surface_fraction" : 1,
-                                                           "pervious_surface_fraction": 1, "height_of_roughness_elements": 1,
-                                                           "terrain_roughness_class"  : 1],
-                                     prefixName         : prefixName,
-                                     datasource         : datasource])){
-                    logger.info("Cannot compute the LCZ classification.")
-                    return
-                }
-
-
-                datasource.execute("DROP TABLE IF EXISTS $rsu_indic0, $rsu_indic1, $rsu_indic2, $rsu_indic3".toString())
-
-
-
-                [outputTableName: classifyLCZ.results.outputTableName]
+            lczIndicNames.each { oldIndic, newIndic ->
+                queryReplaceNames += "ALTER TABLE $rsuIndicators ALTER COLUMN $oldIndic RENAME TO $newIndic;"
             }
-    )
+            // Keep only the ID, geometry column and the 7 indicators useful for LCZ classification
+            datasource.execute "$queryReplaceNames"
+            datasource.execute "CREATE TABLE $lczIndicTable AS SELECT $columnIdRsu, $geometricColumn, " +
+                    "${lczIndicNames.values().join(",")} FROM $rsuIndicators"
+
+            // The classification algorithm is called
+            IProcess classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
+            if (!classifyLCZ.execute([rsuLczIndicators : lczIndicTable,
+                                      prefixName       : prefixName,
+                                      datasource       : datasource,
+                                      normalisationType: "AVG",
+                                      mapOfWeights     : mapOfWeights])) {
+                logger.info("Cannot compute the LCZ classification.")
+                return
+            }
+
+
+            datasource.execute("DROP TABLE IF EXISTS $rsu_indic0, $rsu_indic1, $rsu_indic2, $rsu_indic3".toString())
+
+
+            [outputTableName: classifyLCZ.results.outputTableName]
+        }
+    })
 }

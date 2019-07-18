@@ -2,6 +2,7 @@ package org.orbisgis
 
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.geoindicators.Geoindicators
@@ -37,12 +38,12 @@ class SpatialUnitsTests {
 
     @Test
     void prepareGeometriesForRSUTest() {
-        H2GIS h2GIS = H2GIS.open([databaseName: '/tmp/spatialunitsdb'])
-        h2GIS.load(this.class.getResource("road_test.shp").toString(), true)
-        h2GIS.load(this.class.getResource("rail_test.shp").toString(), true)
-        h2GIS.load(this.class.getResource("veget_test.shp").toString(), true)
-        h2GIS.load(this.class.getResource("hydro_test.shp").toString(), true)
-        h2GIS.load(this.class.getResource("zone_test.shp").toString(),true)
+        H2GIS h2GIS = H2GIS.open([databaseName: './target/spatialunitsdb'])
+        h2GIS.load(this.class.getResource("road_test.shp"), true)
+        h2GIS.load(this.class.getResource("rail_test.shp"), true)
+        h2GIS.load(this.class.getResource("veget_test.shp"), true)
+        h2GIS.load(this.class.getResource("hydro_test.shp"), true)
+        h2GIS.load(this.class.getResource("zone_test.shp"),true)
 
         def  prepareData = Geoindicators.SpatialUnits.prepareRSUData()
         assertTrue prepareData.execute([zoneTable: 'zone_test', roadTable: 'road_test',  railTable: 'rail_test',
@@ -57,7 +58,7 @@ class SpatialUnitsTests {
         def rsu = Geoindicators.SpatialUnits.createRSU()
         assertTrue rsu.execute([inputTableName: outputTableGeoms, prefixName: "rsu", datasource: h2GIS])
         def outputTable = rsu.results.outputTableName
-        assertTrue h2GIS.save(outputTable,'/tmp/rsu.shp')
+        assertTrue h2GIS.save(outputTable,'./target/rsu.shp')
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
 
         assertEquals 213 , countRows.numberOfRows

@@ -14,49 +14,50 @@ import org.orbisgis.processmanagerapi.IProcess
  *
  * @return
  */
-static IProcess joinTables() {
-    processFactory.create("Utility process to join tables in one",
-            [inputTableNamesWithId: Map, outputTableName: String, datasource: JdbcDataSource],
-            [outputTableName: String],
-            { inputTableNamesWithId, outputTableName, JdbcDataSource datasource ->
+IProcess joinTables() {
+    create({
+        title "Utility process to join tables in one"
+        inputs inputTableNamesWithId: Map, outputTableName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { inputTableNamesWithId, outputTableName, datasource ->
 
-                logger.info("Executing Utility process to join tables in one")
+            logger.info("Executing Utility process to join tables in one")
 
-                def columnKey
-                def alias = "a"
-                def leftQuery = ""
-                def indexes = ""
+            def columnKey
+            def alias = "a"
+            def leftQuery = ""
+            def indexes = ""
 
-                def columns = []
+            def columns = []
 
-                inputTableNamesWithId.each { key, value ->
-                    if (alias == "a") {
-                        columnKey = "$alias.${value}"
-                        columns = datasource.getTable(key).columnNames.collect {
-                            alias + "." + it
-                        }
-                        leftQuery += " FROM ${key} as $alias "
-                    } else {
-                        datasource.getTable(key).columnNames.forEach() { item ->
-                            if (!item.equalsIgnoreCase(value)) {
-                                columns.add(alias + "." + item)
-                            }
-                        }
-                        leftQuery += " LEFT JOIN ${key} as ${alias} ON ${alias}.${value} = ${columnKey} "
+            inputTableNamesWithId.each { key, value ->
+                if (alias == "a") {
+                    columnKey = "$alias.${value}"
+                    columns = datasource.getTable(key).columnNames.collect {
+                        alias + "." + it
                     }
-                    indexes += "CREATE INDEX IF NOT EXISTS ${key}_ids ON ${key}($value);"
-                    alias++
+                    leftQuery += " FROM ${key} as $alias "
+                } else {
+                    datasource.getTable(key).columnNames.forEach() { item ->
+                        if (!item.equalsIgnoreCase(value)) {
+                            columns.add(alias + "." + item)
+                        }
+                    }
+                    leftQuery += " LEFT JOIN ${key} as ${alias} ON ${alias}.${value} = ${columnKey} "
                 }
-
-                def columnsAsString = (columns as Set).join(",")
-
-                datasource.execute "DROP TABLE IF EXISTS ${outputTableName}"
-                datasource.execute indexes
-                datasource.execute "CREATE TABLE ${outputTableName} AS SELECT ${columnsAsString} ${leftQuery}"
-
-                [outputTableName: outputTableName]
+                indexes += "CREATE INDEX IF NOT EXISTS ${key}_ids ON ${key}($value);"
+                alias++
             }
-    )
+
+            def columnsAsString = (columns as Set).join(",")
+
+            datasource.execute "DROP TABLE IF EXISTS ${outputTableName}"
+            datasource.execute indexes
+            datasource.execute "CREATE TABLE ${outputTableName} AS SELECT ${columnsAsString} ${leftQuery}"
+
+            [outputTableName: outputTableName]
+        }
+    })
 }
 
 /**
@@ -68,32 +69,32 @@ static IProcess joinTables() {
  *
  * @return
  */
-static IProcess saveTablesAsFiles(){
-    processFactory.create("Utility process to save tables in geojson or csv files",
-            [inputTableNames: String[], directory: String, datasource: JdbcDataSource],
-            [directory: String],
-            { inputTableNames, directory, datasource ->
-                if(directory==null){
-                    logger.info("The directory to save the data cannot be null")
-                    return
-                }
-                File dirFile = new File(directory)
-
-                if(!dirFile.exists()){
-                    dirFile.mkdir()
-                    logger.info("The folder ${directory} has been created")
-                }
-                else if (!dirFile.isDirectory()){
-                    logger.info("Invalid directory path")
-                    return
-                }
-                inputTableNames.each{tableName ->
-                    def fileToSave = dirFile.absolutePath + File.separator + tableName +
-                            (datasource.getTable(tableName).isSpatial() ? ".geojson" : ".csv")
-                    datasource.save(tableName, fileToSave)
-                    logger.info("The table ${tableName} has been saved in file ${fileToSave}")
-                }
-                [directory:directory]
+IProcess saveTablesAsFiles(){
+    create({
+        title "Utility process to save tables in geojson or csv files"
+        inputs inputTableNames: String[], directory: String, datasource: JdbcDataSource
+        outputs directory: String
+        run { inputTableNames, directory, datasource ->
+            if (directory == null) {
+                logger.info("The directory to save the data cannot be null")
+                return
             }
-    )
+            File dirFile = new File(directory)
+
+            if (!dirFile.exists()) {
+                dirFile.mkdir()
+                logger.info("The folder ${directory} has been created")
+            } else if (!dirFile.isDirectory()) {
+                logger.info("Invalid directory path")
+                return
+            }
+            inputTableNames.each { tableName ->
+                def fileToSave = dirFile.absolutePath + File.separator + tableName +
+                        (datasource.getTable(tableName).isSpatial() ? ".geojson" : ".csv")
+                datasource.save(tableName, fileToSave)
+                logger.info("The table ${tableName} has been saved in file ${fileToSave}")
+            }
+            [directory: directory]
+        }
+    })
 }
