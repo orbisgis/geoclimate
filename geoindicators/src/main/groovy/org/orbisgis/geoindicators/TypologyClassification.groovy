@@ -50,7 +50,7 @@ IProcess identifyLczType() {
         outputs outputTableName: String
         run { rsuLczIndicators, prefixName, datasource, normalisationType, mapOfWeights ->
 
-            logger.info("Set the LCZ type of each RSU")
+            info "Set the LCZ type of each RSU"
 
             // List of possible operations
 
@@ -67,13 +67,13 @@ IProcess identifyLczType() {
 
                 // To avoid overwriting the output files of this step, a unique identifier is created
                 // Temporary table names are defined
-                def LCZ_classes = "LCZ_classes" + uuid()
-                def normalizedValues = "normalizedValues" + uuid()
-                def normalizedRange = "normalizedRange" + uuid()
-                def buffLczTable = "buffLczTable" + uuid()
-                def allLczTable = "allLczTable" + uuid()
-                def pivotedTable = "pivotedTable" + uuid()
-                def mainLczTable = "mainLczTable" + uuid()
+                def LCZ_classes = "LCZ_classes$uuid"
+                def normalizedValues = "normalizedValues$uuid"
+                def normalizedRange = "normalizedRange$uuid"
+                def buffLczTable = "buffLczTable$uuid"
+                def allLczTable = "allLczTable$uuid"
+                def pivotedTable = "pivotedTable$uuid"
+                def mainLczTable = "mainLczTable$uuid"
 
                 // I. Each dimension (each of the 7 indicators) is normalized according to average and standard deviation
                 // (or median and median of the variability)
@@ -235,7 +235,7 @@ IProcess identifyLczType() {
 
                 [outputTableName: outputTableName]
             } else {
-                logger.error("The 'normalisationType' argument is not valid.")
+                error "The 'normalisationType' argument is not valid."
             }
         }
     })

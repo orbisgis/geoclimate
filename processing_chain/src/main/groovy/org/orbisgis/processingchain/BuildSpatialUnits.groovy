@@ -3,7 +3,6 @@ package org.orbisgis.processingchain
 import groovy.transform.BaseScript
 import org.orbisgis.geoindicators.Geoindicators
 import org.orbisgis.datamanager.JdbcDataSource
-import org.orbisgis.processmanagerapi.IProcess
 
 
 @BaseScript ProcessingChain processingChain
@@ -34,7 +33,7 @@ import org.orbisgis.processmanagerapi.IProcess
  * @return outputTableBlockName Table name where are stored the blocks and the RSU ID
  * @return outputTableRsuName Table name where are stored the RSU
  */
-IProcess createUnitsOfAnalysis(){
+def createUnitsOfAnalysis(){
     return create({
         title "Create all new spatial units and their relations : building, block and RSU"
         inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
@@ -46,21 +45,27 @@ IProcess createUnitsOfAnalysis(){
         outputs outputTableBuildingName: String, outputTableBlockName: String, outputTableRsuName: String
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
               surface_vegetation, surface_hydro, distance, prefixName, indicatorUse ->
-            logger.info("Create the units of analysis...")
+            info "Create the units of analysis..."
 
             // Create the RSU
-            IProcess prepareRSUData = Geoindicators.SpatialUnits.prepareRSUData()
-            IProcess createRSU = Geoindicators.SpatialUnits.createRSU()
-            if (!prepareRSUData.execute([datasource       : datasource, zoneTable: zoneTable, roadTable: roadTable,
-                                         railTable        : railTable, vegetationTable: vegetationTable,
-                                         hydrographicTable: hydrographicTable, surface_vegetation: surface_vegetation,
-                                         surface_hydro    : surface_hydro, prefixName: prefixName])) {
-                logger.info("Cannot prepare the data for RSU calculation.")
+            def prepareRSUData = Geoindicators.SpatialUnits.prepareRSUData()
+            def createRSU = Geoindicators.SpatialUnits.createRSU()
+            if (!prepareRSUData([datasource        : datasource,
+                                 zoneTable         : zoneTable,
+                                 roadTable         : roadTable,
+                                 railTable         : railTable,
+                                 vegetationTable   : vegetationTable,
+                                 hydrographicTable : hydrographicTable,
+                                 surface_vegetation: surface_vegetation,
+                                 surface_hydro     : surface_hydro,
+                                 prefixName        : prefixName])) {
+                info "Cannot prepare the data for RSU calculation."
                 return
             }
-            if (!createRSU.execute([datasource: datasource, inputTableName: prepareRSUData.results.outputTableName,
-                                    prefixName: prefixName])) {
-                logger.info("Cannot compute the RSU.")
+            if (!createRSU([datasource    : datasource,
+                            inputTableName: prepareRSUData.results.outputTableName,
+                            prefixName    : prefixName])) {
+                info "Cannot compute the RSU."
                 return
             }
 
@@ -71,32 +76,34 @@ IProcess createUnitsOfAnalysis(){
             // If the urban typology is needed
             if (indicatorUse.contains("URBAN_TYPOLOGY")) {
                 // Create the blocks
-                IProcess createBlocks = Geoindicators.SpatialUnits.createBlocks()
-                if (!createBlocks.execute([datasource: datasource, inputTableName: buildingTable,
-                                           prefixName: prefixName, distance: distance])) {
-                    logger.info("Cannot create the blocks.")
+                def createBlocks = Geoindicators.SpatialUnits.createBlocks()
+                if (!createBlocks([datasource    : datasource,
+                                   inputTableName: buildingTable,
+                                   prefixName    : prefixName,
+                                   distance      : distance])) {
+                    info "Cannot create the blocks."
                     return
                 }
 
                 // Create the relations between RSU and blocks (store in the block table)
-                IProcess createScalesRelationsRsuBl = Geoindicators.SpatialUnits.createScalesRelations()
-                if (!createScalesRelationsRsuBl.execute([datasource              : datasource,
-                                                         inputLowerScaleTableName: createBlocks.results.outputTableName,
-                                                         inputUpperScaleTableName: createRSU.results.outputTableName,
-                                                         idColumnUp              : createRSU.results.outputIdRsu,
-                                                         prefixName              : prefixName])) {
-                    logger.info("Cannot compute the scales relations between blocks and RSU.")
+                def createScalesRelationsRsuBl = Geoindicators.SpatialUnits.createScalesRelations()
+                if (!createScalesRelationsRsuBl([datasource              : datasource,
+                                                 inputLowerScaleTableName: createBlocks.results.outputTableName,
+                                                 inputUpperScaleTableName: createRSU.results.outputTableName,
+                                                 idColumnUp              : createRSU.results.outputIdRsu,
+                                                 prefixName              : prefixName])) {
+                    info "Cannot compute the scales relations between blocks and RSU."
                     return
                 }
 
                 // Create the relations between buildings and blocks (store in the buildings table)
-                IProcess createScalesRelationsBlBu = Geoindicators.SpatialUnits.createScalesRelations()
-                if (!createScalesRelationsBlBu.execute([datasource              : datasource,
-                                                        inputLowerScaleTableName: buildingTable,
-                                                        inputUpperScaleTableName: createBlocks.results.outputTableName,
-                                                        idColumnUp              : createBlocks.results.outputIdBlock,
-                                                        prefixName              : prefixName])) {
-                    logger.info("Cannot compute the scales relations between blocks and buildings.")
+                def createScalesRelationsBlBu = Geoindicators.SpatialUnits.createScalesRelations()
+                if (!createScalesRelationsBlBu([datasource              : datasource,
+                                                inputLowerScaleTableName: buildingTable,
+                                                inputUpperScaleTableName: createBlocks.results.outputTableName,
+                                                idColumnUp              : createBlocks.results.outputIdBlock,
+                                                prefixName              : prefixName])) {
+                    info "Cannot compute the scales relations between blocks and buildings."
                     return
                 }
                 inputLowerScaleBuRsu = createScalesRelationsBlBu.results.outputTableName
@@ -108,13 +115,13 @@ IProcess createUnitsOfAnalysis(){
             // WARNING : if the blocks are used, the building table will contain the id_block and id_rsu for each of its
             // id_build but the relations between id_block and i_rsu should not been consider in this Table
             // the relationships may indeed be different from the one in the block Table
-            IProcess createScalesRelationsRsuBlBu = Geoindicators.SpatialUnits.createScalesRelations()
-            if (!createScalesRelationsRsuBlBu.execute([datasource              : datasource,
-                                                       inputLowerScaleTableName: inputLowerScaleBuRsu,
-                                                       inputUpperScaleTableName: createRSU.results.outputTableName,
-                                                       idColumnUp              : createRSU.results.outputIdRsu,
-                                                       prefixName              : prefixName])) {
-                logger.info("Cannot compute the scales relations between buildings and RSU.")
+            def createScalesRelationsRsuBlBu = Geoindicators.SpatialUnits.createScalesRelations()
+            if (!createScalesRelationsRsuBlBu([datasource              : datasource,
+                                               inputLowerScaleTableName: inputLowerScaleBuRsu,
+                                               inputUpperScaleTableName: createRSU.results.outputTableName,
+                                               idColumnUp              : createRSU.results.outputIdRsu,
+                                               prefixName              : prefixName])) {
+                info "Cannot compute the scales relations between buildings and RSU."
                 return
             }
 

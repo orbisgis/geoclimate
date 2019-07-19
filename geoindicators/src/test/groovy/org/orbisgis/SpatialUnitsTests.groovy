@@ -38,7 +38,7 @@ class SpatialUnitsTests {
 
     @Test
     void prepareGeometriesForRSUTest() {
-        H2GIS h2GIS = H2GIS.open([databaseName: './target/spatialunitsdb'])
+        H2GIS h2GIS = H2GIS.open([databaseName: './target/spatialunitsdb2'])
         h2GIS.load(this.class.getResource("road_test.shp"), true)
         h2GIS.load(this.class.getResource("rail_test.shp"), true)
         h2GIS.load(this.class.getResource("veget_test.shp"), true)

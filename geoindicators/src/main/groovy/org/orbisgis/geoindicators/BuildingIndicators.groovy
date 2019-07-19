@@ -2,7 +2,6 @@ package org.orbisgis.geoindicators
 
 import groovy.transform.BaseScript
 import org.orbisgis.datamanager.JdbcDataSource
-import org.orbisgis.processmanagerapi.IProcess
 
 @BaseScript Geoindicators geoindicators
 
@@ -26,16 +25,17 @@ import org.orbisgis.processmanagerapi.IProcess
  * urban indicators: The MApUCE tools chain. Urban climate, 24, 153-174.
  *
  * @return A database table name.
+ *
  * @author Jérémy Bernard
  */
-IProcess sizeProperties() {
+def sizeProperties() {
     def final OP_VOLUME = "building_volume"
     def final OP_FLOOR_AREA = "building_floor_area"
     def final OP_FACADE_LENGTH = "building_total_facade_length"
     def final OP_PASSIVE_VOLUME_RATIO = "building_passive_volume_ratio"
 
     def final GEOMETRIC_FIELD = "the_geom"
-    def final COLUMN_ID_BU ="id_build"
+    def final COLUMN_ID_BU = "id_build"
     def final DIST_PASSIV = 3
     def final BASE_NAME = "building_size_properties"
 
@@ -45,7 +45,7 @@ IProcess sizeProperties() {
         outputs outputTableName: String
         run { inputBuildingTableName, operations, prefixName, datasource ->
 
-            logger.info("Executing Building size properties")
+            info "Executing Building size properties"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
@@ -77,7 +77,8 @@ IProcess sizeProperties() {
             datasource.execute query
             [outputTableName: outputTableName]
         }
-    })}
+    })
+}
 
 
 /**
@@ -101,9 +102,10 @@ IProcess sizeProperties() {
  * urban indicators: The MApUCE tools chain. Urban climate, 24, 153-174.
  *
  * @return A database table name.
+ *
  * @author Jérémy Bernard
  */
-IProcess neighborsProperties() {
+def neighborsProperties() {
     def final GEOMETRIC_FIELD = "the_geom"
     def final ID_FIELD = "id_build"
     def final HEIGHT_WALL = "height_wall"
@@ -119,10 +121,10 @@ IProcess neighborsProperties() {
         outputs outputTableName: String
         run { inputBuildingTableName, operations, prefixName, datasource ->
 
-            logger.info("Executing Building interactions properties")
+            info "Executing Building interactions properties"
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
-            def build_intersec = "build_intersec" + uuid()
+            def build_intersec = "build_intersec$uuid"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
@@ -177,7 +179,8 @@ IProcess neighborsProperties() {
             datasource.execute query
             [outputTableName: outputTableName]
         }
-    })}
+    })
+}
 
 
 /**
@@ -203,9 +206,10 @@ IProcess neighborsProperties() {
  * urban indicators: The MApUCE tools chain. Urban climate, 24, 153-174.
  *
  * @return A database table name.
+ *
  * @author Jérémy Bernard
  */
-IProcess formProperties() {
+def formProperties() {
 
     def final GEOMETRIC_FIELD = "the_geom"
     def final ID_FIELD = "id_build"
@@ -218,47 +222,48 @@ IProcess formProperties() {
     def final BASE_NAME = "building_form_properties"
 
     return create({
-            title "Building form properties"
-            inputs inputBuildingTableName: String,operations: String[], prefixName: String, datasource: JdbcDataSource
-            outputs outputTableName : String
-            run { inputBuildingTableName, operations, prefixName, datasource ->
+        title "Building form properties"
+        inputs inputBuildingTableName: String, operations: String[], prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { inputBuildingTableName, operations, prefixName, datasource ->
 
-                logger.info("Executing Building form properties")
+            info "Executing Building form properties"
 
-                // The name of the outputTableName is constructed
-                def outputTableName = prefixName + "_" + BASE_NAME
+            // The name of the outputTableName is constructed
+            def outputTableName = prefixName + "_" + BASE_NAME
 
-                def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
+            def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
 
-                // The operation names are transformed into lower case
-                operations.replaceAll {s -> s.toLowerCase()}
-                operations.each {operation ->
-                    switch(operation){
-                        case OP_CONCAVITY:
-                            query += "ST_AREA($GEOMETRIC_FIELD)/ST_AREA(ST_CONVEXHULL($GEOMETRIC_FIELD)) AS $operation,"
-                            break
-                        case OP_FORM_FACTOR:
-                            query += "ST_AREA($GEOMETRIC_FIELD)/POWER(ST_PERIMETER($GEOMETRIC_FIELD), 2) AS $operation,"
-                            break
-                        case OP_RAW_COMPACITY:
-                            query += "((ST_PERIMETER($GEOMETRIC_FIELD)+ST_PERIMETER(ST_HOLES($GEOMETRIC_FIELD)))*$HEIGHT_WALL+" +
-                                    "POWER(POWER(ST_AREA($GEOMETRIC_FIELD),2)+4*ST_AREA($GEOMETRIC_FIELD)*" +
-                                    "POWER($HEIGHT_ROOF-$HEIGHT_WALL, 2),0.5)+POWER(ST_AREA($GEOMETRIC_FIELD),0.5)*" +
-                                    "($HEIGHT_ROOF-$HEIGHT_WALL))/POWER(ST_AREA($GEOMETRIC_FIELD)*" +
-                                    "($HEIGHT_WALL+$HEIGHT_ROOF)/2, 2./3) AS $operation,"
-                            break
-                        case OP_CONVEX_HULL_PERIMETER_DENSITY:
-                            query += "ST_PERIMETER(ST_CONVEXHULL($GEOMETRIC_FIELD))/(ST_PERIMETER($GEOMETRIC_FIELD)+" +
-                                    "ST_PERIMETER(ST_HOLES($GEOMETRIC_FIELD))) AS $operation,"
-                            break
-                    }
+            // The operation names are transformed into lower case
+            operations.replaceAll { s -> s.toLowerCase() }
+            operations.each { operation ->
+                switch (operation) {
+                    case OP_CONCAVITY:
+                        query += "ST_AREA($GEOMETRIC_FIELD)/ST_AREA(ST_CONVEXHULL($GEOMETRIC_FIELD)) AS $operation,"
+                        break
+                    case OP_FORM_FACTOR:
+                        query += "ST_AREA($GEOMETRIC_FIELD)/POWER(ST_PERIMETER($GEOMETRIC_FIELD), 2) AS $operation,"
+                        break
+                    case OP_RAW_COMPACITY:
+                        query += "((ST_PERIMETER($GEOMETRIC_FIELD)+ST_PERIMETER(ST_HOLES($GEOMETRIC_FIELD)))*$HEIGHT_WALL+" +
+                                "POWER(POWER(ST_AREA($GEOMETRIC_FIELD),2)+4*ST_AREA($GEOMETRIC_FIELD)*" +
+                                "POWER($HEIGHT_ROOF-$HEIGHT_WALL, 2),0.5)+POWER(ST_AREA($GEOMETRIC_FIELD),0.5)*" +
+                                "($HEIGHT_ROOF-$HEIGHT_WALL))/POWER(ST_AREA($GEOMETRIC_FIELD)*" +
+                                "($HEIGHT_WALL+$HEIGHT_ROOF)/2, 2./3) AS $operation,"
+                        break
+                    case OP_CONVEX_HULL_PERIMETER_DENSITY:
+                        query += "ST_PERIMETER(ST_CONVEXHULL($GEOMETRIC_FIELD))/(ST_PERIMETER($GEOMETRIC_FIELD)+" +
+                                "ST_PERIMETER(ST_HOLES($GEOMETRIC_FIELD))) AS $operation,"
+                        break
                 }
-                query+= "$ID_FIELD FROM $inputBuildingTableName"
-
-                datasource.execute query
-                [outputTableName: outputTableName]
             }
-})}
+            query += "$ID_FIELD FROM $inputBuildingTableName"
+
+            datasource.execute query
+            [outputTableName: outputTableName]
+        }
+    })
+}
 
 /**
  * This process extract the building closest distance to an other building. A buffer of defined size (bufferDist
@@ -273,9 +278,10 @@ IProcess formProperties() {
  * @param prefixName String use as prefix to name the output table
  *
  * @return A database table name.
+ *
  * @author Jérémy Bernard
  */
-IProcess minimumBuildingSpacing() {
+def minimumBuildingSpacing() {
     def final GEOMETRIC_FIELD = "the_geom"
     def final ID_FIELD = "id_build"
     def final BASE_NAME = "building_minimum_building_spacing"
@@ -285,12 +291,12 @@ IProcess minimumBuildingSpacing() {
         inputs inputBuildingTableName: String, bufferDist: 100D, prefixName: String, datasource: JdbcDataSource
         outputs outputTableName: String
         run { inputBuildingTableName, bufferDist, prefixName, datasource ->
-            logger.info("Executing Building minimum building spacing")
+            info "Executing Building minimum building spacing"
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
-            def build_buffer = "build_buffer" + uuid()
-            def build_within_buffer = "build_within_buffer" + uuid()
+            def build_buffer = "build_buffer$uuid"
+            def build_within_buffer = "build_within_buffer$uuid"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
@@ -322,7 +328,8 @@ IProcess minimumBuildingSpacing() {
 
             [outputTableName: outputTableName]
         }
-    })}
+    })
+}
 
 /**
  * This process extract the building closest distance to a road. A buffer of defined size (bufferDist argument)
@@ -337,9 +344,10 @@ IProcess minimumBuildingSpacing() {
  * @param prefixName String use as prefix to name the output table
  *
  * @return A database table name.
+ *
  * @author Jérémy Bernard
  */
-IProcess roadDistance() {
+def roadDistance() {
     def final GEOMETRIC_FIELD = "the_geom"
     def final ID_FIELD_BU = "id_build"
     def final ROAD_WIDTH = "width"
@@ -351,13 +359,13 @@ IProcess roadDistance() {
         outputs outputTableName: String
         run { inputBuildingTableName, inputRoadTableName, bufferDist, prefixName, datasource ->
 
-            logger.info("Executing Building road distance")
+            info "Executing Building road distance"
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
-            def build_buffer = "build_buffer" + uuid()
-            def road_surf = "road_surf" + uuid()
-            def road_within_buffer = "road_within_buffer" + uuid()
+            def build_buffer = "build_buffer$uuid"
+            def road_surf = "road_surf$uuid"
+            def road_within_buffer = "road_within_buffer$uuid"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
@@ -394,7 +402,8 @@ IProcess roadDistance() {
 
             [outputTableName: outputTableName]
         }
-    })}
+    })
+}
 
 /**
  * Script to compute the building closeness to a 50 m wide isolated building ("building_number_building_neighbor" = 0).
@@ -418,10 +427,11 @@ IProcess roadDistance() {
  * de recherche en architecture, Laboratoire de recherche en architecture, Toulouse, France, 2015.
  *
  * @return A database table name.
+ *
  * @author Jérémy Bernard
  *
  */
-IProcess likelihoodLargeBuilding() {
+def likelihoodLargeBuilding() {
     def final GEOMETRIC_FIELD = "the_geom"
     def final ID_FIELD_BU = "id_build"
     def final BASE_NAME = "building_likelihood_large_building"
@@ -432,7 +442,7 @@ IProcess likelihoodLargeBuilding() {
         outputs outputTableName: String
         run { inputBuildingTableName, nbOfBuildNeighbors, prefixName, datasource ->
 
-            logger.info("Executing Building closeness to a 50 m wide building")
+            info "Executing Building closeness to a 50 m wide building"
 
             // Processes used for the indicator calculation
             // a and r are the two parameters necessary for the logistic regression calculation (their value is

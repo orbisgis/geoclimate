@@ -14,14 +14,15 @@ abstract class ProcessingChain extends GroovyProcessFactory {
     public static Logger logger = LoggerFactory.getLogger(ProcessingChain.class)
 
     public  static PrepareBDTopo = new PrepareBDTopo()
-
     public static  PrepareOSM  = new PrepareOSM()
-
     public static BuildGeoIndicators  = new BuildGeoIndicators()
-
     public static BuildSpatialUnits  = new BuildSpatialUnits()
-
     public static BuildLCZ  = new BuildLCZ()
-
     public static DataUtils  = new DataUtils()
+
+    //Utility methods
+    static def uuid = { UUID.randomUUID().toString().replaceAll("-", "_") }
+    static def info = { obj -> logger.info(obj.toString()) }
+    static def warn = { obj -> logger.warn(obj.toString()) }
+    static def error = { obj -> logger.error(obj.toString()) }
 }

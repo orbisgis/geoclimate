@@ -4,6 +4,7 @@ package org.orbisgis.processingchain
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.processmanagerapi.IProcess
@@ -20,34 +21,42 @@ class ProcessingChainTest {
 
     @BeforeAll
     static void init(){
-        H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb;AUTO_SERVER=TRUE", "sa", "")
-        h2GISDatabase.load(ProcessingChain.class.getResource("IRIS_GE.shp"), "IRIS_GE", true)
-        h2GISDatabase.load(ProcessingChain.class.getResource("BATI_INDIFFERENCIE.shp"), "BATI_INDIFFERENCIE", true)
-        h2GISDatabase.load(ProcessingChain.class.getResource("BATI_INDUSTRIEL.shp"), "BATI_INDUSTRIEL", true)
-        h2GISDatabase.load(ProcessingChain.class.getResource("BATI_REMARQUABLE.shp"), "BATI_REMARQUABLE", true)
-        h2GISDatabase.load(ProcessingChain.class.getResource("ROUTE.shp"), "ROUTE",true)
-        h2GISDatabase.load(ProcessingChain.class.getResource("SURFACE_EAU.shp"), "SURFACE_EAU",true)
-        h2GISDatabase.load(ProcessingChain.class.getResource("ZONE_VEGETATION.shp"), "ZONE_VEGETATION",true)
-        h2GISDatabase.load(ProcessingChain.class.getResource("TRONCON_VOIE_FERREE.csv"), "TRONCON_VOIE_FERREE0",true)
-        h2GISDatabase.execute "DROP TABLE IF EXISTS TRONCON_VOIE_FERREE; CREATE TABLE TRONCON_VOIE_FERREE AS SELECT PK," +
-                "CAST(the_geom AS GEOMETRY) AS the_geom, ID, PREC_PLANI, NATURE, ELECTRIFIE, FRANCHISST, LARGEUR," +
-                "NB_VOIES, POS_SOL, ETAT, Z_INI, Z_FIN FROM TRONCON_VOIE_FERREE0;"
-        h2GISDatabase.load(ProcessingChain.class.getResource("BUILDING_ABSTRACT_PARAMETERS.csv"), "BUILDING_ABSTRACT_PARAMETERS", true)
-        h2GISDatabase.load(ProcessingChain.class.getResource("BUILDING_ABSTRACT_USE_TYPE.csv"), "BUILDING_ABSTRACT_USE_TYPE", true)
-        h2GISDatabase.load(ProcessingChain.class.getResource("BUILDING_BD_TOPO_USE_TYPE.csv"), "BUILDING_BD_TOPO_USE_TYPE", true)
-        h2GISDatabase.load(ProcessingChain.class.getResource("RAIL_ABSTRACT_TYPE.csv"), "RAIL_ABSTRACT_TYPE", true)
-        h2GISDatabase.load(ProcessingChain.class.getResource("RAIL_BD_TOPO_TYPE.csv"), "RAIL_BD_TOPO_TYPE",true)
-        h2GISDatabase.load(ProcessingChain.class.getResource("ROAD_ABSTRACT_PARAMETERS.csv"), "ROAD_ABSTRACT_PARAMETERS",true)
-        h2GISDatabase.load(ProcessingChain.class.getResource("ROAD_ABSTRACT_SURFACE.csv"), "ROAD_ABSTRACT_SURFACE",true)
-        h2GISDatabase.load(ProcessingChain.class.getResource("ROAD_ABSTRACT_TYPE.csv"), "ROAD_ABSTRACT_TYPE",true)
-        h2GISDatabase.load(ProcessingChain.class.getResource("RAIL_ABSTRACT_TYPE.csv"), "RAIL_ABSTRACT_TYPE", true)
-        h2GISDatabase.load(ProcessingChain.class.getResource("ROAD_BD_TOPO_TYPE.csv"), "ROAD_BD_TOPO_TYPE",true)
-        h2GISDatabase.load(ProcessingChain.class.getResource("VEGET_ABSTRACT_PARAMETERS.csv"), "VEGET_ABSTRACT_PARAMETERS",true)
-        h2GISDatabase.load(ProcessingChain.class.getResource("VEGET_ABSTRACT_TYPE.csv"), "VEGET_ABSTRACT_TYPE",true)
-        h2GISDatabase.load(ProcessingChain.class.getResource("VEGET_BD_TOPO_TYPE.csv"), "VEGET_BD_TOPO_TYPE",true)
+        if(ProcessingChainTest.class.getResource("bdtopofolder") != null &&
+                new File(ProcessingChainTest.class.getResource("bdtopofolder").toURI()).exists()) {
+            System.properties.setProperty("data.bd.topo", "true")
+            H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb;AUTO_SERVER=TRUE", "sa", "")
+            h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/IRIS_GE.shp"), "IRIS_GE", true)
+            h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/BATI_INDIFFERENCIE.shp"), "BATI_INDIFFERENCIE", true)
+            h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/BATI_INDUSTRIEL.shp"), "BATI_INDUSTRIEL", true)
+            h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/BATI_REMARQUABLE.shp"), "BATI_REMARQUABLE", true)
+            h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/ROUTE.shp"), "ROUTE", true)
+            h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/SURFACE_EAU.shp"), "SURFACE_EAU", true)
+            h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/ZONE_VEGETATION.shp"), "ZONE_VEGETATION", true)
+            h2GISDatabase.load(ProcessingChain.class.getResource("TRONCON_VOIE_FERREE.csv"), "TRONCON_VOIE_FERREE0", true)
+            h2GISDatabase.execute "DROP TABLE IF EXISTS TRONCON_VOIE_FERREE; CREATE TABLE TRONCON_VOIE_FERREE AS SELECT PK," +
+                    "CAST(the_geom AS GEOMETRY) AS the_geom, ID, PREC_PLANI, NATURE, ELECTRIFIE, FRANCHISST, LARGEUR," +
+                    "NB_VOIES, POS_SOL, ETAT, Z_INI, Z_FIN FROM TRONCON_VOIE_FERREE0;"
+            h2GISDatabase.load(ProcessingChain.class.getResource("BUILDING_ABSTRACT_PARAMETERS.csv"), "BUILDING_ABSTRACT_PARAMETERS", true)
+            h2GISDatabase.load(ProcessingChain.class.getResource("BUILDING_ABSTRACT_USE_TYPE.csv"), "BUILDING_ABSTRACT_USE_TYPE", true)
+            h2GISDatabase.load(ProcessingChain.class.getResource("BUILDING_BD_TOPO_USE_TYPE.csv"), "BUILDING_BD_TOPO_USE_TYPE", true)
+            h2GISDatabase.load(ProcessingChain.class.getResource("RAIL_ABSTRACT_TYPE.csv"), "RAIL_ABSTRACT_TYPE", true)
+            h2GISDatabase.load(ProcessingChain.class.getResource("RAIL_BD_TOPO_TYPE.csv"), "RAIL_BD_TOPO_TYPE", true)
+            h2GISDatabase.load(ProcessingChain.class.getResource("ROAD_ABSTRACT_PARAMETERS.csv"), "ROAD_ABSTRACT_PARAMETERS", true)
+            h2GISDatabase.load(ProcessingChain.class.getResource("ROAD_ABSTRACT_SURFACE.csv"), "ROAD_ABSTRACT_SURFACE", true)
+            h2GISDatabase.load(ProcessingChain.class.getResource("ROAD_ABSTRACT_TYPE.csv"), "ROAD_ABSTRACT_TYPE", true)
+            h2GISDatabase.load(ProcessingChain.class.getResource("RAIL_ABSTRACT_TYPE.csv"), "RAIL_ABSTRACT_TYPE", true)
+            h2GISDatabase.load(ProcessingChain.class.getResource("ROAD_BD_TOPO_TYPE.csv"), "ROAD_BD_TOPO_TYPE", true)
+            h2GISDatabase.load(ProcessingChain.class.getResource("VEGET_ABSTRACT_PARAMETERS.csv"), "VEGET_ABSTRACT_PARAMETERS", true)
+            h2GISDatabase.load(ProcessingChain.class.getResource("VEGET_ABSTRACT_TYPE.csv"), "VEGET_ABSTRACT_TYPE", true)
+            h2GISDatabase.load(ProcessingChain.class.getResource("VEGET_BD_TOPO_TYPE.csv"), "VEGET_BD_TOPO_TYPE", true)
+        }
+        else{
+            System.properties.setProperty("data.bd.topo", "false")
+        }
     }
 
     @Test
+    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void prepareBDTopoTest(){
         H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb", "sa", "")
         def process = ProcessingChain.PrepareBDTopo.prepareBDTopo()
@@ -58,16 +67,6 @@ class ProcessingChainTest {
                                     distBuffer: 500, expand: 1000, idZone: '56195',
                                     hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
         ])
-        /*
-        H2GIS h2GISDatabase = H2GIS.open(bdTopoDb.absolutePath-".mv.db", "sa", "")
-        def process = ProcessingChain.PrepareBDTopo.prepareBDTopo()
-        assertTrue process.execute([datasource: h2GISDatabase, tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
-                                    tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
-                                    tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
-                                    tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
-                                    distBuffer: 500, expand: 1000, idZone: '56195',
-                                    hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
-        ])*/
         process.getResults().each {entry ->
             if(entry.key == 'outputStats') {
                 entry.value.each{tab -> assertNotNull(h2GISDatabase.getTable(tab))}
@@ -77,30 +76,8 @@ class ProcessingChainTest {
     }
 
 
-    /*
-    @EnabledIfSystemProperty(named = "test.processingchain", matches = "true")
-    @Test
-    void BDTopoProcessingChainTest(){
-        H2GIS h2GIS = H2GIS.open("./target/processingchaindb", "sa", "")
-        h2GIS.load(new File(this.class.getResource("geoclimate_bdtopo_data_test/IRIS_GE.geojson").toURI()).getAbsolutePath(),"IRIS_GE",true)
-        h2GIS.load(new File(this.class.getResource("geoclimate_bdtopo_data_test/BATI_INDIFFERENCIE.geojson").toURI()).getAbsolutePath(),"BATI_INDIFFERENCIE",true)
-        h2GIS.load(new File(this.class.getResource("geoclimate_bdtopo_data_test/BATI_REMARQUABLE.geojson").toURI()).getAbsolutePath(),"BATI_REMARQUABLE",true)
-        h2GIS.load(new File(this.class.getResource("geoclimate_bdtopo_data_test/ROUTE.geojson").toURI()).getAbsolutePath(),"ROUTE",true)
-        h2GIS.load(new File(this.class.getResource("geoclimate_bdtopo_data_test/TRONCON_VOIE_FERREE.geojson").toURI()).getAbsolutePath(),"TRONCON_VOIE_FERREE",true)
-        h2GIS.load(new File(this.class.getResource("geoclimate_bdtopo_data_test/SURFACE_EAU.geojson").toURI()).getAbsolutePath(),"SURFACE_EAU",true)
-        h2GIS.load(new File(this.class.getResource("geoclimate_bdtopo_data_test/ZONE_VEGETATION.geojson").toURI()).getAbsolutePath(),"ZONE_VEGETATION",true)
-        ProcessMapper pm =  ProcessingChain.prepareBDTopo.createMapper()
-        pm.execute([datasource: h2GIS, distBuffer : 500, expand : 1000, idZone : "56260", tableIrisName: "IRIS_GE",
-                    tableBuildIndifName: "BATI_INDIFFERENCIE", tableBuildIndusName: "BATI_INDUSTRIEL",
-                    tableBuildRemarqName: "BATI_REMARQUABLE", tableRoadName: "ROUTE", tableRailName: "TRONCON_VOIE_FERREE",
-                    tableHydroName: "SURFACE_EAU", tableVegetName: "ZONE_VEGETATION",  hLevMin: 3,  hLevMax: 15,
-                    hThresholdLev2: 10])
-        pm.getResults().each {
-            entry -> assertNull h2GIS.getTable(entry.getValue())
-        }
-    }
-*/
     @Disabled
+    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     @Test
     void PrepareOSMTest() {
 
@@ -404,6 +381,7 @@ class ProcessingChainTest {
     }
 
     @Test
+    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void CreateUnitsOfAnalysisTest(){
         H2GIS h2GIS = H2GIS.open("./target/processingchainscales")
         String sqlString = new File(getClass().getResource("data_for_tests.sql").toURI()).text
@@ -437,6 +415,7 @@ class ProcessingChainTest {
     }
 
     @Test
+    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void createLCZTest(){
         H2GIS h2GIS = H2GIS.open("./target/processinglcz")
         String sqlString = new File(getClass().getResource("data_for_tests.sql").toURI()).text
@@ -485,6 +464,7 @@ class ProcessingChainTest {
 
     @Disabled
     @Test
+    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void osmGeoIndicatorsFromApi() {
         //Do not change this code
         String id_zone = "56195"
@@ -538,6 +518,7 @@ class ProcessingChainTest {
 
     @Disabled
     @Test
+    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void osmGeoIndicatorsFromTestFiles() {
         String urlBuilding = new File(getClass().getResource("BUILDING.geojson").toURI()).absolutePath
         String urlRoad= new File(getClass().getResource("ROAD.geojson").toURI()).absolutePath
@@ -672,6 +653,7 @@ class ProcessingChainTest {
 
     @Disabled
     @Test
+    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void osmLczFromTestFiles() {
         String urlBuilding = new File(getClass().getResource("BUILDING.geojson").toURI()).absolutePath
         String urlRoad= new File(getClass().getResource("ROAD.geojson").toURI()).absolutePath
@@ -755,6 +737,7 @@ class ProcessingChainTest {
     }
 
     @Test
+    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void bdtopoLczFromTestFiles() {
         H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb", "sa", "")
         def process = ProcessingChain.PrepareBDTopo.prepareBDTopo()

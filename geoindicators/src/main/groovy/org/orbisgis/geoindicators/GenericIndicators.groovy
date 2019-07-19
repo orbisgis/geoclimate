@@ -28,6 +28,7 @@ import org.orbisgis.processmanagerapi.IProcess
  * @param prefixName String use as prefix to name the output table
  *
  * @return A database table name.
+ *
  * @author Jérémy Bernard
  */
 IProcess unweightedOperationFromLowerScale() {
@@ -47,7 +48,7 @@ IProcess unweightedOperationFromLowerScale() {
         run { inputLowerScaleTableName, inputUpperScaleTableName, inputIdUp, inputVarAndOperations, prefixName,
               datasource ->
 
-            logger.info("Executing Unweighted statistical operations from lower scale")
+            info "Executing Unweighted statistical operations from lower scale"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
@@ -122,7 +123,7 @@ IProcess weightedAggregatedStatistics() {
         run { inputLowerScaleTableName, inputUpperScaleTableName, inputIdUp, inputVarWeightsOperations, prefixName,
               datasource ->
 
-            logger.info("Executing Weighted statistical operations from lower scale")
+            info "Executing Weighted statistical operations from lower scale"
 
             // The name of the outputTableName is constructed
             String outputTableName = prefixName + "_" + BASE_NAME
@@ -206,7 +207,7 @@ IProcess geometryProperties() {
         outputs outputTableName: String
         run { inputTableName, inputFields, operations, prefixName, datasource ->
 
-            logger.info("Executing Geometry properties")
+            info "Executing Geometry properties"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
@@ -259,7 +260,7 @@ IProcess perkinsSkillScoreBuildingDirection() {
         outputs outputTableName: String
         run { buildingTableName, inputIdUp, angleRangeSize, prefixName, datasource ->
 
-            logger.info("Executing Block Perkins skill score building direction")
+            info "Executing Block Perkins skill score building direction"
 
             // The name of the outputTableName is constructed
             String baseName = inputIdUp[3..-1] + "_perkins_skill_score_building_direction"
@@ -269,11 +270,11 @@ IProcess perkinsSkillScoreBuildingDirection() {
             if ((180 % angleRangeSize) == 0 && (180 / angleRangeSize) > 1) {
                 // To avoid overwriting the output files of this step, a unique identifier is created
                 // Temporary table names
-                def build_min_rec = "build_min_rec" + uuid()
-                def build_dir360 = "build_dir360" + uuid()
-                def build_dir180 = "build_dir180" + uuid()
-                def build_dir_dist = "build_dir_dist" + uuid()
-                def build_dir_tot = "build_dir_tot" + uuid()
+                def build_min_rec = "build_min_rec$uuid"
+                def build_dir360 = "build_dir360$uuid"
+                def build_dir180 = "build_dir180$uuid"
+                def build_dir_dist = "build_dir_dist$uuid"
+                def build_dir_tot = "build_dir_tot$uuid"
 
                 // The minimum diameter of the minimum rectangle is created for each building
                 datasource.execute "DROP TABLE IF EXISTS $build_min_rec; CREATE TABLE $build_min_rec AS " +
@@ -316,9 +317,9 @@ IProcess perkinsSkillScoreBuildingDirection() {
                 sqlQueryPerkins = sqlQueryPerkins[0..-3] + "AS block_perkins_skill_score_building_direction" +
                         " FROM $build_dir_tot;"
 
-                datasource.execute(sqlQueryDist)
-                datasource.execute(sqlQueryTot)
-                datasource.execute(sqlQueryPerkins)
+                datasource.execute sqlQueryDist
+                datasource.execute sqlQueryTot
+                datasource.execute sqlQueryPerkins
 
                 // The temporary tables are deleted
                 datasource.execute "DROP TABLE IF EXISTS $build_min_rec, $build_dir360, $build_dir180, " +
