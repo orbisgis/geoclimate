@@ -10,7 +10,6 @@ import static java.nio.charset.StandardCharsets.UTF_8
  * Root access point to the Geoindicators processes.
  */
 abstract class Geoindicators extends GroovyProcessFactory {
-
     public static Logger logger = LoggerFactory.getLogger(Geoindicators.class)
 
     //Processes

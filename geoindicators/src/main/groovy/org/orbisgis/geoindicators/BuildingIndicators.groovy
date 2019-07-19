@@ -2,7 +2,6 @@ package org.orbisgis.geoindicators
 
 import groovy.transform.BaseScript
 import org.orbisgis.datamanager.JdbcDataSource
-import org.orbisgis.processmanagerapi.IProcess
 
 @BaseScript Geoindicators geoindicators
 
@@ -29,7 +28,7 @@ import org.orbisgis.processmanagerapi.IProcess
  *
  * @author Jérémy Bernard
  */
-IProcess sizeProperties() {
+def sizeProperties() {
     def final OP_VOLUME = "building_volume"
     def final OP_FLOOR_AREA = "building_floor_area"
     def final OP_FACADE_LENGTH = "building_total_facade_length"
@@ -106,7 +105,7 @@ IProcess sizeProperties() {
  *
  * @author Jérémy Bernard
  */
-IProcess neighborsProperties() {
+def neighborsProperties() {
     def final GEOMETRIC_FIELD = "the_geom"
     def final ID_FIELD = "id_build"
     def final HEIGHT_WALL = "height_wall"
@@ -210,7 +209,7 @@ IProcess neighborsProperties() {
  *
  * @author Jérémy Bernard
  */
-IProcess formProperties() {
+def formProperties() {
 
     def final GEOMETRIC_FIELD = "the_geom"
     def final ID_FIELD = "id_build"
@@ -282,7 +281,7 @@ IProcess formProperties() {
  *
  * @author Jérémy Bernard
  */
-IProcess minimumBuildingSpacing() {
+def minimumBuildingSpacing() {
     def final GEOMETRIC_FIELD = "the_geom"
     def final ID_FIELD = "id_build"
     def final BASE_NAME = "building_minimum_building_spacing"
@@ -348,7 +347,7 @@ IProcess minimumBuildingSpacing() {
  *
  * @author Jérémy Bernard
  */
-IProcess roadDistance() {
+def roadDistance() {
     def final GEOMETRIC_FIELD = "the_geom"
     def final ID_FIELD_BU = "id_build"
     def final ROAD_WIDTH = "width"
@@ -432,7 +431,7 @@ IProcess roadDistance() {
  * @author Jérémy Bernard
  *
  */
-IProcess likelihoodLargeBuilding() {
+def likelihoodLargeBuilding() {
     def final GEOMETRIC_FIELD = "the_geom"
     def final ID_FIELD_BU = "id_build"
     def final BASE_NAME = "building_likelihood_large_building"

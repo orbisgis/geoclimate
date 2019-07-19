@@ -11,29 +11,29 @@ import static org.junit.jupiter.api.Assertions.assertTrue
 
 class BlockIndicatorsTests {
 
-    private static H2GIS H2GIS
+    private static H2GIS h2GIS
 
     @BeforeAll
     static void init(){
-        H2GIS = H2GIS.open([databaseName: "./target/${BlockIndicatorsTests.getName()}"])
+        h2GIS = H2GIS.open("./target/${BlockIndicatorsTests.getName()}")
     }
 
     @BeforeEach
     void initData(){
-        H2GIS.executeScript(getClass().getResourceAsStream("data_for_tests.sql"))
+        h2GIS.executeScript(getClass().getResourceAsStream("data_for_tests.sql"))
     }
 
     @Test
     void holeAreaDensityTest() {
         // Only the first 6 first created buildings are selected since any new created building may alter the results
-        H2GIS.execute "DROP TABLE IF EXISTS tempo_block; " +
+        h2GIS.execute "DROP TABLE IF EXISTS tempo_block; " +
                 "CREATE TABLE tempo_block AS SELECT * FROM block_test WHERE id_block = 6"
 
         def  p =  Geoindicators.BlockIndicators.holeAreaDensity()
-        assertTrue p.execute([blockTable: "tempo_block", prefixName: "test", datasource: H2GIS])
+        assertTrue p.execute([blockTable: "tempo_block", prefixName: "test", datasource: h2GIS])
 
         def sum = 0
-        H2GIS.eachRow("SELECT * FROM test_block_hole_area_density"){
+        h2GIS.eachRow("SELECT * FROM test_block_hole_area_density"){
             row -> sum += row.block_hole_area_density
         }
         assertEquals(3.0/47, sum, 0.00001)
@@ -42,23 +42,23 @@ class BlockIndicatorsTests {
     @Test
     void netCompacityTest() {
         // Only the first 6 first created buildings are selected since any new created building may alter the results
-        H2GIS.execute "DROP TABLE IF EXISTS tempo_build, building_size_properties, building_contiguity; " +
+        h2GIS.execute "DROP TABLE IF EXISTS tempo_build, building_size_properties, building_contiguity; " +
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 8"
 
         def  p_size =  Geoindicators.BuildingIndicators.sizeProperties()
         assertTrue p_size.execute([inputBuildingTableName: "tempo_build",
-                        operations:["building_volume"], prefixName : "test", datasource:H2GIS])
+                        operations:["building_volume"], prefixName : "test", datasource:h2GIS])
 
         // The indicators are gathered in a same table
-        H2GIS.execute "DROP TABLE IF EXISTS tempo_build2; " +
+        h2GIS.execute "DROP TABLE IF EXISTS tempo_build2; " +
                 "CREATE TABLE tempo_build2 AS SELECT a.*, b.building_volume FROM tempo_build a" +
                 " LEFT JOIN test_building_size_properties b ON a.id_build = b.id_build"
 
         def  p =  Geoindicators.BlockIndicators.netCompacity()
         assertTrue p.execute([buildTable: "tempo_build2", buildingVolumeField: "building_volume",
-                   buildingContiguityField: "building_contiguity", prefixName: "test", datasource: H2GIS])
+                   buildingContiguityField: "building_contiguity", prefixName: "test", datasource: h2GIS])
         def sum = 0
-        H2GIS.eachRow("SELECT * FROM test_block_net_compacity WHERE id_block = 4"){
+        h2GIS.eachRow("SELECT * FROM test_block_net_compacity WHERE id_block = 4"){
             row -> sum += row.block_net_compacity
         }
         assertEquals(0.51195, sum, 0.00001)
@@ -67,15 +67,15 @@ class BlockIndicatorsTests {
     @Test
     void closingnessTest() {
         // Only the first 6 first created buildings are selected since any new created building may alter the results
-        H2GIS.execute("DROP TABLE IF EXISTS tempo_block, tempo_build; " +
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_block, tempo_build; " +
                 "CREATE TABLE tempo_block AS SELECT * FROM block_test WHERE id_block = 8; CREATE TABLE tempo_build AS" +
                 " SELECT * FROM building_test WHERE id_block = 8")
 
         def p = Geoindicators.BlockIndicators.closingness()
         assertTrue p.execute([correlationTableName: "tempo_build", blockTable: "tempo_block", prefixName: "test",
-                              datasource: H2GIS])
+                              datasource: h2GIS])
         def sum = 0
-        H2GIS.eachRow("SELECT * FROM test_block_closingness") {
+        h2GIS.eachRow("SELECT * FROM test_block_closingness") {
             row -> sum += row.block_closingness
         }
         assertEquals(450, sum)

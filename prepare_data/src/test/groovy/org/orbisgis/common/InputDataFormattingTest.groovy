@@ -2,6 +2,7 @@ package org.orbisgis.common
 
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty
 import org.orbisgis.PrepareData
 import org.orbisgis.datamanager.h2gis.H2GIS
 
@@ -11,34 +12,41 @@ import static org.junit.jupiter.api.Assertions.assertTrue
 class InputDataFormattingTest {
     @BeforeAll
     static void init(){
-        H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb", "sa", "")
-        h2GISDatabase.load(InputDataFormatting.class.getResource("IRIS_GE.shp"), "IRIS_GE", true)
-        h2GISDatabase.load(InputDataFormatting.class.getResource("BATI_INDIFFERENCIE.shp"), "BATI_INDIFFERENCIE", true)
-        h2GISDatabase.load(InputDataFormatting.class.getResource("BATI_INDUSTRIEL.shp"), "BATI_INDUSTRIEL", true)
-        h2GISDatabase.load(InputDataFormatting.class.getResource("BATI_REMARQUABLE.shp"), "BATI_REMARQUABLE", true)
-        h2GISDatabase.load(InputDataFormatting.class.getResource("ROUTE.shp"), "ROUTE",true)
-        h2GISDatabase.load(InputDataFormatting.class.getResource("SURFACE_EAU.shp"), "SURFACE_EAU",true)
-        h2GISDatabase.load(InputDataFormatting.class.getResource("ZONE_VEGETATION.shp"), "ZONE_VEGETATION",true)
-        h2GISDatabase.load(InputDataFormatting.class.getResource("TRONCON_VOIE_FERREE.csv"), "TRONCON_VOIE_FERREE0",true)
-        h2GISDatabase.execute "DROP TABLE IF EXISTS TRONCON_VOIE_FERREE; CREATE TABLE TRONCON_VOIE_FERREE AS SELECT PK," +
-                "CAST(the_geom AS GEOMETRY) AS the_geom, ID, PREC_PLANI, NATURE, ELECTRIFIE, FRANCHISST, LARGEUR," +
-                "NB_VOIES, POS_SOL, ETAT, Z_INI, Z_FIN FROM TRONCON_VOIE_FERREE0;"
-        h2GISDatabase.load(InputDataFormatting.class.getResource("BUILDING_ABSTRACT_PARAMETERS.csv"), "BUILDING_ABSTRACT_PARAMETERS", true)
-        h2GISDatabase.load(InputDataFormatting.class.getResource("BUILDING_ABSTRACT_USE_TYPE.csv"), "BUILDING_ABSTRACT_USE_TYPE", true)
-        h2GISDatabase.load(InputDataFormatting.class.getResource("BUILDING_BD_TOPO_USE_TYPE.csv"), "BUILDING_BD_TOPO_USE_TYPE", true)
-        h2GISDatabase.load(InputDataFormatting.class.getResource("RAIL_ABSTRACT_TYPE.csv"), "RAIL_ABSTRACT_TYPE", true)
-        h2GISDatabase.load(InputDataFormatting.class.getResource("RAIL_BD_TOPO_TYPE.csv"), "RAIL_BD_TOPO_TYPE",true)
-        h2GISDatabase.load(InputDataFormatting.class.getResource("ROAD_ABSTRACT_PARAMETERS.csv"), "ROAD_ABSTRACT_PARAMETERS",true)
-        h2GISDatabase.load(InputDataFormatting.class.getResource("ROAD_ABSTRACT_SURFACE.csv"), "ROAD_ABSTRACT_SURFACE",true)
-        h2GISDatabase.load(InputDataFormatting.class.getResource("ROAD_ABSTRACT_TYPE.csv"), "ROAD_ABSTRACT_TYPE",true)
-        h2GISDatabase.load(InputDataFormatting.class.getResource("RAIL_ABSTRACT_TYPE.csv"), "RAIL_ABSTRACT_TYPE", true)
-        h2GISDatabase.load(InputDataFormatting.class.getResource("ROAD_BD_TOPO_TYPE.csv"), "ROAD_BD_TOPO_TYPE",true)
-        h2GISDatabase.load(InputDataFormatting.class.getResource("VEGET_ABSTRACT_PARAMETERS.csv"), "VEGET_ABSTRACT_PARAMETERS",true)
-        h2GISDatabase.load(InputDataFormatting.class.getResource("VEGET_ABSTRACT_TYPE.csv"), "VEGET_ABSTRACT_TYPE",true)
-        h2GISDatabase.load(InputDataFormatting.class.getResource("VEGET_BD_TOPO_TYPE.csv"), "VEGET_BD_TOPO_TYPE",true)
+        if(InputDataFormattingTest.class.getResource("bdtopofolder") != null &&
+                new File(AbstractTablesInitializationTest.class.getResource("bdtopofolder").toURI()).exists()) {
+            H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb", "sa", "")
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("bdtopofolder/IRIS_GE.shp"), "IRIS_GE", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("bdtopofolder/BATI_INDIFFERENCIE.shp"), "BATI_INDIFFERENCIE", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("bdtopofolder/BATI_INDUSTRIEL.shp"), "BATI_INDUSTRIEL", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("bdtopofolder/BATI_REMARQUABLE.shp"), "BATI_REMARQUABLE", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("bdtopofolder/ROUTE.shp"), "ROUTE", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("bdtopofolder/SURFACE_EAU.shp"), "SURFACE_EAU", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("bdtopofolder/ZONE_VEGETATION.shp"), "ZONE_VEGETATION", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("TRONCON_VOIE_FERREE.csv"), "TRONCON_VOIE_FERREE0", true)
+            h2GISDatabase.execute "DROP TABLE IF EXISTS TRONCON_VOIE_FERREE; CREATE TABLE TRONCON_VOIE_FERREE AS SELECT PK," +
+                    "CAST(the_geom AS GEOMETRY) AS the_geom, ID, PREC_PLANI, NATURE, ELECTRIFIE, FRANCHISST, LARGEUR," +
+                    "NB_VOIES, POS_SOL, ETAT, Z_INI, Z_FIN FROM TRONCON_VOIE_FERREE0;"
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("BUILDING_ABSTRACT_PARAMETERS.csv"), "BUILDING_ABSTRACT_PARAMETERS", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("BUILDING_ABSTRACT_USE_TYPE.csv"), "BUILDING_ABSTRACT_USE_TYPE", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("BUILDING_BD_TOPO_USE_TYPE.csv"), "BUILDING_BD_TOPO_USE_TYPE", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("RAIL_ABSTRACT_TYPE.csv"), "RAIL_ABSTRACT_TYPE", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("RAIL_BD_TOPO_TYPE.csv"), "RAIL_BD_TOPO_TYPE", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("ROAD_ABSTRACT_PARAMETERS.csv"), "ROAD_ABSTRACT_PARAMETERS", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("ROAD_ABSTRACT_SURFACE.csv"), "ROAD_ABSTRACT_SURFACE", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("ROAD_ABSTRACT_TYPE.csv"), "ROAD_ABSTRACT_TYPE", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("RAIL_ABSTRACT_TYPE.csv"), "RAIL_ABSTRACT_TYPE", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("ROAD_BD_TOPO_TYPE.csv"), "ROAD_BD_TOPO_TYPE", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("VEGET_ABSTRACT_PARAMETERS.csv"), "VEGET_ABSTRACT_PARAMETERS", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("VEGET_ABSTRACT_TYPE.csv"), "VEGET_ABSTRACT_TYPE", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("VEGET_BD_TOPO_TYPE.csv"), "VEGET_BD_TOPO_TYPE", true)
+        }
+        else{
+            System.properties.setProperty("data.bd.topo", "false")
+        }
     }
 
     @Test
+    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void inputDataFormatting(){
         H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb", "sa", "")
         def process0 = PrepareData.BDTopoGISLayers.importPreprocess()

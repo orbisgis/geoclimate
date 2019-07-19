@@ -165,7 +165,7 @@ class RsuIndicatorsTests {
     @Test
     void effectiveTerrainRoughnessHeightTest() {
         // Only the first 5 first created buildings are selected for the tests
-        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, rsu_table; CREATE TABLE tempo_build AS SELECT * " +
+        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, rsu_table, BUILDING_INTERSECTION, BUILDING_INTERSECTION_EXPL, BUILDINGFREE, BUILDINGLAYER; CREATE TABLE tempo_build AS SELECT * " +
                 "FROM building_test WHERE id_build < 6")
 
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
