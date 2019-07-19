@@ -33,32 +33,33 @@ IProcess freeExternalFacadeDensity() {
     def final HEIGHT_WALL = "height_wall"
     def final BASE_NAME = "rsu_free_external_facade_density"
 
-return create({
-    title "RSU free external facade density"
-    inputs buildingTable: String, rsuTable: String, buContiguityColumn: String, buTotalFacadeLengthColumn: String,
-            prefixName: String, datasource: JdbcDataSource
-    outputs outputTableName: String
-    run { buildingTable, rsuTable, buContiguityColumn, buTotalFacadeLengthColumn, prefixName, datasource ->
+    return create({
+        title "RSU free external facade density"
+        inputs buildingTable: String, rsuTable: String, buContiguityColumn: String, buTotalFacadeLengthColumn: String,
+                prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { buildingTable, rsuTable, buContiguityColumn, buTotalFacadeLengthColumn, prefixName, datasource ->
 
-        logger.info("Executing RSU free external facade density")
+            info "Executing RSU free external facade density"
 
-        // The name of the outputTableName is constructed
-        def outputTableName = prefixName + "_" + BASE_NAME
+            // The name of the outputTableName is constructed
+            def outputTableName = prefixName + "_" + BASE_NAME
 
-        def query = "CREATE INDEX IF NOT EXISTS id_bua ON $buildingTable($ID_FIELD_RSU); " +
-                "CREATE INDEX IF NOT EXISTS id_blb ON $rsuTable($ID_FIELD_RSU); " +
-                "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
-                "SELECT COALESCE(SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$HEIGHT_WALL)/" +
-                "st_area(b.$GEOMETRIC_FIELD_RSU),0) AS rsu_free_external_facade_density, b.$ID_FIELD_RSU "
+            def query = "CREATE INDEX IF NOT EXISTS id_bua ON $buildingTable($ID_FIELD_RSU); " +
+                    "CREATE INDEX IF NOT EXISTS id_blb ON $rsuTable($ID_FIELD_RSU); " +
+                    "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
+                    "SELECT COALESCE(SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$HEIGHT_WALL)/" +
+                    "st_area(b.$GEOMETRIC_FIELD_RSU),0) AS rsu_free_external_facade_density, b.$ID_FIELD_RSU "
 
-        query += " FROM $buildingTable a RIGHT JOIN $rsuTable b " +
-                "ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU GROUP BY b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD_RSU;"
+            query += " FROM $buildingTable a RIGHT JOIN $rsuTable b " +
+                    "ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU GROUP BY b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD_RSU;"
 
-        datasource.execute query
+            datasource.execute query
 
-        [outputTableName: outputTableName]
-    }
-})}
+            [outputTableName: outputTableName]
+        }
+    })
+}
 
 /**
  * Process used to compute the RSU ground sky view factor such as defined by Stewart et Oke (2012): ratio of the
@@ -108,17 +109,17 @@ IProcess groundSkyViewFactor() {
         run { rsuTable, correlationBuildingTable, rsuBuildingDensityColumn, pointDensity, rayLength, numberOfDirection,
               prefixName, datasource ->
 
-            logger.info("Executing RSU ground sky view factor")
+            info "Executing RSU ground sky view factor"
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
-            def ptsRSUtot = "ptsRSUtot" + uuid()
-            def ptsRSUGrid = "ptsRSUGrid" + uuid()
-            def ptsRSUtempo = "ptsRSUtempo" + uuid()
-            def ptsRSUbu = "ptsRSUbu" + uuid()
-            def ptsRSUfreeall = "ptsRSUfreeall" + uuid()
-            def randomSample = "randomSample" + uuid()
-            def svfPts = "svfPts" + uuid()
+            def ptsRSUtot = "ptsRSUtot$uuid"
+            def ptsRSUGrid = "ptsRSUGrid$uuid"
+            def ptsRSUtempo = "ptsRSUtempo$uuid"
+            def ptsRSUbu = "ptsRSUbu$uuid"
+            def ptsRSUfreeall = "ptsRSUfreeall$uuid"
+            def randomSample = "randomSample$uuid"
+            def svfPts = "svfPts$uuid"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
@@ -199,7 +200,7 @@ IProcess groundSkyViewFactor() {
 
             def tObis = System.currentTimeMillis() - to_start
 
-            logger.info("SVF calculation time: ${tObis / 1000} s")
+            info "SVF calculation time: ${tObis / 1000} s"
 
 
             // The temporary tables are deleted
@@ -242,7 +243,7 @@ IProcess aspectRatio() {
         run { rsuTable, rsuFreeExternalFacadeDensityColumn, rsuBuildingDensityColumn,
               prefixName, datasource ->
 
-            logger.info("Executing RSU aspect ratio")
+            info "Executing RSU aspect ratio"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
@@ -298,7 +299,7 @@ IProcess projectedFacadeAreaDistribution() {
         outputs outputTableName: String
         run { buildingTable, rsuTable, listLayersBottom, numberOfDirection, prefixName, datasource ->
 
-            logger.info("Executing RSU projected facade area distribution")
+            info "Executing RSU projected facade area distribution"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
@@ -307,14 +308,14 @@ IProcess projectedFacadeAreaDistribution() {
 
                 // To avoid overwriting the output files of this step, a unique identifier is created
                 // Temporary table names
-                def buildingIntersection = "building_intersection" + uuid()
-                def buildingIntersectionExpl = "building_intersection_expl" + uuid()
-                def buildingFree = "buildingFree" + uuid()
-                def buildingLayer = "buildingLayer" + uuid()
-                def buildingFreeExpl = "buildingFreeExpl" + uuid()
-                def rsuInter = "rsuInter" + uuid()
-                def finalIndicator = "finalIndicator" + uuid()
-                def rsuInterRot = "rsuInterRot" + uuid()
+                def buildingIntersection = "building_intersection$uuid"
+                def buildingIntersectionExpl = "building_intersection_expl$uuid"
+                def buildingFree = "buildingFree$uuid"
+                def buildingLayer = "buildingLayer$uuid"
+                def buildingFreeExpl = "buildingFreeExpl$uuid"
+                def rsuInter = "rsuInter$uuid"
+                def finalIndicator = "finalIndicator$uuid"
+                def rsuInterRot = "rsuInterRot$uuid"
 
                 // The projection should be performed at the median of the angle interval
                 def dirMedDeg = 180 / numberOfDirection
@@ -501,14 +502,14 @@ IProcess roofAreaDistribution() {
         outputs outputTableName: String
         run { rsuTable, buildingTable, listLayersBottom, prefixName, datasource ->
 
-            logger.info("Executing RSU roof area distribution")
+            info "Executing RSU roof area distribution"
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
-            def buildRoofSurfIni = "build_roof_surf_ini" + uuid()
-            def buildVertRoofInter = "build_vert_roof_inter" + uuid()
-            def buildVertRoofAll = "buildVertRoofAll" + uuid()
-            def buildRoofSurfTot = "build_roof_surf_tot" + uuid()
+            def buildRoofSurfIni = "build_roof_surf_ini$uuid"
+            def buildVertRoofInter = "build_vert_roof_inter$uuid"
+            def buildVertRoofAll = "buildVertRoofAll$uuid"
+            def buildRoofSurfTot = "build_roof_surf_tot$uuid"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
@@ -670,7 +671,7 @@ IProcess effectiveTerrainRoughnessHeight() {
         run { rsuTable, projectedFacadeAreaName, geometricMeanBuildingHeightName, prefixName, listLayersBottom,
               numberOfDirection, datasource ->
 
-            logger.info("Executing RSU effective terrain roughness height")
+            info "Executing RSU effective terrain roughness height"
 
             // Processes used for the indicator calculation
             // Some local variables are initialized
@@ -680,7 +681,7 @@ IProcess effectiveTerrainRoughnessHeight() {
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
-            def lambdaTable = "lambdaTable" + uuid()
+            def lambdaTable = "lambdaTable$uuid"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
@@ -755,15 +756,15 @@ IProcess linearRoadOperations() {
         run { rsuTable, roadTable, operations, prefixName, angleRangeSize, levelConsiderated,
               datasource ->
 
-            logger.info("Executing Operations on the linear of road")
+            info "Executing Operations on the linear of road"
 
             // Test whether the angleRangeSize is a divisor of 180°
             if (180 % angleRangeSize == 0 && 180 / angleRangeSize > 1) {
                 // Test whether the operations filled by the user are OK
                 if (operations == null) {
-                    logger.error("The parameter operations should not be null")
+                    error "The parameter operations should not be null"
                 } else if (operations.isEmpty()) {
-                    logger.error("The parameter operations is empty")
+                    error "The parameter operations is empty"
                 } else {
                     // The operation names are transformed into lower case
                     operations.replaceAll({ s -> s.toLowerCase() })
@@ -775,12 +776,12 @@ IProcess linearRoadOperations() {
                     if (opOk) {
                         // To avoid overwriting the output files of this step, a unique identifier is created
                         // Temporary table names
-                        def roadInter = "roadInter" + uuid()
-                        def roadExpl = "roadExpl" + uuid()
-                        def roadDistrib = "roadDistrib" + uuid()
-                        def roadDens = "roadDens" + uuid()
-                        def roadDistTot = "roadDistTot" + uuid()
-                        def roadDensTot = "roadDensTot" + uuid()
+                        def roadInter = "roadInter$uuid"
+                        def roadExpl = "roadExpl$uuid"
+                        def roadDistrib = "roadDistrib$uuid"
+                        def roadDens = "roadDens$uuid"
+                        def roadDistTot = "roadDistTot$uuid"
+                        def roadDensTot = "roadDensTot$uuid"
 
                         // The name of the outputTableName is constructed
                         def outputTableName = prefixName + "_" + BASE_NAME
@@ -901,12 +902,11 @@ IProcess linearRoadOperations() {
                         [outputTableName: outputTableName]
 
                     } else {
-                        logger.error("One of several operations are not valid.")
+                        error "One of several operations are not valid."
                     }
                 }
             } else {
-                logger.error("Cannot compute the indicator. The range size (angleRangeSize) should " +
-                        "be a divisor of 180°")
+                error "Cannot compute the indicator. The range size (angleRangeSize) should be a divisor of 180°"
             }
         }
     })
@@ -946,7 +946,7 @@ IProcess effectiveTerrainRoughnessClass() {
         outputs outputTableName: String
         run { datasource, rsuTable, effectiveTerrainRoughnessHeight, prefixName ->
 
-            logger.info("Executing RSU effective terrain roughness class")
+            info "Executing RSU effective terrain roughness class"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
@@ -1004,15 +1004,15 @@ IProcess vegetationFraction() {
         outputs outputTableName: String
         run { rsuTable, vegetTable, fractionType, prefixName, datasource ->
 
-            logger.info("Executing vegetation fraction")
+            info "Executing vegetation fraction"
 
             // The name of the outputTableName is constructed
             String outputTableName = prefixName + "_" + baseName
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
-            def interTable = "interTable" + uuid()
-            def buffTable = "buffTable" + uuid()
+            def interTable = "interTable$uuid"
+            def buffTable = "buffTable$uuid"
 
             // Intersections between vegetation and RSU are calculated
             def interQuery = "DROP TABLE IF EXISTS $interTable; " +
@@ -1088,16 +1088,16 @@ IProcess roadFraction() {
         outputs outputTableName: String
         run { rsuTable, roadTable, levelToConsiders, prefixName, datasource ->
 
-            logger.info("Executing road fraction")
+            info "Executing road fraction"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
-            def surfTable = "surfTable" + uuid()
-            def interTable = "interTable" + uuid()
-            def buffTable = "buffTable" + uuid()
+            def surfTable = "surfTable$uuid"
+            def interTable = "interTable$uuid"
+            def buffTable = "buffTable$uuid"
 
             def surfQuery = "DROP TABLE IF EXISTS $surfTable; CREATE TABLE $surfTable AS SELECT " +
                     "ST_BUFFER($GEOMETRIC_COLUMN_ROAD,$WIDTH_ROAD/2,'endcap=flat') AS the_geom," +
@@ -1169,14 +1169,14 @@ IProcess waterFraction() {
         outputs outputTableName: String
         run { rsuTable, waterTable, prefixName, datasource ->
 
-            logger.info("Executing water fraction")
+            info "Executing water fraction"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
-            def buffTable = "buffTable" + uuid()
+            def buffTable = "buffTable$uuid"
 
             // Intersections between water and RSU are calculated
             def buffQuery = "DROP TABLE IF EXISTS $buffTable; " +
@@ -1200,7 +1200,8 @@ IProcess waterFraction() {
 
             [outputTableName: outputTableName]
         }
-    })}
+    })
+}
 
 /**
  * Script to compute the pervious and impervious fraction within each RSU of an area from other land fractions.
@@ -1234,7 +1235,7 @@ IProcess perviousnessFraction() {
         outputs outputTableName: String
         run { rsuTable, operationsAndComposition, prefixName, datasource ->
 
-            logger.info("Executing Perviousness fraction")
+            info "Executing Perviousness fraction"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
@@ -1250,7 +1251,7 @@ IProcess perviousnessFraction() {
                     }
                     query = query[0..-2] + "AS $indic,"
                 } else {
-                    logger.error("$indic is not a valid name (valid names are in $OPS).".toString())
+                    error "$indic is not a valid name (valid names are in $OPS)."
                 }
             }
             query = query[0..-2] + " FROM $rsuTable;"

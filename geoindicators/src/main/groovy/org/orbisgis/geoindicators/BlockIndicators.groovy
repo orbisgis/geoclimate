@@ -16,6 +16,7 @@ import org.orbisgis.processmanagerapi.IProcess
  * @param prefixName String use as prefix to name the output table
  *
  * @return outputTableName Table name in which the block id and their corresponding indicator value are stored
+ *
  * @author Jérémy Bernard
  */
 IProcess holeAreaDensity() {
@@ -30,7 +31,7 @@ IProcess holeAreaDensity() {
         outputs outputTableName: String
         run {blockTable, prefixName, datasource ->
 
-            logger.info("Executing Hole area ratio")
+            info "Executing Hole area ratio"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
@@ -42,7 +43,8 @@ IProcess holeAreaDensity() {
             datasource.execute query
             [outputTableName: outputTableName]
         }
-    })}
+    })
+}
 
 /**
  * The sum of the building free external area composing the block are divided by the sum of the building volume.
@@ -59,6 +61,7 @@ IProcess holeAreaDensity() {
  * @param prefixName String use as prefix to name the output table
  *
  * @return outputTableName Table name in which the block id and their corresponding indicator value are stored
+ *
  * @author Jérémy Bernard
  */
 IProcess netCompacity() {
@@ -75,7 +78,7 @@ IProcess netCompacity() {
         outputs outputTableName: String
         run { buildTable, buildingVolumeField, buildingContiguityField, prefixName, datasource ->
 
-            logger.info("Executing Block net compacity")
+            info "Executing Block net compacity"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
@@ -90,7 +93,8 @@ IProcess netCompacity() {
             datasource.execute query
             [outputTableName: outputTableName]
         }
-    })}
+    })
+}
 
 /**
  * This indicator is usefull for the urban fabric classification proposed in Thornay et al. (2017) and also described
@@ -128,7 +132,7 @@ IProcess closingness() {
         outputs outputTableName: String
         run { correlationTableName, blockTable, prefixName, datasource ->
 
-            logger.info("Executing Closingness of a block")
+            info "Executing Closingness of a block"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
@@ -144,4 +148,5 @@ IProcess closingness() {
             datasource.execute query
             [outputTableName: outputTableName]
         }
-    })}
+    })
+}

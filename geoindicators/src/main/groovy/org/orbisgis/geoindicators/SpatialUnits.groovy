@@ -27,7 +27,7 @@ IProcess createRSU(){
         inputs inputTableName: String, prefixName: String, datasource: JdbcDataSource
         outputs outputTableName: String, outputIdRsu: String
         run { inputTableName, prefixName = 'rsu', datasource ->
-            logger.info("Creating the reference spatial units")
+            info "Creating the reference spatial units"
 
             // The name of the outputTableName is constructed
             String outputTableName = prefixName + "_" + BASE_NAME
@@ -37,7 +37,7 @@ IProcess createRSU(){
                     " from st_explode ('(select st_polygonize(st_union(" +
                     "st_precisionreducer(st_node(st_accum(st_force2d(the_geom))), 3))) as the_geom from $inputTableName)')"
 
-            logger.info("Reference spatial units table created")
+            info "Reference spatial units table created"
 
             [outputTableName: outputTableName, outputIdRsu: COLUMN_ID_NAME]
         }
@@ -62,7 +62,7 @@ IProcess createRSU(){
  * @param outputTableName The name of the output table
  * @return A database table name.
  */
-IProcess prepareRSUData(){
+IProcess prepareRSUData() {
     def final BASE_NAME = "prepared_rsu_data"
 
     return create({
@@ -74,7 +74,7 @@ IProcess prepareRSUData(){
         run { zoneTable, roadTable, railTable, vegetationTable, hydrographicTable, surface_vegetation,
               surface_hydrographic, prefixName, datasource ->
 
-            logger.info("Creating the reference spatial units")
+            info "Creating the reference spatial units"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
@@ -82,7 +82,7 @@ IProcess prepareRSUData(){
             def numberZone = datasource.firstRow("select count(*) as nb from $zoneTable").nb
 
             if (numberZone == 1) {
-                logger.info("Preparing vegetation...")
+                info "Preparing vegetation..."
 
                 def vegetation_indice = vegetationTable + "_" + uuid()
 
@@ -119,7 +119,7 @@ IProcess prepareRSUData(){
                         "AND ST_INTERSECTS(a.the_geom, b.the_geom)"
 
                 //Extract water
-                logger.info("Preparing hydrographic...")
+                info "Preparing hydrographic..."
                 String hydrographic_indice = hydrographicTable + uuid()
                 datasource.execute "DROP TABLE IF EXISTS $hydrographic_indice"
                 datasource.execute "CREATE TABLE $hydrographic_indice(THE_GEOM geometry, ID serial," +
@@ -156,7 +156,7 @@ IProcess prepareRSUData(){
                         "WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)"
 
 
-                logger.info("Preparing road...")
+                info "Preparing road..."
 
                 def road_tmp = "road_tmp" + uuid()
 
@@ -165,7 +165,7 @@ IProcess prepareRSUData(){
                         "where zindex=0"
 
 
-                logger.info("Preparing rail...")
+                info "Preparing rail..."
 
                 def rail_tmp = "rail_tmp" + uuid()
 
@@ -174,7 +174,7 @@ IProcess prepareRSUData(){
                         "where zindex=0"
 
                 // The input table that contains the geometries to be transformed as RSU
-                logger.info("Grouping all tables...")
+                info "Grouping all tables..."
                 datasource.execute "DROP TABLE if exists $outputTableName"
                 datasource.execute "CREATE TABLE $outputTableName AS (SELECT THE_GEOM FROM $road_tmp)" +
                         " UNION (SELECT THE_GEOM FROM $rail_tmp) " +
@@ -182,7 +182,7 @@ IProcess prepareRSUData(){
                         " UNION  (SELECT THE_GEOM FROM $vegetation_tmp)"
 
             } else {
-                logger.error("Cannot compute the RSU. The input zone table must have one row.")
+                error "Cannot compute the RSU. The input zone table must have one row."
             }
 
             [outputTableName: outputTableName]
@@ -209,7 +209,7 @@ IProcess createBlocks(){
         inputs inputTableName: String, distance : 0.0d, prefixName: "block", datasource: JdbcDataSource
         outputs outputTableName : String, outputIdBlock: String
         run { inputTableName,distance, prefixName, JdbcDataSource datasource ->
-            logger.info("Creating the blocks...")
+            info "Creating the blocks..."
             def columnIdName = "id_block"
 
             // The name of the outputTableName is constructed
@@ -219,11 +219,11 @@ IProcess createBlocks(){
 
 
             //Find all neighbors for each building
-            logger.info("Building index to perform the process...")
+            info "Building index to perform the process..."
             datasource.getSpatialTable(inputTableName).the_geom.createSpatialIndex()
             datasource.getSpatialTable(inputTableName).id_build.createIndex()
 
-            logger.info("Building spatial clusters...")
+            info "Building spatial clusters..."
 
             String graphTable = "spatial_clusters"+ uuid()
 
@@ -242,7 +242,7 @@ IProcess createBlocks(){
             getConnectedComponents(datasource.getConnection(),graphTable,"undirected")
 
             //Unify buildings that share a boundary
-            logger.info("Merging spatial clusters...")
+            info "Merging spatial clusters..."
             String subGraphBlocks =  "subgraphblocks"+ uuid()
             datasource.execute """
             CREATE INDEX ON $subGraphTableNodes(NODE_ID);
@@ -253,12 +253,12 @@ IProcess createBlocks(){
             WHERE A.id_build=B.NODE_ID GROUP BY B.CONNECTED_COMPONENT;"""
 
             //Create the blocks
-            logger.info("Creating the block table...")
+            info "Creating the block table..."
             datasource.execute """DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName ($columnIdName SERIAL, THE_GEOM GEOMETRY) 
             AS (SELECT null, THE_GEOM FROM $subGraphBlocks) UNION ALL (SELECT null, a.the_geom FROM $inputTableName a 
             LEFT JOIN $subGraphTableNodes b ON a.id_build = b.NODE_ID WHERE b.NODE_ID IS NULL);"""
 
-            logger.info("The blocks have been created")
+            info "The blocks have been created"
             [outputTableName: outputTableName, outputIdBlock: columnIdName]
         }
     })
@@ -289,7 +289,7 @@ IProcess createScalesRelations(){
         outputs outputTableName: String, outputIdColumnUp: String
         run { inputLowerScaleTableName, inputUpperScaleTableName, idColumnUp, prefixName, datasource ->
 
-            logger.info("Creating the Tables of relations between two scales")
+            info "Creating the Tables of relations between two scales"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + inputLowerScaleTableName + "_corr"
@@ -302,7 +302,7 @@ IProcess createScalesRelations(){
                     "ST_INTERSECTS(st_force2d(a.$GEOMETRIC_COLUMN_LOW), st_force2d(b.$GEOMETRIC_COLUMN_UP)) ORDER BY " +
                     "ST_AREA(ST_INTERSECTION(st_force2d(a.$GEOMETRIC_COLUMN_LOW), st_force2d(b.$GEOMETRIC_COLUMN_UP))) " +
                     "DESC LIMIT 1) AS $idColumnUp FROM $inputLowerScaleTableName a"
-            logger.info("The relations between scales have been created")
+            info "The relations between scales have been created"
 
             [outputTableName: outputTableName, outputIdColumnUp: idColumnUp]
         }

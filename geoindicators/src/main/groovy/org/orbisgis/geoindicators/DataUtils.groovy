@@ -8,6 +8,7 @@ import org.orbisgis.processmanagerapi.IProcess
 
 /**
  * An utility process to join all tables in one table
+ *
  * @param  inputTableNamesWithId list of table names with a identifier column name
  * @param prefixName for the output table
  * @param datasource connection to the database
@@ -21,7 +22,7 @@ IProcess joinTables() {
         outputs outputTableName: String
         run { inputTableNamesWithId, outputTableName, datasource ->
 
-            logger.info("Executing Utility process to join tables in one")
+            info "Executing Utility process to join tables in one"
 
             def columnKey
             def alias = "a"
@@ -62,6 +63,7 @@ IProcess joinTables() {
 
 /**
  * An utility process to save several tables in a folder
+ *
  * @param  inputTableNames to be stored in the directory.
  * Note : A spatial table is saved in a geojson file and the other in csv
  * @param directory folder to save the tables
@@ -76,23 +78,23 @@ IProcess saveTablesAsFiles(){
         outputs directory: String
         run { inputTableNames, directory, datasource ->
             if (directory == null) {
-                logger.info("The directory to save the data cannot be null")
+                info "The directory to save the data cannot be null"
                 return
             }
             File dirFile = new File(directory)
 
             if (!dirFile.exists()) {
                 dirFile.mkdir()
-                logger.info("The folder ${directory} has been created")
+                info "The folder ${directory} has been created"
             } else if (!dirFile.isDirectory()) {
-                logger.info("Invalid directory path")
+                info "Invalid directory path"
                 return
             }
             inputTableNames.each { tableName ->
                 def fileToSave = dirFile.absolutePath + File.separator + tableName +
                         (datasource.getTable(tableName).isSpatial() ? ".geojson" : ".csv")
                 datasource.save(tableName, fileToSave)
-                logger.info("The table ${tableName} has been saved in file ${fileToSave}")
+                info "The table ${tableName} has been saved in file ${fileToSave}"
             }
             [directory: directory]
         }
