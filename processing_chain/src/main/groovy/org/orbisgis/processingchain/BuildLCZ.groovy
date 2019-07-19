@@ -295,7 +295,7 @@ IProcess createLCZ() {
                 IProcess classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
                 if(!classifyLCZ.execute([rsuLczIndicators   : lczIndicTable,
                                      normalisationType  : "AVG",
-                                     mapOfWeights       : mapsOfWeights,
+                                     mapOfWeights       : mapOfWeights,
                                      prefixName         : prefixName,
                                      datasource         : datasource])){
                     logger.info("Cannot compute the LCZ classification.")

@@ -282,7 +282,7 @@ IProcess computeBuildingsIndicators() {
  */
 IProcess computeRSUIndicators() {
     return create({
-        title "Compute the geoindicators at block scale"
+        title "Compute the geoindicators at RSU scale"
         inputs  datasource                 : JdbcDataSource,   buildingTable               : String,
                 rsuTable                   : String,           prefixName                  : "rsu_indicators",
                 vegetationTable            : String,           roadTable                   : String,

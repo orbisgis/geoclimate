@@ -100,6 +100,7 @@ class ProcessingChainTest {
         }
     }
 */
+    @Disabled
     @Test
     void PrepareOSMTest() {
 
@@ -482,6 +483,7 @@ class ProcessingChainTest {
         assertEquals(14, nb_rsu.nb)
     }
 
+    @Disabled
     @Test
     void osmGeoIndicatorsFromApi() {
         //Do not change this code
@@ -534,6 +536,7 @@ class ProcessingChainTest {
 
     }
 
+    @Disabled
     @Test
     void osmGeoIndicatorsFromTestFiles() {
         String urlBuilding = new File(getClass().getResource("BUILDING.geojson").toURI()).absolutePath
@@ -563,6 +566,8 @@ class ProcessingChainTest {
         datasource.load(urlBuilding, buildingTableName)
         datasource.load(urlRoad, roadTableName)
         datasource.load(urlRail, railTableName)
+        //datasource.execute("DROP TABLE IF EXISTS $vegetationTableName; CALL GEOJSONREAD('$urlVeget', '$vegetationTableName')")
+        //println("ok")
         datasource.load(urlVeget, vegetationTableName)
         datasource.load(urlHydro, hydrographicTableName)
         datasource.load(urlZone, zoneTableName)
@@ -665,6 +670,7 @@ class ProcessingChainTest {
         assertEquals(countRelationRSU.count,countRSUIndicators.count)
     }
 
+    @Disabled
     @Test
     void osmLczFromTestFiles() {
         String urlBuilding = new File(getClass().getResource("BUILDING.geojson").toURI()).absolutePath
