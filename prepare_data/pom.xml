@@ -19,6 +19,10 @@
     <artifactId>prepare_data</artifactId>
     <dependencies>
         <dependency>
+            <groupId>org.orbisgis</groupId>
+            <artifactId>osm</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.codehaus.groovy</groupId>
             <artifactId>groovy</artifactId>
         </dependency>
