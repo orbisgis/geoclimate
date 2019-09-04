@@ -15,7 +15,7 @@
     <modules>
         <module>geoindicators</module>
         <module>prepare_data</module>
-	    <module>processing_chain</module>
+        <module>processing_chain</module>
     </modules>
 
     <properties>
