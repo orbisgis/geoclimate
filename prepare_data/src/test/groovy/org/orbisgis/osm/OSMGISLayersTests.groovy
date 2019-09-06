@@ -14,7 +14,7 @@ class OSMGISLayersTests {
 
     private static final Logger logger = LoggerFactory.getLogger(OSMGISLayersTests.class)
 
-    //@Test
+    //@Test disable due to potential API blocking
     void extractAndCreateGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb')
 
@@ -25,24 +25,24 @@ class OSMGISLayersTests {
         process.getResults().each {it ->
             println it
         }
-        //assertNotNull(h2GIS.getTable("RAW_INPUT_BUILDING"))
-        //assertTrue(h2GIS.getTable("RAW_INPUT_BUILDING").getColumnNames().contains("HEIGHT"))
-        //assertTrue(h2GIS.getTable("RAW_INPUT_BUILDING").getColumnNames().contains("OFFICE"))
     }
 
     @Test
     void createGISLayersTest() {
         def h2GIS = H2GIS.open('./target/osmdb')
-
         IProcess process = PrepareData.OSMGISLayers.createGISLayers()
         process.execute([
                 datasource : h2GIS,
                 osmFilePath: new File(this.class.getResource("saint_jean.osm").toURI()).getAbsolutePath(),
                 epsg :2154])
-        assertnul process.results.railTableName
-        assertnul process.results.waterTableName
-        assertEquals 3, h2GIS.getTable(process.results.buildingTableName).rowCount
+        assertNull process.results.railTableName
+        assertNull process.results.waterTableName
+        assertEquals 448, h2GIS.getTable(process.results.buildingTableName).rowCount
+        h2GIS.getTable(process.results.buildingTableName).save("./target/osm_building.shp")
+
+        h2GIS.getTable(process.results.vegetationTableName).save("./target/osm_vegetation.shp")
         assertEquals 3, h2GIS.getTable(process.results.vegetationTableName).rowCount
-        assertEquals 3, h2GIS.getTable(process.results.roadTableName).rowCount
+        h2GIS.getTable(process.results.roadTableName).save("./target/osm_road.shp")
+        assertEquals 22, h2GIS.getTable(process.results.roadTableName).rowCount
     }
 }

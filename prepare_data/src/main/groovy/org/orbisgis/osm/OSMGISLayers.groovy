@@ -63,7 +63,7 @@ IProcess extractAndCreateGISLayers(){
                 if (extract.execute(overpassQuery: query)) {
                     def prefix = "OSM_DATA_${UUID.randomUUID().toString().replaceAll("-", "_")}"
                     def createGISLayer = createGISLayers()
-                    if (createGISLayer(datasource: datasource, osmTablesPrefix: prefix, osmFilePath: extract.results.outputFilePath)) {
+                    if (createGISLayer(datasource: datasource, osmTablesPrefix: prefix, osmFilePath: extract.results.outputFilePath, epsg:epsg)) {
 
                         [buildingTableName:  createGISLayer.getResults().outputBuildingTableName,
                          roadTableName: createGISLayer.getResults().outputRoadTableName,
@@ -92,7 +92,7 @@ IProcess extractAndCreateGISLayers(){
 IProcess createGISLayers() {
     return create({
         title "Create GIS layer from an OSM XML file"
-        inputs datasource: JdbcDataSource, osmFilePath: String, epsg: int
+        inputs datasource: JdbcDataSource, osmFilePath: String, epsg: -1
         outputs buildingTableName: String, roadTableName: String, railTableName: String,
                 vegetationTableName: String, waterTableName: String
         run { datasource, osmFilePath, epsg ->
@@ -133,7 +133,7 @@ IProcess createGISLayers() {
                 tagsKeys = ['railway', 'layer']
                 assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tagKeys: tagsKeys)
                 def outputRailTableName = transform.results.outputTableName
-                logger.info "Road layer created"
+                logger.info "Rail layer created"
 
                 //Create vegetation layer
                 transform = OSMHelper.Transform.toPolygons()

@@ -1,18 +1,59 @@
-package org.orbisgis.osm
-1+1
 
-//import org.junit.jupiter.api.Disabled
-//import org.junit.jupiter.api.Test
-//import org.orbisgis.PrepareData
-//import org.orbisgis.datamanager.h2gis.H2GIS
-//import org.slf4j.Logger
-//import org.slf4j.LoggerFactory
-//
-//import static org.junit.jupiter.api.Assertions.*
-//
-//class FormattingForAbstractModelTests {
-//
-//    private static final Logger logger = LoggerFactory.getLogger(OSMGISLayersTests.class)
+package org.orbisgis.osm
+
+
+import org.junit.jupiter.api.Test
+import org.orbisgis.PrepareData
+import org.orbisgis.datamanager.h2gis.H2GIS
+import org.orbisgis.processmanagerapi.IProcess
+
+import static org.junit.jupiter.api.Assertions.*
+
+class FormattingForAbstractModelTests {
+
+    @Test
+   void transformBuildingsTest() {
+        def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
+        IProcess extractData = PrepareData.OSMGISLayers.createGISLayers()
+        extractData.execute([
+                datasource : h2GIS,
+                osmFilePath: new File(this.class.getResource("saint_jean.osm").toURI()).getAbsolutePath(),
+                epsg :2154])
+        assertEquals 661, h2GIS.getTable(extractData.results.buildingTableName).rowCount
+        h2GIS.getTable(extractData.results.buildingTableName).save("./target/osm_building.shp")
+
+        IProcess format = PrepareData.FormattingForAbstractModel.formatBuildingLayer()
+        format.execute([
+                datasource : h2GIS,
+                inputTableName: extractData.results.buildingTableName])
+
+        assertEquals 661, h2GIS.getTable(format.results.outputTableName).rowCount
+        h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated.shp")
+    }
+
+    @Test
+    void transformRoadsTest() {
+        def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
+        IProcess extractData = PrepareData.OSMGISLayers.createGISLayers()
+        extractData.execute([
+                datasource : h2GIS,
+                osmFilePath: new File(this.class.getResource("saint_jean.osm").toURI()).getAbsolutePath(),
+                epsg :2154])
+        assertEquals 57, h2GIS.getTable(extractData.results.roadTableName).rowCount
+        h2GIS.getTable(extractData.results.roadTableName).save("./target/osm_road.shp")
+
+        IProcess format = PrepareData.FormattingForAbstractModel.formatRoadLayer()
+        format.execute([
+                datasource : h2GIS,
+                inputTableName: extractData.results.roadTableName])
+
+        assertEquals 22, h2GIS.getTable(format.results.outputTableName).rowCount
+        h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_formated.shp")
+    }
+}
+
+
+
 //
 //    @Test
 //    void transformBuildingsTest() {
