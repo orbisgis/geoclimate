@@ -5,6 +5,8 @@ import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.SFSUtilities
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.GeometryFactory
+import org.locationtech.jts.geom.Polygon
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.PrepareData
 import org.orbisgis.processmanagerapi.IProcess
@@ -55,21 +57,22 @@ IProcess extractAndCreateGISLayers(){
                 geom = ST_Transform.ST_Transform(datasource.getConnection(), geom, epsg).buffer(extendedValue)
                 filterArea = ST_Transform.ST_Transform(datasource.getConnection(), geom, 4326).getEnvelopeInternal()
             }
+            GeometryFactory gf = new GeometryFactory()
+            Polygon polygon  = gf.toGeometry(filterArea)
             //def outputEnvelopeTableName = "ZONE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             //datasource.execute "create table ${outputEnvelopeTableName}"
-            def  query = OSMHelper.Utilities.buildOSMQuery(filterArea, [], NODE, WAY, RELATION)
-
+            def  query = OSMHelper.Utilities.buildOSMQuery(polygon, [], NODE, WAY, RELATION)
                 def extract = OSMHelper.Loader.extract()
                 if (extract.execute(overpassQuery: query)) {
                     def prefix = "OSM_DATA_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-                    def createGISLayer = createGISLayers()
-                    if (createGISLayer(datasource: datasource, osmTablesPrefix: prefix, osmFilePath: extract.results.outputFilePath, epsg:epsg)) {
+                    IProcess createGISLayerProcess = createGISLayers()
+                    if (createGISLayerProcess.execute(datasource: datasource, osmFilePath: extract.results.outputFilePath, epsg:epsg)) {
 
-                        [buildingTableName:  createGISLayer.getResults().outputBuildingTableName,
-                         roadTableName: createGISLayer.getResults().outputRoadTableName,
-                         railTableName: createGISLayer.getResults().outputRailTableName,
-                         vegetationTableName: createGISLayer.getResults().outputVegetationTableName,
-                         waterTableName: createGISLayer.getResults().outputWaterTableName]
+                        [buildingTableName:  createGISLayerProcess.getResults().outputBuildingTableName,
+                         roadTableName: createGISLayerProcess.getResults().outputRoadTableName,
+                         railTableName: createGISLayerProcess.getResults().outputRailTableName,
+                         vegetationTableName: createGISLayerProcess.getResults().outputVegetationTableName,
+                         waterTableName: createGISLayerProcess.getResults().outputWaterTableName]
                     }
                     else{
                         logger.error "Cannot load the OSM file ${extract.results.outputFilePath}"
@@ -120,7 +123,7 @@ IProcess createGISLayers() {
                 logger.info "Building layer created"
 
                 //Create road layer
-                transform = OSMHelper.Transform.toLines()
+                transform = OSMHelper.Transform.extractWaysAsLines()
                 logger.info "Create the road layer"
                 tagsKeys = ['highway', 'cycleway', 'biclycle_road', 'cyclestreet', 'route', 'junction', 'layer']
                 assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tagKeys: tagsKeys)
@@ -128,7 +131,7 @@ IProcess createGISLayers() {
                 logger.info "Road layer created"
 
                 //Create rail layer
-                transform = OSMHelper.Transform.toLines()
+                transform = OSMHelper.Transform.extractWaysAsLines()
                 logger.info "Create the rail layer"
                 tagsKeys = ['railway', 'layer']
                 assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tagKeys: tagsKeys)

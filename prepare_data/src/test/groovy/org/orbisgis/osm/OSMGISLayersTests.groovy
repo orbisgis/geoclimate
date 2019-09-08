@@ -14,7 +14,7 @@ class OSMGISLayersTests {
 
     private static final Logger logger = LoggerFactory.getLogger(OSMGISLayersTests.class)
 
-    //@Test disable due to potential API blocking
+    @Test //disable due to potential API blocking
     void extractAndCreateGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb')
 
@@ -23,7 +23,7 @@ class OSMGISLayersTests {
                 datasource : h2GIS,
                 placeName: "Cliscouët, Vannes"])
         process.getResults().each {it ->
-            println it
+            println it.value
         }
     }
 
@@ -37,12 +37,12 @@ class OSMGISLayersTests {
                 epsg :2154])
         assertNull process.results.railTableName
         assertNull process.results.waterTableName
-        assertEquals 448, h2GIS.getTable(process.results.buildingTableName).rowCount
+        assertEquals 661, h2GIS.getTable(process.results.buildingTableName).rowCount
         h2GIS.getTable(process.results.buildingTableName).save("./target/osm_building.shp")
 
         h2GIS.getTable(process.results.vegetationTableName).save("./target/osm_vegetation.shp")
-        assertEquals 3, h2GIS.getTable(process.results.vegetationTableName).rowCount
+        assertEquals 6, h2GIS.getTable(process.results.vegetationTableName).rowCount
         h2GIS.getTable(process.results.roadTableName).save("./target/osm_road.shp")
-        assertEquals 22, h2GIS.getTable(process.results.roadTableName).rowCount
+        assertEquals 56, h2GIS.getTable(process.results.roadTableName).rowCount
     }
 }

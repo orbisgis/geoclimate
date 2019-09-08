@@ -223,10 +223,82 @@ IProcess formatBuildingLayer() {
 static IProcess formatRoadLayer() {
     return create({
             title "Format the raw roads table into a table that matches the constraints of the GeoClimate Input Model"
-            inputs datasource  : JdbcDataSource,             inputTableName      : String
+            inputs datasource  : JdbcDataSource, inputTableName      : String
             outputs outputTableName: String
             run{ datasource, inputTableName ->
                 logger.info('Formating road layer')
+
+                //Define the mapping between the values in OSM and those used in the abstract model
+       def mappingForRoadType = [
+                "cycleway"    : [
+                        "highway"      : ["cycleway"],
+                        "cycleway"     : ["track"],
+                        "biclycle_road": ["yes"]
+                ],
+                "ferry"       : [
+                        "route": ["ferry"]
+                ],
+                "footway"     : [
+                        "highway": ["footway", "pedestrian"]
+                ],
+                "highway"     : [
+                        "highway"    : ["service", "road", "raceway", "escape"],
+                        "cyclestreet": ["yes"]
+                ],
+                "highway_link": [
+                        "highway": ["motorway_link", "motorway_junction", "trunk_link", "primary_link", "secondary_link", "tertiary_link", "junction"]
+                ],
+                "motorway"    : [
+                        "highway": ["motorway"]
+                ],
+                "path"        : [
+                        "highway": ["path", "bridleway"]
+                ],
+                "primary"     : [
+                        "highway": ["primary"]
+                ],
+                "residential" : [
+                        "highway": ["residential", "living_street"]
+                ],
+                "roundabout"  : [
+                        "junction": ["roundabout", "circular"]
+                ],
+                "secondary"   : [
+                        "highway": ["secondary"]
+                ],
+                "steps"       : [
+                        "highway": ["steps"]
+                ],
+                "tertiary"    : [
+                        "highway": ["tertiary"]
+                ],
+                "track"       : [
+                        "highway": ["track"]
+                ],
+                "trunk"       : [
+                        "highway": ["trunk"]
+                ],
+                "unclassified": [
+                        "highway": ["unclassified"]
+                ]
+        ]
+
+        def mappingForSurface = [
+                "unpaved"    : ["surface": ["unpaved", "grass_paver", "artificial_turf"]],
+                "paved"      : ["surface": ["paved", "asphalt"]],
+                "ground"     : ["surface": ["ground", "dirt", "earth", "clay"]],
+                "gravel"     : ["surface": ["gravel", "fine_gravel", "gravel_turf"]],
+                "concrete"   : ["surface": ["concrete", "concrete:lanes", "concrete:plates", "cement"]],
+                "grass"      : ["surface": ["grass"]],
+                "compacted"  : ["surface": ["compacted"]],
+                "sand"       : ["surface": ["sand"]],
+                "cobblestone": ["surface": ["cobblestone", "paving_stones", "sett", "unhewn_cobblestone"]],
+                "wood"       : ["surface": ["wood", "woodchips"]],
+                "pebblestone": ["surface": ["pebblestone"]],
+                "mud"        : ["surface": ["mud"]],
+                "metal"      : ["surface": ["metal"]],
+                "water"      : ["surface": ["water"]]
+        ]
                 def queryMapper = "SELECT "
                 def columnToMap = ['width','highway', 'surface', 'sidewalk',
                                    'lane','layer','maxspeed','oneway',
