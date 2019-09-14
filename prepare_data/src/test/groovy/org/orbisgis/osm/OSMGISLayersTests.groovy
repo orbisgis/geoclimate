@@ -16,7 +16,7 @@ class OSMGISLayersTests {
 
     @Test //disable due to potential API blocking
     void extractAndCreateGISLayers() {
-        def h2GIS = H2GIS.open('./target/osmdb')
+        def h2GIS = H2GIS.open('./target/osmdb,AUTO_SERVER=TRUE')
 
         IProcess process = PrepareData.OSMGISLayers.extractAndCreateGISLayers()
         process.execute([
@@ -29,20 +29,25 @@ class OSMGISLayersTests {
 
     @Test
     void createGISLayersTest() {
-        def h2GIS = H2GIS.open('./target/osmdb')
+        def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
         IProcess process = PrepareData.OSMGISLayers.createGISLayers()
         process.execute([
                 datasource : h2GIS,
-                osmFilePath: new File(this.class.getResource("saint_jean.osm").toURI()).getAbsolutePath(),
+                osmFilePath: new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath(),
                 epsg :2154])
-        assertNull process.results.railTableName
-        assertNull process.results.waterTableName
-        assertEquals 661, h2GIS.getTable(process.results.buildingTableName).rowCount
-        h2GIS.getTable(process.results.buildingTableName).save("./target/osm_building.shp")
+        //h2GIS.getTable(process.results.buildingTableName).save("./target/osm_building.shp")
+        assertEquals 1038, h2GIS.getTable(process.results.buildingTableName).rowCount
 
-        h2GIS.getTable(process.results.vegetationTableName).save("./target/osm_vegetation.shp")
-        assertEquals 6, h2GIS.getTable(process.results.vegetationTableName).rowCount
-        h2GIS.getTable(process.results.roadTableName).save("./target/osm_road.shp")
-        assertEquals 56, h2GIS.getTable(process.results.roadTableName).rowCount
+        //h2GIS.getTable(process.results.vegetationTableName).save("./target/osm_vegetation.shp")
+        assertEquals 128, h2GIS.getTable(process.results.vegetationTableName).rowCount
+
+        //h2GIS.getTable(process.results.roadTableName).save("./target/osm_road.shp")
+        assertEquals 360, h2GIS.getTable(process.results.roadTableName).rowCount
+
+        //h2GIS.getTable(process.results.railTableName).save("./target/osm_rails.shp")
+        assertEquals 44, h2GIS.getTable(process.results.railTableName).rowCount
+
+        //h2GIS.getTable(process.results.hydroTableName).save("./target/osm_hydro.shp")
+        assertEquals 8, h2GIS.getTable(process.results.hydroTableName).rowCount
     }
 }

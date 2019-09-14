@@ -197,8 +197,10 @@ IProcess formatBuildingLayer() {
                     if(type == null || type.isEmpty()){
                         type =  'building'
                     }
+                    def zIndex = getZIndex(row.'layer')
+
                     stmt.addBatch"""insert into ${outputTableName} values('${row.the_geom}',
-                    '${row.id}',${heightWall},${heightRoof},${nbLevels},'${type}','${use}',${row.'layer'})""".toString()
+                    '${row.id}',${heightWall},${heightRoof},${nbLevels},'${type}','${use}',${zIndex})""".toString()
                 }
             }
             logger.info('Buildings transformation finishes')
@@ -220,114 +222,114 @@ IProcess formatBuildingLayer() {
  *        and the associated key/value tags retrieved from OSM
  * @return outputTableName The name of the final roads table
  */
-static IProcess formatRoadLayer() {
+ IProcess formatRoadLayer() {
     return create({
             title "Format the raw roads table into a table that matches the constraints of the GeoClimate Input Model"
             inputs datasource  : JdbcDataSource, inputTableName      : String
             outputs outputTableName: String
-            run{ datasource, inputTableName ->
-                logger.info('Formating road layer')
+            run { datasource, inputTableName ->
+                    logger.info('Formating road layer')
 
-                //Define the mapping between the values in OSM and those used in the abstract model
-       def mappingForRoadType = [
-                "cycleway"    : [
-                        "highway"      : ["cycleway"],
-                        "cycleway"     : ["track"],
-                        "biclycle_road": ["yes"]
-                ],
-                "ferry"       : [
-                        "route": ["ferry"]
-                ],
-                "footway"     : [
-                        "highway": ["footway", "pedestrian"]
-                ],
-                "highway"     : [
-                        "highway"    : ["service", "road", "raceway", "escape"],
-                        "cyclestreet": ["yes"]
-                ],
-                "highway_link": [
-                        "highway": ["motorway_link", "motorway_junction", "trunk_link", "primary_link", "secondary_link", "tertiary_link", "junction"]
-                ],
-                "motorway"    : [
-                        "highway": ["motorway"]
-                ],
-                "path"        : [
-                        "highway": ["path", "bridleway"]
-                ],
-                "primary"     : [
-                        "highway": ["primary"]
-                ],
-                "residential" : [
-                        "highway": ["residential", "living_street"]
-                ],
-                "roundabout"  : [
-                        "junction": ["roundabout", "circular"]
-                ],
-                "secondary"   : [
-                        "highway": ["secondary"]
-                ],
-                "steps"       : [
-                        "highway": ["steps"]
-                ],
-                "tertiary"    : [
-                        "highway": ["tertiary"]
-                ],
-                "track"       : [
-                        "highway": ["track"]
-                ],
-                "trunk"       : [
-                        "highway": ["trunk"]
-                ],
-                "unclassified": [
-                        "highway": ["unclassified"]
-                ]
-        ]
+                    outputTableName = "INPUT_ROAD_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+                    //Define the mapping between the values in OSM and those used in the abstract model
+                    def mappingForRoadType = [
+                            "cycleway"    : [
+                                    "highway"      : ["cycleway"],
+                                    "cycleway"     : ["track"],
+                                    "biclycle_road": ["yes"]
+                            ],
+                            "ferry"       : [
+                                    "route": ["ferry"]
+                            ],
+                            "footway"     : [
+                                    "highway": ["footway", "pedestrian"]
+                            ],
+                            "highway"     : [
+                                    "highway"    : ["service", "road", "raceway", "escape"],
+                                    "cyclestreet": ["yes"]
+                            ],
+                            "highway_link": [
+                                    "highway": ["motorway_link", "motorway_junction", "trunk_link", "primary_link", "secondary_link", "tertiary_link", "junction"]
+                            ],
+                            "motorway"    : [
+                                    "highway": ["motorway"]
+                            ],
+                            "path"        : [
+                                    "highway": ["path", "bridleway"]
+                            ],
+                            "primary"     : [
+                                    "highway": ["primary"]
+                            ],
+                            "residential" : [
+                                    "highway": ["residential", "living_street"]
+                            ],
+                            "roundabout"  : [
+                                    "junction": ["roundabout", "circular"]
+                            ],
+                            "secondary"   : [
+                                    "highway": ["secondary"]
+                            ],
+                            "steps"       : [
+                                    "highway": ["steps"]
+                            ],
+                            "tertiary"    : [
+                                    "highway": ["tertiary"]
+                            ],
+                            "track"       : [
+                                    "highway": ["track"]
+                            ],
+                            "trunk"       : [
+                                    "highway": ["trunk"]
+                            ],
+                            "unclassified": [
+                                    "highway": ["unclassified"]
+                            ]
+                    ]
 
-        def mappingForSurface = [
-                "unpaved"    : ["surface": ["unpaved", "grass_paver", "artificial_turf"]],
-                "paved"      : ["surface": ["paved", "asphalt"]],
-                "ground"     : ["surface": ["ground", "dirt", "earth", "clay"]],
-                "gravel"     : ["surface": ["gravel", "fine_gravel", "gravel_turf"]],
-                "concrete"   : ["surface": ["concrete", "concrete:lanes", "concrete:plates", "cement"]],
-                "grass"      : ["surface": ["grass"]],
-                "compacted"  : ["surface": ["compacted"]],
-                "sand"       : ["surface": ["sand"]],
-                "cobblestone": ["surface": ["cobblestone", "paving_stones", "sett", "unhewn_cobblestone"]],
-                "wood"       : ["surface": ["wood", "woodchips"]],
-                "pebblestone": ["surface": ["pebblestone"]],
-                "mud"        : ["surface": ["mud"]],
-                "metal"      : ["surface": ["metal"]],
-                "water"      : ["surface": ["water"]]
-        ]
-                def queryMapper = "SELECT "
-                def columnToMap = ['width','highway', 'surface', 'sidewalk',
-                                   'lane','layer','maxspeed','oneway',
-                                   'h_ref','route','cycleway',
-                                   'biclycle_road','cyclestreet','junction']
-                queryMapper += columnsMapper(datasource.getTable(inputTableName).columnNames, columnToMap)
-                queryMapper += " FROM $inputTableName"
+                    def mappingForSurface = [
+                            "unpaved"    : ["surface": ["unpaved", "grass_paver", "artificial_turf"]],
+                            "paved"      : ["surface": ["paved", "asphalt"]],
+                            "ground"     : ["surface": ["ground", "dirt", "earth", "clay"]],
+                            "gravel"     : ["surface": ["gravel", "fine_gravel", "gravel_turf"]],
+                            "concrete"   : ["surface": ["concrete", "concrete:lanes", "concrete:plates", "cement"]],
+                            "grass"      : ["surface": ["grass"]],
+                            "compacted"  : ["surface": ["compacted"]],
+                            "sand"       : ["surface": ["sand"]],
+                            "cobblestone": ["surface": ["cobblestone", "paving_stones", "sett", "unhewn_cobblestone"]],
+                            "wood"       : ["surface": ["wood", "woodchips"]],
+                            "pebblestone": ["surface": ["pebblestone"]],
+                            "mud"        : ["surface": ["mud"]],
+                            "metal"      : ["surface": ["metal"]],
+                            "water"      : ["surface": ["water"]]
+                    ]
+                    def queryMapper = "SELECT "
+                    def columnToMap = ['width', 'highway', 'surface', 'sidewalk',
+                                       'lane', 'layer', 'maxspeed', 'oneway',
+                                       'h_ref', 'route', 'cycleway',
+                                       'biclycle_road', 'cyclestreet', 'junction']
+                    def columnNames= datasource.getTable(inputTableName).columnNames
+                    queryMapper += columnsMapper(columnNames, columnToMap)
+                    queryMapper += " FROM $inputTableName"
 
-                outputTableName = "INPUT_ROAD_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-                datasource.execute("    drop table if exists $outputTableName;\n" +
-                        "CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR,\n" +
-                        "SURFACE VARCHAR, SIDEWALK VARCHAR, ZINDEX INTEGER)")
-                datasource.withBatch(1000) { stmt ->
-                    datasource.eachRow(queryMapper){ row ->
-                        def width = getWidth(row.'width')
-                        String type = getAbstractValue(row, mappingForRoadType)
-                        if (null == type || type.isEmpty()) {
-                            type = 'unclassified'
+                    datasource.execute """drop table if exists $outputTableName;
+                            CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR, 
+                            SURFACE VARCHAR, SIDEWALK VARCHAR, ZINDEX INTEGER);"""
+                    datasource.withBatch(1000) { stmt ->
+                        datasource.eachRow(queryMapper) { row ->
+                            def width = getWidth(row.'width')
+                            String type = getAbstractValue(row, columnNames, mappingForRoadType)
+                            if (null == type || type.isEmpty()) {
+                                type = 'unclassified'
+                            }
+                            String surface = getAbstractValue(row,columnNames, mappingForSurface)
+                            String sidewalk = getSidewalk(row.'sidewalk')
+                            def zIndex = getZIndex(row.'layer')
+                            stmt.addBatch """insert into $outputTableName values('${row.the_geom}','${row.id}', ${width},'${type}','${surface}','${sidewalk}',${zIndex})""".toString()
                         }
-                        String surface = getAbstractValue(row, mappingForSurface)
-                        String sidewalk = getSidewalk(row.'sidewalk')
-                        def zIndex = getZIndex(row.'layer')
-                        stmt.addBatch """insert into input_road values(${row.the_geom},${row.id},
-                    ${width},${type},${surface},${sidewalk},${zIndex})""".toString()
                     }
+                    logger.info('Roads transformation finishes')
+                    [outputTableName: outputTableName]
                 }
-                logger.info('Roads transformation finishes')
-                [outputTableName: "INPUT_ROAD"]
-            }
     }
     )
 }
@@ -337,108 +339,157 @@ static IProcess formatRoadLayer() {
  * of the geoClimate Input Model
  * @param datasource A connexion to a DB containing the raw rails table
  * @param inputTableName The name of the raw rails table in the DB
- * @param mappingForType A map between the target values for the column type in the model
- *        and the associated key/value tags retrieved from OSM
  * @return outputTableName The name of the final rails table
  */
-static IProcess transformRails() {
+ IProcess formatRailsLayer() {
     return create({
-        title "transform the raw rails table into a table that matches the constraints of the GeoClimate Input Model"
-        inputs datasource : JdbcDataSource , inputTableName: String, mappingForRailType: Map
+        title "Format the raw rails table into a table that matches the constraints of the GeoClimate Input Model"
+        inputs datasource : JdbcDataSource , inputTableName: String
         outputs outputTableName: String
-        run { datasource, inputTableName, mappingForRailType ->
-            def inputTable = datasource.getSpatialTable(inputTableName)
+        run { datasource, inputTableName ->
             logger.info('Rails transformation starts')
-            datasource.execute("    drop table if exists input_rail;\n" +
-                    "CREATE TABLE input_rail (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER)")
-            inputTable.eachRow { row ->
-                String type = getAbstractValue(row, mappingForRailType)
-                int zIndex = getZIndex(row.'layer')
 
-                //special treatment if type is subway
-                if (type == "subway") {
+            outputTableName = "INPUT_RAILS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+            def mappingType = [
+                "highspeed":["highspeed":["yes"]],
+                "rail":["railway":["rail","light_rail","narrow_gauge"]],
+                "service_track":["service":["yard","siding","spur","crossover"]],
+                "disused":["railway":["disused"]],
+               "funicular":["railway":["funicular"]],
+                "subway":["railway":["subway"]],
+               "tram":["railway":["tram"]]
+            ]
 
-                    if (!((row.tunnel != null && row.tunnel == "no" && row.layer != null && row.layer.toInt() >= 0)
-                            || (row.bridge != null && (row.bridge == "yes" || row.bridge == "viaduct")))) {
-                        type = null
+            def queryMapper = "SELECT "
+            def columnToMap =  ['highspeed','railway','service',
+                                'tunnel','layer','bridge']
+
+            def columnNames= datasource.getTable(inputTableName).columnNames
+            queryMapper += columnsMapper(columnNames, columnToMap)
+            queryMapper += " FROM $inputTableName"
+
+            datasource.execute """ drop table if exists $outputTableName;
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);"""
+
+            datasource.withBatch(1000) { stmt ->
+                datasource.eachRow(queryMapper) { row ->
+                    String type = getAbstractValue(row, columnNames, mappingType)
+                    def zIndex = getZIndex(row.'layer')
+                    //special treatment if type is subway
+                    if (type == "subway") {
+
+                        if (!((row.tunnel != null && row.tunnel == "no" && row.layer != null && row.layer.toInt() >= 0)
+                                || (row.bridge != null && (row.bridge == "yes" || row.bridge == "viaduct")))) {
+                            type = null
+                        }
                     }
+                    stmt.addBatch """insert into $outputTableName values('${row.the_geom}','${row.id}','${type}',${zIndex})"""
+
                 }
-                def query = "insert into input_rail values(${row.the_geom},${row.id_way},${type},${zIndex})"
-                datasource.execute(query)
             }
             logger.info('Rails transformation finishes')
-            [outputTableName: "INPUT_RAIL"]
+            [outputTableName: outputTableName]
         }
     }
     )
 }
 
-///**
-// * This process is used to transform the raw vegetation table into a table that matches the constraints
-// * of the geoClimate Input Model
-// * @param datasource A connexion to a DB containing the raw vegetation table
-// * @param inputTableName The name of the raw vegetation table in the DB
-// * @param mappingForType A map between the target values for the column type in the model
-// *        and the associated key/value tags retrieved from OSM
-// * @return outputTableName The name of the final vegetation table
-// */
-//static IProcess transformVeget() {
-//    return processFactory.create(
-//            "transform the raw vegetation table into a table that matches the constraints of the GeoClimate Input Model",
-//            [datasource    : JdbcDataSource,
-//             inputTableName: String,
-//             mappingForVegetType: Map],
-//            [outputTableName: String],
-//            { JdbcDataSource datasource, inputTableName, mappingForVegetType ->
-//                def inputTable = datasource.getSpatialTable(inputTableName)
-//                logger.info('Veget transformation starts')
-//                datasource.execute("    drop table if exists input_veget;\n" +
-//                        "CREATE TABLE input_veget (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, TYPE VARCHAR)")
-//                inputTable.eachRow { row ->
-//                    String type = getAbstractValue(row, mappingForVegetType)
-//                    def query = "insert into input_veget values(${row.the_geom},${row.id_source},${type})"
-//                    datasource.execute(query)
-//                }
-//                logger.info('Veget transformation finishes')
-//                [outputTableName: "INPUT_VEGET"]
-//            }
-//    )
-//}
-//
-///**
-// * This process is used to transform the raw hydro table into a table that matches the constraints
-// * of the geoClimate Input Model
-// * @param datasource A connexion to a DB containing the raw hydro table
-// * @param inputTableName The name of the raw hydro table in the DB
-// * @param mappingForType A map between the target values for the column type in the model
-// *        and the associated key/value tags retrieved from OSM
-// * @return outputTableName The name of the final hydro table
-// */
-//static IProcess transformHydro() {
-//    return processFactory.create(
-//            "transform the raw hydro table into a table that matches the constraints of the GeoClimate Input Model",
-//            [datasource          : JdbcDataSource,
-//             inputTableName      : String],
-//            [outputTableName: String],
-//            { datasource, inputTableName ->
-//                def inputTable = datasource.getSpatialTable(inputTableName)
-//                logger.info('Veget transformation starts')
-//                datasource.execute("    drop table if exists input_hydro;\n" +
-//                        "CREATE TABLE input_hydro (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR)")
-//                inputTable.eachRow { row ->
-//                    def query = "insert into input_hydro values(${row.the_geom},${row.id_source})"
-//                    datasource.execute (query)
-//                }
-//                logger.info('Veget transformation finishes')
-//                [outputTableName: "INPUT_HYDRO"]
-//            }
-//    )
-//}
-//
+/**
+ * This process is used to transform the raw vegetation table into a table that matches the constraints
+ * of the geoClimate Input Model
+ * @param datasource A connexion to a DB containing the raw vegetation table
+ * @param inputTableName The name of the raw vegetation table in the DB
+ * @return outputTableName The name of the final vegetation table
+ */
+IProcess formatVegetationLayer() {
+    return create({
+            title "Format the raw vegetation table into a table that matches the constraints of the GeoClimate Input Model"
+            inputs datasource    : JdbcDataSource, inputTableName: String
+            outputs outputTableName: String
+            run { JdbcDataSource datasource, inputTableName ->
+                logger.info('Veget transformation starts')
+                outputTableName = "INPUT_VEGET_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+
+                def mappingType = [
+                "tree":["natural":["tree"]],
+                "wood":["landcover":["trees"],"natural":["wood"]],
+                "forest":["landuse":["forest"]],
+                "scrub":["natural":["scrub"],"landcover":["scrub"],"landuse":["scrub"]],
+                "grassland":["landcover":["grass","grassland"],"natural":["grass","grassland"],"vegetation":["grassland"],"landuse":["grass","grassland"]],
+                "heath":["natural":["heath"]],
+                "tree_row":["natural":["tree_row"],"landcover":["tree_row"],"barrier":["tree_row"]],
+                "hedge":["barrier":["hedge"],"natural":["hedge","hedge_bank"],"fence_type":["hedge"],"hedge":["hedge_bank"]],
+                "mangrove":["wetland":["mangrove"]],
+                "orchard":["landuse":["orchard"]],
+                "vineyard":["landuse":["vineyard"],"vineyard":["! no"]],
+                "banana plants":["trees":["banana_plants"],"crop":["banana"]],
+                "sugar cane":["produce":["sugar_cane"],"crop":["sugar_cane"]]
+                ]
+
+                def queryMapper = "SELECT "
+                def columnToMap =  ['natural','landuse','landcover',
+                                  'vegetation','barrier','fence_type',
+                                   'hedge','wetland','vineyard',
+                                    'trees','crop','produce']
+
+                def columnNames= datasource.getTable(inputTableName).columnNames
+                queryMapper += columnsMapper(columnNames, columnToMap)
+                queryMapper += " FROM $inputTableName"
+
+
+                datasource.execute """ drop table if exists $outputTableName;
+                        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, TYPE VARCHAR);"""
+
+                datasource.withBatch(1000) { stmt ->
+                    datasource.eachRow(queryMapper) { row ->
+                        String type = getAbstractValue(row,columnNames, mappingType)
+                        stmt.addBatch """insert into $outputTableName values('${row.the_geom}','${row.id}','${type}')"""
+                        
+                    }
+                }
+                logger.info('Veget transformation finishes')
+                [outputTableName: outputTableName]
+            }
+})
+}
+
+
+/**
+* This process is used to transform the raw hydro table into a table that matches the constraints
+ * of the geoClimate Input Model
+ * @param datasource A connexion to a DB containing the raw hydro table
+ * @param inputTableName The name of the raw hydro table in the DB
+ * @return outputTableName The name of the final hydro table
+ */
+IProcess formatHydroLayer() {
+    return create({
+        title "Format the raw hydro table into a table that matches the constraints of the GeoClimate Input Model"
+        inputs datasource    : JdbcDataSource, inputTableName: String
+        outputs outputTableName: String
+        { datasource, inputTableName ->
+            logger.info('Veget transformation starts')
+            outputTableName = "INPUT_VEGET_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+
+            datasource.execute """Drop table if exists $outputTableName;
+                        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR);"""
+
+            datasource.withBatch(1000) { stmt ->
+                datasource.getTable(inputTableName).eachRow { row ->
+                    stmt.addBatch "insert into input_hydro values('${row.the_geom}','${row.id}')"
+                }
+                logger.info('Veget transformation finishes')
+                [outputTableName: outputTableName]
+            }
+        }
+    }
+    )
+}
+
 /**
  * This function defines the input values for both columns type and use to follow the constraints
  * of the geoClimate Input Model
  * @param row The row of the raw table to examine
+ * @param columnNames the names of the column in the raw table
  * @param myMap A map between the target values in the model and the associated key/value tags retrieved from OSM
  * @return A list of Strings : first value is for "type" and second for "use"
  */
@@ -548,7 +599,7 @@ static int getNbLevels (b_lev ,r_lev,b_r_lev) {
  * @param width The original width value
  * @return the calculated value of width (default value : null)
  */
-static float getWidth (String width){
+static Float getWidth (String width){
     return (width != null && width.isFloat()) ? width.toFloat() : null
 }
 
@@ -557,17 +608,18 @@ static float getWidth (String width){
  * @param width The original zindex value
  * @return The calculated value of zindex (default value : null)
  */
-static int getZIndex (String zindex){
+static Integer getZIndex (String zindex){
     return (zindex != null && zindex.isInteger()) ? zindex.toInteger() : null
 }
 
 /**
  * This function defines the input value for a column of the geoClimate Input Model according to a given mapping between the expected value and the set of key/values tag in OSM
  * @param row The row of the raw table to examine
+ * @param columnNames the names of the column in the raw table
  * @param myMap A map between the target values in the model and the associated key/value tags retrieved from OSM
  * @return A list of Strings : first value is for "type" and second for "use"
  */
-static String getAbstractValue(def row, def myMap) {
+static String getAbstractValue(def row,def columnNames, def myMap) {
     String strType = null
     myMap.each { finalVal ->
         def finalKey = finalVal.key
