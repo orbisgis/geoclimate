@@ -12,6 +12,7 @@ import org.orbisgis.processmanagerapi.IProcess
  * of the geoClimate Input Model
  * @param datasource A connexion to a DB containing the raw buildings table
  * @param inputTableName The name of the raw buildings table in the DB
+ * @param h_lev_min minimum height level
  * @param mappingForTypeAndUse A map between the target values for type and use in the model
  *        and the associated key/value tags retrieved from OSM
  * @return outputTableName The name of the final buildings table
@@ -19,9 +20,9 @@ import org.orbisgis.processmanagerapi.IProcess
 IProcess formatBuildingLayer() {
     return create({
         title "Transform OSM buildings table into a table that matches the constraints of the GeoClimate input model"
-        inputs datasource : JdbcDataSource , inputTableName:String
+        inputs datasource : JdbcDataSource , inputTableName:String, h_lev_min:3, h_lev_max: 15, hThresholdLev2:10
         outputs outputTableName: String
-        run { JdbcDataSource datasource, inputTableName ->
+        run { JdbcDataSource datasource, inputTableName, h_lev_min, h_lev_max, hThresholdLev2 ->
             logger.info('Formating building layer')
             def queryMapper = "SELECT "
             def columnToMap = ['height', 'building:height', 'roof:height', 'building:roof:height',
@@ -171,6 +172,44 @@ IProcess formatBuildingLayer() {
                     "building"                       : ["building": ["yes"]
                     ]
             ]
+
+            def  typeAndLevel = ['building': 1,
+                                 'house': 1,
+                                 'detached': 1,
+                                 'residential': 1,
+                                 'apartments': 1,
+                                 'bungalow': 0,
+                                 'historic': 0,
+                                 'monument': 0,
+                                 'ruins': 0,
+                                 'castle': 0,
+                                 'agricultural': 0,
+                                 'farm': 0,
+                                 'farm_auxiliary': 0,
+                                 'barn': 0,
+                                 'greenhouse': 0,
+                                 'silo': 0,
+                                 'commercial': 2,
+                                 'industrial': 0,
+                                 'sport': 0,
+                                 'sports_centre': 0,
+                                 'grandstand': 0,
+                                 'transportation': 0,
+                                 'train_station': 0,
+                                 'toll_booth': 0,
+                                 'terminal': 0,
+                                 'healthcare': 1,
+                                 'education': 1,
+                                 'entertainment, arts and culture': 0,
+                                 'sustenance': 1,
+                                 'military': 0,
+                                 'religious': 0,
+                                 'chapel': 0,
+                                 'church': 0,
+                                 'government': 1,
+                                 'townhall': 1,
+                                 'office': 1,]
+
             def columnNames= datasource.getTable(inputTableName).columnNames
             queryMapper += columnsMapper(columnNames, columnToMap)
             queryMapper += " FROM $inputTableName"
@@ -190,17 +229,24 @@ IProcess formatBuildingLayer() {
                     String b_roof_lev = row.'building:roof:levels'
                     def heightWall = getHeightWall(height, b_height, roof_height, b_roof_height)
                     def heightRoof = getHeightRoof(height, b_height)
+
                     def nbLevels = getNbLevels(b_lev, roof_lev, b_roof_lev)
                     def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
                     def use = typeAndUseValues[1]
-                    def type =typeAndUseValues[0]
-                    if(type == null || type.isEmpty()){
-                        type =  'building'
+                    def type = typeAndUseValues[0]
+                    if (type == null || type.isEmpty()) {
+                        type = 'building'
                     }
+
+                    def nbLevelFromType = typeAndLevel[type]
+
+                    def formatedHeight = formatHeightsAndNbLevels( heightWall,  heightRoof,  nbLevels,  h_lev_min,
+                     h_lev_max, hThresholdLev2,  nbLevelFromType==null?0:nbLevelFromType)
+
                     def zIndex = getZIndex(row.'layer')
 
                     stmt.addBatch"""insert into ${outputTableName} values('${row.the_geom}',
-                    '${row.id}',${heightWall},${heightRoof},${nbLevels},'${type}','${use}',${zIndex})""".toString()
+                    '${row.id}',${formatedHeight.heightWall},${formatedHeight.heightRoof},${formatedHeight.nbLevels},'${type}','${use}',${zIndex})""".toString()
                 }
             }
             logger.info('Buildings transformation finishes')
@@ -302,6 +348,24 @@ IProcess formatBuildingLayer() {
                             "metal"      : ["surface": ["metal"]],
                             "water"      : ["surface": ["water"]]
                     ]
+                
+                def typeAndWidth =  [ 'highway': 8,
+                 'motorway': 24,
+                 'trunk': 16,
+                 'primary': 10,
+                 'secondary': 10,
+                 'tertiary': 8,
+                 'residential': 8,
+                 'unclassified': 3,
+                 'track': 2,
+                 'path': 1,
+                 'footway': 1,
+                 'cycleway': 1,
+                 'steps': 1,
+                 'highway_link': 8,
+                 'roundabout': 4,
+                 'ferry': 0]
+
                     def queryMapper = "SELECT "
                     def columnToMap = ['width', 'highway', 'surface', 'sidewalk',
                                        'lane', 'layer', 'maxspeed', 'oneway',
@@ -321,6 +385,11 @@ IProcess formatBuildingLayer() {
                             if (null == type || type.isEmpty()) {
                                 type = 'unclassified'
                             }
+                            def widthFromType = typeAndWidth[type]
+                            if(width==0 &&widthFromType!=null){
+                                width=widthFromType
+                            }
+
                             String surface = getAbstractValue(row,columnNames, mappingForSurface)
                             String sidewalk = getSidewalk(row.'sidewalk')
                             def zIndex = getZIndex(row.'layer')
@@ -407,7 +476,7 @@ IProcess formatVegetationLayer() {
             inputs datasource    : JdbcDataSource, inputTableName: String
             outputs outputTableName: String
             run { JdbcDataSource datasource, inputTableName ->
-                logger.info('Veget transformation starts')
+                logger.info('Vegetation transformation starts')
                 outputTableName = "INPUT_VEGET_${UUID.randomUUID().toString().replaceAll("-", "_")}"
 
                 def mappingType = [
@@ -431,6 +500,20 @@ IProcess formatVegetationLayer() {
                                   'vegetation','barrier','fence_type',
                                    'hedge','wetland','vineyard',
                                     'trees','crop','produce']
+                
+                def typeAndVegClass =['tree': 'high',
+                 'wood': 'high',
+                 'forest': 'high',
+                 'scrub': 'low',
+                 'grassland': 'low',
+                 'heath': 'low',
+                 'tree_row': 'high',
+                 'hedge': 'high',
+                 'mangrove': 'high',
+                 'orchard': 'high',
+                 'vineyard': 'low',
+                 'banana_plants': 'high',
+                 'sugar_cane': 'low']
 
                 def columnNames= datasource.getTable(inputTableName).columnNames
                 queryMapper += columnsMapper(columnNames, columnToMap)
@@ -438,16 +521,19 @@ IProcess formatVegetationLayer() {
 
 
                 datasource.execute """ drop table if exists $outputTableName;
-                        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, TYPE VARCHAR);"""
+                        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4));"""
 
                 datasource.withBatch(1000) { stmt ->
                     datasource.eachRow(queryMapper) { row ->
                         String type = getAbstractValue(row,columnNames, mappingType)
-                        stmt.addBatch """insert into $outputTableName values('${row.the_geom}','${row.id}','${type}')"""
+
+                        def height_class = typeAndVegClass[type]
+
+                        stmt.addBatch """insert into $outputTableName values('${row.the_geom}','${row.id}','${type}', '${height_class}')"""
                         
                     }
                 }
-                logger.info('Veget transformation finishes')
+                logger.info('Vegetation transformation finishes')
                 [outputTableName: outputTableName]
             }
 })
@@ -557,6 +643,92 @@ static float getHeightWall(height, b_height, r_height, b_r_height) {
 }
 
 /**
+ * Rule to guarantee the height wall, height roof and number of levels values
+ * @param height_wall value
+ * @param height_roof value
+ * @param nb_lev value
+ * @param h_lev_min value
+ * @param h_lev_max value
+ * @param hThresholdLev2 value
+ * @param nbLevFromType value
+ * @param hThresholdLev2 value
+ * @return a map with the new values
+ */
+static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels, def h_lev_min,
+                                   def h_lev_max,def hThresholdLev2, def nbLevFromType){
+    //Initialisation of heights and number of levels
+    // Update height_wall
+    if(heightWall==0){
+        if(heightRoof==0){
+            if(nbLevels==0){
+                heightWall= h_lev_min
+            }
+            else {
+                heightWall= h_lev_min*nbLevels
+            }
+        }
+        else {
+            heightWall= heightRoof
+        }
+    }
+    // Update height_roof
+    if(heightRoof==0){
+        if(heightWall==0){
+            if(nbLevels==0){
+                heightRoof= h_lev_min
+            }
+            else {
+                heightRoof= h_lev_min*nbLevels
+            }
+        }
+        else{
+            heightRoof= heightWall
+        }
+    }
+    // Update nb_lev
+    // If the nb_lev parameter (in the abstract table) is equal to 1 or 2
+    // (and height_wall > 10m) then apply the rule. Else, the nb_lev is equal to 1
+    if(nbLevFromType==1 || nbLevFromType==2 && heightWall> hThresholdLev2){
+        if(nbLevels==0){
+            if(heightWall==0){
+                if(heightRoof==0){
+                    nbLevels= 1
+                }
+                else{
+                    nbLevels= heightRoof/h_lev_min
+                }
+            }
+            else {
+                nbLevels= heightWall/h_lev_min
+            }
+        }
+    }
+    else{
+        nbLevels = 1
+    }
+
+   // Control of heights and number of levels
+   // Check if height_roof is lower than height_wall. If yes, then correct height_roof
+    if(heightWall>heightRoof){
+        heightRoof = heightWall
+    }
+    def tmpHmin=  nbLevels*h_lev_min
+    // Check if there is a high difference beetween the "real" and "theorical (based on the level number) roof heights
+    if(tmpHmin>heightRoof){
+        heightRoof= tmpHmin
+    }
+    def tmpHmax=  nbLevels*h_lev_max
+    if(nbLevFromType==1 || nbLevFromType==2 && heightWall> hThresholdLev2){
+    if(tmpHmax<heightWall){
+        nbLevels= heightWall/h_lev_max
+    }
+    }
+    return [heightWall:heightWall, heightRoof:heightRoof, nbLevels:nbLevels]
+
+}
+
+
+/**
  * This function defines the value of the column height_roof according to the values of height and b_height
  * @param row The row of the raw table to examine
  * @return The calculated value of height_roof (default value : 0)
@@ -600,7 +772,7 @@ static int getNbLevels (b_lev ,r_lev,b_r_lev) {
  * @return the calculated value of width (default value : null)
  */
 static Float getWidth (String width){
-    return (width != null && width.isFloat()) ? width.toFloat() : null
+    return (width != null && width.isFloat()) ? width.toFloat() : 0
 }
 
 /**
@@ -608,8 +780,8 @@ static Float getWidth (String width){
  * @param width The original zindex value
  * @return The calculated value of zindex (default value : null)
  */
-static Integer getZIndex (String zindex){
-    return (zindex != null && zindex.isInteger()) ? zindex.toInteger() : null
+static int getZIndex (String zindex){
+    return (zindex != null && zindex.isInteger()) ? zindex.toInteger() : 0
 }
 
 /**

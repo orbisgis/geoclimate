@@ -21,10 +21,10 @@ import static org.orbisgis.osm.OSMElement.WAY
   * This process is used to create the GIS layers using the Overpass API
   * @param datasource A connexion to a DB to load the OSM file
   * @param placeName the name of the place to extract
- *  @param epsg code to reproject the GIS layers, default is -1
- *  @param distance to expand the envelope of the query box. Default is 0
- * @return The name of the resulting GIS tables : buildingTableName, roadTableName,
- *  railTableName, vegetationTableName, hydroTableName, zoneTableName and zoneEnvelopeTableName
+  *  @param epsg code to reproject the GIS layers, default is -1
+  *  @param distance to expand the envelope of the query box. Default is 0
+  * @return The name of the resulting GIS tables : buildingTableName, roadTableName,
+  *  railTableName, vegetationTableName, hydroTableName, zoneTableName and zoneEnvelopeTableName
  */
 IProcess extractAndCreateGISLayers(){
     return create({
