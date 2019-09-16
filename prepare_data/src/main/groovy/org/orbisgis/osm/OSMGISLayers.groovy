@@ -3,7 +3,6 @@ package org.orbisgis.osm
 import groovy.transform.BaseScript
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.SFSUtilities
-import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
@@ -22,15 +21,19 @@ import static org.orbisgis.osm.OSMElement.WAY
   * This process is used to create the GIS layers using the Overpass API
   * @param datasource A connexion to a DB to load the OSM file
   * @param placeName the name of the place to extract
-  * @return
-  */
+ *  @param epsg code to reproject the GIS layers, default is -1
+ *  @param distance to expand the envelope of the query box. Default is 0
+ * @return The name of the resulting GIS tables : buildingTableName, roadTableName,
+ *  railTableName, vegetationTableName, hydroTableName, zoneTableName and zoneEnvelopeTableName
+ */
 IProcess extractAndCreateGISLayers(){
     return create({
         title "Create GIS layer from the OSM data model"
-        inputs datasource: JdbcDataSource, placeName: String, epsg:-1,extendedValue:0
+        inputs datasource: JdbcDataSource, placeName: String, epsg:-1,distance:0
         outputs buildingTableName: String, roadTableName: String, railTableName: String,
-                vegetationTableName: String,hydroTableName: String
-        run {datasource, placeName, epsg,  extendedValue ->
+                vegetationTableName: String,hydroTableName: String, zoneTableName: String,
+                zoneEnvelopeTableName: String
+        run {datasource, placeName, epsg,  distance ->
 
             if(datasource==null){
                 logger.error('The datasource cannot be null')
@@ -45,34 +48,30 @@ IProcess extractAndCreateGISLayers(){
             /**
              * Extract the OSM file from the envelope of the geometry
              */
-            if(epsg==-1){
-                interiorPoint = geom.getCentroid()
-                epsg = SFSUtilities.getSRID(datasource.getConnection(), interiorPoint.y as float, interiorPoint.x as float)
-            }
-            Envelope filterArea
-            if(extendedValue==0){
-                filterArea = geom.getEnvelopeInternal()
-            }
-            else {
-                geom = ST_Transform.ST_Transform(datasource.getConnection(), geom, epsg).buffer(extendedValue)
-                filterArea = ST_Transform.ST_Transform(datasource.getConnection(), geom, 4326).getEnvelopeInternal()
-            }
-            GeometryFactory gf = new GeometryFactory()
-            Polygon polygon  = gf.toGeometry(filterArea)
-            //def outputEnvelopeTableName = "ZONE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-            //datasource.execute "create table ${outputEnvelopeTableName}"
-            def  query = OSMHelper.Utilities.buildOSMQuery(polygon, [], NODE, WAY, RELATION)
+            def geomAndEnv = buildGeometryAndZone(geom, epsg, distance, datasource)
+            epsg =  geomAndEnv.geom.getSRID()
+
+            def outputZoneTable = "ZONE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+            datasource.execute """create table ${outputZoneTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
+            INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT('${geomAndEnv.geom.toString()}', $epsg), '$placeName');"""
+
+
+            def outputZoneEnvelopeTable = "ZONE_ENVELOPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+            datasource.execute """create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
+            INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${geomAndEnv.filterArea.toString()}',$epsg), '$placeName');"""
+
+            def  query = OSMHelper.Utilities.buildOSMQuery(geomAndEnv.filterArea, [], NODE, WAY, RELATION)
                 def extract = OSMHelper.Loader.extract()
                 if (extract.execute(overpassQuery: query)) {
-                    def prefix = "OSM_DATA_${UUID.randomUUID().toString().replaceAll("-", "_")}"
                     IProcess createGISLayerProcess = createGISLayers()
                     if (createGISLayerProcess.execute(datasource: datasource, osmFilePath: extract.results.outputFilePath, epsg:epsg)) {
 
-                        [buildingTableName:  createGISLayerProcess.getResults().outputBuildingTableName,
-                         roadTableName: createGISLayerProcess.getResults().outputRoadTableName,
-                         railTableName: createGISLayerProcess.getResults().outputRailTableName,
-                         vegetationTableName: createGISLayerProcess.getResults().outputVegetationTableName,
-                         hydroTableName: createGISLayerProcess.getResults().outputhydroTableName]
+                        [buildingTableName:  createGISLayerProcess.getResults().buildingTableName,
+                         roadTableName: createGISLayerProcess.getResults().roadTableName,
+                         railTableName: createGISLayerProcess.getResults().railTableName,
+                         vegetationTableName: createGISLayerProcess.getResults().vegetationTableName,
+                         hydroTableName: createGISLayerProcess.getResults().hydroTableName,
+                         zoneTableName :outputZoneTable, zoneEnvelopeTableName :outputZoneEnvelopeTable ]
                     }
                     else{
                         logger.error "Cannot load the OSM file ${extract.results.outputFilePath}"
@@ -87,10 +86,59 @@ IProcess extractAndCreateGISLayers(){
 }
 
 /**
+ * This method is used to build a new geometry and its envelope according an EPSG code and a distance
+ * The geometry and the envelope are set up in an UTM coordinate system when the epsg code is unknown.
+ *
+ * @param geom the input geometry
+ * @param epsg the input epsg code
+ * @param distance a value to expand the envelope of the geometry
+ * @param datasource a connexion to the database
+ *
+ * @return a map with the input geometry and the envelope of the input geometry. Both are projected in a new reference
+ * system depending on the epsg code.
+ * Note that the envelope of the geometry can be expanded according the input distance value.
+ */
+def buildGeometryAndZone(Geometry geom, int epsg, int distance, def datasource) {
+    GeometryFactory gf = new GeometryFactory()
+    def con = datasource.getConnection();
+    Polygon filterArea = null
+    if(epsg==-1 || epsg==0){
+        def interiorPoint = geom.getCentroid()
+        epsg = SFSUtilities.getSRID(datasource.getConnection(), interiorPoint.y as float, interiorPoint.x as float)
+        geom = ST_Transform.ST_Transform(con, geom, epsg);
+        if(distance==0){
+            Geometry tmpEnvGeom = gf.toGeometry(geom.getEnvelopeInternal())
+            tmpEnvGeom.setSRID(epsg)
+            filterArea = ST_Transform.ST_Transform(con, tmpEnvGeom, 4326)
+        }
+        else {
+            def tmpEnvGeom = gf.toGeometry(geom.getEnvelopeInternal().expandBy(distance))
+            tmpEnvGeom.setSRID(epsg)
+            filterArea = ST_Transform.ST_Transform(con, tmpEnvGeom, 4326)
+        }
+    }
+    else {
+        geom = ST_Transform.ST_Transform(con, geom, epsg);
+        if(distance==0){
+            filterArea = gf.toGeometry(geom.getEnvelopeInternal())
+            filterArea.setSRID(epsg)
+        }
+        else {
+            filterArea = gf.toGeometry(geom.getEnvelopeInternal().expandBy(distance))
+            filterArea.setSRID(epsg)
+        }
+    }
+    return [geom :  geom, filterArea : filterArea]
+}
+
+/**
  * This process is used to create the GIS layers from an osm xml file
  * @param datasource A connexion to a DB to load the OSM file
  * @param placeName the name of the place to extract
- * @return buildingTableName The name of the resulting buildings table
+ * @param epsg code to reproject the GIS layers, default is -1
+ *
+ * @return The name of the resulting GIS tables : buildingTableName, roadTableName,
+ * railTableName, vegetationTableName, hydroTableName
  */
 IProcess createGISLayers() {
     return create({
