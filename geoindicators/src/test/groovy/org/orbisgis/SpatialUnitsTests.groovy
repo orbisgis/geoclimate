@@ -17,7 +17,7 @@ class SpatialUnitsTests {
 
     @BeforeAll
     static void init(){
-        h2GIS = H2GIS.open([databaseName: './target/spatialunitsdb'])
+        h2GIS = H2GIS.open('./target/spatialunitsdb;AUTO_SERVER=TRUE')
     }
 
     @BeforeEach
@@ -38,7 +38,7 @@ class SpatialUnitsTests {
 
     @Test
     void prepareGeometriesForRSUTest() {
-        H2GIS h2GIS = H2GIS.open([databaseName: './target/spatialunitsdb2'])
+        H2GIS h2GIS = H2GIS.open('./target/spatialunitsdb2;AUTO_SERVER=TRUE')
         h2GIS.load(this.class.getResource("road_test.shp"), true)
         h2GIS.load(this.class.getResource("rail_test.shp"), true)
         h2GIS.load(this.class.getResource("veget_test.shp"), true)
@@ -61,7 +61,7 @@ class SpatialUnitsTests {
         assertTrue h2GIS.save(outputTable,'./target/rsu.shp')
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
 
-        assertEquals 213 , countRows.numberOfRows
+        assertEquals 246 , countRows.numberOfRows
     }
 
 

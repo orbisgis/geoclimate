@@ -3,6 +3,7 @@ package org.orbisgis.processingchain
 import org.junit.jupiter.api.Test
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanager.h2gis.H2GIS
+import org.orbisgis.geoindicators.DataUtils
 import org.orbisgis.processmanagerapi.IProcess
 import org.orbisgis.geoindicators.Geoindicators
 import org.slf4j.Logger
@@ -19,8 +20,13 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
 
     @Test
     void osmToRSU() {
-        def h2GIS = H2GIS.open('./target/osm_chain_db;AUTO_SERVER=TRUE')
-        def placeName = "Cliscouet, Vannes"
+        String directory ="./target/osm_processchain_geoindicators"
+
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def h2GIS = H2GIS.open(dirFile.absolutePath+File.separator+'osm_chain_db;AUTO_SERVER=TRUE')
+        def placeName = "fontainebleau"
         IProcess process = ProcessingChain.PrepareOSM.buildGeoclimateLayers()
 
         process.execute([datasource: h2GIS, placeName :placeName, distance: 0])
@@ -37,10 +43,16 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
                              vegetationTable   : process.getResults().outputVeget,
                              hydrographicTable : process.getResults().outputHydro,
                              prefixName        : prefixName])) {
+            def saveTables = Geoindicators.DataUtils.saveTablesAsFiles()
+
+            saveTables.execute( [inputTableNames: process.getResults().values()
+                                 , directory: directory, datasource: h2GIS])
+
             if (createRSU([datasource    : h2GIS,
                             inputTableName: prepareRSUData.results.outputTableName,
+                           inputZoneTableName :process.getResults().outputZone,
                             prefixName    : prefixName])) {
-                h2GIS.getTable(createRSU.results.outputTableName).save("./target/rsu_${prefixName}.geojson")
+                h2GIS.getTable(createRSU.results.outputTableName).save(dirFile.absolutePath+File.separator+"${prefixName}.geojson")
             }
 
         }
