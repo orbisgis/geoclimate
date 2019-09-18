@@ -21,12 +21,11 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
 IProcess createRSU(){
     def final COLUMN_ID_NAME = "id_rsu"
     def final BASE_NAME = "created_rsu"
-
     return create({
         title "Create reference spatial units (RSU)"
-        inputs inputTableName: String, prefixName: String, datasource: JdbcDataSource
+        inputs inputTableName: String, prefixName: "rsu", datasource: JdbcDataSource
         outputs outputTableName: String, outputIdRsu: String
-        run { inputTableName, prefixName = 'rsu', datasource ->
+        run { inputTableName, prefixName , datasource ->
             info "Creating the reference spatial units"
 
             // The name of the outputTableName is constructed
@@ -64,7 +63,6 @@ IProcess createRSU(){
  */
 IProcess prepareRSUData() {
     def final BASE_NAME = "prepared_rsu_data"
-
     return create({
         title "Prepare the abstract model to build the RSU"
         inputs zoneTable: String, roadTable: String, railTable: String, vegetationTable: String,
@@ -86,6 +84,7 @@ IProcess prepareRSUData() {
 
                 def vegetation_indice = vegetationTable + "_" + uuid()
 
+                epsg = datasource.getSpatialTable(vegetationTable).srid
                 datasource.execute "DROP TABLE IF EXISTS $vegetation_indice"
                 datasource.execute "CREATE TABLE $vegetation_indice(THE_GEOM geometry, ID serial," +
                         " CONTACT integer) AS (SELECT THE_GEOM, null , 0 FROM ST_EXPLODE('" +
@@ -101,7 +100,7 @@ IProcess prepareRSUData() {
 
                 datasource.execute "DROP TABLE IF EXISTS $vegetation_unified"
                 datasource.execute "CREATE TABLE $vegetation_unified AS " +
-                        "(SELECT the_geom FROM ST_EXPLODE('(SELECT ST_UNION(ST_ACCUM(THE_GEOM))" +
+                        "(SELECT ST_SETSRID(the_geom, $epsg) as the_geom FROM ST_EXPLODE('(SELECT ST_UNION(ST_ACCUM(THE_GEOM))" +
                         " AS THE_GEOM FROM $vegetation_indice WHERE CONTACT=1)') " +
                         "where st_dimension(the_geom)>0 AND st_isempty(the_geom)=false AND " +
                         "st_area(the_geom)> $surface_vegetation) " +
@@ -138,7 +137,7 @@ IProcess prepareRSUData() {
                 def hydrographic_unified = "hydrographic_unified" + uuid()
 
                 datasource.execute "DROP TABLE IF EXISTS $hydrographic_unified"
-                datasource.execute "CREATE TABLE $hydrographic_unified AS (SELECT THE_GEOM FROM " +
+                datasource.execute "CREATE TABLE $hydrographic_unified AS (SELECT ST_SETSRID(the_geom, $epsg) as the_geom FROM " +
                         "ST_EXPLODE('(SELECT ST_UNION(ST_ACCUM(THE_GEOM)) AS THE_GEOM FROM" +
                         " $hydrographic_indice  WHERE CONTACT=1)') where st_dimension(the_geom)>0" +
                         " AND st_isempty(the_geom)=false AND st_area(the_geom)> $surface_hydrographic) " +

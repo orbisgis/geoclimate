@@ -180,6 +180,10 @@ def computeBlockIndicators(){
             def blockPrefixName = "block_indicators"
             def id_block = "id_block"
 
+            // Maps for intermediate or final joins
+            def finalTablesToJoin = [:]
+            finalTablesToJoin.put(inputBlockTableName, id_block)
+
             //Compute :
             //Sum of the building area
             //Sum of the building volume composing the block
@@ -197,6 +201,8 @@ def computeBlockIndicators(){
                 return
             }
 
+            finalTablesToJoin.put(computeSimpleStats.results.outputTableName, id_block)
+
             //Ratio between the holes area and the blocks area
             // block_hole_area_density
             def computeHoleAreaDensity = Geoindicators.BlockIndicators.holeAreaDensity()
@@ -206,6 +212,7 @@ def computeBlockIndicators(){
                 info "Cannot compute the hole area density."
                 return
             }
+            finalTablesToJoin.put(computeHoleAreaDensity.results.outputTableName, id_block)
 
             //Perkins SKill Score of the distribution of building direction within a block
             // block_perkins_skill_score_building_direction
@@ -218,6 +225,7 @@ def computeBlockIndicators(){
                 info "Cannot compute perkins skill indicator. "
                 return
             }
+            finalTablesToJoin.put(computePerkinsSkillScoreBuildingDirection.results.outputTableName, id_block)
 
 
             //Block closingness
@@ -229,6 +237,7 @@ def computeBlockIndicators(){
                 info "Cannot compute closingness indicator. "
                 return
             }
+            finalTablesToJoin.put(computeClosingness.results.outputTableName, id_block)
 
             //Block net compacity
             def computeNetCompacity = Geoindicators.BlockIndicators.netCompacity()
@@ -240,6 +249,7 @@ def computeBlockIndicators(){
                 info "Cannot compute the net compacity indicator. "
                 return
             }
+            finalTablesToJoin.put(computeNetCompacity.results.outputTableName, id_block)
 
             //Block mean building height
             //Block standard deviation building height
@@ -253,16 +263,11 @@ def computeBlockIndicators(){
                 info "Cannot compute the block mean building height and standard deviation building height indicators. "
                 return
             }
+            finalTablesToJoin.put(computeWeightedAggregatedStatistics.results.outputTableName, id_block)
 
             //Merge all in one table
-            def blockTableJoin = DataUtils.joinTables()
-            if(!blockTableJoin([inputTableNamesWithId: [(inputBlockTableName): id_block,
-                                                        (computeSimpleStats.results.outputTableName): id_block,
-                                                        (computeHoleAreaDensity.results.outputTableName):id_block ,
-                                                        (computePerkinsSkillScoreBuildingDirection.results.outputTableName): id_block,
-                                                        (computeClosingness.results.outputTableName):id_block,
-                                                        (computeNetCompacity.results.outputTableName):id_block,
-                                                        (computeWeightedAggregatedStatistics.results.outputTableName):id_block],
+            def blockTableJoin = Geoindicators.DataUtils.joinTables()
+            if(!blockTableJoin([inputTableNamesWithId: finalTablesToJoin,
                                 outputTableName: blockPrefixName,
                                 datasource: datasource])){
                 info "Cannot merge all tables in $blockPrefixName. "

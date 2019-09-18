@@ -14,16 +14,17 @@ class OSMGISLayersTests {
 
     private static final Logger logger = LoggerFactory.getLogger(OSMGISLayersTests.class)
 
-    @Test //disable due to potential API blocking
+    //@Test enable it to test data extraction from the overpass api
     void extractAndCreateGISLayers() {
-        def h2GIS = H2GIS.open('./target/osmdb,AUTO_SERVER=TRUE')
-
+        def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
         IProcess process = PrepareData.OSMGISLayers.extractAndCreateGISLayers()
         process.execute([
                 datasource : h2GIS,
                 placeName: "Cliscouët, Vannes"])
         process.getResults().each {it ->
-            println it.value
+            if(it.value!=null){
+                h2GIS.getTable(it.value).save("./target/${it.value}.shp")
+            }
         }
     }
 
