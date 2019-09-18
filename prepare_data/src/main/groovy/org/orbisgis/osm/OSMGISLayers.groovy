@@ -156,7 +156,7 @@ IProcess createGISLayers() {
         title "Create GIS layer from an OSM XML file"
         inputs datasource: JdbcDataSource, osmFilePath: String, epsg: -1
         outputs buildingTableName: String, roadTableName: String, railTableName: String,
-                vegetationTableName: String, hydroTableName: String
+                vegetationTableName: String, hydroTableName: String, epsg: int
         run { datasource, osmFilePath, epsg ->
             if(epsg<=-1){
                 logger.error "Invalid epsg code $epsg"
@@ -227,7 +227,7 @@ IProcess createGISLayers() {
                 logger.info "Water layer created"
 
                 [buildingTableName  : outputBuildingTableName, roadTableName: outputRoadTableName, railTableName: outputRailTableName,
-                 vegetationTableName: outputVegetationTableName, hydroTableName: outputhydroTableName]
+                 vegetationTableName: outputVegetationTableName, hydroTableName: outputhydroTableName, epsg: epsg]
             }
         }
     })

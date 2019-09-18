@@ -27,11 +27,14 @@ class FormattingForAbstractModelTests {
         assertEquals 8, h2GIS.getTable(extractData.results.hydroTableName).rowCount
 
 
+        def epsg = extractData.results.epsg
+
         //Buildings
         IProcess format = PrepareData.FormattingForAbstractModel.formatBuildingLayer()
         format.execute([
                 datasource : h2GIS,
-                inputTableName: extractData.results.buildingTableName])
+                inputTableName: extractData.results.buildingTableName,
+                epsg: epsg])
         assertEquals 1038, h2GIS.getTable(format.results.outputTableName).rowCount
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated.shp")
 
@@ -39,7 +42,8 @@ class FormattingForAbstractModelTests {
         format = PrepareData.FormattingForAbstractModel.formatRoadLayer()
         format.execute([
                 datasource : h2GIS,
-                inputTableName: extractData.results.roadTableName])
+                inputTableName: extractData.results.roadTableName,
+                epsg: epsg])
 
         assertEquals 360, h2GIS.getTable(format.results.outputTableName).rowCount
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_formated.shp")
@@ -49,7 +53,8 @@ class FormattingForAbstractModelTests {
         format = PrepareData.FormattingForAbstractModel.formatRailsLayer()
         format.execute([
                 datasource : h2GIS,
-                inputTableName: extractData.results.railTableName])
+                inputTableName: extractData.results.railTableName,
+                epsg: epsg])
 
         assertEquals 44, h2GIS.getTable(format.results.outputTableName).rowCount
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_rails_formated.shp")
@@ -59,7 +64,8 @@ class FormattingForAbstractModelTests {
         format = PrepareData.FormattingForAbstractModel.formatVegetationLayer()
         format.execute([
                 datasource : h2GIS,
-                inputTableName: extractData.results.vegetationTableName])
+                inputTableName: extractData.results.vegetationTableName,
+                epsg: epsg])
 
         assertEquals 128, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where type is null").count==0
@@ -73,7 +79,8 @@ class FormattingForAbstractModelTests {
         format = PrepareData.FormattingForAbstractModel.formatHydroLayer()
         format.execute([
                 datasource : h2GIS,
-                inputTableName: extractData.results.hydroTableName])
+                inputTableName: extractData.results.hydroTableName,
+                epsg: epsg])
 
         assertEquals 8, h2GIS.getTable(format.results.outputTableName).rowCount
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_hydro_formated.shp")
@@ -102,18 +109,22 @@ class FormattingForAbstractModelTests {
             h2GIS.getTable(extractData.results.zoneEnvelopeTableName).save("./target/osm_zone_envelope_${formatedPlaceName}.geojson")
 
 
+            def epsg = extractData.results.epsg
+
             //Buildings
             IProcess format = PrepareData.FormattingForAbstractModel.formatBuildingLayer()
             format.execute([
                     datasource : h2GIS,
-                    inputTableName: extractData.results.buildingTableName])
+                    inputTableName: extractData.results.buildingTableName,
+                    epsg: epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_${formatedPlaceName}.geojson")
 
             //Roads
             format = PrepareData.FormattingForAbstractModel.formatRoadLayer()
             format.execute([
                     datasource : h2GIS,
-                    inputTableName: extractData.results.roadTableName])
+                    inputTableName: extractData.results.roadTableName,
+                    epsg: epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_${formatedPlaceName}.geojson")
 
 
@@ -121,7 +132,8 @@ class FormattingForAbstractModelTests {
             format = PrepareData.FormattingForAbstractModel.formatRailsLayer()
             format.execute([
                     datasource : h2GIS,
-                    inputTableName: extractData.results.railTableName])
+                    inputTableName: extractData.results.railTableName,
+                    epsg: epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_rails_${formatedPlaceName}.geojson")
 
 
@@ -129,7 +141,8 @@ class FormattingForAbstractModelTests {
             format = PrepareData.FormattingForAbstractModel.formatVegetationLayer()
             format.execute([
                     datasource : h2GIS,
-                    inputTableName: extractData.results.vegetationTableName])
+                    inputTableName: extractData.results.vegetationTableName,
+                    epsg: epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_vegetation_${formatedPlaceName}.geojson")
 
 
@@ -137,7 +150,8 @@ class FormattingForAbstractModelTests {
             format = PrepareData.FormattingForAbstractModel.formatHydroLayer()
             format.execute([
                     datasource : h2GIS,
-                    inputTableName: extractData.results.hydroTableName])
+                    inputTableName: extractData.results.hydroTableName,
+                    epsg: epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_hydro_${formatedPlaceName}.geojson")
 
         }else {
