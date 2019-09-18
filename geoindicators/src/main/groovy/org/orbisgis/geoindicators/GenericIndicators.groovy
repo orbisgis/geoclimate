@@ -130,7 +130,7 @@ IProcess weightedAggregatedStatistics() {
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
-            def weighted_mean = "weighted_mean" + uuid()
+            def weighted_mean = "weighted_mean" + uuid
 
             // The weighted mean is calculated in all cases since it is useful for the STD calculation
             def weightedMeanQuery = "CREATE INDEX IF NOT EXISTS id_l ON $inputLowerScaleTableName($inputIdUp); " +

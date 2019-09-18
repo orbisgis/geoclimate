@@ -60,11 +60,6 @@ class ChainProcessMainTest {
         def countBlocks = datasource.firstRow("select count(*) as count from ${relationBlocks}".toString())
         assertEquals(countBlocks.count,maxBlocks.max)
 
-        datasource.eachRow("select count(distinct id_block) as count_block , count(id_build) as count_building from ${relationBuildings} where id_rsu = 42".toString()) {
-            row ->
-                assertEquals(7,row.count_block )
-                assertEquals(14,row.count_building)
-        }
 
         def maxRSUBlocks = datasource.firstRow("select count(distinct id_block) as max from ${relationBuildings} where id_rsu is not null".toString())
         def countRSU = datasource.firstRow("select count(*) as count from ${relationBlocks} where id_rsu is not null".toString())

@@ -645,7 +645,7 @@ def computeRSUIndicators() {
 
             // Merge all in one table
             // To avoid duplicate the_geom in the join table, remove it from the intermediate table
-            datasource("ALTER TABLE $intermediateJoinTable DROP COLUMN the_geom;")
+            datasource.execute("ALTER TABLE $intermediateJoinTable DROP COLUMN the_geom;")
             def rsuTableJoin = Geoindicators.DataUtils.joinTables()
             if (!rsuTableJoin([inputTableNamesWithId: finalTablesToJoin,
                                outputTableName      : prefixName,

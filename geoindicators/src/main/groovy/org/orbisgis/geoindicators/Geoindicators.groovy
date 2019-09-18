@@ -22,7 +22,11 @@ abstract class Geoindicators extends GroovyProcessFactory {
     public static TypologyClassification = new TypologyClassification()
 
     //Utility methods
-    static def uuid = { UUID.randomUUID().toString().replaceAll("-", "_") }
+    static def getUuid(){
+        UUID.randomUUID().toString().replaceAll("-", "_") }
+
+    static def uuid = {getUuid()}
+
     static def info = { obj -> logger.info(obj.toString()) }
     static def warn = { obj -> logger.warn(obj.toString()) }
     static def error = { obj -> logger.error(obj.toString()) }
