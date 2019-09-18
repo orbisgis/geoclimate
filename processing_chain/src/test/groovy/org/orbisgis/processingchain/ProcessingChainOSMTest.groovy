@@ -39,7 +39,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
         if (prepareRSUData([datasource        : h2GIS,
                              zoneTable         : process.getResults().outputZone,
                              roadTable         : process.getResults().outputRoad,
-                             railTable         : null,
+                             railTable         : process.getResults().outputRail,
                              vegetationTable   : process.getResults().outputVeget,
                              hydrographicTable : process.getResults().outputHydro,
                              prefixName        : prefixName])) {

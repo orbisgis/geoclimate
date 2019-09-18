@@ -211,12 +211,12 @@ IProcess prepareRSUData() {
 
                 }
                 info "RSU created..."
-                [outputTableName: outputTableName]
 
             } else {
                 error "Cannot compute the RSU. The input zone table must have one row."
+                outputTableName=null
             }
-            [outputTableName: null]
+            [outputTableName: outputTableName]
         }
 
     })
