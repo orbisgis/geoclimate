@@ -26,7 +26,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
         dirFile.delete()
         dirFile.mkdir()
         def h2GIS = H2GIS.open(dirFile.absolutePath+File.separator+'osm_chain_db;AUTO_SERVER=TRUE')
-        def placeName = "fontainebleau"
+        def placeName = "Cliscouet, vannes"
         IProcess process = ProcessingChain.PrepareOSM.buildGeoclimateLayers()
 
         process.execute([datasource: h2GIS, placeName :placeName, distance: 0])
@@ -92,7 +92,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
         datasource.load(urlZone, zoneTableName)
 
         //Run tests
-        osmGeoIndicators(directory, datasource, zoneTableName, buildingTableName,roadTableName,railTableName,vegetationTableName,
+        osmGeoIndicators(directory, datasource, zoneTableName, buildingTableName,roadTableName,null,vegetationTableName,
                 hydrographicTableName,saveResults, indicatorUse)
 
     }

@@ -222,7 +222,7 @@ IProcess formatBuildingLayer() {
 
                 outputTableName = "INPUT_BUILDING_${UUID.randomUUID().toString().replaceAll("-", "_")}"
                 datasource.execute """ DROP TABLE if exists ${outputTableName};
-                        CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_SOURCE VARCHAR, HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT,
+                        CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_build serial, ID_SOURCE VARCHAR, HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT,
                               NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER);"""
                 datasource.withBatch(1000) { stmt ->
                     datasource.eachRow(queryMapper) { row ->
@@ -252,7 +252,7 @@ IProcess formatBuildingLayer() {
                         def zIndex = getZIndex(row.'layer')
 
                         stmt.addBatch """insert into ${outputTableName} values(ST_GEOMFROMTEXT('${row.the_geom}',$epsg),
-                    '${row.id}',${formatedHeight.heightWall},${formatedHeight.heightRoof},${formatedHeight.nbLevels},'${
+                    null, '${row.id}',${formatedHeight.heightWall},${formatedHeight.heightRoof},${formatedHeight.nbLevels},'${
                             type
                         }','${use}',${zIndex})""".toString()
                     }
@@ -390,7 +390,7 @@ IProcess formatBuildingLayer() {
                         queryMapper += " FROM $inputTableName"
 
                         datasource.execute """drop table if exists $outputTableName;
-                            CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR, 
+                            CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_road serial, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR, 
                             SURFACE VARCHAR, SIDEWALK VARCHAR, ZINDEX INTEGER);"""
                         datasource.withBatch(1000) { stmt ->
                             datasource.eachRow(queryMapper) { row ->
@@ -409,7 +409,7 @@ IProcess formatBuildingLayer() {
                                 def zIndex = getZIndex(row.'layer')
                                 stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${
                                     row.the_geom
-                                }',$epsg),'${row.id}', ${width},'${type}','${surface}','${sidewalk}',${
+                                }',$epsg), null, '${row.id}', ${width},'${type}','${surface}','${sidewalk}',${
                                     zIndex
                                 })""".toString()
                             }
@@ -461,7 +461,7 @@ IProcess formatBuildingLayer() {
                 queryMapper += " FROM $inputTableName"
 
                 datasource.execute """ drop table if exists $outputTableName;
-                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);"""
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_rail serial, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);"""
 
                 datasource.withBatch(1000) { stmt ->
                     datasource.eachRow(queryMapper) { row ->
@@ -476,7 +476,7 @@ IProcess formatBuildingLayer() {
                             }
                         }
                         stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${row.the_geom}',$epsg),
-                    '${row.id}','${type}',${zIndex})"""
+                    null, '${row.id}','${type}',${zIndex})"""
 
                     }
                 }
@@ -505,7 +505,7 @@ IProcess formatVegetationLayer() {
                 outputTableName = "INPUT_VEGET_${UUID.randomUUID().toString().replaceAll("-", "_")}"
                 if(inputTableName==null) {
                     datasource.execute """ drop table if exists $outputTableName;
-                        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4));"""
+                        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_veget serial, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4));"""
                 }
                 else{
                 def mappingType = ["farmland":["landuse":["farmland"]],
@@ -550,7 +550,7 @@ IProcess formatVegetationLayer() {
                 queryMapper += " FROM $inputTableName"
 
                     datasource.execute """ drop table if exists $outputTableName;
-                        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4));"""
+                        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_veget serial, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4));"""
 
 
                     datasource.withBatch(1000) { stmt ->
@@ -559,7 +559,7 @@ IProcess formatVegetationLayer() {
 
                         def height_class = typeAndVegClass[type]
 
-                        stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${row.the_geom}',$epsg),'${row.id}','${type}', '${height_class}')"""
+                        stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${row.the_geom}',$epsg), null, '${row.id}','${type}', '${height_class}')"""
                         
                     }
                 }
@@ -588,15 +588,15 @@ IProcess formatHydroLayer() {
             outputTableName = "INPUT_HYDRO_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             if(inputTableName==null){
                 datasource.execute """Drop table if exists $outputTableName;
-                        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_SOURCE VARCHAR);"""
+                        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_hydro serial, ID_SOURCE VARCHAR);"""
             }
             else {
             datasource.execute """Drop table if exists $outputTableName;
-                        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_SOURCE VARCHAR);"""
+                        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_hydro serial, ID_SOURCE VARCHAR);"""
 
             datasource.withBatch(1000) { stmt ->
                 datasource.getTable(inputTableName).eachRow { row ->
-                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${row.the_geom}',$epsg),'${row.id}')"
+                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${row.the_geom}',$epsg), null, '${row.id}')"
                 }
             }
             }
