@@ -46,7 +46,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
         }
     }
 
-    @Test
+    //@Test
     void osmGeoIndicatorsFromTestFiles() {
         String urlBuilding = new File(getClass().getResource("BUILDING.geojson").toURI()).absolutePath
         String urlRoad= new File(getClass().getResource("ROAD.geojson").toURI()).absolutePath
@@ -85,7 +85,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
 
     }
 
-    @Test
+    //@Test
     void osmGeoIndicatorsFromApi() {
         String directory ="./target/osm_processchain_full"
 
@@ -135,7 +135,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
 
     }
 
-    @Test
+    //@Test
     void osmLczFromTestFiles() {
         String urlBuilding = new File(getClass().getResource("BUILDING.geojson").toURI()).absolutePath
         String urlRoad= new File(getClass().getResource("ROAD.geojson").toURI()).absolutePath
