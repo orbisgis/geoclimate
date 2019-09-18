@@ -131,7 +131,7 @@ IProcess prepareRSUData() {
                             "$vegetation_unified AS a, $zoneTable AS b WHERE a.the_geom && b.the_geom " +
                             "AND ST_INTERSECTS(a.the_geom, b.the_geom)"
 
-                    queryCreateOutputTable+=[vegetation_tmp:"(SELECT THE_GEOM FROM $vegetation_tmp)"]
+                    queryCreateOutputTable+=[vegetation_tmp:"(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $vegetation_tmp)"]
                 }
 
                 if(hydrographicTable) {
@@ -172,7 +172,7 @@ IProcess prepareRSUData() {
                             " AS THE_GEOM FROM $hydrographic_unified AS a, $zoneTable AS b " +
                             "WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)"
 
-                    queryCreateOutputTable+=[hydrographic_tmp:"(SELECT THE_GEOM FROM $hydrographic_tmp)"]
+                    queryCreateOutputTable+=[hydrographic_tmp:"(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $hydrographic_tmp)"]
                 }
 
                 if(roadTable) {
@@ -184,7 +184,7 @@ IProcess prepareRSUData() {
                     datasource.execute "DROP TABLE IF EXISTS $road_tmp"
                     datasource.execute "CREATE TABLE $road_tmp AS SELECT the_geom AS THE_GEOM FROM $roadTable " +
                             "where zindex=0"
-                    queryCreateOutputTable+=[road_tmp:"(SELECT THE_GEOM FROM $road_tmp)"]
+                    queryCreateOutputTable+=[road_tmp:"(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $road_tmp)"]
                 }
 
                 if(railTable) {
@@ -195,7 +195,7 @@ IProcess prepareRSUData() {
                     datasource.execute "DROP TABLE IF EXISTS $rail_tmp"
                     datasource.execute "CREATE TABLE $rail_tmp AS SELECT the_geom AS THE_GEOM FROM $railTable " +
                             "where zindex=0"
-                    queryCreateOutputTable+=[rail_tmp:"(SELECT THE_GEOM FROM $rail_tmp)"]
+                    queryCreateOutputTable+=[rail_tmp:"(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $rail_tmp)"]
                 }
 
                 // The input table that contains the geometries to be transformed as RSU
