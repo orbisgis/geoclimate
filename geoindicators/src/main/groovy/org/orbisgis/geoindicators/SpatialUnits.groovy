@@ -43,7 +43,7 @@ IProcess createRSU(){
             }
             else{
             datasource.execute """DROP TABLE IF EXISTS $outputTableName;
-            CREATE TABLE $outputTableName as  select  EXPLOD_ID as $COLUMN_ID_NAME, st_setsrid(the_geom, $epsg) 
+            CREATE TABLE $outputTableName as  select  EXPLOD_ID as $COLUMN_ID_NAME, st_setsrid(the_geom, $epsg) as the_geom 
                      from st_explode ('(select st_polygonize(st_union(
                     st_precisionreducer(st_node(st_accum(st_force2d(the_geom))), 3))) as the_geom from $inputTableName)')"""
             }
@@ -97,7 +97,7 @@ IProcess prepareRSUData() {
                 if(vegetationTable) {
                     info "Preparing vegetation..."
 
-                    def vegetation_indice = vegetationTable + "_" + uuid()
+                    def vegetation_indice = vegetationTable + "_" + uuid
 
                     datasource.execute "DROP TABLE IF EXISTS $vegetation_indice"
                     datasource.execute "CREATE TABLE $vegetation_indice(THE_GEOM geometry, ID serial," +
@@ -110,7 +110,7 @@ IProcess prepareRSUData() {
                             " FROM $vegetation_indice a, $vegetation_indice b WHERE a.THE_GEOM && b.THE_GEOM AND " +
                             "ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM) AND a.ID<>b.ID)"
 
-                    def vegetation_unified = "vegetation_unified" + uuid()
+                    def vegetation_unified = "vegetation_unified" + uuid
 
                     datasource.execute "DROP TABLE IF EXISTS $vegetation_unified"
                     datasource.execute "CREATE TABLE $vegetation_unified AS " +
@@ -124,7 +124,7 @@ IProcess prepareRSUData() {
                     datasource.execute "CREATE  INDEX IF NOT EXISTS veg_unified_idx ON  $vegetation_unified(THE_GEOM)" +
                             " using rtree"
 
-                    def vegetation_tmp = "vegetation_tmp" + uuid()
+                    def vegetation_tmp = "vegetation_tmp" + uuid
 
                     datasource.execute "DROP TABLE IF EXISTS $vegetation_tmp"
                     datasource.execute "CREATE TABLE $vegetation_tmp AS SELECT a.the_geom AS THE_GEOM FROM " +
@@ -137,7 +137,7 @@ IProcess prepareRSUData() {
                 if(hydrographicTable) {
                     //Extract water
                     info "Preparing hydrographic..."
-                    String hydrographic_indice = hydrographicTable + uuid()
+                    String hydrographic_indice = hydrographicTable + uuid
                     datasource.execute "DROP TABLE IF EXISTS $hydrographic_indice"
                     datasource.execute "CREATE TABLE $hydrographic_indice(THE_GEOM geometry, ID serial," +
                             " CONTACT integer) AS (SELECT st_makevalid(THE_GEOM) as the_geom, null , 0 FROM " +
@@ -152,7 +152,7 @@ IProcess prepareRSUData() {
                             " AND ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM) AND a.ID<>b.ID)"
                     datasource.execute "CREATE INDEX ON $hydrographic_indice(contact)"
 
-                    def hydrographic_unified = "hydrographic_unified" + uuid()
+                    def hydrographic_unified = "hydrographic_unified" + uuid
 
                     datasource.execute "DROP TABLE IF EXISTS $hydrographic_unified"
                     datasource.execute "CREATE TABLE $hydrographic_unified AS (SELECT ST_SETSRID(the_geom, $epsg) as the_geom FROM " +
@@ -165,7 +165,7 @@ IProcess prepareRSUData() {
 
                     datasource.execute "CREATE INDEX IF NOT EXISTS hydro_unified_idx ON $hydrographic_unified(THE_GEOM)"
 
-                    def hydrographic_tmp = "hydrographic_tmp" + uuid()
+                    def hydrographic_tmp = "hydrographic_tmp" + uuid
 
                     datasource.execute "DROP TABLE IF EXISTS $hydrographic_tmp"
                     datasource.execute "CREATE TABLE $hydrographic_tmp AS SELECT a.the_geom" +
@@ -241,7 +241,7 @@ IProcess createBlocks(){
 
             info "Building spatial clusters..."
 
-            String graphTable = "spatial_clusters"+ uuid()
+            String graphTable = "spatial_clusters"+ uuid
 
             datasource.execute """drop table if exists $graphTable; create table $graphTable 
              (EDGE_ID SERIAL, START_NODE INT, END_NODE INT) as select null, a.id_build as START_NODE, b.id_build as END_NODE 
@@ -259,12 +259,12 @@ IProcess createBlocks(){
 
             //Unify buildings that share a boundary
             info "Merging spatial clusters..."
-            String subGraphBlocks =  "subgraphblocks"+ uuid()
+            String subGraphBlocks =  "subgraphblocks"+ uuid
             datasource.execute """
             CREATE INDEX ON $subGraphTableNodes(NODE_ID);
             DROP TABLE IF EXISTS $subGraphBlocks;
             CREATE TABLE $subGraphBlocks
-            AS SELECT ST_UNION(ST_ACCUM(A.THE_GEOM)) AS THE_GEOM
+            AS SELECT ST_UNION(ST_ACCUM(ST_MAKEVALID(A.THE_GEOM))) AS THE_GEOM
             FROM $inputTableName A, $subGraphTableNodes B
             WHERE A.id_build=B.NODE_ID GROUP BY B.CONNECTED_COMPONENT;"""
 
@@ -310,13 +310,14 @@ IProcess createScalesRelations(){
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + inputLowerScaleTableName + "_corr"
 
-            datasource.execute "DROP TABLE IF EXISTS $outputTableName; CREATE INDEX IF NOT EXISTS ids_l " +
-                    "ON $inputLowerScaleTableName($GEOMETRIC_COLUMN_LOW) USING RTREE; CREATE INDEX IF NOT EXISTS " +
-                    "ids_u ON $inputUpperScaleTableName($GEOMETRIC_COLUMN_UP) USING RTREE"
+            datasource.execute """DROP TABLE IF EXISTS $outputTableName; 
+                    CREATE INDEX IF NOT EXISTS ids_l ON $inputLowerScaleTableName($GEOMETRIC_COLUMN_LOW) USING RTREE; 
+                    CREATE INDEX IF NOT EXISTS ids_u ON $inputUpperScaleTableName($GEOMETRIC_COLUMN_UP) USING RTREE"""
+
             datasource.execute "CREATE TABLE $outputTableName AS SELECT a.*, (SELECT b.$idColumnUp " +
-                    "FROM $inputUpperScaleTableName b WHERE st_force2d(a.$GEOMETRIC_COLUMN_LOW) && st_force2d(b.$GEOMETRIC_COLUMN_UP) AND " +
+                    "FROM $inputUpperScaleTableName b WHERE a.$GEOMETRIC_COLUMN_LOW && b.$GEOMETRIC_COLUMN_UP AND " +
                     "ST_INTERSECTS(st_force2d(a.$GEOMETRIC_COLUMN_LOW), st_force2d(b.$GEOMETRIC_COLUMN_UP)) ORDER BY " +
-                    "ST_AREA(ST_INTERSECTION(st_force2d(a.$GEOMETRIC_COLUMN_LOW), st_force2d(b.$GEOMETRIC_COLUMN_UP))) " +
+                    "ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$GEOMETRIC_COLUMN_LOW)), st_force2d(st_makevalid(b.$GEOMETRIC_COLUMN_UP)))) " +
                     "DESC LIMIT 1) AS $idColumnUp FROM $inputLowerScaleTableName a"
             info "The relations between scales have been created"
 

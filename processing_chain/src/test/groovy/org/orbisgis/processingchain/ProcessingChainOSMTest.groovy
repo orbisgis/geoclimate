@@ -58,7 +58,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
         }
     }
 
-    //@Test
+    @Test
     void osmGeoIndicatorsFromTestFiles() {
         String urlBuilding = new File(getClass().getResource("BUILDING.geojson").toURI()).absolutePath
         String urlRoad= new File(getClass().getResource("ROAD.geojson").toURI()).absolutePath
@@ -131,7 +131,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
             IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
             saveTables.execute( [inputTableNames: [buildingTableName,roadTableName,railTableName,hydrographicTableName,
                                                    vegetationTableName,zoneTableName]
-                                 , directory: directory, datasource: datasource])
+                                 , directory: dirFile.absolutePath, datasource: datasource])
         }
 
         String indicatorUse = ["TEB", "URBAN_TYPOLOGY", "LCZ"]
@@ -142,7 +142,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
                 hydrographicTableName, saveResults )
 
         //Run tests
-        osmGeoIndicators(directory, datasource, zoneTableName, buildingTableName,roadTableName,railTableName,vegetationTableName,
+        osmGeoIndicators(dirFile.absolutePath, datasource, zoneTableName, buildingTableName,roadTableName,railTableName,vegetationTableName,
                 hydrographicTableName,saveResults, indicatorUse)
 
     }

@@ -142,18 +142,18 @@ def neighborsProperties() {
                 switch (operation) {
                     case OP_CONTIGUITY:
                         query += "sum(least(a.$HEIGHT_WALL, b.$HEIGHT_WALL)*" +
-                                "st_length(ST_INTERSECTION(a.$GEOMETRIC_FIELD,b.$GEOMETRIC_FIELD)))/" +
+                                "st_length(ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_FIELD),ST_MAKEVALID(b.$GEOMETRIC_FIELD))))/" +
                                 "((ST_PERIMETER(a.$GEOMETRIC_FIELD)+" +
                                 "ST_PERIMETER(ST_HOLES(a.$GEOMETRIC_FIELD)))*a.$HEIGHT_WALL)" +
                                 " AS $operation,"
                         break
                     case OP_COMMON_WALL_FRACTION:
-                        query += "sum(ST_LENGTH(ST_INTERSECTION(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD)))/" +
+                        query += "sum(ST_LENGTH(ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_FIELD), ST_MAKEVALID(b.$GEOMETRIC_FIELD))))/" +
                                 "(ST_PERIMETER(a.$GEOMETRIC_FIELD)+ST_PERIMETER(ST_HOLES(a.$GEOMETRIC_FIELD))) " +
                                 "AS $operation,"
                         break
                     case OP_NUMBER_BUILDING_NEIGHBOR:
-                        query += "COUNT(ST_INTERSECTION(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD))" +
+                        query += "COUNT(ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_FIELD),ST_MAKEVALID( b.$GEOMETRIC_FIELD)))" +
                                 " AS $operation,"
                         break
                 }

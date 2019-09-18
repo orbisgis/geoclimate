@@ -336,7 +336,7 @@ IProcess projectedFacadeAreaDistribution() {
                 // Common party walls between buildings are calculated
                 datasource.execute "CREATE TABLE $buildingIntersection(pk SERIAL, the_geom GEOMETRY, " +
                         "ID_build_a INTEGER, ID_build_b INTEGER, z_max DOUBLE, z_min DOUBLE) AS " +
-                        "(SELECT NULL, ST_INTERSECTION(a.$GEOMETRIC_COLUMN_BU, b.$GEOMETRIC_COLUMN_BU), " +
+                        "(SELECT NULL, ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_COLUMN_BU), ST_MAKEVALID(b.$GEOMETRIC_COLUMN_BU)), " +
                         "a.$ID_COLUMN_BU, b.$ID_COLUMN_BU, GREATEST(a.$HEIGHT_WALL,b.$HEIGHT_WALL), " +
                         "LEAST(a.$HEIGHT_WALL,b.$HEIGHT_WALL) FROM $buildingTable AS a, $buildingTable AS b " +
                         "WHERE a.$GEOMETRIC_COLUMN_BU && b.$GEOMETRIC_COLUMN_BU AND " +
@@ -403,7 +403,7 @@ IProcess projectedFacadeAreaDistribution() {
                 // Intersections between free facades and rsu geometries are calculated
                 datasource.execute "CREATE SPATIAL INDEX IF NOT EXISTS ids_bufre ON $buildingFreeExpl(the_geom); " +
                         "CREATE TABLE $rsuInter(id_rsu INTEGER, the_geom GEOMETRY, $namesAndType) AS " +
-                        "(SELECT a.$ID_COLUMN_RSU, ST_INTERSECTION(a.$GEOMETRIC_COLUMN_RSU, b.the_geom), " +
+                        "(SELECT a.$ID_COLUMN_RSU, ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_COLUMN_RSU), ST_MAKEVALID(b.the_geom)), " +
                         "${onlyNamesB[0..-2]} FROM $rsuTable a, $buildingFreeExpl b " +
                         "WHERE a.$GEOMETRIC_COLUMN_RSU && b.the_geom " +
                         "AND ST_INTERSECTS(a.$GEOMETRIC_COLUMN_RSU, b.the_geom))"
