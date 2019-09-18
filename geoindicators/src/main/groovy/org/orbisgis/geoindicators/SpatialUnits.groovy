@@ -176,26 +176,13 @@ IProcess prepareRSUData() {
                 }
 
                 if(roadTable) {
-
                     info "Preparing road..."
-
-                    def road_tmp = "road_tmp" + uuid()
-
-                    datasource.execute "DROP TABLE IF EXISTS $road_tmp"
-                    datasource.execute "CREATE TABLE $road_tmp AS SELECT the_geom AS THE_GEOM FROM $roadTable " +
-                            "where zindex=0"
-                    queryCreateOutputTable+=[road_tmp:"(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $road_tmp)"]
+                    queryCreateOutputTable+=[road_tmp:"(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $roadTable where zindex=0)"]
                 }
 
                 if(railTable) {
                     info "Preparing rail..."
-
-                    def rail_tmp = "rail_tmp" + uuid()
-
-                    datasource.execute "DROP TABLE IF EXISTS $rail_tmp"
-                    datasource.execute "CREATE TABLE $rail_tmp AS SELECT the_geom AS THE_GEOM FROM $railTable " +
-                            "where zindex=0"
-                    queryCreateOutputTable+=[rail_tmp:"(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $rail_tmp)"]
+                    queryCreateOutputTable+=[rail_tmp:"(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $railTable where zindex=0)"]
                 }
 
                 // The input table that contains the geometries to be transformed as RSU
