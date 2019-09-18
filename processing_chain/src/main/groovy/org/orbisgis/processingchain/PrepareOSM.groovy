@@ -22,7 +22,7 @@ import org.orbisgis.processmanagerapi.IProcess
  * @param distance The integer value to expand the envelope of zone
  * @return
  */
-def prepareOSM() {
+IProcess buildGeoclimateLayers() {
     return create({
         title "Extract and transform OSM data to the Geoclimate model"
         inputs datasource: JdbcDataSource,
@@ -31,7 +31,8 @@ def prepareOSM() {
                 hLevMin: 3,
                 hLevMax: 15,
                 hThresholdLev2: 10
-        outputs outputBuilding: String, outputRoad: String, outputRail: String, outputHydro: String, outputVeget: String, outputZone: String
+        outputs outputBuilding: String, outputRoad: String, outputRail: String,
+                outputHydro: String, outputVeget: String, outputZone: String, outputZoneEnvelope: String
         run { datasource, placeName, distance, hLevMin, hLevMax, hThresholdLev2 ->
 
             if (datasource == null) {
@@ -41,10 +42,8 @@ def prepareOSM() {
 
             info "Building OSM GIS layers"
             IProcess process = PrepareData.OSMGISLayers.extractAndCreateGISLayers()
-            if (process.execute([
-                    datasource: datasource,
-                    placeName : placeName])) {
-
+            if (process.execute([datasource: datasource, placeName : placeName,
+                    distance: distance])) {
 
                 info "OSM GIS layers created"
 
@@ -57,50 +56,52 @@ def prepareOSM() {
                 def hydroTableName = res.hydroTableName
                 def zoneTableName = res.zoneTableName
                 def zoneEnvelopeTableName = res.zoneEnvelopeTableName
+                def epsg = res.epsg
+                if(zoneTableName!=null) {
+                    info "Formating OSM GIS layers"
+                        IProcess format = PrepareData.FormattingForAbstractModel.formatBuildingLayer()
+                        format.execute([
+                                datasource    : datasource,
+                                inputTableName: buildingTableName,
+                                epsg:epsg])
+                        buildingTableName = format.results.outputTableName
 
-                info "Formating OSM GIS layers"
-                if (buildingTableName != null) {
-                    IProcess format = PrepareData.FormattingForAbstractModel.formatBuildingLayer()
-                    format.execute([
-                            datasource    : datasource,
-                            inputTableName: buildingTableName])
+                        format = PrepareData.FormattingForAbstractModel.formatRoadLayer()
+                        format.execute([
+                                datasource    : datasource,
+                                inputTableName: roadTableName,
+                                epsg:epsg])
+                        roadTableName = format.results.outputTableName
+
+
+                        format = PrepareData.FormattingForAbstractModel.formatRailsLayer()
+                        format.execute([
+                                datasource    : datasource,
+                                inputTableName: railTableName,
+                                epsg:epsg])
+                        railTableName = format.results.outputTableName
+
+                        format = PrepareData.FormattingForAbstractModel.formatVegetationLayer()
+                        format.execute([
+                                datasource    : datasource,
+                                inputTableName: vegetationTableName,
+                                epsg:epsg])
+                        vegetationTableName = format.results.outputTableName
+
+                        format = PrepareData.FormattingForAbstractModel.formatHydroLayer()
+                        format.execute([
+                                datasource    : datasource,
+                                inputTableName: hydroTableName,
+                                epsg:epsg])
+                        hydroTableName = format.results.outputTableName
+
+                        info "OSM GIS layers formated"
+
                 }
-                if (roadTableName != null) {
-                    IProcess format = PrepareData.FormattingForAbstractModel.formatRoadLayer()
-                    format.execute([
-                            datasource    : datasource,
-                            inputTableName: roadTableName])
-                }
 
-                if (railTableName != null) {
-                    IProcess format = PrepareData.FormattingForAbstractModel.formatRailsLayer()
-                    format.execute([
-                            datasource    : datasource,
-                            inputTableName: railTableName])
-                }
-
-                if (vegetationTableName != null) {
-                    IProcess format = PrepareData.FormattingForAbstractModel.formatVegetationLayer()
-                    format.execute([
-                            datasource    : datasource,
-                            inputTableName: vegetationTableName])
-                }
-
-                if (hydroTableName != null) {
-                    IProcess format = PrepareData.FormattingForAbstractModel.formatHydroLayer()
-                    format.execute([
-                            datasource    : datasource,
-                            inputTableName: hydroTableName])
-                }
-
-                info "OSM GIS layers formated"
-
-
-                [outputBuilding: finalBuildings, outputRoad: finalRoads,
-                 outputRail    : finalRails, outputHydro: finalHydro, outputVeget: finalVeget, outputZone: finalZone,
-                 outputStats   : [finalOutputBuildingStatZone, finalOutputBuildingStatZoneBuff, finalOutputRoadStatZone,
-                                  finalOutputRoadStatZoneBuff, finalOutputRailStatZone, finalOutputHydroStatZone, finalOutputHydroStatZoneExt,
-                                  finalOutputVegetStatZone, finalOutputVegetStatZoneExt]]
+                [outputBuilding: buildingTableName, outputRoad: roadTableName,
+                 outputRail    : railTableName, outputHydro: hydroTableName, outputVeget: vegetationTableName,
+                 outputZone: zoneTableName,outputZoneEnvelope:zoneEnvelopeTableName]
 
             }
         }

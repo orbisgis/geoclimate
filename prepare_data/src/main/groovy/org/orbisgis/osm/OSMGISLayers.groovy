@@ -21,10 +21,11 @@ import static org.orbisgis.osm.OSMElement.WAY
   * This process is used to create the GIS layers using the Overpass API
   * @param datasource A connexion to a DB to load the OSM file
   * @param placeName the name of the place to extract
-  *  @param epsg code to reproject the GIS layers, default is -1
-  *  @param distance to expand the envelope of the query box. Default is 0
+  * @param epsg code to reproject the GIS layers, default is -1
+  * @param distance to expand the envelope of the query box. Default is 0
   * @return The name of the resulting GIS tables : buildingTableName, roadTableName,
-  *  railTableName, vegetationTableName, hydroTableName, zoneTableName and zoneEnvelopeTableName
+  * railTableName, vegetationTableName, hydroTableName, zoneTableName, zoneEnvelopeTableName
+ *  and the epsg of the processed zone
  */
 IProcess extractAndCreateGISLayers(){
     return create({
@@ -32,54 +33,64 @@ IProcess extractAndCreateGISLayers(){
         inputs datasource: JdbcDataSource, placeName: String, epsg:-1,distance:0
         outputs buildingTableName: String, roadTableName: String, railTableName: String,
                 vegetationTableName: String,hydroTableName: String, zoneTableName: String,
-                zoneEnvelopeTableName: String
-        run {datasource, placeName, epsg,  distance ->
+                zoneEnvelopeTableName: String, epsg: int
+        run { datasource, placeName, epsg, distance ->
+            def outputZoneTable = "ZONE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+            def outputZoneEnvelopeTable = "ZONE_ENVELOPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
 
-            if(datasource==null){
+            if (datasource == null) {
                 logger.error('The datasource cannot be null')
                 return null
             }
             Geometry geom = OSMHelper.Utilities.getAreaFromPlace(placeName);
 
-            if(geom==null){
+            if (geom == null) {
                 logger.error("Cannot find an area from the place name ${placeName}")
-                return null
-            }
-            /**
-             * Extract the OSM file from the envelope of the geometry
-             */
-            def geomAndEnv = buildGeometryAndZone(geom, epsg, distance, datasource)
-            epsg =  geomAndEnv.geom.getSRID()
+                [buildingTableName    : null,
+                 roadTableName        : null,
+                 railTableName        : null,
+                 vegetationTableName  : null,
+                 hydroTableName       : null,
+                 zoneTableName        : null,
+                 zoneEnvelopeTableName: null,
+                 epsg: epsg]
+            } else {
+                /**
+                 * Extract the OSM file from the envelope of the geometry
+                 */
+                def geomAndEnv = buildGeometryAndZone(geom, epsg, distance, datasource)
+                epsg = geomAndEnv.geom.getSRID()
 
-            def outputZoneTable = "ZONE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-            datasource.execute """create table ${outputZoneTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
-            INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT('${geomAndEnv.geom.toString()}', $epsg), '$placeName');"""
+                datasource.execute """create table ${outputZoneTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
+            INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT('${
+                    geomAndEnv.geom.toString()
+                }', $epsg), '$placeName');"""
 
+                datasource.execute """create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
+            INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${
+                    geomAndEnv.filterArea.toString()
+                }',$epsg), '$placeName');"""
 
-            def outputZoneEnvelopeTable = "ZONE_ENVELOPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-            datasource.execute """create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
-            INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${geomAndEnv.filterArea.toString()}',$epsg), '$placeName');"""
-
-            def  query = OSMHelper.Utilities.buildOSMQuery(geomAndEnv.filterArea, [], NODE, WAY, RELATION)
+                def query = OSMHelper.Utilities.buildOSMQuery(geomAndEnv.filterArea, [], NODE, WAY, RELATION)
                 def extract = OSMHelper.Loader.extract()
                 if (extract.execute(overpassQuery: query)) {
                     IProcess createGISLayerProcess = createGISLayers()
-                    if (createGISLayerProcess.execute(datasource: datasource, osmFilePath: extract.results.outputFilePath, epsg:epsg)) {
+                    if (createGISLayerProcess.execute(datasource: datasource, osmFilePath: extract.results.outputFilePath, epsg: epsg)) {
 
-                        [buildingTableName:  createGISLayerProcess.getResults().buildingTableName,
-                         roadTableName: createGISLayerProcess.getResults().roadTableName,
-                         railTableName: createGISLayerProcess.getResults().railTableName,
+                        [buildingTableName  : createGISLayerProcess.getResults().buildingTableName,
+                         roadTableName      : createGISLayerProcess.getResults().roadTableName,
+                         railTableName      : createGISLayerProcess.getResults().railTableName,
                          vegetationTableName: createGISLayerProcess.getResults().vegetationTableName,
-                         hydroTableName: createGISLayerProcess.getResults().hydroTableName,
-                         zoneTableName :outputZoneTable, zoneEnvelopeTableName :outputZoneEnvelopeTable ]
-                    }
-                    else{
+                         hydroTableName     : createGISLayerProcess.getResults().hydroTableName,
+                         zoneTableName      : outputZoneTable, zoneEnvelopeTableName: outputZoneEnvelopeTable,
+                         epsg: epsg]
+                    } else {
                         logger.error "Cannot load the OSM file ${extract.results.outputFilePath}"
                     }
-                }
-                else{
+                } else {
                     logger.error "Cannot execute the overpass query $query"
                 }
+            }
         }
     }
     )

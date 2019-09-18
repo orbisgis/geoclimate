@@ -20,233 +20,242 @@ import org.orbisgis.processmanagerapi.IProcess
 IProcess formatBuildingLayer() {
     return create({
         title "Transform OSM buildings table into a table that matches the constraints of the GeoClimate input model"
-        inputs datasource : JdbcDataSource , inputTableName:String, h_lev_min:3, h_lev_max: 15, hThresholdLev2:10
+        inputs datasource : JdbcDataSource , inputTableName:String, epsg: int, h_lev_min:3, h_lev_max: 15, hThresholdLev2:10
         outputs outputTableName: String
-        run { JdbcDataSource datasource, inputTableName, h_lev_min, h_lev_max, hThresholdLev2 ->
-            logger.info('Formating building layer')
-            def queryMapper = "SELECT "
-            def columnToMap = ['height', 'building:height', 'roof:height', 'building:roof:height',
-                               'building:levels', 'roof:levels', 'building:roof:levels', 'building',
-                               'amenity', 'layer', 'aeroway', 'historic', 'leisure', 'monument',
-                               'place_of_worship', 'military', 'railway', 'public_transport',
-                               'barrier', 'government', 'historic:building', 'grandstand',
-                               'house', 'shop', 'industrial', 'man_made', 'residential',
-                               'apartments', 'ruins', 'agricultural', 'barn', 'healthcare',
-                               'education', 'restaurant', 'sustenance', 'office']
-
-            def mappingTypeAndUse = [
-                    "terminal"                       : ["aeroway" : ["terminal", "airport_terminal"],
-                                                        "amenity" : ["terminal", "airport_terminal"],
-                                                        "building": ["terminal", "airport_terminal"]
-                    ],
-                    "monument"                       : ["building": ["monument"],
-                                                        "historic": ["monument"],
-                                                        "leisure" : ["monument"],
-                                                        "monument": ["yes"]
-                    ],
-                    "religious"                      : ["building"        : ["religious", "abbey", "cathedral", "chapel", "church", "mosque", "musalla", "temple", "synagogue", "shrine", "place_of_worship", "wayside_shrine"],
-                                                        "amenity"         : ["religious", "abbey", "cathedral", "chapel", "church", "mosque", "musalla", "temple", "synagogue", "shrine", "place_of_worship", "wayside_shrine"],
-                                                        "place_of_worship": ["! no", "! chapel", "! church"]
-                    ],
-                    "sport"                          : ["building": ["swimming_pool", "fitness_centre", "horse_riding", "ice_rink", "pitch", "stadium", "track"],
-                                                        "leisure" : ["swimming_pool", "fitness_centre", "horse_riding", "ice_rink", "pitch", "stadium", "track"],
-                                                        "amenity" : ["swimming_pool", "fitness_centre", "horse_riding", "ice_rink", "pitch", "stadium", "track"]
-                    ],
-                    "sports_centre"                  : ["building": ["sports_centre", "sports_hall"],
-                                                        "leisure" : ["sports_centre", "sports_hall"],
-                                                        "amenity" : ["sports_centre", "sports_hall"]
-                    ],
-                    "chapel"                         : ["building"        : ["chapel"],
-                                                        "amenity"         : ["chapel"],
-                                                        "place_of_worship": ["chapel"],
-                    ],
-                    "church"                         : ["building"        : ["church"],
-                                                        "amenity"         : ["church"],
-                                                        "place_of_worship": ["church"],
-                    ],
-                    "castle"                         : ["building": ["castle", "fortress"],
-                    ],
-                    "military"                       : ["military": ["ammunition", "bunker", "barracks", "casemate", "office", "shelter"],
-                                                        "building": ["ammunition", "bunker", "barracks", "casemate", "military", "shelter"],
-                                                        "office"  : ["military"]
-                    ],
-                    "train_station"                  : ["building"        : ["train_station"],
-                                                        "railway"         : ["station", "train_station"],
-                                                        "public_transport": ["train_station"],
-                                                        "amenity"         : ["train_station"]
-                    ],
-                    "townhall"                       : ["amenity" : ["townhall"],
-                                                        "building": ["townhall"]
-                    ],
-                    "toll"                           : ["barrier" : ["toll_booth"],
-                                                        "building": ["toll_booth"]
-                    ],
-                    "government"                     : ["building"  : ["government", "government_office"],
-                                                        "government": ["! no"],
-                                                        "office"    : ["government"]
-                    ],
-                    "historic"                       : ["building"         : ["historic"],
-                                                        "historic"         : [],
-                                                        "historic_building": ["! no"]
-                    ],
-                    "grandstand"                     : ["building"  : ["grandstand"],
-                                                        "leisure"   : ["grandstand"],
-                                                        "amenity"   : ["grandstand"],
-                                                        "grandstand": ["yes"]
-                    ],
-                    "detached"                       : ["building": ["detached"],
-                                                        "house"   : ["detached"]
-                    ],
-                    "farm_auxiliary"                 : ["building": ["farm_auxiliary", "barn", "stable", "sty", "cowshed", "digester", "greenhouse"]
-                    ],
-                    "commercial"                     : ["building": ["bank", "bureau_de_change", "boat_rental", "car_rental", "commercial", "internet_cafe", "kiosk", "money_transfer", "market", "market_place", "pharmacy", "post_office", "retail", "shop", "store", "supermarket", "warehouse"],
-                                                        "amenity" : ["bank", "bureau_de_change", "boat_rental", "car_rental", "commercial", "internet_cafe", "kiosk", "money_transfer", "market", "market_place", "pharmacy", "post_office", "retail", "shop", "store", "supermarket", "warehouse"],
-                                                        "shop"    : ["!= no"]
-                    ],
-                    "industrial"                     : ["building"  : ["industrial", "factory", "warehouse"],
-                                                        "industrial": ["factory"],
-                                                        "amenity"   : ["factory"]
-                    ],
-                    "greenhouse"                     : ["building"  : ["greenhouse"],
-                                                        "amenity"   : ["greenhouse"],
-                                                        "industrial": ["greenhouse"]
-                    ],
-                    "silo"                           : ["building": ["silo", "grain_silo"],
-                                                        "man_made": ["silo", "grain_silo"]
-                    ],
-                    "house"                          : ["building": ["house"],
-                                                        "house"   : ["! no", "! detached", "! residential", "! villa"],
-                                                        "amenity" : ["house"]
-                    ],
-                    "residential"                    : ["building"   : ["residential", "villa", "detached", "dormitory", "condominium", "sheltered_housing", "workers_dormitory", "terrace"],
-                                                        "residential": ["university", "detached", "dormitory", "condominium", "sheltered_housing", "workers_dormitory", "building"],
-                                                        "house"      : ["residential"],
-                                                        "amenity"    : ["residential"]
-                    ],
-                    "apartments"                     : ["building"   : ["apartments"],
-                                                        "residential": ["apartments"],
-                                                        "amenity"    : ["apartments"],
-                                                        "apartments" : ["yes"]
-                    ],
-                    "bungalow"                       : ["building": ["bungalow"],
-                                                        "house"   : ["bungalow"],
-                                                        "amenity" : ["bungalow"]
-                    ],
-                    "ruins"                          : ["building": ["ruins"],
-                                                        "ruins"   : ["ruins"]
-                    ],
-                    "agricultural"                   : ["building"    : ["agricultural"],
-                                                        "agricultural": ["building"]
-                    ],
-                    "farm"                           : ["building": ["farm", "farmhouse"]
-                    ],
-                    "barn"                           : ["building": ["barn"],
-                                                        "barn"    : ["! no"]
-                    ],
-                    "transportation"                 : ["building"        : ["train_station", "transportation", "station"],
-                                                        "aeroway"         : ["hangar", "tower", "bunker", "control_tower", "building"],
-                                                        "railway"         : ["station", "train_station", "building"],
-                                                        "public_transport": ["train_station", "station"],
-                                                        "amenity"         : ["train_station", "terminal"]
-                    ],
-                    "healthcare"                     : ["amenity"   : ["healthcare"],
-                                                        "building"  : ["healthcare"],
-                                                        "healthcare": ["! no"]
-                    ],
-                    "education"                      : ["amenity"  : ["education", "college", "kindergarten", "school", "university"],
-                                                        "building" : ["education", "college", "kindergarten", "school", "university"],
-                                                        "education": ["college", "kindergarten", "school", "university"]
-                    ],
-                    "entertainment, arts and culture": ["leisure": ["! no"]
-                    ],
-                    "sustenance"                     : ["amenity"   : ["restaurant", "bar", "cafe", "fast_food", "ice_cream", "pub"],
-                                                        "building"  : ["restaurant", "bar", "cafe", "fast_food", "ice_cream", "pub"],
-                                                        "restaurant": ["! no"],
-                                                        "shop"      : ["restaurant", "bar", "cafe", "fast_food", "ice_cream", "pub"],
-                                                        "sustenance": ["! no"]
-                    ],
-                    "office"                         : ["building": ["office"],
-                                                        "amenity" : ["office"],
-                                                        "office"  : ["! no"]
-                    ],
-                    "building"                       : ["building": ["yes"]
-                    ]
-            ]
-
-            def  typeAndLevel = ['building': 1,
-                                 'house': 1,
-                                 'detached': 1,
-                                 'residential': 1,
-                                 'apartments': 1,
-                                 'bungalow': 0,
-                                 'historic': 0,
-                                 'monument': 0,
-                                 'ruins': 0,
-                                 'castle': 0,
-                                 'agricultural': 0,
-                                 'farm': 0,
-                                 'farm_auxiliary': 0,
-                                 'barn': 0,
-                                 'greenhouse': 0,
-                                 'silo': 0,
-                                 'commercial': 2,
-                                 'industrial': 0,
-                                 'sport': 0,
-                                 'sports_centre': 0,
-                                 'grandstand': 0,
-                                 'transportation': 0,
-                                 'train_station': 0,
-                                 'toll_booth': 0,
-                                 'terminal': 0,
-                                 'healthcare': 1,
-                                 'education': 1,
-                                 'entertainment, arts and culture': 0,
-                                 'sustenance': 1,
-                                 'military': 0,
-                                 'religious': 0,
-                                 'chapel': 0,
-                                 'church': 0,
-                                 'government': 1,
-                                 'townhall': 1,
-                                 'office': 1,]
-
-            def columnNames= datasource.getTable(inputTableName).columnNames
-            queryMapper += columnsMapper(columnNames, columnToMap)
-            queryMapper += " FROM $inputTableName"
-
+        run { JdbcDataSource datasource, inputTableName,epsg, h_lev_min, h_lev_max, hThresholdLev2 ->
             outputTableName = "INPUT_BUILDING_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-            datasource.execute """ DROP TABLE if exists ${outputTableName};
-                        CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT,
+            logger.info('Formating building layer')
+            if (inputTableName == null) {
+                datasource.execute """ DROP TABLE if exists ${outputTableName};
+                        CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_SOURCE VARCHAR, HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT,
                               NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER);"""
-            datasource.withBatch(1000) { stmt ->
-                datasource.eachRow(queryMapper) { row ->
-                    String height = row.'height'
-                    String b_height = row.'building:height'
-                    String roof_height = row.'roof:height'
-                    String b_roof_height = row.'building:roof:height'
-                    String b_lev = row.'building:levels'
-                    String roof_lev = row.'roof:levels'
-                    String b_roof_lev = row.'building:roof:levels'
-                    def heightWall = getHeightWall(height, b_height, roof_height, b_roof_height)
-                    def heightRoof = getHeightRoof(height, b_height)
+            } else {
+                def queryMapper = "SELECT "
+                def columnToMap = ['height', 'building:height', 'roof:height', 'building:roof:height',
+                                   'building:levels', 'roof:levels', 'building:roof:levels', 'building',
+                                   'amenity', 'layer', 'aeroway', 'historic', 'leisure', 'monument',
+                                   'place_of_worship', 'military', 'railway', 'public_transport',
+                                   'barrier', 'government', 'historic:building', 'grandstand',
+                                   'house', 'shop', 'industrial', 'man_made', 'residential',
+                                   'apartments', 'ruins', 'agricultural', 'barn', 'healthcare',
+                                   'education', 'restaurant', 'sustenance', 'office']
 
-                    def nbLevels = getNbLevels(b_lev, roof_lev, b_roof_lev)
-                    def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
-                    def use = typeAndUseValues[1]
-                    def type = typeAndUseValues[0]
-                    if (type == null || type.isEmpty()) {
-                        type = 'building'
+                def mappingTypeAndUse = [
+                        "terminal"                       : ["aeroway" : ["terminal", "airport_terminal"],
+                                                            "amenity" : ["terminal", "airport_terminal"],
+                                                            "building": ["terminal", "airport_terminal"]
+                        ],
+                        "monument"                       : ["building": ["monument"],
+                                                            "historic": ["monument"],
+                                                            "leisure" : ["monument"],
+                                                            "monument": ["yes"]
+                        ],
+                        "religious"                      : ["building"        : ["religious", "abbey", "cathedral", "chapel", "church", "mosque", "musalla", "temple", "synagogue", "shrine", "place_of_worship", "wayside_shrine"],
+                                                            "amenity"         : ["religious", "abbey", "cathedral", "chapel", "church", "mosque", "musalla", "temple", "synagogue", "shrine", "place_of_worship", "wayside_shrine"],
+                                                            "place_of_worship": ["! no", "! chapel", "! church"]
+                        ],
+                        "sport"                          : ["building": ["swimming_pool", "fitness_centre", "horse_riding", "ice_rink", "pitch", "stadium", "track"],
+                                                            "leisure" : ["swimming_pool", "fitness_centre", "horse_riding", "ice_rink", "pitch", "stadium", "track"],
+                                                            "amenity" : ["swimming_pool", "fitness_centre", "horse_riding", "ice_rink", "pitch", "stadium", "track"]
+                        ],
+                        "sports_centre"                  : ["building": ["sports_centre", "sports_hall"],
+                                                            "leisure" : ["sports_centre", "sports_hall"],
+                                                            "amenity" : ["sports_centre", "sports_hall"]
+                        ],
+                        "chapel"                         : ["building"        : ["chapel"],
+                                                            "amenity"         : ["chapel"],
+                                                            "place_of_worship": ["chapel"],
+                        ],
+                        "church"                         : ["building"        : ["church"],
+                                                            "amenity"         : ["church"],
+                                                            "place_of_worship": ["church"],
+                        ],
+                        "castle"                         : ["building": ["castle", "fortress"],
+                        ],
+                        "military"                       : ["military": ["ammunition", "bunker", "barracks", "casemate", "office", "shelter"],
+                                                            "building": ["ammunition", "bunker", "barracks", "casemate", "military", "shelter"],
+                                                            "office"  : ["military"]
+                        ],
+                        "train_station"                  : ["building"        : ["train_station"],
+                                                            "railway"         : ["station", "train_station"],
+                                                            "public_transport": ["train_station"],
+                                                            "amenity"         : ["train_station"]
+                        ],
+                        "townhall"                       : ["amenity" : ["townhall"],
+                                                            "building": ["townhall"]
+                        ],
+                        "toll"                           : ["barrier" : ["toll_booth"],
+                                                            "building": ["toll_booth"]
+                        ],
+                        "government"                     : ["building"  : ["government", "government_office"],
+                                                            "government": ["! no"],
+                                                            "office"    : ["government"]
+                        ],
+                        "historic"                       : ["building"         : ["historic"],
+                                                            "historic"         : [],
+                                                            "historic_building": ["! no"]
+                        ],
+                        "grandstand"                     : ["building"  : ["grandstand"],
+                                                            "leisure"   : ["grandstand"],
+                                                            "amenity"   : ["grandstand"],
+                                                            "grandstand": ["yes"]
+                        ],
+                        "detached"                       : ["building": ["detached"],
+                                                            "house"   : ["detached"]
+                        ],
+                        "farm_auxiliary"                 : ["building": ["farm_auxiliary", "barn", "stable", "sty", "cowshed", "digester", "greenhouse"]
+                        ],
+                        "commercial"                     : ["building": ["bank", "bureau_de_change", "boat_rental", "car_rental", "commercial", "internet_cafe", "kiosk", "money_transfer", "market", "market_place", "pharmacy", "post_office", "retail", "shop", "store", "supermarket", "warehouse"],
+                                                            "amenity" : ["bank", "bureau_de_change", "boat_rental", "car_rental", "commercial", "internet_cafe", "kiosk", "money_transfer", "market", "market_place", "pharmacy", "post_office", "retail", "shop", "store", "supermarket", "warehouse"],
+                                                            "shop"    : ["!= no"]
+                        ],
+                        "industrial"                     : ["building"  : ["industrial", "factory", "warehouse"],
+                                                            "industrial": ["factory"],
+                                                            "amenity"   : ["factory"]
+                        ],
+                        "greenhouse"                     : ["building"  : ["greenhouse"],
+                                                            "amenity"   : ["greenhouse"],
+                                                            "industrial": ["greenhouse"]
+                        ],
+                        "silo"                           : ["building": ["silo", "grain_silo"],
+                                                            "man_made": ["silo", "grain_silo"]
+                        ],
+                        "house"                          : ["building": ["house"],
+                                                            "house"   : ["! no", "! detached", "! residential", "! villa"],
+                                                            "amenity" : ["house"]
+                        ],
+                        "residential"                    : ["building"   : ["residential", "villa", "detached", "dormitory", "condominium", "sheltered_housing", "workers_dormitory", "terrace"],
+                                                            "residential": ["university", "detached", "dormitory", "condominium", "sheltered_housing", "workers_dormitory", "building"],
+                                                            "house"      : ["residential"],
+                                                            "amenity"    : ["residential"]
+                        ],
+                        "apartments"                     : ["building"   : ["apartments"],
+                                                            "residential": ["apartments"],
+                                                            "amenity"    : ["apartments"],
+                                                            "apartments" : ["yes"]
+                        ],
+                        "bungalow"                       : ["building": ["bungalow"],
+                                                            "house"   : ["bungalow"],
+                                                            "amenity" : ["bungalow"]
+                        ],
+                        "ruins"                          : ["building": ["ruins"],
+                                                            "ruins"   : ["ruins"]
+                        ],
+                        "agricultural"                   : ["building"    : ["agricultural"],
+                                                            "agricultural": ["building"]
+                        ],
+                        "farm"                           : ["building": ["farm", "farmhouse"]
+                        ],
+                        "barn"                           : ["building": ["barn"],
+                                                            "barn"    : ["! no"]
+                        ],
+                        "transportation"                 : ["building"        : ["train_station", "transportation", "station"],
+                                                            "aeroway"         : ["hangar", "tower", "bunker", "control_tower", "building"],
+                                                            "railway"         : ["station", "train_station", "building"],
+                                                            "public_transport": ["train_station", "station"],
+                                                            "amenity"         : ["train_station", "terminal"]
+                        ],
+                        "healthcare"                     : ["amenity"   : ["healthcare"],
+                                                            "building"  : ["healthcare"],
+                                                            "healthcare": ["! no"]
+                        ],
+                        "education"                      : ["amenity"  : ["education", "college", "kindergarten", "school", "university"],
+                                                            "building" : ["education", "college", "kindergarten", "school", "university"],
+                                                            "education": ["college", "kindergarten", "school", "university"]
+                        ],
+                        "entertainment, arts and culture": ["leisure": ["! no"]
+                        ],
+                        "sustenance"                     : ["amenity"   : ["restaurant", "bar", "cafe", "fast_food", "ice_cream", "pub"],
+                                                            "building"  : ["restaurant", "bar", "cafe", "fast_food", "ice_cream", "pub"],
+                                                            "restaurant": ["! no"],
+                                                            "shop"      : ["restaurant", "bar", "cafe", "fast_food", "ice_cream", "pub"],
+                                                            "sustenance": ["! no"]
+                        ],
+                        "office"                         : ["building": ["office"],
+                                                            "amenity" : ["office"],
+                                                            "office"  : ["! no"]
+                        ],
+                        "building"                       : ["building": ["yes"]
+                        ]
+                ]
+
+                def typeAndLevel = ['building'                       : 1,
+                                    'house'                          : 1,
+                                    'detached'                       : 1,
+                                    'residential'                    : 1,
+                                    'apartments'                     : 1,
+                                    'bungalow'                       : 0,
+                                    'historic'                       : 0,
+                                    'monument'                       : 0,
+                                    'ruins'                          : 0,
+                                    'castle'                         : 0,
+                                    'agricultural'                   : 0,
+                                    'farm'                           : 0,
+                                    'farm_auxiliary'                 : 0,
+                                    'barn'                           : 0,
+                                    'greenhouse'                     : 0,
+                                    'silo'                           : 0,
+                                    'commercial'                     : 2,
+                                    'industrial'                     : 0,
+                                    'sport'                          : 0,
+                                    'sports_centre'                  : 0,
+                                    'grandstand'                     : 0,
+                                    'transportation'                 : 0,
+                                    'train_station'                  : 0,
+                                    'toll_booth'                     : 0,
+                                    'terminal'                       : 0,
+                                    'healthcare'                     : 1,
+                                    'education'                      : 1,
+                                    'entertainment, arts and culture': 0,
+                                    'sustenance'                     : 1,
+                                    'military'                       : 0,
+                                    'religious'                      : 0,
+                                    'chapel'                         : 0,
+                                    'church'                         : 0,
+                                    'government'                     : 1,
+                                    'townhall'                       : 1,
+                                    'office'                         : 1,]
+
+                def columnNames = datasource.getTable(inputTableName).columnNames
+                queryMapper += columnsMapper(columnNames, columnToMap)
+                queryMapper += " FROM $inputTableName"
+
+                outputTableName = "INPUT_BUILDING_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+                datasource.execute """ DROP TABLE if exists ${outputTableName};
+                        CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_SOURCE VARCHAR, HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT,
+                              NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER);"""
+                datasource.withBatch(1000) { stmt ->
+                    datasource.eachRow(queryMapper) { row ->
+                        String height = row.'height'
+                        String b_height = row.'building:height'
+                        String roof_height = row.'roof:height'
+                        String b_roof_height = row.'building:roof:height'
+                        String b_lev = row.'building:levels'
+                        String roof_lev = row.'roof:levels'
+                        String b_roof_lev = row.'building:roof:levels'
+                        def heightWall = getHeightWall(height, b_height, roof_height, b_roof_height)
+                        def heightRoof = getHeightRoof(height, b_height)
+
+                        def nbLevels = getNbLevels(b_lev, roof_lev, b_roof_lev)
+                        def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
+                        def use = typeAndUseValues[1]
+                        def type = typeAndUseValues[0]
+                        if (type == null || type.isEmpty()) {
+                            type = 'building'
+                        }
+
+                        def nbLevelFromType = typeAndLevel[type]
+
+                        def formatedHeight = formatHeightsAndNbLevels(heightWall, heightRoof, nbLevels, h_lev_min,
+                                h_lev_max, hThresholdLev2, nbLevelFromType == null ? 0 : nbLevelFromType)
+
+                        def zIndex = getZIndex(row.'layer')
+
+                        stmt.addBatch """insert into ${outputTableName} values(ST_GEOMFROMTEXT('${row.the_geom}',$epsg),
+                    '${row.id}',${formatedHeight.heightWall},${formatedHeight.heightRoof},${formatedHeight.nbLevels},'${
+                            type
+                        }','${use}',${zIndex})""".toString()
                     }
-
-                    def nbLevelFromType = typeAndLevel[type]
-
-                    def formatedHeight = formatHeightsAndNbLevels( heightWall,  heightRoof,  nbLevels,  h_lev_min,
-                     h_lev_max, hThresholdLev2,  nbLevelFromType==null?0:nbLevelFromType)
-
-                    def zIndex = getZIndex(row.'layer')
-
-                    stmt.addBatch"""insert into ${outputTableName} values('${row.the_geom}',
-                    '${row.id}',${formatedHeight.heightWall},${formatedHeight.heightRoof},${formatedHeight.nbLevels},'${type}','${use}',${zIndex})""".toString()
                 }
             }
             logger.info('Buildings transformation finishes')
@@ -271,129 +280,139 @@ IProcess formatBuildingLayer() {
  IProcess formatRoadLayer() {
     return create({
             title "Format the raw roads table into a table that matches the constraints of the GeoClimate Input Model"
-            inputs datasource  : JdbcDataSource, inputTableName      : String
+            inputs datasource  : JdbcDataSource, inputTableName      : String,epsg: int
             outputs outputTableName: String
-            run { datasource, inputTableName ->
+            run { datasource, inputTableName,epsg ->
                     logger.info('Formating road layer')
-
                     outputTableName = "INPUT_ROAD_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-                    //Define the mapping between the values in OSM and those used in the abstract model
-                    def mappingForRoadType = [
-                            "cycleway"    : [
-                                    "highway"      : ["cycleway"],
-                                    "cycleway"     : ["track"],
-                                    "biclycle_road": ["yes"]
-                            ],
-                            "ferry"       : [
-                                    "route": ["ferry"]
-                            ],
-                            "footway"     : [
-                                    "highway": ["footway", "pedestrian"]
-                            ],
-                            "highway"     : [
-                                    "highway"    : ["service", "road", "raceway", "escape"],
-                                    "cyclestreet": ["yes"]
-                            ],
-                            "highway_link": [
-                                    "highway": ["motorway_link", "motorway_junction", "trunk_link", "primary_link", "secondary_link", "tertiary_link", "junction"]
-                            ],
-                            "motorway"    : [
-                                    "highway": ["motorway"]
-                            ],
-                            "path"        : [
-                                    "highway": ["path", "bridleway"]
-                            ],
-                            "primary"     : [
-                                    "highway": ["primary"]
-                            ],
-                            "residential" : [
-                                    "highway": ["residential", "living_street"]
-                            ],
-                            "roundabout"  : [
-                                    "junction": ["roundabout", "circular"]
-                            ],
-                            "secondary"   : [
-                                    "highway": ["secondary"]
-                            ],
-                            "steps"       : [
-                                    "highway": ["steps"]
-                            ],
-                            "tertiary"    : [
-                                    "highway": ["tertiary"]
-                            ],
-                            "track"       : [
-                                    "highway": ["track"]
-                            ],
-                            "trunk"       : [
-                                    "highway": ["trunk"]
-                            ],
-                            "unclassified": [
-                                    "highway": ["unclassified"]
-                            ]
-                    ]
-
-                    def mappingForSurface = [
-                            "unpaved"    : ["surface": ["unpaved", "grass_paver", "artificial_turf"]],
-                            "paved"      : ["surface": ["paved", "asphalt"]],
-                            "ground"     : ["surface": ["ground", "dirt", "earth", "clay"]],
-                            "gravel"     : ["surface": ["gravel", "fine_gravel", "gravel_turf"]],
-                            "concrete"   : ["surface": ["concrete", "concrete:lanes", "concrete:plates", "cement"]],
-                            "grass"      : ["surface": ["grass"]],
-                            "compacted"  : ["surface": ["compacted"]],
-                            "sand"       : ["surface": ["sand"]],
-                            "cobblestone": ["surface": ["cobblestone", "paving_stones", "sett", "unhewn_cobblestone"]],
-                            "wood"       : ["surface": ["wood", "woodchips"]],
-                            "pebblestone": ["surface": ["pebblestone"]],
-                            "mud"        : ["surface": ["mud"]],
-                            "metal"      : ["surface": ["metal"]],
-                            "water"      : ["surface": ["water"]]
-                    ]
-                
-                def typeAndWidth =  [ 'highway': 8,
-                 'motorway': 24,
-                 'trunk': 16,
-                 'primary': 10,
-                 'secondary': 10,
-                 'tertiary': 8,
-                 'residential': 8,
-                 'unclassified': 3,
-                 'track': 2,
-                 'path': 1,
-                 'footway': 1,
-                 'cycleway': 1,
-                 'steps': 1,
-                 'highway_link': 8,
-                 'roundabout': 4,
-                 'ferry': 0]
-
-                    def queryMapper = "SELECT "
-                    def columnToMap = ['width', 'highway', 'surface', 'sidewalk',
-                                       'lane', 'layer', 'maxspeed', 'oneway',
-                                       'h_ref', 'route', 'cycleway',
-                                       'biclycle_road', 'cyclestreet', 'junction']
-                    def columnNames= datasource.getTable(inputTableName).columnNames
-                    queryMapper += columnsMapper(columnNames, columnToMap)
-                    queryMapper += " FROM $inputTableName"
-
-                    datasource.execute """drop table if exists $outputTableName;
-                            CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR, 
+                    if(inputTableName==null){
+                        datasource.execute """drop table if exists $outputTableName;
+                            CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR, 
                             SURFACE VARCHAR, SIDEWALK VARCHAR, ZINDEX INTEGER);"""
-                    datasource.withBatch(1000) { stmt ->
-                        datasource.eachRow(queryMapper) { row ->
-                            def width = getWidth(row.'width')
-                            String type = getAbstractValue(row, columnNames, mappingForRoadType)
-                            if (null == type || type.isEmpty()) {
-                                type = 'unclassified'
-                            }
-                            def widthFromType = typeAndWidth[type]
-                            if(width==0 &&widthFromType!=null){
-                                width=widthFromType
-                            }
+                    }
+                    else {
+                        //Define the mapping between the values in OSM and those used in the abstract model
+                        def mappingForRoadType = [
+                                "cycleway"    : [
+                                        "highway"      : ["cycleway"],
+                                        "cycleway"     : ["track"],
+                                        "biclycle_road": ["yes"]
+                                ],
+                                "ferry"       : [
+                                        "route": ["ferry"]
+                                ],
+                                "footway"     : [
+                                        "highway": ["footway", "pedestrian"]
+                                ],
+                                "highway"     : [
+                                        "highway"    : ["service", "road", "raceway", "escape"],
+                                        "cyclestreet": ["yes"]
+                                ],
+                                "highway_link": [
+                                        "highway": ["motorway_link", "motorway_junction", "trunk_link", "primary_link", "secondary_link", "tertiary_link", "junction"]
+                                ],
+                                "motorway"    : [
+                                        "highway": ["motorway"]
+                                ],
+                                "path"        : [
+                                        "highway": ["path", "bridleway"]
+                                ],
+                                "primary"     : [
+                                        "highway": ["primary"]
+                                ],
+                                "residential" : [
+                                        "highway": ["residential", "living_street"]
+                                ],
+                                "roundabout"  : [
+                                        "junction": ["roundabout", "circular"]
+                                ],
+                                "secondary"   : [
+                                        "highway": ["secondary"]
+                                ],
+                                "steps"       : [
+                                        "highway": ["steps"]
+                                ],
+                                "tertiary"    : [
+                                        "highway": ["tertiary"]
+                                ],
+                                "track"       : [
+                                        "highway": ["track"]
+                                ],
+                                "trunk"       : [
+                                        "highway": ["trunk"]
+                                ],
+                                "unclassified": [
+                                        "highway": ["unclassified"]
+                                ]
+                        ]
 
-                            String surface = getAbstractValue(row,columnNames, mappingForSurface)
-                            String sidewalk = getSidewalk(row.'sidewalk')
-                            def zIndex = getZIndex(row.'layer')
-                            stmt.addBatch """insert into $outputTableName values('${row.the_geom}','${row.id}', ${width},'${type}','${surface}','${sidewalk}',${zIndex})""".toString()
+                        def mappingForSurface = [
+                                "unpaved"    : ["surface": ["unpaved", "grass_paver", "artificial_turf"]],
+                                "paved"      : ["surface": ["paved", "asphalt"]],
+                                "ground"     : ["surface": ["ground", "dirt", "earth", "clay"]],
+                                "gravel"     : ["surface": ["gravel", "fine_gravel", "gravel_turf"]],
+                                "concrete"   : ["surface": ["concrete", "concrete:lanes", "concrete:plates", "cement"]],
+                                "grass"      : ["surface": ["grass"]],
+                                "compacted"  : ["surface": ["compacted"]],
+                                "sand"       : ["surface": ["sand"]],
+                                "cobblestone": ["surface": ["cobblestone", "paving_stones", "sett", "unhewn_cobblestone"]],
+                                "wood"       : ["surface": ["wood", "woodchips"]],
+                                "pebblestone": ["surface": ["pebblestone"]],
+                                "mud"        : ["surface": ["mud"]],
+                                "metal"      : ["surface": ["metal"]],
+                                "water"      : ["surface": ["water"]]
+                        ]
+
+                        def typeAndWidth = ['highway'     : 8,
+                                            'motorway'    : 24,
+                                            'trunk'       : 16,
+                                            'primary'     : 10,
+                                            'secondary'   : 10,
+                                            'tertiary'    : 8,
+                                            'residential' : 8,
+                                            'unclassified': 3,
+                                            'track'       : 2,
+                                            'path'        : 1,
+                                            'footway'     : 1,
+                                            'cycleway'    : 1,
+                                            'steps'       : 1,
+                                            'highway_link': 8,
+                                            'roundabout'  : 4,
+                                            'ferry'       : 0]
+
+                        def queryMapper = "SELECT "
+                        def columnToMap = ['width', 'highway', 'surface', 'sidewalk',
+                                           'lane', 'layer', 'maxspeed', 'oneway',
+                                           'h_ref', 'route', 'cycleway',
+                                           'biclycle_road', 'cyclestreet', 'junction']
+                        def columnNames = datasource.getTable(inputTableName).columnNames
+                        queryMapper += columnsMapper(columnNames, columnToMap)
+                        queryMapper += " FROM $inputTableName"
+
+                        datasource.execute """drop table if exists $outputTableName;
+                            CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR, 
+                            SURFACE VARCHAR, SIDEWALK VARCHAR, ZINDEX INTEGER);"""
+                        datasource.withBatch(1000) { stmt ->
+                            datasource.eachRow(queryMapper) { row ->
+                                def width = getWidth(row.'width')
+                                String type = getAbstractValue(row, columnNames, mappingForRoadType)
+                                if (null == type || type.isEmpty()) {
+                                    type = 'unclassified'
+                                }
+                                def widthFromType = typeAndWidth[type]
+                                if (width == 0 && widthFromType != null) {
+                                    width = widthFromType
+                                }
+
+                                String surface = getAbstractValue(row, columnNames, mappingForSurface)
+                                String sidewalk = getSidewalk(row.'sidewalk')
+                                def zIndex = getZIndex(row.'layer')
+                                stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${
+                                    row.the_geom
+                                }',$epsg),'${row.id}', ${width},'${type}','${surface}','${sidewalk}',${
+                                    zIndex
+                                })""".toString()
+                            }
                         }
                     }
                     logger.info('Roads transformation finishes')
@@ -413,47 +432,53 @@ IProcess formatBuildingLayer() {
  IProcess formatRailsLayer() {
     return create({
         title "Format the raw rails table into a table that matches the constraints of the GeoClimate Input Model"
-        inputs datasource : JdbcDataSource , inputTableName: String
+        inputs datasource : JdbcDataSource , inputTableName: String, epsg: int
         outputs outputTableName: String
-        run { datasource, inputTableName ->
+        run { datasource, inputTableName,epsg ->
             logger.info('Rails transformation starts')
-
             outputTableName = "INPUT_RAILS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-            def mappingType = [
-                "highspeed":["highspeed":["yes"]],
-                "rail":["railway":["rail","light_rail","narrow_gauge"]],
-                "service_track":["service":["yard","siding","spur","crossover"]],
-                "disused":["railway":["disused"]],
-               "funicular":["railway":["funicular"]],
-                "subway":["railway":["subway"]],
-               "tram":["railway":["tram"]]
-            ]
+            if(inputTableName==null){
+                datasource.execute """ drop table if exists $outputTableName;
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);"""
 
-            def queryMapper = "SELECT "
-            def columnToMap =  ['highspeed','railway','service',
-                                'tunnel','layer','bridge']
+            }else {
+                def mappingType = [
+                        "highspeed": ["highspeed": ["yes"]],
+                        "rail": ["railway": ["rail", "light_rail", "narrow_gauge"]],
+                        "service_track": ["service": ["yard", "siding", "spur", "crossover"]],
+                        "disused": ["railway": ["disused"]],
+                        "funicular": ["railway": ["funicular"]],
+                        "subway": ["railway": ["subway"]],
+                        "tram": ["railway": ["tram"]]
+                ]
 
-            def columnNames= datasource.getTable(inputTableName).columnNames
-            queryMapper += columnsMapper(columnNames, columnToMap)
-            queryMapper += " FROM $inputTableName"
+                def queryMapper = "SELECT "
+                def columnToMap = ['highspeed', 'railway', 'service',
+                                   'tunnel', 'layer', 'bridge']
 
-            datasource.execute """ drop table if exists $outputTableName;
-                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);"""
+                def columnNames = datasource.getTable(inputTableName).columnNames
+                queryMapper += columnsMapper(columnNames, columnToMap)
+                queryMapper += " FROM $inputTableName"
 
-            datasource.withBatch(1000) { stmt ->
-                datasource.eachRow(queryMapper) { row ->
-                    String type = getAbstractValue(row, columnNames, mappingType)
-                    def zIndex = getZIndex(row.'layer')
-                    //special treatment if type is subway
-                    if (type == "subway") {
+                datasource.execute """ drop table if exists $outputTableName;
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);"""
 
-                        if (!((row.tunnel != null && row.tunnel == "no" && row.layer != null && row.layer.toInt() >= 0)
-                                || (row.bridge != null && (row.bridge == "yes" || row.bridge == "viaduct")))) {
-                            type = null
+                datasource.withBatch(1000) { stmt ->
+                    datasource.eachRow(queryMapper) { row ->
+                        String type = getAbstractValue(row, columnNames, mappingType)
+                        def zIndex = getZIndex(row.'layer')
+                        //special treatment if type is subway
+                        if (type == "subway") {
+
+                            if (!((row.tunnel != null && row.tunnel == "no" && row.layer != null && row.layer.toInt() >= 0)
+                                    || (row.bridge != null && (row.bridge == "yes" || row.bridge == "viaduct")))) {
+                                type = null
+                            }
                         }
-                    }
-                    stmt.addBatch """insert into $outputTableName values('${row.the_geom}','${row.id}','${type}',${zIndex})"""
+                        stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${row.the_geom}',$epsg),
+                    '${row.id}','${type}',${zIndex})"""
 
+                    }
                 }
             }
             logger.info('Rails transformation finishes')
@@ -473,15 +498,20 @@ IProcess formatBuildingLayer() {
 IProcess formatVegetationLayer() {
     return create({
             title "Format the raw vegetation table into a table that matches the constraints of the GeoClimate Input Model"
-            inputs datasource    : JdbcDataSource, inputTableName: String
+            inputs datasource    : JdbcDataSource, inputTableName: String, epsg: int
             outputs outputTableName: String
-            run { JdbcDataSource datasource, inputTableName ->
+            run { JdbcDataSource datasource, inputTableName,epsg ->
                 logger.info('Vegetation transformation starts')
                 outputTableName = "INPUT_VEGET_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-
-                def mappingType = [
+                if(inputTableName==null) {
+                    datasource.execute """ drop table if exists $outputTableName;
+                        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4));"""
+                }
+                else{
+                def mappingType = ["farmland":["landuse":["farmland"]],
                 "tree":["natural":["tree"]],
                 "wood":["landcover":["trees"],"natural":["wood"]],
+                "meadow":["landuse":["meadow"]],
                 "forest":["landuse":["forest"]],
                 "scrub":["natural":["scrub"],"landcover":["scrub"],"landuse":["scrub"]],
                 "grassland":["landcover":["grass","grassland"],"natural":["grass","grassland"],"vegetation":["grassland"],"landuse":["grass","grassland"]],
@@ -501,14 +531,14 @@ IProcess formatVegetationLayer() {
                                    'hedge','wetland','vineyard',
                                     'trees','crop','produce']
                 
-                def typeAndVegClass =['tree': 'high',
+                def typeAndVegClass =['tree': 'high', 'farmland': 'low',
                  'wood': 'high',
                  'forest': 'high',
                  'scrub': 'low',
                  'grassland': 'low',
                  'heath': 'low',
                  'tree_row': 'high',
-                 'hedge': 'high',
+                 'hedge': 'high', 'meadow':'low',
                  'mangrove': 'high',
                  'orchard': 'high',
                  'vineyard': 'low',
@@ -519,20 +549,21 @@ IProcess formatVegetationLayer() {
                 queryMapper += columnsMapper(columnNames, columnToMap)
                 queryMapper += " FROM $inputTableName"
 
+                    datasource.execute """ drop table if exists $outputTableName;
+                        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4));"""
 
-                datasource.execute """ drop table if exists $outputTableName;
-                        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4));"""
 
-                datasource.withBatch(1000) { stmt ->
+                    datasource.withBatch(1000) { stmt ->
                     datasource.eachRow(queryMapper) { row ->
                         String type = getAbstractValue(row,columnNames, mappingType)
 
                         def height_class = typeAndVegClass[type]
 
-                        stmt.addBatch """insert into $outputTableName values('${row.the_geom}','${row.id}','${type}', '${height_class}')"""
+                        stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${row.the_geom}',$epsg),'${row.id}','${type}', '${height_class}')"""
                         
                     }
                 }
+            }
                 logger.info('Vegetation transformation finishes')
                 [outputTableName: outputTableName]
             }
@@ -550,22 +581,27 @@ IProcess formatVegetationLayer() {
 IProcess formatHydroLayer() {
     return create({
         title "Format the raw hydro table into a table that matches the constraints of the GeoClimate Input Model"
-        inputs datasource    : JdbcDataSource, inputTableName: String
+        inputs datasource    : JdbcDataSource, inputTableName: String,epsg: int
         outputs outputTableName: String
-        { datasource, inputTableName ->
-            logger.info('Veget transformation starts')
-            outputTableName = "INPUT_VEGET_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-
+        run { datasource, inputTableName,epsg ->
+            logger.info('Hydro transformation starts')
+            outputTableName = "INPUT_HYDRO_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+            if(inputTableName==null){
+                datasource.execute """Drop table if exists $outputTableName;
+                        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_SOURCE VARCHAR);"""
+            }
+            else {
             datasource.execute """Drop table if exists $outputTableName;
-                        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, ID_SOURCE VARCHAR);"""
+                        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_SOURCE VARCHAR);"""
 
             datasource.withBatch(1000) { stmt ->
                 datasource.getTable(inputTableName).eachRow { row ->
-                    stmt.addBatch "insert into input_hydro values('${row.the_geom}','${row.id}')"
+                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${row.the_geom}',$epsg),'${row.id}')"
                 }
-                logger.info('Veget transformation finishes')
-                [outputTableName: outputTableName]
             }
+            }
+            logger.info('Hydro transformation finishes')
+            [outputTableName: outputTableName]
         }
     }
     )
@@ -585,7 +621,7 @@ static String[] getTypeAndUse(def row,def columnNames, def myMap) {
     myMap.each { finalVal ->
         def finalKey = finalVal.key
         finalVal.value.each { osmVals ->
-            if(columnNames.contains(osmVals.key)){
+            if(columnNames.contains(osmVals.key.toUpperCase())){
                 def  columnValue = row.getString(osmVals.key)
             if(columnValue!=null){
             osmVals.value.each { osmVal ->
@@ -796,7 +832,7 @@ static String getAbstractValue(def row,def columnNames, def myMap) {
     myMap.each { finalVal ->
         def finalKey = finalVal.key
         finalVal.value.each { osmVals ->
-            if (columnNames.contains(osmVals.key)) {
+            if (columnNames.contains(osmVals.key.toUpperCase())) {
                 def columnValue = row.getString(osmVals.key)
                 if (columnValue != null) {
                     osmVals.value.each { osmVal ->
