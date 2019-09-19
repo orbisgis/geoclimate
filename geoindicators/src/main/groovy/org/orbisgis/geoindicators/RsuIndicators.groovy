@@ -1262,3 +1262,93 @@ IProcess perviousnessFraction() {
         }
     })
 }
+
+
+/**
+* Process used to compute the free facade fraction within an extended RSU. The free facade fraction is defined as
+* the ratio between the free facade area within an extended RSU and the free facade area within an extended RSU +
+* the area of the extended RSU. This indicator may be useful to investigate a simple an fast approach to
+* calculate the ground sky view factor such as defined by Stewart et Oke (2012): ratio of the
+* amount of sky hemisphere visible from ground level to that of an unobstructed hemisphere. Preliminary studies
+* have been performed by Bernabé et al. (2015) and Bernard et al. (2018). The calculation needs
+* the "building_contiguity", the building wall height, the "building_total_facade_length" values as well as
+* a correlation Table between buildings and blocks.
+*
+*
+* @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+* the resulting database will be stored
+* @param buildingTable The name of the input ITable where are stored the buildings, the building contiguity values,
+* the building total facade length values and the building and rsu id
+* @param rsuTable The name of the input ITable where are stored the rsu geometries and the id_rsu
+* @param buContiguityColumn The name of the column where are stored the building contiguity values (within the
+    * building Table)
+* @param buTotalFacadeLengthColumn The name of the column where are stored the building total facade length values
+* (within the building Table)
+* @param buffDist The size used for RSU extension (buffer size in meters)
+* @param prefixName String use as prefix to name the output table
+*
+* References:
+* --> Stewart, Ian D., and Tim R. Oke. "Local climate zones for urban temperature studies." Bulletin of
+* the American Meteorological Society 93, no. 12 (2012): 1879-1900.
+* --> Bernabé, A., Musy, M., Andrieu, H., & Calmet, I. (2015). Radiative properties of the urban fabric derived
+* from surface form analysis: A simplified solar balance model. Solar Energy, 122, 156-168.
+* --> Jérémy Bernard, Erwan Bocher, Gwendall Petit, Sylvain Palominos. Sky View Factor Calculation in
+* Urban Context: Computational Performance and Accuracy Analysis of Two Open and Free GIS Tools. Climate ,
+* MDPI, 2018, Urban Overheating - Progress on Mitigation Science and Engineering Applications, 6 (3), pp.60.
+*
+*
+* @return A database table name.
+* @author Jérémy Bernard
+*/
+IProcess extendedFreeFacadeFraction() {
+    def final GEOMETRIC_FIELD_RSU = "the_geom"
+    def final ID_FIELD_RSU = "id_rsu"
+    def final HEIGHT_WALL = "height_wall"
+    def final BASE_NAME = "rsu_extended_free_facade_fraction"
+    def final ID_FIELD_EXT_RSU = "id_rsu_ext"
+
+    return create({
+        title "Extended RSU free facade fraction (for SVF fast)"
+        inputs buildingTable: String, rsuTable: String, buContiguityColumn: String, buTotalFacadeLengthColumn: String,
+                prefixName: String, buffDist: 30, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { buildingTable, rsuTable, buContiguityColumn, buTotalFacadeLengthColumn, prefixName, buffDist, datasource ->
+
+            info "Executing RSU free facade fraction (for SVF fast)"
+
+            // The name of the outputTableName is constructed
+            def outputTableName = prefixName + "_" + BASE_NAME
+
+            // Temporary tables are created
+            def extRsuTable = "extRsu$uuid"
+
+            datasource.getSpatialTable(rsuTable)[ID_FIELD_RSU].createIndex()
+
+            // The RSU area is extended according to a buffer and the id_rsu column name is modified to avoid conflicts
+            datasource.execute "DROP TABLE IF EXISTS $extRsuTable; CREATE TABLE $extRsuTable AS SELECT " +
+                    "ST_BUFFER($GEOMETRIC_FIELD_RSU, $buffDist, 'quad_segs=2') AS $GEOMETRIC_FIELD_RSU," +
+                    "$ID_FIELD_RSU AS $ID_FIELD_EXT_RSU FROM $rsuTable;"
+
+            // The relations between buildings and extended RSU are calculated
+            def BuRsuComp =  Geoindicators.SpatialUnits.createScalesRelations()
+            BuRsuComp.execute([inputLowerScaleTableName: buildingTable, inputUpperScaleTableName : extRsuTable,
+                                     idColumnUp: ID_FIELD_EXT_RSU, prefixName: prefixName, datasource: datasource])
+            def BuRsuRelations = BuRsuComp.results.outputTableName
+
+            datasource.getSpatialTable(BuRsuRelations)[ID_FIELD_EXT_RSU].createIndex()
+
+            def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
+                    "SELECT COALESCE(SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$HEIGHT_WALL)/" +
+                    "(SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$HEIGHT_WALL) + " +
+                    "st_area(b.$GEOMETRIC_FIELD_RSU)),0) AS rsu_extended_free_facade_fraction, " +
+                    "b.$ID_FIELD_EXT_RSU AS $ID_FIELD_RSU"
+
+            query += " FROM $BuRsuRelations a RIGHT JOIN $extRsuTable b " +
+                    "ON a.$ID_FIELD_EXT_RSU = b.$ID_FIELD_EXT_RSU GROUP BY b.$ID_FIELD_EXT_RSU, b.$GEOMETRIC_FIELD_RSU;"
+
+            datasource.execute query
+
+            [outputTableName: outputTableName]
+        }
+    })
+}
