@@ -462,7 +462,7 @@ def likelihoodLargeBuilding() {
             // The calculation of the logistic function is performed only for buildings having no neighbors
             datasource.execute """DROP TABLE IF EXISTS $outputTableName; 
                      CREATE TABLE $outputTableName AS SELECT a.$ID_FIELD_BU, 
-                     CASEWHEN(a.$nbOfBuildNeighbors>0, 0," +
+                     CASEWHEN(a.$nbOfBuildNeighbors>0, 0,
                      1/(1+$a*exp(-$r*st_maxdistance(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD)))) AS $BASE_NAME 
                      FROM $inputBuildingTableName a LEFT JOIN $inputBuildingTableName b 
                      ON a.$ID_FIELD_BU = b.$ID_FIELD_BU"""

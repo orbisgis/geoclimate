@@ -53,8 +53,8 @@ IProcess unweightedOperationFromLowerScale() {
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
 
-            datasource.getSpatialTable(inputLowerScaleTableName)."$inputIdUp".createIndex()
-            datasource.getSpatialTable(inputUpperScaleTableName)."$inputIdUp".createIndex()
+            datasource.getTable(inputLowerScaleTableName)."$inputIdUp".createIndex()
+            datasource.getTable(inputUpperScaleTableName)."$inputIdUp".createIndex()
 
             def query =  "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
 
