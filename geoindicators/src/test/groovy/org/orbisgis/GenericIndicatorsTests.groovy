@@ -122,7 +122,7 @@ class GenericIndicatorsTests {
     void geometryPropertiesTest() {
         h2GIS.execute """
                 DROP TABLE IF EXISTS spatial_table, test_geometry_properties;
-                CREATE TABLE spatial_table (id int, the_geom LINESTRING);
+                CREATE TABLE spatial_table (id int, the_geom GEOMETRY(LINESTRING));
                 INSERT INTO spatial_table VALUES (1, 'LINESTRING(0 0, 0 10)'::GEOMETRY);
         """
         def  p =  Geoindicators.GenericIndicators.geometryProperties()

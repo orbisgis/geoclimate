@@ -5,14 +5,11 @@ import org.orbisgis.common.AbstractTablesInitialization
 import org.orbisgis.osm.FormattingForAbstractModel
 import org.orbisgis.common.InputDataFormatting
 import org.orbisgis.osm.OSMGISLayers
-import org.orbisgis.processmanager.ProcessManager
-import org.orbisgis.processmanagerapi.IProcessFactory
+import org.orbisgis.processmanager.GroovyProcessFactory
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-abstract class PrepareData extends Script {
-
-    public static IProcessFactory processFactory = ProcessManager.getProcessManager().factory("prepareData")
+abstract class PrepareData extends GroovyProcessFactory {
 
     public static Logger logger = LoggerFactory.getLogger(PrepareData.class)
 

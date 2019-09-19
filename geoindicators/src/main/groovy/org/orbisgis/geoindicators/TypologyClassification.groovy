@@ -33,7 +33,7 @@ import org.orbisgis.processmanagerapi.IProcess
  * @return A database table name.
  * @author Jérémy Bernard
  */
-static IProcess identifyLczType() {
+IProcess identifyLczType() {
     def final OPS = ["AVG", "MEDIAN"]
     def final ID_FIELD_RSU = "id_rsu"
     def final CENTER_NAME = "center"
@@ -41,21 +41,20 @@ static IProcess identifyLczType() {
     def final BASE_NAME = "LCZ_type"
     def final GEOMETRIC_FIELD = "the_geom"
     
-    return processFactory.create(
-        "Set the LCZ type of each RSU",
-        [rsuLczIndicators: String, normalisationType: "AVG", 
-                mapOfWeights: ["sky_view_factor": 1,"aspect_ratio": 1, "building_surface_fraction": 1, 
-                               "impervious_surface_fraction": 1, "pervious_surface_fraction": 1, 
-                               "height_of_roughness_elements": 1, "terrain_roughness_class": 1],
-                prefixName: String, datasource: JdbcDataSource],
-        [outputTableName : String],
-        { rsuLczIndicators, normalisationType, mapOfWeights, prefixName, datasource ->
+    return create({
+        title "Set the LCZ type of each RSU"
+        inputs rsuLczIndicators: String, prefixName: String, datasource: JdbcDataSource, normalisationType: "AVG",
+                mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                               "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                               "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+        outputs outputTableName: String
+        run { rsuLczIndicators, prefixName, datasource, normalisationType, mapOfWeights ->
 
-            logger.info("Set the LCZ type of each RSU")
+            info "Set the LCZ type of each RSU"
 
             // List of possible operations
 
-            if(OPS.contains(normalisationType)){
+            if (OPS.contains(normalisationType)) {
                 def centerValue = [:]
                 def variabilityValue = [:]
                 def queryRangeNorm = ""
@@ -68,13 +67,13 @@ static IProcess identifyLczType() {
 
                 // To avoid overwriting the output files of this step, a unique identifier is created
                 // Temporary table names are defined
-                def LCZ_classes = "LCZ_classes" + uuid()
-                def normalizedValues = "normalizedValues" + uuid()
-                def normalizedRange = "normalizedRange" + uuid()
-                def buffLczTable = "buffLczTable" + uuid()
-                def allLczTable = "allLczTable" + uuid()
-                def pivotedTable = "pivotedTable" + uuid()
-                def mainLczTable = "mainLczTable" + uuid()
+                def LCZ_classes = "LCZ_classes$uuid"
+                def normalizedValues = "normalizedValues$uuid"
+                def normalizedRange = "normalizedRange$uuid"
+                def buffLczTable = "buffLczTable$uuid"
+                def allLczTable = "allLczTable$uuid"
+                def pivotedTable = "pivotedTable$uuid"
+                def mainLczTable = "mainLczTable$uuid"
 
                 // I. Each dimension (each of the 7 indicators) is normalized according to average and standard deviation
                 // (or median and median of the variability)
@@ -90,42 +89,41 @@ static IProcess identifyLczType() {
                         " height_of_roughness_elements_low FLOAT, height_of_roughness_elements_upp FLOAT," +
                         "terrain_roughness_class_low FLOAT, terrain_roughness_class_upp FLOAT);" +
                         "INSERT INTO $LCZ_classes VALUES " +
-                                "('LCZ1',0.2,0.4,2.0,null,0.4,0.6,0.4,0.6,0.0,0.1,25.0,null,7.5,8.5)," +
-                                "('LCZ2',0.3,0.6,0.8,2.0,0.4,0.7,0.3,0.5,0.0,0.2,10.0,25.0,5.5,7.5)," +
-                                "('LCZ3',0.2,0.6,0.8,1.5,0.4,0.7,0.2,0.5,0.0,0.3,3.0,10.0,5.5,6.5),"+
-                                "('LCZ4',0.5,0.7,0.8,1.3,0.2,0.4,0.3,0.4,0.3,0.4,25.0,null,6.5,8.5),"+
-                                "('LCZ5',0.5,0.8,0.3,0.8,0.2,0.4,0.3,0.5,0.2,0.4,10.0,25.0,4.5,6.5),"+
-                                "('LCZ6',0.6,0.9,0.3,0.8,0.2,0.4,0.2,0.5,0.3,0.6,3.0,10.0,4.5,6.5),"+
-                                "('LCZ7',0.2,0.5,1.0,2.0,0.6,0.9,0.0,0.2,0.0,0.3,2.0,4.0,3.5,5.5),"+
-                                "('LCZ8',0.7,1.0,0.1,0.3,0.3,0.5,0.4,0.5,0.0,0.2,3.0,10.0,4.5,5.5),"+
-                                "('LCZ9',0.8,1.0,0.1,0.3,0.1,0.2,0.0,0.2,0.6,0.8,3.0,10.0,4.5,6.5),"+
-                                "('LCZ10',0.6,0.9,0.2,0.5,0.2,0.3,0.2,0.4,0.4,0.5,5.0,15.0,4.5,6.5),"+
-                                "('LCZA',0.0,0.4,1.0,null,0.0,0.1,0.0,0.1,0.9,1.0,3.0,30.0,7.5,8.5),"+
-                                "('LCZB',0.5,0.8,0.3,0.8,0.0,0.1,0.0,0.1,0.9,1.0,3.0,15.0,4.5,6.5),"+
-                                "('LCZC',0.7,0.9,0.3,1.0,0.0,0.1,0.0,0.1,0.9,1.0,0.0,2.0,3.5,5.5),"+
-                                "('LCZD',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,1.0,2.5,4.5),"+
-                                "('LCZE',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.3,0.5,2.5),"+
-                                "('LCZF',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.3,0.5,2.5),"+
-                                "('LCZG',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.0,0.5,1.5);"
+                        "('LCZ1',0.2,0.4,2.0,null,0.4,0.6,0.4,0.6,0.0,0.1,25.0,null,7.5,8.5)," +
+                        "('LCZ2',0.3,0.6,0.8,2.0,0.4,0.7,0.3,0.5,0.0,0.2,10.0,25.0,5.5,7.5)," +
+                        "('LCZ3',0.2,0.6,0.8,1.5,0.4,0.7,0.2,0.5,0.0,0.3,3.0,10.0,5.5,6.5)," +
+                        "('LCZ4',0.5,0.7,0.8,1.3,0.2,0.4,0.3,0.4,0.3,0.4,25.0,null,6.5,8.5)," +
+                        "('LCZ5',0.5,0.8,0.3,0.8,0.2,0.4,0.3,0.5,0.2,0.4,10.0,25.0,4.5,6.5)," +
+                        "('LCZ6',0.6,0.9,0.3,0.8,0.2,0.4,0.2,0.5,0.3,0.6,3.0,10.0,4.5,6.5)," +
+                        "('LCZ7',0.2,0.5,1.0,2.0,0.6,0.9,0.0,0.2,0.0,0.3,2.0,4.0,3.5,5.5)," +
+                        "('LCZ8',0.7,1.0,0.1,0.3,0.3,0.5,0.4,0.5,0.0,0.2,3.0,10.0,4.5,5.5)," +
+                        "('LCZ9',0.8,1.0,0.1,0.3,0.1,0.2,0.0,0.2,0.6,0.8,3.0,10.0,4.5,6.5)," +
+                        "('LCZ10',0.6,0.9,0.2,0.5,0.2,0.3,0.2,0.4,0.4,0.5,5.0,15.0,4.5,6.5)," +
+                        "('LCZA',0.0,0.4,1.0,null,0.0,0.1,0.0,0.1,0.9,1.0,3.0,30.0,7.5,8.5)," +
+                        "('LCZB',0.5,0.8,0.3,0.8,0.0,0.1,0.0,0.1,0.9,1.0,3.0,15.0,4.5,6.5)," +
+                        "('LCZC',0.7,0.9,0.3,1.0,0.0,0.1,0.0,0.1,0.9,1.0,0.0,2.0,3.5,5.5)," +
+                        "('LCZD',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,1.0,2.5,4.5)," +
+                        "('LCZE',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.3,0.5,2.5)," +
+                        "('LCZF',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.3,0.5,2.5)," +
+                        "('LCZG',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.0,0.5,1.5);"
 
                 // For each LCZ indicator...
                 datasource.getTable(rsuLczIndicators).columnNames.collect { indicCol ->
                     if (!indicCol.equalsIgnoreCase(ID_FIELD_RSU) && !indicCol.equalsIgnoreCase(GEOMETRIC_FIELD)) {
                         // The values used for normalization ("mean" and "standard deviation") are calculated
                         // (for each column) and stored into maps
-                        centerValue[indicCol]=datasource.firstRow("SELECT ${normalisationType}(all_val) " +
+                        centerValue[indicCol] = datasource.firstRow("SELECT ${normalisationType}(all_val) " +
                                 "AS $CENTER_NAME FROM (SELECT ${indicCol}_low AS all_val FROM $LCZ_classes " +
                                 "WHERE ${indicCol}_low IS NOT NULL UNION ALL SELECT ${indicCol}_upp AS all_val " +
                                 "FROM $LCZ_classes WHERE ${indicCol}_upp IS NOT NULL)")[CENTER_NAME]
-                        if(normalisationType == "AVG"){
-                            variabilityValue[indicCol]=datasource.firstRow("SELECT STDDEV_POP(all_val) " +
+                        if (normalisationType == "AVG") {
+                            variabilityValue[indicCol] = datasource.firstRow("SELECT STDDEV_POP(all_val) " +
                                     "AS $VARIABILITY_NAME FROM (SELECT ${indicCol}_low AS all_val " +
                                     "FROM $LCZ_classes WHERE ${indicCol}_low IS NOT NULL UNION ALL " +
                                     "SELECT ${indicCol}_upp AS all_val FROM $LCZ_classes WHERE ${indicCol}_upp " +
                                     "IS NOT NULL)")[VARIABILITY_NAME]
-                        }
-                        else{
-                            variabilityValue[indicCol]=datasource.firstRow("SELECT MEDIAN(ABS(all_val-" +
+                        } else {
+                            variabilityValue[indicCol] = datasource.firstRow("SELECT MEDIAN(ABS(all_val-" +
                                     "${centerValue[indicCol]})) AS $VARIABILITY_NAME FROM " +
                                     "(SELECT ${indicCol}_low AS all_val FROM $LCZ_classes WHERE ${indicCol}_low " +
                                     "IS NOT NULL UNION ALL SELECT ${indicCol}_upp AS all_val FROM $LCZ_classes " +
@@ -196,33 +194,33 @@ static IProcess identifyLczType() {
                 datasource.execute "DROP TABLE IF EXISTS $mainLczTable;" +
                         "CREATE INDEX IF NOT EXISTS all_id ON $allLczTable($ID_FIELD_RSU); " +
                         "CREATE TABLE $mainLczTable AS SELECT a.$ID_FIELD_RSU, a.$GEOMETRIC_FIELD, " +
-                                "(SELECT b.lcz FROM $allLczTable b " +
-                                        "WHERE a.$ID_FIELD_RSU = b.$ID_FIELD_RSU " +
-                                        "ORDER BY b.distance ASC LIMIT 1) AS LCZ1," +
-                                "(SELECT b.lcz FROM $allLczTable b " +
-                                        "WHERE a.$ID_FIELD_RSU = b.$ID_FIELD_RSU " +
-                                        "ORDER BY b.distance ASC OFFSET 1 LIMIT 1) AS LCZ2 " +
-                                "FROM $allLczTable a GROUP BY $ID_FIELD_RSU"
+                        "(SELECT b.lcz FROM $allLczTable b " +
+                        "WHERE a.$ID_FIELD_RSU = b.$ID_FIELD_RSU " +
+                        "ORDER BY b.distance ASC LIMIT 1) AS LCZ1," +
+                        "(SELECT b.lcz FROM $allLczTable b " +
+                        "WHERE a.$ID_FIELD_RSU = b.$ID_FIELD_RSU " +
+                        "ORDER BY b.distance ASC LIMIT 1 OFFSET 1 ) AS LCZ2 " +
+                        "FROM $allLczTable a GROUP BY $ID_FIELD_RSU"
 
                 // Recover the LCZ TYPES list and the number of types in a map
                 def lczTypeTempo = datasource.rows "SELECT name FROM $LCZ_classes"
                 def lczType = []
-                lczTypeTempo.each{l ->
+                lczTypeTempo.each { l ->
                     lczType.add(l["NAME"])
                 }
                 // For each LCZ type...
                 datasource.eachRow("SELECT name FROM $LCZ_classes") { LCZ ->
-                        // Piece of query that will be useful for pivoting the LCZ distance table
-                        queryForPivot += "MAX(CASEWHEN(lcz = '${LCZ.name}', distance, null)) AS ${LCZ.name},"
+                    // Piece of query that will be useful for pivoting the LCZ distance table
+                    queryForPivot += "MAX(CASEWHEN(lcz = '${LCZ.name}', distance, null)) AS ${LCZ.name},"
 
-                        // Piece of query that will be useful for the calculation of the Perkins Skill Score
-                        queryPerkinsSkill += "LEAST(1./${lczType.size()}, b.${LCZ.name}/(b.${lczType.join("+b.")}))+"
-                    }
+                    // Piece of query that will be useful for the calculation of the Perkins Skill Score
+                    queryPerkinsSkill += "LEAST(1./${lczType.size()}, b.${LCZ.name}/(b.${lczType.join("+b.")}))+"
+                }
 
                 // The table is pivoted in order to have the distance for each LCZ type as column and for each RSU as row.
                 // Then for each RSU, the distance to the closest LCZ type is stored and the Perkins Skill Score is calculated
                 datasource.execute "DROP TABLE IF EXISTS $pivotedTable;" +
-                        "CREATE TABLE $pivotedTable AS SELECT $ID_FIELD_RSU,"  +
+                        "CREATE TABLE $pivotedTable AS SELECT $ID_FIELD_RSU," +
                         "${queryForPivot[0..-2]} FROM $allLczTable GROUP BY $ID_FIELD_RSU;" +
                         "DROP TABLE IF EXISTS $outputTableName;" +
                         "CREATE INDEX IF NOT EXISTS main_id ON $mainLczTable($ID_FIELD_RSU);" +
@@ -236,10 +234,9 @@ static IProcess identifyLczType() {
                         "$buffLczTable, $allLczTable, $pivotedTable, $mainLczTable;"
 
                 [outputTableName: outputTableName]
-            }
-            else{
-                logger.error("The 'normalisationType' argument is not valid.")
+            } else {
+                error "The 'normalisationType' argument is not valid."
             }
         }
-    )
+    })
 }
