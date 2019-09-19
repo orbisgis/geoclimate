@@ -306,6 +306,7 @@ def computeBlockIndicators(){
  * @param indicatorUse The use defined for the indicator. Depending on this use, only a part of the indicators could
  * be calculated (default is all indicators : ["LCZ", "URBAN_TYPOLOGY", "TEB"])
  * @param prefixName A prefix used to name the output table
+ * @param svfSimplified A boolean to use a simplified version of the SVF calculation (default false)
  * @param datasource A connection to a database
  *
  * @return
@@ -322,7 +323,7 @@ def computeRSUIndicators() {
                 heightColumnName           : "height_roof",    fractionTypePervious        : ["low_vegetation", "water"],
                 fractionTypeImpervious     : ["road"],         inputFields                 : ["id_build", "the_geom"],
                 levelForRoads              : [0],              angleRangeSizeBuDirection   : 30,
-                indicatorUse               : ["LCZ", "URBAN_TYPOLOGY", "TEB"]
+                svfSimplified              : false,            indicatorUse               : ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified
         outputs outputTableName: String
         run { datasource            , buildingTable                     , rsuTable,
               prefixName            , vegetationTable                   , roadTable,
@@ -330,7 +331,7 @@ def computeRSUIndicators() {
               svfPointDensity       , svfRayLength                      , svfNumberOfDirection,
               heightColumnName      , fractionTypePervious              , fractionTypeImpervious,
               inputFields           , levelForRoads                     , angleRangeSizeBuDirection,
-              indicatorUse ->
+              svfSimplified         , indicatorUse ->
 
             info "Start computing RSU indicators..."
             def to_start = System.currentTimeMillis()
@@ -556,12 +557,12 @@ def computeRSUIndicators() {
                 def aspectRatio = computeAspectRatio.results.outputTableName
                 finalTablesToJoin.put(aspectRatio, columnIdRsu)
             }
-            def svf_fast = true
+
             // rsu_ground_sky_view_factor
             if (indicatorUse.contains("LCZ")) {
                 def SVF = "SVF"
                 // If the fast version is chosen (SVF derived from extended RSU free facade fraction
-                if (svf_fast == true) {
+                if (svfSimplified == true) {
                     def computeExtFF =  Geoindicators.RsuIndicators.extendedFreeFacadeFraction()
                     if (!computeExtFF([buildingTable: buildingTable,
                                           rsuTable: intermediateJoinTable,
