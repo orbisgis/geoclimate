@@ -129,10 +129,10 @@ def neighborsProperties() {
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
 
-            def query = "CREATE INDEX IF NOT EXISTS buff_ids ON $inputBuildingTableName($GEOMETRIC_FIELD) " +
-                    "USING RTREE; " +
-                    "CREATE INDEX IF NOT EXISTS buff_id ON $inputBuildingTableName($ID_FIELD);" +
-                    " CREATE TABLE $build_intersec AS SELECT "
+            datasource.getSpatialTable(inputBuildingTableName).the_geom.createSpatialIndex()
+            datasource.getSpatialTable(inputBuildingTableName).id_build.createIndex()
+
+            def query = " CREATE TABLE $build_intersec AS SELECT "
 
             def query_update = ""
 
@@ -301,13 +301,15 @@ def minimumBuildingSpacing() {
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
 
+            datasource.getSpatialTable(inputBuildingTableName).the_geom.createSpatialIndex()
+            datasource.getSpatialTable(inputBuildingTableName).id_build.createIndex()
+
             // The buffer is created
             datasource.execute "CREATE TABLE $build_buffer AS SELECT $ID_FIELD, " +
                     "ST_BUFFER($GEOMETRIC_FIELD, $bufferDist) AS $GEOMETRIC_FIELD FROM $inputBuildingTableName; " +
                     "CREATE INDEX IF NOT EXISTS buff_ids ON $build_buffer($GEOMETRIC_FIELD) USING RTREE;" +
-                    "CREATE INDEX IF NOT EXISTS inpute_ids ON $inputBuildingTableName($GEOMETRIC_FIELD) USING RTREE;" +
-                    "CREATE INDEX IF NOT EXISTS buff_id ON $build_buffer($ID_FIELD); " +
-                    "CREATE INDEX IF NOT EXISTS inpute_id ON $inputBuildingTableName($ID_FIELD)"
+                    "CREATE INDEX IF NOT EXISTS buff_id ON $build_buffer($ID_FIELD); "
+
             // The building located within the buffer are identified
             datasource.execute "DROP TABLE IF EXISTS $build_within_buffer; CREATE TABLE $build_within_buffer AS" +
                     " SELECT b.$ID_FIELD, a.$GEOMETRIC_FIELD FROM $inputBuildingTableName a, $build_buffer b " +
@@ -370,6 +372,8 @@ def roadDistance() {
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
 
+            datasource.getSpatialTable(inputBuildingTableName).id_build.createIndex()
+
             // The buffer is created
             datasource.execute "DROP TABLE IF EXISTS $build_buffer; " +
                     "CREATE TABLE $build_buffer AS SELECT $ID_FIELD_BU," +
@@ -386,9 +390,9 @@ def roadDistance() {
                     "SELECT a.$ID_FIELD_BU, b.$GEOMETRIC_FIELD FROM $build_buffer a, $road_surf b " +
                     "WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD AND " +
                     "ST_INTERSECTS(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD); " +
-                    "CREATE INDEX IF NOT EXISTS with_buff_id ON $road_within_buffer($ID_FIELD_BU); " +
-                    "CREATE INDEX IF NOT EXISTS a_id ON $inputBuildingTableName($ID_FIELD_BU)"
-            // The minimum distance is calculated between each building and the surrounding roads (he minimum
+                    "CREATE INDEX IF NOT EXISTS with_buff_id ON $road_within_buffer($ID_FIELD_BU); "
+
+            // The minimum distance is calculated between each building and the surrounding roads (the minimum
             // distance is set to the bufferDist value for buildings having no road within a bufferDist meters
             // distance)
             datasource.execute "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE " +
@@ -453,14 +457,15 @@ def likelihoodLargeBuilding() {
             // The name of the outputTableName is constructed
             String outputTableName = prefixName + "_" + BASE_NAME
 
+            datasource.getSpatialTable(inputBuildingTableName).id_build.createIndex()
+
             // The calculation of the logistic function is performed only for buildings having no neighbors
-            datasource.execute "CREATE INDEX ON $inputBuildingTableName($ID_FIELD_BU); " +
-                    "DROP TABLE IF EXISTS $outputTableName; " +
-                    "CREATE TABLE $outputTableName AS SELECT a.$ID_FIELD_BU, " +
-                    "CASEWHEN(a.$nbOfBuildNeighbors>0, 0," +
-                    " 1/(1+$a*exp(-$r*st_maxdistance(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD)))) AS $BASE_NAME " +
-                    "FROM $inputBuildingTableName a LEFT JOIN $inputBuildingTableName b " +
-                    "ON a.$ID_FIELD_BU = b.$ID_FIELD_BU"
+            datasource.execute """DROP TABLE IF EXISTS $outputTableName; 
+                     CREATE TABLE $outputTableName AS SELECT a.$ID_FIELD_BU, 
+                     CASEWHEN(a.$nbOfBuildNeighbors>0, 0,
+                     1/(1+$a*exp(-$r*st_maxdistance(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD)))) AS $BASE_NAME 
+                     FROM $inputBuildingTableName a LEFT JOIN $inputBuildingTableName b 
+                     ON a.$ID_FIELD_BU = b.$ID_FIELD_BU"""
 
             [outputTableName: outputTableName]
         }

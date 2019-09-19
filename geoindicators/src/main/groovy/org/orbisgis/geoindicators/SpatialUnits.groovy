@@ -270,7 +270,8 @@ IProcess createBlocks(){
 
             //Create the blocks
             info "Creating the block table..."
-            datasource.execute """DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName ($columnIdName SERIAL, THE_GEOM GEOMETRY) 
+            datasource.execute """DROP TABLE IF EXISTS $outputTableName; 
+            CREATE TABLE $outputTableName ($columnIdName SERIAL, THE_GEOM GEOMETRY) 
             AS (SELECT null, THE_GEOM FROM $subGraphBlocks) UNION ALL (SELECT null, a.the_geom FROM $inputTableName a 
             LEFT JOIN $subGraphTableNodes b ON a.id_build = b.NODE_ID WHERE b.NODE_ID IS NULL);"""
 
@@ -309,16 +310,15 @@ IProcess createScalesRelations(){
 
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + inputLowerScaleTableName + "_corr"
+            datasource.getSpatialTable(inputLowerScaleTableName).the_geom.createSpatialIndex()
+            datasource.getSpatialTable(inputUpperScaleTableName).the_geom.createSpatialIndex()
 
-            datasource.execute """DROP TABLE IF EXISTS $outputTableName; 
-                    CREATE INDEX IF NOT EXISTS ids_l ON $inputLowerScaleTableName($GEOMETRIC_COLUMN_LOW) USING RTREE; 
-                    CREATE INDEX IF NOT EXISTS ids_u ON $inputUpperScaleTableName($GEOMETRIC_COLUMN_UP) USING RTREE"""
-
-            datasource.execute "CREATE TABLE $outputTableName AS SELECT a.*, (SELECT b.$idColumnUp " +
-                    "FROM $inputUpperScaleTableName b WHERE a.$GEOMETRIC_COLUMN_LOW && b.$GEOMETRIC_COLUMN_UP AND " +
-                    "ST_INTERSECTS(st_force2d(a.$GEOMETRIC_COLUMN_LOW), st_force2d(b.$GEOMETRIC_COLUMN_UP)) ORDER BY " +
-                    "ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$GEOMETRIC_COLUMN_LOW)), st_force2d(st_makevalid(b.$GEOMETRIC_COLUMN_UP)))) " +
-                    "DESC LIMIT 1) AS $idColumnUp FROM $inputLowerScaleTableName a"
+            datasource.execute """DROP TABLE IF EXISTS $outputTableName;
+                        CREATE TABLE $outputTableName AS SELECT a.*, (SELECT b.$idColumnUp 
+                     FROM $inputUpperScaleTableName b WHERE a.$GEOMETRIC_COLUMN_LOW && b.$GEOMETRIC_COLUMN_UP AND 
+                     ST_INTERSECTS(st_force2d(a.$GEOMETRIC_COLUMN_LOW), st_force2d(b.$GEOMETRIC_COLUMN_UP)) ORDER BY 
+                     ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$GEOMETRIC_COLUMN_LOW)), st_force2d(st_makevalid(b.$GEOMETRIC_COLUMN_UP)))) 
+                     DESC LIMIT 1) AS $idColumnUp FROM $inputLowerScaleTableName a """
             info "The relations between scales have been created"
 
             [outputTableName: outputTableName, outputIdColumnUp: idColumnUp]

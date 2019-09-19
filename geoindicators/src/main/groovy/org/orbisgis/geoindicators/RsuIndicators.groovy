@@ -45,9 +45,10 @@ IProcess freeExternalFacadeDensity() {
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
 
-            def query = "CREATE INDEX IF NOT EXISTS id_bua ON $buildingTable($ID_FIELD_RSU); " +
-                    "CREATE INDEX IF NOT EXISTS id_blb ON $rsuTable($ID_FIELD_RSU); " +
-                    "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
+            datasource.getSpatialTable(buildingTable).id_rsu.createIndex()
+            datasource.getSpatialTable(rsuTable).id_rsu.createIndex()
+
+            def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
                     "SELECT COALESCE(SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$HEIGHT_WALL)/" +
                     "st_area(b.$GEOMETRIC_FIELD_RSU),0) AS rsu_free_external_facade_density, b.$ID_FIELD_RSU "
 
@@ -125,13 +126,11 @@ IProcess groundSkyViewFactor() {
             def outputTableName = prefixName + "_" + BASE_NAME
 
             // Create the needed index on input tables and the table that will contain the SVF calculation points
-            H2gisSpatialTable rsuSpatialTable = datasource.getSpatialTable(rsuTable)
-            rsuSpatialTable[GEOMETRIC_COLUMN_RSU].createSpatialIndex()
-            rsuSpatialTable[ID_COLUMN_RSU].createIndex()
+            datasource.getSpatialTable(rsuTable).the_geom.createSpatialIndex()
+            datasource.getSpatialTable(rsuTable).id_rsu.createIndex()
 
-            H2gisSpatialTable buildingSpatialTable = datasource.getSpatialTable(correlationBuildingTable)
-            buildingSpatialTable[GEOMETRIC_COLUMN_RSU].createSpatialIndex()
-            buildingSpatialTable[ID_COLUMN_RSU].createIndex()
+            datasource.getSpatialTable(correlationBuildingTable).the_geom.createSpatialIndex()
+            datasource.getSpatialTable(correlationBuildingTable).id_rsu.createIndex()
 
             def to_start = System.currentTimeMillis()
 
@@ -304,6 +303,11 @@ IProcess projectedFacadeAreaDistribution() {
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
 
+            datasource.getSpatialTable(buildingTable).the_geom.createSpatialIndex()
+            datasource.getSpatialTable(rsuTable).the_geom.createSpatialIndex()
+            datasource.getSpatialTable(buildingTable).id_build.createIndex()
+            datasource.getSpatialTable(rsuTable).id_rsu.createIndex()
+
             if (360 % numberOfDirection == 0 && numberOfDirection % 2 == 0) {
 
                 // To avoid overwriting the output files of this step, a unique identifier is created
@@ -325,13 +329,6 @@ IProcess projectedFacadeAreaDistribution() {
 
                 // The list that will store the fields name is initialized
                 def names = []
-
-                // Indexes and spatial indexes are created on input tables
-                datasource.execute "CREATE SPATIAL INDEX IF NOT EXISTS ids_ina " +
-                        "ON $buildingTable($GEOMETRIC_COLUMN_BU); " +
-                        "CREATE SPATIAL INDEX IF NOT EXISTS ids_inb ON $rsuTable($GEOMETRIC_COLUMN_RSU); " +
-                        "CREATE INDEX IF NOT EXISTS id_ina ON $buildingTable($ID_COLUMN_BU); " +
-                        "CREATE INDEX IF NOT EXISTS id_inb ON $rsuTable($ID_COLUMN_RSU);"
 
                 // Common party walls between buildings are calculated
                 datasource.execute "CREATE TABLE $buildingIntersection(pk SERIAL, the_geom GEOMETRY, " +
@@ -511,6 +508,9 @@ IProcess roofAreaDistribution() {
             def buildVertRoofAll = "buildVertRoofAll$uuid"
             def buildRoofSurfTot = "build_roof_surf_tot$uuid"
 
+            datasource.getSpatialTable(rsuTable).the_geom.createSpatialIndex()
+            datasource.getSpatialTable(rsuTable).id_rsu.createIndex()
+
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
 
@@ -561,9 +561,7 @@ IProcess roofAreaDistribution() {
             // Indexes and spatial indexes are created on rsu and building Tables
             datasource.execute "CREATE INDEX IF NOT EXISTS ids_bu ON $buildVertRoofAll(the_geom) USING RTREE; " +
                     "CREATE INDEX IF NOT EXISTS id_bu ON $buildVertRoofAll(id_build); " +
-                    "CREATE INDEX IF NOT EXISTS id_rsu ON $buildVertRoofAll(id_rsu);" +
-                    "CREATE INDEX IF NOT EXISTS ids_rsu ON $rsuTable($GEOMETRIC_COLUMN_RSU) USING RTREE;" +
-                    "CREATE INDEX IF NOT EXISTS id_rsu ON $rsuTable(id_rsu);"
+                    "CREATE INDEX IF NOT EXISTS id_rsu ON $buildVertRoofAll(id_rsu);"
 
             //PEUT-ETRE MIEUX VAUT-IL FAIRE L'INTERSECTION À PART POUR ÉVITER DE LA FAIRE 2 FOIS ICI ?
 
@@ -758,6 +756,10 @@ IProcess linearRoadOperations() {
 
             info "Executing Operations on the linear of road"
 
+            datasource.getSpatialTable(rsuTable).the_geom.createSpatialIndex()
+            datasource.getSpatialTable(rsuTable).id_rsu.createIndex()
+            datasource.getSpatialTable(roadTable).the_geom.createSpatialIndex()
+
             // Test whether the angleRangeSize is a divisor of 180°
             if (180 % angleRangeSize == 0 && 180 / angleRangeSize > 1) {
                 // Test whether the operations filled by the user are OK
@@ -807,8 +809,6 @@ IProcess linearRoadOperations() {
                             filtering = filtering[0..-4]
                         }
                         def selectionQuery = "DROP TABLE IF EXISTS $outputTableName; DROP TABLE IF EXISTS $roadInter; " +
-                                "CREATE INDEX IF NOT EXISTS ids_r ON $roadTable($GEOMETRIC_COLUMN_ROAD) USING RTREE; " +
-                                "CREATE INDEX IF NOT EXISTS ids_u ON $rsuTable($GEOMETRIC_COLUMN_RSU) USING RTREE; " +
                                 "CREATE TABLE $roadInter AS SELECT a.$ID_COLUMN_RSU AS id_rsu, " +
                                 "ST_AREA(a.$GEOMETRIC_COLUMN_RSU) AS rsu_area, ST_INTERSECTION(a.$GEOMETRIC_COLUMN_RSU, " +
                                 "b.$GEOMETRIC_COLUMN_ROAD) AS the_geom $ifZindex FROM $rsuTable a, $roadTable b " +
@@ -861,7 +861,6 @@ IProcess linearRoadOperations() {
                             def queryDistrib = queryExpl + "CREATE TABLE $roadDistrib AS SELECT id_rsu, " +
                                     caseQueryDistrib[0..-2] +
                                     " FROM $roadExpl GROUP BY id_rsu;" +
-                                    "CREATE INDEX IF NOT EXISTS id_u ON $rsuTable($ID_COLUMN_RSU);" +
                                     "CREATE INDEX IF NOT EXISTS id_d ON $roadDistrib(id_rsu);" +
                                     "DROP TABLE IF EXISTS $roadDistTot; CREATE TABLE $roadDistTot($ID_COLUMN_RSU INTEGER," +
                                     "${nameDistrib.join(" double,")} double) AS (SELECT a.$ID_COLUMN_RSU," +
@@ -878,7 +877,6 @@ IProcess linearRoadOperations() {
                         if (operations.contains("rsu_linear_road_density")) {
                             String queryDensity = "CREATE TABLE $roadDens AS SELECT id_rsu, " + caseQueryDens[0..-2] +
                                     " FROM $roadInter GROUP BY id_rsu;" +
-                                    "CREATE INDEX IF NOT EXISTS id_u ON $rsuTable($ID_COLUMN_RSU);" +
                                     "CREATE INDEX IF NOT EXISTS id_d ON $roadDens(id_rsu);" +
                                     "DROP TABLE IF EXISTS $roadDensTot; CREATE TABLE $roadDensTot($ID_COLUMN_RSU INTEGER," +
                                     "${nameDens.join(" double,")} double) AS (SELECT a.$ID_COLUMN_RSU," +
@@ -1014,10 +1012,13 @@ IProcess vegetationFraction() {
             def interTable = "interTable$uuid"
             def buffTable = "buffTable$uuid"
 
+
+            datasource.getSpatialTable(rsuTable).the_geom.createSpatialIndex()
+            datasource.getSpatialTable(rsuTable).id_rsu.createIndex()
+            datasource.getSpatialTable(vegetTable).the_geom.createSpatialIndex()
+
             // Intersections between vegetation and RSU are calculated
             def interQuery = "DROP TABLE IF EXISTS $interTable; " +
-                    "CREATE INDEX IF NOT EXISTS ids_r ON $rsuTable($geometricColumnRsu) USING RTREE; " +
-                    "CREATE INDEX IF NOT EXISTS ids_v ON $vegetTable($geometricColumnVeget) USING RTREE;" +
                     "CREATE TABLE $interTable AS SELECT b.$idColumnRsu, a.$vegetClass, " +
                     "ST_AREA(b.$geometricColumnRsu) AS RSU_AREA, " +
                     "ST_AREA(ST_INTERSECTION(a.$geometricColumnVeget, b.$geometricColumnRsu)) AS VEGET_AREA " +
@@ -1099,13 +1100,15 @@ IProcess roadFraction() {
             def interTable = "interTable$uuid"
             def buffTable = "buffTable$uuid"
 
+            datasource.getSpatialTable(rsuTable).the_geom.createSpatialIndex()
+            datasource.getSpatialTable(roadTable).the_geom.createSpatialIndex()
+
             def surfQuery = "DROP TABLE IF EXISTS $surfTable; CREATE TABLE $surfTable AS SELECT " +
                     "ST_BUFFER($GEOMETRIC_COLUMN_ROAD,$WIDTH_ROAD/2,'endcap=flat') AS the_geom," +
                     "$Z_INDEX_ROAD FROM $roadTable;"
 
             // Intersections between road surfaces and RSU are calculated
             def interQuery = "DROP TABLE IF EXISTS $interTable; " +
-                    "CREATE INDEX IF NOT EXISTS ids_r ON $rsuTable($GEOMETRIC_COLUMN_RSU) USING RTREE; " +
                     "CREATE INDEX IF NOT EXISTS ids_v ON $surfTable($GEOMETRIC_COLUMN_ROAD) USING RTREE;" +
                     "CREATE TABLE $interTable AS SELECT b.$ID_COLUMN_RSU, a.$Z_INDEX_ROAD, " +
                     "ST_AREA(b.$GEOMETRIC_COLUMN_RSU) AS RSU_AREA, " +
@@ -1178,11 +1181,13 @@ IProcess waterFraction() {
             // Temporary table names
             def buffTable = "buffTable$uuid"
 
+
+            datasource.getSpatialTable(rsuTable).the_geom.createSpatialIndex()
+            datasource.getSpatialTable(rsuTable).id_rsu.createIndex()
+            datasource.getSpatialTable(waterTable).the_geom.createSpatialIndex()
+
             // Intersections between water and RSU are calculated
             def buffQuery = "DROP TABLE IF EXISTS $buffTable; " +
-                    "CREATE INDEX IF NOT EXISTS ids_r ON $rsuTable($GEOMETRIC_COLUMN_RSU) USING RTREE; " +
-                    "CREATE INDEX IF NOT EXISTS ids_v ON $waterTable($GEOMETRIC_COLUMN_WATER) USING RTREE;" +
-                    "CREATE INDEX IF NOT EXISTS ids_v ON $rsuTable($ID_COLUMN_RSU);" +
                     "CREATE TABLE $buffTable AS SELECT b.$ID_COLUMN_RSU, " +
                     "SUM(ST_AREA(ST_INTERSECTION(a.$GEOMETRIC_COLUMN_WATER, b.$GEOMETRIC_COLUMN_RSU)))" +
                     "/ST_AREA(b.$GEOMETRIC_COLUMN_RSU) AS water_fraction FROM $waterTable a, $rsuTable b " +
