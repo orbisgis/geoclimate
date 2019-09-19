@@ -83,8 +83,9 @@ IProcess netCompacity() {
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
 
-            def query = "CREATE INDEX IF NOT EXISTS id_b " +
-                    "ON $buildTable($ID_COLUMN_BL); DROP TABLE IF EXISTS $outputTableName;" +
+            datasource.getSpatialTable(buildTable).id_block.createIndex()
+
+            def query = "DROP TABLE IF EXISTS $outputTableName;" +
                     " CREATE TABLE $outputTableName AS SELECT $ID_COLUMN_BL, " +
                     "SUM($buildingContiguityField*(ST_PERIMETER($GEOMETRY_FIELD_BU)+" +
                     "ST_PERIMETER(ST_HOLES($GEOMETRY_FIELD_BU)))*$HEIGHT_WALL)/POWER(SUM($buildingVolumeField)," +
@@ -137,8 +138,10 @@ IProcess closingness() {
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
 
-            def query = "CREATE INDEX IF NOT EXISTS id_bubl ON $blockTable($ID_COLUMN_BL); " +
-                    "CREATE INDEX IF NOT EXISTS id_b ON $correlationTableName($ID_COLUMN_BL); " +
+            datasource.getSpatialTable(blockTable).id_block.createIndex()
+            datasource.getSpatialTable(correlationTableName).id_block.createIndex()
+
+            def query =
                     "DROP TABLE IF EXISTS $outputTableName;" +
                     " CREATE TABLE $outputTableName AS SELECT b.$ID_COLUMN_BL, " +
                     "ST_AREA(ST_HOLES(b.$GEOMETRY_FIELD_BL))-SUM(ST_AREA(ST_HOLES(a.$GEOMETRY_FIELD_BU))) AS $BASE_NAME " +
