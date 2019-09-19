@@ -323,7 +323,7 @@ def computeRSUIndicators() {
                 heightColumnName           : "height_roof",    fractionTypePervious        : ["low_vegetation", "water"],
                 fractionTypeImpervious     : ["road"],         inputFields                 : ["id_build", "the_geom"],
                 levelForRoads              : [0],              angleRangeSizeBuDirection   : 30,
-                svfSimplified              : false,            indicatorUse               : ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified
+                svfSimplified              : false,            indicatorUse                : ["LCZ", "URBAN_TYPOLOGY", "TEB"]
         outputs outputTableName: String
         run { datasource            , buildingTable                     , rsuTable,
               prefixName            , vegetationTable                   , roadTable,
