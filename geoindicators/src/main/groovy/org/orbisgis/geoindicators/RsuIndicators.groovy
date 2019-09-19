@@ -1378,6 +1378,7 @@ IProcess extendedFreeFacadeFraction() {
 
             datasource.getSpatialTable(BuRsuRelations)[ID_FIELD_EXT_RSU].createIndex()
 
+            // The facade fraction is calculated
             def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
                     "SELECT COALESCE(SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$HEIGHT_WALL)/" +
                     "(SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$HEIGHT_WALL) + " +

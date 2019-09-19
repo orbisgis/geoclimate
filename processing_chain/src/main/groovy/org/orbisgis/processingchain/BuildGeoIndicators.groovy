@@ -556,22 +556,40 @@ def computeRSUIndicators() {
                 def aspectRatio = computeAspectRatio.results.outputTableName
                 finalTablesToJoin.put(aspectRatio, columnIdRsu)
             }
-
+            def svf_fast = false
             // rsu_ground_sky_view_factor
             if (indicatorUse.contains("LCZ")) {
-                def computeSVF = Geoindicators.RsuIndicators.groundSkyViewFactor()
-                if (!computeSVF([rsuTable                : intermediateJoinTable,
-                                 correlationBuildingTable: buildingTable,
-                                 rsuBuildingDensityColumn: "dens_area",
-                                 pointDensity            : svfPointDensity,
-                                 rayLength               : svfRayLength,
-                                 numberOfDirection       : svfNumberOfDirection,
-                                 prefixName              : prefixName,
-                                 datasource              : datasource])) {
-                    info "Cannot compute the SVF calculation in $prefixName. "
-                    return
-                }
-                def SVF = computeSVF.results.outputTableName
+                def SVF = "SVF"
+                // If the fast version is chosen (SVF derived from extended RSU free facade fraction
+                if (svf_fast == true) {
+                    def computeExtFF =  Geoindicators.RsuIndicators.extendedFreeFacadeFraction()
+                    if (!computeExtFF([buildingTable: buildingTable,
+                                          rsuTable: intermediateJoinTable,
+                                          buContiguityColumn: "building_contiguity",
+                                          buTotalFacadeLengthColumn: "building_total_facade_length",
+                                          prefixName: prefixName, buffDist : 30, datasource: datasource])){
+                        info "Cannot compute the SVF calculation in $prefixName. "
+                        return
+                        }
+                    datasource.execute "DROP TABLE IF EXISTS $SVF; CREATE TABLE SVF " +
+                            "AS SELECT 1-rsu_extended_free_facade_fraction AS RSU_GROUND_SKY_VIEW_FACTOR, $columnIdRsu " +
+                            "FROM ${computeExtFF.results.outputTableName}"
+                    }
+                else {
+                    def computeSVF = Geoindicators.RsuIndicators.groundSkyViewFactor()
+                    if (!computeSVF([rsuTable                : intermediateJoinTable,
+                                     correlationBuildingTable: buildingTable,
+                                     rsuBuildingDensityColumn: "dens_area",
+                                     pointDensity            : svfPointDensity,
+                                     rayLength               : svfRayLength,
+                                     numberOfDirection       : svfNumberOfDirection,
+                                     prefixName              : prefixName,
+                                     datasource              : datasource])) {
+                        info "Cannot compute the SVF calculation in $prefixName. "
+                        return
+                        }
+                    SVF = computeSVF.results.outputTableName
+                    }
                 finalTablesToJoin.put(SVF, columnIdRsu)
             }
 

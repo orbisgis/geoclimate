@@ -67,7 +67,7 @@ class RsuIndicatorsTests {
     }
 
     @Test
-    void groundSkyViewFactorTest2() {
+    void extendedFreeFacadeFractionTest2() {
         H2GIS datasource = H2GIS.open("/home/decide/Code/Intel/geoclimate-1/processing_chain/target/osm_processchain_geoindicators/osm_chain_db;AUTO_SERVER=TRUE")
 
         def intermediateTable = [:]
@@ -420,7 +420,7 @@ class RsuIndicatorsTests {
 
     @Test
     void extendedFreeFacadeFractionTest() {
-        // Only the first 1 first created buildings are selected for the tests
+        // Only the first 5 first created buildings are selected for the tests
         h2GIS.execute "DROP TABLE IF EXISTS tempo_build, rsu_free_external_facade_density; CREATE TABLE tempo_build AS SELECT * " +
                 "FROM building_test WHERE id_build < 6"
         // The geometry of the RSU is useful for the calculation, then it is inserted inside the build/rsu correlation table
