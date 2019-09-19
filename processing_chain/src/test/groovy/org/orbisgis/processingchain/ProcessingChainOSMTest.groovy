@@ -50,7 +50,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
 
             if (createRSU([datasource    : h2GIS,
                             inputTableName: prepareRSUData.results.outputTableName,
-                           inputZoneTableName :process.getResults().outputZone,
+                            inputZoneTableName :process.getResults().outputZone,
                             prefixName    : prefixName])) {
                 h2GIS.getTable(createRSU.results.outputTableName).save(dirFile.absolutePath+File.separator+"${prefixName}.geojson")
             }
@@ -92,14 +92,15 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
         datasource.load(urlZone, zoneTableName)
 
         //Run tests
-        osmGeoIndicators(directory, datasource, zoneTableName, buildingTableName,roadTableName,null,vegetationTableName,
+        osmGeoIndicators(dirFile.absolutePath+File, datasource, zoneTableName, buildingTableName,roadTableName,null,vegetationTableName,
                 hydrographicTableName,saveResults, indicatorUse)
 
     }
 
-    //@Test
+    @Test
     void osmGeoIndicatorsFromApi() {
         String directory ="./target/osm_processchain_full"
+        boolean saveResults = true
 
         File dirFile = new File(directory)
         dirFile.delete()
@@ -108,11 +109,11 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osm_chain_db;AUTO_SERVER=TRUE")
 
         //Extract and transform OSM data
-        def placeName = "Cliscouet, Vannes"
+        def placeName = "Vannes"
 
         IProcess prepareOSMData = ProcessingChain.PrepareOSM.buildGeoclimateLayers()
 
-        process.execute([datasource: h2GIS, placeName :placeName, distance: 0])
+        prepareOSMData.execute([datasource: datasource, placeName :placeName, distance: 0])
 
         String buildingTableName = prepareOSMData.getResults().outputBuilding
 
@@ -137,9 +138,9 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
         String indicatorUse = ["TEB", "URBAN_TYPOLOGY", "LCZ"]
 
         // Run LCZ
-        calcLcz(directory, datasource, zoneTableName, buildingTableName,
+        /*calcLcz(directory, datasource, zoneTableName, buildingTableName,
                 roadTableName, railTableName, vegetationTableName,
-                hydrographicTableName, saveResults )
+                hydrographicTableName, saveResults )*/
 
         //Run tests
         osmGeoIndicators(dirFile.absolutePath, datasource, zoneTableName, buildingTableName,roadTableName,railTableName,vegetationTableName,

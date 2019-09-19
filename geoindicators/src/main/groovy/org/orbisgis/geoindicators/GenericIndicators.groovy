@@ -53,9 +53,10 @@ IProcess unweightedOperationFromLowerScale() {
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
 
-            def query = "CREATE INDEX IF NOT EXISTS id_l ON $inputLowerScaleTableName($inputIdUp); " +
-                    "CREATE INDEX IF NOT EXISTS id_ucorr ON $inputUpperScaleTableName($inputIdUp); " +
-                    "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
+            datasource.getSpatialTable(inputLowerScaleTableName)."$inputIdUp".createIndex()
+            datasource.getSpatialTable(inputUpperScaleTableName)."$inputIdUp".createIndex()
+
+            def query =  "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
 
             inputVarAndOperations.each { var, operations ->
                 operations.each { op ->
@@ -132,10 +133,11 @@ IProcess weightedAggregatedStatistics() {
             // Temporary table names
             def weighted_mean = "weighted_mean" + uuid
 
+            datasource.getSpatialTable(inputLowerScaleTableName)."$inputIdUp".createIndex()
+            datasource.getSpatialTable(inputUpperScaleTableName)."$inputIdUp".createIndex()
+
             // The weighted mean is calculated in all cases since it is useful for the STD calculation
-            def weightedMeanQuery = "CREATE INDEX IF NOT EXISTS id_l ON $inputLowerScaleTableName($inputIdUp); " +
-                    "CREATE INDEX IF NOT EXISTS id_ucorr ON $inputUpperScaleTableName($inputIdUp); " +
-                    "DROP TABLE IF EXISTS $weighted_mean; CREATE TABLE $weighted_mean($inputIdUp INTEGER,"
+            def weightedMeanQuery =  "DROP TABLE IF EXISTS $weighted_mean; CREATE TABLE $weighted_mean($inputIdUp INTEGER,"
             def nameAndType = ""
             def weightedMean = ""
             inputVarWeightsOperations.each { var, weights ->
@@ -281,9 +283,10 @@ IProcess perkinsSkillScoreBuildingDirection() {
                         "SELECT $ID_FIELD_BU, $inputIdUp, ST_MINIMUMDIAMETER(ST_MINIMUMRECTANGLE($GEOMETIC_FIELD)) " +
                         "AS the_geom FROM $buildingTableName"
 
+                datasource.getSpatialTable(buildingTableName).id_build.createIndex()
+
                 // The length and direction of the smallest and the longest sides of the Minimum rectangle are calculated
-                datasource.execute "CREATE INDEX IF NOT EXISTS id_bua ON $buildingTableName($ID_FIELD_BU);" +
-                        "CREATE INDEX IF NOT EXISTS id_bua ON $build_min_rec($ID_FIELD_BU);" +
+                datasource.execute "CREATE INDEX IF NOT EXISTS id_bua ON $build_min_rec($ID_FIELD_BU);" +
                         "DROP TABLE IF EXISTS $build_dir360; CREATE TABLE $build_dir360 AS " +
                         "SELECT a.$inputIdUp, ST_LENGTH(a.the_geom) AS LEN_L, " +
                         "ST_AREA(b.the_geom)/ST_LENGTH(a.the_geom) AS LEN_H, " +
