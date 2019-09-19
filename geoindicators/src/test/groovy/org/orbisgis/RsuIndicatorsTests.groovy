@@ -67,6 +67,50 @@ class RsuIndicatorsTests {
     }
 
     @Test
+    void groundSkyViewFactorTest2() {
+        H2GIS datasource = H2GIS.open("/home/decide/Code/Intel/geoclimate-1/processing_chain/target/osm_processchain_geoindicators/osm_chain_db;AUTO_SERVER=TRUE")
+
+        def intermediateTable = [:]
+        def inputVarAndOperations = [:]
+        def finalTablesToJoin = [:]
+
+        intermediateTable.put("GEOUNITS_GEOUNITS_BUILDING_CORR_CORR", "id_build")
+
+        def  area =  Geoindicators.GenericIndicators.geometryProperties()
+        area.execute([inputTableName: "GEOUNITS_GEOUNITS_BUILDING_CORR_CORR",
+                              inputFields:["id_build", "the_geom", "id_rsu"],
+                              operations:["st_area"],
+                              prefixName : "test",
+                              datasource:datasource])
+        def bu_area = area.results.outputTableName
+
+        inputVarAndOperations = inputVarAndOperations << ["area": ["DENS"]]
+
+        def computeRSUStatisticsUnweighted = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
+        !computeRSUStatisticsUnweighted([inputLowerScaleTableName: bu_area,
+                                             inputUpperScaleTableName: "GEOUNITS_CREATED_RSU_6BE7DDA4_AD37_47DA_86A1_0F0546BABB4A",
+                                             inputIdUp               : "id_rsu",
+                                             inputVarAndOperations   : inputVarAndOperations,
+                                             prefixName              : "",
+                                             datasource              : datasource])
+        def buildDens = computeRSUStatisticsUnweighted.results.outputTableName
+
+        finalTablesToJoin.put(buildDens, "id_rsu")
+        finalTablesToJoin.put("GEOUNITS_CREATED_RSU_6BE7DDA4_AD37_47DA_86A1_0F0546BABB4A", "id_rsu")
+
+        def rsuTableJoin = Geoindicators.DataUtils.joinTables()
+        rsuTableJoin([inputTableNamesWithId: finalTablesToJoin,
+                           outputTableName      : "join0",
+                           datasource           : datasource])
+
+        def  p =  Geoindicators.RsuIndicators.groundSkyViewFactor()
+        p.execute([rsuTable: rsuTableJoin.results.outputTableName, correlationBuildingTable: "GEOUNITS_GEOUNITS_BUILDING_CORR_CORR", rsuBuildingDensityColumn:
+                "dens_area", pointDensity: 0.004, rayLength: 100, numberOfDirection: 60, prefixName: "test",
+                              datasource: datasource])
+
+    }
+
+    @Test
     void aspectRatioTest() {
         def  p =  Geoindicators.RsuIndicators.aspectRatio()
         assertTrue p.execute([rsuTable: "rsu_test", rsuFreeExternalFacadeDensityColumn:

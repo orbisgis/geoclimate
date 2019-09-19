@@ -134,6 +134,8 @@ IProcess groundSkyViewFactor() {
             buildingSpatialTable[ID_COLUMN_RSU].createIndex()
 
             def to_start = System.currentTimeMillis()
+            def t_i = System.currentTimeMillis()
+            def i = 0
 
             datasource.execute "DROP TABLE IF EXISTS $ptsRSUtot; CREATE TABLE $ptsRSUtot (pk serial, " +
                     "the_geom geometry, id_rsu int)"
@@ -148,12 +150,22 @@ IProcess groundSkyViewFactor() {
                 datasource.execute "DROP TABLE IF EXISTS $ptsRSUGrid; CREATE TABLE $ptsRSUGrid(pk SERIAL, " +
                         "the_geom GEOMETRY) AS (SELECT null, the_geom " +
                         "FROM ST_MAKEGRIDPOINTS('${row[GEOMETRIC_COLUMN_RSU]}'::GEOMETRY, $gms, $gms))"
+
+                i+=1
+                println "Row ${row.id_rsu} - Step $i: ${(System.currentTimeMillis()-t_i) / 1000} s"
+                t_i = System.currentTimeMillis()
+
                 // Grid points included inside the RSU are conserved
                 datasource.execute "CREATE INDEX IF NOT EXISTS ids_temp ON $ptsRSUGrid(the_geom) USING RTREE; " +
                         "DROP TABLE IF EXISTS $ptsRSUtempo; CREATE TABLE $ptsRSUtempo AS SELECT a.pk, a.the_geom, " +
                         "${row[ID_COLUMN_RSU]} AS id_rsu FROM $ptsRSUGrid a WHERE a.the_geom && " +
                         "'${row[GEOMETRIC_COLUMN_RSU]}' AND " +
                         "ST_INTERSECTS(a.the_geom, '${row[GEOMETRIC_COLUMN_RSU]}')"
+
+                i+=1
+                println "Row ${row.id_rsu} - Step $i: ${(System.currentTimeMillis()-t_i) / 1000} s"
+                t_i = System.currentTimeMillis()
+
                 // If there is no point within the RSU (which could be the case for a long and thin RSU), the SVF
                 // is calculated for the centroid of the RSU
                 if (datasource.firstRow("SELECT COUNT(*) AS NB FROM $ptsRSUtempo")["NB"] == 0) {
@@ -161,18 +173,33 @@ IProcess groundSkyViewFactor() {
                             "1 AS pk, ST_CENTROID('${row[GEOMETRIC_COLUMN_RSU]}') AS the_geom, " +
                             "${row[ID_COLUMN_RSU]} AS id_rsu"
                 }
+
+                i+=1
+                println "Row ${row.id_rsu} - Step $i: ${(System.currentTimeMillis()-t_i) / 1000} s"
+                t_i = System.currentTimeMillis()
+
                 // The grid points intersecting buildings are identified
                 datasource.execute "CREATE INDEX IF NOT EXISTS ids_temp ON $ptsRSUtempo(the_geom) USING RTREE; " +
                         "CREATE INDEX IF NOT EXISTS id_temp ON $ptsRSUtempo(id_rsu);" +
                         "DROP TABLE IF EXISTS $ptsRSUbu; CREATE TABLE $ptsRSUbu AS SELECT a.pk FROM $ptsRSUtempo a " +
                         "LEFT JOIN $correlationBuildingTable b ON a.id_rsu = b.$ID_COLUMN_RSU WHERE " +
                         "a.the_geom && b.$GEOMETRIC_COLUMN_BU AND ST_INTERSECTS(a.the_geom, b.$GEOMETRIC_COLUMN_BU)"
+
+                i+=1
+                println "Row ${row.id_rsu} - Step $i: ${(System.currentTimeMillis()-t_i) / 1000} s"
+                t_i = System.currentTimeMillis()
+
                 // The grid points intersecting buildings are then deleted
                 datasource.execute "CREATE INDEX IF NOT EXISTS id_temp ON $ptsRSUtempo(pk); " +
                         "CREATE INDEX IF NOT EXISTS id_temp ON $ptsRSUbu(pk); DROP TABLE IF EXISTS $ptsRSUfreeall; " +
                         "CREATE TABLE $ptsRSUfreeall(pk SERIAL, the_geom GEOMETRY, id_rsu INT) AS (SELECT null, " +
                         "a.the_geom, a.id_rsu FROM $ptsRSUtempo a LEFT JOIN $ptsRSUbu b ON a.pk=b.pk WHERE b.pk " +
                         "IS NULL)"
+
+                i+=1
+                println "Row ${row.id_rsu} - Step $i: ${(System.currentTimeMillis()-t_i) / 1000} s"
+                t_i = System.currentTimeMillis()
+
                 // A random sample of points (of size corresponding to the point density defined by $pointDensity)
                 // is drawn in order to have the same density of point in each RSU. It is directly
                 // inserted into the Table gathering the SVF points used for all RSU
@@ -181,6 +208,11 @@ IProcess groundSkyViewFactor() {
                         "(TRUNC(${pointDensity}*ST_AREA('${row[GEOMETRIC_COLUMN_RSU]}'::GEOMETRY)*" +
                         "${(1.0 - row[rsuBuildingDensityColumn])})+1);"
             }
+
+            i+=1
+            println "Step $i: ${(System.currentTimeMillis()-t_i) / 1000} s"
+            t_i = System.currentTimeMillis()
+
             // The SVF calculation is performed at point scale
             datasource.execute "CREATE INDEX IF NOT EXISTS ids_pts ON $ptsRSUtot(the_geom) USING RTREE; " +
                     "DROP TABLE IF EXISTS $svfPts; CREATE TABLE $svfPts AS SELECT a.pk, a.id_rsu, " +
@@ -188,6 +220,11 @@ IProcess groundSkyViewFactor() {
                     "$rayLength, $numberOfDirection, 5) AS SVF FROM $ptsRSUtot AS a, $correlationBuildingTable " +
                     "AS b WHERE ST_EXPAND(a.the_geom, $rayLength) && b.$GEOMETRIC_COLUMN_BU AND " +
                     "ST_DWITHIN(b.$GEOMETRIC_COLUMN_BU, a.the_geom, $rayLength) GROUP BY a.the_geom"
+
+            i+=1
+            println "Step $i: ${(System.currentTimeMillis()-t_i) / 1000} s"
+            t_i = System.currentTimeMillis()
+
 
             // The result of the SVF calculation is averaged at RSU scale and the rsu that do not have
             // buildings in the area of calculation are considered "free sky" (SVF = 1)
@@ -198,6 +235,10 @@ IProcess groundSkyViewFactor() {
                     "FROM $svfPts a RIGHT JOIN $ptsRSUtot b ON a.id_rsu = b.id_rsu " +
                     "GROUP BY b.id_rsu"
 
+            i+=1
+            println "Step $i: ${(System.currentTimeMillis()-t_i) / 1000} s"
+            t_i = System.currentTimeMillis()
+
             def tObis = System.currentTimeMillis() - to_start
 
             info "SVF calculation time: ${tObis / 1000} s"
@@ -205,7 +246,7 @@ IProcess groundSkyViewFactor() {
 
             // The temporary tables are deleted
             datasource.execute "DROP TABLE IF EXISTS $ptsRSUtot, $ptsRSUGrid, $ptsRSUtempo, $ptsRSUbu, " +
-                    "$ptsRSUfreeall, $randomSample, $svfPts"
+                    "$ptsRSUfreeall, $randomSample"
 
             [outputTableName: outputTableName]
         }
