@@ -1373,7 +1373,8 @@ IProcess extendedFreeFacadeFraction() {
             // The relations between buildings and extended RSU are calculated
             def BuRsuComp =  Geoindicators.SpatialUnits.createScalesRelations()
             BuRsuComp.execute([inputLowerScaleTableName: buildingTable, inputUpperScaleTableName : extRsuTable,
-                                     idColumnUp: ID_FIELD_EXT_RSU, prefixName: prefixName, datasource: datasource])
+                                     idColumnUp: ID_FIELD_EXT_RSU, prefixName: prefixName, nbRelations: null,
+                               datasource: datasource])
             def BuRsuRelations = BuRsuComp.results.outputTableName
 
             datasource.getSpatialTable(BuRsuRelations)[ID_FIELD_EXT_RSU].createIndex()

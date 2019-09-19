@@ -84,7 +84,7 @@ class SpatialUnitsTests {
                 "OR id_build > 28 AND id_build < 30"
         def pRsu =  Geoindicators.SpatialUnits.createScalesRelations()
         assertTrue pRsu.execute([inputLowerScaleTableName: "build_tempo", inputUpperScaleTableName : "rsu_test",
-                      idColumnUp: "id_rsu", prefixName: "test", datasource: h2GIS])
+                      idColumnUp: "id_rsu", prefixName: "test", nbRelations: 1, datasource: h2GIS])
         h2GIS.eachRow("SELECT * FROM ${pRsu.results.outputTableName}".toString()){
             row ->
                 def expected = h2GIS.firstRow("SELECT ${pRsu.results.outputIdColumnUp} FROM rsu_build_corr WHERE id_build = ${row.id_build}".toString())
@@ -92,7 +92,7 @@ class SpatialUnitsTests {
         }
         def pBlock =  Geoindicators.SpatialUnits.createScalesRelations()
         assertTrue pBlock.execute([inputLowerScaleTableName: "build_tempo", inputUpperScaleTableName : "block_test",
-                        idColumnUp: "id_block", prefixName: "test", datasource: h2GIS])
+                        idColumnUp: "id_block", prefixName: "test", nbRelations: null, datasource: h2GIS])
 
         h2GIS.eachRow("SELECT * FROM ${pBlock.results.outputTableName}".toString()){
             row ->

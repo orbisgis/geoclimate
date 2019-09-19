@@ -556,7 +556,7 @@ def computeRSUIndicators() {
                 def aspectRatio = computeAspectRatio.results.outputTableName
                 finalTablesToJoin.put(aspectRatio, columnIdRsu)
             }
-            def svf_fast = false
+            def svf_fast = true
             // rsu_ground_sky_view_factor
             if (indicatorUse.contains("LCZ")) {
                 def SVF = "SVF"
