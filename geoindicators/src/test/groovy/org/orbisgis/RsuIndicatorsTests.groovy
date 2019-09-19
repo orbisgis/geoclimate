@@ -78,7 +78,7 @@ class RsuIndicatorsTests {
 
         def  area =  Geoindicators.GenericIndicators.geometryProperties()
         area.execute([inputTableName: "GEOUNITS_GEOUNITS_BUILDING_CORR_CORR",
-                              inputFields:["id_build", the_geom],
+                              inputFields:["id_build", "the_geom", "id_rsu"],
                               operations:["st_area"],
                               prefixName : "test",
                               datasource:datasource])
@@ -88,7 +88,7 @@ class RsuIndicatorsTests {
 
         def computeRSUStatisticsUnweighted = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
         !computeRSUStatisticsUnweighted([inputLowerScaleTableName: bu_area,
-                                             inputUpperScaleTableName: "GEOUNITS_CREATED_RSU_",
+                                             inputUpperScaleTableName: "GEOUNITS_CREATED_RSU_6BE7DDA4_AD37_47DA_86A1_0F0546BABB4A",
                                              inputIdUp               : "id_rsu",
                                              inputVarAndOperations   : inputVarAndOperations,
                                              prefixName              : "",
@@ -96,17 +96,17 @@ class RsuIndicatorsTests {
         def buildDens = computeRSUStatisticsUnweighted.results.outputTableName
 
         finalTablesToJoin.put(buildDens, "id_rsu")
-        finalTablesToJoin.put("GEOUNITS_CREATED_RSU_", "id_rsu")
+        finalTablesToJoin.put("GEOUNITS_CREATED_RSU_6BE7DDA4_AD37_47DA_86A1_0F0546BABB4A", "id_rsu")
 
         def rsuTableJoin = Geoindicators.DataUtils.joinTables()
         rsuTableJoin([inputTableNamesWithId: finalTablesToJoin,
-                           outputTableName      : "",
+                           outputTableName      : "join0",
                            datasource           : datasource])
 
         def  p =  Geoindicators.RsuIndicators.groundSkyViewFactor()
-        assertTrue p.execute([rsuTable: rsuTableJoin.results.outputTableName, correlationBuildingTable: buildingTableName, rsuBuildingDensityColumn:
-                "rsu_building_density", pointDensity: 0.008, rayLength: 100, numberOfDirection: 60, prefixName: "test",
-                              datasource: h2GIS])
+        p.execute([rsuTable: rsuTableJoin.results.outputTableName, correlationBuildingTable: "GEOUNITS_GEOUNITS_BUILDING_CORR_CORR", rsuBuildingDensityColumn:
+                "dens_area", pointDensity: 0.004, rayLength: 100, numberOfDirection: 60, prefixName: "test",
+                              datasource: datasource])
 
     }
 

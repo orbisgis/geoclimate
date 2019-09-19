@@ -135,6 +135,7 @@ IProcess groundSkyViewFactor() {
 
             def to_start = System.currentTimeMillis()
             def t_i = System.currentTimeMillis()
+            def i = 0
 
             datasource.execute "DROP TABLE IF EXISTS $ptsRSUtot; CREATE TABLE $ptsRSUtot (pk serial, " +
                     "the_geom geometry, id_rsu int)"
@@ -151,8 +152,8 @@ IProcess groundSkyViewFactor() {
                         "FROM ST_MAKEGRIDPOINTS('${row[GEOMETRIC_COLUMN_RSU]}'::GEOMETRY, $gms, $gms))"
 
                 i+=1
+                println "Row ${row.id_rsu} - Step $i: ${(System.currentTimeMillis()-t_i) / 1000} s"
                 t_i = System.currentTimeMillis()
-                "Step $i: ${System.currentTimeMillis()-t_i / 1000} s"
 
                 // Grid points included inside the RSU are conserved
                 datasource.execute "CREATE INDEX IF NOT EXISTS ids_temp ON $ptsRSUGrid(the_geom) USING RTREE; " +
@@ -162,8 +163,8 @@ IProcess groundSkyViewFactor() {
                         "ST_INTERSECTS(a.the_geom, '${row[GEOMETRIC_COLUMN_RSU]}')"
 
                 i+=1
+                println "Row ${row.id_rsu} - Step $i: ${(System.currentTimeMillis()-t_i) / 1000} s"
                 t_i = System.currentTimeMillis()
-                "Step $i: ${System.currentTimeMillis()-t_i / 1000} s"
 
                 // If there is no point within the RSU (which could be the case for a long and thin RSU), the SVF
                 // is calculated for the centroid of the RSU
@@ -174,8 +175,8 @@ IProcess groundSkyViewFactor() {
                 }
 
                 i+=1
+                println "Row ${row.id_rsu} - Step $i: ${(System.currentTimeMillis()-t_i) / 1000} s"
                 t_i = System.currentTimeMillis()
-                "Step $i: ${System.currentTimeMillis()-t_i / 1000} s"
 
                 // The grid points intersecting buildings are identified
                 datasource.execute "CREATE INDEX IF NOT EXISTS ids_temp ON $ptsRSUtempo(the_geom) USING RTREE; " +
@@ -185,8 +186,8 @@ IProcess groundSkyViewFactor() {
                         "a.the_geom && b.$GEOMETRIC_COLUMN_BU AND ST_INTERSECTS(a.the_geom, b.$GEOMETRIC_COLUMN_BU)"
 
                 i+=1
+                println "Row ${row.id_rsu} - Step $i: ${(System.currentTimeMillis()-t_i) / 1000} s"
                 t_i = System.currentTimeMillis()
-                "Step $i: ${System.currentTimeMillis()-t_i / 1000} s"
 
                 // The grid points intersecting buildings are then deleted
                 datasource.execute "CREATE INDEX IF NOT EXISTS id_temp ON $ptsRSUtempo(pk); " +
@@ -196,8 +197,8 @@ IProcess groundSkyViewFactor() {
                         "IS NULL)"
 
                 i+=1
+                println "Row ${row.id_rsu} - Step $i: ${(System.currentTimeMillis()-t_i) / 1000} s"
                 t_i = System.currentTimeMillis()
-                "Step $i: ${System.currentTimeMillis()-t_i / 1000} s"
 
                 // A random sample of points (of size corresponding to the point density defined by $pointDensity)
                 // is drawn in order to have the same density of point in each RSU. It is directly
@@ -209,8 +210,8 @@ IProcess groundSkyViewFactor() {
             }
 
             i+=1
+            println "Step $i: ${(System.currentTimeMillis()-t_i) / 1000} s"
             t_i = System.currentTimeMillis()
-            "Step $i: ${System.currentTimeMillis()-t_i / 1000} s"
 
             // The SVF calculation is performed at point scale
             datasource.execute "CREATE INDEX IF NOT EXISTS ids_pts ON $ptsRSUtot(the_geom) USING RTREE; " +
@@ -221,8 +222,8 @@ IProcess groundSkyViewFactor() {
                     "ST_DWITHIN(b.$GEOMETRIC_COLUMN_BU, a.the_geom, $rayLength) GROUP BY a.the_geom"
 
             i+=1
+            println "Step $i: ${(System.currentTimeMillis()-t_i) / 1000} s"
             t_i = System.currentTimeMillis()
-            "Step $i: ${System.currentTimeMillis()-t_i / 1000} s"
 
 
             // The result of the SVF calculation is averaged at RSU scale and the rsu that do not have
@@ -235,9 +236,8 @@ IProcess groundSkyViewFactor() {
                     "GROUP BY b.id_rsu"
 
             i+=1
+            println "Step $i: ${(System.currentTimeMillis()-t_i) / 1000} s"
             t_i = System.currentTimeMillis()
-            "Step $i: ${System.currentTimeMillis()-t_i / 1000} s"
-
 
             def tObis = System.currentTimeMillis() - to_start
 
@@ -246,7 +246,7 @@ IProcess groundSkyViewFactor() {
 
             // The temporary tables are deleted
             datasource.execute "DROP TABLE IF EXISTS $ptsRSUtot, $ptsRSUGrid, $ptsRSUtempo, $ptsRSUbu, " +
-                    "$ptsRSUfreeall, $randomSample, $svfPts"
+                    "$ptsRSUfreeall, $randomSample"
 
             [outputTableName: outputTableName]
         }
