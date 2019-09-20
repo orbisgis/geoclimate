@@ -378,10 +378,10 @@ class RsuIndicatorsTests {
     void extendedFreeFacadeFractionTest() {
         // Only the first 5 first created buildings are selected for the tests
         h2GIS.execute "DROP TABLE IF EXISTS tempo_build, rsu_free_external_facade_density; CREATE TABLE tempo_build AS SELECT * " +
-                "FROM building_test WHERE id_build < 6"
+                "FROM building_test WHERE id_build < 6 OR id_build = 35"
         // The geometry of the RSU is useful for the calculation, then it is inserted inside the build/rsu correlation table
         h2GIS.execute "DROP TABLE IF EXISTS rsu_tempo; CREATE TABLE rsu_tempo AS SELECT * " +
-                "FROM rsu_test"
+                "FROM rsu_test WHERE id_rsu = 1"
 
         def  p =  Geoindicators.RsuIndicators.extendedFreeFacadeFraction()
         assertTrue p.execute([buildingTable: "tempo_build",
@@ -393,6 +393,6 @@ class RsuIndicatorsTests {
         h2GIS.eachRow("SELECT * FROM test_rsu_extended_free_facade_fraction WHERE id_rsu = 1"){
             row -> concat+= row.rsu_extended_free_facade_fraction.round(3)
         }
-        assertEquals(0.160, concat)
+        assertEquals(0.177, concat)
     }
 }

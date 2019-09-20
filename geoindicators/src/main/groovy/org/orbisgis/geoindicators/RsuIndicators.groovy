@@ -1342,16 +1342,15 @@ IProcess perviousnessFraction() {
 * @author Jérémy Bernard
 */
 IProcess extendedFreeFacadeFraction() {
-    def final GEOMETRIC_FIELD_RSU = "the_geom"
+    def final GEOMETRIC_FIELD = "the_geom"
     def final ID_FIELD_RSU = "id_rsu"
     def final HEIGHT_WALL = "height_wall"
     def final BASE_NAME = "rsu_extended_free_facade_fraction"
-    def final ID_FIELD_EXT_RSU = "id_rsu_ext"
 
     return create({
         title "Extended RSU free facade fraction (for SVF fast)"
         inputs buildingTable: String, rsuTable: String, buContiguityColumn: String, buTotalFacadeLengthColumn: String,
-                prefixName: String, buffDist: 30, datasource: JdbcDataSource
+                prefixName: String, buffDist: 10, datasource: JdbcDataSource
         outputs outputTableName: String
         run { buildingTable, rsuTable, buContiguityColumn, buTotalFacadeLengthColumn, prefixName, buffDist, datasource ->
 
@@ -1362,34 +1361,49 @@ IProcess extendedFreeFacadeFraction() {
 
             // Temporary tables are created
             def extRsuTable = "extRsu$uuid"
+            def inclBu = "inclBu$uuid"
+            def fullInclBu = "fullInclBu$uuid"
+            def notIncBu = "notIncBu$uuid"
+            def allBu = "allBu$uuid"
 
-            datasource.getSpatialTable(rsuTable)[ID_FIELD_RSU].createIndex()
-
-            // The RSU area is extended according to a buffer and the id_rsu column name is modified to avoid conflicts
+            // The RSU area is extended according to a buffer
             datasource.execute "DROP TABLE IF EXISTS $extRsuTable; CREATE TABLE $extRsuTable AS SELECT " +
-                    "ST_BUFFER($GEOMETRIC_FIELD_RSU, $buffDist, 'quad_segs=2') AS $GEOMETRIC_FIELD_RSU," +
-                    "$ID_FIELD_RSU AS $ID_FIELD_EXT_RSU FROM $rsuTable;"
+                    "ST_BUFFER($GEOMETRIC_FIELD, $buffDist, 'quad_segs=2') AS $GEOMETRIC_FIELD," +
+                    "$ID_FIELD_RSU FROM $rsuTable;"
 
-            // The relations between buildings and extended RSU are calculated
-            def BuRsuComp =  Geoindicators.SpatialUnits.createScalesRelations()
-            BuRsuComp.execute([inputLowerScaleTableName: buildingTable, inputUpperScaleTableName : extRsuTable,
-                                     idColumnUp: ID_FIELD_EXT_RSU, prefixName: prefixName, nbRelations: null,
-                               datasource: datasource])
-            def BuRsuRelations = BuRsuComp.results.outputTableName
+            // The facade area of buildings being entirely included in the RSU buffer is calculated
+            datasource.getSpatialTable(extRsuTable)[GEOMETRIC_FIELD].createIndex()
+            datasource.getSpatialTable(buildingTable)[GEOMETRIC_FIELD].createIndex()
 
-            datasource.getSpatialTable(BuRsuRelations)[ID_FIELD_EXT_RSU].createIndex()
+            datasource.execute "DROP TABLE IF EXISTS $inclBu; CREATE TABLE $inclBu AS SELECT " +
+                    "COALESCE(SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$HEIGHT_WALL), 0) AS FAC_AREA," +
+                    "b.$ID_FIELD_RSU FROM $buildingTable a, $extRsuTable b WHERE ST_COVERS(b.$GEOMETRIC_FIELD," +
+                    "a.$GEOMETRIC_FIELD) GROUP BY b.$ID_FIELD_RSU;"
+
+            // All RSU are feeded with default value
+            datasource.getTable(inclBu)[ID_FIELD_RSU].createIndex()
+            datasource.getTable(rsuTable)[ID_FIELD_RSU].createIndex()
+            datasource.execute "DROP TABLE IF EXISTS $fullInclBu; CREATE TABLE $fullInclBu AS SELECT " +
+                    "COALESCE(a.FAC_AREA, 0) AS FAC_AREA, b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD " +
+                    "FROM $inclBu a RIGHT JOIN $rsuTable b ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU;"
+
+            // The facade area of buildings being partially included in the RSU buffer is calculated
+            datasource.execute "DROP TABLE IF EXISTS $notIncBu; CREATE TABLE $notIncBu AS SELECT " +
+                    "COALESCE(SUM(ST_LENGTH(ST_INTERSECTION(ST_TOMULTILINE(a.$GEOMETRIC_FIELD)," +
+                    " b.$GEOMETRIC_FIELD))*a.$HEIGHT_WALL), 0) " +
+                    "AS FAC_AREA, b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD FROM $buildingTable a, $extRsuTable b " +
+                    "WHERE ST_OVERLAPS(b.$GEOMETRIC_FIELD, a.$GEOMETRIC_FIELD) GROUP BY b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD;"
 
             // The facade fraction is calculated
-            def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
-                    "SELECT COALESCE(SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$HEIGHT_WALL)/" +
-                    "(SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$HEIGHT_WALL) + " +
-                    "st_area(b.$GEOMETRIC_FIELD_RSU)),0) AS rsu_extended_free_facade_fraction, " +
-                    "b.$ID_FIELD_EXT_RSU AS $ID_FIELD_RSU"
-
-            query += " FROM $BuRsuRelations a RIGHT JOIN $extRsuTable b " +
-                    "ON a.$ID_FIELD_EXT_RSU = b.$ID_FIELD_EXT_RSU GROUP BY b.$ID_FIELD_EXT_RSU, b.$GEOMETRIC_FIELD_RSU;"
-
-            datasource.execute query
+            datasource.getTable(notIncBu)[ID_FIELD_RSU].createIndex()
+            datasource.getSpatialTable(fullInclBu)[ID_FIELD_RSU].createIndex()
+            datasource.execute "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
+                    "SELECT COALESCE((a.FAC_AREA + b.FAC_AREA) /" +
+                    "(a.FAC_AREA + b.FAC_AREA + ST_AREA(ST_BUFFER(a.$GEOMETRIC_FIELD, $buffDist, 'quad_segs=2')))," +
+                    " a.FAC_AREA / (a.FAC_AREA  + ST_AREA(ST_BUFFER(a.$GEOMETRIC_FIELD, $buffDist, 'quad_segs=2'))))" +
+                    "AS rsu_extended_free_facade_fraction, " +
+                    "a.$ID_FIELD_RSU, a.$GEOMETRIC_FIELD FROM $fullInclBu a LEFT JOIN $notIncBu b " +
+                    "ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU;"
 
             [outputTableName: outputTableName]
         }
