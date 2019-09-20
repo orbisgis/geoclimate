@@ -581,7 +581,7 @@ def computeRSUIndicators() {
                     if (!computeSVF([rsuTable                : intermediateJoinTable,
                                      correlationBuildingTable: buildingTable,
                                      rsuBuildingDensityColumn: "dens_area",
-                                     pointDensity            : 0.02,
+                                     pointDensity            : svfPointDensity,
                                      rayLength               : svfRayLength,
                                      numberOfDirection       : svfNumberOfDirection,
                                      prefixName              : prefixName,
