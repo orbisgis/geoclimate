@@ -568,7 +568,7 @@ def computeRSUIndicators() {
                                           rsuTable: intermediateJoinTable,
                                           buContiguityColumn: "building_contiguity",
                                           buTotalFacadeLengthColumn: "building_total_facade_length",
-                                          prefixName: prefixName, buffDist : 30, datasource: datasource])){
+                                          prefixName: prefixName, buffDist : 45, datasource: datasource])){
                         info "Cannot compute the SVF calculation in $prefixName. "
                         return
                         }
@@ -581,7 +581,7 @@ def computeRSUIndicators() {
                     if (!computeSVF([rsuTable                : intermediateJoinTable,
                                      correlationBuildingTable: buildingTable,
                                      rsuBuildingDensityColumn: "dens_area",
-                                     pointDensity            : svfPointDensity,
+                                     pointDensity            : 0.02,
                                      rayLength               : svfRayLength,
                                      numberOfDirection       : svfNumberOfDirection,
                                      prefixName              : prefixName,

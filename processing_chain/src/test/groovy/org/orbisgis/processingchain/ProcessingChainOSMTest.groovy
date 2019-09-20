@@ -181,7 +181,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
 
         //Run tests
         calcLcz(directory, datasource, zoneTableName, buildingTableName,roadTableName,null,vegetationTableName,
-                hydrographicTableName,saveResults)
+                hydrographicTableName,saveResults, false)
     }
 
 
