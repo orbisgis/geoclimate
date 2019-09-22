@@ -97,7 +97,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
 
     }
 
-    @Test
+    //@Test
     void osmGeoIndicatorsFromApi() {
         String directory ="./target/osm_processchain_full"
         boolean saveResults = true
