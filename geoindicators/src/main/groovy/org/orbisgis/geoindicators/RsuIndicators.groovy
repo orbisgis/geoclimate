@@ -247,11 +247,9 @@ IProcess aspectRatio() {
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
 
-            def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
-                    "SELECT $rsuFreeExternalFacadeDensityColumn/(1-$rsuBuildingDensityColumn) AS " +
-                    "rsu_aspect_ratio, $COLUMN_ID_RSU FROM $rsuTable"
-
-            datasource.execute query
+            datasource.execute """DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS 
+                    SELECT $rsuFreeExternalFacadeDensityColumn/(1-$rsuBuildingDensityColumn) AS 
+                    rsu_aspect_ratio, $COLUMN_ID_RSU FROM $rsuTable"""
 
             [outputTableName: outputTableName]
         }
