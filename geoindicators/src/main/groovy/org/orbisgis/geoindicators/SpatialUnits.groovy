@@ -270,7 +270,8 @@ IProcess createBlocks(){
 
             //Create the blocks
             info "Creating the block table..."
-            datasource.execute """DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName ($columnIdName SERIAL, THE_GEOM GEOMETRY) 
+            datasource.execute """DROP TABLE IF EXISTS $outputTableName; 
+            CREATE TABLE $outputTableName ($columnIdName SERIAL, THE_GEOM GEOMETRY) 
             AS (SELECT null, THE_GEOM FROM $subGraphBlocks) UNION ALL (SELECT null, a.the_geom FROM $inputTableName a 
             LEFT JOIN $subGraphTableNodes b ON a.id_build = b.NODE_ID WHERE b.NODE_ID IS NULL);"""
 
@@ -313,6 +314,8 @@ IProcess createScalesRelations(){
 
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + inputLowerScaleTableName + "_corr"
+            datasource.getSpatialTable(inputLowerScaleTableName).the_geom.createSpatialIndex()
+            datasource.getSpatialTable(inputUpperScaleTableName).the_geom.createSpatialIndex()
 
             datasource.execute """DROP TABLE IF EXISTS $outputTableName; 
                     CREATE INDEX IF NOT EXISTS ids_l ON $inputLowerScaleTableName($GEOMETRIC_COLUMN_LOW) USING RTREE; 

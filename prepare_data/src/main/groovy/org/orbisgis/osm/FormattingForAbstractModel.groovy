@@ -648,6 +648,9 @@ static String[] getTypeAndUse(def row,def columnNames, def myMap) {
             }
         }
     }
+    if (strUse==null) {
+            strUse = strType
+    }
     return [strType,strUse]
 }
 

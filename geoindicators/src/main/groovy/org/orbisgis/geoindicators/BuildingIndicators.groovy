@@ -129,49 +129,45 @@ def neighborsProperties() {
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
 
-            def query = "CREATE INDEX IF NOT EXISTS buff_ids ON $inputBuildingTableName($GEOMETRIC_FIELD) " +
-                    "USING RTREE; " +
-                    "CREATE INDEX IF NOT EXISTS buff_id ON $inputBuildingTableName($ID_FIELD);" +
-                    " CREATE TABLE $build_intersec AS SELECT "
+            datasource.getSpatialTable(inputBuildingTableName).the_geom.createSpatialIndex()
+            datasource.getSpatialTable(inputBuildingTableName).id_build.createIndex()
 
-            def query_update = ""
+            def query = " CREATE TABLE $build_intersec AS SELECT "
 
             // The operation names are transformed into lower case
             operations.replaceAll { s -> s.toLowerCase() }
             operations.each { operation ->
                 switch (operation) {
                     case OP_CONTIGUITY:
-                        query += "sum(least(a.$HEIGHT_WALL, b.$HEIGHT_WALL)*" +
-                                "st_length(ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_FIELD),ST_MAKEVALID(b.$GEOMETRIC_FIELD))))/" +
-                                "((ST_PERIMETER(a.$GEOMETRIC_FIELD)+" +
-                                "ST_PERIMETER(ST_HOLES(a.$GEOMETRIC_FIELD)))*a.$HEIGHT_WALL)" +
-                                " AS $operation,"
+                        query += """sum(least(a_height_wall, b_height_wall)* 
+                                st_length(the_geom)/(perimeter* a_height_wall)) AS $operation,"""
                         break
                     case OP_COMMON_WALL_FRACTION:
-                        query += "sum(ST_LENGTH(ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_FIELD), ST_MAKEVALID(b.$GEOMETRIC_FIELD))))/" +
-                                "(ST_PERIMETER(a.$GEOMETRIC_FIELD)+ST_PERIMETER(ST_HOLES(a.$GEOMETRIC_FIELD))) " +
-                                "AS $operation,"
+                        query += """SUM(st_length(the_geom)/perimeter)
+                                 AS $operation,"""
                         break
                     case OP_NUMBER_BUILDING_NEIGHBOR:
-                        query += "COUNT(ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_FIELD),ST_MAKEVALID( b.$GEOMETRIC_FIELD)))" +
-                                " AS $operation,"
+                        query += "COUNT($ID_FIELD) AS $operation,"
                         break
                 }
-                // The buildingNeighborProperty is set to 0 for the buildings that have no intersection with their
-                // building neighbors
-                if (OPS.contains(operation)) {
-                    query_update += "UPDATE $outputTableName SET $operation = 0 WHERE $operation IS null;"
-                }
             }
-            query += "a.$ID_FIELD FROM $inputBuildingTableName a, $inputBuildingTableName b" +
-                    " WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD AND " +
-                    "ST_INTERSECTS(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD) AND a.$ID_FIELD <> b.$ID_FIELD" +
-                    " GROUP BY a.$ID_FIELD;" +
-                    "CREATE INDEX IF NOT EXISTS buff_id ON $build_intersec($ID_FIELD);" +
-                    "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
-                    "SELECT b.${operations.join(",b.")}, a.$ID_FIELD" +
-                    " FROM $inputBuildingTableName a LEFT JOIN $build_intersec b ON a.$ID_FIELD = b.$ID_FIELD;"
-            query += query_update
+            def list = []
+            operations.each { iter ->
+                list << "(CASE WHEN b.${iter} is null then 0 else b.${iter} END) as ${iter}"
+            }
+            query += """$ID_FIELD FROM (SELECT ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_FIELD),
+                        ST_MAKEVALID(b.$GEOMETRIC_FIELD)) AS the_geom,
+                        a.$ID_FIELD, ST_PERIMETER(a.$GEOMETRIC_FIELD) + ST_PERIMETER(ST_HOLES(a.$GEOMETRIC_FIELD)) AS perimeter, 
+                        a.$HEIGHT_WALL AS  a_height_wall,  b.$HEIGHT_WALL AS b_height_wall FROM
+                    $inputBuildingTableName a, $inputBuildingTableName b 
+                     WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD AND 
+                    ST_INTERSECTS(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD) AND a.$ID_FIELD <> b.$ID_FIELD)
+                     GROUP BY $ID_FIELD;
+                    CREATE INDEX IF NOT EXISTS buff_id ON $build_intersec($ID_FIELD);
+                    DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS 
+                    SELECT  ${list.join(",")} ,  a.$ID_FIELD
+                     FROM $inputBuildingTableName a LEFT JOIN $build_intersec b ON a.$ID_FIELD = b.$ID_FIELD;"""
+
 
             // The temporary tables are deleted
             query += "DROP TABLE IF EXISTS $build_intersec"
@@ -280,6 +276,7 @@ def formProperties() {
  * @return A database table name.
  *
  * @author Jérémy Bernard
+ * @author Erwan Bocher
  */
 def minimumBuildingSpacing() {
     def final GEOMETRIC_FIELD = "the_geom"
@@ -295,36 +292,27 @@ def minimumBuildingSpacing() {
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
-            def build_buffer = "build_buffer$uuid"
-            def build_within_buffer = "build_within_buffer$uuid"
+            def build_min_distance = "build_min_distance$uuid"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
 
-            // The buffer is created
-            datasource.execute "CREATE TABLE $build_buffer AS SELECT $ID_FIELD, " +
-                    "ST_BUFFER($GEOMETRIC_FIELD, $bufferDist) AS $GEOMETRIC_FIELD FROM $inputBuildingTableName; " +
-                    "CREATE INDEX IF NOT EXISTS buff_ids ON $build_buffer($GEOMETRIC_FIELD) USING RTREE;" +
-                    "CREATE INDEX IF NOT EXISTS inpute_ids ON $inputBuildingTableName($GEOMETRIC_FIELD) USING RTREE;" +
-                    "CREATE INDEX IF NOT EXISTS buff_id ON $build_buffer($ID_FIELD); " +
-                    "CREATE INDEX IF NOT EXISTS inpute_id ON $inputBuildingTableName($ID_FIELD)"
-            // The building located within the buffer are identified
-            datasource.execute "DROP TABLE IF EXISTS $build_within_buffer; CREATE TABLE $build_within_buffer AS" +
-                    " SELECT b.$ID_FIELD, a.$GEOMETRIC_FIELD FROM $inputBuildingTableName a, $build_buffer b " +
-                    "WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD AND " +
-                    "ST_INTERSECTS(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD) AND a.$ID_FIELD <> b.$ID_FIELD;" +
-                    "CREATE INDEX IF NOT EXISTS with_buff_id ON $build_within_buffer($ID_FIELD);" +
-                    "CREATE INDEX IF NOT EXISTS with_buff_ids ON $build_within_buffer($GEOMETRIC_FIELD) USING RTREE"
+            datasource.getSpatialTable(inputBuildingTableName).the_geom.createSpatialIndex()
+            datasource.getSpatialTable(inputBuildingTableName).id_build.createIndex()
+
+            datasource.execute """DROP TABLE IF EXISTS $build_min_distance; CREATE TABLE $build_min_distance AS 
+                     SELECT b.$ID_FIELD, min(ST_distance(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD)) AS min_distance FROM $inputBuildingTableName a, $inputBuildingTableName b 
+                    WHERE st_expand(a.$GEOMETRIC_FIELD, $bufferDist) && b.$GEOMETRIC_FIELD AND a.$ID_FIELD <> b.$ID_FIELD GROUP BY b.$ID_FIELD;
+                     CREATE INDEX IF NOT EXISTS with_buff_id ON $build_min_distance($ID_FIELD); """
+
             // The minimum distance is calculated (The minimum distance is set to the $inputE value for buildings
-            // having no building neighbors in a bufferDist meters distance
-            datasource.execute "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE " +
-                    "$outputTableName(building_minimum_building_spacing DOUBLE, $ID_FIELD INTEGER)" +
-                    " AS (SELECT COALESCE(MIN(ST_DISTANCE(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD)), $bufferDist), " +
-                    "a.$ID_FIELD " +
-                    "FROM $build_within_buffer b RIGHT JOIN $inputBuildingTableName a ON a.$ID_FIELD = b.$ID_FIELD" +
-                    " GROUP BY a.$ID_FIELD)"
+            // having no building neighbors in a envelope meters distance
+            datasource.execute """DROP TABLE IF EXISTS $outputTableName; 
+                    CREATE TABLE $outputTableName($ID_FIELD INTEGER,building_minimum_building_spacing FLOAT) 
+                     AS SELECT a.$ID_FIELD, case when b.min_distance is not null then b.min_distance else 100 end 
+                    FROM $inputBuildingTableName a LEFT JOIN $build_min_distance b ON a.$ID_FIELD = b.$ID_FIELD """
             // The temporary tables are deleted
-            datasource.execute "DROP TABLE IF EXISTS $build_buffer, $build_within_buffer"
+            datasource.execute "DROP TABLE IF EXISTS $build_min_distance"
 
             [outputTableName: outputTableName]
         }
@@ -370,6 +358,8 @@ def roadDistance() {
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
 
+            datasource.getSpatialTable(inputBuildingTableName).id_build.createIndex()
+
             // The buffer is created
             datasource.execute "DROP TABLE IF EXISTS $build_buffer; " +
                     "CREATE TABLE $build_buffer AS SELECT $ID_FIELD_BU," +
@@ -386,9 +376,9 @@ def roadDistance() {
                     "SELECT a.$ID_FIELD_BU, b.$GEOMETRIC_FIELD FROM $build_buffer a, $road_surf b " +
                     "WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD AND " +
                     "ST_INTERSECTS(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD); " +
-                    "CREATE INDEX IF NOT EXISTS with_buff_id ON $road_within_buffer($ID_FIELD_BU); " +
-                    "CREATE INDEX IF NOT EXISTS a_id ON $inputBuildingTableName($ID_FIELD_BU)"
-            // The minimum distance is calculated between each building and the surrounding roads (he minimum
+                    "CREATE INDEX IF NOT EXISTS with_buff_id ON $road_within_buffer($ID_FIELD_BU); "
+
+            // The minimum distance is calculated between each building and the surrounding roads (the minimum
             // distance is set to the bufferDist value for buildings having no road within a bufferDist meters
             // distance)
             datasource.execute "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE " +
@@ -453,14 +443,15 @@ def likelihoodLargeBuilding() {
             // The name of the outputTableName is constructed
             String outputTableName = prefixName + "_" + BASE_NAME
 
+            datasource.getSpatialTable(inputBuildingTableName).id_build.createIndex()
+
             // The calculation of the logistic function is performed only for buildings having no neighbors
-            datasource.execute "CREATE INDEX ON $inputBuildingTableName($ID_FIELD_BU); " +
-                    "DROP TABLE IF EXISTS $outputTableName; " +
-                    "CREATE TABLE $outputTableName AS SELECT a.$ID_FIELD_BU, " +
-                    "CASEWHEN(a.$nbOfBuildNeighbors>0, 0," +
-                    " 1/(1+$a*exp(-$r*st_maxdistance(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD)))) AS $BASE_NAME " +
-                    "FROM $inputBuildingTableName a LEFT JOIN $inputBuildingTableName b " +
-                    "ON a.$ID_FIELD_BU = b.$ID_FIELD_BU"
+            datasource.execute """DROP TABLE IF EXISTS $outputTableName; 
+                     CREATE TABLE $outputTableName AS SELECT a.$ID_FIELD_BU, 
+                     CASEWHEN(a.$nbOfBuildNeighbors>0, 0,
+                     1/(1+$a*exp(-$r*st_maxdistance(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD)))) AS $BASE_NAME 
+                     FROM $inputBuildingTableName a LEFT JOIN $inputBuildingTableName b 
+                     ON a.$ID_FIELD_BU = b.$ID_FIELD_BU"""
 
             [outputTableName: outputTableName]
         }
