@@ -134,45 +134,65 @@ IProcess groundSkyViewFactor() {
 
 
             // Create the geometries of buildings and RSU holes included within each RSU
-            datasource.execute "DROP TABLE IF EXISTS $rsuHolesToRemove, $multiptsRSUtot, $ptsRSUtot, $outputTableName;" +
-                    "CREATE TABLE $rsuHolesToRemove AS (SELECT ST_TOMULTILINE(ST_ACCUM(ST_INTERSECTION(a.$GEOMETRIC_COLUMN_RSU, " +
-                    "b.$GEOMETRIC_COLUMN_BU))) AS the_geom, a.$ID_COLUMN_RSU FROM $rsuTable a, $correlationBuildingTable b " +
-                    "WHERE a.$GEOMETRIC_COLUMN_RSU && b.$GEOMETRIC_COLUMN_BU AND ST_OVERLAPS(a.$GEOMETRIC_COLUMN_RSU, " +
-                    "b.$GEOMETRIC_COLUMN_BU) OR a.$GEOMETRIC_COLUMN_RSU && b.$GEOMETRIC_COLUMN_BU AND " +
-                    "ST_CONTAINS(a.$GEOMETRIC_COLUMN_RSU, b.$GEOMETRIC_COLUMN_BU) GROUP BY a.$ID_COLUMN_RSU) "
-                    "UNION ALL SELECT ST_TOMULTILINE(ST_HOLES($GEOMETRIC_COLUMN_RSU)) AS the_geom, $ID_COLUMN_RSU " +
-                    "FROM $rsuTable"
+            datasource.execute """
+                    DROP TABLE IF EXISTS $rsuHolesToRemove, $multiptsRSUtot, $ptsRSUtot, $svfPts, $outputTableName;
+                    CREATE TABLE $rsuHolesToRemove 
+                    AS (SELECT  ST_TOMULTILINE(ST_ACCUM(ST_INTERSECTION(a.$GEOMETRIC_COLUMN_RSU, b.$GEOMETRIC_COLUMN_BU)))
+                                AS the_geom, a.$ID_COLUMN_RSU 
+                    FROM        $rsuTable a, $correlationBuildingTable b 
+                    WHERE       a.$GEOMETRIC_COLUMN_RSU && b.$GEOMETRIC_COLUMN_BU AND ST_OVERLAPS(a.$GEOMETRIC_COLUMN_RSU, 
+                                b.$GEOMETRIC_COLUMN_BU) OR a.$GEOMETRIC_COLUMN_RSU && b.$GEOMETRIC_COLUMN_BU AND 
+                                ST_CONTAINS(a.$GEOMETRIC_COLUMN_RSU, b.$GEOMETRIC_COLUMN_BU)
+                    GROUP BY    a.$ID_COLUMN_RSU)
+                    UNION ALL 
+                    SELECT      ST_TOMULTILINE(ST_HOLES($GEOMETRIC_COLUMN_RSU)) AS the_geom, $ID_COLUMN_RSU
+                    FROM $rsuTable"""
 
             datasource.getTable(rsuHolesToRemove)[ID_COLUMN_RSU].createIndex()
 
             // The points used for the SVF calculation are randomly selected within each RSU. The points are
             // located outside buildings (and RSU holes) and the density of points (points / m² of free ground surface)
             // is similar in each RSU
-            datasource.execute "CREATE TABLE $multiptsRSUtot AS SELECT a.$ID_COLUMN_RSU, " +
-                    "ST_GENERATEPOINTS(ST_MAKEPOLYGON(ST_EXTERIORRING(a.$GEOMETRIC_COLUMN_RSU), " +
-                    "ST_ACCUM(b.the_geom)), TRUNC(${pointDensity}*ST_AREA(a.$GEOMETRIC_COLUMN_RSU)*" +
-                    "(1.0 - a.$rsuBuildingDensityColumn)+1)) AS the_geom FROM $rsuTable a LEFT JOIN " +
-                    "$rsuHolesToRemove b ON a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU GROUP BY a.$ID_COLUMN_RSU"
+            datasource.execute """
+                    CREATE TABLE $multiptsRSUtot 
+                    AS SELECT       a.$ID_COLUMN_RSU, ST_GENERATEPOINTS(ST_MAKEPOLYGON(ST_EXTERIORRING(a.$GEOMETRIC_COLUMN_RSU),
+                                    ST_ACCUM(b.the_geom)), TRUNC(${pointDensity}*ST_AREA(a.$GEOMETRIC_COLUMN_RSU)*
+                                    (1.0 - a.$rsuBuildingDensityColumn)+1)) AS the_geom 
+                    FROM            $rsuTable a 
+                    LEFT JOIN       $rsuHolesToRemove b 
+                    ON              a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU 
+                    GROUP BY        a.$ID_COLUMN_RSU"""
 
             // Convert the multipoint geometries to points
-            datasource.execute "CREATE TABLE $ptsRSUtot(pk SERIAL, $ID_COLUMN_RSU INTEGER, the_geom GEOMETRY) " +
-                    "AS (SELECT null, $ID_COLUMN_RSU, the_geom FROM ST_EXPLODE('(SELECT * FROM $multiptsRSUtot)'))"
+            datasource.execute """
+                    CREATE TABLE $ptsRSUtot(pk SERIAL, $ID_COLUMN_RSU INTEGER, the_geom GEOMETRY)
+                    AS (SELECT      null, $ID_COLUMN_RSU, the_geom 
+                    FROM            ST_EXPLODE('(SELECT * FROM $multiptsRSUtot)'))"""
+
+            datasource.getSpatialTable(ptsRSUtot).the_geom.createSpatialIndex()
 
             // The SVF calculation is performed at point scale
-            datasource.execute "CREATE INDEX IF NOT EXISTS ids_pts ON $ptsRSUtot(the_geom) USING RTREE; " +
-                    "DROP TABLE IF EXISTS $svfPts; CREATE TABLE $svfPts AS SELECT a.pk, a.$ID_COLUMN_RSU, " +
-                    "ST_SVF(ST_GEOMETRYN(a.the_geom,1), ST_ACCUM(ST_UPDATEZ(b.$GEOMETRIC_COLUMN_BU, b.$HEIGHT_WALL)), " +
-                    "$rayLength, $numberOfDirection, 5) AS SVF FROM $ptsRSUtot AS a, $correlationBuildingTable " +
-                    "AS b WHERE ST_EXPAND(a.the_geom, $rayLength) && b.$GEOMETRIC_COLUMN_BU AND " +
-                    "ST_DWITHIN(b.$GEOMETRIC_COLUMN_BU, a.the_geom, $rayLength) GROUP BY a.the_geom"
+            datasource.execute """
+                    CREATE TABLE $svfPts 
+                    AS SELECT   a.pk, a.$ID_COLUMN_RSU, 
+                                ST_SVF(ST_GEOMETRYN(a.the_geom,1), ST_ACCUM(ST_UPDATEZ(b.$GEOMETRIC_COLUMN_BU, b.$HEIGHT_WALL)), 
+                                       $rayLength, $numberOfDirection, 5) AS SVF
+                    FROM        $ptsRSUtot AS a, $correlationBuildingTable AS b 
+                    WHERE       ST_EXPAND(a.the_geom, $rayLength) && b.$GEOMETRIC_COLUMN_BU AND 
+                                ST_DWITHIN(b.$GEOMETRIC_COLUMN_BU, a.the_geom, $rayLength) 
+                    GROUP BY    a.the_geom"""
 
             datasource.getTable(svfPts)[ID_COLUMN_RSU].createIndex()
             datasource.getTable(ptsRSUtot)[ID_COLUMN_RSU].createIndex()
 
             // The result of the SVF calculation is averaged at RSU scale
-            datasource.execute "CREATE TABLE $outputTableName(id_rsu integer, rsu_ground_sky_view_factor double) AS " +
-                    "(SELECT a.$ID_COLUMN_RSU, AVG(b.SVF) FROM $ptsRSUtot a LEFT JOIN $svfPts b ON a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU" +
-                    " GROUP BY a.$ID_COLUMN_RSU)"
+            datasource.execute """
+                    CREATE TABLE $outputTableName(id_rsu integer, rsu_ground_sky_view_factor double) 
+                    AS          (SELECT a.$ID_COLUMN_RSU, AVG(b.SVF) 
+                    FROM        $ptsRSUtot a 
+                    LEFT JOIN   $svfPts b 
+                    ON          a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU
+                    GROUP BY    a.$ID_COLUMN_RSU)"""
 
             def tObis = System.currentTimeMillis() - to_start
 
