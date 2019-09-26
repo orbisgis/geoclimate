@@ -134,44 +134,40 @@ def neighborsProperties() {
 
             def query = " CREATE TABLE $build_intersec AS SELECT "
 
-            def query_update = ""
-
             // The operation names are transformed into lower case
             operations.replaceAll { s -> s.toLowerCase() }
             operations.each { operation ->
                 switch (operation) {
                     case OP_CONTIGUITY:
-                        query += "sum(least(a.$HEIGHT_WALL, b.$HEIGHT_WALL)*" +
-                                "st_length(ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_FIELD),ST_MAKEVALID(b.$GEOMETRIC_FIELD))))/" +
-                                "((ST_PERIMETER(a.$GEOMETRIC_FIELD)+" +
-                                "ST_PERIMETER(ST_HOLES(a.$GEOMETRIC_FIELD)))*a.$HEIGHT_WALL)" +
-                                " AS $operation,"
+                        query += """sum(least(a_height_wall, b_height_wall)* 
+                                st_length(the_geom)/(perimeter* a_height_wall)) AS $operation,"""
                         break
                     case OP_COMMON_WALL_FRACTION:
-                        query += "sum(ST_LENGTH(ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_FIELD), ST_MAKEVALID(b.$GEOMETRIC_FIELD))))/" +
-                                "(ST_PERIMETER(a.$GEOMETRIC_FIELD)+ST_PERIMETER(ST_HOLES(a.$GEOMETRIC_FIELD))) " +
-                                "AS $operation,"
+                        query += """SUM(st_length(the_geom)/perimeter)
+                                 AS $operation,"""
                         break
                     case OP_NUMBER_BUILDING_NEIGHBOR:
-                        query += "COUNT(ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_FIELD),ST_MAKEVALID( b.$GEOMETRIC_FIELD)))" +
-                                " AS $operation,"
+                        query += "COUNT($ID_FIELD) AS $operation,"
                         break
                 }
-                // The buildingNeighborProperty is set to 0 for the buildings that have no intersection with their
-                // building neighbors
-                if (OPS.contains(operation)) {
-                    query_update += "UPDATE $outputTableName SET $operation = 0 WHERE $operation IS null;"
-                }
             }
-            query += "a.$ID_FIELD FROM $inputBuildingTableName a, $inputBuildingTableName b" +
-                    " WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD AND " +
-                    "ST_INTERSECTS(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD) AND a.$ID_FIELD <> b.$ID_FIELD" +
-                    " GROUP BY a.$ID_FIELD;" +
-                    "CREATE INDEX IF NOT EXISTS buff_id ON $build_intersec($ID_FIELD);" +
-                    "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
-                    "SELECT b.${operations.join(",b.")}, a.$ID_FIELD" +
-                    " FROM $inputBuildingTableName a LEFT JOIN $build_intersec b ON a.$ID_FIELD = b.$ID_FIELD;"
-            query += query_update
+            def list = []
+            operations.each { iter ->
+                list << "(CASE WHEN b.${iter} is null then 0 else b.${iter} END) as ${iter}"
+            }
+            query += """$ID_FIELD FROM (SELECT ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_FIELD),
+                        ST_MAKEVALID(b.$GEOMETRIC_FIELD)) AS the_geom,
+                        a.$ID_FIELD, ST_PERIMETER(a.$GEOMETRIC_FIELD) + ST_PERIMETER(ST_HOLES(a.$GEOMETRIC_FIELD)) AS perimeter, 
+                        a.$HEIGHT_WALL AS  a_height_wall,  b.$HEIGHT_WALL AS b_height_wall FROM
+                    $inputBuildingTableName a, $inputBuildingTableName b 
+                     WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD AND 
+                    ST_INTERSECTS(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD) AND a.$ID_FIELD <> b.$ID_FIELD)
+                     GROUP BY $ID_FIELD;
+                    CREATE INDEX IF NOT EXISTS buff_id ON $build_intersec($ID_FIELD);
+                    DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS 
+                    SELECT  ${list.join(",")} ,  a.$ID_FIELD
+                     FROM $inputBuildingTableName a LEFT JOIN $build_intersec b ON a.$ID_FIELD = b.$ID_FIELD;"""
+
 
             // The temporary tables are deleted
             query += "DROP TABLE IF EXISTS $build_intersec"
