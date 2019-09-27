@@ -165,17 +165,6 @@ class FormattingForAbstractModelTests {
         }
     }
 
-
-    @Test
-    void testIfjson(){
-        def paramFile
-        paramFile = new File("D:\\Users\\le_sauxe\\Documents\\IUT\\GitWorkSpace\\geoclimate-1\\prepare_data\\src\\main\\resources\\org\\orbisgis\\osm\\buildingParams.json")
-        def jsonSlurper = new JsonSlurper()
-
-        println jsonSlurper.parse(paramFile)
-    }
-
-
 }
 
 
