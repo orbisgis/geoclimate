@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*
 class FormattingForAbstractModelTests {
 
     @Test
-   void formatingGISLayers() {
+   void formattingGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
         IProcess extractData = PrepareData.OSMGISLayers.createGISLayers()
         extractData.execute([

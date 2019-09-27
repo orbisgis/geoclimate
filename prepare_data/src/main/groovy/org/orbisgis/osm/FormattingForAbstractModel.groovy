@@ -34,7 +34,7 @@ IProcess formatBuildingLayer() {
                         CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_SOURCE VARCHAR, HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT,
                               NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER);"""
             } else {
-                def paramsDefaultFile = new File(this.class.getResource("buildingParams.json").toURI())
+                def paramsDefaultFile = this.class.getResource("buildingParams.json").toURI()
                 def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
                 def mappingTypeAndUse = parametersMap.get("type")
                 def typeAndLevel = parametersMap.get("level")
@@ -122,7 +122,7 @@ IProcess formatBuildingLayer() {
                     }
                     else {
                         //Define the mapping between the values in OSM and those used in the abstract model
-                        def paramsDefaultFile = new File(this.class.getResource("roadParams.json").toURI())
+                        def paramsDefaultFile = this.class.getResource("roadParams.json").toURI()
                         def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
                         def mappingForRoadType = parametersMap.get("type")
                         def mappingForSurface = parametersMap.get("surface")
@@ -191,7 +191,7 @@ IProcess formatBuildingLayer() {
                     CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);"""
 
             }else {
-                def paramsDefaultFile = new File(this.class.getResource("railParams.json").toURI())
+                def paramsDefaultFile = this.class.getResource("railParams.json").toURI()
                 def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
                 def mappingType = parametersMap.get("type")
 
@@ -252,7 +252,7 @@ IProcess formatVegetationLayer() {
                 datasource.execute """ drop table if exists $outputTableName;
                         CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_veget serial, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4));"""
             } else {
-                def paramsDefaultFile = new File(this.class.getResource("vegetParams.json").toURI())
+                def paramsDefaultFile = this.class.getResource("vegetParams.json").toURI()
                 def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
                 def mappingType = parametersMap.get("type")
                 def typeAndVegClass = parametersMap.get("class")
@@ -621,14 +621,15 @@ static Map parametersMapping(def file, def altResource) {
     def jsonSlurper = new JsonSlurper()
     if (file) {
         if (new File(file).isFile()) {
-            paramFile = new File(file)
+            paramFile = file
         } else {
-            logger.error("No file named ${file} found.")
+            logger.warn("No file named ${file} found. Taking default instead")
+            paramFile = altResource
         }
     } else {
         paramFile = altResource
     }
 
-    return jsonSlurper.parse(paramFile)
+    return jsonSlurper.parse(new File(paramFile))
 
 }
