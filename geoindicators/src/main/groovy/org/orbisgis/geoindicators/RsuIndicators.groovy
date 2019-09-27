@@ -94,6 +94,7 @@ IProcess freeExternalFacadeDensity() {
  *
  * @return A database table name.
  * @author Jérémy Bernard
+ * @author Erwan Bocher
  */
 IProcess groundSkyViewFactor() {
     def final GEOMETRIC_COLUMN_RSU = "the_geom"
@@ -114,97 +115,91 @@ IProcess groundSkyViewFactor() {
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
+            def rsuHolesToRemove = "rsuHolesToRemove$uuid"
+            def multiptsRSUtot = "multiptsRSUtot$uuid"
             def ptsRSUtot = "ptsRSUtot$uuid"
-            def ptsRSUGrid = "ptsRSUGrid$uuid"
-            def ptsRSUtempo = "ptsRSUtempo$uuid"
-            def ptsRSUbu = "ptsRSUbu$uuid"
-            def ptsRSUfreeall = "ptsRSUfreeall$uuid"
-            def randomSample = "randomSample$uuid"
             def svfPts = "svfPts$uuid"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
 
             // Create the needed index on input tables and the table that will contain the SVF calculation points
-            datasource.getSpatialTable(rsuTable).the_geom.createSpatialIndex()
-            datasource.getSpatialTable(rsuTable).id_rsu.createIndex()
+            datasource.getSpatialTable(rsuTable)[GEOMETRIC_COLUMN_RSU].createSpatialIndex()
+            datasource.getTable(rsuTable)[ID_COLUMN_RSU].createIndex()
 
-            datasource.getSpatialTable(correlationBuildingTable).the_geom.createSpatialIndex()
-            datasource.getSpatialTable(correlationBuildingTable).id_rsu.createIndex()
+            datasource.getSpatialTable(correlationBuildingTable)[GEOMETRIC_COLUMN_BU].createSpatialIndex()
+            datasource.getTable(correlationBuildingTable)[ID_COLUMN_RSU].createIndex()
 
             def to_start = System.currentTimeMillis()
 
-            datasource.execute "DROP TABLE IF EXISTS $ptsRSUtot; CREATE TABLE $ptsRSUtot (pk serial, " +
-                    "the_geom geometry, id_rsu int)"
 
-            // The points used for the SVF calculation should be selected within each RSU
-            datasource.eachRow("SELECT * FROM $rsuTable") { row ->
-                // Size of the grid mesh used to sample each RSU (based on the building density + 10%) - if the
-                // building density exceeds 90%, the LCZ 7 building density is then set to 90%
-                def freeAreaDens = Math.max(1 - (row[rsuBuildingDensityColumn] + 0.1), 0.1)
-                def gms = (freeAreaDens / pointDensity)**0.5
-                // A grid of point is created for each RSU
-                datasource.execute "DROP TABLE IF EXISTS $ptsRSUGrid; CREATE TABLE $ptsRSUGrid(pk SERIAL, " +
-                        "the_geom GEOMETRY) AS (SELECT null, the_geom " +
-                        "FROM ST_MAKEGRIDPOINTS('${row[GEOMETRIC_COLUMN_RSU]}'::GEOMETRY, $gms, $gms))"
-                // Grid points included inside the RSU are conserved
-                datasource.execute "CREATE INDEX IF NOT EXISTS ids_temp ON $ptsRSUGrid(the_geom) USING RTREE; " +
-                        "DROP TABLE IF EXISTS $ptsRSUtempo; CREATE TABLE $ptsRSUtempo AS SELECT a.pk, a.the_geom, " +
-                        "${row[ID_COLUMN_RSU]} AS id_rsu FROM $ptsRSUGrid a WHERE a.the_geom && " +
-                        "'${row[GEOMETRIC_COLUMN_RSU]}' AND " +
-                        "ST_INTERSECTS(a.the_geom, '${row[GEOMETRIC_COLUMN_RSU]}')"
-                // If there is no point within the RSU (which could be the case for a long and thin RSU), the SVF
-                // is calculated for the centroid of the RSU
-                if (datasource.firstRow("SELECT COUNT(*) AS NB FROM $ptsRSUtempo")["NB"] == 0) {
-                    datasource.execute "DROP TABLE IF EXISTS $ptsRSUtempo; CREATE TABLE $ptsRSUtempo AS SELECT " +
-                            "1 AS pk, ST_CENTROID('${row[GEOMETRIC_COLUMN_RSU]}') AS the_geom, " +
-                            "${row[ID_COLUMN_RSU]} AS id_rsu"
-                }
-                // The grid points intersecting buildings are identified
-                datasource.execute "CREATE INDEX IF NOT EXISTS ids_temp ON $ptsRSUtempo(the_geom) USING RTREE; " +
-                        "CREATE INDEX IF NOT EXISTS id_temp ON $ptsRSUtempo(id_rsu);" +
-                        "DROP TABLE IF EXISTS $ptsRSUbu; CREATE TABLE $ptsRSUbu AS SELECT a.pk FROM $ptsRSUtempo a " +
-                        "LEFT JOIN $correlationBuildingTable b ON a.id_rsu = b.$ID_COLUMN_RSU WHERE " +
-                        "a.the_geom && b.$GEOMETRIC_COLUMN_BU AND ST_INTERSECTS(a.the_geom, b.$GEOMETRIC_COLUMN_BU)"
-                // The grid points intersecting buildings are then deleted
-                datasource.execute "CREATE INDEX IF NOT EXISTS id_temp ON $ptsRSUtempo(pk); " +
-                        "CREATE INDEX IF NOT EXISTS id_temp ON $ptsRSUbu(pk); DROP TABLE IF EXISTS $ptsRSUfreeall; " +
-                        "CREATE TABLE $ptsRSUfreeall(pk SERIAL, the_geom GEOMETRY, id_rsu INT) AS (SELECT null, " +
-                        "a.the_geom, a.id_rsu FROM $ptsRSUtempo a LEFT JOIN $ptsRSUbu b ON a.pk=b.pk WHERE b.pk " +
-                        "IS NULL)"
-                // A random sample of points (of size corresponding to the point density defined by $pointDensity)
-                // is drawn in order to have the same density of point in each RSU. It is directly
-                // inserted into the Table gathering the SVF points used for all RSU
-                datasource.execute "DROP TABLE IF EXISTS $randomSample; INSERT INTO $ptsRSUtot(pk, the_geom, id_rsu) " +
-                        "SELECT null, the_geom, id_rsu FROM $ptsRSUfreeall ORDER BY RANDOM() LIMIT " +
-                        "(TRUNC(${pointDensity}*ST_AREA('${row[GEOMETRIC_COLUMN_RSU]}'::GEOMETRY)*" +
-                        "${(1.0 - row[rsuBuildingDensityColumn])})+1);"
-            }
+            // Create the geometries of buildings and RSU holes included within each RSU
+            datasource.execute """
+                    DROP TABLE IF EXISTS $rsuHolesToRemove, $multiptsRSUtot, $ptsRSUtot, $svfPts, $outputTableName;
+                    CREATE TABLE $rsuHolesToRemove 
+                    AS (SELECT  ST_TOMULTILINE(ST_ACCUM(ST_INTERSECTION(a.$GEOMETRIC_COLUMN_RSU, b.$GEOMETRIC_COLUMN_BU)))
+                                AS the_geom, a.$ID_COLUMN_RSU 
+                    FROM        $rsuTable a, $correlationBuildingTable b 
+                    WHERE       a.$GEOMETRIC_COLUMN_RSU && b.$GEOMETRIC_COLUMN_BU AND ST_OVERLAPS(a.$GEOMETRIC_COLUMN_RSU, 
+                                b.$GEOMETRIC_COLUMN_BU) OR a.$GEOMETRIC_COLUMN_RSU && b.$GEOMETRIC_COLUMN_BU AND 
+                                ST_CONTAINS(a.$GEOMETRIC_COLUMN_RSU, b.$GEOMETRIC_COLUMN_BU)
+                    GROUP BY    a.$ID_COLUMN_RSU)
+                    UNION ALL 
+                    SELECT      ST_TOMULTILINE(ST_HOLES($GEOMETRIC_COLUMN_RSU)) AS the_geom, $ID_COLUMN_RSU
+                    FROM $rsuTable"""
+
+            datasource.getTable(rsuHolesToRemove)[ID_COLUMN_RSU].createIndex()
+
+            // The points used for the SVF calculation are randomly selected within each RSU. The points are
+            // located outside buildings (and RSU holes) and the density of points (points / m² of free ground surface)
+            // is similar in each RSU
+            datasource.execute """
+                    CREATE TABLE $multiptsRSUtot 
+                    AS SELECT       a.$ID_COLUMN_RSU, ST_GENERATEPOINTS(ST_MAKEPOLYGON(ST_EXTERIORRING(a.$GEOMETRIC_COLUMN_RSU),
+                                    ST_ACCUM(b.the_geom)), TRUNC(${pointDensity}*ST_AREA(a.$GEOMETRIC_COLUMN_RSU)*
+                                    (1.0 - a.$rsuBuildingDensityColumn)+1)) AS the_geom 
+                    FROM            $rsuTable a 
+                    LEFT JOIN       $rsuHolesToRemove b 
+                    ON              a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU 
+                    GROUP BY        a.$ID_COLUMN_RSU"""
+
+            // Convert the multipoint geometries to points
+            datasource.execute """
+                    CREATE TABLE $ptsRSUtot(pk SERIAL, $ID_COLUMN_RSU INTEGER, the_geom GEOMETRY)
+                    AS (SELECT      null, $ID_COLUMN_RSU, the_geom 
+                    FROM            ST_EXPLODE('(SELECT * FROM $multiptsRSUtot)'))"""
+
+            datasource.getSpatialTable(ptsRSUtot).the_geom.createSpatialIndex()
+
             // The SVF calculation is performed at point scale
-            datasource.execute "CREATE INDEX IF NOT EXISTS ids_pts ON $ptsRSUtot(the_geom) USING RTREE; " +
-                    "DROP TABLE IF EXISTS $svfPts; CREATE TABLE $svfPts AS SELECT a.pk, a.id_rsu, " +
-                    "ST_SVF(ST_GEOMETRYN(a.the_geom,1), ST_ACCUM(ST_UPDATEZ(b.$GEOMETRIC_COLUMN_BU, b.$HEIGHT_WALL)), " +
-                    "$rayLength, $numberOfDirection, 5) AS SVF FROM $ptsRSUtot AS a, $correlationBuildingTable " +
-                    "AS b WHERE ST_EXPAND(a.the_geom, $rayLength) && b.$GEOMETRIC_COLUMN_BU AND " +
-                    "ST_DWITHIN(b.$GEOMETRIC_COLUMN_BU, a.the_geom, $rayLength) GROUP BY a.the_geom"
+            datasource.execute """
+                    CREATE TABLE $svfPts 
+                    AS SELECT   a.pk, a.$ID_COLUMN_RSU, 
+                                ST_SVF(ST_GEOMETRYN(a.the_geom,1), ST_ACCUM(ST_UPDATEZ(b.$GEOMETRIC_COLUMN_BU, b.$HEIGHT_WALL)), 
+                                       $rayLength, $numberOfDirection, 5) AS SVF
+                    FROM        $ptsRSUtot AS a, $correlationBuildingTable AS b 
+                    WHERE       ST_EXPAND(a.the_geom, $rayLength) && b.$GEOMETRIC_COLUMN_BU AND 
+                                ST_DWITHIN(b.$GEOMETRIC_COLUMN_BU, a.the_geom, $rayLength) 
+                    GROUP BY    a.the_geom"""
 
-            // The result of the SVF calculation is averaged at RSU scale and the rsu that do not have
-            // buildings in the area of calculation are considered "free sky" (SVF = 1)
-            datasource.execute "CREATE INDEX IF NOT EXISTS id_svf ON $svfPts(id_rsu); " +
-                    "CREATE INDEX IF NOT EXISTS id_pts ON $ptsRSUtot(id_rsu);" +
-                    "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
-                    "SELECT COALESCE(AVG(a.SVF),1.0) AS rsu_ground_sky_view_factor, b.id_rsu AS $ID_COLUMN_RSU " +
-                    "FROM $svfPts a RIGHT JOIN $ptsRSUtot b ON a.id_rsu = b.id_rsu " +
-                    "GROUP BY b.id_rsu"
+            datasource.getTable(svfPts)[ID_COLUMN_RSU].createIndex()
+            datasource.getTable(ptsRSUtot)[ID_COLUMN_RSU].createIndex()
+
+            // The result of the SVF calculation is averaged at RSU scale
+            datasource.execute """
+                    CREATE TABLE $outputTableName(id_rsu integer, rsu_ground_sky_view_factor double) 
+                    AS          (SELECT a.$ID_COLUMN_RSU, AVG(b.SVF) 
+                    FROM        $ptsRSUtot a 
+                    LEFT JOIN   $svfPts b 
+                    ON          a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU
+                    GROUP BY    a.$ID_COLUMN_RSU)"""
 
             def tObis = System.currentTimeMillis() - to_start
 
             info "SVF calculation time: ${tObis / 1000} s"
 
-
             // The temporary tables are deleted
-            datasource.execute "DROP TABLE IF EXISTS $ptsRSUtot, $ptsRSUGrid, $ptsRSUtempo, $ptsRSUbu, " +
-                    "$ptsRSUfreeall, $randomSample, $svfPts"
+            datasource.execute "DROP TABLE IF EXISTS $rsuHolesToRemove, $ptsRSUtot, $multiptsRSUtot, $svfPts"
 
             [outputTableName: outputTableName]
         }
@@ -247,11 +242,9 @@ IProcess aspectRatio() {
             // The name of the outputTableName is constructed
             def outputTableName = prefixName + "_" + BASE_NAME
 
-            def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
-                    "SELECT $rsuFreeExternalFacadeDensityColumn/(1-$rsuBuildingDensityColumn) AS " +
-                    "rsu_aspect_ratio, $COLUMN_ID_RSU FROM $rsuTable"
-
-            datasource.execute query
+            datasource.execute """DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS 
+                    SELECT $rsuFreeExternalFacadeDensityColumn/(1-$rsuBuildingDensityColumn) AS 
+                    rsu_aspect_ratio, $COLUMN_ID_RSU FROM $rsuTable"""
 
             [outputTableName: outputTableName]
         }
