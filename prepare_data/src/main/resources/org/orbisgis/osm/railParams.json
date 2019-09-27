@@ -1,0 +1,45 @@
+{
+    "type" :
+    {
+    "highspeed": {
+        "highspeed": [
+            "yes"
+        ]
+    },
+    "rail": {
+        "railway": [
+            "rail",
+            "light_rail",
+            "narrow_gauge"
+        ]
+    },
+    "service_track": {
+        "service": [
+            "yard",
+            "siding",
+            "spur",
+            "crossover"
+        ]
+    },
+    "disused": {
+        "railway": [
+            "disused"
+        ]
+    },
+    "funicular": {
+        "railway": [
+            "funicular"
+        ]
+    },
+    "subway": {
+        "railway": [
+            "subway"
+        ]
+    },
+    "tram": {
+        "railway": [
+            "tram"
+        ]
+    }
+}
+}

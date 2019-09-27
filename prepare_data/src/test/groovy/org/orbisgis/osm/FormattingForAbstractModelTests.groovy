@@ -1,18 +1,18 @@
-
 package org.orbisgis.osm
 
-
+import groovy.json.JsonSlurper
 import org.junit.jupiter.api.Test
 import org.orbisgis.PrepareData
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.processmanagerapi.IProcess
+import groovy.json.JsonOutput
 
 import static org.junit.jupiter.api.Assertions.*
 
 class FormattingForAbstractModelTests {
 
     @Test
-   void formatingGISLayers() {
+   void formattingGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
         IProcess extractData = PrepareData.OSMGISLayers.createGISLayers()
         extractData.execute([
@@ -29,12 +29,14 @@ class FormattingForAbstractModelTests {
 
         def epsg = extractData.results.epsg
 
+
         //Buildings
         IProcess format = PrepareData.FormattingForAbstractModel.formatBuildingLayer()
         format.execute([
                 datasource : h2GIS,
                 inputTableName: extractData.results.buildingTableName,
-                epsg: epsg])
+                epsg: epsg,
+                jsonFilename: null])
         assertEquals 1038, h2GIS.getTable(format.results.outputTableName).rowCount
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated.shp")
 
@@ -43,29 +45,33 @@ class FormattingForAbstractModelTests {
         format.execute([
                 datasource : h2GIS,
                 inputTableName: extractData.results.roadTableName,
-                epsg: epsg])
+                epsg: epsg,
+                jsonFilename: null])
 
         assertEquals 360, h2GIS.getTable(format.results.outputTableName).rowCount
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_formated.shp")
 
-        //Rails
 
+        //Rails
         format = PrepareData.FormattingForAbstractModel.formatRailsLayer()
         format.execute([
                 datasource : h2GIS,
                 inputTableName: extractData.results.railTableName,
-                epsg: epsg])
+                epsg: epsg,
+                jsonFilename: null])
 
         assertEquals 44, h2GIS.getTable(format.results.outputTableName).rowCount
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_rails_formated.shp")
 
-        //Vegetation
 
+        //Vegetation
         format = PrepareData.FormattingForAbstractModel.formatVegetationLayer()
         format.execute([
                 datasource : h2GIS,
                 inputTableName: extractData.results.vegetationTableName,
-                epsg: epsg])
+                epsg: epsg,
+                jsonFilename: null
+        ])
 
         assertEquals 128, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where type is null").count==0
@@ -75,7 +81,6 @@ class FormattingForAbstractModelTests {
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_vegetation_formated.shp")
 
         //Hydrography
-
         format = PrepareData.FormattingForAbstractModel.formatHydroLayer()
         format.execute([
                 datasource : h2GIS,
@@ -84,6 +89,7 @@ class FormattingForAbstractModelTests {
 
         assertEquals 8, h2GIS.getTable(format.results.outputTableName).rowCount
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_hydro_formated.shp")
+
     }
 
     //@Test //enable it to test data extraction from the overpass api
@@ -158,9 +164,6 @@ class FormattingForAbstractModelTests {
             assertTrue(false)
         }
     }
-
-
-
 
 }
 
