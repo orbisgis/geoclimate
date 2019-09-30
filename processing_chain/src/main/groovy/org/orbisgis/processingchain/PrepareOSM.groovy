@@ -63,14 +63,20 @@ IProcess buildGeoclimateLayers() {
                         format.execute([
                                 datasource    : datasource,
                                 inputTableName: buildingTableName,
-                                epsg:epsg])
+                                epsg:epsg,
+                                h_lev_min:hLevMin,
+                                h_lev_max: hLevMax,
+                                hThresholdLev2:hThresholdLev2,
+                                jsonFilename : null
+                        ])
                         buildingTableName = format.results.outputTableName
 
                         format = PrepareData.FormattingForAbstractModel.formatRoadLayer()
                         format.execute([
                                 datasource    : datasource,
                                 inputTableName: roadTableName,
-                                epsg:epsg])
+                                epsg:epsg,
+                                jsonFilename : null])
                         roadTableName = format.results.outputTableName
 
 
@@ -78,14 +84,16 @@ IProcess buildGeoclimateLayers() {
                         format.execute([
                                 datasource    : datasource,
                                 inputTableName: railTableName,
-                                epsg:epsg])
+                                epsg:epsg,
+                                jsonFilename : null])
                         railTableName = format.results.outputTableName
 
                         format = PrepareData.FormattingForAbstractModel.formatVegetationLayer()
                         format.execute([
                                 datasource    : datasource,
                                 inputTableName: vegetationTableName,
-                                epsg:epsg])
+                                epsg:epsg,
+                                jsonFilename : null])
                         vegetationTableName = format.results.outputTableName
 
                         format = PrepareData.FormattingForAbstractModel.formatHydroLayer()

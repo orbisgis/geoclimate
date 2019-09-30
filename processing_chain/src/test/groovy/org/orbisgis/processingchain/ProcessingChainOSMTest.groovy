@@ -26,7 +26,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
         dirFile.delete()
         dirFile.mkdir()
         def h2GIS = H2GIS.open(dirFile.absolutePath+File.separator+'osm_chain_db;AUTO_SERVER=TRUE')
-        def placeName = "Cliscouet, vannes"
+        def placeName = "vannes"
         IProcess process = ProcessingChain.PrepareOSM.buildGeoclimateLayers()
 
         process.execute([datasource: h2GIS, placeName :placeName, distance: 0])
