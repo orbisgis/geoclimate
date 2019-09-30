@@ -24,7 +24,7 @@ import groovy.json.JsonSlurper
 IProcess formatBuildingLayer() {
     return create({
         title "Transform OSM buildings table into a table that matches the constraints of the GeoClimate input model"
-        inputs datasource : JdbcDataSource , inputTableName:String, epsg: int, h_lev_min:3, h_lev_max: 15, hThresholdLev2:10, jsonFilename : String
+        inputs datasource : JdbcDataSource , inputTableName:String, epsg: int, h_lev_min:3, h_lev_max: 15, hThresholdLev2:10, jsonFilename : ""
         outputs outputTableName: String
         run { JdbcDataSource datasource, inputTableName,epsg, h_lev_min, h_lev_max, hThresholdLev2, jsonFilename ->
             outputTableName = "INPUT_BUILDING_${UUID.randomUUID().toString().replaceAll("-", "_")}"
@@ -110,7 +110,7 @@ IProcess formatBuildingLayer() {
  IProcess formatRoadLayer() {
     return create({
             title "Format the raw roads table into a table that matches the constraints of the GeoClimate Input Model"
-            inputs datasource  : JdbcDataSource, inputTableName : String, epsg: int, jsonFilename : String
+            inputs datasource  : JdbcDataSource, inputTableName : String, epsg: int, jsonFilename : ""
             outputs outputTableName: String
             run { datasource, inputTableName,epsg, jsonFilename ->
                     logger.info('Formating road layer')
@@ -181,7 +181,7 @@ IProcess formatBuildingLayer() {
  IProcess formatRailsLayer() {
     return create({
         title "Format the raw rails table into a table that matches the constraints of the GeoClimate Input Model"
-        inputs datasource : JdbcDataSource , inputTableName: String, epsg: int, jsonFilename : String
+        inputs datasource : JdbcDataSource , inputTableName: String, epsg: int, jsonFilename : ""
         outputs outputTableName: String
         run { datasource, inputTableName,epsg, jsonFilename ->
             logger.info('Rails transformation starts')
@@ -243,7 +243,7 @@ IProcess formatBuildingLayer() {
 IProcess formatVegetationLayer() {
     return create({
         title "Format the raw vegetation table into a table that matches the constraints of the GeoClimate Input Model"
-        inputs datasource: JdbcDataSource, inputTableName: String, epsg: int, jsonFilename: String
+        inputs datasource: JdbcDataSource, inputTableName: String, epsg: int, jsonFilename: ""
         outputs outputTableName: String
         run { JdbcDataSource datasource, inputTableName, epsg, jsonFilename ->
             logger.info('Vegetation transformation starts')
