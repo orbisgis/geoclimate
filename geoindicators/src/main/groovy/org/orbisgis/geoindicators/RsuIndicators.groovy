@@ -129,7 +129,6 @@ IProcess groundSkyViewFactor() {
 
             def to_start = System.currentTimeMillis()
 
-
             // Create the geometries of buildings and RSU holes included within each RSU
             datasource.execute """
                     DROP TABLE IF EXISTS $rsuHolesToRemove, $multiptsRSUtot, $ptsRSUtot, $svfPts, $outputTableName;
@@ -1254,6 +1253,114 @@ IProcess perviousnessFraction() {
             query = query[0..-2] + " FROM $rsuTable;"
 
             datasource.execute query
+
+            [outputTableName: outputTableName]
+        }
+    })
+}
+
+
+/**
+* Process used to compute the free facade fraction within an extended RSU. The free facade fraction is defined as
+* the ratio between the free facade area within an extended RSU and the free facade area within an extended RSU +
+* the area of the extended RSU. This indicator may be useful to investigate a simple an fast approach to
+* calculate the ground sky view factor such as defined by Stewart et Oke (2012): ratio of the
+* amount of sky hemisphere visible from ground level to that of an unobstructed hemisphere. Preliminary studies
+* have been performed by Bernabé et al. (2015) and Bernard et al. (2018). The calculation needs
+* the "building_contiguity", the building wall height, the "building_total_facade_length" values as well as
+* a correlation Table between buildings and blocks.
+*
+*
+* @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+* the resulting database will be stored
+* @param buildingTable The name of the input ITable where are stored the buildings, the building contiguity values,
+* the building total facade length values and the building and rsu id
+* @param rsuTable The name of the input ITable where are stored the rsu geometries and the id_rsu
+* @param buContiguityColumn The name of the column where are stored the building contiguity values (within the
+    * building Table)
+* @param buTotalFacadeLengthColumn The name of the column where are stored the building total facade length values
+* (within the building Table)
+* @param buffDist The size used for RSU extension (buffer size in meters)
+* @param prefixName String use as prefix to name the output table
+*
+* References:
+* --> Stewart, Ian D., and Tim R. Oke. "Local climate zones for urban temperature studies." Bulletin of
+* the American Meteorological Society 93, no. 12 (2012): 1879-1900.
+* --> Bernabé, A., Musy, M., Andrieu, H., & Calmet, I. (2015). Radiative properties of the urban fabric derived
+* from surface form analysis: A simplified solar balance model. Solar Energy, 122, 156-168.
+* --> Jérémy Bernard, Erwan Bocher, Gwendall Petit, Sylvain Palominos. Sky View Factor Calculation in
+* Urban Context: Computational Performance and Accuracy Analysis of Two Open and Free GIS Tools. Climate ,
+* MDPI, 2018, Urban Overheating - Progress on Mitigation Science and Engineering Applications, 6 (3), pp.60.
+*
+*
+* @return A database table name.
+* @author Jérémy Bernard
+*/
+IProcess extendedFreeFacadeFraction() {
+    def final GEOMETRIC_FIELD = "the_geom"
+    def final ID_FIELD_RSU = "id_rsu"
+    def final HEIGHT_WALL = "height_wall"
+    def final BASE_NAME = "rsu_extended_free_facade_fraction"
+
+    return create({
+        title "Extended RSU free facade fraction (for SVF fast)"
+        inputs buildingTable: String, rsuTable: String, buContiguityColumn: String, buTotalFacadeLengthColumn: String,
+                prefixName: String, buffDist: 10, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { buildingTable, rsuTable, buContiguityColumn, buTotalFacadeLengthColumn, prefixName, buffDist, datasource ->
+
+            info "Executing RSU free facade fraction (for SVF fast)"
+
+            // The name of the outputTableName is constructed
+            def outputTableName = prefixName + "_" + BASE_NAME
+
+            // Temporary tables are created
+            def extRsuTable = "extRsu$uuid"
+            def inclBu = "inclBu$uuid"
+            def fullInclBu = "fullInclBu$uuid"
+            def notIncBu = "notIncBu$uuid"
+            def allBu = "allBu$uuid"
+
+            // The RSU area is extended according to a buffer
+            datasource.execute "DROP TABLE IF EXISTS $extRsuTable; CREATE TABLE $extRsuTable AS SELECT " +
+                    "ST_BUFFER($GEOMETRIC_FIELD, $buffDist, 'quad_segs=2') AS $GEOMETRIC_FIELD," +
+                    "$ID_FIELD_RSU FROM $rsuTable;"
+
+            // The facade area of buildings being entirely included in the RSU buffer is calculated
+            datasource.getSpatialTable(extRsuTable)[GEOMETRIC_FIELD].createIndex()
+            datasource.getSpatialTable(buildingTable)[GEOMETRIC_FIELD].createIndex()
+
+            datasource.execute "DROP TABLE IF EXISTS $inclBu; CREATE TABLE $inclBu AS SELECT " +
+                    "COALESCE(SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$HEIGHT_WALL), 0) AS FAC_AREA," +
+                    "b.$ID_FIELD_RSU FROM $buildingTable a, $extRsuTable b WHERE ST_COVERS(b.$GEOMETRIC_FIELD," +
+                    "a.$GEOMETRIC_FIELD) GROUP BY b.$ID_FIELD_RSU;"
+
+            // All RSU are feeded with default value
+            datasource.getTable(inclBu)[ID_FIELD_RSU].createIndex()
+            datasource.getTable(rsuTable)[ID_FIELD_RSU].createIndex()
+
+            datasource.execute "DROP TABLE IF EXISTS $fullInclBu; CREATE TABLE $fullInclBu AS SELECT " +
+                    "COALESCE(a.FAC_AREA, 0) AS FAC_AREA, b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD " +
+                    "FROM $inclBu a RIGHT JOIN $rsuTable b ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU;"
+
+            // The facade area of buildings being partially included in the RSU buffer is calculated
+            datasource.execute "DROP TABLE IF EXISTS $notIncBu; CREATE TABLE $notIncBu AS SELECT " +
+                    "COALESCE(SUM(ST_LENGTH(ST_INTERSECTION(ST_TOMULTILINE(a.$GEOMETRIC_FIELD)," +
+                    " b.$GEOMETRIC_FIELD))*a.$HEIGHT_WALL), 0) " +
+                    "AS FAC_AREA, b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD FROM $buildingTable a, $extRsuTable b " +
+                    "WHERE ST_OVERLAPS(b.$GEOMETRIC_FIELD, a.$GEOMETRIC_FIELD) GROUP BY b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD;"
+
+            // The facade fraction is calculated
+            datasource.getTable(notIncBu)[ID_FIELD_RSU].createIndex()
+            datasource.getSpatialTable(fullInclBu)[ID_FIELD_RSU].createIndex()
+
+            datasource.execute "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
+                    "SELECT COALESCE((a.FAC_AREA + b.FAC_AREA) /" +
+                    "(a.FAC_AREA + b.FAC_AREA + ST_AREA(ST_BUFFER(a.$GEOMETRIC_FIELD, $buffDist, 'quad_segs=2')))," +
+                    " a.FAC_AREA / (a.FAC_AREA  + ST_AREA(ST_BUFFER(a.$GEOMETRIC_FIELD, $buffDist, 'quad_segs=2'))))" +
+                    "AS rsu_extended_free_facade_fraction, " +
+                    "a.$ID_FIELD_RSU, a.$GEOMETRIC_FIELD FROM $fullInclBu a LEFT JOIN $notIncBu b " +
+                    "ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU;"
 
             [outputTableName: outputTableName]
         }
