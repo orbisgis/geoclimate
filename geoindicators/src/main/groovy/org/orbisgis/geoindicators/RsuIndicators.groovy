@@ -70,16 +70,13 @@ IProcess freeExternalFacadeDensity() {
  * Bernard et al. (2018)). The density of points used for the calculation actually depends on building
  * density (higher the building density, lower the density of points). To avoid this phenomenon, we set
  * a constant density of point "point_density" for a given amount of free surfaces (default 0.008,
- * based on the median of Bernard et al. (2018) dataset). The calculation needs the "rsu_building_density"
- * and the "rsu_area".
+ * based on the median of Bernard et al. (2018) dataset).
  *
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
  * @param rsuTable The name of the input ITable where are stored the RSU
  * @param correlationBuildingTable The name of the input ITable where are stored the buildings and the relationships
  * between buildings and RSU
- * @param rsuBuildingDensityColumn The name of the column where are stored the building density values (within the rsu
- * Table)
  * @param pointDensity The density of points (nb / free m²) used to calculate the spatial average SVF
  * @param rayLength The maximum distance to consider an obstacle as potential sky cover
  * @param numberOfDirection the number of directions considered to calculate the SVF
@@ -105,10 +102,10 @@ IProcess groundSkyViewFactor() {
     
     return create({
         title "RSU ground sky view factor"
-        inputs rsuTable: String, correlationBuildingTable: String, rsuBuildingDensityColumn: String, pointDensity: 0.008D,
+        inputs rsuTable: String, correlationBuildingTable: String, pointDensity: 0.008D,
                 rayLength: 100D, numberOfDirection: 60, prefixName: String, datasource: JdbcDataSource
         outputs outputTableName: String
-        run { rsuTable, correlationBuildingTable, rsuBuildingDensityColumn, pointDensity, rayLength, numberOfDirection,
+        run { rsuTable, correlationBuildingTable, pointDensity, rayLength, numberOfDirection,
               prefixName, datasource ->
 
             info "Executing RSU ground sky view factor"
@@ -155,13 +152,17 @@ IProcess groundSkyViewFactor() {
             // is similar in each RSU
             datasource.execute """
                     CREATE TABLE $multiptsRSUtot 
-                    AS SELECT       a.$ID_COLUMN_RSU, ST_GENERATEPOINTS(ST_MAKEPOLYGON(ST_EXTERIORRING(a.$GEOMETRIC_COLUMN_RSU),
-                                    ST_ACCUM(b.the_geom)), TRUNC(${pointDensity}*ST_AREA(a.$GEOMETRIC_COLUMN_RSU)*
-                                    (1.0 - a.$rsuBuildingDensityColumn)+1)) AS the_geom 
-                    FROM            $rsuTable a 
-                    LEFT JOIN       $rsuHolesToRemove b 
-                    ON              a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU 
-                    GROUP BY        a.$ID_COLUMN_RSU"""
+                    AS SELECT       $ID_COLUMN_RSU, ST_GENERATEPOINTS(c.the_geom, TRUNC(${pointDensity}*
+                                    c.rsu_area*(1.0 - ((c.rsu_area - ST_AREA(c.the_geom))/
+                                    c.rsu_area))+1)) AS the_geom 
+                    FROM 
+                                    (SELECT ST_MAKEPOLYGON(ST_EXTERIORRING(a.$GEOMETRIC_COLUMN_RSU),
+                                                ST_ACCUM(b.the_geom)) AS the_geom, st_area(a.$GEOMETRIC_COLUMN_RSU) 
+                                                AS rsu_area, a.$ID_COLUMN_RSU 
+                                    FROM        $rsuTable a 
+                                    LEFT JOIN   $rsuHolesToRemove b 
+                                    ON          a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU 
+                                    GROUP BY    a.$ID_COLUMN_RSU) as c"""
 
             // Convert the multipoint geometries to points
             datasource.execute """
@@ -188,7 +189,7 @@ IProcess groundSkyViewFactor() {
             // The result of the SVF calculation is averaged at RSU scale
             datasource.execute """
                     CREATE TABLE $outputTableName(id_rsu integer, rsu_ground_sky_view_factor double) 
-                    AS          (SELECT a.$ID_COLUMN_RSU, AVG(b.SVF) 
+                    AS          (SELECT a.$ID_COLUMN_RSU, CASE WHEN AVG(b.SVF) is not null THEN AVG(b.SVF) ELSE 0 END
                     FROM        $ptsRSUtot a 
                     LEFT JOIN   $svfPts b 
                     ON          a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU

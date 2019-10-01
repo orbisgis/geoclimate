@@ -562,7 +562,6 @@ def computeRSUIndicators() {
                 def computeSVF = Geoindicators.RsuIndicators.groundSkyViewFactor()
                 if (!computeSVF([rsuTable                : intermediateJoinTable,
                                  correlationBuildingTable: buildingTable,
-                                 rsuBuildingDensityColumn: "dens_area",
                                  pointDensity            : svfPointDensity,
                                  rayLength               : svfRayLength,
                                  numberOfDirection       : svfNumberOfDirection,

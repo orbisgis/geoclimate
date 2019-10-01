@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue
 
 class ChainProcessMainTest {
 
-    public static Logger logger = LoggerFactory.getLogger(ProcessingChainOSMTest.class)
+    public static Logger logger = LoggerFactory.getLogger(ChainProcessMainTest.class)
 
     /**
      * A method to compute geomorphological indicators
