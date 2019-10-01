@@ -283,8 +283,10 @@ IProcess createBlocks(){
 
 /**
  * This process is used to link each object of a lower scale to an upper scale ID (i.e.: building to RSU). If a
- * lower scale object intersects two upper scale objects, it is attributed to the one where is located the
- * major part of its surface.
+ * lower scale object intersects several upper scale objects, the user may choose the number of upper scale object
+ * kept by the lower scale object as relation (the upper scale objects are retained based on the
+ * area shared between the objects (i.e. building and RSU - default 1). If nbRelations is null, all relations are
+ * conserved.
  *
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
@@ -292,6 +294,8 @@ IProcess createBlocks(){
  * @param inputUpperScaleTableName The input table where are stored the upperScale objects (i.e. RSU)
  * @param idColumnUp The column name where is stored the ID of the upperScale objects (i.e. RSU)
  * @param prefixName A prefix used to name the output table
+ * @param nbRelations Number of relations that the lower scale object can have with the upper scale object (i.e. if
+ * nbRelations = 1 for buildings and RSU, the buildings can have only one RSU as relation)
  *
  * @return A database table name and the name of its ID field
  */
@@ -302,9 +306,9 @@ IProcess createScalesRelations(){
     return create({
         title "Creating the Tables of relations between two scales"
         inputs inputLowerScaleTableName: String, inputUpperScaleTableName: String, idColumnUp: String,
-                prefixName: String, datasource: JdbcDataSource
+                prefixName: String, nbRelations: 1, datasource: JdbcDataSource
         outputs outputTableName: String, outputIdColumnUp: String
-        run { inputLowerScaleTableName, inputUpperScaleTableName, idColumnUp, prefixName, datasource ->
+        run { inputLowerScaleTableName, inputUpperScaleTableName, idColumnUp, prefixName, nbRelations, datasource ->
 
             info "Creating the Tables of relations between two scales"
 
@@ -319,6 +323,7 @@ IProcess createScalesRelations(){
                      ST_INTERSECTS(st_force2d(a.$GEOMETRIC_COLUMN_LOW), st_force2d(b.$GEOMETRIC_COLUMN_UP)) ORDER BY 
                      ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$GEOMETRIC_COLUMN_LOW)), st_force2d(st_makevalid(b.$GEOMETRIC_COLUMN_UP)))) 
                      DESC LIMIT 1) AS $idColumnUp FROM $inputLowerScaleTableName a """
+
             info "The relations between scales have been created"
 
             [outputTableName: outputTableName, outputIdColumnUp: idColumnUp]

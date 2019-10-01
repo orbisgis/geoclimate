@@ -148,7 +148,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
 
     }
 
-    //@Test
+    @Test
     void osmLczFromTestFiles() {
         String urlBuilding = new File(getClass().getResource("BUILDING.geojson").toURI()).absolutePath
         String urlRoad= new File(getClass().getResource("ROAD.geojson").toURI()).absolutePath
@@ -181,8 +181,8 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
         datasource.load(urlZone, zoneTableName)
 
         //Run tests
-        calcLcz(directory, datasource, zoneTableName, buildingTableName,roadTableName,railTableName,vegetationTableName,
-                hydrographicTableName,saveResults)
+        calcLcz(directory, datasource, zoneTableName, buildingTableName,roadTableName,null,vegetationTableName,
+                hydrographicTableName,saveResults, true)
     }
 
 

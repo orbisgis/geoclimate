@@ -136,7 +136,7 @@ class ChainProcessMainTest {
      */
     void calcLcz(String directory, JdbcDataSource datasource, String zoneTableName, String buildingTableName,
                  String roadTableName, String railTableName, String vegetationTableName,
-                 String hydrographicTableName, boolean saveResults ) {
+                 String hydrographicTableName, boolean saveResults, boolean svfSimplified = false ) {
 
 
         //Create spatial units and relations : building, block, rsu
@@ -163,7 +163,8 @@ class ChainProcessMainTest {
                             hydrographicTable: hydrographicTableName, facadeDensListLayersBottom: [0, 50, 200], facadeDensNumberOfDirection: 8,
                             svfPointDensity: 0.008, svfRayLength: 100, svfNumberOfDirection: 60,
                             heightColumnName: "height_roof", fractionTypePervious: ["low_vegetation", "water"],
-                            fractionTypeImpervious: ["road"], inputFields: ["id_build"], levelForRoads: [0]])){
+                            fractionTypeImpervious: ["road"], inputFields: ["id_build"], levelForRoads: [0],
+                            svfSimplified : svfSimplified])){
             logger.info("Cannot create the LCZ.")
             return
         }
