@@ -1325,12 +1325,12 @@ IProcess extendedFreeFacadeFraction() {
 
             // The RSU area is extended according to a buffer
             datasource.execute "DROP TABLE IF EXISTS $extRsuTable; CREATE TABLE $extRsuTable AS SELECT " +
-                    "ST_EXPAND($GEOMETRIC_FIELD, $buffDist) AS $GEOMETRIC_FIELD," +
+                    "ST_BUFFER($GEOMETRIC_FIELD, $buffDist, 'quad_segs=2') AS $GEOMETRIC_FIELD," +
                     "$ID_FIELD_RSU FROM $rsuTable;"
 
             // The facade area of buildings being entirely included in the RSU buffer is calculated
-            datasource.getSpatialTable(extRsuTable)[GEOMETRIC_FIELD].createSpatialIndex()
-            datasource.getSpatialTable(buildingTable)[GEOMETRIC_FIELD].createSpatialIndex()
+            datasource.getSpatialTable(extRsuTable)[GEOMETRIC_FIELD].createIndex()
+            datasource.getSpatialTable(buildingTable)[GEOMETRIC_FIELD].createIndex()
 
             datasource.execute "DROP TABLE IF EXISTS $inclBu; CREATE TABLE $inclBu AS SELECT " +
                     "COALESCE(SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$HEIGHT_WALL), 0) AS FAC_AREA," +
@@ -1358,8 +1358,8 @@ IProcess extendedFreeFacadeFraction() {
 
             datasource.execute "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
                     "SELECT COALESCE((a.FAC_AREA + b.FAC_AREA) /" +
-                    "(a.FAC_AREA + b.FAC_AREA + ST_AREA(ST_EXPAND(a.$GEOMETRIC_FIELD, $buffDist)))," +
-                    " a.FAC_AREA / (a.FAC_AREA  + ST_AREA(ST_EXPAND(a.$GEOMETRIC_FIELD, $buffDist))))" +
+                    "(a.FAC_AREA + b.FAC_AREA + ST_AREA(ST_BUFFER(a.$GEOMETRIC_FIELD, $buffDist, 'quad_segs=2')))," +
+                    " a.FAC_AREA / (a.FAC_AREA  + ST_AREA(ST_BUFFER(a.$GEOMETRIC_FIELD, $buffDist, 'quad_segs=2'))))" +
                     "AS rsu_extended_free_facade_fraction, " +
                     "a.$ID_FIELD_RSU, a.$GEOMETRIC_FIELD FROM $fullInclBu a LEFT JOIN $notIncBu b " +
                     "ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU;"
