@@ -326,35 +326,30 @@ IProcess projectedFacadeAreaDistribution() {
                 // Common party walls between buildings are calculated
                 datasource.execute "CREATE TABLE $buildingIntersection(pk SERIAL, the_geom GEOMETRY, " +
                         "ID_build_a INTEGER, ID_build_b INTEGER, z_max DOUBLE, z_min DOUBLE) AS " +
-                        "(SELECT NULL, ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_COLUMN_BU), ST_MAKEVALID(b.$GEOMETRIC_COLUMN_BU)), " +
+                        "(SELECT NULL, ST_TOMULTILINE(ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_COLUMN_BU), ST_MAKEVALID(b.$GEOMETRIC_COLUMN_BU))), " +
                         "a.$ID_COLUMN_BU, b.$ID_COLUMN_BU, GREATEST(a.$HEIGHT_WALL,b.$HEIGHT_WALL), " +
                         "LEAST(a.$HEIGHT_WALL,b.$HEIGHT_WALL) FROM $buildingTable AS a, $buildingTable AS b " +
                         "WHERE a.$GEOMETRIC_COLUMN_BU && b.$GEOMETRIC_COLUMN_BU AND " +
                         "ST_INTERSECTS(a.$GEOMETRIC_COLUMN_BU, b.$GEOMETRIC_COLUMN_BU) " +
                         "AND a.$ID_COLUMN_BU <> b.$ID_COLUMN_BU)"
 
-                // Common party walls are converted to multilines and then exploded
-                datasource.execute "CREATE TABLE $buildingIntersectionExpl(pk SERIAL, the_geom GEOMETRY, " +
-                        "ID_build_a INTEGER, ID_build_b INTEGER, z_max DOUBLE, z_min DOUBLE) AS " +
-                        "(SELECT NULL, ST_TOMULTILINE(the_geom), ID_build_a, ID_build_b, z_max, z_min " +
-                        "FROM ST_EXPLODE('(SELECT the_geom AS the_geom, ID_build_a, ID_build_b, z_max, z_min " +
-                        "FROM $buildingIntersection)'))"
+                datasource.getSpatialTable(buildingIntersection).ID_build_a.createIndex()
+
 
                 // Each free facade is stored TWICE (an intersection could be seen from the point of view of two
                 // buildings).
                 // Facades of isolated buildings are unioned to free facades of non-isolated buildings which are
                 // unioned to free intersection facades. To each facade is affected its corresponding free height
-                datasource.execute "CREATE INDEX IF NOT EXISTS id_buint" +
-                        " ON ${buildingIntersectionExpl}(ID_build_a); " +
-                        "CREATE TABLE $buildingFree(pk SERIAL, the_geom GEOMETRY, z_max DOUBLE, z_min DOUBLE) " +
-                        "AS (SELECT NULL, ST_TOMULTISEGMENTS(a.the_geom), a.$HEIGHT_WALL, 0 " +
-                        "FROM $buildingTable a WHERE a.$ID_COLUMN_BU NOT IN (SELECT ID_build_a " +
-                        "FROM $buildingIntersectionExpl)) UNION ALL (SELECT NULL, " +
-                        "ST_TOMULTISEGMENTS(ST_DIFFERENCE(ST_TOMULTILINE(a.$GEOMETRIC_COLUMN_BU), " +
-                        "ST_UNION(ST_ACCUM(b.the_geom)))), a.$HEIGHT_WALL, 0 FROM $buildingTable a, " +
-                        "$buildingIntersectionExpl b WHERE a.$ID_COLUMN_BU=b.ID_build_a " +
-                        "GROUP BY b.ID_build_a) UNION ALL (SELECT NULL, ST_TOMULTISEGMENTS(the_geom) " +
-                        "AS the_geom, z_max, z_min FROM $buildingIntersectionExpl WHERE ID_build_a<ID_build_b)"
+                datasource.execute """
+                        CREATE TABLE $buildingFree(pk SERIAL, the_geom GEOMETRY, z_max DOUBLE, z_min DOUBLE) 
+                        AS (SELECT NULL, ST_TOMULTISEGMENTS(a.the_geom), a.$HEIGHT_WALL, 0 
+                        FROM $buildingTable a WHERE a.$ID_COLUMN_BU NOT IN (SELECT ID_build_a 
+                        FROM $buildingIntersection)) UNION ALL (SELECT NULL, 
+                        ST_TOMULTISEGMENTS(ST_DIFFERENCE(ST_TOMULTILINE(a.$GEOMETRIC_COLUMN_BU), 
+                        ST_UNION(ST_ACCUM(b.the_geom)))), a.$HEIGHT_WALL, 0 FROM $buildingTable a, 
+                        $buildingIntersection b WHERE a.$ID_COLUMN_BU=b.ID_build_a 
+                        GROUP BY b.ID_build_a) UNION ALL (SELECT NULL, ST_TOMULTISEGMENTS(the_geom) 
+                        AS the_geom, z_max, z_min FROM $buildingIntersection WHERE ID_build_a<ID_build_b)"""
 
                 // The height of wall is calculated for each intermediate level...
                 def layerQuery = "CREATE TABLE $buildingLayer AS SELECT pk, the_geom, "
@@ -386,17 +381,20 @@ IProcess projectedFacadeAreaDistribution() {
                     onlyNamesB += " b." + n + ","
                 }
 
-                // Free facades are exploded to multisegments
-                datasource.execute "CREATE TABLE $buildingFreeExpl(pk SERIAL, the_geom GEOMETRY, $namesAndType) " +
-                        "AS (SELECT NULL, the_geom, ${onlyNames[0..-2]} FROM ST_EXPLODE('$buildingLayer'))"
+                datasource.getSpatialTable(buildingLayer).the_geom.createSpatialIndex()
 
                 // Intersections between free facades and rsu geometries are calculated
-                datasource.execute "CREATE SPATIAL INDEX IF NOT EXISTS ids_bufre ON $buildingFreeExpl(the_geom); " +
-                        "CREATE TABLE $rsuInter(id_rsu INTEGER, the_geom GEOMETRY, $namesAndType) AS " +
-                        "(SELECT a.$ID_COLUMN_RSU, ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_COLUMN_RSU), ST_MAKEVALID(b.the_geom)), " +
-                        "${onlyNamesB[0..-2]} FROM $rsuTable a, $buildingFreeExpl b " +
-                        "WHERE a.$GEOMETRIC_COLUMN_RSU && b.the_geom " +
-                        "AND ST_INTERSECTS(a.$GEOMETRIC_COLUMN_RSU, b.the_geom))"
+                datasource.execute """ DROP TABLE IF EXISTS $buildingFreeExpl; 
+                        CREATE TABLE $buildingFreeExpl(id_rsu INTEGER, the_geom GEOMETRY, $namesAndType) AS 
+                        (SELECT a.$ID_COLUMN_RSU, ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_COLUMN_RSU), ST_TOMULTILINE(b.the_geom)), 
+                        ${onlyNamesB[0..-2]} FROM $rsuTable a, $buildingLayer b 
+                        WHERE a.$GEOMETRIC_COLUMN_RSU && b.the_geom 
+                        AND ST_INTERSECTS(a.$GEOMETRIC_COLUMN_RSU, b.the_geom))"""
+
+
+                // Intersections  facades are exploded to multisegments
+                datasource.execute "CREATE TABLE $rsuInter(pk SERIAL,id_rsu INTEGER, the_geom GEOMETRY, $namesAndType) " +
+                        "AS (SELECT NULL, id_rsu, the_geom, ${onlyNames[0..-2]} FROM ST_EXPLODE('$buildingFreeExpl'))"
 
                 // Basic informations are stored in the result Table where will be added all fields
                 // corresponding to the distribution
