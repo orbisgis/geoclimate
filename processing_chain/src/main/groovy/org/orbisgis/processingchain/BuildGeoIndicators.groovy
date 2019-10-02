@@ -566,6 +566,7 @@ def computeRSUIndicators() {
                     def computeExtFF =  Geoindicators.RsuIndicators.extendedFreeFacadeFraction()
                     if (!computeExtFF([buildingTable: buildingTable,
                                           rsuTable: intermediateJoinTable,
+                                          buContiguityColumn: "building_contiguity",
                                           buTotalFacadeLengthColumn: "building_total_facade_length",
                                           prefixName: prefixName, buffDist : 10, datasource: datasource])){
                         info "Cannot compute the SVF calculation in $prefixName. "

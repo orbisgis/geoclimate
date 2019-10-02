@@ -438,6 +438,7 @@ IProcess projectedFacadeAreaDistribution() {
                 datasource.getTable(finalIndicator).id_rsu.createIndex()
                 // Sum area at RSU scale and fill null values with 0
                 datasource.execute """
+                        DROP TABLE IF EXISTS $outputTableName;
                         CREATE TABLE    ${outputTableName} 
                         AS SELECT       a.id_rsu, ${sumNamesDir[0..-3]} 
                         FROM            $rsuTable a LEFT JOIN $finalIndicator b 
