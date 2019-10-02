@@ -146,28 +146,36 @@ IProcess groundSkyViewFactor() {
 
             datasource.getTable(rsuHolesToRemove)[ID_COLUMN_RSU].createIndex()
 
-            // The points used for the SVF calculation are randomly selected within each RSU. The points are
-            // located outside buildings (and RSU holes) and the density of points (points / m² of free ground surface)
-            // is similar in each RSU
+            // The points used for the SVF calculation are regularly selected within each RSU. The points are
+            // located outside buildings (and RSU holes) and the size of the grid mesh used to sample each RSU
+            // (based on the building density + 10%) - if the building density exceeds 90%,
+            // the LCZ 7 building density is then set to 90%)
             datasource.execute """
                     CREATE TABLE $multiptsRSUtot 
-                    AS SELECT       $ID_COLUMN_RSU, ST_GENERATEPOINTS(c.the_geom, TRUNC(${pointDensity}*
-                                    c.rsu_area*(1.0 - ((c.rsu_area - ST_AREA(c.the_geom))/
-                                    c.rsu_area))+1)) AS the_geom 
-                    FROM 
-                                    (SELECT ST_MAKEPOLYGON(ST_EXTERIORRING(a.$GEOMETRIC_COLUMN_RSU),
+                    AS SELECT       $ID_COLUMN_RSU, 
+                                    ST_GENERATEPOINTS(c.the_geom, (ST_AREA(c.the_geom) / pointDensity)**0.5,
+                                                      (ST_AREA(c.the_geom) / pointDensity)**0.5, true) AS the_geom,
+                                    ST_AREA(c.the_geom) AS rsu_diff_surf 
+                    FROM            ST_EXPLODE('(SELECT ST_MAKEPOLYGON(ST_EXTERIORRING(a.$GEOMETRIC_COLUMN_RSU),
                                                 ST_ACCUM(b.the_geom)) AS the_geom, st_area(a.$GEOMETRIC_COLUMN_RSU) 
                                                 AS rsu_area, a.$ID_COLUMN_RSU 
                                     FROM        $rsuTable a 
                                     LEFT JOIN   $rsuHolesToRemove b 
                                     ON          a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU 
-                                    GROUP BY    a.$ID_COLUMN_RSU) as c"""
+                                    GROUP BY    a.$ID_COLUMN_RSU)') as c"""
 
-            // Convert the multipoint geometries to points
+            // A random sample of points (of size corresponding to the point density defined by $pointDensity)
+            // is drawn in order to have the same density of point in each RSU.
+            datasource.getTable(multiptsRSUtot).id_rsu.createIndex()
+            datasource.getTable(multiptsRSUtot).rsu_diff_surf.createIndex()
             datasource.execute """
-                    CREATE TABLE $ptsRSUtot(pk SERIAL, $ID_COLUMN_RSU INTEGER, the_geom GEOMETRY)
-                    AS (SELECT      null, $ID_COLUMN_RSU, the_geom 
-                    FROM            ST_EXPLODE('(SELECT * FROM $multiptsRSUtot)'))"""
+                    DROP TABLE IF EXISTS $ptsRSUtot;
+                    CREATE TABLE    $ptsRSUtot($ID_COLUMN_RSU INTEGER, the_geom GEOMETRY) 
+                    AS SELECT       id_rsu, the_geom 
+                    FROM            $multiptsRSUtot
+                    GROUP BY        id_rsu, rsu_diff_surf 
+                    ORDER BY        RANDOM() 
+                    LIMIT           TRUNC(${pointDensity}*rsu_diff_surf+1);"""
 
             datasource.getSpatialTable(ptsRSUtot).the_geom.createSpatialIndex()
 
