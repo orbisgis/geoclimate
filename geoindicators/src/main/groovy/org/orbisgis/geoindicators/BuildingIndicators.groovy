@@ -367,7 +367,8 @@ def roadDistance() {
                     " AS $GEOMETRIC_FIELD FROM $inputBuildingTableName; " +
                     "CREATE INDEX IF NOT EXISTS buff_ids ON $build_buffer($GEOMETRIC_FIELD) USING RTREE"
             // The road surfaces are created
-            datasource.execute "CREATE TABLE $road_surf AS " +
+            datasource.execute "DROP TABLE IF EXISTS $road_surf;" +
+                    "CREATE TABLE $road_surf AS " +
                     "SELECT ST_BUFFER($GEOMETRIC_FIELD, $ROAD_WIDTH/2,'endcap=flat') " +
                     "AS $GEOMETRIC_FIELD FROM $inputRoadTableName; " +
                     "CREATE INDEX IF NOT EXISTS buff_ids ON $road_surf($GEOMETRIC_FIELD) USING RTREE"
