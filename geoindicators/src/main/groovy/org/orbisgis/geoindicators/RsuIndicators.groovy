@@ -312,7 +312,6 @@ IProcess projectedFacadeAreaDistribution() {
                 def buildingFreeExpl = "buildingFreeExpl$uuid"
                 def rsuInter = "rsuInter$uuid"
                 def finalIndicator = "finalIndicator$uuid"
-                def rsuInterRot = "rsuInterRot$uuid"
 
                 // The projection should be performed at the median of the angle interval
                 def dirMedDeg = 180 / numberOfDirection
@@ -324,7 +323,8 @@ IProcess projectedFacadeAreaDistribution() {
                 def names = []
 
                 // Common party walls between buildings are calculated
-                datasource.execute """CREATE TABLE $buildingIntersection( the_geom GEOMETRY, 
+                datasource.execute """DROP TABLE IF EXISTS $buildingIntersection;
+                        CREATE TABLE $buildingIntersection( the_geom GEOMETRY, 
                         id_build_a INTEGER, id_build_b INTEGER, z_max DOUBLE, z_min DOUBLE) AS 
                         SELECT ST_CollectionExtract(t.the_geom,2) ,
                         t.id_build_a , t.id_build_b , t.z_max , t.z_min 
@@ -344,6 +344,7 @@ IProcess projectedFacadeAreaDistribution() {
                 // Facades of isolated buildings are unioned to free facades of non-isolated buildings which are
                 // unioned to free intersection facades. To each facade is affected its corresponding free height
                 datasource.execute """
+                        DROP TABLE IF EXISTS $buildingFree;
                         CREATE TABLE $buildingFree(the_geom GEOMETRY, z_max DOUBLE, z_min DOUBLE) 
                         AS (SELECT  ST_TOMULTISEGMENTS(a.the_geom), a.$HEIGHT_WALL, 0 
                         FROM $buildingTable a WHERE a.$ID_COLUMN_BU NOT IN (SELECT ID_build_a 
@@ -355,7 +356,7 @@ IProcess projectedFacadeAreaDistribution() {
                         AS the_geom, z_max, z_min FROM $buildingIntersection WHERE ID_build_a<ID_build_b)"""
 
                 // The height of wall is calculated for each intermediate level...
-                def layerQuery = "CREATE TABLE $buildingLayer AS SELECT the_geom, "
+                def layerQuery = "DROP TABLE IF EXISTS $buildingLayer; CREATE TABLE $buildingLayer AS SELECT the_geom, "
                 for (i in 1..(listLayersBottom.size() - 1)) {
                     names[i - 1] = "rsu_projected_facade_area_distribution${listLayersBottom[i - 1]}" +
                             "_${listLayersBottom[i]}"
@@ -396,7 +397,8 @@ IProcess projectedFacadeAreaDistribution() {
 
 
                 // Intersections  facades are exploded to multisegments
-                datasource.execute "CREATE TABLE $rsuInter(id_rsu INTEGER, the_geom GEOMETRY, $namesAndType) " +
+                datasource.execute "DROP TABLE IF EXISTS $rsuInter; " +
+                        "CREATE TABLE $rsuInter(id_rsu INTEGER, the_geom GEOMETRY, $namesAndType) " +
                         "AS (SELECT id_rsu, the_geom, ${onlyNames[0..-2]} FROM ST_EXPLODE('$buildingFreeExpl'))"
 
 
@@ -425,7 +427,8 @@ IProcess projectedFacadeAreaDistribution() {
                     }
                 }
 
-                def query = "CREATE TABLE $finalIndicator AS SELECT a.id_rsu," + queryColumns[0..-2] +
+                def query = "DROP TABLE IF EXISTS $finalIndicator; " +
+                        "CREATE TABLE $finalIndicator AS SELECT a.id_rsu," + queryColumns[0..-2] +
                         " FROM (SELECT id_rsu, CASE WHEN ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom)) >= PI()" +
                                                         "THEN ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom)) - PI() " +
                                                         "ELSE ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom)) END AS azimuth," +
@@ -447,7 +450,7 @@ IProcess projectedFacadeAreaDistribution() {
 
                 // Remove all temporary tables created
                 datasource.execute "DROP TABLE IF EXISTS ${buildingIntersection}, ${buildingIntersectionExpl}, " +
-                        "${buildingFree}, ${buildingFreeExpl}, ${rsuInter}, $finalIndicator;"
+                        "${buildingFree}, ${buildingFreeExpl}, $buildingLayer, ${rsuInter}, $finalIndicator;"
             }
 
             [outputTableName: outputTableName]
@@ -507,7 +510,8 @@ IProcess roofAreaDistribution() {
             def outputTableName = prefixName + "_" + BASE_NAME
 
             // Vertical and non-vertical (tilted and horizontal) roof areas are calculated
-            datasource.execute "CREATE TABLE $buildRoofSurfIni AS SELECT $GEOMETRIC_COLUMN_BU, $ID_COLUMN_RSU," +
+            datasource.execute "DROP TABLE IF EXISTS $buildRoofSurfIni;" +
+                    "CREATE TABLE $buildRoofSurfIni AS SELECT $GEOMETRIC_COLUMN_BU, $ID_COLUMN_RSU," +
                     "$ID_COLUMN_BU, $HEIGHT_ROOF AS z_max, $HEIGHT_WALL AS z_min, ST_AREA($GEOMETRIC_COLUMN_BU)" +
                     " AS building_area, ST_PERIMETER($GEOMETRIC_COLUMN_BU)+" +
                     "ST_PERIMETER(ST_HOLES($GEOMETRIC_COLUMN_BU))" +
@@ -528,7 +532,8 @@ IProcess roofAreaDistribution() {
             // Vertical roofs that are potentially in contact with the facade of a building neighbor are identified
             // and the corresponding area is estimated (only if the building roof does not overpass the building
             // wall of the neighbor)
-            datasource.execute "CREATE TABLE $buildVertRoofInter(id_build INTEGER, vert_roof_to_remove DOUBLE) AS " +
+            datasource.execute "DROP TABLE IF EXISTS $buildVertRoofInter; " +
+                    "CREATE TABLE $buildVertRoofInter(id_build INTEGER, vert_roof_to_remove DOUBLE) AS " +
                     "(SELECT b.$ID_COLUMN_BU, sum(CASEWHEN(b.building_area>a.building_area, " +
                     "POWER(a.building_area,0.5)*b.delta_h/2, POWER(b.building_area,0.5)*b.delta_h/2)) " +
                     "FROM $buildRoofSurfIni a, $buildRoofSurfIni b WHERE a.$GEOMETRIC_COLUMN_BU && " +
@@ -541,7 +546,8 @@ IProcess roofAreaDistribution() {
             // Vertical roofs that are potentially in contact with the facade of a building neighbor are identified
             // and the corresponding area is estimated (only if the building roof does not overpass the building wall
             // of the neighbor)
-            datasource.execute "CREATE TABLE $buildVertRoofAll(id_build INTEGER, the_geom GEOMETRY, " +
+            datasource.execute "DROP TABLE IF EXISTS $buildVertRoofAll;" +
+                    "CREATE TABLE $buildVertRoofAll(id_build INTEGER, the_geom GEOMETRY, " +
                     "id_rsu INTEGER, z_max DOUBLE, z_min DOUBLE, delta_h DOUBLE, building_area DOUBLE, " +
                     "building_total_facade_length DOUBLE, non_vertical_roof_area DOUBLE, vertical_roof_area DOUBLE," +
                     " vert_roof_to_remove DOUBLE) AS " +
@@ -560,7 +566,8 @@ IProcess roofAreaDistribution() {
             // Update the roof areas (vertical and non vertical) taking into account the vertical roofs shared with
             // the neighbor facade and the roof surfaces that are not in the RSU. Note that half of the facade
             // are considered as vertical roofs, the other to "normal roof".
-            datasource.execute "CREATE TABLE $buildRoofSurfTot(id_build INTEGER," +
+            datasource.execute "DROP TABLE IF EXISTS $buildRoofSurfTot; " +
+                    "CREATE TABLE $buildRoofSurfTot(id_build INTEGER," +
                     "id_rsu INTEGER, z_max DOUBLE, z_min DOUBLE, delta_h DOUBLE, non_vertical_roof_area DOUBLE, " +
                     "vertical_roof_area DOUBLE) AS (SELECT a.id_build, a.id_rsu, a.z_max, a.z_min, a.delta_h, " +
                     "a.non_vertical_roof_area*ST_AREA(ST_INTERSECTION(a.the_geom, b.$GEOMETRIC_COLUMN_RSU))/a.building_area " +
@@ -603,7 +610,7 @@ IProcess roofAreaDistribution() {
             datasource.execute finalQuery + nonVertQuery + vertQuery[0..-2] + endQuery
 
             datasource.execute "DROP TABLE IF EXISTS ${buildRoofSurfIni}, ${buildVertRoofInter}, " +
-                    "${buildRoofSurfTot};"
+                    "$buildVertRoofAll; ${buildRoofSurfTot};"
 
             [outputTableName: outputTableName]
         }
@@ -677,7 +684,8 @@ IProcess effectiveTerrainRoughnessHeight() {
             def outputTableName = prefixName + "_" + BASE_NAME
 
             // The lambda_f indicator is first calculated
-            def lambdaQuery = "CREATE TABLE $lambdaTable AS SELECT $ID_COLUMN_RSU, $geometricMeanBuildingHeightName, ("
+            def lambdaQuery = "DROP TABLE IF EXISTS $lambdaTable;" +
+                    "CREATE TABLE $lambdaTable AS SELECT $ID_COLUMN_RSU, $geometricMeanBuildingHeightName, ("
             for (int i in 1..listLayersBottom.size()) {
                 names[i - 1] = "$projectedFacadeAreaName${listLayersBottom[i - 1]}_${listLayersBottom[i]}"
                 if (i == listLayersBottom.size()) {
@@ -800,7 +808,7 @@ IProcess linearRoadOperations() {
                             }
                             filtering = filtering[0..-4]
                         }
-                        def selectionQuery = "DROP TABLE IF EXISTS $outputTableName; DROP TABLE IF EXISTS $roadInter; " +
+                        def selectionQuery = "DROP TABLE IF EXISTS $roadInter; " +
                                 "CREATE TABLE $roadInter AS SELECT a.$ID_COLUMN_RSU AS id_rsu, " +
                                 "ST_AREA(a.$GEOMETRIC_COLUMN_RSU) AS rsu_area, ST_INTERSECTION(a.$GEOMETRIC_COLUMN_RSU, " +
                                 "b.$GEOMETRIC_COLUMN_ROAD) AS the_geom $ifZindex FROM $rsuTable a, $roadTable b " +
@@ -867,7 +875,8 @@ IProcess linearRoadOperations() {
 
                         // If the rsu linear density should be calculated
                         if (operations.contains("rsu_linear_road_density")) {
-                            String queryDensity = "CREATE TABLE $roadDens AS SELECT id_rsu, " + caseQueryDens[0..-2] +
+                            String queryDensity = "DROP TABLE IF EXISTS $roadDens;" +
+                                    "CREATE TABLE $roadDens AS SELECT id_rsu, " + caseQueryDens[0..-2] +
                                     " FROM $roadInter GROUP BY id_rsu;" +
                                     "CREATE INDEX IF NOT EXISTS id_d ON $roadDens(id_rsu);" +
                                     "DROP TABLE IF EXISTS $roadDensTot; CREATE TABLE $roadDensTot($ID_COLUMN_RSU INTEGER," +
@@ -881,7 +890,7 @@ IProcess linearRoadOperations() {
                         }
                         if (operations.contains("rsu_road_direction_distribution") &&
                                 operations.contains("rsu_linear_road_density")) {
-                            datasource.execute "CREATE TABLE $outputTableName AS SELECT a.*," +
+                            datasource.execute "DROP TABLE if exists $outputTableName; CREATE TABLE $outputTableName AS SELECT a.*," +
                                     "b.${nameDens.join(",b.")} FROM $roadDistTot a LEFT JOIN $roadDensTot b " +
                                     "ON a.id_rsu=b.id_rsu"
                         }
@@ -1320,7 +1329,6 @@ IProcess extendedFreeFacadeFraction() {
             def inclBu = "inclBu$uuid"
             def fullInclBu = "fullInclBu$uuid"
             def notIncBu = "notIncBu$uuid"
-            def allBu = "allBu$uuid"
 
             // The RSU area is extended according to a buffer
             datasource.execute "DROP TABLE IF EXISTS $extRsuTable; CREATE TABLE $extRsuTable AS SELECT " +
@@ -1362,6 +1370,9 @@ IProcess extendedFreeFacadeFraction() {
                     "AS rsu_extended_free_facade_fraction, " +
                     "a.$ID_FIELD_RSU, a.$GEOMETRIC_FIELD FROM $fullInclBu a LEFT JOIN $notIncBu b " +
                     "ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU;"
+
+            // Drop intermediate tables
+            datasource.execute "DROP TABLE IF EXISTS $extRsuTable, $inclBu, $fullInclBu, $notIncBu;"
 
             [outputTableName: outputTableName]
         }
