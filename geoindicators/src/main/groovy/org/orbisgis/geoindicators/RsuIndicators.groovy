@@ -610,7 +610,7 @@ IProcess roofAreaDistribution() {
             datasource.execute finalQuery + nonVertQuery + vertQuery[0..-2] + endQuery
 
             datasource.execute "DROP TABLE IF EXISTS ${buildRoofSurfIni}, ${buildVertRoofInter}, " +
-                    "$buildVertRoofAll; ${buildRoofSurfTot};"
+                    "$buildVertRoofAll, $buildRoofSurfTot;"
 
             [outputTableName: outputTableName]
         }
@@ -869,7 +869,8 @@ IProcess linearRoadOperations() {
                             datasource.execute queryDistrib
 
                             if (!operations.contains("rsu_linear_road_density")) {
-                                datasource.execute "ALTER TABLE $roadDistTot RENAME TO $outputTableName"
+                                datasource.execute "DROP TABLE IF EXISTS $outputTableName;" +
+                                        "ALTER TABLE $roadDistTot RENAME TO $outputTableName"
                             }
                         }
 
@@ -885,7 +886,8 @@ IProcess linearRoadOperations() {
                                     "FROM $rsuTable a LEFT JOIN $roadDens b ON a.$ID_COLUMN_RSU=b.id_rsu)"
                             datasource.execute queryDensity
                             if (!operations.contains("rsu_road_direction_distribution")) {
-                                datasource.execute "ALTER TABLE $roadDensTot RENAME TO $outputTableName"
+                                datasource.execute "DROP TABLE IF EXISTS $outputTableName;" +
+                                        "ALTER TABLE $roadDensTot RENAME TO $outputTableName"
                             }
                         }
                         if (operations.contains("rsu_road_direction_distribution") &&
