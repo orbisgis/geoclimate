@@ -102,14 +102,17 @@ def createLCZ() {
 
             //Compute RSU indicators
             def computeRSUIndicators = ProcessingChain.BuildGeoIndicators.computeRSUIndicators()
-            if (!computeRSUIndicators([datasource       : datasource,
-                                       buildingTable    : buildingIndicators,
-                                       rsuTable         : rsuTable,
-                                       vegetationTable  : vegetationTable,
-                                       roadTable        : roadTable,
-                                       hydrographicTable: hydrographicTable,
-                                       indicatorUse     : ["LCZ"],
-                                       svfSimplified    : svfSimplified])) {
+            if (!computeRSUIndicators([datasource           : datasource,
+                                       buildingTable        : buildingIndicators,
+                                       rsuTable             : rsuTable,
+                                       vegetationTable      : vegetationTable,
+                                       roadTable            : roadTable,
+                                       hydrographicTable    : hydrographicTable,
+                                       indicatorUse         : ["LCZ"],
+                                       svfPointDensity      : svfPointDensity,
+                                       svfRayLength         : svfRayLength,
+                                       svfNumberOfDirection : svfNumberOfDirection,
+                                       svfSimplified        : svfSimplified])) {
                 info "Cannot compute the RSU indicators."
                 return
             }
