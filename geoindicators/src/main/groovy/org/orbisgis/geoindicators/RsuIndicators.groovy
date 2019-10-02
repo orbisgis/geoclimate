@@ -399,57 +399,54 @@ IProcess projectedFacadeAreaDistribution() {
                 datasource.execute "CREATE TABLE $rsuInter(id_rsu INTEGER, the_geom GEOMETRY, $namesAndType) " +
                         "AS (SELECT id_rsu, the_geom, ${onlyNames[0..-2]} FROM ST_EXPLODE('$buildingFreeExpl'))"
 
-                // Basic informations are stored in the result Table where will be added all fields
-                // corresponding to the distribution
-                datasource.execute "CREATE TABLE ${finalIndicator}_0 AS SELECT $ID_COLUMN_RSU FROM $rsuTable"
-
 
                 // The analysis is then performed for each direction ('numberOfDirection' / 2 because calculation
                 // is performed for a direction independently of the "toward")
+                def namesAndTypeDir = ""
+                def onlyNamesDir = ""
+                def sumNamesDir = ""
+                def queryColumns = ""
                 for (int d = 0; d < numberOfDirection / 2; d++) {
                     def dirDeg = d * 360 / numberOfDirection
                     def dirRad = Math.toRadians(dirDeg)
-
+                    def dirRadMid = dirRad + dirMedRad
+                    def dirDegMid = dirDeg + dirMedDeg
                     // Define the field name for each of the directions and vertical layers
-                    def namesAndTypeDir = ""
-                    def onlyNamesDir = ""
-                    def onlyNamesDirB = ""
                     for (n in names) {
                         namesAndTypeDir += " " + n + "D" + (dirDeg + dirMedDeg) + " double,"
-                        onlyNamesDir += " " + n + "D" + (dirDeg + dirMedDeg) + ","
-                        onlyNamesDirB += " b." + n + "D" + (dirDeg + dirMedDeg) + ","
+                        queryColumns += " CASEWHEN  (a.azimuth-$dirRadMid>PI()/2, " +
+                                                    "a.$n*a.length*COS(a.azimuth-$dirRadMid-PI()/2), " +
+                                                    "CASEWHEN   (a.azimuth-$dirRadMid<-PI()/2, " +
+                                                                "a.$n*a.length*COS(a.azimuth-$dirRadMid+PI()/2), " +
+                                                                "a.$n*a.length*ABS(SIN(a.azimuth-$dirRadMid))))/2 " +
+                                        "AS ${n}D${dirDegMid},"
+                        onlyNamesDir += "${n}d${dirDegMid},"
+                        sumNamesDir += "COALESCE(SUM(b.${n}d${dirDegMid}), 0) AS ${n}d${dirDegMid} ,"
                     }
-
-                    // To calculate the indicator for a new wind direction, the free facades are rotated
-                    datasource.execute "DROP TABLE IF EXISTS $rsuInterRot; " +
-                            "CREATE TABLE $rsuInterRot(id_rsu INTEGER, the_geom geometry, ${namesAndType[0..-2]})" +
-                            " AS (SELECT id_rsu, ST_ROTATE(the_geom,${dirRad + dirMedRad}), " +
-                            "${onlyNames[0..-2]} FROM $rsuInter)"
-
-                    // The projected facade area indicator is calculated according to the free facades table
-                    // for each vertical layer for this specific direction "d"
-                    def calcQuery = ""
-                    for (n in names) {
-                        calcQuery += "COALESCE(sum((st_xmax(b.the_geom) - st_xmin(b.the_geom))*b.$n)/2,0) AS " +
-                                "${n}D${dirDeg + dirMedDeg}, "
-                    }
-                    datasource.execute "CREATE INDEX IF NOT EXISTS id_rint ON $rsuInterRot(id_rsu); " +
-                            "CREATE INDEX IF NOT EXISTS id_fin ON ${finalIndicator}_$d(id_rsu); " +
-                            "CREATE TABLE ${finalIndicator}_${d + 1} AS SELECT a.*, ${calcQuery[0..-3]} " +
-                            "FROM ${finalIndicator}_$d a LEFT JOIN $rsuInterRot b " +
-                            "ON a.id_rsu = b.ID_RSU GROUP BY a.id_rsu"
                 }
 
-                datasource.execute "DROP TABLE IF EXISTS $outputTableName; ALTER TABLE " +
-                        "${finalIndicator}_${numberOfDirection / 2} RENAME TO $outputTableName"
+                def query = "CREATE TABLE $finalIndicator AS SELECT a.id_rsu," + queryColumns[0..-2] +
+                        " FROM (SELECT id_rsu, CASE WHEN ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom)) >= PI()" +
+                                                        "THEN ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom)) - PI() " +
+                                                        "ELSE ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom)) END AS azimuth," +
+                                " ST_LENGTH(the_geom) AS length, ${onlyNames[0..-2]} FROM $rsuInter) a"
+
+                datasource.execute query
+
+
+
+                datasource.getTable(finalIndicator).id_rsu.createIndex()
+                // Sum area at RSU scale and fill null values with 0
+                datasource.execute """
+                        CREATE TABLE    ${outputTableName} 
+                        AS SELECT       a.id_rsu, ${sumNamesDir[0..-3]} 
+                        FROM            $rsuTable a LEFT JOIN $finalIndicator b 
+                        ON              a.id_rsu = b.id_rsu 
+                        GROUP BY        a.id_rsu"""
 
                 // Remove all temporary tables created
-                def removeQuery = " ${finalIndicator}_0"
-                for (int d = 0; d < numberOfDirection / 2; d++) {
-                    removeQuery += ", ${finalIndicator}_$d"
-                }
                 datasource.execute "DROP TABLE IF EXISTS ${buildingIntersection}, ${buildingIntersectionExpl}, " +
-                        "${buildingFree}, ${buildingFreeExpl}, ${rsuInter}, $removeQuery;"
+                        "${buildingFree}, ${buildingFreeExpl}, ${rsuInter}, $finalIndicator;"
             }
 
             [outputTableName: outputTableName]

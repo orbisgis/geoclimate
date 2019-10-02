@@ -82,8 +82,8 @@ class RsuIndicatorsTests {
     @Test
     void projectedFacadeAreaDistributionTest() {
         // Only the first 5 first created buildings are selected for the tests
-        h2GIS.execute "DROP TABLE IF EXISTS tempo_build; CREATE TABLE tempo_build AS SELECT * " +
-                "FROM building_test WHERE id_build < 6"
+        h2GIS.execute "DROP TABLE IF EXISTS tempo_build, test_rsu_projected_facade_area_distribution;" +
+                " CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 6"
 
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def numberOfDirection = 4
