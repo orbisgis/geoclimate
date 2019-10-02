@@ -60,25 +60,10 @@ def createLCZ() {
               fractionTypeImpervious, inputFields, levelForRoads, svfSimplified ->
             info "Create the LCZ..."
 
-            // To avoid overwriting the output files of this step, a unique identifier is created
-            def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
+            // Name of the table where are stored the indicators needed for the LCZ classification
+            def lczIndicTable = prefixName+"_lczIndicTable"
 
-            // Temporary table names
-            def lczIndicTable = "lczIndicTable" + uid_out
-            def rsu_indic0 = "rsu_indic0" + uid_out
-            def rsu_indic1 = "rsu_indic1" + uid_out
-            def rsu_indic2 = "rsu_indic2" + uid_out
-            def rsu_indic3 = "rsu_indic3" + uid_out
-
-            // Output table name
-            def outputTableName = "lczTable"
-
-            def veg_type = []
-            def perv_type = []
-            def imp_type = []
-            def surf_fractions = [:]
             def columnIdRsu = "id_rsu"
-            def columnIdBu = "id_build"
             def geometricColumn = "the_geom"
             def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"             : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
                                  "DENS_AREA"                        : "BUILDING_SURFACE_FRACTION",
@@ -126,7 +111,8 @@ def createLCZ() {
             }
             // Keep only the ID, geometry column and the 7 indicators useful for LCZ classification
             datasource.execute "$queryReplaceNames"
-            datasource.execute "CREATE TABLE $lczIndicTable AS SELECT $columnIdRsu, $geometricColumn, " +
+            datasource.execute "DROP TABLE IF EXISTS $lczIndicTable;" +
+                    "CREATE TABLE $lczIndicTable AS SELECT $columnIdRsu, $geometricColumn, " +
                     "${lczIndicNames.values().join(",")} FROM $rsuIndicators"
 
                 // The classification algorithm is called
@@ -139,8 +125,6 @@ def createLCZ() {
                     info "Cannot compute the LCZ classification."
                     return
                 }
-
-            datasource.execute "DROP TABLE IF EXISTS $rsu_indic0, $rsu_indic1, $rsu_indic2, $rsu_indic3"
 
             [outputTableName: classifyLCZ.results.outputTableName]
         }

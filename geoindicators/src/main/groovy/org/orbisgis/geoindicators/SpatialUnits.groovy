@@ -25,12 +25,12 @@ IProcess createRSU(){
     def final BASE_NAME = "created_rsu"
     return create({
         title "Create reference spatial units (RSU)"
-        inputs inputTableName: String, inputZoneTableName: "", prefixName: "rsu", datasource: JdbcDataSource
+        inputs inputTableName: String, inputZoneTableName: "", prefixName: "", datasource: JdbcDataSource
         outputs outputTableName: String, outputIdRsu: String
         run { inputTableName, inputZoneTableName, prefixName , datasource ->
             info "Creating the reference spatial units"
             // The name of the outputTableName is constructed
-            String outputTableName = "${prefixName}_${BASE_NAME}_${uuid}"
+            String outputTableName = "${prefixName}_${BASE_NAME}"
             int epsg = datasource.getSpatialTable(inputTableName).srid
 
             if(inputZoneTableName!=null && !inputZoneTableName.isEmpty()){
