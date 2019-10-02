@@ -326,7 +326,7 @@ IProcess projectedFacadeAreaDistribution() {
                 // Common party walls between buildings are calculated
                 datasource.execute """CREATE TABLE $buildingIntersection( the_geom GEOMETRY, 
                         id_build_a INTEGER, id_build_b INTEGER, z_max DOUBLE, z_min DOUBLE) AS 
-                        SELECT case when st_dimension(t.the_geom) > 0 then ST_TOMULTILINE(t.the_geom) else null end,
+                        SELECT ST_CollectionExtract(t.the_geom,2) ,
                         t.id_build_a , t.id_build_b , t.z_max , t.z_min 
                         from (select ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_COLUMN_BU), ST_MAKEVALID(b.$GEOMETRIC_COLUMN_BU)) as the_geom, 
                         a.$ID_COLUMN_BU as id_build_a, b.$ID_COLUMN_BU as id_build_b, 
