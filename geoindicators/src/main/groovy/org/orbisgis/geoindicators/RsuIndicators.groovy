@@ -152,9 +152,7 @@ IProcess groundSkyViewFactor() {
                         ST_EXPLODE('(SELECT $ID_COLUMN_RSU,
                                     case when LEAST(TRUNC($pointDensity*c.rsu_area_diff),100)=0 
                                     then st_pointonsurface(c.the_geom)
-                                    else ST_GENERATEPOINTS(c.the_geom, POWER((c.rsu_area_diff /c.rsu_area * c.rsu_area_diff / c.env_area)/ $pointDensity,0.5),
-                                                      POWER((c.rsu_area_diff /c.rsu_area * c.rsu_area_diff / c.env_area) / $pointDensity,0.5), true, 
-                        LEAST(TRUNC($pointDensity*c.rsu_area_diff),100)) end
+                                    else ST_GENERATEPOINTS(c.the_geom, LEAST(TRUNC($pointDensity*c.rsu_area_diff),100)) end
                         AS the_geom
                         FROM  (SELECT the_geom, st_area($GEOMETRIC_COLUMN_RSU) 
                                                 AS rsu_area_diff,rsu_area, st_area(st_envelope(the_geom)) as env_area, $ID_COLUMN_RSU
@@ -163,7 +161,6 @@ IProcess groundSkyViewFactor() {
             // A random sample of points (of size corresponding to the point density defined by $pointDensity)
             // is drawn in order to have the same density of point in each RSU.
             datasource.getSpatialTable(multiptsRSUtot).the_geom.createSpatialIndex()
-            datasource.getSpatialTable(multiptsRSUtot).id_rsu.createIndex()
 
             // The SVF calculation is performed at point scale
             datasource.execute """
@@ -174,7 +171,7 @@ IProcess groundSkyViewFactor() {
                     FROM        $multiptsRSUtot AS a, $correlationBuildingTable AS b 
                     WHERE       ST_EXPAND(a.the_geom, $rayLength) && b.$GEOMETRIC_COLUMN_BU AND 
                                 ST_DWITHIN(b.$GEOMETRIC_COLUMN_BU, a.the_geom, $rayLength) 
-                    GROUP BY    a.the_geom, a.$ID_COLUMN_RSU"""
+                    GROUP BY    a.the_geom"""
 
             datasource.getTable(svfPts)[ID_COLUMN_RSU].createIndex()
 
