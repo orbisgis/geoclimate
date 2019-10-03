@@ -63,7 +63,7 @@ IProcess identifyLczType() {
                 def queryPerkinsSkill = ""
 
                 // The name of the outputTableName is constructed
-                def outputTableName = prefixName + "_" + BASE_NAME
+                def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
                 // To avoid overwriting the output files of this step, a unique identifier is created
                 // Temporary table names are defined

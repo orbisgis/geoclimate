@@ -30,8 +30,9 @@ IProcess createRSU(){
         run { inputTableName, inputZoneTableName, prefixName , datasource ->
             info "Creating the reference spatial units"
             // The name of the outputTableName is constructed
-            String outputTableName = "${prefixName}_${BASE_NAME}"
-            int epsg = datasource.getSpatialTable(inputTableName).srid
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
+
+            def epsg = datasource.getSpatialTable(inputTableName).srid
 
             if(inputZoneTableName!=null && !inputZoneTableName.isEmpty()){
 
@@ -39,7 +40,7 @@ IProcess createRSU(){
                     CREATE TABLE $outputTableName as  select  EXPLOD_ID as $COLUMN_ID_NAME, st_setsrid(a.the_geom, $epsg) as the_geom
                      from st_explode ('(select st_polygonize(st_union(
                     st_precisionreducer(st_node(st_accum(st_force2d(the_geom))), 3))) as the_geom from $inputTableName)') as a,
-            $inputZoneTableName as b where a.the_geom && b.the_geom and st_intersects(ST_POINTONSURFACE(a.THE_GEOM), b.the_geom)"""
+                    $inputZoneTableName as b where a.the_geom && b.the_geom and st_intersects(ST_POINTONSURFACE(a.THE_GEOM), b.the_geom)"""
             }
             else{
             datasource.execute """DROP TABLE IF EXISTS $outputTableName;
@@ -83,10 +84,10 @@ IProcess prepareRSUData() {
         outputs outputTableName: String
         run { zoneTable, roadTable, railTable, vegetationTable, hydrographicTable, surface_vegetation,
               surface_hydrographic, prefixName, datasource ->
-            info "Creating the reference spatial units"
+            info "Preparing the abstract model to build the RSU"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             // Create temporary table names (for tables that will be removed at the end of the IProcess)
             def vegetation_indice = vegetationTable + "_" + uuid
@@ -101,7 +102,7 @@ IProcess prepareRSUData() {
             def numberZone = datasource.firstRow("select count(*) as nb from $zoneTable").nb
 
             if (numberZone == 1) {
-                epsg = datasource.getSpatialTable(zoneTable).srid
+                def epsg = datasource.getSpatialTable(zoneTable).srid
                 if(vegetationTable) {
                     info "Preparing vegetation..."
 
@@ -189,12 +190,14 @@ IProcess prepareRSUData() {
                 info "Grouping all tables..."
                 if(queryCreateOutputTable){
                     datasource.execute """DROP TABLE if exists $outputTableName;
-                CREATE TABLE $outputTableName AS (SELECT st_setsrid(ST_ToMultiLine(THE_GEOM),$epsg) THE_GEOM  FROM $zoneTable) UNION ${queryCreateOutputTable.values().join(' union ')};
+                CREATE TABLE $outputTableName(the_geom GEOMETRY) AS (SELECT st_setsrid(ST_ToMultiLine(THE_GEOM),$epsg) 
+                 FROM $zoneTable) UNION ${queryCreateOutputTable.values().join(' union ')};
                    DROP TABLE IF EXISTS ${queryCreateOutputTable.keySet().join(' , ')}"""
                 }
                 else {
                     datasource.execute """DROP TABLE if exists $outputTableName;
-                CREATE TABLE $outputTableName AS (SELECT st_setsrid(ST_ToMultiLine(THE_GEOM),$epsg) THE_GEOM FROM $zoneTable);"""
+                CREATE TABLE $outputTableName(the_geom GEOMETRY) AS (SELECT st_setsrid(ST_ToMultiLine(THE_GEOM),$epsg) 
+                FROM $zoneTable);"""
 
                 }
 
@@ -225,6 +228,7 @@ IProcess prepareRSUData() {
  * @return A database table name and the name of the column ID
  */
 IProcess createBlocks(){
+    def final BASE_NAME = "created_blocks"
     return create({
         title "Merge the geometries that touch each other"
         inputs inputTableName: String, distance : 0.0d, prefixName: "block", datasource: JdbcDataSource
@@ -234,8 +238,7 @@ IProcess createBlocks(){
             def columnIdName = "id_block"
 
             // The name of the outputTableName is constructed
-            String baseName = "created_blocks"
-            String outputTableName = prefixName + "_" + baseName
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             //Find all neighbors for each building
             info "Building index to perform the process..."
@@ -279,7 +282,8 @@ IProcess createBlocks(){
             LEFT JOIN $subGraphTableNodes b ON a.id_build = b.NODE_ID WHERE b.NODE_ID IS NULL);"""
 
             // Temporary tables are deleted
-            datasource.execute "DROP TABLE IF EXISTS $graphTable, $subGraphBlocks;"
+            datasource.execute "DROP TABLE IF EXISTS $graphTable, ${graphTable+"_EDGE_CC"}, " +
+                    "$subGraphBlocks, ${subGraphBlocks+"_NODE_CC"};"
 
             info "The blocks have been created"
             [outputTableName: outputTableName, outputIdBlock: columnIdName]
@@ -319,7 +323,7 @@ IProcess createScalesRelations(){
             info "Creating the Tables of relations between two scales"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + inputLowerScaleTableName + "_corr"
+            def outputTableName = getOutputTableName(prefixName, inputLowerScaleTableName+"_corr")
             datasource.getSpatialTable(inputLowerScaleTableName).the_geom.createSpatialIndex()
             datasource.getSpatialTable(inputUpperScaleTableName).the_geom.createSpatialIndex()
 

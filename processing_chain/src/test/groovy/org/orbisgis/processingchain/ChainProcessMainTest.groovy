@@ -37,13 +37,14 @@ class ChainProcessMainTest {
      */
     void osmGeoIndicators(String directory, JdbcDataSource datasource, String zoneTableName, String buildingTableName,
                           String roadTableName, String railTableName, String vegetationTableName,
-                          String hydrographicTableName, boolean saveResults, indicatorUse ) {
+                          String hydrographicTableName, boolean saveResults, boolean svfSimplified = false, indicatorUse,
+                          String prefixName = "" ) {
         //Create spatial units and relations : building, block, rsu
         IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
         assertTrue spatialUnits.execute([datasource : datasource, zoneTable: zoneTableName, buildingTable: buildingTableName,
                                          roadTable: roadTableName, railTable: railTableName, vegetationTable: vegetationTableName,
                                          hydrographicTable: hydrographicTableName, surface_vegetation: 100000,
-                                         surface_hydro  : 2500, distance: 0.01, prefixName: "geounits"])
+                                         surface_hydro  : 2500, distance: 0.01, prefixName: prefixName])
 
         String relationBuildings = spatialUnits.getResults().outputTableBuildingName
         String relationBlocks = spatialUnits.getResults().outputTableBlockName
@@ -71,7 +72,8 @@ class ChainProcessMainTest {
         assertTrue computeBuildingsIndicators.execute([datasource               : datasource,
                                                        inputBuildingTableName   : relationBuildings,
                                                        inputRoadTableName       : roadTableName,
-                                                       indicatorUse             : indicatorUse])
+                                                       indicatorUse             : indicatorUse,
+                                                       prefixName               : prefixName])
         String buildingIndicators = computeBuildingsIndicators.getResults().outputTableName
         if(saveResults){
             logger.info("Saving building indicators")
@@ -88,7 +90,8 @@ class ChainProcessMainTest {
             def computeBlockIndicators = ProcessingChain.BuildGeoIndicators.computeBlockIndicators()
             assertTrue computeBlockIndicators.execute([datasource            : datasource,
                                                        inputBuildingTableName: buildingIndicators,
-                                                       inputBlockTableName   : relationBlocks])
+                                                       inputBlockTableName   : relationBlocks,
+                                                       prefixName            : prefixName])
             String blockIndicators = computeBlockIndicators.getResults().outputTableName
             if (saveResults) {
                 logger.info("Saving block indicators")
@@ -108,7 +111,9 @@ class ChainProcessMainTest {
                                                  vegetationTable        : vegetationTableName,
                                                  roadTable              : roadTableName,
                                                  hydrographicTable      : hydrographicTableName,
-                                                 indicatorUse           : indicatorUse])
+                                                 indicatorUse           : indicatorUse,
+                                                 prefixName             : prefixName,
+                                                 svfSimplified          : svfSimplified])
         String rsuIndicators = computeRSUIndicators.getResults().outputTableName
         if(saveResults){
             logger.info("Saving RSU indicators")

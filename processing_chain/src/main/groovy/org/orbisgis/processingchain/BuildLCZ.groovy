@@ -39,9 +39,11 @@ import org.orbisgis.datamanager.JdbcDataSource
  * @return outputTableName Table name where are stored the resulting RSU
  */
 def createLCZ() {
+    def final BASE_NAME = "lcz_type"
+    def final LCZ_INDIC_TABLE = "lcz_indic_table"
     return create({
         title "Create the LCZ"
-        inputs datasource: JdbcDataSource, prefixName: String, buildingTable: String, rsuTable: String, roadTable: String,
+        inputs datasource: JdbcDataSource, prefixName: "", buildingTable: String, rsuTable: String, roadTable: String,
                 vegetationTable: String, hydrographicTable: String, facadeDensListLayersBottom: [0, 50, 200],
                 facadeDensNumberOfDirection: 8, svfPointDensity: 0.008, svfRayLength: 100,
                 svfNumberOfDirection: 60, heightColumnName: "height_roof",
@@ -60,10 +62,11 @@ def createLCZ() {
               fractionTypeImpervious, inputFields, levelForRoads, svfSimplified ->
             info "Create the LCZ..."
 
-            // Name of the table where are stored the indicators needed for the LCZ classification
-            def lczIndicTable = prefixName+"_lczIndicTable"
+            // The name of the outputTableName is constructed
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
+            def lczIndicTable = getOutputTableName(prefixName, LCZ_INDIC_TABLE)
 
-            def columnIdRsu = "id_rsu"
+            def COLUMN_ID_RSU = "id_rsu"
             def geometricColumn = "the_geom"
             def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"             : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
                                  "DENS_AREA"                        : "BUILDING_SURFACE_FRACTION",
@@ -79,7 +82,8 @@ def createLCZ() {
             if (!computeBuildingsIndicators([datasource            : datasource,
                                              inputBuildingTableName: buildingTable,
                                              inputRoadTableName    : roadTable,
-                                             indicatorUse          : ["LCZ"]])) {
+                                             indicatorUse          : ["LCZ"],
+                                             prefixName            : prefixName])) {
                 info "Cannot compute building indicators."
                 return
             }
@@ -97,7 +101,8 @@ def createLCZ() {
                                        svfPointDensity      : svfPointDensity,
                                        svfRayLength         : svfRayLength,
                                        svfNumberOfDirection : svfNumberOfDirection,
-                                       svfSimplified        : svfSimplified])) {
+                                       svfSimplified        : svfSimplified,
+                                       prefixName           : prefixName])) {
                 info "Cannot compute the RSU indicators."
                 return
             }
@@ -112,7 +117,7 @@ def createLCZ() {
             // Keep only the ID, geometry column and the 7 indicators useful for LCZ classification
             datasource.execute "$queryReplaceNames"
             datasource.execute "DROP TABLE IF EXISTS $lczIndicTable;" +
-                    "CREATE TABLE $lczIndicTable AS SELECT $columnIdRsu, $geometricColumn, " +
+                    "CREATE TABLE $lczIndicTable AS SELECT $COLUMN_ID_RSU, $geometricColumn, " +
                     "${lczIndicNames.values().join(",")} FROM $rsuIndicators"
 
                 // The classification algorithm is called
@@ -125,6 +130,9 @@ def createLCZ() {
                     info "Cannot compute the LCZ classification."
                     return
                 }
+
+            // Rename the last table to the right output table name
+            datasource.execute "ALTER TABLE ${classifyLCZ.results.outputTableName} RENAME TO $outputTableName"
 
             [outputTableName: classifyLCZ.results.outputTableName]
         }
