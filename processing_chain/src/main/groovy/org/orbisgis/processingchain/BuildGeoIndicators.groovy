@@ -306,6 +306,7 @@ def computeBlockIndicators(){
  * @param indicatorUse The use defined for the indicator. Depending on this use, only a part of the indicators could
  * be calculated (default is all indicators : ["LCZ", "URBAN_TYPOLOGY", "TEB"])
  * @param prefixName A prefix used to name the output table
+ * @param svfSimplified A boolean to use a simplified version of the SVF calculation (default false)
  * @param datasource A connection to a database
  *
  * @return
@@ -322,7 +323,7 @@ def computeRSUIndicators() {
                 heightColumnName           : "height_roof",    fractionTypePervious        : ["low_vegetation", "water"],
                 fractionTypeImpervious     : ["road"],         inputFields                 : ["id_build", "the_geom"],
                 levelForRoads              : [0],              angleRangeSizeBuDirection   : 30,
-                indicatorUse               : ["LCZ", "URBAN_TYPOLOGY", "TEB"]
+                svfSimplified              : false,            indicatorUse                : ["LCZ", "URBAN_TYPOLOGY", "TEB"]
         outputs outputTableName: String
         run { datasource            , buildingTable                     , rsuTable,
               prefixName            , vegetationTable                   , roadTable,
@@ -330,7 +331,7 @@ def computeRSUIndicators() {
               svfPointDensity       , svfRayLength                      , svfNumberOfDirection,
               heightColumnName      , fractionTypePervious              , fractionTypeImpervious,
               inputFields           , levelForRoads                     , angleRangeSizeBuDirection,
-              indicatorUse ->
+              svfSimplified         , indicatorUse ->
 
             info "Start computing RSU indicators..."
             def to_start = System.currentTimeMillis()
@@ -559,19 +560,36 @@ def computeRSUIndicators() {
 
             // rsu_ground_sky_view_factor
             if (indicatorUse.contains("LCZ")) {
-                def computeSVF = Geoindicators.RsuIndicators.groundSkyViewFactor()
-                if (!computeSVF([rsuTable                : intermediateJoinTable,
-                                 correlationBuildingTable: buildingTable,
-                                 rsuBuildingDensityColumn: "dens_area",
-                                 pointDensity            : svfPointDensity,
-                                 rayLength               : svfRayLength,
-                                 numberOfDirection       : svfNumberOfDirection,
-                                 prefixName              : prefixName,
-                                 datasource              : datasource])) {
-                    info "Cannot compute the SVF calculation in $prefixName. "
-                    return
-                }
-                def SVF = computeSVF.results.outputTableName
+                def SVF = "SVF"
+                // If the fast version is chosen (SVF derived from extended RSU free facade fraction
+                if (svfSimplified == true) {
+                    def computeExtFF =  Geoindicators.RsuIndicators.extendedFreeFacadeFraction()
+                    if (!computeExtFF([buildingTable: buildingTable,
+                                          rsuTable: intermediateJoinTable,
+                                          buContiguityColumn: "building_contiguity",
+                                          buTotalFacadeLengthColumn: "building_total_facade_length",
+                                          prefixName: prefixName, buffDist : 10, datasource: datasource])){
+                        info "Cannot compute the SVF calculation in $prefixName. "
+                        return
+                        }
+                    datasource.execute "DROP TABLE IF EXISTS $SVF; CREATE TABLE SVF " +
+                            "AS SELECT 1-rsu_extended_free_facade_fraction AS RSU_GROUND_SKY_VIEW_FACTOR, $columnIdRsu " +
+                            "FROM ${computeExtFF.results.outputTableName}"
+                    }
+                else {
+                    def computeSVF = Geoindicators.RsuIndicators.groundSkyViewFactor()
+                    if (!computeSVF([rsuTable                : intermediateJoinTable,
+                                     correlationBuildingTable: buildingTable,
+                                     pointDensity            : svfPointDensity,
+                                     rayLength               : svfRayLength,
+                                     numberOfDirection       : svfNumberOfDirection,
+                                     prefixName              : prefixName,
+                                     datasource              : datasource])) {
+                        info "Cannot compute the SVF calculation in $prefixName. "
+                        return
+                        }
+                    SVF = computeSVF.results.outputTableName
+                    }
                 finalTablesToJoin.put(SVF, columnIdRsu)
             }
 

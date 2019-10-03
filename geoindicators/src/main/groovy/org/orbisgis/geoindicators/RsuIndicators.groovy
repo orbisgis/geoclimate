@@ -70,16 +70,13 @@ IProcess freeExternalFacadeDensity() {
  * Bernard et al. (2018)). The density of points used for the calculation actually depends on building
  * density (higher the building density, lower the density of points). To avoid this phenomenon, we set
  * a constant density of point "point_density" for a given amount of free surfaces (default 0.008,
- * based on the median of Bernard et al. (2018) dataset). The calculation needs the "rsu_building_density"
- * and the "rsu_area".
+ * based on the median of Bernard et al. (2018) dataset).
  *
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
  * @param rsuTable The name of the input ITable where are stored the RSU
  * @param correlationBuildingTable The name of the input ITable where are stored the buildings and the relationships
  * between buildings and RSU
- * @param rsuBuildingDensityColumn The name of the column where are stored the building density values (within the rsu
- * Table)
  * @param pointDensity The density of points (nb / free m²) used to calculate the spatial average SVF
  * @param rayLength The maximum distance to consider an obstacle as potential sky cover
  * @param numberOfDirection the number of directions considered to calculate the SVF
@@ -105,10 +102,10 @@ IProcess groundSkyViewFactor() {
     
     return create({
         title "RSU ground sky view factor"
-        inputs rsuTable: String, correlationBuildingTable: String, rsuBuildingDensityColumn: String, pointDensity: 0.008D,
+        inputs rsuTable: String, correlationBuildingTable: String, pointDensity: 0.008D,
                 rayLength: 100D, numberOfDirection: 60, prefixName: String, datasource: JdbcDataSource
         outputs outputTableName: String
-        run { rsuTable, correlationBuildingTable, rsuBuildingDensityColumn, pointDensity, rayLength, numberOfDirection,
+        run { rsuTable, correlationBuildingTable, pointDensity, rayLength, numberOfDirection,
               prefixName, datasource ->
 
             info "Executing RSU ground sky view factor"
@@ -132,7 +129,6 @@ IProcess groundSkyViewFactor() {
 
             def to_start = System.currentTimeMillis()
 
-
             // Create the geometries of buildings and RSU holes included within each RSU
             datasource.execute """
                     DROP TABLE IF EXISTS $rsuHolesToRemove, $multiptsRSUtot, $ptsRSUtot, $svfPts, $outputTableName;
@@ -155,13 +151,17 @@ IProcess groundSkyViewFactor() {
             // is similar in each RSU
             datasource.execute """
                     CREATE TABLE $multiptsRSUtot 
-                    AS SELECT       a.$ID_COLUMN_RSU, ST_GENERATEPOINTS(ST_MAKEPOLYGON(ST_EXTERIORRING(a.$GEOMETRIC_COLUMN_RSU),
-                                    ST_ACCUM(b.the_geom)), TRUNC(${pointDensity}*ST_AREA(a.$GEOMETRIC_COLUMN_RSU)*
-                                    (1.0 - a.$rsuBuildingDensityColumn)+1)) AS the_geom 
-                    FROM            $rsuTable a 
-                    LEFT JOIN       $rsuHolesToRemove b 
-                    ON              a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU 
-                    GROUP BY        a.$ID_COLUMN_RSU"""
+                    AS SELECT       $ID_COLUMN_RSU, ST_GENERATEPOINTS(c.the_geom, TRUNC(${pointDensity}*
+                                    c.rsu_area*(1.0 - ((c.rsu_area - ST_AREA(c.the_geom))/
+                                    c.rsu_area))+1)) AS the_geom 
+                    FROM 
+                                    (SELECT ST_MAKEPOLYGON(ST_EXTERIORRING(a.$GEOMETRIC_COLUMN_RSU),
+                                                ST_ACCUM(b.the_geom)) AS the_geom, st_area(a.$GEOMETRIC_COLUMN_RSU) 
+                                                AS rsu_area, a.$ID_COLUMN_RSU 
+                                    FROM        $rsuTable a 
+                                    LEFT JOIN   $rsuHolesToRemove b 
+                                    ON          a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU 
+                                    GROUP BY    a.$ID_COLUMN_RSU) as c"""
 
             // Convert the multipoint geometries to points
             datasource.execute """
@@ -188,7 +188,7 @@ IProcess groundSkyViewFactor() {
             // The result of the SVF calculation is averaged at RSU scale
             datasource.execute """
                     CREATE TABLE $outputTableName(id_rsu integer, rsu_ground_sky_view_factor double) 
-                    AS          (SELECT a.$ID_COLUMN_RSU, AVG(b.SVF) 
+                    AS          (SELECT a.$ID_COLUMN_RSU, CASE WHEN AVG(b.SVF) is not null THEN AVG(b.SVF) ELSE 0 END
                     FROM        $ptsRSUtot a 
                     LEFT JOIN   $svfPts b 
                     ON          a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU
@@ -324,40 +324,38 @@ IProcess projectedFacadeAreaDistribution() {
                 def names = []
 
                 // Common party walls between buildings are calculated
-                datasource.execute "CREATE TABLE $buildingIntersection(pk SERIAL, the_geom GEOMETRY, " +
-                        "ID_build_a INTEGER, ID_build_b INTEGER, z_max DOUBLE, z_min DOUBLE) AS " +
-                        "(SELECT NULL, ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_COLUMN_BU), ST_MAKEVALID(b.$GEOMETRIC_COLUMN_BU)), " +
-                        "a.$ID_COLUMN_BU, b.$ID_COLUMN_BU, GREATEST(a.$HEIGHT_WALL,b.$HEIGHT_WALL), " +
-                        "LEAST(a.$HEIGHT_WALL,b.$HEIGHT_WALL) FROM $buildingTable AS a, $buildingTable AS b " +
-                        "WHERE a.$GEOMETRIC_COLUMN_BU && b.$GEOMETRIC_COLUMN_BU AND " +
-                        "ST_INTERSECTS(a.$GEOMETRIC_COLUMN_BU, b.$GEOMETRIC_COLUMN_BU) " +
-                        "AND a.$ID_COLUMN_BU <> b.$ID_COLUMN_BU)"
+                datasource.execute """CREATE TABLE $buildingIntersection( the_geom GEOMETRY, 
+                        id_build_a INTEGER, id_build_b INTEGER, z_max DOUBLE, z_min DOUBLE) AS 
+                        SELECT ST_CollectionExtract(t.the_geom,2) ,
+                        t.id_build_a , t.id_build_b , t.z_max , t.z_min 
+                        from (select ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_COLUMN_BU), ST_MAKEVALID(b.$GEOMETRIC_COLUMN_BU)) as the_geom, 
+                        a.$ID_COLUMN_BU as id_build_a, b.$ID_COLUMN_BU as id_build_b, 
+                        GREATEST(a.$HEIGHT_WALL,b.$HEIGHT_WALL) as z_max, 
+                        LEAST(a.$HEIGHT_WALL,b.$HEIGHT_WALL) as z_min FROM $buildingTable AS a, $buildingTable AS b 
+                        WHERE a.$GEOMETRIC_COLUMN_BU && b.$GEOMETRIC_COLUMN_BU AND 
+                        ST_INTERSECTS(a.$GEOMETRIC_COLUMN_BU, b.$GEOMETRIC_COLUMN_BU) 
+                        AND a.$ID_COLUMN_BU <> b.$ID_COLUMN_BU) as t"""
 
-                // Common party walls are converted to multilines and then exploded
-                datasource.execute "CREATE TABLE $buildingIntersectionExpl(pk SERIAL, the_geom GEOMETRY, " +
-                        "ID_build_a INTEGER, ID_build_b INTEGER, z_max DOUBLE, z_min DOUBLE) AS " +
-                        "(SELECT NULL, ST_TOMULTILINE(the_geom), ID_build_a, ID_build_b, z_max, z_min " +
-                        "FROM ST_EXPLODE('(SELECT the_geom AS the_geom, ID_build_a, ID_build_b, z_max, z_min " +
-                        "FROM $buildingIntersection)'))"
+                datasource.getSpatialTable(buildingIntersection).ID_build_a.createIndex()
+
 
                 // Each free facade is stored TWICE (an intersection could be seen from the point of view of two
                 // buildings).
                 // Facades of isolated buildings are unioned to free facades of non-isolated buildings which are
                 // unioned to free intersection facades. To each facade is affected its corresponding free height
-                datasource.execute "CREATE INDEX IF NOT EXISTS id_buint" +
-                        " ON ${buildingIntersectionExpl}(ID_build_a); " +
-                        "CREATE TABLE $buildingFree(pk SERIAL, the_geom GEOMETRY, z_max DOUBLE, z_min DOUBLE) " +
-                        "AS (SELECT NULL, ST_TOMULTISEGMENTS(a.the_geom), a.$HEIGHT_WALL, 0 " +
-                        "FROM $buildingTable a WHERE a.$ID_COLUMN_BU NOT IN (SELECT ID_build_a " +
-                        "FROM $buildingIntersectionExpl)) UNION ALL (SELECT NULL, " +
-                        "ST_TOMULTISEGMENTS(ST_DIFFERENCE(ST_TOMULTILINE(a.$GEOMETRIC_COLUMN_BU), " +
-                        "ST_UNION(ST_ACCUM(b.the_geom)))), a.$HEIGHT_WALL, 0 FROM $buildingTable a, " +
-                        "$buildingIntersectionExpl b WHERE a.$ID_COLUMN_BU=b.ID_build_a " +
-                        "GROUP BY b.ID_build_a) UNION ALL (SELECT NULL, ST_TOMULTISEGMENTS(the_geom) " +
-                        "AS the_geom, z_max, z_min FROM $buildingIntersectionExpl WHERE ID_build_a<ID_build_b)"
+                datasource.execute """
+                        CREATE TABLE $buildingFree(the_geom GEOMETRY, z_max DOUBLE, z_min DOUBLE) 
+                        AS (SELECT  ST_TOMULTISEGMENTS(a.the_geom), a.$HEIGHT_WALL, 0 
+                        FROM $buildingTable a WHERE a.$ID_COLUMN_BU NOT IN (SELECT ID_build_a 
+                        FROM $buildingIntersection)) UNION ALL (SELECT  
+                        ST_TOMULTISEGMENTS(ST_DIFFERENCE(ST_TOMULTILINE(a.$GEOMETRIC_COLUMN_BU), 
+                        ST_UNION(ST_ACCUM(b.the_geom)))), a.$HEIGHT_WALL, 0 FROM $buildingTable a, 
+                        $buildingIntersection b WHERE a.$ID_COLUMN_BU=b.ID_build_a 
+                        GROUP BY b.ID_build_a) UNION ALL (SELECT ST_TOMULTISEGMENTS(the_geom) 
+                        AS the_geom, z_max, z_min FROM $buildingIntersection WHERE ID_build_a<ID_build_b)"""
 
                 // The height of wall is calculated for each intermediate level...
-                def layerQuery = "CREATE TABLE $buildingLayer AS SELECT pk, the_geom, "
+                def layerQuery = "CREATE TABLE $buildingLayer AS SELECT the_geom, "
                 for (i in 1..(listLayersBottom.size() - 1)) {
                     names[i - 1] = "rsu_projected_facade_area_distribution${listLayersBottom[i - 1]}" +
                             "_${listLayersBottom[i]}"
@@ -386,69 +384,70 @@ IProcess projectedFacadeAreaDistribution() {
                     onlyNamesB += " b." + n + ","
                 }
 
-                // Free facades are exploded to multisegments
-                datasource.execute "CREATE TABLE $buildingFreeExpl(pk SERIAL, the_geom GEOMETRY, $namesAndType) " +
-                        "AS (SELECT NULL, the_geom, ${onlyNames[0..-2]} FROM ST_EXPLODE('$buildingLayer'))"
+                datasource.getSpatialTable(buildingLayer).the_geom.createSpatialIndex()
 
                 // Intersections between free facades and rsu geometries are calculated
-                datasource.execute "CREATE SPATIAL INDEX IF NOT EXISTS ids_bufre ON $buildingFreeExpl(the_geom); " +
-                        "CREATE TABLE $rsuInter(id_rsu INTEGER, the_geom GEOMETRY, $namesAndType) AS " +
-                        "(SELECT a.$ID_COLUMN_RSU, ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_COLUMN_RSU), ST_MAKEVALID(b.the_geom)), " +
-                        "${onlyNamesB[0..-2]} FROM $rsuTable a, $buildingFreeExpl b " +
-                        "WHERE a.$GEOMETRIC_COLUMN_RSU && b.the_geom " +
-                        "AND ST_INTERSECTS(a.$GEOMETRIC_COLUMN_RSU, b.the_geom))"
+                datasource.execute """ DROP TABLE IF EXISTS $buildingFreeExpl; 
+                        CREATE TABLE $buildingFreeExpl(id_rsu INTEGER, the_geom GEOMETRY, $namesAndType) AS 
+                        (SELECT a.$ID_COLUMN_RSU, ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_COLUMN_RSU), ST_TOMULTILINE(b.the_geom)), 
+                        ${onlyNamesB[0..-2]} FROM $rsuTable a, $buildingLayer b 
+                        WHERE a.$GEOMETRIC_COLUMN_RSU && b.the_geom 
+                        AND ST_INTERSECTS(a.$GEOMETRIC_COLUMN_RSU, b.the_geom))"""
 
-                // Basic informations are stored in the result Table where will be added all fields
-                // corresponding to the distribution
-                datasource.execute "CREATE TABLE ${finalIndicator}_0 AS SELECT $ID_COLUMN_RSU FROM $rsuTable"
+
+                // Intersections  facades are exploded to multisegments
+                datasource.execute "CREATE TABLE $rsuInter(id_rsu INTEGER, the_geom GEOMETRY, $namesAndType) " +
+                        "AS (SELECT id_rsu, the_geom, ${onlyNames[0..-2]} FROM ST_EXPLODE('$buildingFreeExpl'))"
 
 
                 // The analysis is then performed for each direction ('numberOfDirection' / 2 because calculation
                 // is performed for a direction independently of the "toward")
+                def namesAndTypeDir = ""
+                def onlyNamesDir = ""
+                def sumNamesDir = ""
+                def queryColumns = ""
                 for (int d = 0; d < numberOfDirection / 2; d++) {
                     def dirDeg = d * 360 / numberOfDirection
                     def dirRad = Math.toRadians(dirDeg)
-
+                    def dirRadMid = dirRad + dirMedRad
+                    def dirDegMid = dirDeg + dirMedDeg
                     // Define the field name for each of the directions and vertical layers
-                    def namesAndTypeDir = ""
-                    def onlyNamesDir = ""
-                    def onlyNamesDirB = ""
                     for (n in names) {
                         namesAndTypeDir += " " + n + "D" + (dirDeg + dirMedDeg) + " double,"
-                        onlyNamesDir += " " + n + "D" + (dirDeg + dirMedDeg) + ","
-                        onlyNamesDirB += " b." + n + "D" + (dirDeg + dirMedDeg) + ","
+                        queryColumns += " CASEWHEN  (a.azimuth-$dirRadMid>PI()/2, " +
+                                                    "a.$n*a.length*COS(a.azimuth-$dirRadMid-PI()/2), " +
+                                                    "CASEWHEN   (a.azimuth-$dirRadMid<-PI()/2, " +
+                                                                "a.$n*a.length*COS(a.azimuth-$dirRadMid+PI()/2), " +
+                                                                "a.$n*a.length*ABS(SIN(a.azimuth-$dirRadMid))))/2 " +
+                                        "AS ${n}D${dirDegMid},"
+                        onlyNamesDir += "${n}d${dirDegMid},"
+                        sumNamesDir += "COALESCE(SUM(b.${n}d${dirDegMid}), 0) AS ${n}d${dirDegMid} ,"
                     }
-
-                    // To calculate the indicator for a new wind direction, the free facades are rotated
-                    datasource.execute "DROP TABLE IF EXISTS $rsuInterRot; " +
-                            "CREATE TABLE $rsuInterRot(id_rsu INTEGER, the_geom geometry, ${namesAndType[0..-2]})" +
-                            " AS (SELECT id_rsu, ST_ROTATE(the_geom,${dirRad + dirMedRad}), " +
-                            "${onlyNames[0..-2]} FROM $rsuInter)"
-
-                    // The projected facade area indicator is calculated according to the free facades table
-                    // for each vertical layer for this specific direction "d"
-                    def calcQuery = ""
-                    for (n in names) {
-                        calcQuery += "COALESCE(sum((st_xmax(b.the_geom) - st_xmin(b.the_geom))*b.$n)/2,0) AS " +
-                                "${n}D${dirDeg + dirMedDeg}, "
-                    }
-                    datasource.execute "CREATE INDEX IF NOT EXISTS id_rint ON $rsuInterRot(id_rsu); " +
-                            "CREATE INDEX IF NOT EXISTS id_fin ON ${finalIndicator}_$d(id_rsu); " +
-                            "CREATE TABLE ${finalIndicator}_${d + 1} AS SELECT a.*, ${calcQuery[0..-3]} " +
-                            "FROM ${finalIndicator}_$d a LEFT JOIN $rsuInterRot b " +
-                            "ON a.id_rsu = b.ID_RSU GROUP BY a.id_rsu"
                 }
 
-                datasource.execute "DROP TABLE IF EXISTS $outputTableName; ALTER TABLE " +
-                        "${finalIndicator}_${numberOfDirection / 2} RENAME TO $outputTableName"
+                def query = "CREATE TABLE $finalIndicator AS SELECT a.id_rsu," + queryColumns[0..-2] +
+                        " FROM (SELECT id_rsu, CASE WHEN ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom)) >= PI()" +
+                                                        "THEN ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom)) - PI() " +
+                                                        "ELSE ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom)) END AS azimuth," +
+                                " ST_LENGTH(the_geom) AS length, ${onlyNames[0..-2]} FROM $rsuInter) a"
+
+                datasource.execute query
+
+
+
+                datasource.getTable(finalIndicator).id_rsu.createIndex()
+                // Sum area at RSU scale and fill null values with 0
+                datasource.execute """
+                        DROP TABLE IF EXISTS $outputTableName;
+                        CREATE TABLE    ${outputTableName} 
+                        AS SELECT       a.id_rsu, ${sumNamesDir[0..-3]} 
+                        FROM            $rsuTable a LEFT JOIN $finalIndicator b 
+                        ON              a.id_rsu = b.id_rsu 
+                        GROUP BY        a.id_rsu"""
 
                 // Remove all temporary tables created
-                def removeQuery = " ${finalIndicator}_0"
-                for (int d = 0; d < numberOfDirection / 2; d++) {
-                    removeQuery += ", ${finalIndicator}_$d"
-                }
                 datasource.execute "DROP TABLE IF EXISTS ${buildingIntersection}, ${buildingIntersectionExpl}, " +
-                        "${buildingFree}, ${buildingFreeExpl}, ${rsuInter}, $removeQuery;"
+                        "${buildingFree}, ${buildingFreeExpl}, ${rsuInter}, $finalIndicator;"
             }
 
             [outputTableName: outputTableName]
@@ -1255,6 +1254,114 @@ IProcess perviousnessFraction() {
             query = query[0..-2] + " FROM $rsuTable;"
 
             datasource.execute query
+
+            [outputTableName: outputTableName]
+        }
+    })
+}
+
+
+/**
+* Process used to compute the free facade fraction within an extended RSU. The free facade fraction is defined as
+* the ratio between the free facade area within an extended RSU and the free facade area within an extended RSU +
+* the area of the extended RSU. This indicator may be useful to investigate a simple an fast approach to
+* calculate the ground sky view factor such as defined by Stewart et Oke (2012): ratio of the
+* amount of sky hemisphere visible from ground level to that of an unobstructed hemisphere. Preliminary studies
+* have been performed by Bernabé et al. (2015) and Bernard et al. (2018). The calculation needs
+* the "building_contiguity", the building wall height, the "building_total_facade_length" values as well as
+* a correlation Table between buildings and blocks.
+*
+*
+* @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+* the resulting database will be stored
+* @param buildingTable The name of the input ITable where are stored the buildings, the building contiguity values,
+* the building total facade length values and the building and rsu id
+* @param rsuTable The name of the input ITable where are stored the rsu geometries and the id_rsu
+* @param buContiguityColumn The name of the column where are stored the building contiguity values (within the
+    * building Table)
+* @param buTotalFacadeLengthColumn The name of the column where are stored the building total facade length values
+* (within the building Table)
+* @param buffDist The size used for RSU extension (buffer size in meters)
+* @param prefixName String use as prefix to name the output table
+*
+* References:
+* --> Stewart, Ian D., and Tim R. Oke. "Local climate zones for urban temperature studies." Bulletin of
+* the American Meteorological Society 93, no. 12 (2012): 1879-1900.
+* --> Bernabé, A., Musy, M., Andrieu, H., & Calmet, I. (2015). Radiative properties of the urban fabric derived
+* from surface form analysis: A simplified solar balance model. Solar Energy, 122, 156-168.
+* --> Jérémy Bernard, Erwan Bocher, Gwendall Petit, Sylvain Palominos. Sky View Factor Calculation in
+* Urban Context: Computational Performance and Accuracy Analysis of Two Open and Free GIS Tools. Climate ,
+* MDPI, 2018, Urban Overheating - Progress on Mitigation Science and Engineering Applications, 6 (3), pp.60.
+*
+*
+* @return A database table name.
+* @author Jérémy Bernard
+*/
+IProcess extendedFreeFacadeFraction() {
+    def final GEOMETRIC_FIELD = "the_geom"
+    def final ID_FIELD_RSU = "id_rsu"
+    def final HEIGHT_WALL = "height_wall"
+    def final BASE_NAME = "rsu_extended_free_facade_fraction"
+
+    return create({
+        title "Extended RSU free facade fraction (for SVF fast)"
+        inputs buildingTable: String, rsuTable: String, buContiguityColumn: String, buTotalFacadeLengthColumn: String,
+                prefixName: String, buffDist: 10, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { buildingTable, rsuTable, buContiguityColumn, buTotalFacadeLengthColumn, prefixName, buffDist, datasource ->
+
+            info "Executing RSU free facade fraction (for SVF fast)"
+
+            // The name of the outputTableName is constructed
+            def outputTableName = prefixName + "_" + BASE_NAME
+
+            // Temporary tables are created
+            def extRsuTable = "extRsu$uuid"
+            def inclBu = "inclBu$uuid"
+            def fullInclBu = "fullInclBu$uuid"
+            def notIncBu = "notIncBu$uuid"
+            def allBu = "allBu$uuid"
+
+            // The RSU area is extended according to a buffer
+            datasource.execute "DROP TABLE IF EXISTS $extRsuTable; CREATE TABLE $extRsuTable AS SELECT " +
+                    "ST_BUFFER($GEOMETRIC_FIELD, $buffDist, 'quad_segs=2') AS $GEOMETRIC_FIELD," +
+                    "$ID_FIELD_RSU FROM $rsuTable;"
+
+            // The facade area of buildings being entirely included in the RSU buffer is calculated
+            datasource.getSpatialTable(extRsuTable)[GEOMETRIC_FIELD].createIndex()
+            datasource.getSpatialTable(buildingTable)[GEOMETRIC_FIELD].createIndex()
+
+            datasource.execute "DROP TABLE IF EXISTS $inclBu; CREATE TABLE $inclBu AS SELECT " +
+                    "COALESCE(SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$HEIGHT_WALL), 0) AS FAC_AREA," +
+                    "b.$ID_FIELD_RSU FROM $buildingTable a, $extRsuTable b WHERE ST_COVERS(b.$GEOMETRIC_FIELD," +
+                    "a.$GEOMETRIC_FIELD) GROUP BY b.$ID_FIELD_RSU;"
+
+            // All RSU are feeded with default value
+            datasource.getTable(inclBu)[ID_FIELD_RSU].createIndex()
+            datasource.getTable(rsuTable)[ID_FIELD_RSU].createIndex()
+
+            datasource.execute "DROP TABLE IF EXISTS $fullInclBu; CREATE TABLE $fullInclBu AS SELECT " +
+                    "COALESCE(a.FAC_AREA, 0) AS FAC_AREA, b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD " +
+                    "FROM $inclBu a RIGHT JOIN $rsuTable b ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU;"
+
+            // The facade area of buildings being partially included in the RSU buffer is calculated
+            datasource.execute "DROP TABLE IF EXISTS $notIncBu; CREATE TABLE $notIncBu AS SELECT " +
+                    "COALESCE(SUM(ST_LENGTH(ST_INTERSECTION(ST_TOMULTILINE(a.$GEOMETRIC_FIELD)," +
+                    " b.$GEOMETRIC_FIELD))*a.$HEIGHT_WALL), 0) " +
+                    "AS FAC_AREA, b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD FROM $buildingTable a, $extRsuTable b " +
+                    "WHERE ST_OVERLAPS(b.$GEOMETRIC_FIELD, a.$GEOMETRIC_FIELD) GROUP BY b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD;"
+
+            // The facade fraction is calculated
+            datasource.getTable(notIncBu)[ID_FIELD_RSU].createIndex()
+            datasource.getSpatialTable(fullInclBu)[ID_FIELD_RSU].createIndex()
+
+            datasource.execute "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
+                    "SELECT COALESCE((a.FAC_AREA + b.FAC_AREA) /" +
+                    "(a.FAC_AREA + b.FAC_AREA + ST_AREA(ST_BUFFER(a.$GEOMETRIC_FIELD, $buffDist, 'quad_segs=2')))," +
+                    " a.FAC_AREA / (a.FAC_AREA  + ST_AREA(ST_BUFFER(a.$GEOMETRIC_FIELD, $buffDist, 'quad_segs=2'))))" +
+                    "AS rsu_extended_free_facade_fraction, " +
+                    "a.$ID_FIELD_RSU, a.$GEOMETRIC_FIELD FROM $fullInclBu a LEFT JOIN $notIncBu b " +
+                    "ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU;"
 
             [outputTableName: outputTableName]
         }

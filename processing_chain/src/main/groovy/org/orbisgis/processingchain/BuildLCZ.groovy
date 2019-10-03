@@ -49,7 +49,7 @@ def createLCZ() {
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                "height_of_roughness_elements": 1, "terrain_roughness_class": 1],
                 fractionTypePervious: ["low_vegetation", "water"], fractionTypeImpervious: ["road"], inputFields: ["id_build", "the_geom"],
-                levelForRoads: [0]
+                levelForRoads: [0], svfSimplified: false
         outputs outputTableName: String
         run { JdbcDataSource datasource, prefixName, buildingTable, rsuTable, roadTable, vegetationTable,
               hydrographicTable, facadeDensListLayersBottom, facadeDensNumberOfDirection,
@@ -57,7 +57,7 @@ def createLCZ() {
               heightColumnName,
               mapOfWeights,
               fractionTypePervious,
-              fractionTypeImpervious, inputFields, levelForRoads ->
+              fractionTypeImpervious, inputFields, levelForRoads, svfSimplified ->
             info "Create the LCZ..."
 
             // To avoid overwriting the output files of this step, a unique identifier is created
@@ -102,13 +102,17 @@ def createLCZ() {
 
             //Compute RSU indicators
             def computeRSUIndicators = ProcessingChain.BuildGeoIndicators.computeRSUIndicators()
-            if (!computeRSUIndicators([datasource       : datasource,
-                                       buildingTable    : buildingIndicators,
-                                       rsuTable         : rsuTable,
-                                       vegetationTable  : vegetationTable,
-                                       roadTable        : roadTable,
-                                       hydrographicTable: hydrographicTable,
-                                       indicatorUse     : ["LCZ"]])) {
+            if (!computeRSUIndicators([datasource           : datasource,
+                                       buildingTable        : buildingIndicators,
+                                       rsuTable             : rsuTable,
+                                       vegetationTable      : vegetationTable,
+                                       roadTable            : roadTable,
+                                       hydrographicTable    : hydrographicTable,
+                                       indicatorUse         : ["LCZ"],
+                                       svfPointDensity      : svfPointDensity,
+                                       svfRayLength         : svfRayLength,
+                                       svfNumberOfDirection : svfNumberOfDirection,
+                                       svfSimplified        : svfSimplified])) {
                 info "Cannot compute the RSU indicators."
                 return
             }
