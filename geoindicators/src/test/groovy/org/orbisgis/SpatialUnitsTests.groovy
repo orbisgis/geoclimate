@@ -111,15 +111,15 @@ class SpatialUnitsTests {
         h2GIS.load(this.class.getResource("zone_test.shp"),true)
 
         def  prepareData = Geoindicators.SpatialUnits.prepareRSUData()
-        assertTrue prepareData.execute([zoneTable: 'zone_test', roadTable: 'road_test',  railTable: 'rail_test',
-                                        vegetationTable : 'veget_test',
-                                        hydrographicTable :'hydro_test',surface_vegetation : null, surface_hydro : null,
-                                        prefixName: "block", datasource: h2GIS, rsuAreaFilter:1000])
+        assertTrue prepareData.execute([zoneTable               : 'zone_test', roadTable            : 'road_test',
+                                        railTable               : 'rail_test', vegetationTable      : 'veget_test',
+                                        hydrographicTable       :'hydro_test', surface_vegetation   : null,
+                                        surface_hydro           : null,        prefixName           : "block",
+                                        datasource              : h2GIS])
 
         def outputTableGeoms = prepareData.results.outputTableName
 
         assertNotNull h2GIS.getTable(outputTableGeoms)
-
         def rsu = Geoindicators.SpatialUnits.createRSU()
         assertTrue rsu.execute([inputTableName: outputTableGeoms, prefixName: "rsu", datasource: h2GIS])
         def outputTable = rsu.results.outputTableName
