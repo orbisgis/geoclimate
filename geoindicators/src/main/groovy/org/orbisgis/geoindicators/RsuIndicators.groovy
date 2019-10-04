@@ -43,7 +43,7 @@ IProcess freeExternalFacadeDensity() {
             info "Executing RSU free external facade density"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             datasource.getSpatialTable(buildingTable).id_rsu.createIndex()
             datasource.getSpatialTable(rsuTable).id_rsu.createIndex()
@@ -121,7 +121,7 @@ IProcess groundSkyViewFactor() {
             def pts_RANG = "pts_RANG$uuid"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             // Create the needed index on input tables and the table that will contain the SVF calculation points
             datasource.getSpatialTable(rsuTable)[GEOMETRIC_COLUMN_RSU].createSpatialIndex()
@@ -230,7 +230,7 @@ IProcess aspectRatio() {
             info "Executing RSU aspect ratio"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             datasource.execute """DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS 
                     SELECT $rsuFreeExternalFacadeDensityColumn/(1-$rsuBuildingDensityColumn) AS 
@@ -284,7 +284,7 @@ IProcess projectedFacadeAreaDistribution() {
             info "Executing RSU projected facade area distribution"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             datasource.getSpatialTable(buildingTable).the_geom.createSpatialIndex()
             datasource.getSpatialTable(rsuTable).the_geom.createSpatialIndex()
@@ -497,7 +497,7 @@ IProcess roofAreaDistribution() {
             datasource.getSpatialTable(rsuTable).id_rsu.createIndex()
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             // Vertical and non-vertical (tilted and horizontal) roof areas are calculated
             datasource.execute "DROP TABLE IF EXISTS $buildRoofSurfIni;" +
@@ -671,7 +671,7 @@ IProcess effectiveTerrainRoughnessHeight() {
             def lambdaTable = "lambdaTable$uuid"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             // The lambda_f indicator is first calculated
             def lambdaQuery = "DROP TABLE IF EXISTS $lambdaTable;" +
@@ -776,7 +776,7 @@ IProcess linearRoadOperations() {
                         def roadDensTot = "roadDensTot$uuid"
 
                         // The name of the outputTableName is constructed
-                        def outputTableName = prefixName + "_" + BASE_NAME
+                        def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
                         //      1. Whatever are the operations to proceed, this step is done the same way
                         // Only some of the roads are selected according to the level they are located
@@ -940,7 +940,7 @@ IProcess effectiveTerrainRoughnessClass() {
             info "Executing RSU effective terrain roughness class"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             // Based on the lookup Table of Davenport
             datasource.execute "DROP TABLE IF EXISTS $outputTableName;" +
@@ -984,7 +984,7 @@ IProcess vegetationFraction() {
     def final geometricColumnVeget = "the_geom"
     def final idColumnRsu = "id_rsu"
     def final vegetClass = "height_class"
-    def final baseName = "vegetation_fraction"
+    def final BASE_NAME = "vegetation_fraction"
     def final OP_LOW = "low"
     def final OP_HIGH = "high"
     def final OP_ALL = "all"
@@ -998,7 +998,7 @@ IProcess vegetationFraction() {
             info "Executing vegetation fraction"
 
             // The name of the outputTableName is constructed
-            String outputTableName = prefixName + "_" + baseName
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
@@ -1085,7 +1085,7 @@ IProcess roadFraction() {
             info "Executing road fraction"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
@@ -1168,7 +1168,7 @@ IProcess waterFraction() {
             info "Executing water fraction"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
@@ -1236,7 +1236,7 @@ IProcess perviousnessFraction() {
             info "Executing Perviousness fraction"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             // The pervious or impervious fractions are calculated
             def query = "DROP TABLE IF EXISTS $outputTableName; " +
@@ -1314,7 +1314,7 @@ IProcess extendedFreeFacadeFraction() {
             info "Executing RSU free facade fraction (for SVF fast)"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             // Temporary tables are created
             def extRsuTable = "extRsu$uuid"

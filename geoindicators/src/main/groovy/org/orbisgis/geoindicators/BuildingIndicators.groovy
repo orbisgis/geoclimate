@@ -48,7 +48,7 @@ def sizeProperties() {
             info "Executing Building size properties"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
 
@@ -127,7 +127,7 @@ def neighborsProperties() {
             def build_intersec = "build_intersec$uuid"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             datasource.getSpatialTable(inputBuildingTableName).the_geom.createSpatialIndex()
             datasource.getSpatialTable(inputBuildingTableName).id_build.createIndex()
@@ -226,7 +226,7 @@ def formProperties() {
             info "Executing Building form properties"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
 
@@ -295,7 +295,7 @@ def minimumBuildingSpacing() {
             def build_min_distance = "build_min_distance$uuid"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             datasource.getSpatialTable(inputBuildingTableName).the_geom.createSpatialIndex()
             datasource.getSpatialTable(inputBuildingTableName).id_build.createIndex()
@@ -356,7 +356,7 @@ def roadDistance() {
             def road_within_buffer = "road_within_buffer$uuid"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             datasource.getSpatialTable(inputBuildingTableName).id_build.createIndex()
 
@@ -442,7 +442,7 @@ def likelihoodLargeBuilding() {
             def r = 0.25
 
             // The name of the outputTableName is constructed
-            String outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             datasource.getSpatialTable(inputBuildingTableName).id_build.createIndex()
 

@@ -17,12 +17,13 @@ import org.orbisgis.datamanager.JdbcDataSource
  * @return
  */
 def computeBuildingsIndicators() {
+    def final BASE_NAME = "building_indicators"
     return create({
         title "Compute the geoindicators at building scale"
         inputs datasource: JdbcDataSource, inputBuildingTableName: String, inputRoadTableName: String,
-                indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"]
+                indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], prefixName: ""
         outputs outputTableName: String
-        run { datasource, inputBuildingTableName, inputRoadTableName, indicatorUse ->
+        run { datasource, inputBuildingTableName, inputRoadTableName, indicatorUse, prefixName ->
 
             info "Start computing building indicators..."
 
@@ -32,7 +33,10 @@ def computeBuildingsIndicators() {
             def finalTablesToJoin = [:]
             finalTablesToJoin.put(inputBuildingTableName, idColumnBu)
 
-            def buildingPrefixName = "building_indicators"
+            // The name of the outputTableName is constructed
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
+            def buildingPrefixName = "building_indicator_"
+            def buildTableJoinNeighbors
 
             // building_area + building_perimeter
             def geometryOperations = ["st_perimeter", "st_area"]
@@ -134,7 +138,7 @@ def computeBuildingsIndicators() {
                         info "Cannot join the number of neighbors of a building."
                         return
                     }
-                    def buildTableJoinNeighbors = computeJoinNeighbors.results.outputTableName
+                    buildTableJoinNeighbors = computeJoinNeighbors.results.outputTableName
 
                     // building_likelihood_large_building
                     def computeLikelihoodLargeBuilding = Geoindicators.BuildingIndicators.likelihoodLargeBuilding()
@@ -158,14 +162,18 @@ def computeBuildingsIndicators() {
                 return
             }
 
+            // Rename the last table to the right output table name
+            datasource.execute "DROP TABLE IF EXISTS $outputTableName;" +
+                    "ALTER TABLE ${buildingTableJoin.results.outputTableName} RENAME TO $outputTableName"
+
             // Remove all intermediate tables (indicators alone in one table)
             // Recover all created tables in an array
             def finTabNames = finalTablesToJoin.keySet().toArray()
             // Remove the block table from the list of "tables to remove" (since it needs to be conserved)
             finTabNames = finTabNames - inputBuildingTableName
-            datasource.execute """DROP TABLE IF EXISTS ${finTabNames.join(",")}"""
+            datasource.execute """DROP TABLE IF EXISTS ${finTabNames.join(",")}, $buildTableJoinNeighbors"""
 
-            [outputTableName: buildingTableJoin.results.outputTableName]
+            [outputTableName: outputTableName]
 
         }
     })
@@ -178,14 +186,17 @@ def computeBuildingsIndicators() {
  * @return
  */
 def computeBlockIndicators(){
+    def final BASE_NAME = "block_indicators"
     return create({
         title "Compute the geoindicators at block scale"
-        inputs datasource: JdbcDataSource, inputBuildingTableName: String, inputBlockTableName: String
+        inputs datasource: JdbcDataSource, inputBuildingTableName: String, inputBlockTableName: String, prefixName: ""
         outputs outputTableName: String
-        run { datasource, inputBuildingTableName, inputBlockTableName ->
+        run { datasource, inputBuildingTableName, inputBlockTableName, prefixName ->
 
             info "Start computing block indicators..."
-            def blockPrefixName = "block_indicators"
+            // The name of the outputTableName is constructed
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
+            def blockPrefixName = "block_indicator_"
             def id_block = "id_block"
 
             // Maps for intermediate or final joins
@@ -282,6 +293,10 @@ def computeBlockIndicators(){
                 return
             }
 
+            // Rename the last table to the right output table name
+            datasource.execute "DROP TABLE IF EXISTS $outputTableName;" +
+                    "ALTER TABLE ${blockTableJoin.results.outputTableName} RENAME TO $outputTableName"
+
             // Remove all intermediate tables (indicators alone in one table)
             // Recover all created tables in an array
             def finTabNames = finalTablesToJoin.keySet().toArray()
@@ -289,7 +304,7 @@ def computeBlockIndicators(){
             finTabNames = finTabNames - inputBlockTableName
             datasource.execute """DROP TABLE IF EXISTS ${finTabNames.join(",")}"""
 
-            [outputTableName: blockTableJoin.results.outputTableName]
+            [outputTableName: outputTableName]
         }
     })
 }
@@ -366,9 +381,10 @@ def computeRSUIndicators() {
             def outputTableName = prefixName + BASE_NAME
 
             // PrefixName for intermediate table (start with a letter to avoid table name issue if start with a number)
-            def temporaryPrefName = "A$uuid"
+            def temporaryPrefName = "rsu_indicator_"
 
             // Intermediate table that needs to be delete at the end
+            def SVF = "SVF"
             def computeExtFF
 
             // rsu_area (note that the uuid is used as prefix for intermediate tables - indicator alone in a table)
@@ -587,8 +603,6 @@ def computeRSUIndicators() {
 
             // rsu_ground_sky_view_factor
             if (indicatorUse.contains("LCZ")) {
-                // Intermediate table name
-                def SVF = "SVF"
                 // If the fast version is chosen (SVF derived from extended RSU free facade fraction
                 if (svfSimplified == true) {
                     computeExtFF =  Geoindicators.RsuIndicators.extendedFreeFacadeFraction()
@@ -708,12 +722,12 @@ def computeRSUIndicators() {
             interTabNames = interTabNames - rsuTable
             finTabNames = finTabNames - rsuTable
             datasource.execute """DROP TABLE IF EXISTS ${interTabNames.join(",")}, 
-                                                        ${finTabNames.join(",")}, ${computeExtFF.results.outputTableName}"""
+                                                    ${finTabNames.join(",")}, $SVF"""
 
             def tObis = System.currentTimeMillis() - to_start
 
             info "Geoindicators calculation time: ${tObis / 1000} s"
-            [outputTableName: rsuTableJoin.results.outputTableName]
+            [outputTableName: outputTableName]
 
         }
     })
