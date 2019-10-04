@@ -25,7 +25,7 @@ abstract class Geoindicators extends GroovyProcessFactory {
     static def getUuid(){
         UUID.randomUUID().toString().replaceAll("-", "_") }
     static def getOutputTableName(prefixName, baseName){
-        if (prefixName){
+        if (!prefixName){
             return baseName
         }
         else{
