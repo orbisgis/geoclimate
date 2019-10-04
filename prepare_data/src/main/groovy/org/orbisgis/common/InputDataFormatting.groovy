@@ -99,6 +99,7 @@ IProcess inputDataFormatting(){
             def rFCStatsZone = 'R_FC_STATS_ZONE_' + uuid
             def rFCStatsExtZone = 'R_FC_STATS_EXT_ZONE_' + uuid
             def roadZone = 'ROAD_ZONE_' + uuid
+            def roadNumb = 'ROAD_NUMB' + uuid
             def roadValid = 'ROAD_VALID_' + uuid
             def roadEmpty = 'ROAD_EMPTY_' + uuid
             def roadEquals = 'ROAD_EQUALS_' + uuid
@@ -115,11 +116,13 @@ IProcess inputDataFormatting(){
             def railType = 'RAIL_TYPE_' + uuid
             def railTypeRange = 'RAIL_TYPE_RANGE_' + uuid
             def hydroNumZone = 'HYDRO_NUM_ZONE_' + uuid
+            def hydroNum = 'HYDRO_NB' + uuid
             def hydroValid = 'HYDRO_VALID_' + uuid
             def hydroEmpty = 'HYDRO_EMPTY_' + uuid
             def hydroEquals = 'HYDRO_EQUALS_' + uuid
             def hydroOlverlap = 'HYDRO_OVERLAP_' + uuid
             def vegetNumZone = 'VEGET_NUM_ZONE_' + uuid
+            def vegetNum = 'VEGET_NB' + uuid
             def vegetValid = 'VEGET_VALID_' + uuid
             def vegetEmpty = 'VEGET_EMPTY_' + uuid
             def vegetEquals = 'VEGET_EQUALS_' + uuid
@@ -164,13 +167,18 @@ IProcess inputDataFormatting(){
                      BUILD_OVERLAP_EXT_ZONE    : buildOverlapExtZone,
                      ROAD_FC_W_ZERO            : roadFCWZero, ROAD_FC_W_NULL: roadFCWNull, ROAD_FC_W_RANGE: roadFCWRange,
                      R_FC_STATS_ZONE           : rFCStatsZone, R_FC_STATS_EXT_ZONE: rFCStatsExtZone, ROAD_ZONE: roadZone,
-                     ROAD_VALID                : roadValid, ROAD_EMPTY: roadEmpty, ROAD_EQUALS: roadEquals, ROAD_OVERLAP: roadOverlap,
+                     ROAD_VALID                : roadValid,
+                     ROAD_NUMB : roadNumb,
+                     ROAD_EMPTY: roadEmpty, ROAD_EQUALS: roadEquals, ROAD_OVERLAP: roadOverlap,
                      ROAD_W                    : roadW, ROAD_W_RANGE: roadWRange, ROAD_TYPE: roadType, ROAD_TYPE_RANGE: roadTypeRange,
                      RAIL_NB                   : railNB, RAIL_VALID: railValid, RAIL_EMPTY: railEmpty, RAIL_EQUALS: railEquals,
                      RAIL_OVERLAP              : railOverlap, RAIL_TYPE: railType, RAIL_TYPE_RANGE: railTypeRange,
-                     HYDRO_NUM_ZONE            : hydroNumZone, HYDRO_VALID: hydroValid, HYDRO_EMPTY: hydroEmpty,
+                     HYDRO_NUM_ZONE            : hydroNumZone,
+                     HYDRO_NB : hydroNum, HYDRO_VALID: hydroValid, HYDRO_EMPTY: hydroEmpty,
                      HYDRO_EQUALS              : hydroEquals, HYDRO_OVERLAP: hydroOlverlap,
-                     VEGET_NUM_ZONE            : vegetNumZone, VEGET_VALID: vegetValid, VEGET_EMPTY: vegetEmpty,
+                     VEGET_NUM_ZONE            : vegetNumZone,
+                     VEGET_NB : vegetNum,
+                     VEGET_VALID: vegetValid, VEGET_EMPTY: vegetEmpty,
                      VEGET_EQUALS              : vegetEquals, VEGET_OVERLAP: vegetOverlap, VEGET_TYPE: vegetType,
                      VEGET_TYPE_RANGE          : vegetTypeRange,
                      BUILDING                  : building, BUILDING_STATS_ZONE: buildingStatsZone,
