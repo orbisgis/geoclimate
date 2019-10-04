@@ -27,7 +27,7 @@ abstract class ProcessingChain extends GroovyProcessFactory {
     static def warn = { obj -> logger.warn(obj.toString()) }
     static def error = { obj -> logger.error(obj.toString()) }
     static def getOutputTableName(prefixName, baseName){
-        if (prefixName == ""){
+        if (prefixName){
             return baseName
         }
         else{
