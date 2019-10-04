@@ -69,6 +69,9 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
 
         boolean saveResults = true
         String directory ="./target/osm_processchain_geoindicators"
+        def prefixName = ""
+        def indicatorUse = ["URBAN_TYPOLOGY", "LCZ", "TEB"]
+        def svfSimplified = false
 
         File dirFile = new File(directory)
         dirFile.delete()
@@ -82,7 +85,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
         String railTableName="rails"
         String vegetationTableName="veget"
         String hydrographicTableName="hydro"
-        def indicatorUse = ["URBAN_TYPOLOGY", "LCZ", "TEB"]
+
 
         datasource.load(urlBuilding, buildingTableName)
         datasource.load(urlRoad, roadTableName)
@@ -92,8 +95,8 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
         datasource.load(urlZone, zoneTableName)
 
         //Run tests
-        osmGeoIndicators(dirFile.absolutePath+File, datasource, zoneTableName, buildingTableName,roadTableName,null,vegetationTableName,
-                hydrographicTableName,saveResults, indicatorUse)
+        osmGeoIndicators(dirFile.absolutePath+File, datasource, zoneTableName, buildingTableName,roadTableName,
+                null,vegetationTableName, hydrographicTableName,saveResults, svfSimplified, indicatorUse, prefixName)
 
     }
 
@@ -101,6 +104,8 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
     void osmGeoIndicatorsFromApi() {
         String directory ="./target/osm_processchain_full"
         boolean saveResults = true
+        def prefixName = ""
+        def svfSimplified = false
 
         File dirFile = new File(directory)
         dirFile.delete()
@@ -144,7 +149,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
 
         //Run tests
         osmGeoIndicators(dirFile.absolutePath, datasource, zoneTableName, buildingTableName,roadTableName,railTableName,vegetationTableName,
-                hydrographicTableName,saveResults, indicatorUse)
+                hydrographicTableName,saveResults, indicatorUse, prefixName, svfSimplified)
 
     }
 
@@ -182,7 +187,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
 
         //Run tests
         calcLcz(directory, datasource, zoneTableName, buildingTableName,roadTableName,null,vegetationTableName,
-                hydrographicTableName,saveResults, true)
+                hydrographicTableName,saveResults, false, "")
     }
 
 

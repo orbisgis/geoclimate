@@ -62,8 +62,10 @@ def createUnitsOfAnalysis(){
                 info "Cannot prepare the data for RSU calculation."
                 return
             }
+            def rsuDataPrepared = prepareRSUData.results.outputTableName
+
             if (!createRSU([datasource    : datasource,
-                            inputTableName: prepareRSUData.results.outputTableName,
+                            inputTableName: rsuDataPrepared,
                             prefixName    : prefixName])) {
                 info "Cannot compute the RSU."
                 return

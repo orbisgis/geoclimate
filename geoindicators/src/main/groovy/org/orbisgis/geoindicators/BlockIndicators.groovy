@@ -34,7 +34,7 @@ IProcess holeAreaDensity() {
             info "Executing Hole area ratio"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
                     "SELECT $ID_COLUMN_BL, ST_AREA(ST_HOLES($GEOMETRIC_FIELD))/ST_AREA($GEOMETRIC_FIELD) " +
@@ -81,7 +81,7 @@ IProcess netCompacity() {
             info "Executing Block net compacity"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             datasource.getSpatialTable(buildTable).id_block.createIndex()
 
@@ -136,7 +136,7 @@ IProcess closingness() {
             info "Executing Closingness of a block"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             datasource.getSpatialTable(blockTable).id_block.createIndex()
             datasource.getSpatialTable(correlationTableName).id_block.createIndex()
