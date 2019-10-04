@@ -1,6 +1,7 @@
 package org.orbisgis.processingchain
 
 import groovy.transform.BaseScript
+import org.apache.groovy.json.internal.ArrayUtils
 import org.orbisgis.geoindicators.DataUtils
 import org.orbisgis.geoindicators.Geoindicators
 import org.orbisgis.datamanager.JdbcDataSource
@@ -16,12 +17,13 @@ import org.orbisgis.datamanager.JdbcDataSource
  * @return
  */
 def computeBuildingsIndicators() {
+    def final BASE_NAME = "building_indicators"
     return create({
         title "Compute the geoindicators at building scale"
         inputs datasource: JdbcDataSource, inputBuildingTableName: String, inputRoadTableName: String,
-                indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"]
+                indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], prefixName: ""
         outputs outputTableName: String
-        run { datasource, inputBuildingTableName, inputRoadTableName, indicatorUse ->
+        run { datasource, inputBuildingTableName, inputRoadTableName, indicatorUse, prefixName ->
 
             info "Start computing building indicators..."
 
@@ -31,7 +33,10 @@ def computeBuildingsIndicators() {
             def finalTablesToJoin = [:]
             finalTablesToJoin.put(inputBuildingTableName, idColumnBu)
 
-            def buildingPrefixName = "building_indicators"
+            // The name of the outputTableName is constructed
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
+            def buildingPrefixName = "building_indicator_"
+            def buildTableJoinNeighbors
 
             // building_area + building_perimeter
             def geometryOperations = ["st_perimeter", "st_area"]
@@ -133,7 +138,7 @@ def computeBuildingsIndicators() {
                         info "Cannot join the number of neighbors of a building."
                         return
                     }
-                    def buildTableJoinNeighbors = computeJoinNeighbors.results.outputTableName
+                    buildTableJoinNeighbors = computeJoinNeighbors.results.outputTableName
 
                     // building_likelihood_large_building
                     def computeLikelihoodLargeBuilding = Geoindicators.BuildingIndicators.likelihoodLargeBuilding()
@@ -157,7 +162,18 @@ def computeBuildingsIndicators() {
                 return
             }
 
-            [outputTableName: buildingTableJoin.results.outputTableName]
+            // Rename the last table to the right output table name
+            datasource.execute "DROP TABLE IF EXISTS $outputTableName;" +
+                    "ALTER TABLE ${buildingTableJoin.results.outputTableName} RENAME TO $outputTableName"
+
+            // Remove all intermediate tables (indicators alone in one table)
+            // Recover all created tables in an array
+            def finTabNames = finalTablesToJoin.keySet().toArray()
+            // Remove the block table from the list of "tables to remove" (since it needs to be conserved)
+            finTabNames = finTabNames - inputBuildingTableName
+            datasource.execute """DROP TABLE IF EXISTS ${finTabNames.join(",")}, $buildTableJoinNeighbors"""
+
+            [outputTableName: outputTableName]
 
         }
     })
@@ -170,15 +186,22 @@ def computeBuildingsIndicators() {
  * @return
  */
 def computeBlockIndicators(){
+    def final BASE_NAME = "block_indicators"
     return create({
         title "Compute the geoindicators at block scale"
-        inputs datasource: JdbcDataSource, inputBuildingTableName: String, inputBlockTableName: String
+        inputs datasource: JdbcDataSource, inputBuildingTableName: String, inputBlockTableName: String, prefixName: ""
         outputs outputTableName: String
-        run { datasource, inputBuildingTableName, inputBlockTableName ->
+        run { datasource, inputBuildingTableName, inputBlockTableName, prefixName ->
 
             info "Start computing block indicators..."
-            def blockPrefixName = "block_indicators"
+            // The name of the outputTableName is constructed
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
+            def blockPrefixName = "block_indicator_"
             def id_block = "id_block"
+
+            // Maps for intermediate or final joins
+            def finalTablesToJoin = [:]
+            finalTablesToJoin.put(inputBlockTableName, id_block)
 
             //Compute :
             //Sum of the building area
@@ -197,6 +220,8 @@ def computeBlockIndicators(){
                 return
             }
 
+            finalTablesToJoin.put(computeSimpleStats.results.outputTableName, id_block)
+
             //Ratio between the holes area and the blocks area
             // block_hole_area_density
             def computeHoleAreaDensity = Geoindicators.BlockIndicators.holeAreaDensity()
@@ -206,6 +231,7 @@ def computeBlockIndicators(){
                 info "Cannot compute the hole area density."
                 return
             }
+            finalTablesToJoin.put(computeHoleAreaDensity.results.outputTableName, id_block)
 
             //Perkins SKill Score of the distribution of building direction within a block
             // block_perkins_skill_score_building_direction
@@ -218,6 +244,7 @@ def computeBlockIndicators(){
                 info "Cannot compute perkins skill indicator. "
                 return
             }
+            finalTablesToJoin.put(computePerkinsSkillScoreBuildingDirection.results.outputTableName, id_block)
 
 
             //Block closingness
@@ -229,6 +256,7 @@ def computeBlockIndicators(){
                 info "Cannot compute closingness indicator. "
                 return
             }
+            finalTablesToJoin.put(computeClosingness.results.outputTableName, id_block)
 
             //Block net compacity
             def computeNetCompacity = Geoindicators.BlockIndicators.netCompacity()
@@ -240,6 +268,7 @@ def computeBlockIndicators(){
                 info "Cannot compute the net compacity indicator. "
                 return
             }
+            finalTablesToJoin.put(computeNetCompacity.results.outputTableName, id_block)
 
             //Block mean building height
             //Block standard deviation building height
@@ -253,22 +282,29 @@ def computeBlockIndicators(){
                 info "Cannot compute the block mean building height and standard deviation building height indicators. "
                 return
             }
+            finalTablesToJoin.put(computeWeightedAggregatedStatistics.results.outputTableName, id_block)
 
             //Merge all in one table
-            def blockTableJoin = DataUtils.joinTables()
-            if(!blockTableJoin([inputTableNamesWithId: [(inputBlockTableName): id_block,
-                                                        (computeSimpleStats.results.outputTableName): id_block,
-                                                        (computeHoleAreaDensity.results.outputTableName):id_block ,
-                                                        (computePerkinsSkillScoreBuildingDirection.results.outputTableName): id_block,
-                                                        (computeClosingness.results.outputTableName):id_block,
-                                                        (computeNetCompacity.results.outputTableName):id_block,
-                                                        (computeWeightedAggregatedStatistics.results.outputTableName):id_block],
+            def blockTableJoin = Geoindicators.DataUtils.joinTables()
+            if(!blockTableJoin([inputTableNamesWithId: finalTablesToJoin,
                                 outputTableName: blockPrefixName,
                                 datasource: datasource])){
                 info "Cannot merge all tables in $blockPrefixName. "
                 return
             }
-            [outputTableName: blockTableJoin.results.outputTableName]
+
+            // Rename the last table to the right output table name
+            datasource.execute "DROP TABLE IF EXISTS $outputTableName;" +
+                    "ALTER TABLE ${blockTableJoin.results.outputTableName} RENAME TO $outputTableName"
+
+            // Remove all intermediate tables (indicators alone in one table)
+            // Recover all created tables in an array
+            def finTabNames = finalTablesToJoin.keySet().toArray()
+            // Remove the block table from the list of "tables to remove" (since it needs to be conserved)
+            finTabNames = finTabNames - inputBlockTableName
+            datasource.execute """DROP TABLE IF EXISTS ${finTabNames.join(",")}"""
+
+            [outputTableName: outputTableName]
         }
     })
 }
@@ -301,15 +337,18 @@ def computeBlockIndicators(){
  * @param indicatorUse The use defined for the indicator. Depending on this use, only a part of the indicators could
  * be calculated (default is all indicators : ["LCZ", "URBAN_TYPOLOGY", "TEB"])
  * @param prefixName A prefix used to name the output table
+ * @param svfSimplified A boolean to use a simplified version of the SVF calculation (default false)
  * @param datasource A connection to a database
  *
  * @return
  */
 def computeRSUIndicators() {
+    def final BASE_NAME = "rsu_indicators"
+
     return create({
         title "Compute the geoindicators at RSU scale"
         inputs  datasource                 : JdbcDataSource,   buildingTable               : String,
-                rsuTable                   : String,           prefixName                  : "rsu_indicators",
+                rsuTable                   : String,           prefixName                  : "",
                 vegetationTable            : String,           roadTable                   : String,
                 hydrographicTable          : String,           facadeDensListLayersBottom  : [0, 10, 20, 30, 40, 50],
                 facadeDensNumberOfDirection: 12,               svfPointDensity             : 0.008,
@@ -317,7 +356,7 @@ def computeRSUIndicators() {
                 heightColumnName           : "height_roof",    fractionTypePervious        : ["low_vegetation", "water"],
                 fractionTypeImpervious     : ["road"],         inputFields                 : ["id_build", "the_geom"],
                 levelForRoads              : [0],              angleRangeSizeBuDirection   : 30,
-                indicatorUse               : ["LCZ", "URBAN_TYPOLOGY", "TEB"]
+                svfSimplified              : false,            indicatorUse                : ["LCZ", "URBAN_TYPOLOGY", "TEB"]
         outputs outputTableName: String
         run { datasource            , buildingTable                     , rsuTable,
               prefixName            , vegetationTable                   , roadTable,
@@ -325,7 +364,7 @@ def computeRSUIndicators() {
               svfPointDensity       , svfRayLength                      , svfNumberOfDirection,
               heightColumnName      , fractionTypePervious              , fractionTypeImpervious,
               inputFields           , levelForRoads                     , angleRangeSizeBuDirection,
-              indicatorUse ->
+              svfSimplified         , indicatorUse ->
 
             info "Start computing RSU indicators..."
             def to_start = System.currentTimeMillis()
@@ -338,11 +377,21 @@ def computeRSUIndicators() {
             finalTablesToJoin.put(rsuTable, columnIdRsu)
             intermediateJoin.put(rsuTable, columnIdRsu)
 
-            // rsu_area
+            // Name of the output table
+            def outputTableName = prefixName + BASE_NAME
+
+            // PrefixName for intermediate table (start with a letter to avoid table name issue if start with a number)
+            def temporaryPrefName = "rsu_indicator_"
+
+            // Intermediate table that needs to be delete at the end
+            def SVF = "SVF"
+            def computeExtFF
+
+            // rsu_area (note that the uuid is used as prefix for intermediate tables - indicator alone in a table)
             if (indicatorUse.contains("URBAN_TYPOLOGY")) {
                 def computeGeometryProperties = Geoindicators.GenericIndicators.geometryProperties()
                 if (!computeGeometryProperties([inputTableName: rsuTable, inputFields: [columnIdRsu],
-                                                operations    : ["st_area"], prefixName: prefixName,
+                                                operations    : ["st_area"], prefixName: temporaryPrefName,
                                                 datasource    : datasource])) {
                     info "Cannot compute the area of the RSU"
                     return
@@ -358,7 +407,7 @@ def computeRSUIndicators() {
                 if (!computeFreeExtDensity([buildingTable            : buildingTable, rsuTable: rsuTable,
                                             buContiguityColumn       : "building_contiguity",
                                             buTotalFacadeLengthColumn: "building_total_facade_length",
-                                            prefixName               : prefixName,
+                                            prefixName               : temporaryPrefName,
                                             datasource               : datasource])) {
                     info "Cannot compute the free external facade density for the RSU"
                     return
@@ -389,7 +438,7 @@ def computeRSUIndicators() {
                                                  inputUpperScaleTableName: rsuTable,
                                                  inputIdUp               : columnIdRsu,
                                                  inputVarAndOperations   : inputVarAndOperations,
-                                                 prefixName              : prefixName,
+                                                 prefixName              : temporaryPrefName,
                                                  datasource              : datasource])) {
                 info "Cannot compute the statistics : building, building volume densities and mean building neighbor number for the RSU"
                 return
@@ -405,7 +454,7 @@ def computeRSUIndicators() {
                 if (!computeRoadFraction([rsuTable        : rsuTable,
                                           roadTable       : roadTable,
                                           levelToConsiders: ["ground": [0]],
-                                          prefixName      : prefixName,
+                                          prefixName      : temporaryPrefName,
                                           datasource      : datasource])) {
                     info "Cannot compute the fraction of road for the RSU"
                     return
@@ -419,7 +468,7 @@ def computeRSUIndicators() {
                 def computeWaterFraction = Geoindicators.RsuIndicators.waterFraction()
                 if (!computeWaterFraction([rsuTable  : rsuTable,
                                            waterTable: hydrographicTable,
-                                           prefixName: prefixName,
+                                           prefixName: temporaryPrefName,
                                            datasource: datasource])) {
                     info "Cannot compute the fraction of water for the RSU"
                     return
@@ -438,7 +487,7 @@ def computeRSUIndicators() {
             if (!computeVegetationFraction([rsuTable    : rsuTable,
                                             vegetTable  : vegetationTable,
                                             fractionType: fractionTypeVeg,
-                                            prefixName  : prefixName,
+                                            prefixName  : temporaryPrefName,
                                             datasource  : datasource])) {
                 info "Cannot compute the fraction of all vegetation for the RSU"
                 return
@@ -459,7 +508,7 @@ def computeRSUIndicators() {
                                                    inputVarWeightsOperations: ["height_roof"                      : ["area": ["AVG", "STD"]],
                                                                                "building_number_building_neighbor": ["area": ["AVG"]],
                                                                                "building_volume"                  : ["area": ["AVG"]]],
-                                                   prefixName               : prefixName,
+                                                   prefixName               : temporaryPrefName,
                                                    datasource               : datasource])) {
                     info "Cannot compute the weighted indicators mean, std height building, building number density and \n\
                     mean volume building."
@@ -481,7 +530,7 @@ def computeRSUIndicators() {
                                                   operations       : roadOperations,
                                                   levelConsiderated: [0],
                                                   datasource       : datasource,
-                                                  prefixName       : prefixName])) {
+                                                  prefixName       : temporaryPrefName])) {
                     info "Cannot compute the linear road density and road direction distribution"
                     return
                 }
@@ -495,9 +544,9 @@ def computeRSUIndicators() {
                 if (!computeRoofAreaDist([rsuTable        : rsuTable,
                                           buildingTable   : buildingTable,
                                           listLayersBottom: facadeDensListLayersBottom,
-                                          prefixName      : prefixName,
+                                          prefixName      : temporaryPrefName,
                                           datasource      : datasource])) {
-                    info "Cannot compute the roof area distribution in $prefixName. "
+                    info "Cannot compute the roof area distribution. "
                     return
                 }
                 def roofAreaDist = computeRoofAreaDist.results.outputTableName
@@ -516,9 +565,9 @@ def computeRSUIndicators() {
                                             rsuTable         : rsuTable,
                                             listLayersBottom : facadeDensListLayersBottom,
                                             numberOfDirection: facadeDensNumberOfDirection,
-                                            prefixName       : "test",
+                                            prefixName       : temporaryPrefName,
                                             datasource       : datasource])) {
-                    info "Cannot compute the projected facade distribution in $prefixName. "
+                    info "Cannot compute the projected facade distribution. "
                     return
                 }
                 def projFacadeDist = computeProjFacadeDist.results.outputTableName
@@ -530,7 +579,7 @@ def computeRSUIndicators() {
             if (!computeIntermediateJoin([inputTableNamesWithId: intermediateJoin,
                                           outputTableName      : "tab4aspratio",
                                           datasource           : datasource])) {
-                info "Cannot merge the tables used for aspect ratio calculation in $prefixName. "
+                info "Cannot merge the tables used for aspect ratio calculation. "
                 return
             }
             def intermediateJoinTable = computeIntermediateJoin.results.outputTableName
@@ -543,9 +592,9 @@ def computeRSUIndicators() {
                 if (!computeAspectRatio([rsuTable                          : intermediateJoinTable,
                                          rsuFreeExternalFacadeDensityColumn: "rsu_free_external_facade_density",
                                          rsuBuildingDensityColumn          : "dens_area",
-                                         prefixName                        : prefixName,
+                                         prefixName                        : temporaryPrefName,
                                          datasource                        : datasource])) {
-                    info "Cannot compute the aspect ratio calculation in $prefixName. "
+                    info "Cannot compute the aspect ratio calculation "
                     return
                 }
                 def aspectRatio = computeAspectRatio.results.outputTableName
@@ -554,19 +603,35 @@ def computeRSUIndicators() {
 
             // rsu_ground_sky_view_factor
             if (indicatorUse.contains("LCZ")) {
-                def computeSVF = Geoindicators.RsuIndicators.groundSkyViewFactor()
-                if (!computeSVF([rsuTable                : intermediateJoinTable,
-                                 correlationBuildingTable: buildingTable,
-                                 rsuBuildingDensityColumn: "dens_area",
-                                 pointDensity            : svfPointDensity,
-                                 rayLength               : svfRayLength,
-                                 numberOfDirection       : svfNumberOfDirection,
-                                 prefixName              : prefixName,
-                                 datasource              : datasource])) {
-                    info "Cannot compute the SVF calculation in $prefixName. "
-                    return
-                }
-                def SVF = computeSVF.results.outputTableName
+                // If the fast version is chosen (SVF derived from extended RSU free facade fraction
+                if (svfSimplified == true) {
+                    computeExtFF =  Geoindicators.RsuIndicators.extendedFreeFacadeFraction()
+                    if (!computeExtFF([buildingTable: buildingTable,
+                                          rsuTable: intermediateJoinTable,
+                                          buContiguityColumn: "building_contiguity",
+                                          buTotalFacadeLengthColumn: "building_total_facade_length",
+                                          prefixName: temporaryPrefName, buffDist : 10, datasource: datasource])){
+                        info "Cannot compute the SVF calculation. "
+                        return
+                        }
+                    datasource.execute "DROP TABLE IF EXISTS $SVF; CREATE TABLE SVF " +
+                            "AS SELECT 1-rsu_extended_free_facade_fraction AS RSU_GROUND_SKY_VIEW_FACTOR, $columnIdRsu " +
+                            "FROM ${computeExtFF.results.outputTableName}"
+                    }
+                else {
+                    def computeSVF = Geoindicators.RsuIndicators.groundSkyViewFactor()
+                    if (!computeSVF([rsuTable                : intermediateJoinTable,
+                                     correlationBuildingTable: buildingTable,
+                                     pointDensity            : svfPointDensity,
+                                     rayLength               : svfRayLength,
+                                     numberOfDirection       : svfNumberOfDirection,
+                                     prefixName              : temporaryPrefName,
+                                     datasource              : datasource])) {
+                        info "Cannot compute the SVF calculation. "
+                        return
+                        }
+                    SVF = computeSVF.results.outputTableName
+                    }
                 finalTablesToJoin.put(SVF, columnIdRsu)
             }
 
@@ -586,7 +651,7 @@ def computeRSUIndicators() {
                 if (!computePerviousnessFraction([rsuTable                : intermediateJoinTable,
                                                   operationsAndComposition: ["pervious_fraction"  : perv_type,
                                                                              "impervious_fraction": imp_type],
-                                                  prefixName              : prefixName,
+                                                  prefixName              : temporaryPrefName,
                                                   datasource              : datasource])) {
                     info "Cannot compute the perviousness fraction for the RSU"
                     return
@@ -602,11 +667,11 @@ def computeRSUIndicators() {
                 if (!computeEffRoughHeight([rsuTable                       : intermediateJoinTable,
                                             projectedFacadeAreaName        : "rsu_projected_facade_area_distribution",
                                             geometricMeanBuildingHeightName: "geom_avg_$heightColumnName",
-                                            prefixName                     : prefixName,
+                                            prefixName                     : temporaryPrefName,
                                             listLayersBottom               : facadeDensListLayersBottom,
                                             numberOfDirection              : facadeDensNumberOfDirection,
                                             datasource                     : datasource])) {
-                    info "Cannot compute the SVF calculation in $prefixName."
+                    info "Cannot compute the SVF calculation."
                     return
                 }
                 def effRoughHeight = computeEffRoughHeight.results.outputTableName
@@ -617,8 +682,8 @@ def computeRSUIndicators() {
                 if (!computeRoughClass([datasource                     : datasource,
                                         rsuTable                       : effRoughHeight,
                                         effectiveTerrainRoughnessHeight: "rsu_effective_terrain_roughness",
-                                        prefixName                     : prefixName])) {
-                    info "Cannot compute the SVF calculation in $prefixName."
+                                        prefixName                     : temporaryPrefName])) {
+                    info "Cannot compute the SVF calculation."
                     return
                 }
                 def roughClass = computeRoughClass.results.outputTableName
@@ -629,9 +694,9 @@ def computeRSUIndicators() {
             if (indicatorUse.contains("URBAN_TYPOLOGY")) {
                  def computePerkinsDirection = Geoindicators.GenericIndicators.perkinsSkillScoreBuildingDirection()
                 if (!computePerkinsDirection([buildingTableName: buildingTable, inputIdUp: columnIdRsu,
-                                              angleRangeSize   : angleRangeSizeBuDirection, prefixName: prefixName,
+                                              angleRangeSize   : angleRangeSizeBuDirection, prefixName: temporaryPrefName,
                                               datasource       : datasource])) {
-                    info "Cannot compute the perkins Skill Score building direction distribution in $prefixName."
+                    info "Cannot compute the perkins Skill Score building direction distribution."
                     return
                 }
                 def perkinsDirection = computePerkinsDirection.results.outputTableName
@@ -640,18 +705,29 @@ def computeRSUIndicators() {
 
             // Merge all in one table
             // To avoid duplicate the_geom in the join table, remove it from the intermediate table
-            datasource("ALTER TABLE $intermediateJoinTable DROP COLUMN the_geom;")
+            datasource.execute("ALTER TABLE $intermediateJoinTable DROP COLUMN the_geom;")
             def rsuTableJoin = Geoindicators.DataUtils.joinTables()
             if (!rsuTableJoin([inputTableNamesWithId: finalTablesToJoin,
-                               outputTableName      : prefixName,
+                               outputTableName      : outputTableName,
                                datasource           : datasource])) {
-                info "Cannot merge all tables in $prefixName. "
+                info "Cannot merge all tables. "
                 return
             }
+
+            // Remove all intermediate tables (indicators alone in one table)
+            // Recover all created tables in an array
+            def interTabNames = intermediateJoin.keySet().toArray()
+            def finTabNames = finalTablesToJoin.keySet().toArray()
+            // Remove the RSU table from the list of "tables to remove" (since it needs to be conserved)
+            interTabNames = interTabNames - rsuTable
+            finTabNames = finTabNames - rsuTable
+            datasource.execute """DROP TABLE IF EXISTS ${interTabNames.join(",")}, 
+                                                    ${finTabNames.join(",")}, $SVF"""
+
             def tObis = System.currentTimeMillis() - to_start
 
             info "Geoindicators calculation time: ${tObis / 1000} s"
-            [outputTableName: rsuTableJoin.results.outputTableName]
+            [outputTableName: outputTableName]
 
         }
     })

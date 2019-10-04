@@ -39,9 +39,11 @@ import org.orbisgis.datamanager.JdbcDataSource
  * @return outputTableName Table name where are stored the resulting RSU
  */
 def createLCZ() {
+    def final BASE_NAME = "lcz_type"
+    def final LCZ_INDIC_TABLE = "lcz_indic_table"
     return create({
         title "Create the LCZ"
-        inputs datasource: JdbcDataSource, prefixName: String, buildingTable: String, rsuTable: String, roadTable: String,
+        inputs datasource: JdbcDataSource, prefixName: "", buildingTable: String, rsuTable: String, roadTable: String,
                 vegetationTable: String, hydrographicTable: String, facadeDensListLayersBottom: [0, 50, 200],
                 facadeDensNumberOfDirection: 8, svfPointDensity: 0.008, svfRayLength: 100,
                 svfNumberOfDirection: 60, heightColumnName: "height_roof",
@@ -49,7 +51,7 @@ def createLCZ() {
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                "height_of_roughness_elements": 1, "terrain_roughness_class": 1],
                 fractionTypePervious: ["low_vegetation", "water"], fractionTypeImpervious: ["road"], inputFields: ["id_build", "the_geom"],
-                levelForRoads: [0]
+                levelForRoads: [0], svfSimplified: false
         outputs outputTableName: String
         run { JdbcDataSource datasource, prefixName, buildingTable, rsuTable, roadTable, vegetationTable,
               hydrographicTable, facadeDensListLayersBottom, facadeDensNumberOfDirection,
@@ -57,28 +59,14 @@ def createLCZ() {
               heightColumnName,
               mapOfWeights,
               fractionTypePervious,
-              fractionTypeImpervious, inputFields, levelForRoads ->
+              fractionTypeImpervious, inputFields, levelForRoads, svfSimplified ->
             info "Create the LCZ..."
 
-            // To avoid overwriting the output files of this step, a unique identifier is created
-            def uid_out = UUID.randomUUID().toString().replaceAll("-", "_")
+            // The name of the outputTableName is constructed
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
+            def lczIndicTable = getOutputTableName(prefixName, LCZ_INDIC_TABLE)
 
-            // Temporary table names
-            def lczIndicTable = "lczIndicTable" + uid_out
-            def rsu_indic0 = "rsu_indic0" + uid_out
-            def rsu_indic1 = "rsu_indic1" + uid_out
-            def rsu_indic2 = "rsu_indic2" + uid_out
-            def rsu_indic3 = "rsu_indic3" + uid_out
-
-            // Output table name
-            def outputTableName = "lczTable"
-
-            def veg_type = []
-            def perv_type = []
-            def imp_type = []
-            def surf_fractions = [:]
-            def columnIdRsu = "id_rsu"
-            def columnIdBu = "id_build"
+            def COLUMN_ID_RSU = "id_rsu"
             def geometricColumn = "the_geom"
             def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"             : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
                                  "DENS_AREA"                        : "BUILDING_SURFACE_FRACTION",
@@ -94,7 +82,8 @@ def createLCZ() {
             if (!computeBuildingsIndicators([datasource            : datasource,
                                              inputBuildingTableName: buildingTable,
                                              inputRoadTableName    : roadTable,
-                                             indicatorUse          : ["LCZ"]])) {
+                                             indicatorUse          : ["LCZ"],
+                                             prefixName            : prefixName])) {
                 info "Cannot compute building indicators."
                 return
             }
@@ -102,13 +91,18 @@ def createLCZ() {
 
             //Compute RSU indicators
             def computeRSUIndicators = ProcessingChain.BuildGeoIndicators.computeRSUIndicators()
-            if (!computeRSUIndicators([datasource       : datasource,
-                                       buildingTable    : buildingIndicators,
-                                       rsuTable         : rsuTable,
-                                       vegetationTable  : vegetationTable,
-                                       roadTable        : roadTable,
-                                       hydrographicTable: hydrographicTable,
-                                       indicatorUse     : ["LCZ"]])) {
+            if (!computeRSUIndicators([datasource           : datasource,
+                                       buildingTable        : buildingIndicators,
+                                       rsuTable             : rsuTable,
+                                       vegetationTable      : vegetationTable,
+                                       roadTable            : roadTable,
+                                       hydrographicTable    : hydrographicTable,
+                                       indicatorUse         : ["LCZ"],
+                                       svfPointDensity      : svfPointDensity,
+                                       svfRayLength         : svfRayLength,
+                                       svfNumberOfDirection : svfNumberOfDirection,
+                                       svfSimplified        : svfSimplified,
+                                       prefixName           : prefixName])) {
                 info "Cannot compute the RSU indicators."
                 return
             }
@@ -122,7 +116,8 @@ def createLCZ() {
             }
             // Keep only the ID, geometry column and the 7 indicators useful for LCZ classification
             datasource.execute "$queryReplaceNames"
-            datasource.execute "CREATE TABLE $lczIndicTable AS SELECT $columnIdRsu, $geometricColumn, " +
+            datasource.execute "DROP TABLE IF EXISTS $lczIndicTable;" +
+                    "CREATE TABLE $lczIndicTable AS SELECT $COLUMN_ID_RSU, $geometricColumn, " +
                     "${lczIndicNames.values().join(",")} FROM $rsuIndicators"
 
                 // The classification algorithm is called
@@ -136,7 +131,8 @@ def createLCZ() {
                     return
                 }
 
-            datasource.execute "DROP TABLE IF EXISTS $rsu_indic0, $rsu_indic1, $rsu_indic2, $rsu_indic3"
+            // Rename the last table to the right output table name
+            datasource.execute "ALTER TABLE ${classifyLCZ.results.outputTableName} RENAME TO $outputTableName"
 
             [outputTableName: classifyLCZ.results.outputTableName]
         }

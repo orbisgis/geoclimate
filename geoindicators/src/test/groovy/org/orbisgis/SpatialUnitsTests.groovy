@@ -17,7 +17,7 @@ class SpatialUnitsTests {
 
     @BeforeAll
     static void init(){
-        h2GIS = H2GIS.open([databaseName: './target/spatialunitsdb'])
+        h2GIS = H2GIS.open('./target/spatialunitsdb;AUTO_SERVER=TRUE')
     }
 
     @BeforeEach
@@ -38,7 +38,7 @@ class SpatialUnitsTests {
 
     @Test
     void prepareGeometriesForRSUTest() {
-        H2GIS h2GIS = H2GIS.open([databaseName: './target/spatialunitsdb2'])
+        H2GIS h2GIS = H2GIS.open('./target/spatialunitsdb2;AUTO_SERVER=TRUE')
         h2GIS.load(this.class.getResource("road_test.shp"), true)
         h2GIS.load(this.class.getResource("rail_test.shp"), true)
         h2GIS.load(this.class.getResource("veget_test.shp"), true)
@@ -61,7 +61,7 @@ class SpatialUnitsTests {
         assertTrue h2GIS.save(outputTable,'./target/rsu.shp')
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
 
-        assertEquals 213 , countRows.numberOfRows
+        assertEquals 246 , countRows.numberOfRows
     }
 
 
@@ -99,6 +99,34 @@ class SpatialUnitsTests {
                 def expected = h2GIS.firstRow("SELECT ${pBlock.results.outputIdColumnUp} FROM block_build_corr WHERE id_build = ${row.id_build}".toString())
                 assertEquals(row[pBlock.results.outputIdColumnUp], expected[pBlock.results.outputIdColumnUp])
         }
+    }
+
+    @Test
+    void prepareGeometriesForRSUWithFilterTest() {
+        H2GIS h2GIS = H2GIS.open('./target/spatialunitsdb2;AUTO_SERVER=TRUE')
+        h2GIS.load(this.class.getResource("road_test.shp"), true)
+        h2GIS.load(this.class.getResource("rail_test.shp"), true)
+        h2GIS.load(this.class.getResource("veget_test.shp"), true)
+        h2GIS.load(this.class.getResource("hydro_test.shp"), true)
+        h2GIS.load(this.class.getResource("zone_test.shp"),true)
+
+        def  prepareData = Geoindicators.SpatialUnits.prepareRSUData()
+        assertTrue prepareData.execute([zoneTable               : 'zone_test', roadTable            : 'road_test',
+                                        railTable               : 'rail_test', vegetationTable      : 'veget_test',
+                                        hydrographicTable       :'hydro_test', surface_vegetation   : null,
+                                        surface_hydro           : null,        prefixName           : "block",
+                                        datasource              : h2GIS])
+
+        def outputTableGeoms = prepareData.results.outputTableName
+
+        assertNotNull h2GIS.getTable(outputTableGeoms)
+        def rsu = Geoindicators.SpatialUnits.createRSU()
+        assertTrue rsu.execute([inputTableName: outputTableGeoms, prefixName: "rsu", datasource: h2GIS])
+        def outputTable = rsu.results.outputTableName
+        assertTrue h2GIS.save(outputTable,'./target/rsu.shp')
+        def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
+
+        assertEquals 246 , countRows.numberOfRows
     }
 
 }

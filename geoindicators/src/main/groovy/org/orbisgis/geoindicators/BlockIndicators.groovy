@@ -34,7 +34,7 @@ IProcess holeAreaDensity() {
             info "Executing Hole area ratio"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
                     "SELECT $ID_COLUMN_BL, ST_AREA(ST_HOLES($GEOMETRIC_FIELD))/ST_AREA($GEOMETRIC_FIELD) " +
@@ -81,10 +81,11 @@ IProcess netCompacity() {
             info "Executing Block net compacity"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
-            def query = "CREATE INDEX IF NOT EXISTS id_b " +
-                    "ON $buildTable($ID_COLUMN_BL); DROP TABLE IF EXISTS $outputTableName;" +
+            datasource.getSpatialTable(buildTable).id_block.createIndex()
+
+            def query = "DROP TABLE IF EXISTS $outputTableName;" +
                     " CREATE TABLE $outputTableName AS SELECT $ID_COLUMN_BL, " +
                     "SUM($buildingContiguityField*(ST_PERIMETER($GEOMETRY_FIELD_BU)+" +
                     "ST_PERIMETER(ST_HOLES($GEOMETRY_FIELD_BU)))*$HEIGHT_WALL)/POWER(SUM($buildingVolumeField)," +
@@ -135,10 +136,12 @@ IProcess closingness() {
             info "Executing Closingness of a block"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
-            def query = "CREATE INDEX IF NOT EXISTS id_bubl ON $blockTable($ID_COLUMN_BL); " +
-                    "CREATE INDEX IF NOT EXISTS id_b ON $correlationTableName($ID_COLUMN_BL); " +
+            datasource.getSpatialTable(blockTable).id_block.createIndex()
+            datasource.getSpatialTable(correlationTableName).id_block.createIndex()
+
+            def query =
                     "DROP TABLE IF EXISTS $outputTableName;" +
                     " CREATE TABLE $outputTableName AS SELECT b.$ID_COLUMN_BL, " +
                     "ST_AREA(ST_HOLES(b.$GEOMETRY_FIELD_BL))-SUM(ST_AREA(ST_HOLES(a.$GEOMETRY_FIELD_BU))) AS $BASE_NAME " +

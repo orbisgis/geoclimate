@@ -61,7 +61,8 @@ INSERT INTO building_test VALUES (1, 1, 1,'POLYGON((4 4, 10 4, 10 30, 4 30, 4 4)
  (31, 8, null, 'POLYGON((5 -145, 20 -145, 20 -105, 5 -105, 5 -145),(10 -130, 15 -130, 15 -110, 10 -110, 10 -130))'::GEOMETRY, 10, 10, null, null, null, null, null, null),
  (32, 8, null, 'POLYGON((20 -110, 45 -110, 45 -105, 20 -105, 20 -110))'::GEOMETRY, 15, 17, null, null, null, null, null, null),
  (33, 8, null, 'POLYGON((35 -145, 45 -145, 45 -110, 35 -110, 35 -145))'::GEOMETRY, 12, 12, null, null, null, null, null, null),
- (34, 8, null, 'POLYGON((20 -145, 35 -145, 35 -140, 15 -130, 20 -145))'::GEOMETRY, 12, 15, null, null, null, null, null, null);
+ (34, 8, null, 'POLYGON((20 -145, 35 -145, 35 -140, 15 -130, 20 -145))'::GEOMETRY, 12, 15, null, null, null, null, null, null),
+ (35, null, null, 'POLYGON((-31 10, -29 10, -29 20, -31 20, -31 10))'::GEOMETRY, 20, 20, null, null, null, null, null, null);
 
 INSERT INTO block_test VALUES (1, 'POLYGON((4 4, 10 4, 10 30, 4 30, 4 4))'::GEOMETRY),
  (2, 'POLYGON((12 4, 20 4, 20 9, 12 9, 12 4))'::GEOMETRY),
