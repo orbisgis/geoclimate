@@ -212,7 +212,7 @@ IProcess geometryProperties() {
             info "Executing Geometry properties"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefixName + "_" + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
 
@@ -266,7 +266,7 @@ IProcess perkinsSkillScoreBuildingDirection() {
 
             // The name of the outputTableName is constructed
             String baseName = inputIdUp[3..-1] + "_perkins_skill_score_building_direction"
-            String outputTableName = prefixName + "_" + baseName
+            def outputTableName = getOutputTableName(prefixName, baseName)
 
             // Test whether the angleRangeSize is a divisor of 180°
             if ((180 % angleRangeSize) == 0 && (180 / angleRangeSize) > 1) {
