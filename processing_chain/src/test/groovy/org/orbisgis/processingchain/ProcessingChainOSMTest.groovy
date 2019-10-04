@@ -149,7 +149,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
 
         //Run tests
         osmGeoIndicators(dirFile.absolutePath, datasource, zoneTableName, buildingTableName,roadTableName,railTableName,vegetationTableName,
-                hydrographicTableName,saveResults, indicatorUse, prefixName, svfSimplified)
+                hydrographicTableName,saveResults, svfSimplified,indicatorUse,  prefixName)
 
     }
 

@@ -113,6 +113,7 @@ IProcess groundSkyViewFactor() {
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
             def rsuDiff = "rsuDiff$uuid"
+            def rsuDiffTot = "rsuDiffTot$uuid"
             def multiptsRSUtot = "multiptsRSUtot$uuid"
             def ptsRSUtot = "ptsRSUtot$uuid"
             def pts_order = "pts_order$uuid"
@@ -134,14 +135,19 @@ IProcess groundSkyViewFactor() {
 
             // Create the geometries of buildings and RSU holes included within each RSU
             datasource.execute """
-                    DROP TABLE IF EXISTS $rsuDiff, $multiptsRSUtot, $pts_RANG,$pts_order,$ptsRSUtot, $svfPts, $outputTableName;
+                    DROP TABLE IF EXISTS $rsuDiff, $multiptsRSUtot, $rsuDiffTot,$pts_RANG,$pts_order,$ptsRSUtot, $svfPts, $outputTableName;
                     CREATE TABLE $rsuDiff 
                     AS (SELECT  st_difference(a.$GEOMETRIC_COLUMN_RSU, st_makevalid(ST_ACCUM(b.$GEOMETRIC_COLUMN_BU)))
-                                AS the_geom, a.$ID_COLUMN_RSU, st_area(a.$GEOMETRIC_COLUMN_RSU) as rsu_area
+                                AS the_geom, a.$ID_COLUMN_RSU
                     FROM        $rsuTable a, $correlationBuildingTable b 
                     WHERE       a.$GEOMETRIC_COLUMN_RSU && b.$GEOMETRIC_COLUMN_BU AND ST_INTERSECTS(a.$GEOMETRIC_COLUMN_RSU, 
                                 b.$GEOMETRIC_COLUMN_BU)
-                    GROUP BY    a.$ID_COLUMN_RSU)"""
+                    GROUP BY    a.$ID_COLUMN_RSU);"""
+
+            datasource.execute"""CREATE INDEX ON $rsuDiff($ID_COLUMN_RSU);
+                                CREATE TABLE $rsuDiffTot AS SELECT b.$ID_COLUMN_RSU, 
+                                case when a.$ID_COLUMN_RSU is null then b.the_geom else a.the_geom end as the_geom FROM
+                                $rsuTable as b left join $rsuDiff as a on a.$ID_COLUMN_RSU=b.$ID_COLUMN_RSU;"""
 
             // The points used for the SVF calculation are regularly selected within each RSU. The points are
             // located outside buildings (and RSU holes) and the size of the grid mesh used to sample each RSU
@@ -150,13 +156,13 @@ IProcess groundSkyViewFactor() {
             datasource.execute"""CREATE TABLE $multiptsRSUtot AS SELECT $ID_COLUMN_RSU, THE_GEOM 
                         FROM  
                         ST_EXPLODE('(SELECT $ID_COLUMN_RSU,
-                                    case when LEAST(TRUNC($pointDensity*c.rsu_area_diff),100)=0 
+                                    case when LEAST(TRUNC($pointDensity*c.rsu_area_free),100)=0 
                                     then st_pointonsurface(c.the_geom)
-                                    else ST_GENERATEPOINTS(c.the_geom, LEAST(TRUNC($pointDensity*c.rsu_area_diff),100)) end
+                                    else ST_GENERATEPOINTS(c.the_geom, LEAST(TRUNC($pointDensity*c.rsu_area_free),100)) end
                         AS the_geom
                         FROM  (SELECT the_geom, st_area($GEOMETRIC_COLUMN_RSU) 
-                                                AS rsu_area_diff,rsu_area, st_area(st_envelope(the_geom)) as env_area, $ID_COLUMN_RSU
-                                    FROM        st_explode(''(select * from $rsuDiff)'')  where st_area(the_geom)>0) as c)');"""
+                                                AS rsu_area_free, $ID_COLUMN_RSU
+                                    FROM        st_explode(''(select * from $rsuDiffTot)'')  where st_area(the_geom)>0) as c)');"""
 
             // A random sample of points (of size corresponding to the point density defined by $pointDensity)
             // is drawn in order to have the same density of point in each RSU.
@@ -189,7 +195,7 @@ IProcess groundSkyViewFactor() {
             info "SVF calculation time: ${tObis / 1000} s"
 
             // The temporary tables are deleted
-            datasource.execute "DROP TABLE IF EXISTS $rsuDiff, $ptsRSUtot, $pts_order,$multiptsRSUtot, $svfPts"
+            datasource.execute "DROP TABLE IF EXISTS $rsuDiff, $ptsRSUtot, $rsuDiffTot,$pts_order,$multiptsRSUtot, $svfPts"
 
             [outputTableName: outputTableName]
         }
