@@ -114,7 +114,7 @@ class SpatialUnitsTests {
         assertTrue prepareData.execute([zoneTable: 'zone_test', roadTable: 'road_test',  railTable: 'rail_test',
                                         vegetationTable : 'veget_test',
                                         hydrographicTable :'hydro_test',surface_vegetation : null, surface_hydro : null,
-                                        prefixName: "block", datasource: h2GIS, rsuAreaFilter:1000])
+                                        prefixName: "block", datasource: h2GIS])
 
         def outputTableGeoms = prepareData.results.outputTableName
 
