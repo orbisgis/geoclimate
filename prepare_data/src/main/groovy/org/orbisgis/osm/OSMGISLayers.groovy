@@ -68,7 +68,7 @@ IProcess extractAndCreateGISLayers(){
 
                 datasource.execute """create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
             INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${
-                    geomAndEnv.filterArea.toString()
+                    ST_Transform.ST_Transform(datasource.getConnection(), geomAndEnv.filterArea, epsg).toString()
                 }',$epsg), '$placeName');"""
 
                 def query = OSMHelper.Utilities.buildOSMQuery(geomAndEnv.filterArea, [], NODE, WAY, RELATION)
