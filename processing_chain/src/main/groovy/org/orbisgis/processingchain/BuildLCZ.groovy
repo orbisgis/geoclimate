@@ -132,7 +132,8 @@ def createLCZ() {
                 }
 
             // Rename the last table to the right output table name
-            datasource.execute "ALTER TABLE ${classifyLCZ.results.outputTableName} RENAME TO $outputTableName"
+            datasource.execute "DROP TABLE IF EXISTS $outputTableName;" +
+                    "ALTER TABLE ${classifyLCZ.results.outputTableName} RENAME TO $outputTableName"
 
             [outputTableName: classifyLCZ.results.outputTableName]
         }
