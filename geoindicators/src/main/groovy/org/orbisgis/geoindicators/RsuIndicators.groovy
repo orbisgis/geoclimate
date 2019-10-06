@@ -112,10 +112,14 @@ IProcess groundSkyViewFactor() {
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
-            def rsuHolesToRemove = "rsuHolesToRemove$uuid"
+            def rsuDiff = "rsuDiff$uuid"
+            def rsuDiffTot = "rsuDiffTot$uuid"
             def multiptsRSUtot = "multiptsRSUtot$uuid"
             def ptsRSUtot = "ptsRSUtot$uuid"
+            def pts_order = "pts_order$uuid"
             def svfPts = "svfPts$uuid"
+            def rsuDensPts = "rsuDensPts$uuid"
+            def pts_RANG = "pts_RANG$uuid"
 
             // The name of the outputTableName is constructed
             def outputTableName = getOutputTableName(prefixName, BASE_NAME)
@@ -131,65 +135,57 @@ IProcess groundSkyViewFactor() {
 
             // Create the geometries of buildings and RSU holes included within each RSU
             datasource.execute """
-                    DROP TABLE IF EXISTS $rsuHolesToRemove, $multiptsRSUtot, $ptsRSUtot, $svfPts, $outputTableName;
-                    CREATE TABLE $rsuHolesToRemove 
-                    AS (SELECT  ST_TOMULTILINE(ST_ACCUM(ST_INTERSECTION(a.$GEOMETRIC_COLUMN_RSU, b.$GEOMETRIC_COLUMN_BU)))
-                                AS the_geom, a.$ID_COLUMN_RSU 
+                    DROP TABLE IF EXISTS $rsuDiff, $multiptsRSUtot, $rsuDiffTot,$pts_RANG,$pts_order,$ptsRSUtot, $svfPts, $outputTableName;
+                    CREATE TABLE $rsuDiff 
+                    AS (SELECT  st_difference(a.$GEOMETRIC_COLUMN_RSU, st_makevalid(ST_ACCUM(b.$GEOMETRIC_COLUMN_BU)))
+                                AS the_geom, a.$ID_COLUMN_RSU
                     FROM        $rsuTable a, $correlationBuildingTable b 
-                    WHERE       a.$GEOMETRIC_COLUMN_RSU && b.$GEOMETRIC_COLUMN_BU AND ST_OVERLAPS(a.$GEOMETRIC_COLUMN_RSU, 
-                                b.$GEOMETRIC_COLUMN_BU) OR a.$GEOMETRIC_COLUMN_RSU && b.$GEOMETRIC_COLUMN_BU AND 
-                                ST_CONTAINS(a.$GEOMETRIC_COLUMN_RSU, b.$GEOMETRIC_COLUMN_BU)
-                    GROUP BY    a.$ID_COLUMN_RSU)
-                    UNION ALL 
-                    SELECT      ST_TOMULTILINE(ST_HOLES($GEOMETRIC_COLUMN_RSU)) AS the_geom, $ID_COLUMN_RSU
-                    FROM $rsuTable"""
+                    WHERE       a.$GEOMETRIC_COLUMN_RSU && b.$GEOMETRIC_COLUMN_BU AND ST_INTERSECTS(a.$GEOMETRIC_COLUMN_RSU, 
+                                b.$GEOMETRIC_COLUMN_BU)
+                    GROUP BY    a.$ID_COLUMN_RSU);"""
 
-            datasource.getTable(rsuHolesToRemove)[ID_COLUMN_RSU].createIndex()
+            datasource.execute"""CREATE INDEX ON $rsuDiff($ID_COLUMN_RSU);
+                                CREATE TABLE $rsuDiffTot AS SELECT b.$ID_COLUMN_RSU, 
+                                case when a.$ID_COLUMN_RSU is null then b.the_geom else a.the_geom end as the_geom FROM
+                                $rsuTable as b left join $rsuDiff as a on a.$ID_COLUMN_RSU=b.$ID_COLUMN_RSU;"""
 
-            // The points used for the SVF calculation are randomly selected within each RSU. The points are
-            // located outside buildings (and RSU holes) and the density of points (points / m² of free ground surface)
-            // is similar in each RSU
-            datasource.execute """
-                    CREATE TABLE $multiptsRSUtot 
-                    AS SELECT       $ID_COLUMN_RSU, ST_GENERATEPOINTS(c.the_geom, TRUNC(${pointDensity}*
-                                    c.rsu_area*(1.0 - ((c.rsu_area - ST_AREA(c.the_geom))/
-                                    c.rsu_area))+1)) AS the_geom 
-                    FROM 
-                                    (SELECT ST_MAKEPOLYGON(ST_EXTERIORRING(a.$GEOMETRIC_COLUMN_RSU),
-                                                ST_ACCUM(b.the_geom)) AS the_geom, st_area(a.$GEOMETRIC_COLUMN_RSU) 
-                                                AS rsu_area, a.$ID_COLUMN_RSU 
-                                    FROM        $rsuTable a 
-                                    LEFT JOIN   $rsuHolesToRemove b 
-                                    ON          a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU 
-                                    GROUP BY    a.$ID_COLUMN_RSU) as c"""
+            // The points used for the SVF calculation are regularly selected within each RSU. The points are
+            // located outside buildings (and RSU holes) and the size of the grid mesh used to sample each RSU
+            // (based on the building density + 10%) - if the building density exceeds 90%,
+            // the LCZ 7 building density is then set to 90%)
+            datasource.execute"""CREATE TABLE $multiptsRSUtot AS SELECT $ID_COLUMN_RSU, THE_GEOM 
+                        FROM  
+                        ST_EXPLODE('(SELECT $ID_COLUMN_RSU,
+                                    case when LEAST(TRUNC($pointDensity*c.rsu_area_free),100)=0 
+                                    then st_pointonsurface(c.the_geom)
+                                    else ST_GENERATEPOINTS(c.the_geom, LEAST(TRUNC($pointDensity*c.rsu_area_free),100)) end
+                        AS the_geom
+                        FROM  (SELECT the_geom, st_area($GEOMETRIC_COLUMN_RSU) 
+                                                AS rsu_area_free, $ID_COLUMN_RSU
+                                    FROM        st_explode(''(select * from $rsuDiffTot)'')  where st_area(the_geom)>0) as c)');"""
 
-            // Convert the multipoint geometries to points
-            datasource.execute """
-                    CREATE TABLE $ptsRSUtot(pk SERIAL, $ID_COLUMN_RSU INTEGER, the_geom GEOMETRY)
-                    AS (SELECT      null, $ID_COLUMN_RSU, the_geom 
-                    FROM            ST_EXPLODE('(SELECT * FROM $multiptsRSUtot)'))"""
-
-            datasource.getSpatialTable(ptsRSUtot).the_geom.createSpatialIndex()
+            // A random sample of points (of size corresponding to the point density defined by $pointDensity)
+            // is drawn in order to have the same density of point in each RSU.
+            datasource.getSpatialTable(multiptsRSUtot).the_geom.createSpatialIndex()
 
             // The SVF calculation is performed at point scale
             datasource.execute """
                     CREATE TABLE $svfPts 
-                    AS SELECT   a.pk, a.$ID_COLUMN_RSU, 
+                    AS SELECT   a.$ID_COLUMN_RSU, 
                                 ST_SVF(ST_GEOMETRYN(a.the_geom,1), ST_ACCUM(ST_UPDATEZ(b.$GEOMETRIC_COLUMN_BU, b.$HEIGHT_WALL)), 
                                        $rayLength, $numberOfDirection, 5) AS SVF
-                    FROM        $ptsRSUtot AS a, $correlationBuildingTable AS b 
+                    FROM        $multiptsRSUtot AS a, $correlationBuildingTable AS b 
                     WHERE       ST_EXPAND(a.the_geom, $rayLength) && b.$GEOMETRIC_COLUMN_BU AND 
                                 ST_DWITHIN(b.$GEOMETRIC_COLUMN_BU, a.the_geom, $rayLength) 
                     GROUP BY    a.the_geom"""
 
             datasource.getTable(svfPts)[ID_COLUMN_RSU].createIndex()
-            datasource.getTable(ptsRSUtot)[ID_COLUMN_RSU].createIndex()
 
             // The result of the SVF calculation is averaged at RSU scale
             datasource.execute """
                     CREATE TABLE $outputTableName(id_rsu integer, rsu_ground_sky_view_factor double) 
                     AS          (SELECT a.$ID_COLUMN_RSU, CASE WHEN AVG(b.SVF) is not null THEN AVG(b.SVF) ELSE 0 END
-                    FROM        $ptsRSUtot a 
+                    FROM        $rsuTable a 
                     LEFT JOIN   $svfPts b 
                     ON          a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU
                     GROUP BY    a.$ID_COLUMN_RSU)"""
@@ -199,7 +195,7 @@ IProcess groundSkyViewFactor() {
             info "SVF calculation time: ${tObis / 1000} s"
 
             // The temporary tables are deleted
-            datasource.execute "DROP TABLE IF EXISTS $rsuHolesToRemove, $ptsRSUtot, $multiptsRSUtot, $svfPts"
+            datasource.execute "DROP TABLE IF EXISTS $rsuDiff, $ptsRSUtot, $rsuDiffTot,$pts_order,$multiptsRSUtot, $svfPts"
 
             [outputTableName: outputTableName]
         }
@@ -1024,7 +1020,7 @@ IProcess vegetationFraction() {
             def interQuery = "DROP TABLE IF EXISTS $interTable; " +
                     "CREATE TABLE $interTable AS SELECT b.$idColumnRsu, a.$vegetClass, " +
                     "ST_AREA(b.$geometricColumnRsu) AS RSU_AREA, " +
-                    "ST_AREA(ST_INTERSECTION(a.$geometricColumnVeget, b.$geometricColumnRsu)) AS VEGET_AREA " +
+                    "ST_AREA(ST_INTERSECTION(st_force2D(a.$geometricColumnVeget), b.$geometricColumnRsu)) AS VEGET_AREA " +
                     "FROM $vegetTable a, $rsuTable b WHERE a.$geometricColumnVeget && b.$geometricColumnRsu AND " +
                     "ST_INTERSECTS(a.$geometricColumnVeget, b.$geometricColumnRsu);"
 

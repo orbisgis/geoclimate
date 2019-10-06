@@ -83,7 +83,7 @@ IProcess formatBuildingLayer() {
 
                         def zIndex = getZIndex(row.'layer')
 
-                        stmt.addBatch """insert into ${outputTableName} values(ST_GEOMFROMTEXT('${row.the_geom}',$epsg),
+                        stmt.addBatch """insert into ${outputTableName} values(ST_MAKEVALID(ST_GEOMFROMTEXT('${row.the_geom}',$epsg)),
                     null, '${row.id}',${formatedHeight.heightWall},${formatedHeight.heightRoof},${formatedHeight.nbLevels},'${
                             type
                         }','${use}',${zIndex})""".toString()
@@ -276,9 +276,9 @@ IProcess formatVegetationLayer() {
 
                         def height_class = typeAndVegClass[type]
 
-                        stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${
+                        stmt.addBatch """insert into $outputTableName values(ST_MAKEVALID(ST_GEOMFROMTEXT('${
                             row.the_geom
-                        }',$epsg), null, '${row.id}','${type}', '${height_class}')"""
+                        }',$epsg)), null, '${row.id}','${type}', '${height_class}')"""
 
                     }
                 }
@@ -310,7 +310,7 @@ IProcess formatHydroLayer() {
             if(inputTableName!=null){
                 datasource.withBatch(1000) { stmt ->
                     datasource.getTable(inputTableName).eachRow { row ->
-                        stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${row.the_geom}',$epsg), null, '${row.id}')"
+                        stmt.addBatch "insert into $outputTableName values(ST_MAKEVALID(ST_GEOMFROMTEXT('${row.the_geom}',$epsg)), null, '${row.id}')"
                     }
                 }
             }
