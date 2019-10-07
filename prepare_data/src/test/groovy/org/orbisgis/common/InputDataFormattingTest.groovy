@@ -396,7 +396,41 @@ class InputDataFormattingTest {
         assertEquals('path', h2GISDatabase.firstRow("SELECT TYPE FROM ROAD " +
                 "WHERE ID_SOURCE='TRONROUT0000000306711343';")["TYPE"])
 
+        //... with the road 'TRONROUT0000000087744143' : LARGEUR = 5,5 / NATURE = 'Route à 1 chaussée'
+        assertEquals(5.5, h2GISDatabase.firstRow("SELECT WIDTH FROM ROAD " +
+                "WHERE ID_SOURCE='TRONROUT0000000087744143';")["WIDTH"])
+        assertEquals('unclassified', h2GISDatabase.firstRow("SELECT TYPE FROM ROAD " +
+                "WHERE ID_SOURCE='TRONROUT0000000087744143';")["TYPE"])
 
+        //... with the road 'TRONROUT0000000087751875' : LARGEUR = 0 / NATURE = 'Escalier'
+        assertEquals(1, h2GISDatabase.firstRow("SELECT WIDTH FROM ROAD " +
+                "WHERE ID_SOURCE='TRONROUT0000000087751875';")["WIDTH"])
+        assertEquals('steps', h2GISDatabase.firstRow("SELECT TYPE FROM ROAD " +
+                "WHERE ID_SOURCE='TRONROUT0000000087751875';")["TYPE"])
+
+        //... with the road 'TRONROUT0000000087744296' : LARGEUR = 10 / NATURE = 'Quasi-autoroute'
+        assertEquals(10, h2GISDatabase.firstRow("SELECT WIDTH FROM ROAD " +
+                "WHERE ID_SOURCE='TRONROUT0000000087744296';")["WIDTH"])
+        assertEquals('trunk', h2GISDatabase.firstRow("SELECT TYPE FROM ROAD " +
+                "WHERE ID_SOURCE='TRONROUT0000000087744296';")["TYPE"])
+
+        //... with the road 'TRONROUT0000000087744456' : LARGEUR = 4 / NATURE = 'Bretelle'
+        assertEquals(4, h2GISDatabase.firstRow("SELECT WIDTH FROM ROAD " +
+                "WHERE ID_SOURCE='TRONROUT0000000087744456';")["WIDTH"])
+        assertEquals('highway_link', h2GISDatabase.firstRow("SELECT TYPE FROM ROAD " +
+                "WHERE ID_SOURCE='TRONROUT0000000087744456';")["TYPE"])
+
+        //... with the road 'TRONROUT0000000306711352' : LARGEUR = 0 / NATURE = 'Route empierrée'
+        assertEquals(2, h2GISDatabase.firstRow("SELECT WIDTH FROM ROAD " +
+                "WHERE ID_SOURCE='TRONROUT0000000306711352';")["WIDTH"])
+        assertEquals('track', h2GISDatabase.firstRow("SELECT TYPE FROM ROAD " +
+                "WHERE ID_SOURCE='TRONROUT0000000306711352';")["TYPE"])
+
+        //... with the road 'TRONROUT0000000296508508' : LARGEUR = 0 / NATURE = 'Piste cyclable'
+        assertEquals(1, h2GISDatabase.firstRow("SELECT WIDTH FROM ROAD " +
+                "WHERE ID_SOURCE='TRONROUT0000000296508508';")["WIDTH"])
+        assertEquals('cycleway', h2GISDatabase.firstRow("SELECT TYPE FROM ROAD " +
+                "WHERE ID_SOURCE='TRONROUT0000000296508508';")["TYPE"])
 
 
         // ------------------
@@ -529,6 +563,16 @@ class InputDataFormattingTest {
             assertNotNull(row.ZINDEX)
             assertNotEquals('', row.ZINDEX)
         }
+
+        // Specific cases
+        // -------------------------------
+        //... with the rail 'TRONFERR0000000087164801' : NATURE = 'Voie de service'
+        assertEquals('service_track', h2GISDatabase.firstRow("SELECT TYPE FROM RAIL " +
+                "WHERE ID_SOURCE='TRONFERR0000000087164801';")["TYPE"])
+
+        //... with the rail 'TRONFERR0000000087164787' : NATURE = 'Principale'
+        assertEquals('rail', h2GISDatabase.firstRow("SELECT TYPE FROM RAIL " +
+                "WHERE ID_SOURCE='TRONFERR0000000087164787';")["TYPE"])
 
         // ------------------
         // Check if the RAIL_STATS_ZONE table has the correct number of columns and rows
@@ -678,6 +722,33 @@ class InputDataFormattingTest {
             assertNotEquals('', row.HEIGHT_CLASS)
         }
 
+        // Specific cases
+        // -------------------------------
+        //... with the vegetation area 'ZONEVEGE0000000222250983' : NATURE = 'Forêt fermée de feuillus'
+        assertEquals('forest', h2GISDatabase.firstRow("SELECT TYPE FROM VEGET " +
+                "WHERE ID_SOURCE='ZONEVEGE0000000222250983';")["TYPE"])
+        assertEquals('high', h2GISDatabase.firstRow("SELECT HEIGHT_CLASS FROM VEGET " +
+                "WHERE ID_SOURCE='ZONEVEGE0000000222250983';")["HEIGHT_CLASS"])
+
+        //... with the vegetation area 'ZONEVEGE0000000222266277' : NATURE = 'Forêt fermée mixte'
+        assertEquals('forest', h2GISDatabase.firstRow("SELECT TYPE FROM VEGET " +
+                "WHERE ID_SOURCE='ZONEVEGE0000000222266277';")["TYPE"])
+        assertEquals('high', h2GISDatabase.firstRow("SELECT HEIGHT_CLASS FROM VEGET " +
+                "WHERE ID_SOURCE='ZONEVEGE0000000222266277';")["HEIGHT_CLASS"])
+
+        //... with the vegetation area 'ZONEVEGE0000000222259742' : NATURE = 'Bois'
+        assertEquals('forest', h2GISDatabase.firstRow("SELECT TYPE FROM VEGET " +
+                "WHERE ID_SOURCE='ZONEVEGE0000000222259742';")["TYPE"])
+        assertEquals('high', h2GISDatabase.firstRow("SELECT HEIGHT_CLASS FROM VEGET " +
+                "WHERE ID_SOURCE='ZONEVEGE0000000222259742';")["HEIGHT_CLASS"])
+
+        //... with the vegetation area 'ZONEVEGE0000000222262077' : NATURE = 'Haie'
+        assertEquals('hedge', h2GISDatabase.firstRow("SELECT TYPE FROM VEGET " +
+                "WHERE ID_SOURCE='ZONEVEGE0000000222262077';")["TYPE"])
+        assertEquals('high', h2GISDatabase.firstRow("SELECT HEIGHT_CLASS FROM VEGET " +
+                "WHERE ID_SOURCE='ZONEVEGE0000000222262077';")["HEIGHT_CLASS"])
+
+
         // ------------------
         // Check if the VEGET_STATS_ZONE table has the correct number of columns and rows
         tableName = processFormatting.getResults().outputVegetStatZone
@@ -770,6 +841,5 @@ class InputDataFormattingTest {
             assertNotNull(row.THE_GEOM)
             assertNotEquals('', row.THE_GEOM)
         }
-
     }
 }
