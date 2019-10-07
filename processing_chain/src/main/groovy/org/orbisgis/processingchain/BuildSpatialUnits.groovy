@@ -66,7 +66,8 @@ def createUnitsOfAnalysis(){
 
             if (!createRSU([datasource    : datasource,
                             inputTableName: rsuDataPrepared,
-                            prefixName    : prefixName])) {
+                            prefixName    : prefixName,
+                            inputZoneTableName: zoneTable])) {
                 info "Cannot compute the RSU."
                 return
             }

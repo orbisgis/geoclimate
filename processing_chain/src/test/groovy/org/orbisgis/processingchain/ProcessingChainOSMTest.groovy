@@ -18,7 +18,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
 
 
 
-    @Test
+    //@Test
     void osmToRSU() {
         String directory ="./target/osm_processchain_geoindicators"
 
@@ -114,7 +114,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osm_chain_db;AUTO_SERVER=TRUE")
 
         //Extract and transform OSM data
-        def placeName = "Vannes"
+        def placeName = "Rennes"
 
         IProcess prepareOSMData = ProcessingChain.PrepareOSM.buildGeoclimateLayers()
 
@@ -149,7 +149,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
 
         //Run tests
         osmGeoIndicators(dirFile.absolutePath, datasource, zoneTableName, buildingTableName,roadTableName,railTableName,vegetationTableName,
-                hydrographicTableName,saveResults, indicatorUse, prefixName, svfSimplified)
+                hydrographicTableName,saveResults, svfSimplified,indicatorUse,  prefixName)
 
     }
 
