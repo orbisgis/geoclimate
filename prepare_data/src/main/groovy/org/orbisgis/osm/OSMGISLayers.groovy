@@ -42,7 +42,7 @@ IProcess extractAndCreateGISLayers(){
                 logger.error('The datasource cannot be null')
                 return null
             }
-            Geometry geom = OSMHelper.Utilities.getAreaFromPlace(placeName);
+            Geometry geom = OSMTools.Utilities.getAreaFromPlace(placeName);
 
             if (geom == null) {
                 logger.error("Cannot find an area from the place name ${placeName}")
@@ -58,7 +58,7 @@ IProcess extractAndCreateGISLayers(){
                 /**
                  * Extract the OSM file from the envelope of the geometry
                  */
-                def geomAndEnv = buildGeometryAndZone(geom, epsg, distance, datasource)
+                def geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, epsg, distance, datasource)
                 epsg = geomAndEnv.geom.getSRID()
 
                 datasource.execute """create table ${outputZoneTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
@@ -71,8 +71,8 @@ IProcess extractAndCreateGISLayers(){
                     ST_Transform.ST_Transform(datasource.getConnection(), geomAndEnv.filterArea, epsg).toString()
                 }',$epsg), '$placeName');"""
 
-                def query = OSMHelper.Utilities.buildOSMQuery(geomAndEnv.filterArea, [], NODE, WAY, RELATION)
-                def extract = OSMHelper.Loader.extract()
+                def query = OSMTools.Utilities.buildOSMQuery(geomAndEnv.filterArea, [], NODE, WAY, RELATION)
+                def extract = OSMTools.Loader.extract()
                 if (extract.execute(overpassQuery: query)) {
                     IProcess createGISLayerProcess = createGISLayers()
                     if (createGISLayerProcess.execute(datasource: datasource, osmFilePath: extract.results.outputFilePath, epsg: epsg)) {
@@ -163,11 +163,11 @@ IProcess createGISLayers() {
                 return null
             }
             def prefix = "OSM_DATA_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-            def load = OSMHelper.Loader.load()
+            def load = OSMTools.Loader.load()
             logger.info "Loading"
             if (load(datasource: datasource, osmTablesPrefix: prefix, osmFilePath: osmFilePath)) {
                 //Create building layer
-                def transform = OSMHelper.Transform.toPolygons()
+                def transform = OSMTools.Transform.toPolygons()
                 logger.info "Create the building layer"
                 def tags = ['building']
                 def columnsToKeep = ['layer','height', 'building:height', 'roof:height', 'building:roof:height',
@@ -183,7 +183,7 @@ IProcess createGISLayers() {
                 logger.info "Building layer created"
 
                 //Create road layer
-                transform = OSMHelper.Transform.extractWaysAsLines()
+                transform = OSMTools.Transform.extractWaysAsLines()
                 logger.info "Create the road layer"
                 tags = ['highway', 'cycleway', 'biclycle_road', 'cyclestreet', 'route', 'junction']
                 columnsToKeep = ['width','highway', 'surface', 'sidewalk',
@@ -195,7 +195,7 @@ IProcess createGISLayers() {
                 logger.info "Road layer created"
 
                 //Create rail layer
-                transform = OSMHelper.Transform.extractWaysAsLines()
+                transform = OSMTools.Transform.extractWaysAsLines()
                 logger.info "Create the rail layer"
                 tags = ['railway']
                 columnsToKeep =['highspeed','railway','service',
@@ -211,7 +211,7 @@ IProcess createGISLayers() {
                                          'hedge':[],'wetland':[],'vineyard':[],
                                          'trees':[],'crop':[],'produce':[]]
 
-                transform = OSMHelper.Transform.toPolygons()
+                transform = OSMTools.Transform.toPolygons()
                 logger.info "Create the vegetation layer"
                 assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags)
                 def outputVegetationTableName = transform.results.outputTableName
@@ -219,7 +219,7 @@ IProcess createGISLayers() {
 
                 //Create water layer
                 tags = ['natural':['water','waterway','bay'],'water':[],'waterway':[]]
-                transform = OSMHelper.Transform.toPolygons()
+                transform = OSMTools.Transform.toPolygons()
                 logger.info "Create the water layer"
                 tags = ['natural', 'water', 'waterway']
                 assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags)
