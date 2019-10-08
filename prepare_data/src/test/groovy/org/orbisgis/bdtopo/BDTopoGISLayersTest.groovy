@@ -1,36 +1,41 @@
 package org.orbisgis.bdtopo
 
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty
 import org.orbisgis.PrepareData
 import org.orbisgis.datamanager.h2gis.H2GIS
-import org.orbisgis.datamanagerapi.dataset.IJdbcTable
 
-import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertNotEquals
-import static org.junit.jupiter.api.Assertions.assertNotNull
-import static org.junit.jupiter.api.Assertions.assertNull
-import static org.junit.jupiter.api.Assertions.assertTrue
+import static org.junit.jupiter.api.Assertions.*
 
 class BDTopoGISLayersTest {
+    def h2GISDatabase
 
     @BeforeAll
-    static void init() {
-        if (BDTopoGISLayersTest.class.getResource("bdtopofolder") != null &&
+    static void beforeAll(){
+        if(BDTopoGISLayersTest.class.getResource("bdtopofolder") != null &&
                 new File(BDTopoGISLayersTest.class.getResource("bdtopofolder").toURI()).exists()) {
             System.properties.setProperty("data.bd.topo", "true")
-            H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb", "sa", "")
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/IRIS_GE.shp"),"IRIS_GE", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/BATI_INDIFFERENCIE.shp"),"BATI_INDIFFERENCIE", true)
+        }
+        else {
+            System.properties.setProperty("data.bd.topo", "false")
+        }
+    }
+
+    @BeforeEach
+    void beforeEach() {
+        if(System.properties.containsKey("data.bd.topo") && System.properties.getProperty("data.bd.topo") == "true") {
+            h2GISDatabase = H2GIS.open("./target/h2gis_bd_topo_gis_layer_${UUID.randomUUID()};AUTO_SERVER=TRUE", "sa", "")
+            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/IRIS_GE.shp"), "IRIS_GE", true)
+            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/BATI_INDIFFERENCIE.shp"), "BATI_INDIFFERENCIE", true)
             h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/BATI_INDUSTRIEL.shp"), "BATI_INDUSTRIEL", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/BATI_REMARQUABLE.shp"),"BATI_REMARQUABLE", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/ROUTE.shp"),"ROUTE", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/SURFACE_EAU.shp"),"SURFACE_EAU", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/ZONE_VEGETATION.shp"),"ZONE_VEGETATION", true)
+            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/BATI_REMARQUABLE.shp"), "BATI_REMARQUABLE", true)
+            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/ROUTE.shp"), "ROUTE", true)
+            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/SURFACE_EAU.shp"), "SURFACE_EAU", true)
+            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/ZONE_VEGETATION.shp"), "ZONE_VEGETATION", true)
             h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/TRONCON_VOIE_FERREE.shp"), "TRONCON_VOIE_FERREE", true)
 
-            /*
             h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("BUILDING_ABSTRACT_PARAMETERS.csv"), "BUILDING_ABSTRACT_PARAMETERS", true)
             h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("BUILDING_ABSTRACT_USE_TYPE.csv"), "BUILDING_ABSTRACT_USE_TYPE", true)
             h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("BUILDING_BD_TOPO_USE_TYPE.csv"), "BUILDING_BD_TOPO_USE_TYPE", true)
@@ -44,16 +49,12 @@ class BDTopoGISLayersTest {
             h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("VEGET_ABSTRACT_PARAMETERS.csv"), "VEGET_ABSTRACT_PARAMETERS", true)
             h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("VEGET_ABSTRACT_TYPE.csv"), "VEGET_ABSTRACT_TYPE", true)
             h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("VEGET_BD_TOPO_TYPE.csv"), "VEGET_BD_TOPO_TYPE", true)
-            */
-        } else {
-            System.properties.setProperty("data.bd.topo", "false")
         }
     }
 
     @Test
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessTest() {
-        H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb", "sa", "")
         def process = PrepareData.BDTopoGISLayers.importPreprocess()
         assertTrue process.execute([datasource                : h2GISDatabase, tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName       : 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -72,7 +73,9 @@ class BDTopoGISLayersTest {
 
         // Check if the INPUT_BUILDING table has the correct number of columns and rows
         def tableName = process.getResults().outputBuildingName
+        assertNotNull(tableName)
         def table = h2GISDatabase.getTable(tableName)
+        assertNotNull(table)
         assertEquals(8, table.columnCount)
         assertEquals(20568, table.rowCount)
         // Check if the column types are correct
@@ -109,7 +112,9 @@ class BDTopoGISLayersTest {
 
         // Check if the INPUT_ROAD table has the correct number of columns and rows
         tableName = process.getResults().outputRoadName
+        assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
+        assertNotNull(table)
         assertEquals(7, table.columnCount)
         assertEquals(9769, table.rowCount)
         // Check if the column types are correct
@@ -145,7 +150,9 @@ class BDTopoGISLayersTest {
 
         // Check if the INPUT_RAIL table has the correct number of columns and rows
         tableName = process.getResults().outputRailName
+        assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
+        assertNotNull(table)
         assertEquals(4, table.columnCount)
         assertEquals(20, table.rowCount)
         // Check if the column types are correct
@@ -169,7 +176,9 @@ class BDTopoGISLayersTest {
 
         // Check if the INPUT_HYDRO table has the correct number of columns and rows
         tableName = process.getResults().outputHydroName
+        assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
+        assertNotNull(table)
         assertEquals(2, table.columnCount)
         assertEquals(385, table.rowCount)
         // Check if the column types are correct
@@ -185,7 +194,9 @@ class BDTopoGISLayersTest {
 
         // Check if the INPUT_VEGET table has the correct number of columns and rows
         tableName = process.getResults().outputVegetName
+        assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
+        assertNotNull(table)
         assertEquals(3, table.columnCount)
         assertEquals(7756, table.rowCount)
         // Check if the column types are correct
@@ -204,7 +215,9 @@ class BDTopoGISLayersTest {
 
         // Check if the ZONE table has the correct number of columns and rows
         tableName = process.getResults().outputZoneName
+        assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
+        assertNotNull(table)
         assertEquals(2, table.columnCount)
         assertEquals(1, table.rowCount)
         // Check if the column types are correct
@@ -221,7 +234,9 @@ class BDTopoGISLayersTest {
 
         // Check if the ZONE_NEIGHBORS table has the correct number of columns and rows
         tableName = process.getResults().outputZoneNeighborsName
+        assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
+        assertNotNull(table)
         assertEquals(2, table.columnCount)
         assertEquals(11, table.rowCount)
         // Check if the column types are correct
@@ -242,7 +257,6 @@ class BDTopoGISLayersTest {
     @Test
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void initTypes() {
-        H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb", "sa", "")
         def process = PrepareData.BDTopoGISLayers.initTypes()
         assertTrue process.execute([datasource       : h2GISDatabase, buildingAbstractUseType: 'BUILDING_ABSTRACT_USE_TYPE',
                                     roadAbstractType : 'ROAD_ABSTRACT_TYPE', railAbstractType: 'RAIL_ABSTRACT_TYPE',
@@ -253,7 +267,9 @@ class BDTopoGISLayersTest {
 
         // Check if the BUILDING_BD_TOPO_USE_TYPE table has the correct number of columns and rows
         def tableName = process.getResults().outputBuildingBDTopoUseType
+        assertNotNull(tableName)
         def table = h2GISDatabase.getTable(tableName)
+        assertNotNull(table)
         assertEquals(4, table.columnCount)
         assertEquals(23, table.rowCount)
         // Check if the column types are correct
@@ -274,7 +290,9 @@ class BDTopoGISLayersTest {
 
         // Check if the ROAD_BD_TOPO_TYPE table has the correct number of columns and rows
         tableName = process.getResults().outputroadBDTopoType
+        assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
+        assertNotNull(table)
         assertEquals(4, table.columnCount)
         assertEquals(12, table.rowCount)
         assertEquals('INTEGER', table.getColumnsType('ID_NATURE'))
@@ -294,7 +312,9 @@ class BDTopoGISLayersTest {
 
         // Check if the RAIL_BD_TOPO_TYPE table has the correct number of columns and rows
         tableName = process.getResults().outputrailBDTopoType
+        assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
+        assertNotNull(table)
         assertEquals(4, table.columnCount)
         assertEquals(8, table.rowCount)
         assertEquals('INTEGER', table.getColumnsType('ID_NATURE'))
@@ -314,7 +334,9 @@ class BDTopoGISLayersTest {
 
         // Check if the VEGET_BD_TOPO_TYPE table has the correct number of columns and rows
         tableName = process.getResults().outputvegetBDTopoType
+        assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
+        assertNotNull(table)
         assertEquals(4, table.columnCount)
         assertEquals(14, table.rowCount)
         assertEquals('INTEGER', table.getColumnsType('ID_NATURE'))

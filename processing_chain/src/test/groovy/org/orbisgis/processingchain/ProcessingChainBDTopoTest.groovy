@@ -32,10 +32,7 @@ class ProcessingChainBDTopoTest extends ChainProcessMainTest{
             h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/ROUTE.shp"), "ROUTE", true)
             h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/SURFACE_EAU.shp"), "SURFACE_EAU", true)
             h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/ZONE_VEGETATION.shp"), "ZONE_VEGETATION", true)
-            h2GISDatabase.load(ProcessingChain.class.getResource("TRONCON_VOIE_FERREE.csv"), "TRONCON_VOIE_FERREE0", true)
-            h2GISDatabase.execute "DROP TABLE IF EXISTS TRONCON_VOIE_FERREE; CREATE TABLE TRONCON_VOIE_FERREE AS SELECT PK," +
-                    "CAST(the_geom AS GEOMETRY) AS the_geom, ID, PREC_PLANI, NATURE, ELECTRIFIE, FRANCHISST, LARGEUR," +
-                    "NB_VOIES, POS_SOL, ETAT, Z_INI, Z_FIN FROM TRONCON_VOIE_FERREE0;"
+            h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/TRONCON_VOIE_FERREE.shp"), "TRONCON_VOIE_FERREE", true)
             h2GISDatabase.load(ProcessingChain.class.getResource("BUILDING_ABSTRACT_PARAMETERS.csv"), "BUILDING_ABSTRACT_PARAMETERS", true)
             h2GISDatabase.load(ProcessingChain.class.getResource("BUILDING_ABSTRACT_USE_TYPE.csv"), "BUILDING_ABSTRACT_USE_TYPE", true)
             h2GISDatabase.load(ProcessingChain.class.getResource("BUILDING_BD_TOPO_USE_TYPE.csv"), "BUILDING_BD_TOPO_USE_TYPE", true)
