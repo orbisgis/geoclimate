@@ -97,52 +97,6 @@ IProcess extractAndCreateGISLayers(){
 }
 
 /**
- * This method is used to build a new geometry and its envelope according an EPSG code and a distance
- * The geometry and the envelope are set up in an UTM coordinate system when the epsg code is unknown.
- *
- * @param geom the input geometry
- * @param epsg the input epsg code
- * @param distance a value to expand the envelope of the geometry
- * @param datasource a connexion to the database
- *
- * @return a map with the input geometry and the envelope of the input geometry. Both are projected in a new reference
- * system depending on the epsg code.
- * Note that the envelope of the geometry can be expanded according the input distance value.
- */
-def buildGeometryAndZone(Geometry geom, int epsg, int distance, def datasource) {
-    GeometryFactory gf = new GeometryFactory()
-    def con = datasource.getConnection();
-    Polygon filterArea = null
-    if(epsg==-1 || epsg==0){
-        def interiorPoint = geom.getCentroid()
-        epsg = SFSUtilities.getSRID(datasource.getConnection(), interiorPoint.y as float, interiorPoint.x as float)
-        geom = ST_Transform.ST_Transform(con, geom, epsg);
-        if(distance==0){
-            Geometry tmpEnvGeom = gf.toGeometry(geom.getEnvelopeInternal())
-            tmpEnvGeom.setSRID(epsg)
-            filterArea = ST_Transform.ST_Transform(con, tmpEnvGeom, 4326)
-        }
-        else {
-            def tmpEnvGeom = gf.toGeometry(geom.getEnvelopeInternal().expandBy(distance))
-            tmpEnvGeom.setSRID(epsg)
-            filterArea = ST_Transform.ST_Transform(con, tmpEnvGeom, 4326)
-        }
-    }
-    else {
-        geom = ST_Transform.ST_Transform(con, geom, epsg);
-        if(distance==0){
-            filterArea = gf.toGeometry(geom.getEnvelopeInternal())
-            filterArea.setSRID(epsg)
-        }
-        else {
-            filterArea = gf.toGeometry(geom.getEnvelopeInternal().expandBy(distance))
-            filterArea.setSRID(epsg)
-        }
-    }
-    return [geom :  geom, filterArea : filterArea]
-}
-
-/**
  * This process is used to create the GIS layers from an osm xml file
  * @param datasource A connexion to a DB to load the OSM file
  * @param placeName the name of the place to extract
