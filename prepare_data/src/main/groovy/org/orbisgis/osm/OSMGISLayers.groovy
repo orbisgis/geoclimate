@@ -42,7 +42,7 @@ IProcess extractAndCreateGISLayers(){
                 logger.error('The datasource cannot be null')
                 return null
             }
-            Geometry geom = OSMHelper.Utilities.getAreaFromPlace(placeName);
+            Geometry geom = OSMTools.Utilities.getAreaFromPlace(placeName);
 
             if (geom == null) {
                 logger.error("Cannot find an area from the place name ${placeName}")
@@ -58,7 +58,7 @@ IProcess extractAndCreateGISLayers(){
                 /**
                  * Extract the OSM file from the envelope of the geometry
                  */
-                def geomAndEnv = buildGeometryAndZone(geom, epsg, distance, datasource)
+                def geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, epsg, distance, datasource)
                 epsg = geomAndEnv.geom.getSRID()
 
                 datasource.execute """create table ${outputZoneTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
@@ -71,8 +71,8 @@ IProcess extractAndCreateGISLayers(){
                     ST_Transform.ST_Transform(datasource.getConnection(), geomAndEnv.filterArea, epsg).toString()
                 }',$epsg), '$placeName');"""
 
-                def query = OSMHelper.Utilities.buildOSMQuery(geomAndEnv.filterArea, [], NODE, WAY, RELATION)
-                def extract = OSMHelper.Loader.extract()
+                def query = OSMTools.Utilities.buildOSMQuery(geomAndEnv.filterArea, [], NODE, WAY, RELATION)
+                def extract = OSMTools.Loader.extract()
                 if (extract.execute(overpassQuery: query)) {
                     IProcess createGISLayerProcess = createGISLayers()
                     if (createGISLayerProcess.execute(datasource: datasource, osmFilePath: extract.results.outputFilePath, epsg: epsg)) {
@@ -97,52 +97,6 @@ IProcess extractAndCreateGISLayers(){
 }
 
 /**
- * This method is used to build a new geometry and its envelope according an EPSG code and a distance
- * The geometry and the envelope are set up in an UTM coordinate system when the epsg code is unknown.
- *
- * @param geom the input geometry
- * @param epsg the input epsg code
- * @param distance a value to expand the envelope of the geometry
- * @param datasource a connexion to the database
- *
- * @return a map with the input geometry and the envelope of the input geometry. Both are projected in a new reference
- * system depending on the epsg code.
- * Note that the envelope of the geometry can be expanded according the input distance value.
- */
-def buildGeometryAndZone(Geometry geom, int epsg, int distance, def datasource) {
-    GeometryFactory gf = new GeometryFactory()
-    def con = datasource.getConnection();
-    Polygon filterArea = null
-    if(epsg==-1 || epsg==0){
-        def interiorPoint = geom.getCentroid()
-        epsg = SFSUtilities.getSRID(datasource.getConnection(), interiorPoint.y as float, interiorPoint.x as float)
-        geom = ST_Transform.ST_Transform(con, geom, epsg);
-        if(distance==0){
-            Geometry tmpEnvGeom = gf.toGeometry(geom.getEnvelopeInternal())
-            tmpEnvGeom.setSRID(epsg)
-            filterArea = ST_Transform.ST_Transform(con, tmpEnvGeom, 4326)
-        }
-        else {
-            def tmpEnvGeom = gf.toGeometry(geom.getEnvelopeInternal().expandBy(distance))
-            tmpEnvGeom.setSRID(epsg)
-            filterArea = ST_Transform.ST_Transform(con, tmpEnvGeom, 4326)
-        }
-    }
-    else {
-        geom = ST_Transform.ST_Transform(con, geom, epsg);
-        if(distance==0){
-            filterArea = gf.toGeometry(geom.getEnvelopeInternal())
-            filterArea.setSRID(epsg)
-        }
-        else {
-            filterArea = gf.toGeometry(geom.getEnvelopeInternal().expandBy(distance))
-            filterArea.setSRID(epsg)
-        }
-    }
-    return [geom :  geom, filterArea : filterArea]
-}
-
-/**
  * This process is used to create the GIS layers from an osm xml file
  * @param datasource A connexion to a DB to load the OSM file
  * @param placeName the name of the place to extract
@@ -163,11 +117,11 @@ IProcess createGISLayers() {
                 return null
             }
             def prefix = "OSM_DATA_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-            def load = OSMHelper.Loader.load()
+            def load = OSMTools.Loader.load()
             logger.info "Loading"
             if (load(datasource: datasource, osmTablesPrefix: prefix, osmFilePath: osmFilePath)) {
                 //Create building layer
-                def transform = OSMHelper.Transform.toPolygons()
+                def transform = OSMTools.Transform.toPolygons()
                 logger.info "Create the building layer"
                 def tags = ['building']
                 def columnsToKeep = ['layer','height', 'building:height', 'roof:height', 'building:roof:height',
@@ -183,7 +137,7 @@ IProcess createGISLayers() {
                 logger.info "Building layer created"
 
                 //Create road layer
-                transform = OSMHelper.Transform.extractWaysAsLines()
+                transform = OSMTools.Transform.extractWaysAsLines()
                 logger.info "Create the road layer"
                 tags = ['highway', 'cycleway', 'biclycle_road', 'cyclestreet', 'route', 'junction']
                 columnsToKeep = ['width','highway', 'surface', 'sidewalk',
@@ -195,7 +149,7 @@ IProcess createGISLayers() {
                 logger.info "Road layer created"
 
                 //Create rail layer
-                transform = OSMHelper.Transform.extractWaysAsLines()
+                transform = OSMTools.Transform.extractWaysAsLines()
                 logger.info "Create the rail layer"
                 tags = ['railway']
                 columnsToKeep =['highspeed','railway','service',
@@ -211,7 +165,7 @@ IProcess createGISLayers() {
                                          'hedge':[],'wetland':[],'vineyard':[],
                                          'trees':[],'crop':[],'produce':[]]
 
-                transform = OSMHelper.Transform.toPolygons()
+                transform = OSMTools.Transform.toPolygons()
                 logger.info "Create the vegetation layer"
                 assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags)
                 def outputVegetationTableName = transform.results.outputTableName
@@ -219,7 +173,7 @@ IProcess createGISLayers() {
 
                 //Create water layer
                 tags = ['natural':['water','waterway','bay'],'water':[],'waterway':[]]
-                transform = OSMHelper.Transform.toPolygons()
+                transform = OSMTools.Transform.toPolygons()
                 logger.info "Create the water layer"
                 tags = ['natural', 'water', 'waterway']
                 assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags)
