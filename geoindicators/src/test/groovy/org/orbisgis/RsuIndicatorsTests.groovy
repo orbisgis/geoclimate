@@ -15,7 +15,7 @@ class RsuIndicatorsTests {
 
     @BeforeAll
     static void init(){
-        h2GIS = H2GIS.open('./target/buildingdb;AUTO_SERVER=TRUE')
+        h2GIS = H2GIS.open('./target/rsuindicatorsdb;AUTO_SERVER=TRUE')
     }
 
     @BeforeEach

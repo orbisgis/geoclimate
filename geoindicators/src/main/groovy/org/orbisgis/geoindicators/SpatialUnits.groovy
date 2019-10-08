@@ -44,7 +44,7 @@ IProcess createRSU(){
             }
             else{
             datasource.execute """DROP TABLE IF EXISTS $outputTableName;
-                    CREATE TABLE $outputTableName as  select  EXPLOD_ID as $COLUMN_ID_NAME, st_setsrid(the_geom, $epsg) as the_geom 
+                    CREATE TABLE $outputTableName as  select  EXPLOD_ID as $COLUMN_ID_NAME, st_setsrid(st_force2D(the_geom), $epsg) as the_geom 
                      from st_explode ('(select st_polygonize(st_union(
                     st_precisionreducer(st_node(st_accum(st_force2d(the_geom))), 3))) as the_geom from $inputTableName)')"""
             }

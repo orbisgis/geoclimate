@@ -1020,7 +1020,7 @@ IProcess vegetationFraction() {
             def interQuery = "DROP TABLE IF EXISTS $interTable; " +
                     "CREATE TABLE $interTable AS SELECT b.$idColumnRsu, a.$vegetClass, " +
                     "ST_AREA(b.$geometricColumnRsu) AS RSU_AREA, " +
-                    "ST_AREA(ST_INTERSECTION(a.$geometricColumnVeget, b.$geometricColumnRsu)) AS VEGET_AREA " +
+                    "ST_AREA(ST_INTERSECTION(st_force2D(a.$geometricColumnVeget), b.$geometricColumnRsu)) AS VEGET_AREA " +
                     "FROM $vegetTable a, $rsuTable b WHERE a.$geometricColumnVeget && b.$geometricColumnRsu AND " +
                     "ST_INTERSECTS(a.$geometricColumnVeget, b.$geometricColumnRsu);"
 
