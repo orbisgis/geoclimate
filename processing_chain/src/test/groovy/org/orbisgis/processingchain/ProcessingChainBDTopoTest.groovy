@@ -55,7 +55,7 @@ class ProcessingChainBDTopoTest extends ChainProcessMainTest{
     @Test
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void prepareBDTopoTest(){
-        H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb", "sa", "")
+        H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb;AUTO_SERVER=TRUE")
         def process = ProcessingChain.PrepareBDTopo.prepareBDTopo()
         assertTrue process.execute([datasource: h2GISDatabase, tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -75,7 +75,7 @@ class ProcessingChainBDTopoTest extends ChainProcessMainTest{
     @Test
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void CreateUnitsOfAnalysisTest(){
-        H2GIS h2GIS = H2GIS.open("./target/processingchainscales")
+        H2GIS h2GIS = H2GIS.open("./target/processingchainscales;AUTO_SERVER=TRUE")
         String sqlString = new File(getClass().getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
 
@@ -109,7 +109,7 @@ class ProcessingChainBDTopoTest extends ChainProcessMainTest{
     @Test
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void createLCZTest(){
-        H2GIS h2GIS = H2GIS.open("./target/processinglcz")
+        H2GIS h2GIS = H2GIS.open("./target/processinglcz;AUTO_SERVER=TRUE")
         String sqlString = new File(getClass().getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
 
@@ -159,7 +159,7 @@ class ProcessingChainBDTopoTest extends ChainProcessMainTest{
     @Test
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void bdtopoLczFromTestFiles() {
-        H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb", "sa", "")
+        H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb;AUTO_SERVER=TRUE")
         def process = ProcessingChain.PrepareBDTopo.prepareBDTopo()
         assertTrue process.execute([datasource: h2GISDatabase, tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -179,6 +179,37 @@ class ProcessingChainBDTopoTest extends ChainProcessMainTest{
 
         //Run tests
         calcLcz(directory, h2GISDatabase, abstractTables.outputZone, abstractTables.outputBuilding,abstractTables.outputRoad,
-                abstractTables.outputRoad, abstractTables.outputVeget, abstractTables.outputHydro,saveResults)
+                abstractTables.outputRail, abstractTables.outputVeget, abstractTables.outputHydro,saveResults)
+    }
+
+
+    @Test
+    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
+    void bdtopoGeoIndicatorsFromTestFiles() {
+        H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb;AUTO_SERVER=TRUE")
+        def process = ProcessingChain.PrepareBDTopo.prepareBDTopo()
+        assertTrue process.execute([datasource: h2GISDatabase, tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                    tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
+                                    tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
+                                    tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
+                                    distBuffer: 500, expand: 1000, idZone: '56260',
+                                    hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
+        ])
+        def abstractTables = process.getResults()
+
+        boolean saveResults = true
+        def prefixName = ""
+        def svfSimplified = false
+        String indicatorUse = ["TEB", "URBAN_TYPOLOGY", "LCZ"]
+        String directory ="./target/bdtopo_processchain_lcz"
+
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+
+        //Run tests
+        osmGeoIndicators(dirFile.absolutePath, h2GISDatabase, abstractTables.outputZone, abstractTables.outputBuilding,
+                abstractTables.outputRoad, abstractTables.outputRail, abstractTables.outputVeget,
+                abstractTables.outputHydro, saveResults, svfSimplified, indicatorUse,  prefixName)
     }
 }

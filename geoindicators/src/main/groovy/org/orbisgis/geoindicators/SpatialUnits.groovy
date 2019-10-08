@@ -78,9 +78,9 @@ IProcess prepareRSUData() {
     def final BASE_NAME = "prepared_rsu_data"
     return create({
         title "Prepare the abstract model to build the RSU"
-        inputs zoneTable: "", roadTable: "", railTable: "", vegetationTable: "",
-                hydrographicTable: "", surface_vegetation: 100000, surface_hydro: 2500,
-                prefixName: "unified_abstract_model", datasource: JdbcDataSource
+        inputs  zoneTable               : "",   roadTable           : "",                       railTable           : "",
+                vegetationTable         : "",   hydrographicTable   : "",                       surface_vegetation  : 100000,
+                surface_hydro           : 2500, prefixName          : "unified_abstract_model", datasource          : JdbcDataSource
         outputs outputTableName: String
         run { zoneTable, roadTable, railTable, vegetationTable, hydrographicTable, surface_vegetation,
               surface_hydrographic, prefixName, datasource ->

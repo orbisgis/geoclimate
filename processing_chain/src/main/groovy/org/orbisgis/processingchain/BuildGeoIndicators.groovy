@@ -36,7 +36,7 @@ def computeBuildingsIndicators() {
             // The name of the outputTableName is constructed
             def outputTableName = getOutputTableName(prefixName, BASE_NAME)
             def buildingPrefixName = "building_indicator_"
-            def buildTableJoinNeighbors
+            def buildTableJoinNeighbors = "A$uuid"
 
             // building_area + building_perimeter
             def geometryOperations = ["st_perimeter", "st_area"]
