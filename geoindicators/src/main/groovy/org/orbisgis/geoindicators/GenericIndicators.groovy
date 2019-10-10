@@ -256,20 +256,21 @@ IProcess perkinsSkillScoreBuildingDirection() {
     def final ID_FIELD_BU = "id_build"
 
     return create({
-        title "Block Perkins skill score building direction"
+        title "Perkins skill score building direction"
         inputs buildingTableName: String, inputIdUp: String, angleRangeSize: 15, prefixName: String,
                 datasource: JdbcDataSource
         outputs outputTableName: String
         run { buildingTableName, inputIdUp, angleRangeSize, prefixName, datasource ->
 
-            info "Executing Block Perkins skill score building direction"
+            info "Executing Perkins skill score building direction"
 
             // The name of the outputTableName is constructed
-            String baseName = inputIdUp[3..-1] + "_perkins_skill_score_building_direction"
+            String baseName = "perkins_skill_score_building_direction"
             def outputTableName = getOutputTableName(prefixName, baseName)
 
             // Test whether the angleRangeSize is a divisor of 180°
             if ((180 % angleRangeSize) == 0 && (180 / angleRangeSize) > 1) {
+                def med_angle = angleRangeSize / 2
                 // To avoid overwriting the output files of this step, a unique identifier is created
                 // Temporary table names
                 def build_min_rec = "build_min_rec$uuid"
@@ -307,18 +308,29 @@ IProcess perkinsSkillScoreBuildingDirection() {
                 String sqlQueryDist = "DROP TABLE IF EXISTS $build_dir_dist; CREATE TABLE $build_dir_dist AS SELECT "
                 String sqlQueryTot = "DROP TABLE IF EXISTS $build_dir_tot; CREATE TABLE $build_dir_tot AS SELECT *, "
                 String sqlQueryPerkins = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT $inputIdUp, "
+                String sqlQueryGreatest = "GREATEST("
+                String sqlQueryMain = ""
+                String sqlQueryParenthesis = ""
 
-                for (int i = angleRangeSize; i < 180; i += angleRangeSize) {
+                // Gather all columns for recovering the main direction
+                for (int i = angleRangeSize; i <= 180; i += angleRangeSize) {
+                    sqlQueryGreatest += "ANG$i,"
+                    sqlQueryParenthesis += ")"
+                }
+                sqlQueryGreatest = sqlQueryGreatest[0..-2] + ")"
+                for (int i = angleRangeSize; i <= 180; i += angleRangeSize) {
                     sqlQueryDist += "SUM(CASEWHEN(ANG_L>=${i - angleRangeSize} AND ANG_L<$i, LEN_L, " +
                             "CASEWHEN(ANG_H>=${i - angleRangeSize} AND ANG_H<$i, LEN_H, 0))) AS ANG$i, "
                     sqlQueryTot += "ANG$i + "
                     sqlQueryPerkins += "LEAST(1./(${180 / angleRangeSize}), ANG$i::float/ANG_TOT) + "
+                    sqlQueryMain += "CASEWHEN($sqlQueryGreatest = ANG$i, ${i-med_angle}, "
                 }
+                sqlQueryMain += "null" + sqlQueryParenthesis
 
                 sqlQueryDist += "$inputIdUp FROM $build_dir180 GROUP BY $inputIdUp;"
                 sqlQueryTot = sqlQueryTot[0..-3] + "AS ANG_TOT FROM $build_dir_dist;"
-                sqlQueryPerkins = sqlQueryPerkins[0..-3] + "AS block_perkins_skill_score_building_direction" +
-                        " FROM $build_dir_tot;"
+                sqlQueryPerkins = sqlQueryPerkins[0..-3] + "AS perkins_skill_score_building_direction," +
+                        " $sqlQueryMain AS main_building_direction FROM $build_dir_tot;"
 
                 datasource.execute sqlQueryDist
                 datasource.execute sqlQueryTot
