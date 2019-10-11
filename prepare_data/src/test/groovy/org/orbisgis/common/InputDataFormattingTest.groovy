@@ -221,6 +221,55 @@ class InputDataFormattingTest {
         assertEquals('building', h2GISDatabase.firstRow("SELECT TYPE FROM BUILDING " +
                 "WHERE ID_SOURCE='BATIMENT0000000290120079';")["TYPE"])
 
+        // Check if building are well selected or not ...
+        // ... with the building (INDIF) 'BATIMENT0000000290126798' which is inside the zone --> so expected 1
+        assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM BUILDING " +
+                "WHERE ID_SOURCE='BATIMENT0000000290126798';")["TOTAL"])
+        // ... with the building (INDIF) 'BATIMENT0000000257286964' which is inside the buffer zone --> so expected 1
+        assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM BUILDING " +
+                "WHERE ID_SOURCE='BATIMENT0000000257286964';")["TOTAL"])
+        // ... with the building (INDIF) 'BATIMENT0000000292067581' which is outside the buffer zone --> so expected 0
+        assertEquals(0, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM BUILDING " +
+                "WHERE ID_SOURCE='BATIMENT0000000292067581';")["TOTAL"])
+        // ... with the building (INDUS) 'BATIMENT0000000290110613' which is inside the zone --> so expected 1
+        assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM BUILDING " +
+                "WHERE ID_SOURCE='BATIMENT0000000290110613';")["TOTAL"])
+        // ... with the building (INDUS) 'BATIMENT0000000292063421' which is inside the buffer zone --> so expected 1
+        assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM BUILDING " +
+                "WHERE ID_SOURCE='BATIMENT0000000292059690';")["TOTAL"])
+        // ... with the building (INDUS) 'BATIMENT0000000292059690' which is outside the buffer zone --> so expected 0
+        assertEquals(0, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM BUILDING " +
+                "WHERE ID_SOURCE='BATIMENT0000000257295295';")["TOTAL"])
+        // ... with the building (REMARQ) 'BATIMENT0000000290127091' which is inside the zone --> so expected 1
+        assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM BUILDING " +
+                "WHERE ID_SOURCE='BATIMENT0000000290127091';")["TOTAL"])
+        // ... with the building (REMARQ) 'BATIMENT0000000292060079' which is inside the buffer zone --> so expected 1
+        assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM BUILDING " +
+                "WHERE ID_SOURCE='BATIMENT0000000292060079';")["TOTAL"])
+        // ... with the building (REMARQ) 'BATIMENT0000000292060350' which is outside the buffer zone --> so expected 0
+        assertEquals(0, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM BUILDING " +
+                "WHERE ID_SOURCE='BATIMENT0000000292060350';")["TOTAL"])
+
+        // Check if building are associated to the appropriate city (ZONE_ID) ...
+        // ... with the building (INDIF) 'BATIMENT0000000290126764' which in Vannes (56260)
+        assertEquals('56260', h2GISDatabase.firstRow("SELECT ID_ZONE FROM BUILDING " +
+                "WHERE ID_SOURCE='BATIMENT0000000290126764';")["ID_ZONE"])
+        // ... with the building (INDIF) 'BATIMENT0000000292059008' which in Saint-Avé (56206)
+        assertEquals('56206', h2GISDatabase.firstRow("SELECT ID_ZONE FROM BUILDING " +
+                "WHERE ID_SOURCE='BATIMENT0000000292059008';")["ID_ZONE"])
+        // ... with the building (INDIF) 'BATIMENT0000000291363628' which in Arradon (56003)
+        assertEquals('56003', h2GISDatabase.firstRow("SELECT ID_ZONE FROM BUILDING " +
+                "WHERE ID_SOURCE='BATIMENT0000000291363628';")["ID_ZONE"])
+
+        // Verifies that a building that straddles two communes is assigned to the right area
+        // ... with the building (INDIF) 'BATIMENT0000000290543985' which main part is in Séné (56243)
+        assertEquals('56243', h2GISDatabase.firstRow("SELECT ID_ZONE FROM BUILDING " +
+                "WHERE ID_SOURCE='BATIMENT0000000290543985';")["ID_ZONE"])
+        // ... with the building (INDIF) 'BATIMENT0000000087495765' which main part is in Vannes (56260)
+        assertEquals('56260', h2GISDatabase.firstRow("SELECT ID_ZONE FROM BUILDING " +
+                "WHERE ID_SOURCE='BATIMENT0000000087495765';")["ID_ZONE"])
+
+
         // ------------------
         // Check if the BUILDING_STATS_ZONE table has the correct number of columns and rows
         tableName = processFormatting.getResults().outputBuildingStatZone
@@ -430,6 +479,17 @@ class InputDataFormattingTest {
         assertEquals('cycleway', h2GISDatabase.firstRow("SELECT TYPE FROM ROAD " +
                 "WHERE ID_SOURCE='TRONROUT0000000296508508';")["TYPE"])
 
+        // Check if roads are well selected or not ...
+        // ... with the road 'TRONROUT0000000087738203' which is inside the zone --> so expected 1
+        assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM ROAD " +
+                "WHERE ID_SOURCE='TRONROUT0000000087738203';")["TOTAL"])
+        // ... with the road 'TRONROUT0000000114038426' which is inside the buffer zone --> so expected 1
+        assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM ROAD " +
+                "WHERE ID_SOURCE='TRONROUT0000000114038426';")["TOTAL"])
+        // ... with the road 'TRONROUT0000000087732938' which is outside the buffer zone --> so expected 0
+        assertEquals(0, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM ROAD " +
+                "WHERE ID_SOURCE='TRONROUT0000000087732938';")["TOTAL"])
+
 
         // ------------------
         // Check if the ROAD_STATS_ZONE table has the correct number of columns and rows
@@ -578,6 +638,18 @@ class InputDataFormattingTest {
         assertEquals('rail', h2GISDatabase.firstRow("SELECT TYPE FROM RAIL " +
                 "WHERE ID_SOURCE='TRONFERR0000000087164787';")["TYPE"])
 
+        // Check if rails are well selected or not ...
+        // ... with the rail 'TRONFERR0000000087164787' which is inside the zone --> so expected 1
+        assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM RAIL " +
+                "WHERE ID_SOURCE='TRONFERR0000000087164787';")["TOTAL"])
+        // ... with the rail 'TRONFERR0000000087164791' which is intersecting the zone --> so expected 1
+        assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM RAIL " +
+                "WHERE ID_SOURCE='TRONFERR0000000087164791';")["TOTAL"])
+        // ... with the rail 'TRONFERR0000000087164796' which is not intersecting the zone --> so expected 0
+        assertEquals(0, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM RAIL " +
+                "WHERE ID_SOURCE='TRONFERR0000000087164796';")["TOTAL"])
+
+
         // ------------------
         // Check if the RAIL_STATS_ZONE table has the correct number of columns and rows
         tableName = processFormatting.getResults().outputRailStatZone
@@ -640,6 +712,20 @@ class InputDataFormattingTest {
             assertNotNull(row.ID_SOURCE)
             assertNotEquals('', row.ID_SOURCE)
         }
+
+        // Specific cases
+        // -------------------------------
+        // Check if hydrographic area are well selected or not ...
+        // ... with the hydro area 'SURF_EAU0000000087197615' which is inside the zone --> so expected 1
+        assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM HYDRO " +
+                "WHERE ID_SOURCE='SURF_EAU0000000087197615';")["TOTAL"])
+        // ... with the hydro area 'EAU0000000313881261' which is inside the extended zone --> so expected 1
+        assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM HYDRO " +
+                "WHERE ID_SOURCE='SURF_EAU0000000313881261';")["TOTAL"])
+        // ... with the hydro area 'SURF_EAU0000000301051080' which is outside the extended zone --> so expected 0
+        assertEquals(0, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM HYDRO " +
+                "WHERE ID_SOURCE='SURF_EAU0000000301051080';")["TOTAL"])
+
 
         // ------------------
         // Check if the HYDRO_STATS_ZONE table has the correct number of columns and rows
@@ -761,6 +847,20 @@ class InputDataFormattingTest {
                 "WHERE ID_SOURCE='ZONEVEGE0000000222262077';")["TYPE"])
         assertEquals('high', h2GISDatabase.firstRow("SELECT HEIGHT_CLASS FROM VEGET " +
                 "WHERE ID_SOURCE='ZONEVEGE0000000222262077';")["HEIGHT_CLASS"])
+
+        // Check if vegetation area are well selected or not ...
+        // ... with the veget area 'ZONEVEGE0000000222259852' which is inside the zone --> so expected 1
+        assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM VEGET " +
+                "WHERE ID_SOURCE='ZONEVEGE0000000222259852';")["TOTAL"])
+        // ... with the veget area 'ZONEVEGE0000000222246505' which is inside the extended zone --> so expected 1
+        assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM VEGET " +
+                "WHERE ID_SOURCE='ZONEVEGE0000000222246505';")["TOTAL"])
+        // ... with the veget area 'ZONEVEGE0000000222257768' which is intersecting the extended zone (having a part outside) --> so expected 1
+        assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM VEGET " +
+                "WHERE ID_SOURCE='ZONEVEGE0000000222257768';")["TOTAL"])
+        // ... with the veget area 'ZONEVEGE0000000222248816' which is outside the extended zone --> so expected 0
+        assertEquals(0, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM VEGET " +
+                "WHERE ID_SOURCE='ZONEVEGE0000000222248816';")["TOTAL"])
 
 
         // ------------------
