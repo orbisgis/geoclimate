@@ -27,10 +27,29 @@ The simple way to use the Geoclimate chain is to run it in a Groovy console, usi
 Put the following script and run it to extract OSM data from a place name and transform it to a set of GIS Layers.
 
 ```groovy
-@GrabResolver(name='orbisgis', root='http://nexus-ng.orbisgis.org/')
-@Grab(group='org.orbisgis', module='geoclimate', version='1.0-SNAPSHOT')
+// Declaration of the maven repository
+@GrabResolver(name='orbisgis', root='http://nexus-ng.orbisgis.org/repository/orbisgis/')
+@Grab(group='org.orbisgis', module='prepare_data', version='1.0-SNAPSHOT')
 
+import org.orbisgis.datamanager.h2gis.H2GIS
+import org.orbisgis.PrepareData
+import org.orbisgis.processmanagerapi.IProcess
 
+//Create a local H2GIS database
+def h2GIS = H2GIS.open('/tmp/osmdb;AUTO_SERVER=TRUE')
+
+//Run the process to extract OSM data from a place name and transform it to a set of GIS layers needed by Geoclimate
+IProcess process = PrepareData.OSMGISLayers.extractAndCreateGISLayers()
+         process.execute([
+                datasource : h2GIS,
+                placeName: "Vannes"])
+ 
+ //Save the GIS layers in a shapeFile        
+ process.getResults().each {it ->
+        if(it.value!=null && !it.isInteger()){
+                h2GIS.getTable(it.value).save("/tmp/${it.value}.shp")
+            }
+        }
 
 ```
 
