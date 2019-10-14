@@ -22,7 +22,18 @@ To use the current snapshot add in the pom
 
 # How to use
 
-The simple way to use the Geoclimate chain is to run it in a Groovy console. 
+The simple way to use the Geoclimate chain is to run it in a Groovy console, using Grab annotation (http://groovy-lang.org/groovyconsole.html).
+
+Put the following script and run it to extract OSM data from a place name and transform it to a set of GIS Layers.
+
+```groovy
+@GrabResolver(name='orbisgis', root='http://nexus-ng.orbisgis.org/')
+@Grab(group='org.orbisgis', module='geoclimate', version='1.0-SNAPSHOT')
+
+
+
+```
+
 
 
 
