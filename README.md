@@ -46,7 +46,7 @@ IProcess process = PrepareData.OSMGISLayers.extractAndCreateGISLayers()
  
  //Save the GIS layers in a shapeFile        
  process.getResults().each {it ->
-        if(it.value!=null && !it.isInteger()){
+        if(it.value!=null && !it.value.isInteger()){
                 h2GIS.getTable(it.value).save("/tmp/${it.value}.shp")
             }
         }
