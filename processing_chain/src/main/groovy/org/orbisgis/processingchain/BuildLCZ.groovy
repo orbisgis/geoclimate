@@ -39,7 +39,6 @@ import org.orbisgis.datamanager.JdbcDataSource
  * @return outputTableName Table name where are stored the resulting RSU
  */
 def createLCZ() {
-    def final BASE_NAME = "lcz_type"
     def final LCZ_INDIC_TABLE = "lcz_indic_table"
     return create({
         title "Create the LCZ"
@@ -63,7 +62,6 @@ def createLCZ() {
             info "Create the LCZ..."
 
             // The name of the outputTableName is constructed
-            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
             def lczIndicTable = getOutputTableName(prefixName, LCZ_INDIC_TABLE)
 
             def COLUMN_ID_RSU = "id_rsu"
@@ -130,10 +128,6 @@ def createLCZ() {
                     info "Cannot compute the LCZ classification."
                     return
                 }
-
-            // Rename the last table to the right output table name
-            datasource.execute "DROP TABLE IF EXISTS $outputTableName;" +
-                    "ALTER TABLE ${classifyLCZ.results.outputTableName} RENAME TO $outputTableName"
 
             [outputTableName: classifyLCZ.results.outputTableName]
         }

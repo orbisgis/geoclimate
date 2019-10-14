@@ -59,11 +59,8 @@ class RsuIndicatorsTests {
         assertTrue p.execute([rsuTable: "rsu_test",correlationBuildingTable: "corr_tempo", pointDensity: 0.008,
                               rayLength: 100, numberOfDirection: 60, prefixName: "test",
                    datasource: h2GIS])
-        def concat = 0
-        h2GIS.eachRow("SELECT * FROM test_rsu_ground_sky_view_factor WHERE id_rsu = 8"){
-            row -> concat+= row.rsu_ground_sky_view_factor
-        }
-        assertEquals(0.54, concat, 0.05)
+        assertEquals(0.54, h2GIS.firstRow("SELECT * FROM test_rsu_ground_sky_view_factor WHERE id_rsu = 8")["rsu_ground_sky_view_factor"], 0.05)
+        assertEquals(1, h2GIS.firstRow("SELECT * FROM test_rsu_ground_sky_view_factor WHERE id_rsu = 1")["rsu_ground_sky_view_factor"])
     }
 
     @Test

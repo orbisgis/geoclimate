@@ -184,7 +184,7 @@ IProcess groundSkyViewFactor() {
             // The result of the SVF calculation is averaged at RSU scale
             datasource.execute """
                     CREATE TABLE $outputTableName(id_rsu integer, rsu_ground_sky_view_factor double) 
-                    AS          (SELECT a.$ID_COLUMN_RSU, CASE WHEN AVG(b.SVF) is not null THEN AVG(b.SVF) ELSE 0 END
+                    AS          (SELECT a.$ID_COLUMN_RSU, CASE WHEN AVG(b.SVF) is not null THEN AVG(b.SVF) ELSE 1 END
                     FROM        $rsuTable a 
                     LEFT JOIN   $svfPts b 
                     ON          a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU

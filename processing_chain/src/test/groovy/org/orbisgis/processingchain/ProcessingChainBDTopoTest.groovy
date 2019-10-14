@@ -177,9 +177,16 @@ class ProcessingChainBDTopoTest extends ChainProcessMainTest{
         dirFile.delete()
         dirFile.mkdir()
 
+        def prefixName = ""
+        def svfSimplified = false
+        // Define the weights of each indicator in the LCZ creation
+        def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                       "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                       "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
         //Run tests
         calcLcz(directory, h2GISDatabase, abstractTables.outputZone, abstractTables.outputBuilding,abstractTables.outputRoad,
-                abstractTables.outputRail, abstractTables.outputVeget, abstractTables.outputHydro,saveResults)
+                abstractTables.outputRail, abstractTables.outputVeget, abstractTables.outputHydro,saveResults,
+                svfSimplified, prefixName, mapOfWeights)
     }
 
 

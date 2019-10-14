@@ -148,11 +148,12 @@ class GenericIndicatorsTests {
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 9"
 
         def  p =  Geoindicators.GenericIndicators.perkinsSkillScoreBuildingDirection()
-        assertTrue p.execute([buildingTableName: "tempo_build", inputIdUp: "id_block", angleRangeSize: 15, prefixName: "test", datasource: h2GIS])
-        def concat = 0
-        h2GIS.eachRow("SELECT * FROM test_block_perkins_skill_score_building_direction WHERE id_block = 4"){
-            row -> concat+= row.block_perkins_skill_score_building_direction
-        }
-        assertEquals(4.0/12, concat, 0.0001)
+        assertTrue p.execute([buildingTableName: "tempo_build", inputIdUp: "id_block", angleRangeSize: 15,
+                              prefixName: "test", datasource: h2GIS])
+
+        assertEquals(4.0/12, h2GIS.firstRow("SELECT * FROM test_perkins_skill_score_building_direction " +
+                "WHERE id_block = 4")["perkins_skill_score_building_direction"], 0.0001)
+        assertEquals(97.5, h2GIS.firstRow("SELECT * FROM test_perkins_skill_score_building_direction " +
+                "WHERE id_block = 4")["main_building_direction"])
     }
 }

@@ -141,7 +141,10 @@ class ChainProcessMainTest {
      */
     void calcLcz(String directory, JdbcDataSource datasource, String zoneTableName, String buildingTableName,
                  String roadTableName, String railTableName, String vegetationTableName,
-                 String hydrographicTableName, boolean saveResults, boolean svfSimplified = false, String prefixName = "" ) {
+                 String hydrographicTableName, boolean saveResults, boolean svfSimplified = false, String prefixName = "",
+                 def mapOfWeights = ["sky_view_factor": 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                 "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                 "height_of_roughness_elements": 1, "terrain_roughness_class": 1]) {
 
 
         //Create spatial units and relations : building, block, rsu
@@ -169,7 +172,7 @@ class ChainProcessMainTest {
                             svfPointDensity: 0.008, svfRayLength: 100, svfNumberOfDirection: 60,
                             heightColumnName: "height_roof", fractionTypePervious: ["low_vegetation", "water"],
                             fractionTypeImpervious: ["road"], inputFields: ["id_build"], levelForRoads: [0],
-                            svfSimplified : svfSimplified])){
+                            svfSimplified : svfSimplified, mapOfWeights : mapOfWeights])){
             logger.info("Cannot create the LCZ.")
             return
         }
