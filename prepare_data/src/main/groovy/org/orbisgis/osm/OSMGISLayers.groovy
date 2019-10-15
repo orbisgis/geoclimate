@@ -8,11 +8,12 @@ import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.PrepareData
+import org.orbisgis.osm.utils.OSMElement
 import org.orbisgis.processmanagerapi.IProcess
 
-import static org.orbisgis.osm.OSMElement.NODE
-import static org.orbisgis.osm.OSMElement.RELATION
-import static org.orbisgis.osm.OSMElement.WAY
+import static org.orbisgis.osm.utils.OSMElement.NODE
+import static org.orbisgis.osm.utils.OSMElement.RELATION
+import static org.orbisgis.osm.utils.OSMElement.WAY
 
 @BaseScript PrepareData prepareData
 
@@ -46,14 +47,7 @@ IProcess extractAndCreateGISLayers(){
 
             if (geom == null) {
                 logger.error("Cannot find an area from the place name ${placeName}")
-                [buildingTableName    : null,
-                 roadTableName        : null,
-                 railTableName        : null,
-                 vegetationTableName  : null,
-                 hydroTableName       : null,
-                 zoneTableName        : null,
-                 zoneEnvelopeTableName: null,
-                 epsg: epsg]
+                return null
             } else {
                 /**
                  * Extract the OSM file from the envelope of the geometry
@@ -120,6 +114,11 @@ IProcess createGISLayers() {
             def load = OSMTools.Loader.load()
             logger.info "Loading"
             if (load(datasource: datasource, osmTablesPrefix: prefix, osmFilePath: osmFilePath)) {
+                def outputBuildingTableName =null
+                def outputRoadTableName =null
+                def outputRailTableName =null
+                def outputVegetationTableName =null
+                def outputhydroTableName =null
                 //Create building layer
                 def transform = OSMTools.Transform.toPolygons()
                 logger.info "Create the building layer"
@@ -132,9 +131,11 @@ IProcess createGISLayers() {
                                      'house', 'industrial', 'man_made', 'residential',
                                      'apartments', 'ruins', 'agricultural', 'barn', 'healthcare',
                                      'education', 'restaurant', 'sustenance', 'office']
-                assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep:columnsToKeep)
-                def outputBuildingTableName = transform.results.outputTableName
-                logger.info "Building layer created"
+
+                if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep:columnsToKeep)){
+                    outputBuildingTableName = transform.results.outputTableName
+                    logger.info "Building layer created"
+                 }
 
                 //Create road layer
                 transform = OSMTools.Transform.extractWaysAsLines()
@@ -144,9 +145,10 @@ IProcess createGISLayers() {
                                  'lane','layer','maxspeed','oneway',
                                  'h_ref','route','cycleway',
                                  'biclycle_road','cyclestreet','junction']
-                assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)
-                def outputRoadTableName = transform.results.outputTableName
+                if(transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)){
+                 outputRoadTableName = transform.results.outputTableName
                 logger.info "Road layer created"
+                    }
 
                 //Create rail layer
                 transform = OSMTools.Transform.extractWaysAsLines()
@@ -154,9 +156,10 @@ IProcess createGISLayers() {
                 tags = ['railway']
                 columnsToKeep =['highspeed','railway','service',
                                 'tunnel','layer','bridge']
-                assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)
-                def outputRailTableName = transform.results.outputTableName
-                logger.info "Rail layer created"
+                if(transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)){
+                    outputRailTableName = transform.results.outputTableName
+                    logger.info "Rail layer created"
+                }
                 //Create vegetation layer
                 tags = ['natural':['tree', 'wetland', 'grassland', 'tree_row', 'scrub', 'heath', 'sand', 'land', 'mud'],
                        'landuse':['farmland', 'forest', 'grass', 'meadow', 'orchard', 'vineyard', 'village_green'],
@@ -167,18 +170,22 @@ IProcess createGISLayers() {
 
                 transform = OSMTools.Transform.toPolygons()
                 logger.info "Create the vegetation layer"
-                assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags)
-                def outputVegetationTableName = transform.results.outputTableName
-                logger.info "Vegetation layer created"
+                if(transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags)){
+                    outputVegetationTableName = transform.results.outputTableName
+                    logger.info "Vegetation layer created"
+                }
 
                 //Create water layer
                 tags = ['natural':['water','waterway','bay'],'water':[],'waterway':[]]
                 transform = OSMTools.Transform.toPolygons()
                 logger.info "Create the water layer"
                 tags = ['natural', 'water', 'waterway']
-                assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags)
-                def outputhydroTableName = transform.results.outputTableName
-                logger.info "Water layer created"
+                if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags)){
+                    outputhydroTableName = transform.results.outputTableName
+                    logger.info "Water layer created"
+                }
+                //Drop the OSM tables
+                OSMTools.Utilities.dropOSMTables(prefix, datasource)
 
                 [buildingTableName  : outputBuildingTableName, roadTableName: outputRoadTableName, railTableName: outputRailTableName,
                  vegetationTableName: outputVegetationTableName, hydroTableName: outputhydroTableName, epsg: epsg]
