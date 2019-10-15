@@ -114,7 +114,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osm_chain_db;AUTO_SERVER=TRUE")
 
         //Extract and transform OSM data
-        def placeName = "Rennes"
+        def placeName = "Strasbourg"
 
         IProcess prepareOSMData = ProcessingChain.PrepareOSM.buildGeoclimateLayers()
 
@@ -188,6 +188,37 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
         //Run tests
         calcLcz(directory, datasource, zoneTableName, buildingTableName,roadTableName,null,vegetationTableName,
                 hydrographicTableName,saveResults, false, "")
+    }
+
+
+    @Test
+    void testOSMGeoclimateChain() {
+        String directory ="./target/geoclimate_chain"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
+        IProcess process = ProcessingChain.GeoclimateChain.OSMGeoIndicators()
+        if(process.execute(datasource: datasource, placeName: "Cliscouet,Vannes")){
+            IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
+            saveTables.execute( [inputTableNames: process.getResults().values()
+                                 , directory: directory, datasource: datasource])
+        }
+    }
+
+    @Test
+    void testOSMLCZ() {
+        String directory ="./target/geoclimate_chain"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
+        IProcess process = ProcessingChain.GeoclimateChain.OSMLCZ()
+        if(process.execute(datasource: datasource, placeName: "Cliscouet,Vannes")){
+            IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
+            saveTables.execute( [inputTableNames: process.getResults().values()
+                                 , directory: directory, datasource: datasource])
+        }
     }
 
 
