@@ -77,7 +77,23 @@ import org.orbisgis.processingchain.ProcessingChain
         }
 ```
 
-# Use Geoclimate in dbeaver
+# Use Geoclimate in DBeaver
+
+DBeaver is an opensource multi-platform database tool to query, explore, manage data (https://dbeaver.io/). Since the  6.2.2 version, DBeaver support the H2GIS-H2 database. User is able to create an H2GIS database, query and display spatial objects from a friendly interface (see https://twitter.com/H2GIS/status/1181566934548176897).
+
+To use Geoclimate scripts in DBeaver, user must install the Groovy Editor developed by the OrbisGIS team.  
+
+In DBeaver, go to 
+
+    1. Main menu Help -> Install New Software
+    2. Paste extension P2 repository URL http://devs.orbisgis.org/eclipse-repo into Work with field,
+    press Enter
+    3. Select Groovy Editor item
+    4. Click Next->Finish. Restart DBeaver.
+
+Once DBeaver has restarted, select the main menu Groovy Editor, clic on Open editor, then you will have a Groovy Console.
+Copy-paste the previous script to use Geoclimate.
+
 
 
 ### Notes
