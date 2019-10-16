@@ -55,6 +55,15 @@ IProcess process = PrepareData.OSMGISLayers.extractAndCreateGISLayers()
 The next script computes all geoindicators needed by the TEB model (http://www.umr-cnrm.fr/spip.php?article199). To run it the user must set a place name and a connexion to a spatial database (H2GIS or PostGIS). As described above, the script extract the OSM data and transform it to a set of GIS layers requiered by the Geoclimate chain. Then a set of algorithms are excecuted to compute, the 3 geounits (building, block and RSU). For each geounits geographical parameters like density, form, compacity, distance, sky view factor are computed.
 
 ```groovy
+@GrabResolver(name='orbisgis', root='http://nexus-ng.orbisgis.org/repository/orbisgis/')
+@Grab(group='org.orbisgis', module='processing_chain', version='1.0-SNAPSHOT')
+
+
+import org.orbisgis.datamanager.h2gis.H2GIS
+import org.orbisgis.processmanagerapi.IProcess
+import org.orbisgis.processingchain.ProcessingChain
+
+
         String directory =".../geoclimate_chain"
         File dirFile = new File(directory)
         dirFile.delete()
