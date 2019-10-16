@@ -64,7 +64,7 @@ import org.orbisgis.processmanagerapi.IProcess
 import org.orbisgis.processingchain.ProcessingChain
 
 
-        String directory =".../geoclimate_chain"
+        String directory ="/tmp/geoclimate_chain"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
