@@ -208,7 +208,7 @@ def buildLCZ() {
                 roadTable: String, railTable: String, vegetationTable: String,
                 hydrographicTable: String, surface_vegetation: 100000, surface_hydro: 2500,
                 distance: 0.01, svfSimplified:false, prefixName: "lcz",
-                mapOfWeights : ["sky_view_factor": 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                mapOfWeights : ["sky_view_factor": 1, "aspect_ratio": 1, "building_surface_fraction": 4,
                 "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                  "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
         outputs outputTableLCZ: String
