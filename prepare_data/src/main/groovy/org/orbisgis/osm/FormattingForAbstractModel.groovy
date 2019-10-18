@@ -83,10 +83,14 @@ IProcess formatBuildingLayer() {
 
                         def zIndex = getZIndex(row.'layer')
 
-                        stmt.addBatch """insert into ${outputTableName} values(ST_MAKEVALID(ST_GEOMFROMTEXT('${row.the_geom}',$epsg)),
-                    null, '${row.id}',${formatedHeight.heightWall},${formatedHeight.heightRoof},${formatedHeight.nbLevels},'${
-                            type
-                        }','${use}',${zIndex})""".toString()
+                        if(formatedHeight>0 && zIndex>0) {
+                            stmt.addBatch """insert into ${outputTableName} values(ST_MAKEVALID(ST_GEOMFROMTEXT('${
+                                row.the_geom}',$epsg)), null, '${row.id}',${formatedHeight.heightWall},${formatedHeight.heightRoof},${
+                                formatedHeight.nbLevels
+                            },'${
+                                type
+                            }','${use}',${zIndex})""".toString()
+                        }
                     }
                 }
             }
@@ -475,11 +479,6 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
     if(tmpHmax<heightWall){
         nbLevels= heightWall/h_lev_max
     }
-    }
-    if(nbLevels<0 || heightWall<0 || heightRoof<0){
-        nbLevels=0
-        heightWall=0
-        heightRoof=0
     }
     return [heightWall:heightWall, heightRoof:heightRoof, nbLevels:nbLevels]
 

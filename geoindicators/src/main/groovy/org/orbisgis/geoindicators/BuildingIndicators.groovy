@@ -139,8 +139,8 @@ def neighborsProperties() {
             operations.each { operation ->
                 switch (operation) {
                     case OP_CONTIGUITY:
-                        query += """sum(CASE WHEN NB_LEVEL >0 THEN least(a_height_wall, b_height_wall)* 
-                                st_length(the_geom)/(perimeter* a_height_wall) ELSE 0 END) AS $operation,"""
+                        query += """sum(least(a_height_wall, b_height_wall)* 
+                                st_length(the_geom)/(perimeter* a_height_wall)) AS $operation,"""
                         break
                     case OP_COMMON_WALL_FRACTION:
                         query += """SUM(st_length(the_geom)/perimeter)
@@ -158,7 +158,7 @@ def neighborsProperties() {
             query += """$ID_FIELD FROM (SELECT ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_FIELD),
                         ST_MAKEVALID(b.$GEOMETRIC_FIELD)) AS the_geom,
                         a.$ID_FIELD, ST_PERIMETER(a.$GEOMETRIC_FIELD) + ST_PERIMETER(ST_HOLES(a.$GEOMETRIC_FIELD)) AS perimeter, 
-                        a.$HEIGHT_WALL AS  a_height_wall,  b.$HEIGHT_WALL AS b_height_wall, a.NB_LEV AS nb_level FROM
+                        a.$HEIGHT_WALL AS  a_height_wall,  b.$HEIGHT_WALL AS b_height_wall FROM
                     $inputBuildingTableName a, $inputBuildingTableName b 
                      WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD AND 
                     ST_INTERSECTS(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD) AND a.$ID_FIELD <> b.$ID_FIELD)
@@ -241,11 +241,11 @@ def formProperties() {
                         query += "ST_AREA($GEOMETRIC_FIELD)/POWER(ST_PERIMETER($GEOMETRIC_FIELD), 2) AS $operation,"
                         break
                     case OP_RAW_COMPACITY:
-                        query += "CASE WHEN NB_LEVEL>0 THEN ((ST_PERIMETER($GEOMETRIC_FIELD)+ST_PERIMETER(ST_HOLES($GEOMETRIC_FIELD)))*$HEIGHT_WALL+" +
+                        query += "((ST_PERIMETER($GEOMETRIC_FIELD)+ST_PERIMETER(ST_HOLES($GEOMETRIC_FIELD)))*$HEIGHT_WALL+" +
                                 "POWER(POWER(ST_AREA($GEOMETRIC_FIELD),2)+4*ST_AREA($GEOMETRIC_FIELD)*" +
                                 "POWER($HEIGHT_ROOF-$HEIGHT_WALL, 2),0.5)+POWER(ST_AREA($GEOMETRIC_FIELD),0.5)*" +
                                 "($HEIGHT_ROOF-$HEIGHT_WALL))/POWER(ST_AREA($GEOMETRIC_FIELD)*" +
-                                "($HEIGHT_WALL+$HEIGHT_ROOF)/2, 2./3) ELSE 0 END AS $operation,"
+                                "($HEIGHT_WALL+$HEIGHT_ROOF)/2, 2./3)AS $operation,"
                         break
                     case OP_CONVEX_HULL_PERIMETER_DENSITY:
                         query += "ST_PERIMETER(ST_CONVEXHULL($GEOMETRIC_FIELD))/(ST_PERIMETER($GEOMETRIC_FIELD)+" +
