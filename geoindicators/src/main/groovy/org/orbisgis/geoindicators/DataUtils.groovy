@@ -76,7 +76,7 @@ IProcess saveTablesAsFiles(){
         title "Utility process to save tables in geojson or csv files"
         inputs inputTableNames: String[], directory: String, datasource: JdbcDataSource
         outputs directory: String
-        run { inputTableNames, directory, datasource ->
+        run { inputTableNames, directory, JdbcDataSource datasource ->
             if (directory == null) {
                 info "The directory to save the data cannot be null"
                 return

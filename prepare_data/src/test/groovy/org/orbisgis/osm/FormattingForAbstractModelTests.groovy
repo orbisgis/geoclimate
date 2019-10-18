@@ -38,6 +38,13 @@ class FormattingForAbstractModelTests {
                 epsg: epsg,
                 jsonFilename: null])
         assertEquals 1038, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL is null").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL<0").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF is null").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0").count==0
+
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated.shp")
 
         //Roads
@@ -49,6 +56,9 @@ class FormattingForAbstractModelTests {
                 jsonFilename: null])
 
         assertEquals 360, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH is null").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH<0").count==0
+
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_formated.shp")
 
 
@@ -75,7 +85,6 @@ class FormattingForAbstractModelTests {
 
         assertEquals 128, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where type is null").count==0
-
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_CLASS is null").count==0
 
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_vegetation_formated.shp")
@@ -97,7 +106,7 @@ class FormattingForAbstractModelTests {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
 
         //def placeName ="Shanghai, Chine"
-        def placeName ="Rennes"
+        def placeName ="École Lycée Joliot-Curie,Rennes"
 
         IProcess extractData = PrepareData.OSMGISLayers.extractAndCreateGISLayers()
         extractData.execute([
@@ -124,6 +133,13 @@ class FormattingForAbstractModelTests {
                     inputTableName: extractData.results.buildingTableName,
                     epsg: epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_${formatedPlaceName}.geojson")
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count==0
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count==0
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL is null").count==0
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL<0").count==0
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF is null").count==0
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0").count==0
+
 
             //Roads
             format = PrepareData.FormattingForAbstractModel.formatRoadLayer()

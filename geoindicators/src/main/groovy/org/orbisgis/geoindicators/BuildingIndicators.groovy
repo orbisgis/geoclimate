@@ -139,8 +139,8 @@ def neighborsProperties() {
             operations.each { operation ->
                 switch (operation) {
                     case OP_CONTIGUITY:
-                        query += """sum(least(a_height_wall, b_height_wall)* 
-                                st_length(the_geom)/(perimeter* a_height_wall)) AS $operation,"""
+                        query += """sum(CASE WHEN NB_LEVEL >0 THEN least(a_height_wall, b_height_wall)* 
+                                st_length(the_geom)/(perimeter* a_height_wall) ELSE 0 END) AS $operation,"""
                         break
                     case OP_COMMON_WALL_FRACTION:
                         query += """SUM(st_length(the_geom)/perimeter)
@@ -158,7 +158,7 @@ def neighborsProperties() {
             query += """$ID_FIELD FROM (SELECT ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_FIELD),
                         ST_MAKEVALID(b.$GEOMETRIC_FIELD)) AS the_geom,
                         a.$ID_FIELD, ST_PERIMETER(a.$GEOMETRIC_FIELD) + ST_PERIMETER(ST_HOLES(a.$GEOMETRIC_FIELD)) AS perimeter, 
-                        a.$HEIGHT_WALL AS  a_height_wall,  b.$HEIGHT_WALL AS b_height_wall FROM
+                        a.$HEIGHT_WALL AS  a_height_wall,  b.$HEIGHT_WALL AS b_height_wall, a.NB_LEV AS nb_level FROM
                     $inputBuildingTableName a, $inputBuildingTableName b 
                      WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD AND 
                     ST_INTERSECTS(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD) AND a.$ID_FIELD <> b.$ID_FIELD)

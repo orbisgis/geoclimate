@@ -147,7 +147,7 @@ IProcess formatBuildingLayer() {
                                     type = 'unclassified'
                                 }
                                 def widthFromType = typeAndWidth[type]
-                                if (width == 0 && widthFromType != null) {
+                                if (width < 0 && widthFromType != null) {
                                     width = widthFromType
                                 }
 
@@ -475,6 +475,11 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
     if(tmpHmax<heightWall){
         nbLevels= heightWall/h_lev_max
     }
+    }
+    if(nbLevels<0 || heightWall<0 || heightRoof<0){
+        nbLevels=0
+        heightWall=0
+        heightRoof=0
     }
     return [heightWall:heightWall, heightRoof:heightRoof, nbLevels:nbLevels]
 
