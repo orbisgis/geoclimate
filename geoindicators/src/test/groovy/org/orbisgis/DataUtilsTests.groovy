@@ -12,7 +12,7 @@ class DataUtilsTests {
 
     @Test
     void joinTest() {
-        def h2GIS = H2GIS.open([databaseName: './target/datautils'])
+        def h2GIS = H2GIS.open( './target/datautils;AUTO_SERVER=TRUE')
 
         h2GIS.execute "DROP TABLE IF EXISTS tablea, tableb, tablec; CREATE TABLE tablea (ida integer, name varchar); insert into tablea values(1,'orbisgis');" +
                 "CREATE TABLE tableb (idb integer, lab varchar); insert into tableb values(1,'CNRS');" +
@@ -35,7 +35,7 @@ class DataUtilsTests {
     @Test
     void saveTablesAsFiles() {
         def directory = "./target/savedFiles"
-        def h2GIS = H2GIS.open([databaseName: './target/datautils'])
+        def h2GIS = H2GIS.open( './target/datautils;AUTO_SERVER=TRUE')
 
         h2GIS.execute "DROP TABLE IF EXISTS tablea, tablegeom; " +
                 "CREATE TABLE tablea (ida integer, name varchar); " +
