@@ -84,9 +84,9 @@ CREATE INDEX ON $ZONE_NEIGHBORS(the_geom) USING RTREE;
 -- Building (from the layers "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL" and "BATI_REMARQUABLE") that are in the study area (ZONE_BUFFER)
 -------------------------------------
 DROP TABLE IF EXISTS $BU_ZONE_INDIF, $BU_ZONE_INDUS, $BU_ZONE_REMARQ;
-CREATE TABLE $BU_ZONE_INDIF AS SELECT a.the_geom, a.ID as ID_SOURCE, a.HAUTEUR as HEIGHT_WALL FROM $BATI_INDIFFERENCIE a, $ZONE_BUFFER b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
-CREATE TABLE $BU_ZONE_INDUS AS SELECT a.the_geom, a.ID as ID_SOURCE, a.HAUTEUR as HEIGHT_WALL, a.NATURE as TYPE FROM $BATI_INDUSTRIEL a, $ZONE_BUFFER b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
-CREATE TABLE $BU_ZONE_REMARQ AS SELECT a.the_geom, a.ID as ID_SOURCE, a.HAUTEUR as HEIGHT_WALL, a.NATURE as TYPE FROM $BATI_REMARQUABLE a, $ZONE_BUFFER b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
+CREATE TABLE $BU_ZONE_INDIF AS SELECT a.the_geom, a.ID as ID_SOURCE, a.HAUTEUR as HEIGHT_WALL FROM $BATI_INDIFFERENCIE a, $ZONE_BUFFER b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.HAUTEUR>=0;
+CREATE TABLE $BU_ZONE_INDUS AS SELECT a.the_geom, a.ID as ID_SOURCE, a.HAUTEUR as HEIGHT_WALL, a.NATURE as TYPE FROM $BATI_INDUSTRIEL a, $ZONE_BUFFER b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)  and a.HAUTEUR>=0;
+CREATE TABLE $BU_ZONE_REMARQ AS SELECT a.the_geom, a.ID as ID_SOURCE, a.HAUTEUR as HEIGHT_WALL, a.NATURE as TYPE FROM $BATI_REMARQUABLE a, $ZONE_BUFFER b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)  and a.HAUTEUR>=0;
 
 -- Merge the 3 tables into one, keeping informations about the initial table name
 -- The fields 'HEIGHT_ROOF' and 'NB_LEV' fields are left empty. They will be updated later in the geoclimate procedure
@@ -104,8 +104,8 @@ UPDATE $INPUT_BUILDING SET TYPE=(SELECT c.TERM FROM $BUILDING_BD_TOPO_USE_TYPE b
 -- Road (from the layer "ROUTE") that are in the study area (ZONE_BUFFER)
 -------------------------------------
 DROP TABLE IF EXISTS $INPUT_ROAD;
-CREATE TABLE $INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH double, TYPE varchar, SURFACE varchar, SIDEWALK varchar, ZINDEX integer)
-AS SELECT a.THE_GEOM, a.ID, a.LARGEUR, a.NATURE, '', '', a.POS_SOL FROM $ROUTE a, $ZONE_BUFFER b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
+CREATE TABLE $INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH double precision, TYPE varchar, SURFACE varchar, SIDEWALK varchar, ZINDEX integer)
+AS SELECT a.THE_GEOM, a.ID, a.LARGEUR, a.NATURE, '', '', a.POS_SOL FROM $ROUTE a, $ZONE_BUFFER b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
 CREATE INDEX ON $INPUT_ROAD(the_geom) USING RTREE;
 
 -- Update the ROAD table with the new appropriate type key, coming from the abstract table
@@ -115,7 +115,7 @@ UPDATE $INPUT_ROAD SET TYPE=(SELECT c.TERM FROM $ROAD_BD_TOPO_TYPE b, $ROAD_ABST
 -- Rail (from the layer "TRONCON_VOIE_FERREE") that are in the study area (ZONE)
 -------------------------------------
 DROP TABLE IF EXISTS $INPUT_RAIL;
-CREATE TABLE $INPUT_RAIL AS SELECT a.THE_GEOM, a.ID as ID_SOURCE, a.NATURE as TYPE, a.POS_SOL as ZINDEX FROM $TRONCON_VOIE_FERREE a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
+CREATE TABLE $INPUT_RAIL AS SELECT a.THE_GEOM, a.ID as ID_SOURCE, a.NATURE as TYPE, a.POS_SOL as ZINDEX FROM $TRONCON_VOIE_FERREE a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
 
 -- Update the RAIL table with the new appropriate type key, coming from the abstract table
 UPDATE $INPUT_RAIL SET TYPE=(SELECT c.TERM FROM $RAIL_BD_TOPO_TYPE b, $RAIL_ABSTRACT_TYPE c WHERE c.ID_TYPE=b.ID_TYPE and ${INPUT_RAIL}.TYPE=b.NATURE) WHERE TYPE IN (SELECT b.NATURE FROM $RAIL_BD_TOPO_TYPE b);
