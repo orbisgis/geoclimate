@@ -37,8 +37,14 @@ class FormattingForAbstractModelTests {
                 inputTableName: extractData.results.buildingTableName,
                 epsg: epsg,
                 jsonFilename: null])
-        assertEquals 1038, h2GIS.getTable(format.results.outputTableName).rowCount
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated.shp")
+        assertEquals 1038, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL is null").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL<0").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF is null").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0").count==0
 
         //Roads
         format = PrepareData.FormattingForAbstractModel.formatRoadLayer()
@@ -47,9 +53,12 @@ class FormattingForAbstractModelTests {
                 inputTableName: extractData.results.roadTableName,
                 epsg: epsg,
                 jsonFilename: null])
-
-        assertEquals 360, h2GIS.getTable(format.results.outputTableName).rowCount
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_formated.shp")
+        assertEquals 359, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH is null").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH<0").count==0
+
+
 
 
         //Rails
@@ -60,8 +69,8 @@ class FormattingForAbstractModelTests {
                 epsg: epsg,
                 jsonFilename: null])
 
-        assertEquals 44, h2GIS.getTable(format.results.outputTableName).rowCount
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_rails_formated.shp")
+        assertEquals 44, h2GIS.getTable(format.results.outputTableName).rowCount
 
 
         //Vegetation
@@ -72,13 +81,11 @@ class FormattingForAbstractModelTests {
                 epsg: epsg,
                 jsonFilename: null
         ])
-
+        h2GIS.getTable(format.results.outputTableName).save("./target/osm_vegetation_formated.shp")
         assertEquals 128, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where type is null").count==0
-
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_CLASS is null").count==0
 
-        h2GIS.getTable(format.results.outputTableName).save("./target/osm_vegetation_formated.shp")
 
         //Hydrography
         format = PrepareData.FormattingForAbstractModel.formatHydroLayer()
@@ -86,9 +93,8 @@ class FormattingForAbstractModelTests {
                 datasource : h2GIS,
                 inputTableName: extractData.results.hydroTableName,
                 epsg: epsg])
-
-        assertEquals 8, h2GIS.getTable(format.results.outputTableName).rowCount
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_hydro_formated.shp")
+        assertEquals 8, h2GIS.getTable(format.results.outputTableName).rowCount
 
     }
 
@@ -97,7 +103,7 @@ class FormattingForAbstractModelTests {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
 
         //def placeName ="Shanghai, Chine"
-        def placeName ="Rennes"
+        def placeName ="École Lycée Joliot-Curie,Rennes"
 
         IProcess extractData = PrepareData.OSMGISLayers.extractAndCreateGISLayers()
         extractData.execute([
@@ -124,6 +130,13 @@ class FormattingForAbstractModelTests {
                     inputTableName: extractData.results.buildingTableName,
                     epsg: epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_${formatedPlaceName}.geojson")
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count==0
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count==0
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL is null").count==0
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL<0").count==0
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF is null").count==0
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0").count==0
+
 
             //Roads
             format = PrepareData.FormattingForAbstractModel.formatRoadLayer()

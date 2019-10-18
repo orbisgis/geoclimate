@@ -101,7 +101,7 @@ Copy-paste the previous script to use Geoclimate.
 Geoclimate uses a spatial database to store and process in a SQL way the data. The default datase is H2GIS but the user can set a PostGIS connection.
 
  - The temporary tables should respect the pattern : `tableName_UUID` with `-` replaced by `_` if needed.
- - Index should be create using the PostgreSQL syntax : `CREATE INDEX IF EXISTS indexName ON table(columnName) USING RTREE`.
+ - Index should be create using the PostgreSQL syntax : `CREATE INDEX IF EXISTS indexName ON table USING RTREE(columnName)`.
  - The processes should be documented with a description of the process followed by the inputs with `@param` and then the outputs with `@return`. As example :
     ``` java
     /**
