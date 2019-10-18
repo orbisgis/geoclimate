@@ -66,6 +66,14 @@
                 "park"
             ]
         },
+        "garden": {
+            "leisure": [
+                "garden"
+            ],
+            "landuse": [
+                "allotments"
+            ]
+        },
         "tree_row": {
             "natural": [
                 "tree_row"
@@ -143,6 +151,7 @@
         "orchard": "high",
         "vineyard": "low",
         "banana_plants": "high",
-        "sugar_cane": "low"
+        "sugar_cane": "low",
+        "garden": "low"
     }
 }

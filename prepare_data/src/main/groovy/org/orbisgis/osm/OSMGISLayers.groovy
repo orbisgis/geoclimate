@@ -168,9 +168,10 @@ IProcess createGISLayers() {
                     logger.info "Rail layer created"
                 }
                 //Create vegetation layer
-                tags = ['natural':['tree', 'wetland', 'grassland', 'tree_row', 'scrub', 'heath', 'sand', 'land', 'mud'],
-                       'landuse':['farmland', 'forest', 'grass', 'meadow', 'orchard', 'vineyard', 'village_green'],
+                tags = ['natural':['tree', 'wetland', 'grassland', 'tree_row', 'scrub', 'heath', 'sand', 'land', 'mud', 'wood'],
+                       'landuse':['farmland', 'forest', 'grass', 'meadow', 'orchard', 'vineyard', 'village_green', 'allotments'],
                        'landcover':[],
+                        'leisure':['park', 'garden'],
                         'vegetation':['grass'],'barrier':['hedge'],'fence_type':['hedge', 'wood'],
                                          'hedge':[],'wetland':[],'vineyard':[],
                                          'trees':[],'crop':[],'produce':[]]
@@ -183,10 +184,9 @@ IProcess createGISLayers() {
                 }
 
                 //Create water layer
-                tags = ['natural':['water','waterway','bay'],'water':[],'waterway':[]]
+                tags = ['natural':['water','waterway','bay'],'water':[],'waterway':[], 'landuse':['basin', ' salt_pond']]
                 transform = OSMTools.Transform.toPolygons()
                 logger.info "Create the water layer"
-                tags = ['natural', 'water', 'waterway']
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags)){
                     outputhydroTableName = transform.results.outputTableName
                     logger.info "Water layer created"
