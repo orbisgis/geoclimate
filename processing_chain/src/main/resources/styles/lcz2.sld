@@ -7,7 +7,6 @@
         <sld:Name>name</sld:Name>
         <sld:Rule>
           <sld:Name>LCZ 1: Compact high-rise</sld:Name>
-          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>lcz2</ogc:PropertyName>
@@ -22,7 +21,6 @@
         </sld:Rule>
         <sld:Rule>
           <sld:Name>LCZ 2: Compact mid-rise</sld:Name>
-          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>lcz2</ogc:PropertyName>
@@ -37,7 +35,6 @@
         </sld:Rule>
         <sld:Rule>
           <sld:Name>LCZ 3: Compact low-rise</sld:Name>
-          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>lcz2</ogc:PropertyName>
@@ -52,7 +49,6 @@
         </sld:Rule>
         <sld:Rule>
           <sld:Name>LCZ 4: Open high-rise</sld:Name>
-          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>lcz2</ogc:PropertyName>
@@ -67,7 +63,6 @@
         </sld:Rule>
         <sld:Rule>
           <sld:Name>LCZ 5: Open mid-rise</sld:Name>
-          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>lcz2</ogc:PropertyName>
@@ -82,7 +77,6 @@
         </sld:Rule>
         <sld:Rule>
           <sld:Name>LCZ 6: Open low-rise</sld:Name>
-          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>lcz2</ogc:PropertyName>
@@ -97,7 +91,6 @@
         </sld:Rule>
         <sld:Rule>
           <sld:Name>LCZ 7: Lightweight low-rise</sld:Name>
-          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>lcz2</ogc:PropertyName>
@@ -112,7 +105,6 @@
         </sld:Rule>
         <sld:Rule>
           <sld:Name>LCZ 8: Large low-rise</sld:Name>
-          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>lcz2</ogc:PropertyName>
@@ -127,7 +119,6 @@
         </sld:Rule>
         <sld:Rule>
           <sld:Name>LCZ 9: Sparsely built</sld:Name>
-          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>lcz2</ogc:PropertyName>
@@ -142,7 +133,6 @@
         </sld:Rule>
         <sld:Rule>
           <sld:Name>LCZ 10: Heavy industry</sld:Name>
-          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>lcz2</ogc:PropertyName>
@@ -157,7 +147,6 @@
         </sld:Rule>
         <sld:Rule>
           <sld:Name>LCZ A: Dense trees</sld:Name>
-          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>lcz2</ogc:PropertyName>
@@ -172,7 +161,6 @@
         </sld:Rule>
         <sld:Rule>
           <sld:Name>LCZ B: Scattered trees</sld:Name>
-          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>lcz2</ogc:PropertyName>
@@ -187,7 +175,6 @@
         </sld:Rule>
         <sld:Rule>
           <sld:Name>LCZ C: Bush,scrub</sld:Name>
-          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>lcz2</ogc:PropertyName>
@@ -202,7 +189,6 @@
         </sld:Rule>
         <sld:Rule>
           <sld:Name>LCZ D: Low plants</sld:Name>
-          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>lcz2</ogc:PropertyName>
@@ -217,7 +203,6 @@
         </sld:Rule>
         <sld:Rule>
           <sld:Name>LCZ E: Bare rock or paved</sld:Name>
-          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>lcz2</ogc:PropertyName>
@@ -232,7 +217,6 @@
         </sld:Rule>
         <sld:Rule>
           <sld:Name>LCZ F: Bare soil or sand</sld:Name>
-          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>lcz2</ogc:PropertyName>
@@ -247,7 +231,6 @@
         </sld:Rule>
         <sld:Rule>
           <sld:Name>LCZ G: Water</sld:Name>
-          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>lcz2</ogc:PropertyName>
@@ -262,7 +245,6 @@
         </sld:Rule>
         <sld:Rule>
           <sld:Name>Undefined</sld:Name>
-          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter>
             <ogc:Or>
               <ogc:PropertyIsEqualTo>
