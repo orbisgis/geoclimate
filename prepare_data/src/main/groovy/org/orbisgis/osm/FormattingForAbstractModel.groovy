@@ -83,7 +83,7 @@ IProcess formatBuildingLayer() {
 
                         def zIndex = getZIndex(row.'layer')
 
-                        if(formatedHeight>0 && zIndex>0) {
+                        if(formatedHeight.nbLevels>0 && zIndex>=0) {
                             stmt.addBatch """insert into ${outputTableName} values(ST_MAKEVALID(ST_GEOMFROMTEXT('${
                                 row.the_geom}',$epsg)), null, '${row.id}',${formatedHeight.heightWall},${formatedHeight.heightRoof},${
                                 formatedHeight.nbLevels
@@ -157,7 +157,7 @@ IProcess formatBuildingLayer() {
                                 String surface = getAbstractValue(row, columnNames, mappingForSurface)
                                 String sidewalk = getSidewalk(row.'sidewalk')
                                 def zIndex = getZIndex(row.'layer')
-                                if(zIndex>0) {
+                                if(zIndex>=0) {
                                     stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${
                                         row.the_geom
                                     }',$epsg), null, '${row.id}', ${width},'${type}','${surface}','${sidewalk}',${
@@ -223,7 +223,7 @@ IProcess formatBuildingLayer() {
                                 type = null
                             }
                         }
-                        if(zIndex>0) {
+                        if(zIndex>=0) {
                             stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${row.the_geom}',$epsg),
                     null, '${row.id}','${type}',${zIndex})"""
                         }
