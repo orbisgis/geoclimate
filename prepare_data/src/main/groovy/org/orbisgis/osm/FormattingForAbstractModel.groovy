@@ -154,15 +154,16 @@ IProcess formatBuildingLayer() {
                                 if (width < 0 && widthFromType != null) {
                                     width = widthFromType
                                 }
-
                                 String surface = getAbstractValue(row, columnNames, mappingForSurface)
                                 String sidewalk = getSidewalk(row.'sidewalk')
                                 def zIndex = getZIndex(row.'layer')
-                                stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${
-                                    row.the_geom
-                                }',$epsg), null, '${row.id}', ${width},'${type}','${surface}','${sidewalk}',${
-                                    zIndex
-                                })""".toString()
+                                if(zIndex>0) {
+                                    stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${
+                                        row.the_geom
+                                    }',$epsg), null, '${row.id}', ${width},'${type}','${surface}','${sidewalk}',${
+                                        zIndex
+                                    })""".toString()
+                                }
                             }
                         }
                     }
@@ -222,8 +223,10 @@ IProcess formatBuildingLayer() {
                                 type = null
                             }
                         }
-                        stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${row.the_geom}',$epsg),
+                        if(zIndex>0) {
+                            stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${row.the_geom}',$epsg),
                     null, '${row.id}','${type}',${zIndex})"""
+                        }
 
                     }
                 }

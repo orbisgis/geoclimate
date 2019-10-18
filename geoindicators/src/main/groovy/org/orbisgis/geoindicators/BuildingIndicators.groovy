@@ -245,7 +245,7 @@ def formProperties() {
                                 "POWER(POWER(ST_AREA($GEOMETRIC_FIELD),2)+4*ST_AREA($GEOMETRIC_FIELD)*" +
                                 "POWER($HEIGHT_ROOF-$HEIGHT_WALL, 2),0.5)+POWER(ST_AREA($GEOMETRIC_FIELD),0.5)*" +
                                 "($HEIGHT_ROOF-$HEIGHT_WALL))/POWER(ST_AREA($GEOMETRIC_FIELD)*" +
-                                "($HEIGHT_WALL+$HEIGHT_ROOF)/2, 2./3)AS $operation,"
+                                "($HEIGHT_WALL+$HEIGHT_ROOF)/2, 2./3) AS $operation,"
                         break
                     case OP_CONVEX_HULL_PERIMETER_DENSITY:
                         query += "ST_PERIMETER(ST_CONVEXHULL($GEOMETRIC_FIELD))/(ST_PERIMETER($GEOMETRIC_FIELD)+" +

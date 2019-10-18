@@ -35,7 +35,7 @@ class DataUtilsTests {
     @Test
     void saveTablesAsFiles() {
         def directory = "./target/savedFiles"
-        def h2GIS = H2GIS.open([databaseName: './target/datautils'])
+        def h2GIS = H2GIS.open( './target/datautils;AUTO_SERVER=TRUE')
 
         h2GIS.execute "DROP TABLE IF EXISTS tablea, tablegeom; " +
                 "CREATE TABLE tablea (ida integer, name varchar); " +
