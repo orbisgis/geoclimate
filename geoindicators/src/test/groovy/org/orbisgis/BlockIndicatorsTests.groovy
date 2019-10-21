@@ -34,7 +34,7 @@ class BlockIndicatorsTests {
 
         def sum = 0
         h2GIS.eachRow("SELECT * FROM test_block_hole_area_density"){
-            row -> sum += row.block_hole_area_density
+            row -> sum += row.hole_area_density
         }
         assertEquals(3.0/47, sum, 0.00001)
     }
@@ -47,19 +47,19 @@ class BlockIndicatorsTests {
 
         def  p_size =  Geoindicators.BuildingIndicators.sizeProperties()
         assertTrue p_size.execute([inputBuildingTableName: "tempo_build",
-                        operations:["building_volume"], prefixName : "test", datasource:h2GIS])
+                        operations:["volume"], prefixName : "test", datasource:h2GIS])
 
         // The indicators are gathered in a same table
         h2GIS.execute "DROP TABLE IF EXISTS tempo_build2; " +
-                "CREATE TABLE tempo_build2 AS SELECT a.*, b.building_volume FROM tempo_build a" +
+                "CREATE TABLE tempo_build2 AS SELECT a.*, b.volume FROM tempo_build a" +
                 " LEFT JOIN test_building_size_properties b ON a.id_build = b.id_build"
 
         def  p =  Geoindicators.BlockIndicators.netCompacity()
-        assertTrue p.execute([buildTable: "tempo_build2", buildingVolumeField: "building_volume",
-                   buildingContiguityField: "building_contiguity", prefixName: "test", datasource: h2GIS])
+        assertTrue p.execute([buildTable: "tempo_build2", buildingVolumeField: "volume",
+                   buildingContiguityField: "contiguity", prefixName: "test", datasource: h2GIS])
         def sum = 0
         h2GIS.eachRow("SELECT * FROM test_block_net_compacity WHERE id_block = 4"){
-            row -> sum += row.block_net_compacity
+            row -> sum += row.net_compacity
         }
         assertEquals(0.51195, sum, 0.00001)
     }
@@ -76,7 +76,7 @@ class BlockIndicatorsTests {
                               datasource: h2GIS])
         def sum = 0
         h2GIS.eachRow("SELECT * FROM test_block_closingness") {
-            row -> sum += row.block_closingness
+            row -> sum += row.closingness
         }
         assertEquals(450, sum)
     }

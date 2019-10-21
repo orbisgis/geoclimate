@@ -136,7 +136,7 @@ IProcess closingness() {
             info "Executing Closingness of a block"
 
             // The name of the outputTableName is constructed
-            def outputTableName = getOutputTableName(prefixName, "rsu_" + BASE_NAME)
+            def outputTableName = getOutputTableName(prefixName, "block_" + BASE_NAME)
 
             datasource.getSpatialTable(blockTable).id_block.createIndex()
             datasource.getSpatialTable(correlationTableName).id_block.createIndex()
