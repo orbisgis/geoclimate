@@ -6,12 +6,12 @@ This table stores all the indicators computed at the building's scale.
 
 ## Table definition
 
-![](/home/gpetit/Documents/Codes/geoclimate/docs/images/pk.png) PK = Primary Key
+![](./images/pk.png) PK = Primary Key
 
 | Field name   | Field type       | Definition         |
 | :----------- | :--------------- | ------------------ |
 | THE_GEOM       | geometry          | Building's geometry |
-| **ID_BUILD** ![](/home/gpetit/Documents/Codes/geoclimate/docs/images/pk.png) | integer | Building's unique id |
+| **ID_BUILD** ![](./images/pk.png) | integer | Building's unique id |
 | ID_SOURCE | varchar | Original unique id |
 | ID_BLOCK | integer | Belonging block id |
 | ID_RSU | integer | Belonging RSU id |

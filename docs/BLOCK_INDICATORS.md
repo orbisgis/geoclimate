@@ -6,12 +6,12 @@ This table stores all the indicators computed at the block's scale.
 
 ## Table definition
 
-![](/home/gpetit/Documents/Codes/geoclimate/docs/images/pk.png) PK = Primary Key
+![](./images/pk.png) PK = Primary Key
 
 | Field name   | Field type       | Definition         |
 | :----------- | :--------------- | ------------------ |
 | THE_GEOM       | geometry          | Block's geometry |
-| **ID_BLOCK** ![](/home/gpetit/Documents/Codes/geoclimate/docs/images/pk.png) | integer | Block's unique id    |
+| **ID_BLOCK** ![](./images/pk.png) | integer | Block's unique id    |
 | ID_RSU | integer | Belonging RSU id |
 | ID_ZONE | varchar | Belonging zone id |
 | AREA | double precision | Block's area |

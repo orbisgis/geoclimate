@@ -8,11 +8,11 @@ For each RSU, we calculate the main (`LCZ1`) and the secondary (`LCZ2`) LCZ type
 
 ## Table definition
 
-![](/home/gpetit/Documents/Codes/geoclimate/docs/images/pk.png) PK = Primary Key
+![](./images/pk.png) PK = Primary Key
 
 | Field name                                                   | Field type       | Definition         |
 | :----------------------------------------------------------- | :--------------- | ------------------ |
-| **ID_RSU** ![](/home/gpetit/Documents/Codes/geoclimate/docs/images/pk.png) | integer  | RSU's unique id |
+| **ID_RSU** ![](./images/pk.png) | integer  | RSU's unique id |
 | LCZ1 | integer | Main LCZ type  |
 | LCZ2 | integer  | Secondary LCZ type |
 | MIN_DISTANCE | double precision |  |

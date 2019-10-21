@@ -6,12 +6,12 @@ This table stores all the indicators computed at the RSU's scale.
 
 ## Table definition
 
-![](/home/gpetit/Documents/Codes/geoclimate/docs/images/pk.png) PK = Primary Key
+![](./images/pk.png) PK = Primary Key
 
 | Field name   | Field type       | Definition         |
 | :----------- | :--------------- | ------------------ |
 | THE_GEOM       | geometry          | RSU's geometry    |
-| **ID_RSU** ![](/home/gpetit/Documents/Codes/geoclimate/docs/images/pk.png) | integer | RSU's unique id    |
+| **ID_RSU** ![](./images/pk.png) | integer | RSU's unique id    |
 | ID_ZONE | varchar | Belonging zone id |
 | FREE_EXTERNAL_FACADE_DENSITY | double precision |  |
 | HEIGHT_OF_ROUGHNESS_ELEMENTS | double precision |  |
