@@ -25,6 +25,8 @@ import org.orbisgis.datamanager.JdbcDataSource
  * facade density (Bernard et al. 2018).
  * @param prefixName A prefix used to name the output table (default ""). Could be useful in case the user wants to
  * investigate the sensibility of the chain to some input parameters
+ * @param mapOfWeights Values that will be used to increase or decrease the weight of an indicator (which are the key
+ * of the map) for the LCZ classification step (default : all values to 1)
  *
  *
  * @return 10 tables : zoneTable , zoneEnvelopeTableName, buildingTable,
@@ -50,13 +52,16 @@ def OSMGeoIndicators() {
     return create({
         title "Create all geoindicators from OSM data"
         inputs datasource: JdbcDataSource, placeName: String, distance: 0,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
-                svfSimplified:false, prefixName: ""
+                svfSimplified:false, prefixName: "",
+                mapOfWeights : ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                                 "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                                 "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
         outputs zoneTable: String, zoneEnvelopeTableName: String, buildingTable: String,
                 roadTable: String, railTable: String, vegetationTable: String,
                 hydrographicTable: String, buildingIndicators: String,
                 blockIndicators: String,
                 rsuIndicators: String
-        run { datasource, placeName, distance,indicatorUse, svfSimplified, prefixName ->
+        run { datasource, placeName, distance,indicatorUse, svfSimplified, prefixName, mapOfWeights ->
 
             // Temporary tables are created
             def lczIndicTable = "LCZ_INDIC_TABLE$uuid"
@@ -96,10 +101,6 @@ def OSMGeoIndicators() {
 
             // If the LCZ indicators should be calculated, we only affect a LCZ class to each RSU
             if(indicatorUse.contains("LCZ")){
-                // Define the default values
-                def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
-                               "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                               "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
                 def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"             : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
                                      "DENS_AREA"                        : "BUILDING_SURFACE_FRACTION",
                                      "RSU_ASPECT_RATIO"                 : "ASPECT_RATIO",
@@ -135,7 +136,7 @@ def OSMGeoIndicators() {
 
             }
 
-            datasource.execute "DROP TABLE ID EXISTS $lczIndicTable;"
+            datasource.execute "DROP TABLE IF EXISTS $lczIndicTable;"
 
             return [zoneTable         : zoneTableName, zoneEnvelopeTableName: zoneEnvelopeTableName, buildingTable: buildingTableName,
                     roadTable         : roadTableName, railTable: railTableName, vegetationTable: vegetationTableName,
