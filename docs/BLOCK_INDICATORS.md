@@ -2,7 +2,7 @@
 
 This table stores all the indicators computed at the block's scale.
 
-
+![](./images/icons/github.png) The indicators source code is available [here](https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BlockIndicators.groovy).
 
 ## Table definition ![](./images/icons/table.png)
 
