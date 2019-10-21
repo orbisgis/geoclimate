@@ -38,7 +38,7 @@ IProcess identifyLczType() {
     def final ID_FIELD_RSU = "id_rsu"
     def final CENTER_NAME = "center"
     def final VARIABILITY_NAME = "variability"
-    def final BASE_NAME = "LCZ_type"
+    def final BASE_NAME = "RSU_LCZ"
     def final GEOMETRIC_FIELD = "the_geom"
     
     return create({

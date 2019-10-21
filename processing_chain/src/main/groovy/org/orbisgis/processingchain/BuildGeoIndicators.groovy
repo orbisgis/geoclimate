@@ -378,7 +378,7 @@ def computeRSUIndicators() {
             intermediateJoin.put(rsuTable, columnIdRsu)
 
             // Name of the output table
-            def outputTableName = prefixName + BASE_NAME
+            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             // PrefixName for intermediate table (start with a letter to avoid table name issue if start with a number)
             def temporaryPrefName = "rsu_indicator_"

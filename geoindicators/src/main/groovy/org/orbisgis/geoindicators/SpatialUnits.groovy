@@ -22,7 +22,7 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
  */
 IProcess createRSU(){
     def final COLUMN_ID_NAME = "id_rsu"
-    def final BASE_NAME = "created_rsu"
+    def final BASE_NAME = "rsu"
     return create({
         title "Create reference spatial units (RSU)"
         inputs inputTableName: String, inputZoneTableName: "", prefixName: "", datasource: JdbcDataSource
@@ -228,7 +228,7 @@ IProcess prepareRSUData() {
  * @return A database table name and the name of the column ID
  */
 IProcess createBlocks(){
-    def final BASE_NAME = "created_blocks"
+    def final BASE_NAME = "blocks"
     return create({
         title "Merge the geometries that touch each other"
         inputs inputTableName: String, distance : 0.0d, prefixName: "block", datasource: JdbcDataSource
@@ -322,8 +322,9 @@ IProcess createScalesRelations(){
 
             info "Creating the Tables of relations between two scales"
 
-            // The name of the outputTableName is constructed
-            def outputTableName = getOutputTableName(prefixName, inputLowerScaleTableName+"_corr")
+            // The name of the outputTableName is constructed (the prefix name is not added since it is already contained
+            // in the inputLowerScaleTableName object
+            def outputTableName = inputLowerScaleTableName + "_corr"
             datasource.getSpatialTable(inputLowerScaleTableName).the_geom.createSpatialIndex()
             datasource.getSpatialTable(inputUpperScaleTableName).the_geom.createSpatialIndex()
 

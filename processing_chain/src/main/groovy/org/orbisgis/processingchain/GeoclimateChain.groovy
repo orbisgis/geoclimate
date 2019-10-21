@@ -91,10 +91,11 @@ def OSMGeoIndicators() {
             String zoneEnvelopeTableName = prepareOSMData.getResults().outputZoneEnvelope
 
             IProcess geoIndicators = buildGeoIndicators()
-            if (!geoIndicators.execute(datasource: datasource, zoneTable: zoneTableName, buildingTable: buildingTableName,
-                    roadTable: roadTableName, railTable: railTableName, vegetationTable: vegetationTableName,
-                    hydrographicTable: hydrographicTableName,
-                    indicatorUse: indicatorUse, svfSimplified: svfSimplified)) {
+            if (!geoIndicators.execute( datasource          : datasource,           zoneTable       : zoneTableName,
+                                        buildingTable       : buildingTableName,    roadTable       : roadTableName,
+                                        railTable           : railTableName,        vegetationTable : vegetationTableName,
+                                        hydrographicTable   : hydrographicTableName,indicatorUse    : indicatorUse,
+                                        svfSimplified       : svfSimplified,        prefixName      : prefixName)) {
                 error "Cannot build the geoindicators"
                 return null
             }
@@ -128,7 +129,8 @@ def OSMGeoIndicators() {
                                  normalisationType  : "AVG",
                                  mapOfWeights       : mapOfWeights,
                                  prefixName         : prefixName,
-                                 datasource         : datasource])){
+                                 datasource         : datasource,
+                                 prefixName         : prefixName])){
                     info "Cannot compute the LCZ classification."
                     return
                 }
@@ -217,18 +219,20 @@ def buildGeoIndicators() {
         inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
                 roadTable: String, railTable: String, vegetationTable: String,
                 hydrographicTable: String, surface_vegetation: 100000, surface_hydro: 2500,
-                distance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified:false
+                distance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified:false, prefixName: ""
         outputs outputTableBuildingIndicators: String, outputTableBlockIndicators: String, outputTableRsuIndicators: String
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
-              surface_vegetation, surface_hydro, distance,indicatorUse,svfSimplified ->
+              surface_vegetation, surface_hydro, distance,indicatorUse,svfSimplified, prefixName ->
             info "Start computing the geoindicators..."
 
             //Create spatial units and relations : building, block, rsu
             IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
-            if (!spatialUnits.execute([datasource       : datasource, zoneTable: zoneTable, buildingTable: buildingTable,
-                                       roadTable        : roadTable, railTable: railTable, vegetationTable: vegetationTable,
-                                       hydrographicTable: hydrographicTable, surface_vegetation: surface_vegetation,
-                                       surface_hydro    : surface_hydro, distance: distance])) {
+            if (!spatialUnits.execute([datasource       : datasource,           zoneTable           : zoneTable,
+                                       buildingTable    : buildingTable,        roadTable           : roadTable,
+                                       railTable        : railTable,            vegetationTable     : vegetationTable,
+                                       hydrographicTable: hydrographicTable,    surface_vegetation  : surface_vegetation,
+                                       surface_hydro    : surface_hydro,        distance            : distance,
+                                       prefixName       : prefixName])) {
                 error "Cannot create the spatial units"
                 return null
             }
@@ -241,7 +245,8 @@ def buildGeoIndicators() {
             if (!computeBuildingsIndicators.execute([datasource            : datasource,
                                                      inputBuildingTableName: relationBuildings,
                                                      inputRoadTableName    : roadTable,
-                                                     indicatorUse          : indicatorUse])) {
+                                                     indicatorUse          : indicatorUse,
+                                                     prefixName            : prefixName])) {
                 error "Cannot compute the building indicators"
                 return null
             }
@@ -252,7 +257,8 @@ def buildGeoIndicators() {
             def computeBlockIndicators = ProcessingChain.BuildGeoIndicators.computeBlockIndicators()
             if (!computeBlockIndicators.execute([datasource            : datasource,
                                                  inputBuildingTableName: buildingIndicators,
-                                                 inputBlockTableName   : relationBlocks])) {
+                                                 inputBlockTableName   : relationBlocks,
+                                                 prefixName            : prefixName])) {
                 error "Cannot compute the block indicators"
                 return null
             }
@@ -266,7 +272,8 @@ def buildGeoIndicators() {
                                                roadTable        : roadTable,
                                                hydrographicTable: hydrographicTable,
                                                indicatorUse     : indicatorUse,
-                                               svfSimplified    : svfSimplified])) {
+                                               svfSimplified    : svfSimplified,
+                                               prefixName       : prefixName])) {
                 error "Cannot compute the RSU indicators"
                 return null
             }
