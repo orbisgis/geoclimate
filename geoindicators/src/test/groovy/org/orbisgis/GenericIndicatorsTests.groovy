@@ -33,11 +33,11 @@ class GenericIndicatorsTests {
 
         def  psum =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
         assertTrue psum.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "block_test",
-                   inputIdUp: "id_block", inputVarAndOperations: ["building_area":["SUM"]],
+                   inputIdUp: "id_block", inputVarAndOperations: ["area":["SUM"]],
                    prefixName: "first", datasource: h2GIS])
         def  pavg =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
         assertTrue pavg.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "tempo_rsu",
-                      inputIdUp: "id_rsu", inputVarAndOperations: ["building_number_building_neighbor":["AVG"]],
+                      inputIdUp: "id_rsu", inputVarAndOperations: ["number_building_neighbor":["AVG"]],
                       prefixName: "second", datasource: h2GIS])
         def  pgeom_avg =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
         assertTrue pgeom_avg.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "tempo_rsu",
@@ -45,29 +45,29 @@ class GenericIndicatorsTests {
                       prefixName: "third", datasource: h2GIS])
         def  pdens =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
         assertTrue pdens.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "tempo_rsu",
-                      inputIdUp: "id_rsu", inputVarAndOperations: ["building_number_building_neighbor":["AVG"],
-                                                                   "building_area":["SUM", "DENS", "NB_DENS"]],
+                      inputIdUp: "id_rsu", inputVarAndOperations: ["number_building_neighbor":["AVG"],
+                                                                   "area":["SUM", "DENS", "NB_DENS"]],
                       prefixName: "fourth", datasource: h2GIS])
         def concat = ["", "", 0, ""]
 
         h2GIS.eachRow("SELECT * FROM first_unweighted_operation_from_lower_scale WHERE id_block = 1 OR id_block = 4 ORDER BY id_block ASC"){
-            row -> concat[0]+= "${row.sum_building_area}\n"
+            row -> concat[0]+= "${row.sum_area}\n"
         }
         h2GIS.eachRow("SELECT * FROM second_unweighted_operation_from_lower_scale WHERE id_rsu = 1 OR id_rsu = 2 ORDER BY id_rsu ASC"){
-            row -> concat[1]+= "${row.avg_building_number_building_neighbor}\n"
+            row -> concat[1]+= "${row.avg_number_building_neighbor}\n"
         }
         h2GIS.eachRow("SELECT * FROM third_unweighted_operation_from_lower_scale WHERE id_rsu = 1"){
             row -> concat[2]+= row.geom_avg_height_roof
         }
         h2GIS.eachRow("SELECT * FROM fourth_unweighted_operation_from_lower_scale WHERE id_rsu = 1"){
             row ->
-                concat[3]+= "${row.avg_building_number_building_neighbor}\n"
-                concat[3]+= "${row.sum_building_area}\n"
-                concat[3]+= "${row.dens_building_area}\n"
-                concat[3]+= "${row.nb_dens_building_area}\n"
+                concat[3]+= "${row.avg_number_building_neighbor}\n"
+                concat[3]+= "${row.sum_area}\n"
+                concat[3]+= "${row.dens_area}\n"
+                concat[3]+= "${row.nb_dens_area}\n"
         }
         def nb_rsu = h2GIS.firstRow "SELECT COUNT(*) AS NB FROM ${pgeom_avg.results.outputTableName}"
-        def val_zero = h2GIS.firstRow "SELECT dens_building_area AS val FROM ${pdens.results.outputTableName} "+
+        def val_zero = h2GIS.firstRow "SELECT dens_area AS val FROM ${pdens.results.outputTableName} "+
                                       "WHERE id_rsu = 14"
         assertEquals("156.0\n310.0\n", concat[0])
         assertEquals("0.4\n0.0\n", concat[1])
@@ -87,29 +87,29 @@ class GenericIndicatorsTests {
 
         def  pavg =  Geoindicators.GenericIndicators.weightedAggregatedStatistics()
         assertTrue pavg.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "tempo_rsu",
-                      inputIdUp: "id_rsu", inputVarWeightsOperations: ["height_roof" : ["building_area": ["AVG"]]],
+                      inputIdUp: "id_rsu", inputVarWeightsOperations: ["height_roof" : ["area": ["AVG"]]],
                       prefixName: "one", datasource: h2GIS])
         def  pstd =  Geoindicators.GenericIndicators.weightedAggregatedStatistics()
         assertTrue pstd.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "tempo_rsu",
-                      inputIdUp: "id_rsu", inputVarWeightsOperations: ["height_roof": ["building_area": ["STD"]]],
+                      inputIdUp: "id_rsu", inputVarWeightsOperations: ["height_roof": ["area": ["STD"]]],
                       prefixName: "two", datasource: h2GIS])
         def  pall =  Geoindicators.GenericIndicators.weightedAggregatedStatistics()
         assertTrue pall.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "tempo_rsu",
-                      inputIdUp: "id_rsu", inputVarWeightsOperations: ["height_wall": ["building_area": ["STD"]],
-                                                                       "height_roof": ["building_area": ["AVG", "STD"]]],
+                      inputIdUp: "id_rsu", inputVarWeightsOperations: ["height_wall": ["area": ["STD"]],
+                                                                       "height_roof": ["area": ["AVG", "STD"]]],
                       prefixName: "three", datasource: h2GIS])
         def concat = [0, 0, ""]
         h2GIS.eachRow("SELECT * FROM one_weighted_aggregated_statistics WHERE id_rsu = 1"){
-            row -> concat[0]+= row.weighted_avg_height_roof_building_area
+            row -> concat[0]+= row.weighted_avg_height_roof_area
         }
         h2GIS.eachRow("SELECT * FROM two_weighted_aggregated_statistics WHERE id_rsu = 1"){
-            row -> concat[1]+= row.weighted_std_height_roof_building_area
+            row -> concat[1]+= row.weighted_std_height_roof_area
         }
         h2GIS.eachRow("SELECT * FROM three_weighted_aggregated_statistics WHERE id_rsu = 1"){
             row ->
-                concat[2]+= "${row.weighted_avg_height_roof_building_area.round(3)}\n" +
-                        "${row.weighted_std_height_roof_building_area.round(1)}\n" +
-                        "${row.weighted_std_height_wall_building_area.round(2)}\n"
+                concat[2]+= "${row.weighted_avg_height_roof_area.round(3)}\n" +
+                        "${row.weighted_std_height_roof_area.round(1)}\n" +
+                        "${row.weighted_std_height_wall_area.round(2)}\n"
         }
         def nb_rsu = h2GIS.firstRow("SELECT COUNT(*) AS NB FROM ${pavg.results.outputTableName}".toString())
         assertEquals(10.178, concat[0], 0.001)
