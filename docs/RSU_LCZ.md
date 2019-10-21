@@ -4,7 +4,7 @@ This table stores all the *Local Climate Zones* (LCZ) types computed at the RSU'
 
 The LCZ, introduced by *Stewart* & *Oke* ([2012](http://journals.ametsoc.org/doi/abs/10.1175/BAMS-D-11-00019.1), [2014](http://onlinelibrary.wiley.com/doi/10.1002/joc.3746/abstract)), is a classification scheme used to segment the climate area's of cities( and other).
 
-### Methodology
+## Methodology
 
 A LCZ type is assigned to a RSU. This "assignment" is performed according to the 7 indicators used for LCZ classification (`sky_view_factor`, `aspect_ratio`, `building_surface_fraction`, `impervious_surface_fraction`, `pervious_surface_fraction`, `height_of_roughness_elements` and `terrain_roughness_class`). Each LCZ type has a given range for each of the 7 indicators. Then the method to find the LCZ type that is the most appropriate for a given RSU is based on the minimum distance (`MIN_DISTANCE`) to each LCZ (in the 7 dimensions space). In order to calculate this distance, each dimension is normalized according to the mean and the standard deviation (or median and absolute median deviation) of the interval values. Some of the indicators may be more important (or reliable) than the other for the LCZ identification. In order to manage this point, a map containing weights may be passed and will be used to multiply the distance due to a given indicator.
 
@@ -21,10 +21,10 @@ The distance of each RSU to each of the LCZ types is calculated in the normalize
 | Field name                                                   | Field type       | Definition         |
 | :----------------------------------------------------------- | :--------------- | ------------------ |
 | **ID_RSU** ![](./images/icons/pk.png) | integer  | RSU's unique id |
-| LCZ1 | integer | Main LCZ type ([Full definition](#LCZ1))  |
-| LCZ2 | integer  | Secondary LCZ type ([Full definition](#LCZ1)) |
-| MIN_DISTANCE | double precision | Minimum distance to each LCZ ([Full definition](#MIN_DISTANCE)) |
-| PSS | double precision | *Perkin Skill Score* ([Full definition](#PSS)) |
+| LCZ1 | integer | Main LCZ type  |
+| LCZ2 | integer  | Secondary LCZ type |
+| MIN_DISTANCE | double precision | Minimum distance to each LCZ |
+| PSS | double precision | *Perkin Skill Score* |
 
 
 
