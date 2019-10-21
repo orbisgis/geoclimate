@@ -45,15 +45,21 @@ Depending on the options choosed by the user, the Geoclimate chain may produce v
 
 A table that stores all the (geo)indicators computed at the building's scale.
 
+![](./images/arrow.png) Read the full [description](./BUILDING_INDICATORS.md) of this table.
+
 ####  `BLOCK_INDICATORS`
 A table that stores all the (geo)indicators computed at the block's scale.
+
+![](./images/arrow.png) Read the full [description](./BLOCK_INDICATORS.md) of this table.
 
 ####  `RSU_INDICATORS`
 
 A table that stores all the (geo)indicators computed at the RSU's scale.
 
+![](./images/arrow.png) Read the full [description](./RSU_INDICATORS.md) of this table.
+
 ####  `RSU_LCZ`
 
 A table that stores all the *Local Climate Zones* (LCZ) main and secondary types computed at the RSU's scale.
 
-Read the full [description](./RSU_LCZ.md) of this table.
+![](./images/arrow.png) Read the full [description](./RSU_LCZ.md) of this table.
