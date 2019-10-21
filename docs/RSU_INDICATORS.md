@@ -4,24 +4,24 @@ This table stores all the indicators computed at the RSU's scale.
 
 
 
-## Table definition
+## Table definition ![](./images/icons/table.png)
 
-![](./images/pk.png) PK = Primary Key
+![](./images/icons/pk.png) PK = Primary Key
 
 | Field name   | Field type       | Definition         |
 | :----------- | :--------------- | ------------------ |
 | THE_GEOM       | geometry          | RSU's geometry    |
-| **ID_RSU** ![](./images/pk.png) | integer | RSU's unique id    |
+| **ID_RSU** ![](./images/icons/pk.png) | integer | RSU's unique id    |
 | ID_ZONE | varchar | Belonging zone id |
-| FREE_EXTERNAL_FACADE_DENSITY | double precision |  |
-| HEIGHT_OF_ROUGHNESS_ELEMENTS | double precision |  |
-| BUILDING_SURFACE_FRACTION | double precision |  |
-| GROUND_ROAD_FRACTION | double precision |  |
-| WATER_FRACTION | double precision |  |
-| LOW_VEGETATION_FRACTION | double precision |  |
-| HIGH_VEGETATION_FRACTION | double precision |  |
-| ALL_VEGETATION_FRACTION | double precision |  |
-| PROJECTED_FACADE_AREA_DISTRIBUTION0_10D15 | double precision |  |
+| FREE_EXTERNAL_FACADE_DENSITY | double precision | [Full definition](#FREE_EXTERNAL_FACADE_DENSITY) |
+| HEIGHT_OF_ROUGHNESS_ELEMENTS | double precision | [Full definition](#HEIGHT_OF_ROUGHNESS_ELEMENTS) |
+| BUILDING_SURFACE_FRACTION | double precision | [Full definition](#BUILDING_SURFACE_FRACTION) |
+| GROUND_ROAD_FRACTION | double precision | [Full definition](#GROUND_ROAD_FRACTION) |
+| WATER_FRACTION | double precision | [Full definition](#WATER_FRACTION) |
+| LOW_VEGETATION_FRACTION | double precision | [Full definition](#LOW_VEGETATION_FRACTION) |
+| HIGH_VEGETATION_FRACTION | double precision | [Full definition](#HIGH_VEGETATION_FRACTION) |
+| ALL_VEGETATION_FRACTION | double precision | [Full definition](#ALL_VEGETATION_FRACTION) |
+| PROJECTED_FACADE_AREA_DISTRIBUTION0_10D15 | double precision | [Full definition](#PROJECTED_FACADE_AREA_DISTRIBUTIONx_xxx) |
 | PROJECTED_FACADE_AREA_DISTRIBUTION10_20D15 | double precision |  |
 | PROJECTED_FACADE_AREA_DISTRIBUTION20_30D15 | double precision |  |
 | PROJECTED_FACADE_AREA_DISTRIBUTION30_40D15 | double precision |  |
@@ -56,12 +56,135 @@ This table stores all the indicators computed at the RSU's scale.
 | PROJECTED_FACADE_AREA_DISTRIBUTION20_30D165 | double precision |  |
 | PROJECTED_FACADE_AREA_DISTRIBUTION30_40D165 | double precision |  |
 | PROJECTED_FACADE_AREA_DISTRIBUTION40_50D165 | double precision |  |
-| PROJECTED_FACADE_AREA_DISTRIBUTION50_D165 | double precision |  |
-| ASPECT_RATIO | double precision |  |
-| SKY_VIEW_FACTOR | double precision | Sky View Factor (SVF) |
-| PERVIOUS_SURFACE_FRACTION | double precision |  |
-| IMPERVIOUS_SURFACE_FRACTION | double precision |  |
-| EFFECTIVE_TERRAIN_ROUGHNESS | double precision |  |
-| TERRAIN_ROUGHNESS_CLASS | integer |  |
+| PROJECTED_FACADE_AREA_DISTRIBUTION50_D165 | double precision | [Full definition](#xxxxxx) |
+| ASPECT_RATIO | double precision | [Full definition](#ASPECT_RATIO) |
+| SKY_VIEW_FACTOR | double precision | Sky View Factor ([Full definition](#SKY_VIEW_FACTOR)) |
+| PERVIOUS_SURFACE_FRACTION | double precision | [Full definition](#PERVIOUS_SURFACE_FRACTION) |
+| IMPERVIOUS_SURFACE_FRACTION | double precision | [Full definition](#IMPERVIOUS_SURFACE_FRACTION) |
+| EFFECTIVE_TERRAIN_ROUGHNESS | double precision | [Full definition](#EFFECTIVE_TERRAIN_ROUGHNESS) |
+| TERRAIN_ROUGHNESS_CLASS | integer | [Full definition](#TERRAIN_ROUGHNESS_CLASS) |
 
 
+## Indicators definition  ![](./images/icons/dico.png)
+
+
+
+### `FREE_EXTERNAL_FACADE_DENSITY`
+
+Definition: 
+
+Formula: `xxxxxxx`
+
+Source code: 
+
+### `HEIGHT_OF_ROUGHNESS_ELEMENTS`
+
+Definition: 
+
+Formula: `xxxxxxx`
+
+Source code: 
+
+### `BUILDING_SURFACE_FRACTION`
+
+Definition: 
+
+Formula: `xxxxxxx`
+
+Source code: 
+
+### `GROUND_ROAD_FRACTION`
+
+Definition: 
+
+Formula: `xxxxxxx`
+
+Source code: 
+
+### `WATER_FRACTION`
+
+Definition: 
+
+Formula: `xxxxxxx`
+
+Source code: 
+
+### `LOW_VEGETATION_FRACTION`
+
+Definition: 
+
+Formula: `xxxxxxx`
+
+Source code: 
+
+### `HIGH_VEGETATION_FRACTION`
+
+Definition: 
+
+Formula: `xxxxxxx`
+
+Source code: 
+
+### `ALL_VEGETATION_FRACTION`
+
+Definition: 
+
+Formula: `xxxxxxx`
+
+Source code: 
+
+### `PROJECTED_FACADE_AREA_DISTRIBUTIONx_xxx`
+
+Definition: 
+
+Formula: `xxxxxxx`
+
+Source code: 
+
+### `ASPECT_RATIO`
+
+Definition: 
+
+Formula: `xxxxxxx`
+
+Source code: 
+
+### `SKY_VIEW_FACTOR`
+
+Definition: 
+
+Formula: `xxxxxxx`
+
+Source code: 
+
+### `PERVIOUS_SURFACE_FRACTION`
+
+Definition: 
+
+Formula: `xxxxxxx`
+
+Source code: 
+
+### `IMPERVIOUS_SURFACE_FRACTION`
+
+Definition: 
+
+Formula: `xxxxxxx`
+
+Source code: 
+
+### `EFFECTIVE_TERRAIN_ROUGHNESS`
+
+Definition: 
+
+Formula: `xxxxxxx`
+
+Source code: 
+
+### `TERRAIN_ROUGHNESS_CLASS`
+
+Definition: 
+
+Formula: `xxxxxxx`
+
+Source code: 

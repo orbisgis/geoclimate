@@ -6,19 +6,51 @@ The LCZ, introduced by *Stewart* & *Oke* ([2012](http://journals.ametsoc.org/doi
 
 For each RSU, we calculate the main (`LCZ1`) and the secondary (`LCZ2`) LCZ type. The main type is the one that occupies the largest surface area in the RSU
 
-## Table definition
+## Table definition ![](./images/icons/table.png)
 
-![](./images/pk.png) PK = Primary Key
+![](./images/icons/pk.png) PK = Primary Key
 
 | Field name                                                   | Field type       | Definition         |
 | :----------------------------------------------------------- | :--------------- | ------------------ |
-| **ID_RSU** ![](./images/pk.png) | integer  | RSU's unique id |
-| LCZ1 | integer | Main LCZ type  |
-| LCZ2 | integer  | Secondary LCZ type |
-| MIN_DISTANCE | double precision |  |
-| PSS | double precision |  |
+| **ID_RSU** ![](./images/icons/pk.png) | integer  | RSU's unique id |
+| LCZ1 | integer | Main LCZ type ([Full definition](#LCZ1))  |
+| LCZ2 | integer  | Secondary LCZ type ([Full definition](#LCZ1)) |
+| MIN_DISTANCE | double precision | ([Full definition](#MIN_DISTANCE)) |
+| PSS | double precision | ([Full definition](#PSS)) |
 
+## Indicators definition  ![](./images/icons/dico.png)
 
+### `LCZ1`
+
+Definition: 
+
+Formula: `xxxxxxx`
+
+Source code: 
+
+### `LCZ2`
+
+Definition: 
+
+Formula: `xxxxxxx`
+
+Source code: 
+
+### `MIN_DISTANCE`
+
+Definition: 
+
+Formula: `xxxxxxx`
+
+Source code: 
+
+### `PSS`
+
+Definition: 
+
+Formula: `xxxxxxx`
+
+Source code: 
 
 ## LCZ typology
 

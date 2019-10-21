@@ -4,14 +4,14 @@ This table stores all the indicators computed at the building's scale.
 
 
 
-## Table definition
+## Table definition ![](./images/icons/table.png)
 
-![](./images/pk.png) PK = Primary Key
+![](./images/icons/pk.png) PK = Primary Key
 
 | Field name   | Field type       | Definition         |
 | :----------- | :--------------- | ------------------ |
 | THE_GEOM       | geometry          | Building's geometry |
-| **ID_BUILD** ![](./images/pk.png) | integer | Building's unique id |
+| **ID_BUILD** ![](./images/icons/pk.png) | integer | Building's unique id |
 | ID_SOURCE | varchar | Original unique id |
 | ID_BLOCK | integer | Belonging block id |
 | ID_RSU | integer | Belonging RSU id |
@@ -23,21 +23,21 @@ This table stores all the indicators computed at the building's scale.
 | MAIN_USE | varchar |  |
 | ZINDEX | integer |  |
 | AREA | double precision | Building's area |
-| VOLUME | double precision | Building's volume ([Full definition](#volume)) |
-| FLOOR_AREA | double precision | [Full definition](#floor_area) |
-| TOTAL_FACADE_LENGTH | double precision | [Full definition](#floor_area) |
-| CONTIGUITY | double precision | [Full definition](#floor_area) |
-| COMMON_WALL_FRACTION | double precision | [Full definition](#floor_area) |
-| NUMBER_BUILDING_NEIGHBOR | bigint | [Full definition](#floor_area) |
-| CONCAVITY | double precision | [Full definition](#floor_area) |
-| FORM_FACTOR | double precision | [Full definition](#floor_area) |
-| RAW_COMPACITY | double precision | [Full definition](#floor_area) |
-| CONVEXHULL_PERIMETER_DENSITY | double precision | [Full definition](#floor_area) |
-| MINIMUM_BUILDING_SPACING | double precision | [Full definition](#floor_area) |
-| ROAD_DISTANCE | double precision | [Full definition](#floor_area) |
-| LIKELIHOOD_LARGE_BUILDING | double precision | [Full definition](#floor_area) |
+| VOLUME | double precision | Building's volume ([Full definition](#VOLUME)) |
+| FLOOR_AREA | double precision | [Full definition](#FLOOR_AREA) |
+| TOTAL_FACADE_LENGTH | double precision | [Full definition](#TOTAL_FACADE_LENGTH) |
+| CONTIGUITY | double precision | [Full definition](#CONTIGUITY) |
+| COMMON_WALL_FRACTION | double precision | [Full definition](#COMMON_WALL_FRACTION) |
+| NUMBER_BUILDING_NEIGHBOR | bigint | [Full definition](#NUMBER_BUILDING_NEIGHBOR) |
+| CONCAVITY | double precision | [Full definition](#CONCAVITY) |
+| FORM_FACTOR | double precision | [Full definition](#FORM_FACTOR) |
+| RAW_COMPACITY | double precision | [Full definition](#RAW_COMPACITY) |
+| CONVEXHULL_PERIMETER_DENSITY | double precision | [Full definition](#CONVEXHULL_PERIMETER_DENSITY) |
+| MINIMUM_BUILDING_SPACING | double precision | [Full definition](#MINIMUM_BUILDING_SPACING) |
+| ROAD_DISTANCE | double precision | [Full definition](#ROAD_DISTANCE) |
+| LIKELIHOOD_LARGE_BUILDING | double precision | [Full definition](#LIKELIHOOD_LARGE_BUILDING) |
 
-## Indicators definition
+## Indicators definition  ![](./images/icons/dico.png)
 
 
 
