@@ -23,7 +23,7 @@ IProcess holeAreaDensity() {
     //Definition of constant values
     def final GEOMETRIC_FIELD = "the_geom"
     def final ID_COLUMN_BL = "id_block"
-    def final BASE_NAME = "block_hole_area_density"
+    def final BASE_NAME = "hole_area_density"
 
     return create({
         title "Hole area ratio"
@@ -69,7 +69,7 @@ IProcess netCompacity() {
     def final GEOMETRY_FIELD_BU = "the_geom"
     def final ID_COLUMN_BL = "id_block"
     def final HEIGHT_WALL = "height_wall"
-    def final BASE_NAME = "block_net_compacity"
+    def final BASE_NAME = "net_compacity"
 
     return create({
         title "Block net compacity"
@@ -125,7 +125,7 @@ IProcess closingness() {
     def final GEOMETRY_FIELD_BU = "the_geom"
     def final GEOMETRY_FIELD_BL = "the_geom"
     def final ID_COLUMN_BL = "id_block"
-    def final BASE_NAME = "block_closingness"
+    def final BASE_NAME = "closingness"
 
     return create({
         title "Closingness of a block"

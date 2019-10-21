@@ -31,7 +31,7 @@ IProcess freeExternalFacadeDensity() {
     def final GEOMETRIC_FIELD_RSU = "the_geom"
     def final ID_FIELD_RSU = "id_rsu"
     def final HEIGHT_WALL = "height_wall"
-    def final BASE_NAME = "rsu_free_external_facade_density"
+    def final BASE_NAME = "free_external_facade_density"
 
     return create({
         title "RSU free external facade density"
@@ -657,7 +657,7 @@ IProcess roofAreaDistribution() {
 IProcess effectiveTerrainRoughnessHeight() {
     def final GEOMETRIC_COLUMN = "the_geom"
     def final ID_COLUMN_RSU = "id_rsu"
-    def final BASE_NAME = "rsu_effective_terrain_roughness"
+    def final BASE_NAME = "effective_terrain_roughness"
 
     return create({
         title "RSU effective terrain roughness height"

@@ -211,10 +211,10 @@ def formProperties() {
     def final ID_FIELD = "id_build"
     def final HEIGHT_WALL = "height_wall"
     def final HEIGHT_ROOF = "height_roof"
-    def final OP_CONCAVITY = "building_concavity"
-    def final OP_FORM_FACTOR = "building_form_factor"
-    def final OP_RAW_COMPACITY = "building_raw_compacity"
-    def final OP_CONVEX_HULL_PERIMETER_DENSITY = "building_convexhull_perimeter_density"
+    def final OP_CONCAVITY = "concavity"
+    def final OP_FORM_FACTOR = "form_factor"
+    def final OP_RAW_COMPACITY = "raw_compacity"
+    def final OP_CONVEX_HULL_PERIMETER_DENSITY = "convexhull_perimeter_density"
     def final BASE_NAME = "building_form_properties"
 
     return create({
@@ -281,7 +281,7 @@ def formProperties() {
 def minimumBuildingSpacing() {
     def final GEOMETRIC_FIELD = "the_geom"
     def final ID_FIELD = "id_build"
-    def final BASE_NAME = "building_minimum_building_spacing"
+    def final BASE_NAME = "minimum_building_spacing"
 
     return create({
         title "Building minimum building spacing"
@@ -339,7 +339,7 @@ def roadDistance() {
     def final GEOMETRIC_FIELD = "the_geom"
     def final ID_FIELD_BU = "id_build"
     def final ROAD_WIDTH = "width"
-    def final BASE_NAME = "building_road_distance"
+    def final BASE_NAME = "road_distance"
 
     return create({
         title "Building road distance"
@@ -425,7 +425,7 @@ def roadDistance() {
 def likelihoodLargeBuilding() {
     def final GEOMETRIC_FIELD = "the_geom"
     def final ID_FIELD_BU = "id_build"
-    def final BASE_NAME = "building_likelihood_large_building"
+    def final BASE_NAME = "likelihood_large_building"
 
     return create({
         title "Building closeness to a 50 m wide building"
