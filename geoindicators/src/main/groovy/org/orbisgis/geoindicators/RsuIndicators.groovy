@@ -365,21 +365,20 @@ IProcess projectedFacadeAreaDistribution() {
 
                 // ...and for the final level
                 names[listLayersBottom.size() - 1] = "rsu_projected_facade_area_distribution" +
-                        "${listLayersBottom[listLayersBottom.size() - 1]}_"
+                        "${listLayersBottom[listLayersBottom.size() - 1]}"
                 layerQuery += "CASEWHEN(z_max >= ${listLayersBottom[listLayersBottom.size() - 1]}, " +
                         "z_max-GREATEST(z_min,${listLayersBottom[listLayersBottom.size() - 1]}), 0) " +
                         "AS ${names[listLayersBottom.size() - 1]} FROM $buildingFree"
                 datasource.execute layerQuery
 
                 // Names and types of all columns are then useful when calling sql queries
-                def namesAndType = ""
-                def onlyNames = ""
-                def onlyNamesB = ""
-                for (n in names) {
-                    namesAndType += " " + n + " double,"
-                    onlyNames += " " + n + ","
-                    onlyNamesB += " b." + n + ","
-                }
+                def namesAndType = names.inject([]) { result, iter ->
+                    result+=  " $iter double"
+                }.join(",")
+                def onlyNamesB =  names.inject([]) { result, iter ->
+                    result+= "b.$iter"
+                }.join(",")
+                def onlyNames = names.join(",")
 
                 datasource.getSpatialTable(buildingLayer).the_geom.createSpatialIndex()
 
@@ -387,7 +386,7 @@ IProcess projectedFacadeAreaDistribution() {
                 datasource.execute """ DROP TABLE IF EXISTS $buildingFreeExpl; 
                         CREATE TABLE $buildingFreeExpl(id_rsu INTEGER, the_geom GEOMETRY, $namesAndType) AS 
                         (SELECT a.$ID_COLUMN_RSU, ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_COLUMN_RSU), ST_TOMULTILINE(b.the_geom)), 
-                        ${onlyNamesB[0..-2]} FROM $rsuTable a, $buildingLayer b 
+                        ${onlyNamesB} FROM $rsuTable a, $buildingLayer b 
                         WHERE a.$GEOMETRIC_COLUMN_RSU && b.the_geom 
                         AND ST_INTERSECTS(a.$GEOMETRIC_COLUMN_RSU, b.the_geom))"""
 
@@ -395,40 +394,45 @@ IProcess projectedFacadeAreaDistribution() {
                 // Intersections  facades are exploded to multisegments
                 datasource.execute "DROP TABLE IF EXISTS $rsuInter; " +
                         "CREATE TABLE $rsuInter(id_rsu INTEGER, the_geom GEOMETRY, $namesAndType) " +
-                        "AS (SELECT id_rsu, the_geom, ${onlyNames[0..-2]} FROM ST_EXPLODE('$buildingFreeExpl'))"
+                        "AS (SELECT id_rsu, the_geom, ${onlyNames} FROM ST_EXPLODE('$buildingFreeExpl'))"
 
 
                 // The analysis is then performed for each direction ('numberOfDirection' / 2 because calculation
                 // is performed for a direction independently of the "toward")
-                def namesAndTypeDir = ""
-                def onlyNamesDir = ""
-                def sumNamesDir = ""
-                def queryColumns = ""
+                def namesAndTypeDir =[]
+                def onlyNamesDir =[]
+                def sumNamesDir =[]
+                def queryColumns =[]
                 for (int d = 0; d < numberOfDirection / 2; d++) {
                     def dirDeg = d * 360 / numberOfDirection
                     def dirRad = Math.toRadians(dirDeg)
                     def dirRadMid = dirRad + dirMedRad
                     def dirDegMid = dirDeg + dirMedDeg
                     // Define the field name for each of the directions and vertical layers
-                    for (n in names) {
-                        namesAndTypeDir += " " + n + "D" + (dirDeg + dirMedDeg) + " double,"
-                        queryColumns += " CASEWHEN  (a.azimuth-$dirRadMid>PI()/2, " +
-                                                    "a.$n*a.length*COS(a.azimuth-$dirRadMid-PI()/2), " +
-                                                    "CASEWHEN   (a.azimuth-$dirRadMid<-PI()/2, " +
-                                                                "a.$n*a.length*COS(a.azimuth-$dirRadMid+PI()/2), " +
-                                                                "a.$n*a.length*ABS(SIN(a.azimuth-$dirRadMid))))/2 " +
-                                        "AS ${n}D${dirDegMid},"
-                        onlyNamesDir += "${n}d${dirDegMid},"
-                        sumNamesDir += "COALESCE(SUM(b.${n}d${dirDegMid}), 0) AS ${n}d${dirDegMid} ,"
+                    names.each { value ->
+                        namesAndTypeDir += " " + value + "D" + (dirDeg + dirMedDeg) + " double"
+                        queryColumns += """CASE
+                                WHEN  a.azimuth-$dirRadMid>PI()/2
+                                THEN  a.$value*a.length*COS(a.azimuth-$dirRadMid-PI()/2)/2
+                                WHEN  a.azimuth-$dirRadMid<-PI()/2
+                                THEN  a.$value*a.length*COS(a.azimuth-$dirRadMid+PI()/2)/2
+                                ELSE  a.$value*a.length*ABS(SIN(a.azimuth-$dirRadMid))/2 
+                                END AS ${value}D${dirDegMid}"""
+                        onlyNamesDir += "${value}d${dirDegMid}"
+                        sumNamesDir += "COALESCE(SUM(b.${value}d${dirDegMid}), 0) AS ${value}d${dirDegMid} "
                     }
                 }
+                namesAndTypeDir =namesAndTypeDir.join(",")
+                queryColumns =queryColumns.join(",")
+                onlyNamesDir =onlyNamesDir.join(",")
+                sumNamesDir =sumNamesDir.join(",")
 
                 def query = "DROP TABLE IF EXISTS $finalIndicator; " +
-                        "CREATE TABLE $finalIndicator AS SELECT a.id_rsu," + queryColumns[0..-2] +
+                        "CREATE TABLE $finalIndicator AS SELECT a.id_rsu," + queryColumns +
                         " FROM (SELECT id_rsu, CASE WHEN ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom)) >= PI()" +
                                                         "THEN ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom)) - PI() " +
                                                         "ELSE ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom)) END AS azimuth," +
-                                " ST_LENGTH(the_geom) AS length, ${onlyNames[0..-2]} FROM $rsuInter) a"
+                                " ST_LENGTH(the_geom) AS length, ${onlyNames} FROM $rsuInter) a"
 
                 datasource.execute query
 
@@ -439,7 +443,7 @@ IProcess projectedFacadeAreaDistribution() {
                 datasource.execute """
                         DROP TABLE IF EXISTS $outputTableName;
                         CREATE TABLE    ${outputTableName} 
-                        AS SELECT       a.id_rsu, ${sumNamesDir[0..-3]} 
+                        AS SELECT       a.id_rsu, ${sumNamesDir} 
                         FROM            $rsuTable a LEFT JOIN $finalIndicator b 
                         ON              a.id_rsu = b.id_rsu 
                         GROUP BY        a.id_rsu"""
@@ -686,7 +690,7 @@ IProcess effectiveTerrainRoughnessHeight() {
                 names[i - 1] = "$projectedFacadeAreaName${listLayersBottom[i - 1]}_${listLayersBottom[i]}"
                 if (i == listLayersBottom.size()) {
                     names[listLayersBottom.size() - 1] =
-                            "$projectedFacadeAreaName${listLayersBottom[listLayersBottom.size() - 1]}_"
+                            "$projectedFacadeAreaName${listLayersBottom[listLayersBottom.size() - 1]}"
                 }
                 for (int d = 0; d < numberOfDirection / 2; d++) {
                     def dirDeg = d * 360 / numberOfDirection

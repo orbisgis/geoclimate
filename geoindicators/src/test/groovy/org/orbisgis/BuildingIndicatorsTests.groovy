@@ -14,7 +14,7 @@ class BuildingIndicatorsTests {
 
     @BeforeAll
     static void init(){
-        h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
+        h2GIS = H2GIS.open('./target/buildingdb;AUTO_SERVER=TRUE')
     }
 
     @BeforeEach

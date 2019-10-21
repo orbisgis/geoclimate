@@ -98,7 +98,7 @@ class RsuIndicatorsTests {
                             "_${listLayersBottom[i]}"
                     if (i == listLayersBottom.size()){
                         names[listLayersBottom.size()-1]="rsu_projected_facade_area_distribution"+
-                                "${listLayersBottom[listLayersBottom.size()-1]}_"
+                                "${listLayersBottom[listLayersBottom.size()-1]}"
                     }
                     for (int d=0; d<numberOfDirection/2; d++){
                         int dirDeg = d*360/numberOfDirection

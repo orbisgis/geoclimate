@@ -5,6 +5,7 @@ import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.SFSUtilities
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
+import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.PrepareData
@@ -49,13 +50,19 @@ IProcess extractAndCreateGISLayers(){
                 logger.error("Cannot find an area from the place name ${placeName}")
                 return null
             } else {
+                def GEOMETRY_TYPE = "GEOMETRY"
+                if(geom instanceof Polygon){
+                    GEOMETRY_TYPE ="POLYGON"
+                }else if(geom instanceof MultiPolygon){
+                    GEOMETRY_TYPE ="MULTIPOLYGON"
+                }
                 /**
                  * Extract the OSM file from the envelope of the geometry
                  */
                 def geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, epsg, distance, datasource)
                 epsg = geomAndEnv.geom.getSRID()
 
-                datasource.execute """create table ${outputZoneTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
+                datasource.execute """create table ${outputZoneTable} (the_geom GEOMETRY(${GEOMETRY_TYPE}, $epsg), ID_ZONE VARCHAR);
             INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT('${
                     geomAndEnv.geom.toString()
                 }', $epsg), '$placeName');"""
@@ -161,9 +168,10 @@ IProcess createGISLayers() {
                     logger.info "Rail layer created"
                 }
                 //Create vegetation layer
-                tags = ['natural':['tree', 'wetland', 'grassland', 'tree_row', 'scrub', 'heath', 'sand', 'land', 'mud'],
-                       'landuse':['farmland', 'forest', 'grass', 'meadow', 'orchard', 'vineyard', 'village_green'],
+                tags = ['natural':['tree', 'wetland', 'grassland', 'tree_row', 'scrub', 'heath', 'sand', 'land', 'mud', 'wood'],
+                       'landuse':['farmland', 'forest', 'grass', 'meadow', 'orchard', 'vineyard', 'village_green', 'allotments'],
                        'landcover':[],
+                        'leisure':['park', 'garden'],
                         'vegetation':['grass'],'barrier':['hedge'],'fence_type':['hedge', 'wood'],
                                          'hedge':[],'wetland':[],'vineyard':[],
                                          'trees':[],'crop':[],'produce':[]]
@@ -176,10 +184,9 @@ IProcess createGISLayers() {
                 }
 
                 //Create water layer
-                tags = ['natural':['water','waterway','bay'],'water':[],'waterway':[]]
+                tags = ['natural':['water','waterway','bay'],'water':[],'waterway':[], 'landuse':['basin', ' salt_pond']]
                 transform = OSMTools.Transform.toPolygons()
                 logger.info "Create the water layer"
-                tags = ['natural', 'water', 'waterway']
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags)){
                     outputhydroTableName = transform.results.outputTableName
                     logger.info "Water layer created"
