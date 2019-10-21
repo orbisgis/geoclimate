@@ -104,8 +104,8 @@ def OSMGeoIndicators() {
             if(indicatorUse.contains("LCZ")){
                 def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"             : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
                                      "DENS_AREA"                        : "BUILDING_SURFACE_FRACTION",
-                                     "RSU_ASPECT_RATIO"                 : "ASPECT_RATIO",
-                                     "RSU_GROUND_SKY_VIEW_FACTOR"       : "SKY_VIEW_FACTOR",
+                                     "ASPECT_RATIO"                     : "ASPECT_RATIO",
+                                     "GROUND_SKY_VIEW_FACTOR"           : "SKY_VIEW_FACTOR",
                                      "PERVIOUS_FRACTION"                : "PERVIOUS_SURFACE_FRACTION",
                                      "IMPERVIOUS_FRACTION"              : "IMPERVIOUS_SURFACE_FRACTION",
                                      "EFFECTIVE_TERRAIN_ROUGHNESS_CLASS": "TERRAIN_ROUGHNESS_CLASS"]

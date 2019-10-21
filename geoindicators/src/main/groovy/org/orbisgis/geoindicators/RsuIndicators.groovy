@@ -43,14 +43,14 @@ IProcess freeExternalFacadeDensity() {
             info "Executing RSU free external facade density"
 
             // The name of the outputTableName is constructed
-            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
+            def outputTableName = getOutputTableName(prefixName, "rsu_" + BASE_NAME)
 
             datasource.getSpatialTable(buildingTable).id_rsu.createIndex()
             datasource.getSpatialTable(rsuTable).id_rsu.createIndex()
 
             def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
                     "SELECT COALESCE(SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$HEIGHT_WALL)/" +
-                    "st_area(b.$GEOMETRIC_FIELD_RSU),0) AS rsu_free_external_facade_density, b.$ID_FIELD_RSU "
+                    "st_area(b.$GEOMETRIC_FIELD_RSU),0) AS $BASE_NAME, b.$ID_FIELD_RSU "
 
             query += " FROM $buildingTable a RIGHT JOIN $rsuTable b " +
                     "ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU GROUP BY b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD_RSU;"
@@ -98,7 +98,7 @@ IProcess groundSkyViewFactor() {
     def final GEOMETRIC_COLUMN_BU = "the_geom"
     def final ID_COLUMN_RSU = "id_rsu"
     def final HEIGHT_WALL = "height_wall"
-    def final BASE_NAME = "rsu_ground_sky_view_factor"
+    def final BASE_NAME = "ground_sky_view_factor"
     
     return create({
         title "RSU ground sky view factor"
@@ -122,7 +122,7 @@ IProcess groundSkyViewFactor() {
             def pts_RANG = "pts_RANG$uuid"
 
             // The name of the outputTableName is constructed
-            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
+            def outputTableName = getOutputTableName(prefixName, "rsu_" + BASE_NAME)
 
             // Create the needed index on input tables and the table that will contain the SVF calculation points
             datasource.getSpatialTable(rsuTable)[GEOMETRIC_COLUMN_RSU].createSpatialIndex()
@@ -183,7 +183,7 @@ IProcess groundSkyViewFactor() {
 
             // The result of the SVF calculation is averaged at RSU scale
             datasource.execute """
-                    CREATE TABLE $outputTableName(id_rsu integer, rsu_ground_sky_view_factor double) 
+                    CREATE TABLE $outputTableName(id_rsu integer, $BASE_NAME double) 
                     AS          (SELECT a.$ID_COLUMN_RSU, CASE WHEN AVG(b.SVF) is not null THEN AVG(b.SVF) ELSE 1 END
                     FROM        $rsuTable a 
                     LEFT JOIN   $svfPts b 
@@ -223,7 +223,7 @@ IProcess groundSkyViewFactor() {
  */
 IProcess aspectRatio() {
     def final COLUMN_ID_RSU = "id_rsu"
-    def final BASE_NAME = "rsu_aspect_ratio"
+    def final BASE_NAME = "aspect_ratio"
 
     return create({
         title "RSU aspect ratio"
@@ -236,11 +236,11 @@ IProcess aspectRatio() {
             info "Executing RSU aspect ratio"
 
             // The name of the outputTableName is constructed
-            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
+            def outputTableName = getOutputTableName(prefixName, "rsu_" + BASE_NAME)
 
             datasource.execute """DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS 
                     SELECT $rsuFreeExternalFacadeDensityColumn/(1-$rsuBuildingDensityColumn) AS 
-                    rsu_aspect_ratio, $COLUMN_ID_RSU FROM $rsuTable"""
+                    $BASE_NAME, $COLUMN_ID_RSU FROM $rsuTable"""
 
             [outputTableName: outputTableName]
         }
@@ -273,7 +273,7 @@ IProcess aspectRatio() {
  * @author Jérémy Bernard
  */
 IProcess projectedFacadeAreaDistribution() {
-    def final BASE_NAME = "rsu_projected_facade_area_distribution"
+    def final BASE_NAME = "projected_facade_area_distribution"
     def final GEOMETRIC_COLUMN_RSU = "the_geom"
     def final GEOMETRIC_COLUMN_BU = "the_geom"
     def final ID_COLUMN_RSU = "id_rsu"
@@ -290,7 +290,7 @@ IProcess projectedFacadeAreaDistribution() {
             info "Executing RSU projected facade area distribution"
 
             // The name of the outputTableName is constructed
-            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
+            def outputTableName = getOutputTableName(prefixName, "rsu_" + BASE_NAME)
 
             datasource.getSpatialTable(buildingTable).the_geom.createSpatialIndex()
             datasource.getSpatialTable(rsuTable).the_geom.createSpatialIndex()
@@ -354,7 +354,7 @@ IProcess projectedFacadeAreaDistribution() {
                 // The height of wall is calculated for each intermediate level...
                 def layerQuery = "DROP TABLE IF EXISTS $buildingLayer; CREATE TABLE $buildingLayer AS SELECT the_geom, "
                 for (i in 1..(listLayersBottom.size() - 1)) {
-                    names[i - 1] = "rsu_projected_facade_area_distribution${listLayersBottom[i - 1]}" +
+                    names[i - 1] = "$BASE_NAME${listLayersBottom[i - 1]}" +
                             "_${listLayersBottom[i]}"
                     layerQuery += "CASEWHEN(z_max <= ${listLayersBottom[i - 1]}, 0, " +
                             "CASEWHEN(z_min >= ${listLayersBottom[i]}, " +
@@ -364,7 +364,7 @@ IProcess projectedFacadeAreaDistribution() {
                 }
 
                 // ...and for the final level
-                names[listLayersBottom.size() - 1] = "rsu_projected_facade_area_distribution" +
+                names[listLayersBottom.size() - 1] = "$BASE_NAME" +
                         "${listLayersBottom[listLayersBottom.size() - 1]}"
                 layerQuery += "CASEWHEN(z_max >= ${listLayersBottom[listLayersBottom.size() - 1]}, " +
                         "z_max-GREATEST(z_min,${listLayersBottom[listLayersBottom.size() - 1]}), 0) " +
@@ -485,7 +485,7 @@ IProcess roofAreaDistribution() {
     def final ID_COLUMN_BU = "id_build"
     def final HEIGHT_WALL = "height_wall"
     def final HEIGHT_ROOF = "height_roof"
-    def final BASE_NAME = "rsu_roof_area_distribution"
+    def final BASE_NAME = "roof_area_distribution"
 
     return create({
         title "RSU roof area distribution"
@@ -507,7 +507,7 @@ IProcess roofAreaDistribution() {
             datasource.getSpatialTable(rsuTable).id_rsu.createIndex()
 
             // The name of the outputTableName is constructed
-            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
+            def outputTableName = getOutputTableName(prefixName, "rsu_" + BASE_NAME)
 
             // Vertical and non-vertical (tilted and horizontal) roof areas are calculated
             datasource.execute "DROP TABLE IF EXISTS $buildRoofSurfIni;" +
@@ -585,7 +585,7 @@ IProcess roofAreaDistribution() {
                         "z_max <= ${listLayersBottom[i]}, CASEWHEN(delta_h=0, non_vertical_roof_area, " +
                         "non_vertical_roof_area*(z_max-GREATEST(${listLayersBottom[i - 1]},z_min))/delta_h), " +
                         "CASEWHEN(z_min < ${listLayersBottom[i]}, non_vertical_roof_area*(${listLayersBottom[i]}-" +
-                        "GREATEST(${listLayersBottom[i - 1]},z_min))/delta_h, 0)))),0) AS rsu_non_vert_roof_area" +
+                        "GREATEST(${listLayersBottom[i - 1]},z_min))/delta_h, 0)))),0) AS non_vert_roof_area" +
                         "${listLayersBottom[i - 1]}_${listLayersBottom[i]},"
                 vertQuery += " COALESCE(SUM(CASEWHEN(z_max <= ${listLayersBottom[i - 1]}, 0, CASEWHEN(" +
                         "z_max <= ${listLayersBottom[i]}, CASEWHEN(delta_h=0, 0, " +
@@ -594,15 +594,15 @@ IProcess roofAreaDistribution() {
                         "CASEWHEN(z_min>${listLayersBottom[i - 1]}, vertical_roof_area*(1-" +
                         "POWER((z_max-${listLayersBottom[i]})/delta_h,2)),vertical_roof_area*(" +
                         "POWER((z_max-${listLayersBottom[i - 1]})/delta_h,2)-POWER((z_max-${listLayersBottom[i]})/" +
-                        "delta_h,2))), 0)))),0) AS rsu_vert_roof_area${listLayersBottom[i - 1]}_${listLayersBottom[i]},"
+                        "delta_h,2))), 0)))),0) AS vert_roof_area${listLayersBottom[i - 1]}_${listLayersBottom[i]},"
             }
             // The roof area is calculated for the last level (> 50 m in the default case)
             def valueLastLevel = listLayersBottom[listLayersBottom.size() - 1]
             nonVertQuery += " COALESCE(SUM(CASEWHEN(z_max <= $valueLastLevel, 0, CASEWHEN(delta_h=0, non_vertical_roof_area, " +
-                    "non_vertical_roof_area*(z_max-GREATEST($valueLastLevel,z_min))/delta_h))),0) AS rsu_non_vert_roof_area" +
+                    "non_vertical_roof_area*(z_max-GREATEST($valueLastLevel,z_min))/delta_h))),0) AS non_vert_roof_area" +
                     "${valueLastLevel}_,"
             vertQuery += " COALESCE(SUM(CASEWHEN(z_max <= $valueLastLevel, 0, CASEWHEN(delta_h=0, vertical_roof_area, " +
-                    "vertical_roof_area*(z_max-GREATEST($valueLastLevel,z_min))/delta_h))),0) AS rsu_vert_roof_area" +
+                    "vertical_roof_area*(z_max-GREATEST($valueLastLevel,z_min))/delta_h))),0) AS vert_roof_area" +
                     "${valueLastLevel}_,"
 
             def endQuery = " FROM $buildRoofSurfTot GROUP BY id_rsu;"
@@ -681,7 +681,7 @@ IProcess effectiveTerrainRoughnessHeight() {
             def lambdaTable = "lambdaTable$uuid"
 
             // The name of the outputTableName is constructed
-            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
+            def outputTableName = getOutputTableName(prefixName, "rsu_" + BASE_NAME)
 
             // The lambda_f indicator is first calculated
             def lambdaQuery = "DROP TABLE IF EXISTS $lambdaTable;" +
@@ -739,7 +739,7 @@ IProcess effectiveTerrainRoughnessHeight() {
  * @author Jérémy Bernard
  */
 IProcess linearRoadOperations() {
-    def final OPS = ["rsu_road_direction_distribution", "rsu_linear_road_density"]
+    def final OPS = ["road_direction_distribution", "linear_road_density"]
     def final GEOMETRIC_COLUMN_RSU = "the_geom"
     def final ID_COLUMN_RSU = "id_rsu"
     def final GEOMETRIC_COLUMN_ROAD = "the_geom"
@@ -817,12 +817,12 @@ IProcess linearRoadOperations() {
 
                         // If all roads are considered at the same level...
                         if (levelConsiderated == null) {
-                            nameDens.add("rsu_linear_road_density")
-                            caseQueryDens = "SUM(ST_LENGTH(the_geom))/rsu_area AS rsu_linear_road_density "
+                            nameDens.add("linear_road_density")
+                            caseQueryDens = "SUM(ST_LENGTH(the_geom))/rsu_area AS linear_road_density "
                             for (int d = angleRangeSize; d <= 180; d += angleRangeSize) {
                                 caseQueryDistrib += "SUM(CASEWHEN(azimuth>=${d - angleRangeSize} AND azimuth<$d, length, 0)) AS " +
-                                        "rsu_road_direction_distribution_d${d - angleRangeSize}_$d,"
-                                nameDistrib.add("rsu_road_direction_distribution_d${d - angleRangeSize}_$d")
+                                        "road_direction_distribution_d${d - angleRangeSize}_$d,"
+                                nameDistrib.add("road_direction_distribution_d${d - angleRangeSize}_$d")
                             }
                         }
                         // If only certain levels are considered independantly
@@ -830,14 +830,14 @@ IProcess linearRoadOperations() {
                             ifZindex = ", zindex "
                             levelConsiderated.each { lev ->
                                 caseQueryDens += "SUM(CASEWHEN(zindex = $lev, ST_LENGTH(the_geom), 0))/rsu_area " +
-                                        "AS rsu_linear_road_density_h${lev.toString().replaceAll('-', 'minus')},"
-                                nameDens.add("rsu_linear_road_density_h${lev.toString().replaceAll('-', 'minus')}")
+                                        "AS linear_road_density_h${lev.toString().replaceAll('-', 'minus')},"
+                                nameDens.add("linear_road_density_h${lev.toString().replaceAll('-', 'minus')}")
                                 for (int d = angleRangeSize; d <= 180; d += angleRangeSize) {
                                     caseQueryDistrib += "SUM(CASEWHEN(azimuth>=${d - angleRangeSize} AND azimuth<$d AND " +
                                             "zindex = $lev, length, 0)) AS " +
-                                            "rsu_road_direction_distribution_h${lev.toString().replaceAll("-", "minus")}" +
+                                            "road_direction_distribution_h${lev.toString().replaceAll("-", "minus")}" +
                                             "_d${d - angleRangeSize}_$d,"
-                                    nameDistrib.add("rsu_road_direction_distribution_h${lev.toString().replaceAll("-", "minus")}" +
+                                    nameDistrib.add("road_direction_distribution_h${lev.toString().replaceAll("-", "minus")}" +
                                             "_d${d - angleRangeSize}_$d")
                                 }
                             }
@@ -846,7 +846,7 @@ IProcess linearRoadOperations() {
                         //      2. Depending on the operations to proceed, the queries executed during this step will differ
                         // If the road direction distribution is calculated, explode the roads into segments in order to calculate
                         // their length for each azimuth range
-                        if (operations.contains("rsu_road_direction_distribution")) {
+                        if (operations.contains("road_direction_distribution")) {
                             def queryExpl = "DROP TABLE IF EXISTS $roadExpl;" +
                                     "CREATE TABLE $roadExpl AS SELECT id_rsu, the_geom, " +
                                     "CASEWHEN(ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom))>=pi()," +
@@ -868,14 +868,14 @@ IProcess linearRoadOperations() {
                                     "FROM $rsuTable a LEFT JOIN $roadDistrib b ON a.$ID_COLUMN_RSU=b.id_rsu);"
                             datasource.execute queryDistrib
 
-                            if (!operations.contains("rsu_linear_road_density")) {
+                            if (!operations.contains("linear_road_density")) {
                                 datasource.execute "DROP TABLE IF EXISTS $outputTableName;" +
                                         "ALTER TABLE $roadDistTot RENAME TO $outputTableName"
                             }
                         }
 
                         // If the rsu linear density should be calculated
-                        if (operations.contains("rsu_linear_road_density")) {
+                        if (operations.contains("linear_road_density")) {
                             String queryDensity = "DROP TABLE IF EXISTS $roadDens;" +
                                     "CREATE TABLE $roadDens AS SELECT id_rsu, " + caseQueryDens[0..-2] +
                                     " FROM $roadInter GROUP BY id_rsu;" +
@@ -885,13 +885,13 @@ IProcess linearRoadOperations() {
                                     "COALESCE(b.${nameDens.join(",0),COALESCE(b.")},0) " +
                                     "FROM $rsuTable a LEFT JOIN $roadDens b ON a.$ID_COLUMN_RSU=b.id_rsu)"
                             datasource.execute queryDensity
-                            if (!operations.contains("rsu_road_direction_distribution")) {
+                            if (!operations.contains("road_direction_distribution")) {
                                 datasource.execute "DROP TABLE IF EXISTS $outputTableName;" +
                                         "ALTER TABLE $roadDensTot RENAME TO $outputTableName"
                             }
                         }
-                        if (operations.contains("rsu_road_direction_distribution") &&
-                                operations.contains("rsu_linear_road_density")) {
+                        if (operations.contains("road_direction_distribution") &&
+                                operations.contains("linear_road_density")) {
                             datasource.execute "DROP TABLE if exists $outputTableName; CREATE TABLE $outputTableName AS SELECT a.*," +
                                     "b.${nameDens.join(",b.")} FROM $roadDistTot a LEFT JOIN $roadDensTot b " +
                                     "ON a.id_rsu=b.id_rsu"
@@ -950,7 +950,7 @@ IProcess effectiveTerrainRoughnessClass() {
             info "Executing RSU effective terrain roughness class"
 
             // The name of the outputTableName is constructed
-            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
+            def outputTableName = getOutputTableName(prefixName, "rsu_" + BASE_NAME)
 
             // Based on the lookup Table of Davenport
             datasource.execute "DROP TABLE IF EXISTS $outputTableName;" +
@@ -1008,7 +1008,7 @@ IProcess vegetationFraction() {
             info "Executing vegetation fraction"
 
             // The name of the outputTableName is constructed
-            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
+            def outputTableName = getOutputTableName(prefixName, "rsu_" + BASE_NAME)
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
@@ -1095,7 +1095,7 @@ IProcess roadFraction() {
             info "Executing road fraction"
 
             // The name of the outputTableName is constructed
-            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
+            def outputTableName = getOutputTableName(prefixName, "rsu_" + BASE_NAME)
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
@@ -1178,7 +1178,7 @@ IProcess waterFraction() {
             info "Executing water fraction"
 
             // The name of the outputTableName is constructed
-            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
+            def outputTableName = getOutputTableName(prefixName, "rsu_" + BASE_NAME)
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
@@ -1193,14 +1193,14 @@ IProcess waterFraction() {
             def buffQuery = "DROP TABLE IF EXISTS $buffTable; " +
                     "CREATE TABLE $buffTable AS SELECT b.$ID_COLUMN_RSU, " +
                     "SUM(ST_AREA(ST_INTERSECTION(a.$GEOMETRIC_COLUMN_WATER, b.$GEOMETRIC_COLUMN_RSU)))" +
-                    "/ST_AREA(b.$GEOMETRIC_COLUMN_RSU) AS water_fraction FROM $waterTable a, $rsuTable b " +
+                    "/ST_AREA(b.$GEOMETRIC_COLUMN_RSU) AS $BASE_NAME FROM $waterTable a, $rsuTable b " +
                     "WHERE a.$GEOMETRIC_COLUMN_WATER && b.$GEOMETRIC_COLUMN_RSU AND " +
                     "ST_INTERSECTS(a.$GEOMETRIC_COLUMN_WATER, b.$GEOMETRIC_COLUMN_RSU) GROUP BY b.$ID_COLUMN_RSU;"
 
             def finalQuery = "DROP TABLE IF EXISTS $outputTableName; " +
                     "CREATE INDEX IF NOT EXISTS ids_r ON $buffTable($ID_COLUMN_RSU); " +
-                    "CREATE TABLE $outputTableName($ID_COLUMN_RSU INTEGER, water_fraction DOUBLE DEFAULT 0) AS " +
-                    "(SELECT a.$ID_COLUMN_RSU, COALESCE(b.water_fraction,0) FROM $rsuTable a LEFT JOIN $buffTable b ON " +
+                    "CREATE TABLE $outputTableName($ID_COLUMN_RSU INTEGER, $BASE_NAME DOUBLE DEFAULT 0) AS " +
+                    "(SELECT a.$ID_COLUMN_RSU, COALESCE(b.$BASE_NAME,0) FROM $rsuTable a LEFT JOIN $buffTable b ON " +
                     "a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU)"
 
             datasource.execute buffQuery + finalQuery
@@ -1232,7 +1232,7 @@ IProcess waterFraction() {
 IProcess perviousnessFraction() {
     def final ID_COLUMN_RSU = "id_rsu"
     def final OPS = ["pervious_fraction", "impervious_fraction"]
-    def final BASE_NAME = "perviousness_fraction"
+    def final BASE_NAME = "rsu_perviousness_fraction"
 
     return create({
         title "Perviousness fraction"
@@ -1312,7 +1312,7 @@ IProcess extendedFreeFacadeFraction() {
     def final GEOMETRIC_FIELD = "the_geom"
     def final ID_FIELD_RSU = "id_rsu"
     def final HEIGHT_WALL = "height_wall"
-    def final BASE_NAME = "rsu_extended_free_facade_fraction"
+    def final BASE_NAME = "extended_free_facade_fraction"
 
     return create({
         title "Extended RSU free facade fraction (for SVF fast)"
@@ -1324,7 +1324,7 @@ IProcess extendedFreeFacadeFraction() {
             info "Executing RSU free facade fraction (for SVF fast)"
 
             // The name of the outputTableName is constructed
-            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
+            def outputTableName = getOutputTableName(prefixName, "rsu_" + BASE_NAME)
 
             // Temporary tables are created
             def extRsuTable = "extRsu$uuid"
@@ -1369,7 +1369,7 @@ IProcess extendedFreeFacadeFraction() {
                     "SELECT COALESCE((a.FAC_AREA + b.FAC_AREA) /" +
                     "(a.FAC_AREA + b.FAC_AREA + ST_AREA(ST_BUFFER(a.$GEOMETRIC_FIELD, $buffDist, 'quad_segs=2')))," +
                     " a.FAC_AREA / (a.FAC_AREA  + ST_AREA(ST_BUFFER(a.$GEOMETRIC_FIELD, $buffDist, 'quad_segs=2'))))" +
-                    "AS rsu_extended_free_facade_fraction, " +
+                    "AS $BASE_NAME, " +
                     "a.$ID_FIELD_RSU, a.$GEOMETRIC_FIELD FROM $fullInclBu a LEFT JOIN $notIncBu b " +
                     "ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU;"
 
