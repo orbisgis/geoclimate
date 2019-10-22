@@ -12,8 +12,36 @@ This table stores all the indicators computed at the RSU's scale.
 | :----------- | :--------------- | ------------------ |
 | THE_GEOM       | geometry          | RSU's geometry    |
 | **ID_RSU** ![](./images/icons/pk.png) | integer | RSU's unique id    |
-| ID_ZONE | varchar | Belonging zone id |
+| AREA | double precision |  |
+| WEIGHTED_AVG_HEIGHT_ROOF_AREA | double precision |  |
+| WEIGHTED_STD_HEIGHT_ROOF_AREA | double precision |  |
+| WEIGHTED_AVG_NUMBER_BUILDING_NEIGHBOR_AREA | double precision |  |
+| WEIGHTED_AVG_VOLUME_AREA | double precision |  |
+| ROAD_DIRECTION_DISTRIBUTION_H0_D0_30 | double precision |  |
+| ROAD_DIRECTION_DISTRIBUTION_H0_D30_60 | double precision |  |
+| ROAD_DIRECTION_DISTRIBUTION_H0_D60_90 | double precision |  |
+| ROAD_DIRECTION_DISTRIBUTION_H0_D90_120 | double precision |  |
+| ROAD_DIRECTION_DISTRIBUTION_H0_D120_150 | double precision |  |
+| ROAD_DIRECTION_DISTRIBUTION_H0_D150_180 | double precision |  |
+| NON_VERT_ROOF_AREA0_10 | double precision |  |
+| NON_VERT_ROOF_AREA10_20 | double precision |  |
+| NON_VERT_ROOF_AREA20_30 | double precision |  |
+| NON_VERT_ROOF_AREA30_40 | double precision |  |
+| NON_VERT_ROOF_AREA40_50 | double precision |  |
+| NON_VERT_ROOF_AREA50_ | double precision |  |
+| VERT_ROOF_AREA0_10 | double precision |  |
+| VERT_ROOF_AREA10_20 | double precision |  |
+| VERT_ROOF_AREA20_30 | double precision |  |
+| VERT_ROOF_AREA30_40 | double precision |  |
+| VERT_ROOF_AREA40_50 | double precision |  |
+| VERT_ROOF_AREA50_ | double precision |  |
 | FREE_EXTERNAL_FACADE_DENSITY | double precision | [Full definition](#FREE_EXTERNAL_FACADE_DENSITY) |
+| GEOM_AVG_HEIGHT_ROOF | double precision |  |
+| DENS_AREA | double precision |  |
+| DENS_VOLUME | double precision |  |
+| AVG_NUMBER_BUILDING_NEIGHBOR | double precision |  |
+| DENS_FLOOR_AREA | double precision |  |
+| AVG_MINIMUM_BUILDING_SPACING | double precision |  |
 | HEIGHT_OF_ROUGHNESS_ELEMENTS | double precision | [Full definition](#HEIGHT_OF_ROUGHNESS_ELEMENTS) |
 | BUILDING_SURFACE_FRACTION | double precision | [Full definition](#BUILDING_SURFACE_FRACTION) |
 | GROUND_ROAD_FRACTION | double precision | [Full definition](#GROUND_ROAD_FRACTION) |
@@ -62,8 +90,9 @@ This table stores all the indicators computed at the RSU's scale.
 | PERVIOUS_SURFACE_FRACTION | double precision | [Full definition](#PERVIOUS_SURFACE_FRACTION) |
 | IMPERVIOUS_SURFACE_FRACTION | double precision | [Full definition](#IMPERVIOUS_SURFACE_FRACTION) |
 | EFFECTIVE_TERRAIN_ROUGHNESS | double precision | [Full definition](#EFFECTIVE_TERRAIN_ROUGHNESS) |
-| TERRAIN_ROUGHNESS_CLASS | integer | [Full definition](#TERRAIN_ROUGHNESS_CLASS) |
-
+| EFFECTIVE_TERRAIN_ROUGHNESS_CLASS | integer | [Full definition](#EFFECTIVE_TERRAIN_ROUGHNESS_CLASS) |
+| PERKINS_SKILL_SCORE_BUILDING_DIRECTION | double precision |  |
+| MAIN_BUILDING_DIRECTION | integer |  |
 
 ## Indicators definition  ![](./images/icons/dico.png)
 
@@ -110,7 +139,7 @@ Formula: `xxxxxxx`
 
 Source code: 
 
-### `LOW_VEGETATION_FRACTION`
+### `LOW_VEGETATION_FRACTION`
 
 Definition: 
 

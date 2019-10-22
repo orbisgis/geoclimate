@@ -13,10 +13,9 @@ This table stores all the indicators computed at the block's scale.
 | THE_GEOM       | geometry          | Block's geometry |
 | **ID_BLOCK** ![](./images/icons/pk.png) | integer | Block's unique id    |
 | ID_RSU | integer | Belonging RSU id |
-| ID_ZONE | varchar | Belonging zone id |
-| AREA | double precision | Block's area ([Full definition](#AREA)) |
-| SUM_BUILDING_FLOOR_AREA | double precision | [Full definition](#SUM_BUILDING_FLOOR_AREA) |
-| VOLUME | double precision | Block's volume ([Full definition](#VOLUME)) |
+| SUM_AREA | double precision | Block's area ([Full definition](#SUM_AREA)) |
+| SUM_FLOOR_AREA | double precision | [Full definition](#SUM_FLOOR_AREA) |
+| SUM_VOLUME | double precision | Block's volume ([Full definition](#SUM_VOLUME)) |
 | HOLE_AREA_DENSITY | double precision |  [Full definition](#HOLE_AREA_DENSITY) |
 | PERKINS_SKILL_SCORE_BUILDING_DIRECTION | double precision |  [Full definition](#PERKINS_SKILL_SCORE_BUILDING_DIRECTION) |
 | MAIN_BUILDING_DIRECTION | double precision |  [Full definition](#MAIN_BUILDING_DIRECTION) |
@@ -31,7 +30,7 @@ This table stores all the indicators computed at the block's scale.
 
 
 
-### `AREA`
+### `SUM_AREA`
 
 Definition: Block's area.
 
@@ -41,7 +40,7 @@ Source code:
 
 
 
-### `SUM_BUILDING_FLOOR_AREA`
+### `SUM_FLOOR_AREA`
 
 Definition: 
 
@@ -51,7 +50,7 @@ Source code:
 
 
 
-### `VOLUME`
+### `SUM_VOLUME`
 
 Definition: Building's volume.
 
