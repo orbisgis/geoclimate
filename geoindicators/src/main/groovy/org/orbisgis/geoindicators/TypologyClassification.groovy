@@ -89,23 +89,23 @@ IProcess identifyLczType() {
                         " height_of_roughness_elements_low FLOAT, height_of_roughness_elements_upp FLOAT," +
                         "terrain_roughness_class_low FLOAT, terrain_roughness_class_upp FLOAT);" +
                         "INSERT INTO $LCZ_classes VALUES " +
-                        "('LCZ1',0.2,0.4,2.0,null,0.4,0.6,0.4,0.6,0.0,0.1,25.0,null,7.5,8.5)," +
-                        "('LCZ2',0.3,0.6,0.8,2.0,0.4,0.7,0.3,0.5,0.0,0.2,10.0,25.0,5.5,7.5)," +
-                        "('LCZ3',0.2,0.6,0.8,1.5,0.4,0.7,0.2,0.5,0.0,0.3,3.0,10.0,5.5,6.5)," +
-                        "('LCZ4',0.5,0.7,0.8,1.3,0.2,0.4,0.3,0.4,0.3,0.4,25.0,null,6.5,8.5)," +
-                        "('LCZ5',0.5,0.8,0.3,0.8,0.2,0.4,0.3,0.5,0.2,0.4,10.0,25.0,4.5,6.5)," +
-                        "('LCZ6',0.6,0.9,0.3,0.8,0.2,0.4,0.2,0.5,0.3,0.6,3.0,10.0,4.5,6.5)," +
-                        "('LCZ7',0.2,0.5,1.0,2.0,0.6,0.9,0.0,0.2,0.0,0.3,2.0,4.0,3.5,5.5)," +
-                        "('LCZ8',0.7,1.0,0.1,0.3,0.3,0.5,0.4,0.5,0.0,0.2,3.0,10.0,4.5,5.5)," +
-                        "('LCZ9',0.8,1.0,0.1,0.3,0.1,0.2,0.0,0.2,0.6,0.8,3.0,10.0,4.5,6.5)," +
-                        "('LCZ10',0.6,0.9,0.2,0.5,0.2,0.3,0.2,0.4,0.4,0.5,5.0,15.0,4.5,6.5)," +
-                        "('LCZA',0.0,0.4,1.0,null,0.0,0.1,0.0,0.1,0.9,1.0,3.0,30.0,7.5,8.5)," +
-                        "('LCZB',0.5,0.8,0.3,0.8,0.0,0.1,0.0,0.1,0.9,1.0,3.0,15.0,4.5,6.5)," +
-                        "('LCZC',0.7,0.9,0.3,1.0,0.0,0.1,0.0,0.1,0.9,1.0,0.0,2.0,3.5,5.5)," +
-                        "('LCZD',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,1.0,2.5,4.5)," +
-                        "('LCZE',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.3,0.5,2.5)," +
-                        "('LCZF',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.3,0.5,2.5)," +
-                        "('LCZG',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.0,0.5,1.5);"
+                        "('1',0.2,0.4,2.0,null,0.4,0.6,0.4,0.6,0.0,0.1,25.0,null,7.5,8.5)," +
+                        "('2',0.3,0.6,0.8,2.0,0.4,0.7,0.3,0.5,0.0,0.2,10.0,25.0,5.5,7.5)," +
+                        "('3',0.2,0.6,0.8,1.5,0.4,0.7,0.2,0.5,0.0,0.3,3.0,10.0,5.5,6.5)," +
+                        "('4',0.5,0.7,0.8,1.3,0.2,0.4,0.3,0.4,0.3,0.4,25.0,null,6.5,8.5)," +
+                        "('5',0.5,0.8,0.3,0.8,0.2,0.4,0.3,0.5,0.2,0.4,10.0,25.0,4.5,6.5)," +
+                        "('6',0.6,0.9,0.3,0.8,0.2,0.4,0.2,0.5,0.3,0.6,3.0,10.0,4.5,6.5)," +
+                        "('7',0.2,0.5,1.0,2.0,0.6,0.9,0.0,0.2,0.0,0.3,2.0,4.0,3.5,5.5)," +
+                        "('8',0.7,1.0,0.1,0.3,0.3,0.5,0.4,0.5,0.0,0.2,3.0,10.0,4.5,5.5)," +
+                        "('9',0.8,1.0,0.1,0.3,0.1,0.2,0.0,0.2,0.6,0.8,3.0,10.0,4.5,6.5)," +
+                        "('10',0.6,0.9,0.2,0.5,0.2,0.3,0.2,0.4,0.4,0.5,5.0,15.0,4.5,6.5)," +
+                        "('101',0.0,0.4,1.0,null,0.0,0.1,0.0,0.1,0.9,1.0,3.0,30.0,7.5,8.5)," +
+                        "('102',0.5,0.8,0.3,0.8,0.0,0.1,0.0,0.1,0.9,1.0,3.0,15.0,4.5,6.5)," +
+                        "('103',0.7,0.9,0.3,1.0,0.0,0.1,0.0,0.1,0.9,1.0,0.0,2.0,3.5,5.5)," +
+                        "('104',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,1.0,2.5,4.5)," +
+                        "('105',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.3,0.5,2.5)," +
+                        "('106',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.3,0.5,2.5)," +
+                        "('107',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.0,0.5,1.5);"
 
                 // For each LCZ indicator...
                 datasource.getTable(rsuLczIndicators).columnNames.collect { indicCol ->
@@ -194,27 +194,27 @@ IProcess identifyLczType() {
                 datasource.execute "DROP TABLE IF EXISTS $mainLczTable;" +
                         "CREATE INDEX IF NOT EXISTS all_id ON $allLczTable($ID_FIELD_RSU); " +
                         "CREATE TABLE $mainLczTable AS SELECT a.$ID_FIELD_RSU, a.$GEOMETRIC_FIELD, " +
-                        "(SELECT b.lcz FROM $allLczTable b " +
+                        "CAST(SELECT b.lcz FROM $allLczTable b " +
                         "WHERE a.$ID_FIELD_RSU = b.$ID_FIELD_RSU " +
-                        "ORDER BY b.distance ASC LIMIT 1) AS LCZ1," +
-                        "(SELECT b.lcz FROM $allLczTable b " +
+                        "ORDER BY b.distance ASC LIMIT 1 AS INTEGER) AS LCZ1," +
+                        "CAST(SELECT b.lcz FROM $allLczTable b " +
                         "WHERE a.$ID_FIELD_RSU = b.$ID_FIELD_RSU " +
-                        "ORDER BY b.distance ASC LIMIT 1 OFFSET 1 ) AS LCZ2 " +
+                        "ORDER BY b.distance ASC LIMIT 1 OFFSET 1 AS INTEGER) AS LCZ2 " +
                         "FROM $allLczTable a GROUP BY $ID_FIELD_RSU"
 
                 // Recover the LCZ TYPES list and the number of types in a map
                 def lczTypeTempo = datasource.rows "SELECT name FROM $LCZ_classes"
                 def lczType = []
                 lczTypeTempo.each { l ->
-                    lczType.add(l["NAME"])
+                    lczType.add("${l["NAME"]}")
                 }
                 // For each LCZ type...
                 datasource.eachRow("SELECT name FROM $LCZ_classes") { LCZ ->
                     // Piece of query that will be useful for pivoting the LCZ distance table
-                    queryForPivot += "MAX(CASEWHEN(lcz = '${LCZ.name}', distance, null)) AS ${LCZ.name},"
+                    queryForPivot += "MAX(CASEWHEN(lcz = '${LCZ.name}', distance, null)) AS \"${LCZ.name}\","
 
                     // Piece of query that will be useful for the calculation of the Perkins Skill Score
-                    queryPerkinsSkill += "LEAST(1./${lczType.size()}, b.${LCZ.name}/(b.${lczType.join("+b.")}))+"
+                    queryPerkinsSkill += "LEAST(1./${lczType.size()}, b.\"${LCZ.name}\"/(b.\"${lczType.join("\"+b.\"")}\"))+"
                 }
 
                 // The table is pivoted in order to have the distance for each LCZ type as column and for each RSU as row.
@@ -225,7 +225,7 @@ IProcess identifyLczType() {
                         "DROP TABLE IF EXISTS $outputTableName;" +
                         "CREATE INDEX IF NOT EXISTS main_id ON $mainLczTable($ID_FIELD_RSU);" +
                         "CREATE INDEX IF NOT EXISTS piv_id ON $pivotedTable($ID_FIELD_RSU);" +
-                        "CREATE TABLE $outputTableName AS SELECT a.*, LEAST(b.${lczType.join(",b.")}) AS min_distance, " +
+                        "CREATE TABLE $outputTableName AS SELECT a.*, LEAST(b.\"${lczType.join("\",b.\"")}\") AS min_distance, " +
                         "${queryPerkinsSkill[0..-2]} AS PSS FROM $mainLczTable a LEFT JOIN " +
                         "$pivotedTable b ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU;"
 
