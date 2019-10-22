@@ -1,4 +1,7 @@
 {
+    "tags" : ["railway"],
+    "columns":["highspeed","railway","service",
+        "tunnel","layer","bridge"],
     "type" :
     {
     "highspeed": {

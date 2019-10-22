@@ -1,5 +1,6 @@
 package org.orbisgis.osm
 
+import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.SFSUtilities
@@ -129,16 +130,10 @@ IProcess createGISLayers() {
                 //Create building layer
                 def transform = OSMTools.Transform.toPolygons()
                 logger.info "Create the building layer"
-                def tags = ['building']
-                def columnsToKeep = ['layer','height', 'building:height', 'roof:height', 'building:roof:height',
-                                     'building:levels', 'roof:levels', 'building:roof:levels','shop',
-                                     'amenity', 'aeroway', 'historic', 'leisure', 'monument',
-                                     'place_of_worship', 'military', 'railway', 'public_transport',
-                                     'barrier', 'government', 'historic:building', 'grandstand',
-                                     'house', 'industrial', 'man_made', 'residential',
-                                     'apartments', 'ruins', 'agricultural', 'barn', 'healthcare',
-                                     'education', 'restaurant', 'sustenance', 'office']
-
+                def paramsDefaultFile = this.class.getResourceAsStream("buildingParams.json")
+                def parametersMap = readJSONParameters(paramsDefaultFile)
+                def tags = parametersMap.get("tags")
+                def columnsToKeep = parametersMap.get("columns")
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep:columnsToKeep)){
                     outputBuildingTableName = transform.results.outputTableName
                     logger.info "Building layer created"
@@ -147,11 +142,10 @@ IProcess createGISLayers() {
                 //Create road layer
                 transform = OSMTools.Transform.extractWaysAsLines()
                 logger.info "Create the road layer"
-                tags = ['highway', 'cycleway', 'biclycle_road', 'cyclestreet', 'route', 'junction']
-                columnsToKeep = ['width','highway', 'surface', 'sidewalk',
-                                 'lane','layer','maxspeed','oneway',
-                                 'h_ref','route','cycleway',
-                                 'biclycle_road','cyclestreet','junction']
+                paramsDefaultFile = this.class.getResourceAsStream("roadParams.json")
+                parametersMap = readJSONParameters(paramsDefaultFile)
+                tags  = parametersMap.get("tags")
+                columnsToKeep = parametersMap.get("columns")
                 if(transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)){
                  outputRoadTableName = transform.results.outputTableName
                 logger.info "Road layer created"
@@ -160,31 +154,30 @@ IProcess createGISLayers() {
                 //Create rail layer
                 transform = OSMTools.Transform.extractWaysAsLines()
                 logger.info "Create the rail layer"
-                tags = ['railway']
-                columnsToKeep =['highspeed','railway','service',
-                                'tunnel','layer','bridge']
+                paramsDefaultFile = this.class.getResourceAsStream("railParams.json")
+                parametersMap = readJSONParameters(paramsDefaultFile)
+                tags  = parametersMap.get("tags")
+                columnsToKeep = parametersMap.get("columns")
                 if(transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)){
                     outputRailTableName = transform.results.outputTableName
                     logger.info "Rail layer created"
                 }
                 //Create vegetation layer
-                tags = ['natural':['tree', 'wetland', 'grassland', 'tree_row', 'scrub', 'heath', 'sand', 'land', 'mud', 'wood'],
-                       'landuse':['farmland', 'forest', 'grass', 'meadow', 'orchard', 'vineyard', 'village_green', 'allotments'],
-                       'landcover':[],
-                        'leisure':['park', 'garden'],
-                        'vegetation':['grass'],'barrier':['hedge'],'fence_type':['hedge', 'wood'],
-                                         'hedge':[],'wetland':[],'vineyard':[],
-                                         'trees':[],'crop':[],'produce':[]]
-
+                paramsDefaultFile = this.class.getResourceAsStream("vegetParams.json")
+                parametersMap = readJSONParameters(paramsDefaultFile)
+                tags  = parametersMap.get("tags")
+                columnsToKeep = parametersMap.get("columns")
                 transform = OSMTools.Transform.toPolygons()
                 logger.info "Create the vegetation layer"
-                if(transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags)){
+                if(transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags,columnsToKeep: columnsToKeep)){
                     outputVegetationTableName = transform.results.outputTableName
                     logger.info "Vegetation layer created"
                 }
 
                 //Create water layer
-                tags = ['natural':['water','waterway','bay'],'water':[],'waterway':[], 'landuse':['basin', ' salt_pond']]
+                paramsDefaultFile = this.class.getResourceAsStream("waterParams.json")
+                parametersMap = readJSONParameters(paramsDefaultFile)
+                tags  = parametersMap.get("tags")
                 transform = OSMTools.Transform.toPolygons()
                 logger.info "Create the water layer"
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags)){
@@ -199,6 +192,18 @@ IProcess createGISLayers() {
             }
         }
     })
+}
+
+/**
+ * Parse a json file to a Map
+ * @param jsonFile
+ * @return
+ */
+static Map readJSONParameters(def jsonFile) {
+    def jsonSlurper = new JsonSlurper()
+    if (jsonFile) {
+            return jsonSlurper.parse(jsonFile)
+    }
 }
 
 
