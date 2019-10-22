@@ -65,7 +65,7 @@ This table stores all the indicators computed at the building's scale.
 
 ### `TOTAL_FACADE_LENGTH`
 
-**Definition**: Total length of external facade, defined as the building’s external perimeter in addition to building courtyard(s) perimeter
+**Definition**: Total length of external facade, defined as the building’s external perimeter in addition to building's courtyard(s) perimeter.
 
 **Formula**: `Perimeter + Courtyard perimeter `
 
@@ -75,13 +75,11 @@ This table stores all the indicators computed at the building's scale.
 
 ### `CONTIGUITY`
 
-**Definition**: Fraction of wall shared with other buildings
+**Definition**: Fraction of wall shared with other buildings.
 
-Formula: `Shared wall area / total wall area `
+**Formula**: `Shared wall area / total wall area `
 
-sum(least(a_height_wall, b_height_wall)* st_length(the_geom)/(perimeter* a_height_wall)
-
-Source code: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L141
+**Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L141
 
 
 
@@ -107,7 +105,7 @@ Source code: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/sr
 
 ### `CONCAVITY`
 
-**Definition**: Calculates how close is a building from its smallest convex footprint.
+**Definition**: Calculates how close is a building from its smallest [convex](http://www.h2gis.org/docs/dev/ST_ConvexHull/) footprint.
 
 **Formula**: `Area / Convex Hull area`
 
@@ -117,7 +115,7 @@ Source code: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/sr
 
 ### `FORM_FACTOR`
 
-**Definition**: Ratio between the building’s area and the square of the building’s perimeter
+**Definition**: Ratio between the building’s area and the square of the building’s perimeter.
 
 **Formula**: `Area / (perimeter)^(1/2) `
 
@@ -137,7 +135,7 @@ Source code: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/sr
 
 ### `CONVEXHULL_PERIMETER_DENSITY`
 
-**Definition**: Ratio between building Convex Hull perimeter and building perimeter.
+**Definition**: Ratio between building [Convex Hull](http://www.h2gis.org/docs/dev/ST_ConvexHull/) perimeter and building perimeter.
 
 **Formula**: `Convex Hull perimeter / perimeter`
 
@@ -147,7 +145,7 @@ Source code: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/sr
 
 ### `MINIMUM_BUILDING_SPACING`
 
-**Definition**: Building closest distance to an other building. A buffer of defined size (`bufferDist` argument, default 100 m) is used to get the buildings within the building of interest and then the minimum distance is calculated.
+**Definition**: Building closest distance to other buildings. A buffer of defined size (`bufferDist` argument, default 100 m) is used to get the buildings within the building of interest and then the minimum distance is calculated.
 
 **Formula**: `Min(distance(building, other buildings within bufferDist))`
 
@@ -157,7 +155,7 @@ Source code: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/sr
 
 ### `ROAD_DISTANCE`
 
-**Definition**: Building closest distance to a road. A buffer of defined size (`bufferDist` argument,  default 100m) is used to get the roads within the building of interest and then the minimum distance is calculated.
+**Definition**: Building closest distance to roads. A buffer of defined size (`bufferDist` argument,  default 100m) is used to get the roads within the building of interest and then the minimum distance is calculated.
 
 **Formula**: `Min(distance(building, roads within bufferDist))`
 
