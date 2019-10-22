@@ -31,7 +31,7 @@ This table stores all the indicators computed at the block's scale.
 
 
 
-### `AREA`
+### `AREA`
 
 Definition: Block's area.
 
@@ -41,9 +41,9 @@ Source code:
 
 
 
-### `SUM_BUILDING_FLOOR_AREA`
+### `SUM_BUILDING_FLOOR_AREA`
 
-Definition: Block's area.
+Definition: 
 
 Formula: `xxxxxxx`
 
@@ -61,7 +61,7 @@ Source code:
 
 
 
-### `HOLE_AREA_DENSITY`
+### `HOLE_AREA_DENSITY`
 
 Definition: 
 
@@ -69,7 +69,7 @@ Formula: `xxxxxxx`
 
 Source code: 
 
-### `PERKINS_SKILL_SCORE_BUILDING_DIRECTION`
+### `PERKINS_SKILL_SCORE_BUILDING_DIRECTION`
 
 Definition: 
 
@@ -77,7 +77,7 @@ Formula: `xxxxxxx`
 
 Source code: 
 
-### `MAIN_BUILDING_DIRECTION`
+### `MAIN_BUILDING_DIRECTION`
 
 Definition: 
 
@@ -85,7 +85,7 @@ Formula: `xxxxxxx`
 
 Source code: 
 
-### `CLOSINGNESS`
+### `CLOSINGNESS`
 
 Definition: 
 
@@ -93,17 +93,7 @@ Formula: `xxxxxxx`
 
 Source code: 
 
-### `NET_COMPACITY`
-
-Definition: 
-
-Formula: `xxxxxxx`
-
-Source code: 
-
-
-
-### `WEIGHTED_AVG_HEIGHT_ROOF_AREA`
+### `NET_COMPACITY`
 
 Definition: 
 
@@ -113,7 +103,17 @@ Source code:
 
 
 
-### `WEIGHTED_STD_HEIGHT_ROOF_AREA`
+### `WEIGHTED_AVG_HEIGHT_ROOF_AREA`
+
+Definition: 
+
+Formula: `xxxxxxx`
+
+Source code: 
+
+
+
+### `WEIGHTED_STD_HEIGHT_ROOF_AREA`
 
 Definition: 
 

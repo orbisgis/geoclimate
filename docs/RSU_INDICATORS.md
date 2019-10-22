@@ -69,7 +69,7 @@ This table stores all the indicators computed at the RSU's scale.
 
 
 
-### `FREE_EXTERNAL_FACADE_DENSITY`
+### `FREE_EXTERNAL_FACADE_DENSITY`
 
 Definition: 
 
@@ -77,7 +77,8 @@ Formula: `xxxxxxx`
 
 Source code: 
 
-### `HEIGHT_OF_ROUGHNESS_ELEMENTS`
+
+### `HEIGHT_OF_ROUGHNESS_ELEMENTS`
 
 Definition: 
 
@@ -85,7 +86,7 @@ Formula: `xxxxxxx`
 
 Source code: 
 
-### `BUILDING_SURFACE_FRACTION`
+### `BUILDING_SURFACE_FRACTION`
 
 Definition: 
 
@@ -93,7 +94,7 @@ Formula: `xxxxxxx`
 
 Source code: 
 
-### `GROUND_ROAD_FRACTION`
+### `GROUND_ROAD_FRACTION`
 
 Definition: 
 
@@ -101,7 +102,7 @@ Formula: `xxxxxxx`
 
 Source code: 
 
-### `WATER_FRACTION`
+### `WATER_FRACTION`
 
 Definition: 
 
@@ -117,7 +118,7 @@ Formula: `xxxxxxx`
 
 Source code: 
 
-### `HIGH_VEGETATION_FRACTION`
+### `HIGH_VEGETATION_FRACTION`
 
 Definition: 
 
@@ -125,7 +126,7 @@ Formula: `xxxxxxx`
 
 Source code: 
 
-### `ALL_VEGETATION_FRACTION`
+### `ALL_VEGETATION_FRACTION`
 
 Definition: 
 
@@ -133,7 +134,7 @@ Formula: `xxxxxxx`
 
 Source code: 
 
-### `PROJECTED_FACADE_AREA_DISTRIBUTIONx_xxx`
+### `PROJECTED_FACADE_AREA_DISTRIBUTIONx_xxx`
 
 Definition: 
 
@@ -141,7 +142,7 @@ Formula: `xxxxxxx`
 
 Source code: 
 
-### `ASPECT_RATIO`
+### `ASPECT_RATIO`
 
 Definition: 
 
@@ -149,7 +150,7 @@ Formula: `xxxxxxx`
 
 Source code: 
 
-### `SKY_VIEW_FACTOR`
+### `SKY_VIEW_FACTOR`
 
 Definition: 
 
@@ -157,7 +158,7 @@ Formula: `xxxxxxx`
 
 Source code: 
 
-### `PERVIOUS_SURFACE_FRACTION`
+### `PERVIOUS_SURFACE_FRACTION`
 
 Definition: 
 
@@ -165,7 +166,7 @@ Formula: `xxxxxxx`
 
 Source code: 
 
-### `IMPERVIOUS_SURFACE_FRACTION`
+### `IMPERVIOUS_SURFACE_FRACTION`
 
 Definition: 
 
@@ -173,7 +174,7 @@ Formula: `xxxxxxx`
 
 Source code: 
 
-### `EFFECTIVE_TERRAIN_ROUGHNESS`
+### `EFFECTIVE_TERRAIN_ROUGHNESS`
 
 Definition: 
 
@@ -181,7 +182,7 @@ Formula: `xxxxxxx`
 
 Source code: 
 
-### `TERRAIN_ROUGHNESS_CLASS`
+### `TERRAIN_ROUGHNESS_CLASS`
 
 Definition: 
 
