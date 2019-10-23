@@ -10,6 +10,10 @@ This page presents the data dictionary used to describe the geographic data that
 - [Hydrographic areas](#Hydrographic-areas): `input_HYDRO`
 - [Zones](#Zones): `ZONE`, `ZONE_NEIGHBORS`
 
+**Source code**
+
+![](./images/icons/github.png) The abstract model source code is available [here](https://github.com/gpetit/geoclimate/blob/add_docs/prepare_data/src/main/groovy/org/orbisgis/common/AbstractTablesInitialization.groovy).
+
 
 ## Buildings
 
@@ -257,7 +261,28 @@ For each individual value concerning the `type` of a roads (values listed in the
 | highway      |     8     |
 | ferry        |     0     |
 
+
+
+### ROAD Abstract crossing
+
+- Concerned table : `input_road`
+- Concerned field : `crossing`
+
+Lists of all possible values for `crossing` attribute in the `input_road table.
+
+- Term: value used to qualify the crossing type of the road
+- Definition: provides a definition of the crossing attribute
+- Source: Most of the values are based on concepts from existing thesauri. In this case, we indicate their sources.
+
+|   Term   | Definition                                                   |                       Source                        |
+| :------: | ------------------------------------------------------------ | :-------------------------------------------------: |
+|  bridge  | Artificial construction that spans features such as roads, railways,  waterways or valleys and carries a road, railway or other feature | [1](https://wiki.openstreetmap.org/wiki/Key:bridge) |
+|  tunnel  | Underground passage for roads, railways or similar           | [2](https://wiki.openstreetmap.org/wiki/Key:tunnel) |
+| crossing | Everything but a bridge or a tunnel                          |                                                     |
+
 [back to top](#Abstract-input-model)
+
+
 
 ## Rail ways
 
@@ -299,7 +324,29 @@ Lists of all possible values for `type` attribute in the `input_rail` table.
 | subway        | Rails used for city public transport that are always completely separated from other traffic, often underground | [6](https://wiki.openstreetmap.org/wiki/Tag:railway=subway)  |
 | tram          | Railway track which is mainly or exclusively used for trams, or where tram tracks are laid within a normal road open to all traffic, often called street running. |  [7](https://wiki.openstreetmap.org/wiki/Tag:railway=tram)   |
 
+
+
+### RAIL Abstract crossing
+
+- Concerned table : `input_rail`
+- Concerned field : `crossing`
+
+Lists of all possible values for `crossing` attribute in the `input_rail` table.
+
+- Term: value used to qualify the crossingtype of the rail
+- Definition: provides a definition of the crossing attribute
+- Source: Most of the values are based on concepts from existing thesauri. In this case, we indicate their sources.
+
+|   Term   | Definition                                                   |                       Source                        |
+| :------: | ------------------------------------------------------------ | :-------------------------------------------------: |
+|  bridge  | Artificial construction that spans features such as roads, railways,  waterways or valleys and carries a road, railway or other feature | [1](https://wiki.openstreetmap.org/wiki/Key:bridge) |
+|  tunnel  | Underground passage for roads, railways or similar           | [2](https://wiki.openstreetmap.org/wiki/Key:tunnel) |
+| crossing | Everything but a bridge or a tunnel                          |                                                     |
+
 [back to top](#Abstract-input-model)
+
+
+
 
 ## Vegetation areas
 
