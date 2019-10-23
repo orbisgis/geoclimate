@@ -39,14 +39,7 @@ IProcess formatBuildingLayer() {
                 def mappingTypeAndUse = parametersMap.get("type")
                 def typeAndLevel = parametersMap.get("level")
                 def queryMapper = "SELECT "
-                def columnToMap = ['height', 'building:height', 'roof:height', 'building:roof:height',
-                                   'building:levels', 'roof:levels', 'building:roof:levels', 'building',
-                                   'amenity', 'layer', 'aeroway', 'historic', 'leisure', 'monument',
-                                   'place_of_worship', 'military', 'railway', 'public_transport',
-                                   'barrier', 'government', 'historic:building', 'grandstand',
-                                   'house', 'shop', 'industrial', 'man_made', 'residential',
-                                   'apartments', 'ruins', 'agricultural', 'barn', 'healthcare',
-                                   'education', 'restaurant', 'sustenance', 'office']
+                def columnToMap = parametersMap.get("columns")
 
                 def columnNames = datasource.getTable(inputTableName).columnNames
                 queryMapper += columnsMapper(columnNames, columnToMap)
@@ -83,7 +76,7 @@ IProcess formatBuildingLayer() {
 
                         def zIndex = getZIndex(row.'layer')
 
-                        if(formatedHeight.nbLevels>0 && zIndex>=0) {
+                        if(formatedHeight.nbLevels>0 && zIndex>=0 && type) {
                             stmt.addBatch """insert into ${outputTableName} values(ST_MAKEVALID(ST_GEOMFROMTEXT('${
                                 row.the_geom}',$epsg)), null, '${row.id}',${formatedHeight.heightWall},${formatedHeight.heightRoof},${
                                 formatedHeight.nbLevels
@@ -132,10 +125,7 @@ IProcess formatBuildingLayer() {
                         def mappingForSurface = parametersMap.get("surface")
                         def typeAndWidth = parametersMap.get("width")
                         def queryMapper = "SELECT "
-                        def columnToMap = ['width', 'highway', 'surface', 'sidewalk',
-                                           'lane', 'layer', 'maxspeed', 'oneway',
-                                           'h_ref', 'route', 'cycleway',
-                                           'biclycle_road', 'cyclestreet', 'junction']
+                        def columnToMap = parametersMap.get("columns")
                         def columnNames = datasource.getTable(inputTableName).columnNames
                         queryMapper += columnsMapper(columnNames, columnToMap)
                         queryMapper += " FROM $inputTableName"
@@ -157,7 +147,7 @@ IProcess formatBuildingLayer() {
                                 String surface = getAbstractValue(row, columnNames, mappingForSurface)
                                 String sidewalk = getSidewalk(row.'sidewalk')
                                 def zIndex = getZIndex(row.'layer')
-                                if(zIndex>=0) {
+                                if(zIndex>=0 && type) {
                                     stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${
                                         row.the_geom
                                     }',$epsg), null, '${row.id}', ${width},'${type}','${surface}','${sidewalk}',${
@@ -201,8 +191,8 @@ IProcess formatBuildingLayer() {
                 def mappingType = parametersMap.get("type")
 
                 def queryMapper = "SELECT "
-                def columnToMap = ['highspeed', 'railway', 'service',
-                                   'tunnel', 'layer', 'bridge']
+                def columnToMap = parametersMap.get("columns")
+
 
                 def columnNames = datasource.getTable(inputTableName).columnNames
                 queryMapper += columnsMapper(columnNames, columnToMap)
@@ -217,13 +207,12 @@ IProcess formatBuildingLayer() {
                         def zIndex = getZIndex(row.'layer')
                         //special treatment if type is subway
                         if (type == "subway") {
-
                             if (!((row.tunnel != null && row.tunnel == "no" && row.layer != null && row.layer.toInt() >= 0)
                                     || (row.bridge != null && (row.bridge == "yes" || row.bridge == "viaduct")))) {
                                 type = null
                             }
                         }
-                        if(zIndex>=0) {
+                        if(zIndex>=0 && type) {
                             stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${row.the_geom}',$epsg),
                     null, '${row.id}','${type}',${zIndex})"""
                         }
@@ -264,11 +253,7 @@ IProcess formatVegetationLayer() {
                 def mappingType = parametersMap.get("type")
                 def typeAndVegClass = parametersMap.get("class")
                 def queryMapper = "SELECT "
-                def columnToMap = ['natural', 'landuse', 'landcover',
-                                   'vegetation', 'barrier', 'fence_type',
-                                   'hedge', 'wetland', 'vineyard',
-                                   'trees', 'crop', 'produce'
-                ]
+                def columnToMap = parametersMap.get("columns")
                 def columnNames = datasource.getTable(inputTableName).columnNames
                 queryMapper += columnsMapper(columnNames, columnToMap)
                 queryMapper += " FROM $inputTableName"
@@ -283,10 +268,10 @@ IProcess formatVegetationLayer() {
 
                         def height_class = typeAndVegClass[type]
 
+                        if (type) {
                         stmt.addBatch """insert into $outputTableName values(ST_MAKEVALID(ST_GEOMFROMTEXT('${
-                            row.the_geom
-                        }',$epsg)), null, '${row.id}','${type}', '${height_class}')"""
-
+                            row.the_geom}',$epsg)), null, '${row.id}','${type}', '${height_class}')"""
+                        }
                     }
                 }
             }
@@ -623,6 +608,13 @@ static String columnsMapper(def inputColumns, def columnsToMap){
     return flatList
 }
 
+/**
+ * Get a set of parameters stored in a json file
+ *
+ * @param file
+ * @param altResourceStream
+ * @return
+ */
 static Map parametersMapping(def file, def altResourceStream) {
     def paramStream
     def jsonSlurper = new JsonSlurper()
