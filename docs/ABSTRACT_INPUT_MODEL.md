@@ -2,11 +2,11 @@
 
 
 
-This page presents the data dictionary used to describe the geographic data that feed the GeoClimate chain. The data are organized by topics. For each of them, we provide the input tables dictionary (with the name and type of the fields – prefixed with `input_`) and the associated metadata tables, in which description and parameters are stored :
-- [Building](#Buildings):  `input_BUILDING`, `BUILDING_Abstract_use_&_type`, `BUILDING_Abstract_parameters`
-- [Roads](#Roads): `input_ROAD`, `ROAD_Abstract_type`, `ROAD_Abstract_surface`, `ROAD_Abstract_parameters`
-- [Rail ways](#Rail-ways): `input_RAIL`, `RAIL_Abstract_type`
-- [Vegetation areas](#Vegetation-areas): `input_VEGET`, `VEGET_Abstract_type`
+This page presents the data dictionary used to describe the geographic data that feed the GeoClimate chain. The data are organized by topics. For each of them, we provide the input tables dictionary (with the name and type of the fields – prefixed with `input_`) and their associated metadata, in which description and parameters are presented:
+- [Building](#Buildings):  `input_BUILDING`, BUILDING Abstract use and type, BUILDING Abstract level
+- [Roads](#Roads): `input_ROAD`, ROAD Abstract type, ROAD Abstract surface, ROAD Abstract width
+- [Rail ways](#Rail-ways): `input_RAIL`, RAIL Abstract type
+- [Vegetation areas](#Vegetation-areas): `input_VEGET`, VEGET Abstract type, VEGET Abstract height
 - [Hydrographic areas](#Hydrographic-areas): `input_HYDRO`
 - [Zones](#Zones): `ZONE`, `ZONE_NEIGHBORS`
 
@@ -15,7 +15,7 @@ This page presents the data dictionary used to describe the geographic data that
 
 
 
-### Input BUILDING table dictionary
+### BUILDING input table dictionary
 
 - Table name : `input_building`
 - EPSG Code : Any metric coordinate system
@@ -29,17 +29,16 @@ This page presents the data dictionary used to describe the geographic data that
 | height_wall |  FLOAT  |                  | The (corrected) height of the building in meters. Height of the building measured between the ground and the gutter (maximum altitude of the polyline describing the building). *(exprimed in meters)* |
 | height_roof |  FLOAT  |                  | The maximum height of a building is the distance between the top edge of the building (including the roof, but excluding antennas, spires and other equipment mounted on the roof) and the lowest point at the bottom where the building meets the ground. *(exprimed in meters)* |
 |   nb_lev    | INTEGER |                  | Number of levels (have to be greater than 0)                 |
-|    type     | VARCHAR |                  | Value allowing to distinguish the type of building according to its architecture. These values are listed in the table `BUILDING_Abstract_use_&_type`. |
-|  main_use   | VARCHAR |                  | Main use of the building. The use of a building corresponds to a de facto element, relating to what it is used for. These values are listed in the table `BUILDING_Abstract_use_&_type`. |
+|    type     | VARCHAR |                  | Value allowing to distinguish the type of building according to its architecture. These values are listed in the  [BUILDING_Abstract_use_and_type](#BUILDING-Abstract-use-and-type) section. |
+|  main_use   | VARCHAR |                  | Main use of the building. The use of a building corresponds to a de facto element, relating to what it is used for. These values are listed in the  [BUILDING_Abstract_use_and_type](#BUILDING-Abstract-use-and-type) section. |
 |   zindex    | INTEGER |                  | Defines the position with respect to the ground. 0 indicates that the object is on the ground. 1 to 4 indicates that the objects above the ground surface. -4 to -1 value indicates that the object is underground. |
 
-### BUILDING Abstract use & type
+### BUILDING Abstract use and type
 
-- Table name: `BUILDING_Abstract_use_&_type`
 - Concerned table : `input_building`
 - Concerned fields : `type` and `main_use`
 
-Below are listed the values (n=36) that can be used to describe the type and the main use of a building feature of the `input_building` table. We consider that a same value can be used to qualify a `type` or a use (`main_use`).
+List the values that can be used to describe the `type` and the `main_use` of a building feature in the `input_building` table. We consider that a same value can be used to qualify a `type` or a use (`main_use`).
 
 - Term: value used to describe the type and the main use of a building
 
@@ -88,15 +87,15 @@ Below are listed the values (n=36) that can be used to describe the type and the
 
 
 
-### BUILDING Abstract  parameters
+### BUILDING Abstract  level
 
-- Table name: `BUILDING_Abstract_parameters`
 - Concerned table : `input_building`
+
 - Concerned field : `nb_lev`
 
-For each individual value concerning the type or use of a building (values listed in the BUILDING_Abstract_use_&_type metadata table), this list specifies the rules for calculating the number of levels of a building in order to feed the `nb_lvl` field of the `input_building` table.
+For each individual value concerning the `type` or `use` of a building (values listed in the [BUILDING_Abstract_use and type](#BUILDING-Abstract-use-and-type) metadata section), this list specifies the rules for calculating the number of levels of a building in order to feed the `nb_lvl` field in the `input_building` table.
 
-- Term: value used to describe the type and the main use of a building
+- Term: value used to describe the `type` and the `main_use` of a building
 
 - Nb_lev: Specifies whether or not the building type is taken into account when calculating the number of levels (`0` = not taken into account (in this case, the number of levels will be forced to 1) / `1`= taken into account (in this case, a formula will be used to deduct the number) / `2` = other situtation (rule).
 
@@ -143,7 +142,7 @@ For each individual value concerning the type or use of a building (values liste
 
 ## Roads
 
-### Input ROAD table dictionary
+### ROAD input table dictionary
 
 - Table name: `input_road`
 - EPSG Code: Any metric coordinate system
@@ -161,16 +160,16 @@ For each individual value concerning the type or use of a building (values liste
 |  surface  |  VARCHAR   |                   | The surface value is used to provide additional information about the physical surface of roads/footpaths and some other features, particularly regarding material composition and/or structure. |
 | sidewalk  |  VARCHAR   |                   | Specify if the road has two, one or no sidewalk(s) - values=[two, one, no] |
 |  zindex   |  VARCHAR   |                   | Defines the position with respect to the ground. 0 indicates that the object is on the ground. 1 to 4 indicates that the object is above the ground surface. -4 to -1 value indicates that the object is underground. |
+| crossing  |  VARCHAR   |                   | Indicates whether the road is located on a `bridge`, in a `tunnel` or neither (value=`crossing`). |
 
 
 
 ### ROAD Abstract type
 
-- Table name: `ROAD_Abstract_type`
 - Concerned table : `input_road`
 - Concerned fields: `type`
 
-Below are listed the possible values (n=16) for the `type` attributes of the `input_road` table.
+Below are listed the possible values for the `type` attributes in the `input_road` table.
 
 - Term: value used to qualify the type of the road
 - Definition: provides a definition of the type attribute
@@ -199,11 +198,10 @@ Below are listed the possible values (n=16) for the `type` attributes of the `in
 
 ### ROAD Abstract surface
 
-- Table name: `ROAD_Abstract_surface`
 - Concerned table : `input_road`
 - Concerned field : `surface`
 
-Lists of all possible values (n=14) for `surface` attributes of the `input_road` table.
+Lists of all possible values for the `surface` attributes in the `input_road` table.
 
 - Term: value used to qualify the material on the road surface
 - Definition: provides a definition of the surface attribute
@@ -229,17 +227,16 @@ Lists of all possible values (n=14) for `surface` attributes of the `input_road`
 
 
 
-### ROAD Abstract parameters
+### ROAD Abstract width
 
-- Table name: `ROAD_Abstract_parameters`
 - Concerned table : `input_road`
 - Concerned field : `width`
 
-For each individual value concerning the `type` of a highway (values listed in the table `ROAD_Abstract_type` metadata table), this list specifies the minimum road width in order to feed the `min_width` field of the
-`input_road` table.
+For each individual value concerning the `type` of a roads (values listed in the [ROAD Abstract type](#ROAD-Abstract-type) metadata section), this list specifies the minimum road width in order to feed the `width` field of the
+`input_road` table when no information are provided.
 
 - Term: value used to qualify the type of the road
-- Min_width: minimum road width *(in meter)*
+- Min_width: minimum road width *(in meter)* to apply
 
 | Term         | Min_width |
 | :----------: | :-------: |
@@ -264,28 +261,28 @@ For each individual value concerning the `type` of a highway (values listed in t
 
 ## Rail ways
 
-### Input RAIL table dictionary
+### RAIL input table dictionary
 
 * Table name : `input_rail`
 * EPSG Code : Any metric coordinate system
 
 **Abstract dictionary table used to define the rail data:**
 
-| Name      | Type       | Constraints       | Definition                                                   |
+|   Name    |    Type    |    Constraints    | Definition                                                   |
 | :-------: | :--------: | :---------------: | ------------------------------------------------------------ |
 | the_geom  | LINESTRING | ST_DIMENSION() =1 | Geometry                                                     |
-| id_source | VARCHAR    |                   | Identifier of the feature from the input datasource          |
-| type      | VARCHAR    |                   | Type of rail                                                 |
-| zindex    | INTEGER    |                   | Defines the position with respect to the ground. 0 indicates that the object is on the ground. 1 to 4 indicates that the object is above the ground surface. -4 to -1 value indicates that the object is underground. |
+| id_source |  VARCHAR   |                   | Identifier of the feature from the input datasource          |
+|   type    |  VARCHAR   |                   | Type of rail                                                 |
+|  zindex   |  INTEGER   |                   | Defines the position with respect to the ground. 0 indicates that the object is on the ground. 1 to 4 indicates that the object is above the ground surface. -4 to -1 value indicates that the object is underground. |
+| crossing  |  VARCHAR   |                   | Indicates whether the rail section is located on a `bridge`, in a `tunnel` or neither (value=`crossing`). |
 
 
 ### RAIL Abstract type
 
-- Table name: `RAIL_Abstract_type`
 - Concerned table : `input_rail`
 - Concerned field : `type`
 
-Lists of all possible values (n=7) for `type` attribute of the `input_rail` table.
+Lists of all possible values for `type` attribute in the `input_rail` table.
 
 - Term: value used to qualify the type of the rail
 - Definition: provides a definition of the type attribute
@@ -306,7 +303,7 @@ Lists of all possible values (n=7) for `type` attribute of the `input_rail` tabl
 
 ## Vegetation areas
 
-### Input VEGET table dictionary
+### VEGET input table dictionary
 
 - Table name: `input_veget`
 - EPSG Code: Any metric coordinate system
@@ -322,11 +319,10 @@ Lists of all possible values (n=7) for `type` attribute of the `input_rail` tabl
 
 ### VEGET Abstract type
 
-- Table name: `VEGET_Abstract_type`
 - Concerned table : `input_veget`
 - Concerned field : `type`
 
-Lists of all possible values (n=13) for `type` attribute of the `input_veget` table.
+Lists of all possible values for `type` attribute in the `input_veget` table.
 
 - Term: value used to qualify the `type` of the vegetation
 - Definition: provides a definition of the `type` attribute
@@ -351,13 +347,12 @@ Lists of all possible values (n=13) for `type` attribute of the `input_veget` ta
 
 
 
-### VEGET Abstract parameters
+### VEGET Abstract height
 
-- Table name: `VEGET_Abstract_parameters`
 - Concerned table : `input_veget`
 - Concerned field : `height_class`
 
-Lists of all possible values (n=13) for the `height_class` attribute in the `input_veget` table.
+Lists of all possible values for the `height_class` attribute in the `input_veget` table.
 
 - Term: value used to qualify the `height_class` of the vegetation
 - Height_class: vegetation height class (`low` or `high`)
@@ -384,7 +379,7 @@ Lists of all possible values (n=13) for the `height_class` attribute in the `inp
 
 ## Hydrographic areas
 
-### Input HYDRO table dictionary
+### HYDRO input table dictionary
 - Table name: `input_hydro`
 - EPSG Code: Any metric coordinate system
 
@@ -399,7 +394,7 @@ Lists of all possible values (n=13) for the `height_class` attribute in the `inp
 
 ## Zones
 
-### ZONE table dictionary
+### ZONE input table dictionary
 - Table name: `zone`
 - EPSG Code: Any metric coordinate system
 
@@ -410,7 +405,7 @@ Lists of all possible values (n=13) for the `height_class` attribute in the `inp
 | the_geom | POLYGON | ST_DIMENSION() =2 | Geometry                    |
 | id_zone  | VARCHAR |                   | Identifier of the zone area |
 
-### ZONE NEIGHBORS table dictionary
+### ZONE NEIGHBORS input table dictionary
 - Table name: `zone_neighbors`
 - EPSG Code: Any metric coordinate system
 
