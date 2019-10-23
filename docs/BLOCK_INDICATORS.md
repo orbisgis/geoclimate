@@ -20,7 +20,7 @@ This table stores all the indicators computed at the block's scale.
 | PERKINS_SKILL_SCORE_BUILDING_DIRECTION | double precision |  [Full definition](#PERKINS_SKILL_SCORE_BUILDING_DIRECTION) |
 | MAIN_BUILDING_DIRECTION | double precision |  [Full definition](#MAIN_BUILDING_DIRECTION) |
 | CLOSINGNESS | double precision |  [Full definition](#CLOSINGNESS) |
-| NET_COMPACITY | double precision |  [Full definition](#NET_COMPACITY) |
+| NET_COMPACTNESS | double precision | [Full definition](#NET_COMPACTNESS) |
 | WEIGHTED_AVG_HEIGHT_ROOF_AREA | double precision |  [Full definition](#WEIGHTED_AVG_HEIGHT_ROOF_AREA) |
 | WEIGHTED_STD_HEIGHT_ROOF_AREA | double precision |  [Full definition](#WEIGHTED_STD_HEIGHT_ROOF_AREA) |
 
@@ -92,7 +92,7 @@ Formula: `xxxxxxx`
 
 Source code: 
 
-### `NET_COMPACITY`
+### `NET_COMPACTNESS`
 
 Definition: 
 

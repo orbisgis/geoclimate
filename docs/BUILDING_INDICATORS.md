@@ -32,7 +32,7 @@ This table stores all the indicators computed at the building's scale.
 | NUMBER_BUILDING_NEIGHBOR | bigint | [Full definition](#NUMBER_BUILDING_NEIGHBOR) |
 | CONCAVITY | double precision | [Full definition](#CONCAVITY) |
 | FORM_FACTOR | double precision | [Full definition](#FORM_FACTOR) |
-| RAW_COMPACITY | double precision | [Full definition](#RAW_COMPACITY) |
+| RAW_COMPACTNESS | double precision | [Full definition](#RAW_COMPACTNESS) |
 | CONVEXHULL_PERIMETER_DENSITY | double precision | [Full definition](#CONVEXHULL_PERIMETER_DENSITY) |
 | MINIMUM_BUILDING_SPACING | double precision | [Full definition](#MINIMUM_BUILDING_SPACING) |
 | ROAD_DISTANCE | double precision | [Full definition](#ROAD_DISTANCE) |
@@ -123,7 +123,7 @@ This table stores all the indicators computed at the building's scale.
 
 
 
-### `RAW_COMPACITY`
+### `RAW_COMPACTNESS`
 
 **Definition**: Ratio between building surfaces (walls and roof) and the building volume at the power 2/3. For the calculation, the roof is supposed to have a gable and the roof surface is calculated considering that the building is square (otherwise, the assumption related to the gable direction would strongly affect the result).
 
