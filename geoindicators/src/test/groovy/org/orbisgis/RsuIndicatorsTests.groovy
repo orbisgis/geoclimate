@@ -84,7 +84,7 @@ class RsuIndicatorsTests {
 
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def numberOfDirection = 4
-        def dirMedDeg = 180/numberOfDirection
+        def rangeDeg = 360/numberOfDirection
         def p = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution()
         assertTrue p.execute([buildingTable: "tempo_build", rsuTable: "rsu_test", listLayersBottom: listLayersBottom,
                               numberOfDirection: numberOfDirection, prefixName: "test", datasource: h2GIS])
@@ -94,15 +94,15 @@ class RsuIndicatorsTests {
                 // Iterate over columns
                 def names = []
                 for (i in 1..listLayersBottom.size()){
-                    names[i-1]="projected_facade_area_distribution${listLayersBottom[i-1]}"+
+                    names[i-1]="projected_facade_area_distribution_H${listLayersBottom[i-1]}"+
                             "_${listLayersBottom[i]}"
                     if (i == listLayersBottom.size()){
                         names[listLayersBottom.size()-1]="projected_facade_area_distribution"+
-                                "${listLayersBottom[listLayersBottom.size()-1]}"
+                                "_H${listLayersBottom[listLayersBottom.size()-1]}"
                     }
                     for (int d=0; d<numberOfDirection/2; d++){
                         int dirDeg = d*360/numberOfDirection
-                        concat+= row["${names[i-1]}D${dirDeg+dirMedDeg}".toString()].round(2).toString()+"\n"
+                        concat+= row["${names[i-1]}_D${dirDeg}_${dirDeg+rangeDeg}".toString()].round(2).toString()+"\n"
                     }
                 }
 

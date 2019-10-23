@@ -354,7 +354,7 @@ IProcess projectedFacadeAreaDistribution() {
                 // The height of wall is calculated for each intermediate level...
                 def layerQuery = "DROP TABLE IF EXISTS $buildingLayer; CREATE TABLE $buildingLayer AS SELECT the_geom, "
                 for (i in 1..(listLayersBottom.size() - 1)) {
-                    names[i - 1] = "$BASE_NAME${listLayersBottom[i - 1]}" +
+                    names[i - 1] = "${BASE_NAME}_H${listLayersBottom[i - 1]}" +
                             "_${listLayersBottom[i]}"
                     layerQuery += "CASEWHEN(z_max <= ${listLayersBottom[i - 1]}, 0, " +
                             "CASEWHEN(z_min >= ${listLayersBottom[i]}, " +
@@ -365,7 +365,7 @@ IProcess projectedFacadeAreaDistribution() {
 
                 // ...and for the final level
                 names[listLayersBottom.size() - 1] = "$BASE_NAME" +
-                        "${listLayersBottom[listLayersBottom.size() - 1]}"
+                        "_H${listLayersBottom[listLayersBottom.size() - 1]}"
                 layerQuery += "CASEWHEN(z_max >= ${listLayersBottom[listLayersBottom.size() - 1]}, " +
                         "z_max-GREATEST(z_min,${listLayersBottom[listLayersBottom.size() - 1]}), 0) " +
                         "AS ${names[listLayersBottom.size() - 1]} FROM $buildingFree"
@@ -406,20 +406,22 @@ IProcess projectedFacadeAreaDistribution() {
                 for (int d = 0; d < numberOfDirection / 2; d++) {
                     def dirDeg = d * 360 / numberOfDirection
                     def dirRad = Math.toRadians(dirDeg)
+                    def rangeDeg = 360 / numberOfDirection
                     def dirRadMid = dirRad + dirMedRad
                     def dirDegMid = dirDeg + dirMedDeg
                     // Define the field name for each of the directions and vertical layers
                     names.each { value ->
-                        namesAndTypeDir += " " + value + "D" + (dirDeg + dirMedDeg) + " double"
+                        namesAndTypeDir += " " + value + "_D${dirDeg}_${dirDeg+rangeDeg} double"
                         queryColumns += """CASE
                                 WHEN  a.azimuth-$dirRadMid>PI()/2
                                 THEN  a.$value*a.length*COS(a.azimuth-$dirRadMid-PI()/2)/2
                                 WHEN  a.azimuth-$dirRadMid<-PI()/2
                                 THEN  a.$value*a.length*COS(a.azimuth-$dirRadMid+PI()/2)/2
                                 ELSE  a.$value*a.length*ABS(SIN(a.azimuth-$dirRadMid))/2 
-                                END AS ${value}D${dirDegMid}"""
-                        onlyNamesDir += "${value}d${dirDegMid}"
-                        sumNamesDir += "COALESCE(SUM(b.${value}d${dirDegMid}), 0) AS ${value}d${dirDegMid} "
+                                END AS ${value}_D${dirDeg}_${dirDeg+rangeDeg}"""
+                        onlyNamesDir += "${value}_D${dirDeg}_${dirDeg+rangeDeg}"
+                        sumNamesDir += "COALESCE(SUM(b.${value}_D${dirDeg}_${dirDeg+rangeDeg}), 0) " +
+                                "AS ${value}_D${dirDeg}_${dirDeg+rangeDeg} "
                     }
                 }
                 namesAndTypeDir =namesAndTypeDir.join(",")
@@ -717,11 +719,11 @@ IProcess effectiveTerrainRoughnessHeight() {
                 names[i - 1] = "$projectedFacadeAreaName${listLayersBottom[i - 1]}_${listLayersBottom[i]}"
                 if (i == listLayersBottom.size()) {
                     names[listLayersBottom.size() - 1] =
-                            "$projectedFacadeAreaName${listLayersBottom[listLayersBottom.size() - 1]}"
+                            "${projectedFacadeAreaName}_H${listLayersBottom[listLayersBottom.size() - 1]}"
                 }
                 for (int d = 0; d < numberOfDirection / 2; d++) {
                     def dirDeg = d * 360 / numberOfDirection
-                    lambdaQuery += "${names[i - 1]}D${dirDeg + dirMedDeg}+"
+                    lambdaQuery += "${names[i - 1]}_D${dirDeg + dirMedDeg}+"
                 }
             }
             lambdaQuery = lambdaQuery[0..-2] + ")/(${numberOfDirection / 2}*ST_AREA($GEOMETRIC_COLUMN)) " +
