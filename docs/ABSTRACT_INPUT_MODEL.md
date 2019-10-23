@@ -3,19 +3,19 @@
 
 
 This page presents the data dictionary used to describe the geographic data that feed the GeoClimate chain. The data are organized by topics. For each of them, we provide the input tables dictionary (with the name and type of the fields – prefixed with `input_`) and the associated metadata tables, in which description and parameters are stored :
-- [Building](#Buildings): input_BUILDING, BUILDING_Abstract_use_&_type, BUILDING_Abstract_parameters
-- [Roads](#Roads): input_ROAD, ROAD_Abstract_type, ROAD_Abstract_surface, ROAD_Abstract_parameters
-- [Rail ways](#Rail-ways): input_RAIL, RAIL_Abstract_type
-- Vegetation areas: input_VEGET, VEGET_Abstract_type
-- Hydrographic areas: input_HYDRO
-- Zones: ZONE, ZONE_NEIGHBORS
+- [Building](#Buildings):  `input_BUILDING`, `BUILDING_Abstract_use_&_type`, `BUILDING_Abstract_parameters`
+- [Roads](#Roads): `input_ROAD`, `ROAD_Abstract_type`, `ROAD_Abstract_surface`, `ROAD_Abstract_parameters`
+- [Rail ways](#Rail-ways): `input_RAIL`, `RAIL_Abstract_type`
+- [Vegetation areas](#Vegetation-areas): `input_VEGET`, `VEGET_Abstract_type`
+- [Hydrographic areas](#Hydrographic-areas): `input_HYDRO`
+- [Zones](#Zones): `ZONE`, `ZONE_NEIGHBORS`
 
 
 ## Buildings
 
 
 
-### 1.1. input BUILDING table dictionary
+### Input BUILDING table dictionary
 
 - Table name : `input_building`
 - EPSG Code : Any metric coordinate system
@@ -33,7 +33,7 @@ This page presents the data dictionary used to describe the geographic data that
 |  main_use   | VARCHAR |                  | Main use of the building. The use of a building corresponds to a de facto element, relating to what it is used for. These values are listed in the table `BUILDING_Abstract_use_&_type`. |
 |   zindex    | INTEGER |                  | Defines the position with respect to the ground. 0 indicates that the object is on the ground. 1 to 4 indicates that the objects above the ground surface. -4 to -1 value indicates that the object is underground. |
 
-### 1.2. BUILDING Abstract use & type
+### BUILDING Abstract use & type
 
 - Table name: `BUILDING_Abstract_use_&_type`
 - Concerned table : `input_building`
@@ -88,7 +88,7 @@ Below are listed the values (n=36) that can be used to describe the type and the
 
 
 
-### 1.2. BUILDING Abstract  parameters
+### BUILDING Abstract  parameters
 
 - Table name: `BUILDING_Abstract_parameters`
 - Concerned table : `input_building`
@@ -139,11 +139,11 @@ For each individual value concerning the type or use of a building (values liste
 | townhall                        |   1    |
 | office                          |   1    |
 
-
+[back to top](#Abstract-input-model)
 
 ## Roads
 
-### 2.1. input ROAD table dictionary
+### Input ROAD table dictionary
 
 - Table name: `input_road`
 - EPSG Code: Any metric coordinate system
@@ -164,7 +164,7 @@ For each individual value concerning the type or use of a building (values liste
 
 
 
-### 2.2. ROAD Abstract type
+### ROAD Abstract type
 
 - Table name: `ROAD_Abstract_type`
 - Concerned table : `input_road`
@@ -197,7 +197,7 @@ Below are listed the possible values (n=16) for the `type` attributes of the `in
 
 
 
-### 2.3. ROAD Abstract surface
+### ROAD Abstract surface
 
 - Table name: `ROAD_Abstract_surface`
 - Concerned table : `input_road`
@@ -229,7 +229,7 @@ Lists of all possible values (n=14) for `surface` attributes of the `input_road`
 
 
 
-### 2.4. ROAD Abstract parameters
+### ROAD Abstract parameters
 
 - Table name: `ROAD_Abstract_parameters`
 - Concerned table : `input_road`
@@ -260,11 +260,11 @@ For each individual value concerning the `type` of a highway (values listed in t
 | highway      |     8     |
 | ferry        |     0     |
 
-
+[back to top](#Abstract-input-model)
 
 ## Rail ways
 
-### 3.1. input RAIL table dictionary
+### Input RAIL table dictionary
 
 * Table name : `input_rail`
 * EPSG Code : Any metric coordinate system
@@ -279,7 +279,7 @@ For each individual value concerning the `type` of a highway (values listed in t
 | zindex    | INTEGER    |                   | Defines the position with respect to the ground. 0 indicates that the object is on the ground. 1 to 4 indicates that the object is above the ground surface. -4 to -1 value indicates that the object is underground. |
 
 
-### 3.2. RAIL Abstract type
+### RAIL Abstract type
 
 - Table name: `RAIL_Abstract_type`
 - Concerned table : `input_rail`
@@ -302,9 +302,11 @@ Lists of all possible values (n=7) for `type` attribute of the `input_rail` tabl
 | subway        | Rails used for city public transport that are always completely separated from other traffic, often underground | [6](https://wiki.openstreetmap.org/wiki/Tag:railway=subway)  |
 | tram          | Railway track which is mainly or exclusively used for trams, or where tram tracks are laid within a normal road open to all traffic, often called street running. |  [7](https://wiki.openstreetmap.org/wiki/Tag:railway=tram)   |
 
+[back to top](#Abstract-input-model)
+
 ## Vegetation areas
 
-### 4.1. input VEGET table dictionary
+### Input VEGET table dictionary
 
 - Table name: `input_veget`
 - EPSG Code: Any metric coordinate system
@@ -318,7 +320,7 @@ Lists of all possible values (n=7) for `type` attribute of the `input_rail` tabl
 | type         | VARCHAR |                   | Type of vegetation.                                 |
 | height_class | VARCHAR |                   | Height class (`low` or `high`)                      |
 
-### 4.2. VEGET Abstract type
+### VEGET Abstract type
 
 - Table name: `VEGET_Abstract_type`
 - Concerned table : `input_veget`
@@ -349,7 +351,7 @@ Lists of all possible values (n=13) for `type` attribute of the `input_veget` ta
 
 
 
-### 4.2. VEGET Abstract parameters
+### VEGET Abstract parameters
 
 - Table name: `VEGET_Abstract_parameters`
 - Concerned table : `input_veget`
@@ -378,11 +380,11 @@ Lists of all possible values (n=13) for the `height_class` attribute in the `inp
 | banana_plants | high                                      |
 | sugar_cane    | low                |
 
-
+[back to top](#Abstract-input-model)
 
 ## Hydrographic areas
 
-### 5.1. input HYDRO table dictionary
+### Input HYDRO table dictionary
 - Table name: `input_hydro`
 - EPSG Code: Any metric coordinate system
 
@@ -393,10 +395,11 @@ Lists of all possible values (n=13) for the `height_class` attribute in the `inp
 | the_geom  | POLYGON | ST_DIMENSION() =2 | Geometry                                            |
 | id_source | VARCHAR |                   | Identifier of the feature from the input datasource |
 
+[back to top](#Abstract-input-model)
 
 ## Zones
 
-### 6.1. ZONE table dictionary
+### ZONE table dictionary
 - Table name: `zone`
 - EPSG Code: Any metric coordinate system
 
@@ -407,7 +410,7 @@ Lists of all possible values (n=13) for the `height_class` attribute in the `inp
 | the_geom | POLYGON | ST_DIMENSION() =2 | Geometry                    |
 | id_zone  | VARCHAR |                   | Identifier of the zone area |
 
-### 6.2. ZONE NEIGHBORS table dictionary
+### ZONE NEIGHBORS table dictionary
 - Table name: `zone_neighbors`
 - EPSG Code: Any metric coordinate system
 
@@ -418,8 +421,4 @@ Lists of all possible values (n=13) for the `height_class` attribute in the `inp
 | the_geom | POLYGON | ST_DIMENSION() =2 | Geometry                    |
 | id_zone  | VARCHAR |                   | Identifier of the zone area |
 
-
-
-
-
-
+[back to top](#Abstract-input-model)
