@@ -1,4 +1,22 @@
 {
+  "tags" : {
+    "highway": ["yes",
+      "motorway", "trunk","primary","secondary", "tertiary", "unclassified",
+      "residential", "motorway_link",
+      "motorway_junction",
+      "trunk_link",
+      "primary_link",
+      "secondary_link",
+      "tertiary_link",
+      "junction","service",
+      "road","track"
+    ],"junction": ["roundabout",
+      "circular","jughandle","filter","yes"
+    ]
+  },
+  "columns":["width","highway", "surface", "sidewalk",
+    "layer","maxspeed","oneway",
+    "route","junction"],
     "surface":
      {
         "unpaved": {

@@ -43,7 +43,7 @@ class OSMGISLayersTests {
         assertEquals 135, h2GIS.getTable(process.results.vegetationTableName).rowCount
 
         //h2GIS.getTable(process.results.roadTableName).save("./target/osm_road.shp")
-        assertEquals 360, h2GIS.getTable(process.results.roadTableName).rowCount
+        assertEquals 198, h2GIS.getTable(process.results.roadTableName).rowCount
 
         //h2GIS.getTable(process.results.railTableName).save("./target/osm_rails.shp")
         assertEquals 44, h2GIS.getTable(process.results.railTableName).rowCount
