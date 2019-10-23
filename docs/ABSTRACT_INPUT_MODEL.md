@@ -3,17 +3,12 @@
 
 
 This page presents the data dictionary used to describe the geographic data that feed the GeoClimate chain. The data are organized by topics. For each of them, we provide the input tables dictionary (with the name and type of the fields – prefixed with `input_`) and the associated metadata tables, in which description and parameters are stored :
-1. Building: input_BUILDING, BUILDING_Abstract_use_&_type, BUILDING_Abstract_parameters
-2. Roads: input_ROAD, ROAD_Abstract_type, ROAD_Abstract_surface, ROAD_Abstract_parameters
+1. [Building](#1.-Buildings): input_BUILDING, BUILDING_Abstract_use_&_type, BUILDING_Abstract_parameters
+2. [Roads](#2.-Roads): input_ROAD, ROAD_Abstract_type, ROAD_Abstract_surface, ROAD_Abstract_parameters
 3. Rail ways: input_RAIL, RAIL_Abstract_type
 4. Vegetation areas: input_VEGET, VEGET_Abstract_type
 5. Hydrographic areas: input_HYDRO
 6. Zones: ZONE, ZONE_NEIGHBORS
-
-
-
-[TOC]
-
 
 
 ## 1. Buildings
