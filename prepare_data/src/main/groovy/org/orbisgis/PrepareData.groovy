@@ -6,12 +6,11 @@ import org.orbisgis.osm.FormattingForAbstractModel
 import org.orbisgis.common.InputDataFormatting
 import org.orbisgis.osm.OSMGISLayers
 import org.orbisgis.processmanager.GroovyProcessFactory
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 abstract class PrepareData extends GroovyProcessFactory {
 
-    public static Logger logger = LoggerFactory.getLogger(PrepareData.class)
+    public static def logger = LoggerFactory.getLogger(PrepareData.class)
 
 
     public static AbstractTablesInitialization = new AbstractTablesInitialization()
