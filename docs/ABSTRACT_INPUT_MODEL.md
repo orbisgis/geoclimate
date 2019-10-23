@@ -34,8 +34,8 @@ This page presents the data dictionary used to describe the geographic data that
 | height_wall |  FLOAT  |                  | The (corrected) height of the building in meters. Height of the building measured between the ground and the gutter (maximum altitude of the polyline describing the building). *(exprimed in meters)* |
 | height_roof |  FLOAT  |                  | The maximum height of a building is the distance between the top edge of the building (including the roof, but excluding antennas, spires and other equipment mounted on the roof) and the lowest point at the bottom where the building meets the ground. *(exprimed in meters)* |
 |   nb_lev    | INTEGER |                  | Number of levels (have to be greater than 0)                 |
-|    type     | VARCHAR |                  | Value allowing to distinguish the type of building according to its architecture. These values are listed in the table [`BUILDING_Abstract_use_&_type`](#1.2.-BUILDING-Abstract-use-&-type). |
-|  main_use   | VARCHAR |                  | Main use of the building. The use of a building corresponds to a de facto element, relating to what it is used for. These values are listed in the table [`BUILDING_Abstract_use_&_type`](#1.2.-BUILDING-Abstract-use-&-type). |
+|    type     | VARCHAR |                  | Value allowing to distinguish the type of building according to its architecture. These values are listed in the table `BUILDING_Abstract_use_&_type`. |
+|  main_use   | VARCHAR |                  | Main use of the building. The use of a building corresponds to a de facto element, relating to what it is used for. These values are listed in the table `BUILDING_Abstract_use_&_type`. |
 |   zindex    | INTEGER |                  | Defines the position with respect to the ground. 0 indicates that the object is on the ground. 1 to 4 indicates that the objects above the ground surface. -4 to -1 value indicates that the object is underground. |
 
 ### 1.2. BUILDING Abstract use & type
@@ -52,8 +52,8 @@ Below are listed the values (n=36) that can be used to describe the type and the
 
 - Source: most of the values are based on concepts from existing thesauri. In this case, we indicate their source.  
 
-| Term                            | Definition                                                   |                            Source                            |
-| ------------------------------- | ------------------------------------------------------------ | :----------------------------------------------------------: |
+| Term | Definition | Source |
+| :--: | ---------- | :----: |
 | building                        | Used to qualify any kind of feature that is a building       |    [1](https://wiki.openstreetmap.org/wiki/Key:building)     |
 | house                           | A single dwelling unit usually inhabited by one family       | [2](https://wiki.openstreetmap.org/wiki/Tag:building=house)  |
 | detached                        | A free-standing residential building usually housing a single-family. | [3](https://wiki.openstreetmap.org/wiki/Tag:building=detached) |
@@ -106,7 +106,7 @@ For each individual value concerning the type or use of a building (values liste
 - Nb_lev: Specifies whether or not the building type is taken into account when calculating the number of levels (`0` = not taken into account (in this case, the number of levels will be forced to 1) / `1`= taken into account (in this case, a formula will be used to deduct the number) / `2` = other situtation (rule).
 
 | Term                            | Nb_lev |
-| ------------------------------- | :----: |
+| :-----------------------------: | :----: |
 | building                        |   1    |
 | house                           |   1    |
 | detached                        |   1    |
@@ -182,7 +182,7 @@ Below are listed the possible values (n=16) for the `type` attributes of the `in
 - Source: most of the values are based on concepts from existing thesauri. In this case, we indicate their sources.
 
 | Term         | Definition                                                   | Source                                                       |
-| ------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| :----------: | ------------------------------------------------------------ | :----------------------------------------------------------: |
 | residential  | Highway generally used for local traffic within settlement. Usually highway accessing or around residential areas. | [1](https://wiki.openstreetmap.org/wiki/Tag:highway=residential) |
 | track        | Highway for mostly agricultural use, forest tracks etc.; usually unpaved (unsealed) but may apply to paved tracks as well, that are suitable for two-track vehicles, such as tractors or jeeps. | [2](https://wiki.openstreetmap.org/wiki/Tag:highway=track)   |
 | unclassified | Minor public highway typically at the lowest level of the interconnecting grid network. Have lower importance in the highway network than tertiary and are not residential streets or agricultural tracks. | [3](https://wiki.openstreetmap.org/wiki/FR:Tag:highway=unclassified) |
@@ -216,7 +216,7 @@ Lists of all possible values (n=14) for `surface` attributes of the `input_road`
   sources.
 
 | Term        | Definition                                                   |                        Source                        |
-| ----------- | ------------------------------------------------------------ | :--------------------------------------------------: |
+| :---------: | ------------------------------------------------------------ | :--------------------------------------------------: |
 | unpaved     | "Generic term to qualify the surface of a highway that is predominantly unsealed along its length; i.e., it has a loose covering ranging from compacted stone chippings to ground." | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
 | paved       | Surface with coating. Generic term for a highway with a stabilized and hard surface. | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
 | ground      | Surface of the ground itself with no specific fraction of rock. | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
@@ -247,7 +247,7 @@ For each individual value concerning the `type` of a highway (values listed in t
 - Min_width: minimum road width *(in meter)*
 
 | Term         | Min_width |
-| ------------ | :-------: |
+| :----------: | :-------: |
 | residential  |     8     |
 | track        |     2     |
 | unclassified |     3     |
@@ -277,7 +277,7 @@ For each individual value concerning the `type` of a highway (values listed in t
 **Abstract dictionary table used to define the rail data:**
 
 | Name      | Type       | Constraints       | Definition                                                   |
-| --------- | ---------- | ----------------- | ------------------------------------------------------------ |
+| :-------: | :--------: | :---------------: | ------------------------------------------------------------ |
 | the_geom  | LINESTRING | ST_DIMENSION() =1 | Geometry                                                     |
 | id_source | VARCHAR    |                   | Identifier of the feature from the input datasource          |
 | type      | VARCHAR    |                   | Type of rail                                                 |
@@ -298,7 +298,7 @@ Lists of all possible values (n=7) for `type` attribute of the `input_rail` tabl
   sources.
 
 | Term          | Definition                                                   |                            Source                            |
-| ------------- | ------------------------------------------------------------ | :----------------------------------------------------------: |
+| :-----------: | ------------------------------------------------------------ | :----------------------------------------------------------: |
 | highspeed     | Railway track for highspeed rail.                            |    [1](https://wiki.openstreetmap.org/wiki/Key:highspeed)    |
 | rail          | Railway track for full sized passenger or freight trains in the standard gauge for the country or state. |  [2](https://wiki.openstreetmap.org/wiki/Tag:railway=rail)   |
 | service track | Railway track mainly used for sorting or temporary parking of freight trains. | [3](http://professionnels.ign.fr/doc/DC_BDTOPO_3-0Beta.pdf)  |
@@ -317,7 +317,7 @@ Lists of all possible values (n=7) for `type` attribute of the `input_rail` tabl
 **Abstract table used to store the vegetation data:**
 
 | Name         | Type    | Constraints       | Definition                                          |
-| ------------ | ------- | ----------------- | --------------------------------------------------- |
+| :----------: | :-----: | :---------------: | --------------------------------------------------- |
 | the_geom     | POLYGON | ST_DIMENSION() =2 | Geometry                                            |
 | id_source    | VARCHAR |                   | Identifier of the feature from the input datasource |
 | type         | VARCHAR |                   | Type of vegetation.                                 |
@@ -337,7 +337,7 @@ Lists of all possible values (n=13) for `type` attribute of the `input_veget` ta
 
 
 | Term | Definition | Source |
-| ------------- | ------------- | :-------------: |
+| :-----------: | ------------- | :-------------: |
 | tree | A single tree |  [1](https://wiki.openstreetmap.org/wiki/Tag:natural=tree)   |
 | wood          | Tree-covered area (a 'forest' or 'wood') not managed for economic purposes |  [2](https://wiki.openstreetmap.org/wiki/Tag:natural=wood)   |
 | forest        | Managed woodland or woodland plantation. Wooded area maintained by human to obtain forest products | [3](https://wiki.openstreetmap.org/wiki/Tag:landuse=forest)  |
@@ -394,7 +394,7 @@ Lists of all possible values (n=13) for the `height_class` attribute in the `inp
 **Abstract table used to store the hydrographic data:**
 
 | Name      | Type    | Constraints       | Definition                                          |
-| --------- | ------- | ----------------- | --------------------------------------------------- |
+| :-------: | :-----: | :---------------: | --------------------------------------------------- |
 | the_geom  | POLYGON | ST_DIMENSION() =2 | Geometry                                            |
 | id_source | VARCHAR |                   | Identifier of the feature from the input datasource |
 
@@ -408,7 +408,7 @@ Lists of all possible values (n=13) for the `height_class` attribute in the `inp
 **Abstract table used to store the studied zone area:**
 
 | Name     | Type    | Constraints       | Definition                  |
-| -------- | ------- | ----------------- | --------------------------- |
+| :------: | :-----: | :---------------: | --------------------------- |
 | the_geom | POLYGON | ST_DIMENSION() =2 | Geometry                    |
 | id_zone  | VARCHAR |                   | Identifier of the zone area |
 
@@ -419,7 +419,7 @@ Lists of all possible values (n=13) for the `height_class` attribute in the `inp
 **Abstract table used to store every neighboring zones of the studied zone:**
 
 | Name     | Type    | Constraints       | Definition                  |
-| -------- | ------- | ----------------- | --------------------------- |
+| :------: | :-----: | :---------------: | --------------------------- |
 | the_geom | POLYGON | ST_DIMENSION() =2 | Geometry                    |
 | id_zone  | VARCHAR |                   | Identifier of the zone area |
 
