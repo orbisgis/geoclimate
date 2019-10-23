@@ -3,12 +3,12 @@
 
 
 This page presents the data dictionary used to describe the geographic data that feed the GeoClimate chain. The data are organized by topics. For each of them, we provide the input tables dictionary (with the name and type of the fields – prefixed with `input_`) and the associated metadata tables, in which description and parameters are stored :
-1. [Building](#Buildings): input_BUILDING, BUILDING_Abstract_use_&_type, BUILDING_Abstract_parameters
-2. [Roads](#2.-Roads): input_ROAD, ROAD_Abstract_type, ROAD_Abstract_surface, ROAD_Abstract_parameters
-3. Rail ways: input_RAIL, RAIL_Abstract_type
-4. Vegetation areas: input_VEGET, VEGET_Abstract_type
-5. Hydrographic areas: input_HYDRO
-6. Zones: ZONE, ZONE_NEIGHBORS
+- [Building](#Buildings): input_BUILDING, BUILDING_Abstract_use_&_type, BUILDING_Abstract_parameters
+- [Roads](#Roads): input_ROAD, ROAD_Abstract_type, ROAD_Abstract_surface, ROAD_Abstract_parameters
+- [Rail ways](#Rail-ways): input_RAIL, RAIL_Abstract_type
+- Vegetation areas: input_VEGET, VEGET_Abstract_type
+- Hydrographic areas: input_HYDRO
+- Zones: ZONE, ZONE_NEIGHBORS
 
 
 ## Buildings
@@ -141,7 +141,7 @@ For each individual value concerning the type or use of a building (values liste
 
 
 
-## 2. Roads
+## Roads
 
 ### 2.1. input ROAD table dictionary
 
@@ -262,7 +262,7 @@ For each individual value concerning the `type` of a highway (values listed in t
 
 
 
-## 3. Rail ways
+## Rail ways
 
 ### 3.1. input RAIL table dictionary
 
@@ -302,7 +302,7 @@ Lists of all possible values (n=7) for `type` attribute of the `input_rail` tabl
 | subway        | Rails used for city public transport that are always completely separated from other traffic, often underground | [6](https://wiki.openstreetmap.org/wiki/Tag:railway=subway)  |
 | tram          | Railway track which is mainly or exclusively used for trams, or where tram tracks are laid within a normal road open to all traffic, often called street running. |  [7](https://wiki.openstreetmap.org/wiki/Tag:railway=tram)   |
 
-## 4. Vegetation areas
+## Vegetation areas
 
 ### 4.1. input VEGET table dictionary
 
@@ -380,7 +380,7 @@ Lists of all possible values (n=13) for the `height_class` attribute in the `inp
 
 
 
-## 5. Hydrographic areas
+## Hydrographic areas
 
 ### 5.1. input HYDRO table dictionary
 - Table name: `input_hydro`
@@ -394,7 +394,7 @@ Lists of all possible values (n=13) for the `height_class` attribute in the `inp
 | id_source | VARCHAR |                   | Identifier of the feature from the input datasource |
 
 
-## 6. Zones
+## Zones
 
 ### 6.1. ZONE table dictionary
 - Table name: `zone`
