@@ -297,6 +297,20 @@ def computeBlockIndicators(){
             datasource.execute "DROP TABLE IF EXISTS $outputTableName;" +
                     "ALTER TABLE ${blockTableJoin.results.outputTableName} RENAME TO $outputTableName"
 
+            // Modify all indicators which do not have the expected name
+            def listColumnNames = datasource.getTable(outputTableName).getColumnNames()
+            def mapIndic2Change = ["SUM_AREA": "AREA", "SUM_FLOOR_AREA": "FLOOR_AREA",
+                                   "SUM_VOLUME": "VOLUME"]
+            def query2ModifyNames = ""
+            for (ind in mapIndic2Change.keySet()){
+                if (listColumnNames.contains(ind)) {
+                    query2ModifyNames += "ALTER TABLE $outputTableName RENAME COLUMN $ind TO ${mapIndic2Change[ind]};"
+                }
+            }
+            if (query2ModifyNames != ""){
+                datasource.execute query2ModifyNames
+            }
+
             // Remove all intermediate tables (indicators alone in one table)
             // Recover all created tables in an array
             def finTabNames = finalTablesToJoin.keySet().toArray()
@@ -431,6 +445,7 @@ def computeRSUIndicators() {
                                                                   "floor_area"              : ["DENS"],
                                                                   "minimum_building_spacing": ["AVG"],
                                                                   "building": ["NB_DENS"]]
+                def renameQuery = ""
             }
             if (indicatorUse*.toUpperCase().contains("TEB")) {
                 inputVarAndOperations = inputVarAndOperations << ["area": ["DENS"]]
@@ -713,6 +728,20 @@ def computeRSUIndicators() {
                                datasource           : datasource])) {
                 info "Cannot merge all tables. "
                 return
+            }
+
+            // Modify all indicators which do not have the expected name
+            def listColumnNames = datasource.getTable(outputTableName).getColumnNames()
+            def mapIndic2Change = ["DENS_AREA": "BUILDING_AREA_FRACTION", "DENS_FLOOR_AREA": "BUILDING_FLOOR_AREA_DENSITY",
+                                   "DENS_VOLUME": "BUILDING_VOLUME_DENSITY"]
+            def query2ModifyNames = ""
+            for (ind in mapIndic2Change.keySet()){
+                if (listColumnNames.contains(ind)) {
+                    query2ModifyNames += "ALTER TABLE $outputTableName RENAME COLUMN $ind TO ${mapIndic2Change[ind]};"
+                }
+            }
+            if (query2ModifyNames != ""){
+                datasource.execute query2ModifyNames
             }
 
             // Remove all intermediate tables (indicators alone in one table)

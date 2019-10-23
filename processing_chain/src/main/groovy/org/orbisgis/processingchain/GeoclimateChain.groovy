@@ -103,7 +103,7 @@ def OSMGeoIndicators() {
             // If the LCZ indicators should be calculated, we only affect a LCZ class to each RSU
             if(indicatorUse.contains("LCZ")){
                 def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"             : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
-                                     "DENS_AREA"                        : "BUILDING_SURFACE_FRACTION",
+                                     "BUILDING_AREA_FRACTION"           : "BUILDING_SURFACE_FRACTION",
                                      "ASPECT_RATIO"                     : "ASPECT_RATIO",
                                      "GROUND_SKY_VIEW_FACTOR"           : "SKY_VIEW_FACTOR",
                                      "PERVIOUS_FRACTION"                : "PERVIOUS_SURFACE_FRACTION",

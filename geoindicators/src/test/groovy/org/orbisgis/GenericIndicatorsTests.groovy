@@ -100,16 +100,16 @@ class GenericIndicatorsTests {
                       prefixName: "three", datasource: h2GIS])
         def concat = [0, 0, ""]
         h2GIS.eachRow("SELECT * FROM one_weighted_aggregated_statistics WHERE id_rsu = 1"){
-            row -> concat[0]+= row.weighted_avg_height_roof_area
+            row -> concat[0]+= row.avg_height_roof_area_weighted
         }
         h2GIS.eachRow("SELECT * FROM two_weighted_aggregated_statistics WHERE id_rsu = 1"){
-            row -> concat[1]+= row.weighted_std_height_roof_area
+            row -> concat[1]+= row.std_height_roof_area_weighted
         }
         h2GIS.eachRow("SELECT * FROM three_weighted_aggregated_statistics WHERE id_rsu = 1"){
             row ->
-                concat[2]+= "${row.weighted_avg_height_roof_area.round(3)}\n" +
-                        "${row.weighted_std_height_roof_area.round(1)}\n" +
-                        "${row.weighted_std_height_wall_area.round(2)}\n"
+                concat[2]+= "${row.avg_height_roof_area_weighted.round(3)}\n" +
+                        "${row.std_height_roof_area_weighted.round(1)}\n" +
+                        "${row.std_height_wall_area_weighted.round(2)}\n"
         }
         def nb_rsu = h2GIS.firstRow("SELECT COUNT(*) AS NB FROM ${pavg.results.outputTableName}".toString())
         assertEquals(10.178, concat[0], 0.001)
