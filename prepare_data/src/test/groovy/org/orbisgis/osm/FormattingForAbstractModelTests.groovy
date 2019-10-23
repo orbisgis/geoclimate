@@ -21,14 +21,12 @@ class FormattingForAbstractModelTests {
                 epsg :2154])
 
         assertEquals 1038, h2GIS.getTable(extractData.results.buildingTableName).rowCount
-        assertEquals 360, h2GIS.getTable(extractData.results.roadTableName).rowCount
+        assertEquals 198, h2GIS.getTable(extractData.results.roadTableName).rowCount
         assertEquals 44, h2GIS.getTable(extractData.results.railTableName).rowCount
         assertEquals 135, h2GIS.getTable(extractData.results.vegetationTableName).rowCount
         assertEquals 10, h2GIS.getTable(extractData.results.hydroTableName).rowCount
 
-
         def epsg = extractData.results.epsg
-
 
         //Buildings
         IProcess format = PrepareData.FormattingForAbstractModel.formatBuildingLayer()
@@ -54,7 +52,7 @@ class FormattingForAbstractModelTests {
                 epsg: epsg,
                 jsonFilename: null])
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_formated.shp")
-        assertEquals 359, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertEquals 197, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH is null").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH<0").count==0
 
@@ -70,7 +68,7 @@ class FormattingForAbstractModelTests {
                 jsonFilename: null])
 
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_rails_formated.shp")
-        assertEquals 44, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertEquals 41, h2GIS.getTable(format.results.outputTableName).rowCount
 
 
         //Vegetation
