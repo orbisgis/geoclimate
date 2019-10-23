@@ -199,7 +199,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
         dirFile.mkdir()
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
         IProcess process = ProcessingChain.GeoclimateChain.OSMGeoIndicators()
-        if(process.execute(datasource: datasource, placeName: "Cliscouet, Vannes")){
+        if(process.execute(datasource: datasource, placeName: "romainville")){
             IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
             saveTables.execute( [inputTableNames: process.getResults().values()
                                  , directory: directory, datasource: datasource])
@@ -214,7 +214,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
         dirFile.mkdir()
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
         IProcess process = ProcessingChain.GeoclimateChain.OSMLCZ()
-        if(process.execute(datasource: datasource, placeName: "Cliscouet, Vannes")){
+        if(process.execute(datasource: datasource, placeName: "romainville")){
             IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
             saveTables.execute( [inputTableNames: process.getResults().values()
                                  , directory: directory, datasource: datasource])

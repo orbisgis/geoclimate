@@ -1,16 +1,13 @@
 package org.orbisgis.geoindicators
 
 import org.orbisgis.processmanager.GroovyProcessFactory
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
-import static java.nio.charset.StandardCharsets.UTF_8
 
 /**
  * Root access point to the Geoindicators processes.
  */
 abstract class Geoindicators extends GroovyProcessFactory {
-    public static Logger logger = LoggerFactory.getLogger(Geoindicators.class)
+    public static def logger = LoggerFactory.getLogger(Geoindicators.class)
 
     //Processes
     public static BuildingIndicators = new BuildingIndicators()
