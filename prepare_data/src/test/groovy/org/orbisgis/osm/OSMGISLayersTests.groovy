@@ -40,7 +40,7 @@ class OSMGISLayersTests {
         assertEquals 1038, h2GIS.getTable(process.results.buildingTableName).rowCount
 
         //h2GIS.getTable(process.results.vegetationTableName).save("./target/osm_vegetation.shp")
-        assertEquals 128, h2GIS.getTable(process.results.vegetationTableName).rowCount
+        assertEquals 135, h2GIS.getTable(process.results.vegetationTableName).rowCount
 
         //h2GIS.getTable(process.results.roadTableName).save("./target/osm_road.shp")
         assertEquals 360, h2GIS.getTable(process.results.roadTableName).rowCount
@@ -49,6 +49,6 @@ class OSMGISLayersTests {
         assertEquals 44, h2GIS.getTable(process.results.railTableName).rowCount
 
         //h2GIS.getTable(process.results.hydroTableName).save("./target/osm_hydro.shp")
-        assertEquals 8, h2GIS.getTable(process.results.hydroTableName).rowCount
+        assertEquals 10, h2GIS.getTable(process.results.hydroTableName).rowCount
     }
 }

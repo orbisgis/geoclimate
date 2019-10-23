@@ -15,7 +15,7 @@ class TypologyClassificationTests {
 
     @BeforeAll
     static void init(){
-        h2GIS = H2GIS.open([databaseName: './target/buildingdb'])
+        h2GIS = H2GIS.open( './target/buildingdb;AUTO_SERVER=TRUE')
     }
 
     @BeforeEach
@@ -41,10 +41,10 @@ class TypologyClassificationTests {
         h2GIS.getTable(pavg.results.outputTableName).eachRow {
             row ->
                 if (row.id_rsu == 1) {
-                    assertEquals("LCZ1", row.LCZ1,)
+                    assertEquals(1, row.LCZ1,)
                     assertEquals(0, row.min_distance)
                 } else {
-                    assertEquals("LCZ8", row.LCZ1)
+                    assertEquals(8, row.LCZ1)
                     assertTrue(row.min_distance > 0)
                     assertTrue(row.PSS < 1)
                 }
@@ -60,11 +60,11 @@ class TypologyClassificationTests {
         h2GIS.getTable(pmed.results.outputTableName).eachRow {
             row ->
                 if(row.id_rsu==1){
-                    assertEquals("LCZ1", row.LCZ1,)
+                    assertEquals(1, row.LCZ1,)
                     assertEquals(0, row.min_distance)
                 }
                 else{
-                    assertEquals("LCZ8", row.LCZ1)
+                    assertEquals(8, row.LCZ1)
                     assertTrue(row.min_distance>0)
                     assertTrue(row.PSS<1)
                 }

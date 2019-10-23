@@ -15,7 +15,7 @@ class BlockIndicatorsTests {
 
     @BeforeAll
     static void init(){
-        h2GIS = H2GIS.open("./target/${BlockIndicatorsTests.getName()}")
+        h2GIS = H2GIS.open("./target/${BlockIndicatorsTests.getName()};AUTO_SERVER=TRUE")
     }
 
     @BeforeEach
