@@ -459,8 +459,11 @@ IProcess projectedFacadeAreaDistribution() {
 }
 
 /**
- * Script to compute the distribution of roof (vertical, horizontal and tilted) area within a RSU per vertical layer.
- * Note that the method used is based on the assumption that all buildings have gable roofs. Since we do not know
+ * Script to compute both the roof (vertical, horizontal and tilted)
+ * - area within each vertical layer of a RSU.
+ * - optionally the density within the RSU independantly of the layer considered
+ *
+ * WARNING: Note that the method used is based on the assumption that all buildings have gable roofs. Since we do not know
  * what is the direction of the gable, we also consider that buildings are square in order to limit the potential
  * calculation error (for example considering that the gable is always oriented parallel to the larger side of the
  * building.
@@ -473,6 +476,8 @@ IProcess projectedFacadeAreaDistribution() {
  * @param prefixName String use as prefix to name the output table
  * @param listLayersBottom the list of height corresponding to the bottom of each vertical layers (default [0, 10, 20,
  * 30, 40, 50])
+ * @param density Boolean to set whether or not the roof density should be calculated in addition to the distribution
+ * (default true)
  *
  * @return outputTableName Table name in which the rsu id and their corresponding indicator value are stored
  *
@@ -490,11 +495,11 @@ IProcess roofAreaDistribution() {
     return create({
         title "RSU roof area distribution"
         inputs rsuTable: String, buildingTable: String, listLayersBottom: [0, 10, 20, 30, 40, 50], prefixName: String,
-                datasource: JdbcDataSource
+                datasource: JdbcDataSource, density: true
         outputs outputTableName: String
-        run { rsuTable, buildingTable, listLayersBottom, prefixName, datasource ->
+        run { rsuTable, buildingTable, listLayersBottom, prefixName, datasource, density ->
 
-            info "Executing RSU roof area distribution"
+            info "Executing RSU roof area distribution (and optionally roof density)"
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
@@ -502,6 +507,7 @@ IProcess roofAreaDistribution() {
             def buildVertRoofInter = "build_vert_roof_inter$uuid"
             def buildVertRoofAll = "buildVertRoofAll$uuid"
             def buildRoofSurfTot = "build_roof_surf_tot$uuid"
+            def optionalTempo = "optionalTempo$uuid"
 
             datasource.getSpatialTable(rsuTable).the_geom.createSpatialIndex()
             datasource.getSpatialTable(rsuTable).id_rsu.createIndex()
@@ -585,7 +591,7 @@ IProcess roofAreaDistribution() {
                         "z_max <= ${listLayersBottom[i]}, CASEWHEN(delta_h=0, non_vertical_roof_area, " +
                         "non_vertical_roof_area*(z_max-GREATEST(${listLayersBottom[i - 1]},z_min))/delta_h), " +
                         "CASEWHEN(z_min < ${listLayersBottom[i]}, non_vertical_roof_area*(${listLayersBottom[i]}-" +
-                        "GREATEST(${listLayersBottom[i - 1]},z_min))/delta_h, 0)))),0) AS non_vert_roof_area" +
+                        "GREATEST(${listLayersBottom[i - 1]},z_min))/delta_h, 0)))),0) AS non_vert_roof_area_H" +
                         "${listLayersBottom[i - 1]}_${listLayersBottom[i]},"
                 vertQuery += " COALESCE(SUM(CASEWHEN(z_max <= ${listLayersBottom[i - 1]}, 0, CASEWHEN(" +
                         "z_max <= ${listLayersBottom[i]}, CASEWHEN(delta_h=0, 0, " +
@@ -594,23 +600,44 @@ IProcess roofAreaDistribution() {
                         "CASEWHEN(z_min>${listLayersBottom[i - 1]}, vertical_roof_area*(1-" +
                         "POWER((z_max-${listLayersBottom[i]})/delta_h,2)),vertical_roof_area*(" +
                         "POWER((z_max-${listLayersBottom[i - 1]})/delta_h,2)-POWER((z_max-${listLayersBottom[i]})/" +
-                        "delta_h,2))), 0)))),0) AS vert_roof_area${listLayersBottom[i - 1]}_${listLayersBottom[i]},"
+                        "delta_h,2))), 0)))),0) AS vert_roof_area_H${listLayersBottom[i - 1]}_${listLayersBottom[i]},"
             }
             // The roof area is calculated for the last level (> 50 m in the default case)
             def valueLastLevel = listLayersBottom[listLayersBottom.size() - 1]
             nonVertQuery += " COALESCE(SUM(CASEWHEN(z_max <= $valueLastLevel, 0, CASEWHEN(delta_h=0, non_vertical_roof_area, " +
-                    "non_vertical_roof_area*(z_max-GREATEST($valueLastLevel,z_min))/delta_h))),0) AS non_vert_roof_area" +
-                    "${valueLastLevel}_,"
+                    "non_vertical_roof_area*(z_max-GREATEST($valueLastLevel,z_min))/delta_h))),0) AS non_vert_roof_area_H" +
+                    "${valueLastLevel},"
             vertQuery += " COALESCE(SUM(CASEWHEN(z_max <= $valueLastLevel, 0, CASEWHEN(delta_h=0, vertical_roof_area, " +
-                    "vertical_roof_area*(z_max-GREATEST($valueLastLevel,z_min))/delta_h))),0) AS vert_roof_area" +
-                    "${valueLastLevel}_,"
+                    "vertical_roof_area*(z_max-GREATEST($valueLastLevel,z_min))/delta_h))),0) AS vert_roof_area_H" +
+                    "${valueLastLevel},"
 
             def endQuery = " FROM $buildRoofSurfTot GROUP BY id_rsu;"
 
             datasource.execute finalQuery + nonVertQuery + vertQuery[0..-2] + endQuery
 
+            // Calculate the roof density if needed
+            if (density) {
+                def optionalQuery = "ALTER TABLE $outputTableName RENAME TO $optionalTempo;" +
+                        "CREATE INDEX IF NOT EXISTS id ON $optionalTempo($ID_COLUMN_RSU);" +
+                        "DROP TABLE IF EXISTS $outputTableName; " +
+                        "CREATE TABLE $outputTableName AS SELECT a.*, "
+                def optionalNonVert = "("
+                def optionalVert = "("
+
+                for (i in 1..(listLayersBottom.size() - 1)) {
+                    optionalNonVert += " a.non_vert_roof_area_H${listLayersBottom[i - 1]}_${listLayersBottom[i]} + "
+                    optionalVert += "a.vert_roof_area_H${listLayersBottom[i - 1]}_${listLayersBottom[i]} + "
+                }
+                optionalNonVert += "a.non_vert_roof_area_H${valueLastLevel}) / ST_AREA(b.$GEOMETRIC_COLUMN_RSU)"
+                optionalVert += "a.vert_roof_area_H${valueLastLevel}) / ST_AREA(b.$GEOMETRIC_COLUMN_RSU)"
+                optionalQuery += "${optionalNonVert} AS VERT_ROOF_DENSITY, $optionalVert AS NON_VERT_ROOF_DENSITY" +
+                        " FROM $optionalTempo a RIGHT JOIN $rsuTable b ON a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU;"
+
+                datasource.execute optionalQuery
+            }
+
             datasource.execute "DROP TABLE IF EXISTS ${buildRoofSurfIni}, ${buildVertRoofInter}, " +
-                    "$buildVertRoofAll, $buildRoofSurfTot;"
+                    "$buildVertRoofAll, $buildRoofSurfTot, $optionalTempo;"
 
             [outputTableName: outputTableName]
         }

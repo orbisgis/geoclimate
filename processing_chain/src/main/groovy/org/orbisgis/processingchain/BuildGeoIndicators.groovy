@@ -39,9 +39,9 @@ def computeBuildingsIndicators() {
             def buildTableJoinNeighbors = "A$uuid"
 
             // building_area + building_perimeter
-            def geometryOperations = ["st_perimeter", "st_area"]
-            if (indicatorUse*.toUpperCase().contains("LCZ") || indicatorUse*.toUpperCase().contains("TEB")) {
-                geometryOperations = ["st_area"]
+            def geometryOperations = ["st_area"]
+            if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
+                geometryOperations = ["st_perimeter", "st_area"]
             }
             def computeGeometryProperties = Geoindicators.GenericIndicators.geometryProperties()
             if (!computeGeometryProperties([inputTableName: inputBuildingTableName, inputFields: ["id_build"],
@@ -522,7 +522,7 @@ def computeRSUIndicators() {
             if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY") || indicatorUse*.toUpperCase().contains("TEB")) {
                 def roadOperations = ["road_direction_distribution", "linear_road_density"]
                 if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
-                    roadOperations = ["road_direction_distribution"]
+                    roadOperations = ["linear_road_density"]
                 }
                 def computeLinearRoadOperations = Geoindicators.RsuIndicators.linearRoadOperations()
                 if (!computeLinearRoadOperations([rsuTable         : rsuTable,

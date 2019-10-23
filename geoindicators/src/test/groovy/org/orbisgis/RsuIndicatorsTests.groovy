@@ -130,12 +130,12 @@ class RsuIndicatorsTests {
                 // Iterate over columns
                 for (i in 1..listLayersBottom.size()){
                     if (i == listLayersBottom.size()) {
-                        concat1 += row["non_vert_roof_area${listLayersBottom[listLayersBottom.size() - 1]}_"].round(2) + "\n"
-                        concat1 += row["vert_roof_area${listLayersBottom[listLayersBottom.size() - 1]}_"].round(2) + "\n"
+                        concat1 += row["non_vert_roof_area_H${listLayersBottom[listLayersBottom.size() - 1]}"].round(2) + "\n"
+                        concat1 += row["vert_roof_area_H${listLayersBottom[listLayersBottom.size() - 1]}"].round(2) + "\n"
                     }
                     else {
-                        concat1+=row["non_vert_roof_area${listLayersBottom[i-1]}_${listLayersBottom[i]}"].round(2)+"\n"
-                        concat1+=row["vert_roof_area${listLayersBottom[i-1]}_${listLayersBottom[i]}"].round(2)+"\n"
+                        concat1+=row["non_vert_roof_area_H${listLayersBottom[i-1]}_${listLayersBottom[i]}"].round(2)+"\n"
+                        concat1+=row["vert_roof_area_H${listLayersBottom[i-1]}_${listLayersBottom[i]}"].round(2)+"\n"
                     }
                 }
         }
@@ -144,12 +144,12 @@ class RsuIndicatorsTests {
                 // Iterate over columns
                 for (i in 1..listLayersBottom.size()){
                     if (i == listLayersBottom.size()) {
-                        concat2 += row["non_vert_roof_area${listLayersBottom[listLayersBottom.size() - 1]}_"].round(2) + "\n"
-                        concat2 += row["vert_roof_area${listLayersBottom[listLayersBottom.size() - 1]}_"].round(2) + "\n"
+                        concat2 += row["non_vert_roof_area_H${listLayersBottom[listLayersBottom.size() - 1]}"].round(2) + "\n"
+                        concat2 += row["vert_roof_area_H${listLayersBottom[listLayersBottom.size() - 1]}"].round(2) + "\n"
                     }
                     else {
-                        concat2+=row["non_vert_roof_area${listLayersBottom[i-1]}_${listLayersBottom[i]}"].round(2)+"\n"
-                        concat2+=row["vert_roof_area${listLayersBottom[i-1]}_${listLayersBottom[i]}"].round(2)+"\n"
+                        concat2+=row["non_vert_roof_area_H${listLayersBottom[i-1]}_${listLayersBottom[i]}"].round(2)+"\n"
+                        concat2+=row["vert_roof_area_H${listLayersBottom[i-1]}_${listLayersBottom[i]}"].round(2)+"\n"
                     }
                 }
         }
@@ -157,6 +157,14 @@ class RsuIndicatorsTests {
                 concat1)
         assertEquals("355.02\n163.23\n404.01\n141.88\n244.92\n235.5\n48.98\n6.73\n0.0\n0.0\n0.0\n0.0\n",
                 concat2)
+
+        // Test the optionally calculated roof densities
+        def NV1 = h2GIS.firstRow("SELECT * FROM test_rsu_roof_area_distribution WHERE id_rsu = 1")["NON_VERT_ROOF_DENSITY"]
+        def V1 = h2GIS.firstRow("SELECT * FROM test_rsu_roof_area_distribution WHERE id_rsu = 1")["VERT_ROOF_DENSITY"]
+        def NV2 = h2GIS.firstRow("SELECT * FROM test_rsu_roof_area_distribution WHERE id_rsu = 13")["NON_VERT_ROOF_DENSITY"]
+        def V2 = h2GIS.firstRow("SELECT * FROM test_rsu_roof_area_distribution WHERE id_rsu = 13")["VERT_ROOF_DENSITY"]
+        assertEquals(796.64/2000, NV1+V1, 0.001)
+        assertEquals(1600.27/10000, NV2+V2, 0.001)
     }
 
     @Test
