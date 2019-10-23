@@ -418,6 +418,7 @@ def computeRSUIndicators() {
 
             // rsu_building_density + rsu_building_volume_density + rsu_mean_building_neighbor_number
             // + rsu_building_floor_density + rsu_roughness_height
+            // + rsu_building_number_density (RSU number of buildings divided RSU area)
             def inputVarAndOperations = [:]
             if (indicatorUse*.toUpperCase().contains("LCZ")) {
                 inputVarAndOperations = inputVarAndOperations << [(heightColumnName): ["GEOM_AVG"], "area": ["DENS"]]
@@ -428,7 +429,8 @@ def computeRSUIndicators() {
                                                                   "area"                             : ["DENS"],
                                                                   "number_building_neighbor": ["AVG"],
                                                                   "floor_area"              : ["DENS"],
-                                                                  "minimum_building_spacing": ["AVG"]]
+                                                                  "minimum_building_spacing": ["AVG"],
+                                                                  "building": ["NB_DENS"]]
             }
             if (indicatorUse*.toUpperCase().contains("TEB")) {
                 inputVarAndOperations = inputVarAndOperations << ["area": ["DENS"]]
@@ -440,7 +442,8 @@ def computeRSUIndicators() {
                                                  inputVarAndOperations   : inputVarAndOperations,
                                                  prefixName              : temporaryPrefName,
                                                  datasource              : datasource])) {
-                info "Cannot compute the statistics : building, building volume densities and mean building neighbor number for the RSU"
+                info "Cannot compute the statistics : building, building volume densities, building number density" +
+                        " and mean building neighbor number for the RSU"
                 return
             }
             def rsuStatisticsUnweighted = computeRSUStatisticsUnweighted.results.outputTableName
@@ -498,19 +501,17 @@ def computeRSUIndicators() {
 
 
             // rsu_mean_building_height weighted by their area + rsu_std_building_height weighted by their area.
-            // + rsu_building_number_density RSU number of buildings weighted by RSU area
             // + rsu_mean_building_volume RSU mean building volume weighted.
             if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
                 def computeRSUStatisticsWeighted = Geoindicators.GenericIndicators.weightedAggregatedStatistics()
                 if (!computeRSUStatisticsWeighted([inputLowerScaleTableName : buildingTable,
                                                    inputUpperScaleTableName : rsuTable,
                                                    inputIdUp                : columnIdRsu,
-                                                   inputVarWeightsOperations: ["height_roof"                      : ["area": ["AVG", "STD"]],
-                                                                               "number_building_neighbor": ["area": ["AVG"]],
-                                                                               "volume"                  : ["area": ["AVG"]]],
+                                                   inputVarWeightsOperations: ["height_roof"    : ["area": ["AVG", "STD"]],
+                                                                               "volume"         : ["area": ["AVG"]]],
                                                    prefixName               : temporaryPrefName,
                                                    datasource               : datasource])) {
-                    info "Cannot compute the weighted indicators mean, std height building, building number density and \n\
+                    info "Cannot compute the weighted indicators mean, std height building and \n\
                     mean volume building."
                     return
                 }

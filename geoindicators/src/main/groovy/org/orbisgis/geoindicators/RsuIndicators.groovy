@@ -690,7 +690,7 @@ IProcess effectiveTerrainRoughnessHeight() {
 
     return create({
         title "RSU effective terrain roughness height"
-        inputs rsuTable: String, projectedFacadeAreaName: "rsu_projected_facade_area_distribution",
+        inputs rsuTable: String, projectedFacadeAreaName: "projected_facade_area_distribution",
                 geometricMeanBuildingHeightName: String, prefixName: String,
                 listLayersBottom: [0, 10, 20, 30, 40, 50], numberOfDirection: 12, datasource: JdbcDataSource
         outputs outputTableName: String
@@ -703,7 +703,7 @@ IProcess effectiveTerrainRoughnessHeight() {
             // Some local variables are initialized
             def names = []
             // The projection should be performed at the median of the angle interval
-            def dirMedDeg = Math.round(180 / numberOfDirection)
+            def dirRangeDeg = Math.round(360 / numberOfDirection)
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
@@ -716,14 +716,14 @@ IProcess effectiveTerrainRoughnessHeight() {
             def lambdaQuery = "DROP TABLE IF EXISTS $lambdaTable;" +
                     "CREATE TABLE $lambdaTable AS SELECT $ID_COLUMN_RSU, $geometricMeanBuildingHeightName, ("
             for (int i in 1..listLayersBottom.size()) {
-                names[i - 1] = "$projectedFacadeAreaName${listLayersBottom[i - 1]}_${listLayersBottom[i]}"
+                names[i - 1] = "${projectedFacadeAreaName}_H${listLayersBottom[i - 1]}_${listLayersBottom[i]}"
                 if (i == listLayersBottom.size()) {
                     names[listLayersBottom.size() - 1] =
                             "${projectedFacadeAreaName}_H${listLayersBottom[listLayersBottom.size() - 1]}"
                 }
                 for (int d = 0; d < numberOfDirection / 2; d++) {
                     def dirDeg = d * 360 / numberOfDirection
-                    lambdaQuery += "${names[i - 1]}_D${dirDeg + dirMedDeg}+"
+                    lambdaQuery += "${names[i - 1]}_D${dirDeg}_${dirDeg + dirRangeDeg}+"
                 }
             }
             lambdaQuery = lambdaQuery[0..-2] + ")/(${numberOfDirection / 2}*ST_AREA($GEOMETRIC_COLUMN)) " +
