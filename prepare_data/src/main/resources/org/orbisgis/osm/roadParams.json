@@ -16,7 +16,7 @@
   },
   "columns":["width","highway", "surface", "sidewalk",
     "layer","maxspeed","oneway",
-    "route","junction"],
+    "route","junction", "bridge"],
     "surface":
      {
         "unpaved": {
@@ -227,5 +227,9 @@
         "highway_link": 8,
         "roundabout": 4,
         "ferry": 0
-    }
+    },
+  "crossing":{"bridge" :
+  ["yes", "aqueduct", "cantilever", "covered", "low_water_crossing", "movable", "trestle",
+    "viaduct"]}
+
 }

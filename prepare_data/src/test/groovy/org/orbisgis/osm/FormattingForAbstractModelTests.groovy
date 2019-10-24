@@ -55,7 +55,7 @@ class FormattingForAbstractModelTests {
         assertEquals 197, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH is null").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH<0").count==0
-
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where CROSSING IS NOT NULL").count==7
 
 
 
@@ -69,6 +69,7 @@ class FormattingForAbstractModelTests {
 
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_rails_formated.shp")
         assertEquals 41, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where CROSSING IS NOT NULL").count==8
 
 
         //Vegetation
