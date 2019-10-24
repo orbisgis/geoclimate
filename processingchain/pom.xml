@@ -40,13 +40,13 @@
             <artifactId>process-manager</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.orbisgis.orbisprocess</groupId>
+            <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
             <artifactId>preparedata</artifactId>
             <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>org.orbisgis.orbisprocess</groupId>
+            <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
             <artifactId>geoindicators</artifactId>
             <version>${project.version}</version>
             <scope>compile</scope>
