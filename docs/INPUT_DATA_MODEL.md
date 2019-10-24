@@ -97,7 +97,7 @@ List the values that can be used to describe the `type` and the `main_use` of a 
 
 - Concerned field : `nb_lev`
 
-For each individual value concerning the `type` or `use` of a building (values listed in the [BUILDING_Abstract_use and type](#BUILDING-Abstract-use-and-type) metadata section), this list specifies the rules for calculating the number of levels of a building in order to feed the `nb_lvl` field in the `input_building` table.
+For each individual value concerning the `type` or `use` of a building (values listed in the [BUILDING_use and type](#BUILDING-use-and-type) metadata section), this list specifies the rules for calculating the number of levels of a building in order to feed the `nb_lvl` field in the `input_building` table.
 
 - Term: value used to describe the `type` and the `main_use` of a building
 
@@ -142,7 +142,7 @@ For each individual value concerning the `type` or `use` of a building (values l
 | townhall                        |   1    |
 | office                          |   1    |
 
-[back to top](#Abstract-input-model)
+[back to top](#Input-data-model)
 
 ## Roads
 
@@ -236,7 +236,7 @@ Lists of all possible values for the `surface` attributes in the `input_road` ta
 - Concerned table : `input_road`
 - Concerned field : `width`
 
-For each individual value concerning the `type` of a roads (values listed in the [ROAD Abstract type](#ROAD-Abstract-type) metadata section), this list specifies the minimum road width in order to feed the `width` field of the
+For each individual value concerning the `type` of a roads (values listed in the [ROAD type](#ROAD-type) metadata section), this list specifies the minimum road width in order to feed the `width` field of the
 `input_road` table when no information are provided.
 
 - Term: value used to qualify the type of the road
@@ -280,7 +280,7 @@ Lists of all possible values for `crossing` attribute in the `input_road table.
 |  tunnel  | Underground passage for roads, railways or similar           | [2](https://wiki.openstreetmap.org/wiki/Key:tunnel) |
 | crossing | Everything but a bridge or a tunnel                          |                                                     |
 
-[back to top](#Abstract-input-model)
+[back to top](#Input-data-model)
 
 
 
@@ -343,7 +343,7 @@ Lists of all possible values for `crossing` attribute in the `input_rail` table.
 |  tunnel  | Underground passage for roads, railways or similar           | [2](https://wiki.openstreetmap.org/wiki/Key:tunnel) |
 | crossing | Everything but a bridge or a tunnel                          |                                                     |
 
-[back to top](#Abstract-input-model)
+[back to top](#Input-data-model)
 
 
 
@@ -422,7 +422,7 @@ Lists of all possible values for the `height_class` attribute in the `input_vege
 | banana_plants | high                                      |
 | sugar_cane    | low                |
 
-[back to top](#Abstract-input-model)
+[back to top](#Input-data-model)
 
 ## Hydrographic areas
 
@@ -437,7 +437,7 @@ Lists of all possible values for the `height_class` attribute in the `input_vege
 | the_geom  | POLYGON | ST_DIMENSION() =2 | Geometry                                            |
 | id_source | VARCHAR |                   | Identifier of the feature from the input datasource |
 
-[back to top](#Abstract-input-model)
+[back to top](#Input-data-model)
 
 ## Zones
 
@@ -463,4 +463,4 @@ Lists of all possible values for the `height_class` attribute in the `input_vege
 | the_geom | POLYGON | ST_DIMENSION() =2 | Geometry                    |
 | id_zone  | VARCHAR |                   | Identifier of the zone area |
 
-[back to top](#Abstract-input-model)
+[back to top](#Input-data-model)
