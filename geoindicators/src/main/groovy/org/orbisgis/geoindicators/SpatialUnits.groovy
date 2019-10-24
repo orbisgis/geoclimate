@@ -178,12 +178,12 @@ IProcess prepareRSUData() {
 
                 if(roadTable) {
                     info "Preparing road..."
-                    queryCreateOutputTable+=[road_tmp:"(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $roadTable where zindex=0)"]
+                    queryCreateOutputTable+=[road_tmp:"(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $roadTable where zindex=0 or crossing = 'bridge')"]
                 }
 
                 if(railTable) {
                     info "Preparing rail..."
-                    queryCreateOutputTable+=[rail_tmp:"(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $railTable where zindex=0)"]
+                    queryCreateOutputTable+=[rail_tmp:"(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $railTable where zindex=0 or crossing = 'bridge')"]
                 }
 
                 // The input table that contains the geometries to be transformed as RSU
