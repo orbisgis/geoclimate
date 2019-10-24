@@ -23,7 +23,7 @@ IProcess holeAreaDensity() {
     //Definition of constant values
     def final GEOMETRIC_FIELD = "the_geom"
     def final ID_COLUMN_BL = "id_block"
-    def final BASE_NAME = "block_hole_area_density"
+    def final BASE_NAME = "hole_area_density"
 
     return create({
         title "Hole area ratio"
@@ -34,7 +34,7 @@ IProcess holeAreaDensity() {
             info "Executing Hole area ratio"
 
             // The name of the outputTableName is constructed
-            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
+            def outputTableName = getOutputTableName(prefixName, "block_" + BASE_NAME)
 
             def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
                     "SELECT $ID_COLUMN_BL, ST_AREA(ST_HOLES($GEOMETRIC_FIELD))/ST_AREA($GEOMETRIC_FIELD) " +
@@ -64,24 +64,24 @@ IProcess holeAreaDensity() {
  *
  * @author Jérémy Bernard
  */
-IProcess netCompacity() {
+IProcess netCompactness() {
     //Definition of constant values
     def final GEOMETRY_FIELD_BU = "the_geom"
     def final ID_COLUMN_BL = "id_block"
     def final HEIGHT_WALL = "height_wall"
-    def final BASE_NAME = "block_net_compacity"
+    def final BASE_NAME = "net_compactness"
 
     return create({
-        title "Block net compacity"
+        title "Block net compactness"
         inputs buildTable: String, buildingVolumeField: String, buildingContiguityField: String,
          prefixName: String, datasource: JdbcDataSource
         outputs outputTableName: String
         run { buildTable, buildingVolumeField, buildingContiguityField, prefixName, datasource ->
 
-            info "Executing Block net compacity"
+            info "Executing Block net net_compactness"
 
             // The name of the outputTableName is constructed
-            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
+            def outputTableName = getOutputTableName(prefixName, "block_" + BASE_NAME)
 
             datasource.getSpatialTable(buildTable).id_block.createIndex()
 
@@ -125,7 +125,7 @@ IProcess closingness() {
     def final GEOMETRY_FIELD_BU = "the_geom"
     def final GEOMETRY_FIELD_BL = "the_geom"
     def final ID_COLUMN_BL = "id_block"
-    def final BASE_NAME = "block_closingness"
+    def final BASE_NAME = "closingness"
 
     return create({
         title "Closingness of a block"
@@ -136,7 +136,7 @@ IProcess closingness() {
             info "Executing Closingness of a block"
 
             // The name of the outputTableName is constructed
-            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
+            def outputTableName = getOutputTableName(prefixName, "block_" + BASE_NAME)
 
             datasource.getSpatialTable(blockTable).id_block.createIndex()
             datasource.getSpatialTable(correlationTableName).id_block.createIndex()

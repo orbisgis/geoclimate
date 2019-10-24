@@ -16,7 +16,7 @@ DROP TABLE IF EXISTS veget_test;
 DROP TABLE IF EXISTS hydro_test;
 DROP TABLE IF EXISTS rsu_test_for_lcz;
 
-CREATE TABLE building_test (id_build int, id_block int, id_rsu int, the_geom geometry, height_wall float, height_roof float, building_area float, building_perimeter float, nb_lev int, building_total_facade_length float, building_number_building_neighbor int, building_contiguity float);
+CREATE TABLE building_test (id_build int, id_block int, id_rsu int, the_geom geometry, height_wall float, height_roof float, area float, perimeter float, nb_lev int, total_facade_length float, number_building_neighbor int, contiguity float);
 CREATE TABLE block_test (id_block int, the_geom geometry);
 CREATE TABLE block_build_corr (id_block int, id_build int);
 CREATE TABLE rsu_test (id_rsu int, the_geom geometry, rsu_area float, rsu_building_density float, rsu_free_external_facade_density float);

@@ -1,26 +1,44 @@
 package org.orbisgis.processingchain
 
+import org.junit.jupiter.api.Test
 import org.orbisgis.datamanager.JdbcDataSource
+import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.processmanagerapi.IProcess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertTrue
-import static org.junit.jupiter.api.Assertions.assertTrue
-import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 
 class ChainProcessMainTest {
 
     public static Logger logger = LoggerFactory.getLogger(ChainProcessMainTest.class)
+
+
+    @Test
+    void OSMGeoIndicators() {
+        File directory = new File("./target/geoclimateChain")
+
+        H2GIS datasource = H2GIS.open(directory.absolutePath+File.separator+"osm_chain_db;AUTO_SERVER=TRUE")
+        String placeName = "Cliscouet, vannes"
+        def distance = 0
+        def indicatorUse = ["LCZ", "URBAN_TYPOLOGY", "TEB"]
+        boolean svfSimplified = false
+        def prefixName = ""
+        def mapOfWeights = ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                            "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                            "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+
+
+        IProcess OSMGeoIndicatorsCompute= ProcessingChain.GeoclimateChain.OSMGeoIndicators()
+        assertTrue OSMGeoIndicatorsCompute.execute([datasource: datasource,        placeName: placeName,
+                                                    distance: distance,            indicatorUse: indicatorUse,
+                                                    svfSimplified:svfSimplified,   prefixName: prefixName,
+                                                    mapOfWeights: mapOfWeights])
+
+    }
+
 
     /**
      * A method to compute geomorphological indicators
