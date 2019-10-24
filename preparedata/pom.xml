@@ -16,6 +16,7 @@
         <site.basedir>${project.parent.basedir}</site.basedir>
     </properties>
 
+    <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
     <artifactId>preparedata</artifactId>
     <dependencies>
         <dependency>

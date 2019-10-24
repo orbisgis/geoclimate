@@ -9,6 +9,7 @@
         <artifactId>geoclimate-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
+    <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
     <artifactId>geoindicators</artifactId>
 
     <properties>

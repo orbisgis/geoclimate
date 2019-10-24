@@ -28,10 +28,10 @@ Put the following script and run it to extract OSM data from a place name and tr
 ```groovy
 // Declaration of the maven repository
 @GrabResolver(name='orbisgis', root='http://nexus-ng.orbisgis.org/repository/orbisgis/')
-@Grab(group='org.orbisgis.orbisprocess', module='prepare_data', version='1.0-SNAPSHOT')
+@Grab(group='org.orbisgis.orbisprocess', module='geoclimate', version='1.0.0-SNAPSHOT')
 
 import org.orbisgis.datamanager.h2gis.H2GIS
-import org.orbisgis.orbisprocess.preparedata.PrepareData
+import org.orbisgis.orbisprocess.geoclimate.Geoclimate
 
 //Create a local H2GIS database
 def h2GIS = H2GIS.open('/tmp/osmdb;AUTO_SERVER=TRUE')
@@ -91,7 +91,7 @@ In DBeaver, go to
 
 Once DBeaver has restarted, select the main menu Groovy Editor, clic on `Open editor`, then you will have a Groovy Console.
 Copy-paste the previous script to use Geoclimate.
-If you want to log the message of the processes into DBeaver, you can add `Geoclimate.logger = logger` just after the imports.
+If you want to log the message of the processes into DBeaver, you must add `Geoclimate.logger = logger` just after the imports.
 
 
 ### Notes
