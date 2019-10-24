@@ -88,15 +88,15 @@ def computeBuildingsIndicators() {
                 finalTablesToJoin.put(buildTableComputeNeighborsProperties, idColumnBu)
 
                 if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
-                    // building_concavity + building_form_factor + building_raw_compacity + building_convex_hull_perimeter_density
+                    // building_concavity + building_form_factor + building_raw_compactness + building_convex_hull_perimeter_density
                     def computeFormProperties = Geoindicators.BuildingIndicators.formProperties()
                     if (!computeFormProperties([inputBuildingTableName: inputBuildingTableName,
                                                 operations            : ["concavity", "form_factor",
-                                                                         "raw_compacity",
+                                                                         "raw_compactness",
                                                                          "convexhull_perimeter_density"],
                                                 prefixName            : buildingPrefixName,
                                                 datasource            : datasource])) {
-                        info "Cannot compute the building_concavity, building_form_factor, building_raw_compacity, " +
+                        info "Cannot compute the building_concavity, building_form_factor, building_raw_compactness, " +
                                 "building_convexhull_perimeter_density indicators for the buildings"
                         return
                     }
@@ -256,17 +256,17 @@ def computeBlockIndicators(){
             }
             finalTablesToJoin.put(computeClosingness.results.outputTableName, id_block)
 
-            //Block net compacity
-            def computeNetCompacity = Geoindicators.BlockIndicators.netCompactness()
-            if(!computeNetCompacity([buildTable             : inputBuildingTableName,
+            //Block net compactness
+            def computeNetCompactness = Geoindicators.BlockIndicators.netCompactness()
+            if(!computeNetCompactness([buildTable             : inputBuildingTableName,
                                      buildingVolumeField    : "volume",
                                      buildingContiguityField: "contiguity",
                                      prefixName             : blockPrefixName,
                                      datasource             : datasource])){
-                info "Cannot compute the net compacity indicator. "
+                info "Cannot compute the net compactness indicator. "
                 return
             }
-            finalTablesToJoin.put(computeNetCompacity.results.outputTableName, id_block)
+            finalTablesToJoin.put(computeNetCompactness.results.outputTableName, id_block)
 
             //Block mean building height
             //Block standard deviation building height
