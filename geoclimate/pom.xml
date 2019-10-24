@@ -2,15 +2,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-
     <parent>
         <groupId>org.orbisgis.orbisprocess</groupId>
         <artifactId>geoclimate-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
-    <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
-    <artifactId>geoindicators</artifactId>
+    <modelVersion>4.0.0</modelVersion>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -19,6 +16,7 @@
         <site.basedir>${project.parent.basedir}</site.basedir>
     </properties>
 
+    <artifactId>geoclimate</artifactId>
     <dependencies>
         <dependency>
             <groupId>org.codehaus.groovy</groupId>
@@ -41,9 +39,19 @@
             <artifactId>process-manager</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.orbisgis</groupId>
-            <artifactId>h2gis-network</artifactId>
-            <version>2.0.0-SNAPSHOT</version>
+            <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
+            <artifactId>preparedata</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
+            <artifactId>geoindicators</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
+            <artifactId>processingchain</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <!-- Test dependencies -->
         <dependency>

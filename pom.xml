@@ -9,13 +9,15 @@
         <artifactId>orbisparent</artifactId>
         <version>1.0.3-SNAPSHOT</version>
     </parent>
-    <artifactId>geoclimate</artifactId>
+    <groupId>org.orbisgis.orbisprocess</groupId>
+    <artifactId>geoclimate-parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
     <modules>
         <module>geoindicators</module>
-        <module>prepare_data</module>
-        <module>processing_chain</module>
+        <module>preparedata</module>
+        <module>processingchain</module>
+        <module>geoclimate</module>
     </modules>
 
     <properties>
