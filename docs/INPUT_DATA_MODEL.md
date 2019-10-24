@@ -1,4 +1,4 @@
-# Abstract input model
+# Input data model
 
 
 
@@ -12,7 +12,7 @@ This page presents the data dictionary used to describe the geographic data that
 
 **Source code**
 
-![](./images/icons/github.png) The abstract model source code is available [here](https://github.com/gpetit/geoclimate/blob/add_docs/prepare_data/src/main/groovy/org/orbisgis/common/AbstractTablesInitialization.groovy).
+![](./images/icons/github.png) The input model source code is available [here](https://github.com/gpetit/geoclimate/blob/add_docs/prepare_data/src/main/groovy/org/orbisgis/common/AbstractTablesInitialization.groovy).
 
 
 ## Buildings
@@ -33,11 +33,11 @@ This page presents the data dictionary used to describe the geographic data that
 | height_wall |  FLOAT  |                  | The (corrected) height of the building in meters. Height of the building measured between the ground and the gutter (maximum altitude of the polyline describing the building). *(exprimed in meters)* |
 | height_roof |  FLOAT  |                  | The maximum height of a building is the distance between the top edge of the building (including the roof, but excluding antennas, spires and other equipment mounted on the roof) and the lowest point at the bottom where the building meets the ground. *(exprimed in meters)* |
 |   nb_lev    | INTEGER |                  | Number of levels (have to be greater than 0)                 |
-|    type     | VARCHAR |                  | Value allowing to distinguish the type of building according to its architecture. These values are listed in the  [BUILDING_Abstract_use_and_type](#BUILDING-Abstract-use-and-type) section. |
-|  main_use   | VARCHAR |                  | Main use of the building. The use of a building corresponds to a de facto element, relating to what it is used for. These values are listed in the  [BUILDING_Abstract_use_and_type](#BUILDING-Abstract-use-and-type) section. |
+|    type     | VARCHAR |                  | Value allowing to distinguish the type of building according to its architecture. These values are listed in the  [BUILDING_use_and_type](#BUILDING-use-and-type) section. |
+|  main_use   | VARCHAR |                  | Main use of the building. The use of a building corresponds to a de facto element, relating to what it is used for. These values are listed in the  [BUILDING_use_and_type](#BUILDING-use-and-type) section. |
 |   zindex    | INTEGER |                  | Defines the position with respect to the ground. 0 indicates that the object is on the ground. 1 to 4 indicates that the objects above the ground surface. -4 to -1 value indicates that the object is underground. |
 
-### BUILDING Abstract use and type
+### BUILDING use and type
 
 - Concerned table : `input_building`
 - Concerned fields : `type` and `main_use`
@@ -91,7 +91,7 @@ List the values that can be used to describe the `type` and the `main_use` of a 
 
 
 
-### BUILDING Abstract  level
+### BUILDING level
 
 - Concerned table : `input_building`
 
@@ -168,7 +168,7 @@ For each individual value concerning the `type` or `use` of a building (values l
 
 
 
-### ROAD Abstract type
+### ROAD type
 
 - Concerned table : `input_road`
 - Concerned fields: `type`
@@ -200,7 +200,7 @@ Below are listed the possible values for the `type` attributes in the `input_roa
 
 
 
-### ROAD Abstract surface
+### ROAD surface
 
 - Concerned table : `input_road`
 - Concerned field : `surface`
@@ -231,7 +231,7 @@ Lists of all possible values for the `surface` attributes in the `input_road` ta
 
 
 
-### ROAD Abstract width
+### ROAD width
 
 - Concerned table : `input_road`
 - Concerned field : `width`
@@ -263,7 +263,7 @@ For each individual value concerning the `type` of a roads (values listed in the
 
 
 
-### ROAD Abstract crossing
+### ROAD crossing
 
 - Concerned table : `input_road`
 - Concerned field : `crossing`
@@ -302,7 +302,7 @@ Lists of all possible values for `crossing` attribute in the `input_road table.
 | crossing  |  VARCHAR   |                   | Indicates whether the rail section is located on a `bridge`, in a `tunnel` or neither (value=`crossing`). |
 
 
-### RAIL Abstract type
+### RAIL type
 
 - Concerned table : `input_rail`
 - Concerned field : `type`
@@ -326,7 +326,7 @@ Lists of all possible values for `type` attribute in the `input_rail` table.
 
 
 
-### RAIL Abstract crossing
+### RAIL crossing
 
 - Concerned table : `input_rail`
 - Concerned field : `crossing`
@@ -364,7 +364,7 @@ Lists of all possible values for `crossing` attribute in the `input_rail` table.
 | type         | VARCHAR |                   | Type of vegetation.                                 |
 | height_class | VARCHAR |                   | Height class (`low` or `high`)                      |
 
-### VEGET Abstract type
+### VEGET type
 
 - Concerned table : `input_veget`
 - Concerned field : `type`
@@ -394,7 +394,7 @@ Lists of all possible values for `type` attribute in the `input_veget` table.
 
 
 
-### VEGET Abstract height
+### VEGET height
 
 - Concerned table : `input_veget`
 - Concerned field : `height_class`

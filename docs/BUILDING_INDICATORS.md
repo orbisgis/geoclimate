@@ -23,18 +23,19 @@ This table stores all the indicators computed at the building's scale.
 | TYPE | varchar | Building's type |
 | MAIN_USE | varchar | Building's main use |
 | ZINDEX | integer | Altimetric positioning ([Full definition](#ZINDEX)) |
-| AREA | double precision | Building's area |
+| PERIMETER | double precision | Building's perimeter |
+| AREA | double precision | Building's area (footprint) |
 | VOLUME | double precision | Building's volume ([Full definition](#VOLUME)) |
 | FLOOR_AREA | double precision | [Full definition](#FLOOR_AREA) |
 | TOTAL_FACADE_LENGTH | double precision | [Full definition](#TOTAL_FACADE_LENGTH) |
-| CONTIGUITY | double precision | [Full definition](#CONTIGUITY) |
 | COMMON_WALL_FRACTION | double precision | [Full definition](#COMMON_WALL_FRACTION) |
-| NUMBER_BUILDING_NEIGHBOR | bigint | [Full definition](#NUMBER_BUILDING_NEIGHBOR) |
+| CONTIGUITY | double precision | [Full definition](#CONTIGUITY) |
 | CONCAVITY | double precision | [Full definition](#CONCAVITY) |
 | FORM_FACTOR | double precision | [Full definition](#FORM_FACTOR) |
 | RAW_COMPACTNESS | double precision | [Full definition](#RAW_COMPACTNESS) |
 | CONVEXHULL_PERIMETER_DENSITY | double precision | [Full definition](#CONVEXHULL_PERIMETER_DENSITY) |
 | MINIMUM_BUILDING_SPACING | double precision | [Full definition](#MINIMUM_BUILDING_SPACING) |
+| NUMBER_BUILDING_NEIGHBOR | bigint | [Full definition](#NUMBER_BUILDING_NEIGHBOR) |
 | ROAD_DISTANCE | double precision | [Full definition](#ROAD_DISTANCE) |
 | LIKELIHOOD_LARGE_BUILDING | double precision | [Full definition](#LIKELIHOOD_LARGE_BUILDING) |
 
@@ -43,6 +44,7 @@ This table stores all the indicators computed at the building's scale.
 ### `ZINDEX`
 
 **Definition**: Position of the building relative to the ground. 0 means that the building is on the ground. A negative value means that it is under the ground *(e. g. a metro station)* while a value greater than 0 means that it is in the air *(e. g. a bridge)*.
+
 
 ### `VOLUME`
 
@@ -62,7 +64,6 @@ This table stores all the indicators computed at the building's scale.
 **Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L63
 
 
-
 ### `TOTAL_FACADE_LENGTH`
 
 **Definition**: Total length of external facade, defined as the building’s external perimeter in addition to building's courtyard(s) perimeter.
@@ -70,17 +71,6 @@ This table stores all the indicators computed at the building's scale.
 **Formula**: `Perimeter + Courtyard perimeter `
 
 **Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L65
-
-
-
-### `CONTIGUITY`
-
-**Definition**: Fraction of wall shared with other buildings.
-
-**Formula**: `Shared wall area / total wall area `
-
-**Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L141
-
 
 
 ### `COMMON_WALL_FRACTION`
@@ -92,15 +82,13 @@ This table stores all the indicators computed at the building's scale.
 **Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L145
 
 
+### `CONTIGUITY`
 
-### `NUMBER_BUILDING_NEIGHBOR`
+**Definition**: Fraction of wall shared with other buildings.
 
-**Definition**: Number of neighboring buildings, in contact (at least one point) with the building.
+**Formula**: `Shared wall area / total wall area `
 
-**Formula**: `Count the number of buildings touching the building of interest`
-
-**Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L108
-
+**Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L141
 
 
 ### `CONCAVITY`
@@ -112,15 +100,13 @@ This table stores all the indicators computed at the building's scale.
 **Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L237
 
 
-
 ### `FORM_FACTOR`
 
 **Definition**: Ratio between the building’s area and the square of the building’s perimeter.
 
-**Formula**: `Area / (perimeter)^(1/2) `
+**Formula**: `Area / (perimeter)^2 `
 
 **Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L240
-
 
 
 ### `RAW_COMPACTNESS`
@@ -132,7 +118,6 @@ This table stores all the indicators computed at the building's scale.
 **Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L243
 
 
-
 ### `CONVEXHULL_PERIMETER_DENSITY`
 
 **Definition**: Ratio between building [Convex Hull](http://www.h2gis.org/docs/dev/ST_ConvexHull/) perimeter and building perimeter.
@@ -140,7 +125,6 @@ This table stores all the indicators computed at the building's scale.
 **Formula**: `Convex Hull perimeter / perimeter`
 
 **Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L250
-
 
 
 ### `MINIMUM_BUILDING_SPACING`
@@ -151,6 +135,14 @@ This table stores all the indicators computed at the building's scale.
 
 **Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L281
 
+
+### `NUMBER_BUILDING_NEIGHBOR`
+
+**Definition**: Number of neighboring buildings, in contact (at least one point) with the building.
+
+**Formula**: `Count the number of buildings touching the building of interest`
+
+**Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L108
 
 
 ### `ROAD_DISTANCE`

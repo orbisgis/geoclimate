@@ -13,16 +13,16 @@ This table stores all the indicators computed at the block's scale.
 | THE_GEOM       | geometry          | Block's geometry |
 | **ID_BLOCK** ![](./images/icons/pk.png) | integer | Block's unique id    |
 | ID_RSU | integer | Belonging RSU id |
-| SUM_AREA | double precision | Block's area ([Full definition](#SUM_AREA)) |
-| SUM_FLOOR_AREA | double precision | [Full definition](#SUM_FLOOR_AREA) |
-| SUM_VOLUME | double precision | Block's volume ([Full definition](#SUM_VOLUME)) |
+| AREA | double precision | Block's area ([Full definition](#AREA)) |
+| FLOOR_AREA | double precision | [Full definition](#FLOOR_AREA) |
+| VOLUME | double precision | Block's volume ([Full definition](#VOLUME)) |
 | HOLE_AREA_DENSITY | double precision |  [Full definition](#HOLE_AREA_DENSITY) |
-| PERKINS_SKILL_SCORE_BUILDING_DIRECTION | double precision |  [Full definition](#PERKINS_SKILL_SCORE_BUILDING_DIRECTION) |
 | MAIN_BUILDING_DIRECTION | double precision |  [Full definition](#MAIN_BUILDING_DIRECTION) |
+| PERKINS_SKILL_SCORE_BUILDING_DIRECTION | double precision |  [Full definition](#PERKINS_SKILL_SCORE_BUILDING_DIRECTION) |
 | CLOSINGNESS | double precision |  [Full definition](#CLOSINGNESS) |
 | NET_COMPACTNESS | double precision | [Full definition](#NET_COMPACTNESS) |
-| WEIGHTED_AVG_HEIGHT_ROOF_AREA | double precision |  [Full definition](#WEIGHTED_AVG_HEIGHT_ROOF_AREA) |
-| WEIGHTED_STD_HEIGHT_ROOF_AREA | double precision |  [Full definition](#WEIGHTED_STD_HEIGHT_ROOF_AREA) |
+| AVG_HEIGHT_ROOF_AREA_WEIGHTED | double precision |  [Full definition](#AVG_HEIGHT_ROOF_AREA_WEIGHTED) |
+| STD_HEIGHT_ROOF_AREA_WEIGHTED | double precision |  [Full definition](#STD_HEIGHT_ROOF_AREA_WEIGHTED) |
 
 
 
@@ -30,7 +30,7 @@ This table stores all the indicators computed at the block's scale.
 
 
 
-### `SUM_AREA`
+### AREA`
 
 Definition: Block's area.
 
@@ -40,7 +40,7 @@ Source code:
 
 
 
-### `SUM_FLOOR_AREA`
+### `FLOOR_AREA`
 
 Definition: 
 
@@ -50,7 +50,7 @@ Source code:
 
 
 
-### `SUM_VOLUME`
+### `VOLUME`
 
 Definition: Building's volume.
 
@@ -102,7 +102,7 @@ Source code:
 
 
 
-### `WEIGHTED_AVG_HEIGHT_ROOF_AREA`
+### `AVG_HEIGHT_ROOF_AREA_WEIGHTED`
 
 Definition: 
 
@@ -112,7 +112,7 @@ Source code:
 
 
 
-### `WEIGHTED_STD_HEIGHT_ROOF_AREA`
+### `STD_HEIGHT_ROOF_AREA_WEIGHTED`
 
 Definition: 
 
