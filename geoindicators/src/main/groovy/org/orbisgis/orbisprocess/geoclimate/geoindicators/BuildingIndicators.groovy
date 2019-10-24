@@ -29,10 +29,10 @@ import org.orbisgis.datamanager.JdbcDataSource
  * @author Jérémy Bernard
  */
 def sizeProperties() {
-    def final OP_VOLUME = "building_volume"
-    def final OP_FLOOR_AREA = "building_floor_area"
-    def final OP_FACADE_LENGTH = "building_total_facade_length"
-    def final OP_PASSIVE_VOLUME_RATIO = "building_passive_volume_ratio"
+    def final OP_VOLUME = "volume"
+    def final OP_FLOOR_AREA = "floor_area"
+    def final OP_FACADE_LENGTH = "total_facade_length"
+    def final OP_PASSIVE_VOLUME_RATIO = "passive_volume_ratio"
 
     def final GEOMETRIC_FIELD = "the_geom"
     def final COLUMN_ID_BU = "id_build"
@@ -57,18 +57,18 @@ def sizeProperties() {
             operations.each { operation ->
                 switch (operation) {
                     case OP_VOLUME:
-                        query += "ST_AREA($GEOMETRIC_FIELD)*0.5*(height_wall+height_roof) AS building_volume,"
+                        query += "ST_AREA($GEOMETRIC_FIELD)*0.5*(height_wall+height_roof) AS $OP_VOLUME,"
                         break
                     case OP_FLOOR_AREA:
-                        query += "ST_AREA($GEOMETRIC_FIELD)*nb_lev AS building_floor_area,"
+                        query += "ST_AREA($GEOMETRIC_FIELD)*nb_lev AS $OP_FLOOR_AREA,"
                         break
                     case OP_FACADE_LENGTH:
                         query += "ST_PERIMETER($GEOMETRIC_FIELD)+ST_PERIMETER(ST_HOLES($GEOMETRIC_FIELD))" +
-                                " AS building_total_facade_length,"
+                                " AS $OP_FACADE_LENGTH,"
                         break
                     case OP_PASSIVE_VOLUME_RATIO:
                         query += "ST_AREA(ST_BUFFER($GEOMETRIC_FIELD, -$DIST_PASSIV, 'join=mitre'))/" +
-                                "ST_AREA($GEOMETRIC_FIELD) AS building_passive_volume_ratio,"
+                                "ST_AREA($GEOMETRIC_FIELD) AS $OP_PASSIVE_VOLUME_RATIO,"
                         break
                 }
             }
@@ -109,9 +109,9 @@ def neighborsProperties() {
     def final GEOMETRIC_FIELD = "the_geom"
     def final ID_FIELD = "id_build"
     def final HEIGHT_WALL = "height_wall"
-    def final OP_CONTIGUITY = "building_contiguity"
-    def final OP_COMMON_WALL_FRACTION = "building_common_wall_fraction"
-    def final OP_NUMBER_BUILDING_NEIGHBOR = "building_number_building_neighbor"
+    def final OP_CONTIGUITY = "contiguity"
+    def final OP_COMMON_WALL_FRACTION = "common_wall_fraction"
+    def final OP_NUMBER_BUILDING_NEIGHBOR = "number_building_neighbor"
     def final OPS = [OP_CONTIGUITY, OP_COMMON_WALL_FRACTION, OP_NUMBER_BUILDING_NEIGHBOR]
     def final BASE_NAME = "building_neighbors_properties"
 
@@ -189,7 +189,7 @@ def neighborsProperties() {
  *              --> "building_concavity": defined as the building area divided by the convex hull area (cf. Bocher et al. - 2018)
  *              --> "building_form_factor": defined as ratio between the building area divided by the square of the building
  *              perimeter (cf. Bocher et al. - 2018)
- *              --> "building_raw_compacity": defined as the ratio between building surfaces (walls and roof) divided by the
+ *              --> "building_raw_compactness": defined as the ratio between building surfaces (walls and roof) divided by the
  *              building volume at the power 2./3. For the calculation, the roof is supposed to have a gable and the roof surface
  *              is calculated considering that the building is square (otherwise, the assumption related to the gable direction
  *              would strongly affect the result).
@@ -211,10 +211,10 @@ def formProperties() {
     def final ID_FIELD = "id_build"
     def final HEIGHT_WALL = "height_wall"
     def final HEIGHT_ROOF = "height_roof"
-    def final OP_CONCAVITY = "building_concavity"
-    def final OP_FORM_FACTOR = "building_form_factor"
-    def final OP_RAW_COMPACITY = "building_raw_compacity"
-    def final OP_CONVEX_HULL_PERIMETER_DENSITY = "building_convexhull_perimeter_density"
+    def final OP_CONCAVITY = "concavity"
+    def final OP_FORM_FACTOR = "form_factor"
+    def final OP_RAW_COMPACTNESS = "raw_compactness"
+    def final OP_CONVEX_HULL_PERIMETER_DENSITY = "convexhull_perimeter_density"
     def final BASE_NAME = "building_form_properties"
 
     return create({
@@ -240,7 +240,7 @@ def formProperties() {
                     case OP_FORM_FACTOR:
                         query += "ST_AREA($GEOMETRIC_FIELD)/POWER(ST_PERIMETER($GEOMETRIC_FIELD), 2) AS $operation,"
                         break
-                    case OP_RAW_COMPACITY:
+                    case OP_RAW_COMPACTNESS:
                         query += "((ST_PERIMETER($GEOMETRIC_FIELD)+ST_PERIMETER(ST_HOLES($GEOMETRIC_FIELD)))*$HEIGHT_WALL+" +
                                 "POWER(POWER(ST_AREA($GEOMETRIC_FIELD),2)+4*ST_AREA($GEOMETRIC_FIELD)*" +
                                 "POWER($HEIGHT_ROOF-$HEIGHT_WALL, 2),0.5)+POWER(ST_AREA($GEOMETRIC_FIELD),0.5)*" +
@@ -281,7 +281,7 @@ def formProperties() {
 def minimumBuildingSpacing() {
     def final GEOMETRIC_FIELD = "the_geom"
     def final ID_FIELD = "id_build"
-    def final BASE_NAME = "building_minimum_building_spacing"
+    def final BASE_NAME = "minimum_building_spacing"
 
     return create({
         title "Building minimum building spacing"
@@ -295,7 +295,7 @@ def minimumBuildingSpacing() {
             def build_min_distance = "build_min_distance$uuid"
 
             // The name of the outputTableName is constructed
-            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
+            def outputTableName = getOutputTableName(prefixName, "building_" + BASE_NAME)
 
             datasource.getSpatialTable(inputBuildingTableName).the_geom.createSpatialIndex()
             datasource.getSpatialTable(inputBuildingTableName).id_build.createIndex()
@@ -308,7 +308,7 @@ def minimumBuildingSpacing() {
             // The minimum distance is calculated (The minimum distance is set to the $inputE value for buildings
             // having no building neighbors in a envelope meters distance
             datasource.execute """DROP TABLE IF EXISTS $outputTableName; 
-                    CREATE TABLE $outputTableName($ID_FIELD INTEGER,building_minimum_building_spacing FLOAT) 
+                    CREATE TABLE $outputTableName($ID_FIELD INTEGER, $BASE_NAME FLOAT) 
                      AS SELECT a.$ID_FIELD, case when b.min_distance is not null then b.min_distance else 100 end 
                     FROM $inputBuildingTableName a LEFT JOIN $build_min_distance b ON a.$ID_FIELD = b.$ID_FIELD """
             // The temporary tables are deleted
@@ -339,7 +339,7 @@ def roadDistance() {
     def final GEOMETRIC_FIELD = "the_geom"
     def final ID_FIELD_BU = "id_build"
     def final ROAD_WIDTH = "width"
-    def final BASE_NAME = "building_road_distance"
+    def final BASE_NAME = "road_distance"
 
     return create({
         title "Building road distance"
@@ -356,7 +356,7 @@ def roadDistance() {
             def road_within_buffer = "road_within_buffer$uuid"
 
             // The name of the outputTableName is constructed
-            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
+            def outputTableName = getOutputTableName(prefixName, "building_" + BASE_NAME)
 
             datasource.getSpatialTable(inputBuildingTableName).id_build.createIndex()
 
@@ -383,7 +383,7 @@ def roadDistance() {
             // distance is set to the bufferDist value for buildings having no road within a bufferDist meters
             // distance)
             datasource.execute "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE " +
-                    "$outputTableName(building_road_distance DOUBLE, $ID_FIELD_BU INTEGER) AS " +
+                    "$outputTableName($BASE_NAME DOUBLE, $ID_FIELD_BU INTEGER) AS " +
                     "(SELECT COALESCE(MIN(st_distance(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD)), $bufferDist), " +
                     "a.$ID_FIELD_BU FROM $road_within_buffer b RIGHT JOIN $inputBuildingTableName a " +
                     "ON a.$ID_FIELD_BU = b.$ID_FIELD_BU GROUP BY a.$ID_FIELD_BU)"
@@ -425,7 +425,7 @@ def roadDistance() {
 def likelihoodLargeBuilding() {
     def final GEOMETRIC_FIELD = "the_geom"
     def final ID_FIELD_BU = "id_build"
-    def final BASE_NAME = "building_likelihood_large_building"
+    def final BASE_NAME = "likelihood_large_building"
 
     return create({
         title "Building closeness to a 50 m wide building"
@@ -442,7 +442,7 @@ def likelihoodLargeBuilding() {
             def r = 0.25
 
             // The name of the outputTableName is constructed
-            def outputTableName = getOutputTableName(prefixName, BASE_NAME)
+            def outputTableName = getOutputTableName(prefixName, "building_" + BASE_NAME)
 
             datasource.getSpatialTable(inputBuildingTableName).id_build.createIndex()
 
