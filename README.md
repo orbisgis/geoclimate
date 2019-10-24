@@ -12,10 +12,9 @@ To use the current snapshot add in the `pom`
 
 ```xml
 <dependency>
-  <groupId>org.orbisgis</groupId>
+  <groupId>org.orbisgis.orbisprocess</groupId>
   <artifactId>geoclimate</artifactId>
-  <version>1.0-SNAPSHOT</version>
-  <type>pom</type>
+  <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -29,17 +28,16 @@ Put the following script and run it to extract OSM data from a place name and tr
 ```groovy
 // Declaration of the maven repository
 @GrabResolver(name='orbisgis', root='http://nexus-ng.orbisgis.org/repository/orbisgis/')
-@Grab(group='org.orbisgis', module='prepare_data', version='1.0-SNAPSHOT')
+@Grab(group='org.orbisgis.orbisprocess', module='prepare_data', version='1.0-SNAPSHOT')
 
 import org.orbisgis.datamanager.h2gis.H2GIS
-import org.orbisgis.PrepareData
-import org.orbisgis.processmanagerapi.IProcess
+import org.orbisgis.orbisprocess.preparedata.PrepareData
 
 //Create a local H2GIS database
 def h2GIS = H2GIS.open('/tmp/osmdb;AUTO_SERVER=TRUE')
 
 //Run the process to extract OSM data from a place name and transform it to a set of GIS layers needed by Geoclimate
-IProcess process = PrepareData.OSMGISLayers.extractAndCreateGISLayers()
+def process = PrepareData.OSMGISLayers.extractAndCreateGISLayers()
          process.execute([
                 datasource : h2GIS,
                 placeName: "Vannes"])
@@ -56,25 +54,25 @@ The next script computes all geoindicators needed by the [TEB](http://www.umr-cn
 
 ```groovy
 @GrabResolver(name='orbisgis', root='http://nexus-ng.orbisgis.org/repository/orbisgis/')
-@Grab(group='org.orbisgis', module='processing_chain', version='1.0-SNAPSHOT')
+@Grab(group='org.orbisgis.orbisprocess', module='geoclimate', version='1.0.0-SNAPSHOT')
 
+//Uncomment next line to override the Geoclimate logger
+//Geoclimate.logger = logger
 
 import org.orbisgis.datamanager.h2gis.H2GIS
-import org.orbisgis.processmanagerapi.IProcess
-import org.orbisgis.processingchain.ProcessingChain
+import org.orbisgis.orbisprocess.geoclimate.Geoclimate
 
-
-        String directory ="/tmp/geoclimate_chain"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
-        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
-        IProcess process = ProcessingChain.GeoclimateChain.OSMGeoIndicators()
-        if(process.execute(datasource: datasource, placeName: "Cliscouet,Vannes")){
-            IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
-            saveTables.execute( [inputTableNames: process.getResults().values()
-                                 , directory: directory, datasource: datasource])
-        }
+def directory ="/tmp/geoclimate_chain"
+def dirFile = new File(directory)
+dirFile.delete()
+dirFile.mkdir()
+def datasource = H2GIS.open(dirFile.absolutePath+File.separator + "geoclimate_chain_db;AUTO_SERVER=TRUE")
+def process = Geoclimate.GeoclimateChain.OSMGeoIndicators()
+if(process.execute(datasource: datasource, placeName: "Cliscouet,Vannes")){
+    def saveTables = Geoclimate.DataUtils.saveTablesAsFiles()
+    saveTables.execute( [inputTableNames: process.getResults().values()
+                         , directory: directory, datasource: datasource])
+}
 ```
 
 # Use Geoclimate in DBeaver
@@ -93,7 +91,7 @@ In DBeaver, go to
 
 Once DBeaver has restarted, select the main menu Groovy Editor, clic on `Open editor`, then you will have a Groovy Console.
 Copy-paste the previous script to use Geoclimate.
-
+If you want to log the message of the processes into DBeaver, you can add `Geoclimate.logger = logger` just after the imports.
 
 
 ### Notes
