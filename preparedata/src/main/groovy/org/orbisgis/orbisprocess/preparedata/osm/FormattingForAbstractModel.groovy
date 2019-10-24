@@ -114,7 +114,7 @@ IProcess formatBuildingLayer() {
                     def outputTableName = "INPUT_ROAD_${UUID.randomUUID().toString().replaceAll("-", "_")}"
                     if(inputTableName==null){
                         datasource.execute """drop table if exists $outputTableName;
-                            CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR, 
+                            CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR, CROSSING VARCHAR(30),
                             SURFACE VARCHAR, SIDEWALK VARCHAR, ZINDEX INTEGER);"""
                     }
                     else {
@@ -124,6 +124,7 @@ IProcess formatBuildingLayer() {
                         def mappingForRoadType = parametersMap.get("type")
                         def mappingForSurface = parametersMap.get("surface")
                         def typeAndWidth = parametersMap.get("width")
+                        def crossingValues = parametersMap.get("crossing")
                         def queryMapper = "SELECT "
                         def columnToMap = parametersMap.get("columns")
                         def columnNames = datasource.getTable(inputTableName).columnNames
@@ -131,12 +132,12 @@ IProcess formatBuildingLayer() {
                         queryMapper += " FROM $inputTableName"
 
                         datasource.execute """drop table if exists $outputTableName;
-                            CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_road serial, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR, 
+                            CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_road serial, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR, CROSSING VARCHAR(30),
                             SURFACE VARCHAR, SIDEWALK VARCHAR, ZINDEX INTEGER);"""
                         datasource.withBatch(1000) { stmt ->
                             datasource.eachRow(queryMapper) { row ->
                                 def width = getWidth(row.'width')
-                                String type = getAbstractValue(row, columnNames, mappingForRoadType)
+                                String type = getTypeValue(row, columnNames, mappingForRoadType)
                                 if (null == type || type.isEmpty()) {
                                     type = 'unclassified'
                                 }
@@ -144,15 +145,18 @@ IProcess formatBuildingLayer() {
                                 if (width < 0 && widthFromType != null) {
                                     width = widthFromType
                                 }
-                                String surface = getAbstractValue(row, columnNames, mappingForSurface)
+                                def crossing = row.'bridge'
+                                if(crossing){
+                                 crossing = crossingValues.get("bridge").contains(crossing)?"'bridge'":null
+                                }
+
+                                String surface = getTypeValue(row, columnNames, mappingForSurface)
                                 String sidewalk = getSidewalk(row.'sidewalk')
                                 def zIndex = getZIndex(row.'layer')
                                 if(zIndex>=0 && type) {
                                     stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${
-                                        row.the_geom
-                                    }',$epsg), null, '${row.id}', ${width},'${type}','${surface}','${sidewalk}',${
-                                        zIndex
-                                    })""".toString()
+                                        row.the_geom}',$epsg), null, '${row.id}', ${width},'${type}',${crossing}, '${surface}','${sidewalk}',${
+                                        zIndex})""".toString()
                                 }
                             }
                         }
@@ -183,12 +187,13 @@ IProcess formatBuildingLayer() {
             def outputTableName = "INPUT_RAILS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             if(inputTableName==null){
                 datasource.execute """ drop table if exists $outputTableName;
-                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);"""
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_SOURCE VARCHAR, TYPE VARCHAR,CROSSING VARCHAR(30), ZINDEX INTEGER);"""
 
             }else {
                 def paramsDefaultFile = this.class.getResourceAsStream("railParams.json")
                 def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
                 def mappingType = parametersMap.get("type")
+                def crossingValues = parametersMap.get("crossing")
 
                 def queryMapper = "SELECT "
                 def columnToMap = parametersMap.get("columns")
@@ -199,11 +204,11 @@ IProcess formatBuildingLayer() {
                 queryMapper += " FROM $inputTableName"
 
                 datasource.execute """ drop table if exists $outputTableName;
-                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_rail serial, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);"""
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_rail serial, ID_SOURCE VARCHAR, TYPE VARCHAR, CROSSING VARCHAR(30),ZINDEX INTEGER);"""
 
                 datasource.withBatch(1000) { stmt ->
                     datasource.eachRow(queryMapper) { row ->
-                        String type = getAbstractValue(row, columnNames, mappingType)
+                        String type = getTypeValue(row, columnNames, mappingType)
                         def zIndex = getZIndex(row.'layer')
                         //special treatment if type is subway
                         if (type == "subway") {
@@ -212,9 +217,13 @@ IProcess formatBuildingLayer() {
                                 type = null
                             }
                         }
+                        def crossing = row.'bridge'
+                        if(crossing){
+                            crossing = crossingValues.get("bridge").contains(crossing)?"'bridge'":null
+                        }
                         if(zIndex>=0 && type) {
                             stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${row.the_geom}',$epsg),
-                    null, '${row.id}','${type}',${zIndex})"""
+                         null, '${row.id}','${type}',${crossing},${zIndex})"""
                         }
 
                     }
@@ -264,7 +273,7 @@ IProcess formatVegetationLayer() {
 
                 datasource.withBatch(1000) { stmt ->
                     datasource.eachRow(queryMapper) { row ->
-                        String type = getAbstractValue(row, columnNames, mappingType)
+                        String type = getTypeValue(row, columnNames, mappingType)
 
                         def height_class = typeAndVegClass[type]
 
@@ -529,6 +538,9 @@ static int getZIndex (String zindex){
     return (zindex != null && zindex.isInteger()) ? zindex.toInteger() : 0
 }
 
+static String getCrossingValue( def crossingValue, def myMap) {
+    return myMap[crossingValue]
+}
 /**
  * This function defines the input value for a column of the geoClimate Input Model according to a given mapping between the expected value and the set of key/values tag in OSM
  * @param row The row of the raw table to examine
@@ -536,7 +548,7 @@ static int getZIndex (String zindex){
  * @param myMap A map between the target values in the model and the associated key/value tags retrieved from OSM
  * @return A list of Strings : first value is for "type" and second for "use"
  */
-static String getAbstractValue(def row,def columnNames, def myMap) {
+static String getTypeValue(def row, def columnNames, def myMap) {
     String strType = null
     myMap.each { finalVal ->
         def finalKey = finalVal.key
@@ -601,7 +613,7 @@ static String getSidewalk(String sidewalk) {
 static String columnsMapper(def inputColumns, def columnsToMap){
     def flatList = "\"${inputColumns.join("\",\"")}\""
     columnsToMap.each {it ->
-        if(!inputColumns.contains(it)){
+        if(!inputColumns*.toLowerCase().contains(it)){
             flatList+= ", null as \"${it}\""
         }
     }

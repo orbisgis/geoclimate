@@ -44,5 +44,9 @@
             "tram"
         ]
     }
-}
+},
+    "crossing":{"bridge" :
+    ["yes", "aqueduct", "cantilever", "covered", "low_water_crossing", "movable", "trestle",
+        "viaduct"]}
+
 }
