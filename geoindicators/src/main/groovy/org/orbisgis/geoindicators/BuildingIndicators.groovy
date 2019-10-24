@@ -189,7 +189,7 @@ def neighborsProperties() {
  *              --> "building_concavity": defined as the building area divided by the convex hull area (cf. Bocher et al. - 2018)
  *              --> "building_form_factor": defined as ratio between the building area divided by the square of the building
  *              perimeter (cf. Bocher et al. - 2018)
- *              --> "building_raw_compacity": defined as the ratio between building surfaces (walls and roof) divided by the
+ *              --> "building_raw_compactness": defined as the ratio between building surfaces (walls and roof) divided by the
  *              building volume at the power 2./3. For the calculation, the roof is supposed to have a gable and the roof surface
  *              is calculated considering that the building is square (otherwise, the assumption related to the gable direction
  *              would strongly affect the result).
@@ -213,7 +213,7 @@ def formProperties() {
     def final HEIGHT_ROOF = "height_roof"
     def final OP_CONCAVITY = "concavity"
     def final OP_FORM_FACTOR = "form_factor"
-    def final OP_RAW_COMPACITY = "raw_compacity"
+    def final OP_RAW_COMPACTNESS = "raw_compactness"
     def final OP_CONVEX_HULL_PERIMETER_DENSITY = "convexhull_perimeter_density"
     def final BASE_NAME = "building_form_properties"
 
@@ -240,7 +240,7 @@ def formProperties() {
                     case OP_FORM_FACTOR:
                         query += "ST_AREA($GEOMETRIC_FIELD)/POWER(ST_PERIMETER($GEOMETRIC_FIELD), 2) AS $operation,"
                         break
-                    case OP_RAW_COMPACITY:
+                    case OP_RAW_COMPACTNESS:
                         query += "((ST_PERIMETER($GEOMETRIC_FIELD)+ST_PERIMETER(ST_HOLES($GEOMETRIC_FIELD)))*$HEIGHT_WALL+" +
                                 "POWER(POWER(ST_AREA($GEOMETRIC_FIELD),2)+4*ST_AREA($GEOMETRIC_FIELD)*" +
                                 "POWER($HEIGHT_ROOF-$HEIGHT_WALL, 2),0.5)+POWER(ST_AREA($GEOMETRIC_FIELD),0.5)*" +

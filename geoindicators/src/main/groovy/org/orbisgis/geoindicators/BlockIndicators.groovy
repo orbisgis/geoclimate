@@ -64,21 +64,21 @@ IProcess holeAreaDensity() {
  *
  * @author Jérémy Bernard
  */
-IProcess netCompacity() {
+IProcess netCompactness() {
     //Definition of constant values
     def final GEOMETRY_FIELD_BU = "the_geom"
     def final ID_COLUMN_BL = "id_block"
     def final HEIGHT_WALL = "height_wall"
-    def final BASE_NAME = "net_compacity"
+    def final BASE_NAME = "net_compactness"
 
     return create({
-        title "Block net compacity"
+        title "Block net compactness"
         inputs buildTable: String, buildingVolumeField: String, buildingContiguityField: String,
          prefixName: String, datasource: JdbcDataSource
         outputs outputTableName: String
         run { buildTable, buildingVolumeField, buildingContiguityField, prefixName, datasource ->
 
-            info "Executing Block net compacity"
+            info "Executing Block net net_compactness"
 
             // The name of the outputTableName is constructed
             def outputTableName = getOutputTableName(prefixName, "block_" + BASE_NAME)

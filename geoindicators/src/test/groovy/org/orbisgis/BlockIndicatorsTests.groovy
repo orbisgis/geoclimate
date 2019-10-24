@@ -40,7 +40,7 @@ class BlockIndicatorsTests {
     }
 
     @Test
-    void netCompacityTest() {
+    void netCompactnessTest() {
         // Only the first 6 first created buildings are selected since any new created building may alter the results
         h2GIS.execute "DROP TABLE IF EXISTS tempo_build, building_size_properties, building_contiguity; " +
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 8"
@@ -54,12 +54,12 @@ class BlockIndicatorsTests {
                 "CREATE TABLE tempo_build2 AS SELECT a.*, b.volume FROM tempo_build a" +
                 " LEFT JOIN test_building_size_properties b ON a.id_build = b.id_build"
 
-        def  p =  Geoindicators.BlockIndicators.netCompacity()
+        def  p =  Geoindicators.BlockIndicators.netCompactness()
         assertTrue p.execute([buildTable: "tempo_build2", buildingVolumeField: "volume",
                    buildingContiguityField: "contiguity", prefixName: "test", datasource: h2GIS])
         def sum = 0
-        h2GIS.eachRow("SELECT * FROM test_block_net_compacity WHERE id_block = 4"){
-            row -> sum += row.net_compacity
+        h2GIS.eachRow("SELECT * FROM test_block_net_compactness WHERE id_block = 4"){
+            row -> sum += row.net_compactness
         }
         assertEquals(0.51195, sum, 0.00001)
     }

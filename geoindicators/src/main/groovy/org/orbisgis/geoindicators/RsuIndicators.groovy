@@ -648,7 +648,7 @@ IProcess roofAreaDistribution() {
 
 
 /**
- * Script to compute the effective terrain roughness (z0). The method for z0 calculation is based on the
+ * Script to compute the effective terrain roughness length (z0). The method for z0 calculation is based on the
  * Hanna and Britter (2010) procedure (see equation (17) and examples of calculation p. 156 in the
  * corresponding reference). It needs the "rsu_projected_facade_area_distribution" and the
  * "rsu_geometric_mean_height" as input data.
@@ -683,10 +683,10 @@ IProcess roofAreaDistribution() {
  *
  * @author Jérémy Bernard
  */
-IProcess effectiveTerrainRoughnessHeight() {
+IProcess effectiveTerrainRoughnessLength() {
     def final GEOMETRIC_COLUMN = "the_geom"
     def final ID_COLUMN_RSU = "id_rsu"
-    def final BASE_NAME = "effective_terrain_roughness"
+    def final BASE_NAME = "effective_terrain_roughness_length"
 
     return create({
         title "RSU effective terrain roughness height"
@@ -697,7 +697,7 @@ IProcess effectiveTerrainRoughnessHeight() {
         run { rsuTable, projectedFacadeAreaName, geometricMeanBuildingHeightName, prefixName, listLayersBottom,
               numberOfDirection, datasource ->
 
-            info "Executing RSU effective terrain roughness height"
+            info "Executing RSU effective terrain roughness length"
 
             // Processes used for the indicator calculation
             // Some local variables are initialized
@@ -854,7 +854,7 @@ IProcess linearRoadOperations() {
                                 nameDistrib.add("road_direction_distribution_d${d - angleRangeSize}_$d")
                             }
                         }
-                        // If only certain levels are considered independantly
+                        // If only certain levels are considered independently
                         else {
                             ifZindex = ", zindex "
                             levelConsiderated.each { lev ->
@@ -944,21 +944,21 @@ IProcess linearRoadOperations() {
 
 
 /**
- * Script to compute the effective terrain class from the effective terrain roughness height (z0).
+ * Script to compute the effective terrain class from the terrain roughness length (z0).
  * The classes are defined according to the Davenport lookup Table (cf Table 5 in Stewart and Oke, 2012)
  *
  * Warning: the Davenport definition defines a class for a given z0 value. Then there is no definition of the z0 range
  * corresponding to a certain class. Then we have arbitrarily defined the z0 value corresponding to a certain
  * Davenport class as the average of each interval, and the boundary between two classes is defined as the arithmetic
  * average between the z0 values of each class. A definition of the interval based on the profile of class = f(z0)
- * could lead to different results (especially for classes 3, 4 and 5).
+ * could lead to different results (especially for classes 3, 4 and 5) since f(z0) is clearly non-linear.
  *
  * References:
  * Stewart, Ian D., and Tim R. Oke. "Local climate zones for urban temperature studies." Bulletin of the American Meteorological Society 93, no. 12 (2012): 1879-1900.
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
  * @param rsuTable the name of the input ITable where are stored the effectiveTerrainRoughnessHeight values
- * @param effectiveTerrainRoughnessHeight the field name corresponding to the RSU effective terrain roughness class due
+ * @param effectiveTerrainRoughnessLength the field name corresponding to the RSU effective terrain roughness class due
  * to roughness elements (buildings, trees, etc.) (in the rsuTable)
  * @param prefixName String use as prefix to name the output table
  *
@@ -972,9 +972,9 @@ IProcess effectiveTerrainRoughnessClass() {
 
     return create({
         title "RSU effective terrain roughness class"
-        inputs datasource: JdbcDataSource, rsuTable: String, effectiveTerrainRoughnessHeight: String, prefixName: String
+        inputs datasource: JdbcDataSource, rsuTable: String, effectiveTerrainRoughnessLength: String, prefixName: String
         outputs outputTableName: String
-        run { datasource, rsuTable, effectiveTerrainRoughnessHeight, prefixName ->
+        run { datasource, rsuTable, effectiveTerrainRoughnessLength, prefixName ->
 
             info "Executing RSU effective terrain roughness class"
 
@@ -984,14 +984,14 @@ IProcess effectiveTerrainRoughnessClass() {
             // Based on the lookup Table of Davenport
             datasource.execute "DROP TABLE IF EXISTS $outputTableName;" +
                     "CREATE TABLE $outputTableName AS SELECT $ID_COLUMN_RSU, " +
-                    "CASEWHEN($effectiveTerrainRoughnessHeight<0.0 OR $effectiveTerrainRoughnessHeight IS NULL, null," +
-                    "CASEWHEN($effectiveTerrainRoughnessHeight<0.00035, 1," +
-                    "CASEWHEN($effectiveTerrainRoughnessHeight<0.01525, 2," +
-                    "CASEWHEN($effectiveTerrainRoughnessHeight<0.065, 3," +
-                    "CASEWHEN($effectiveTerrainRoughnessHeight<0.175, 4," +
-                    "CASEWHEN($effectiveTerrainRoughnessHeight<0.375, 5," +
-                    "CASEWHEN($effectiveTerrainRoughnessHeight<0.75, 6," +
-                    "CASEWHEN($effectiveTerrainRoughnessHeight<1.5, 7, 8)))))))) AS $BASE_NAME FROM $rsuTable"
+                    "CASEWHEN($effectiveTerrainRoughnessLength<0.0 OR $effectiveTerrainRoughnessLength IS NULL, null," +
+                    "CASEWHEN($effectiveTerrainRoughnessLength<0.00035, 1," +
+                    "CASEWHEN($effectiveTerrainRoughnessLength<0.01525, 2," +
+                    "CASEWHEN($effectiveTerrainRoughnessLength<0.065, 3," +
+                    "CASEWHEN($effectiveTerrainRoughnessLength<0.175, 4," +
+                    "CASEWHEN($effectiveTerrainRoughnessLength<0.375, 5," +
+                    "CASEWHEN($effectiveTerrainRoughnessLength<0.75, 6," +
+                    "CASEWHEN($effectiveTerrainRoughnessLength<1.5, 7, 8)))))))) AS $BASE_NAME FROM $rsuTable"
 
             [outputTableName: outputTableName]
         }

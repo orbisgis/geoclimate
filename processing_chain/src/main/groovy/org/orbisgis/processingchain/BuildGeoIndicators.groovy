@@ -1,8 +1,6 @@
 package org.orbisgis.processingchain
 
 import groovy.transform.BaseScript
-import org.apache.groovy.json.internal.ArrayUtils
-import org.orbisgis.geoindicators.DataUtils
 import org.orbisgis.geoindicators.Geoindicators
 import org.orbisgis.datamanager.JdbcDataSource
 
@@ -259,7 +257,7 @@ def computeBlockIndicators(){
             finalTablesToJoin.put(computeClosingness.results.outputTableName, id_block)
 
             //Block net compacity
-            def computeNetCompacity = Geoindicators.BlockIndicators.netCompacity()
+            def computeNetCompacity = Geoindicators.BlockIndicators.netCompactness()
             if(!computeNetCompacity([buildTable             : inputBuildingTableName,
                                      buildingVolumeField    : "volume",
                                      buildingContiguityField: "contiguity",
@@ -338,7 +336,7 @@ def computeBlockIndicators(){
  * @param pointDensity The density of points (nb / free m²) used to calculate the spatial average SVF (default 0.008)
  * @param rayLength The maximum distance to consider an obstacle as potential sky cover (default 100)
  * @param numberOfDirection the number of directions considered to calculate the SVF (default 60)
- * @param heightColumnName The name of the column (in the building table) used for roughness height calculation (default "height_roof")
+ * @param heightColumnName The name of the column (in the building table) used for roughness length calculation (default "height_roof")
  * @param fractionTypePervious The type of surface that should be consider to calculate the fraction of pervious soil
  * (default ["low_vegetation", "water"] but possible parameters are ["low_vegetation", "high_vegetation", "water"])
  * @param fractionTypeImpervious The type of surface that should be consider to calculate the fraction of impervious soil
@@ -431,7 +429,7 @@ def computeRSUIndicators() {
             }
 
             // rsu_building_density + rsu_building_volume_density + rsu_mean_building_neighbor_number
-            // + rsu_building_floor_density + rsu_roughness_height
+            // + rsu_building_floor_density + rsu_roughness_length
             // + rsu_building_number_density (RSU number of buildings divided RSU area)
             def inputVarAndOperations = [:]
             if (indicatorUse*.toUpperCase().contains("LCZ")) {
@@ -471,7 +469,7 @@ def computeRSUIndicators() {
                 def computeRoadFraction = Geoindicators.RsuIndicators.roadFraction()
                 if (!computeRoadFraction([rsuTable        : rsuTable,
                                           roadTable       : roadTable,
-                                          levelToConsiders: ["ground": [0]],
+                                          levelToConsiders: ["ground": [0], "overground":  [1, 2, 3, 4]],
                                           prefixName      : temporaryPrefName,
                                           datasource      : datasource])) {
                     info "Cannot compute the fraction of road for the RSU"
@@ -536,9 +534,9 @@ def computeRSUIndicators() {
 
             // rsu_linear_road_density + rsu_road_direction_distribution
             if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY") || indicatorUse*.toUpperCase().contains("TEB")) {
-                def roadOperations = ["road_direction_distribution", "linear_road_density"]
-                if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
-                    roadOperations = ["linear_road_density"]
+                def roadOperations = ["linear_road_density"]
+                if (indicatorUse*.toUpperCase().contains("TEB")) {
+                    roadOperations = ["road_direction_distribution", "linear_road_density"]
                 }
                 def computeLinearRoadOperations = Geoindicators.RsuIndicators.linearRoadOperations()
                 if (!computeLinearRoadOperations([rsuTable         : rsuTable,
@@ -607,7 +605,7 @@ def computeRSUIndicators() {
                 def computeAspectRatio = Geoindicators.RsuIndicators.aspectRatio()
                 if (!computeAspectRatio([rsuTable                          : intermediateJoinTable,
                                          rsuFreeExternalFacadeDensityColumn: "free_external_facade_density",
-                                         rsuBuildingDensityColumn          : "dens_area",
+                                         rsuBuildingDensityColumn          : "area_density",
                                          prefixName                        : temporaryPrefName,
                                          datasource                        : datasource])) {
                     info "Cannot compute the aspect ratio calculation "
@@ -679,7 +677,7 @@ def computeRSUIndicators() {
             // rsu_effective_terrain_roughness
             if (indicatorUse*.toUpperCase().contains("LCZ")) {
                 // Create the join tables to have all needed input fields for aspect ratio computation
-                def computeEffRoughHeight = Geoindicators.RsuIndicators.effectiveTerrainRoughnessHeight()
+                def computeEffRoughHeight = Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength()
                 if (!computeEffRoughHeight([rsuTable                       : intermediateJoinTable,
                                             projectedFacadeAreaName        : "projected_facade_area_distribution",
                                             geometricMeanBuildingHeightName: "geom_avg_$heightColumnName",
@@ -697,7 +695,7 @@ def computeRSUIndicators() {
                 def computeRoughClass = Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass()
                 if (!computeRoughClass([datasource                     : datasource,
                                         rsuTable                       : effRoughHeight,
-                                        effectiveTerrainRoughnessHeight: "effective_terrain_roughness",
+                                        effectiveTerrainRoughnessLength: "effective_terrain_roughness_length",
                                         prefixName                     : temporaryPrefName])) {
                     info "Cannot compute the SVF calculation."
                     return
@@ -732,8 +730,10 @@ def computeRSUIndicators() {
 
             // Modify all indicators which do not have the expected name
             def listColumnNames = datasource.getTable(outputTableName).getColumnNames()
-            def mapIndic2Change = ["DENS_AREA": "BUILDING_AREA_FRACTION", "DENS_FLOOR_AREA": "BUILDING_FLOOR_AREA_DENSITY",
-                                   "DENS_VOLUME": "BUILDING_VOLUME_DENSITY"]
+            def mapIndic2Change = ["AREA_DENSITY"           : "BUILDING_AREA_FRACTION",
+                                   "FLOOR_AREA_DENSITY"     : "BUILDING_FLOOR_AREA_DENSITY",
+                                   "VOLUME_DENSITY"         : "BUILDING_VOLUME_DENSITY",
+                                   "LINEAR_ROAD_DENSITY_H0" : "GROUND_LINEAR_ROAD_DENSITY"]
             def query2ModifyNames = ""
             for (ind in mapIndic2Change.keySet()){
                 if (listColumnNames.contains(ind)) {

@@ -66,10 +66,10 @@ IProcess unweightedOperationFromLowerScale() {
                             query += "COALESCE(EXP(1.0/COUNT(*)*SUM(LOG(a.$var))),0) AS ${op + "_" + var},"
                             break
                         case DENS:
-                            query += "COALESCE(SUM(a.$var::float)/ST_AREA(b.$GEOMETRIC_FIELD_UP),0) AS ${op + "_" + var},"
+                            query += "COALESCE(SUM(a.$var::float)/ST_AREA(b.$GEOMETRIC_FIELD_UP),0) AS ${var + "_DENSITY"},"
                             break
                         case NB_DENS:
-                            query += "COALESCE(COUNT(a.*)/ST_AREA(b.$GEOMETRIC_FIELD_UP),0) AS ${op + "_" + var},"
+                            query += "COALESCE(COUNT(a.*)/ST_AREA(b.$GEOMETRIC_FIELD_UP),0) AS ${var + "_NUMBER_DENSITY"},"
                             break
                         case SUM:
                         case AVG:

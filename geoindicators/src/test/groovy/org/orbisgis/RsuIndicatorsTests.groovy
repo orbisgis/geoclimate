@@ -168,7 +168,7 @@ class RsuIndicatorsTests {
     }
 
     @Test
-    void effectiveTerrainRoughnessHeightTest() {
+    void effectiveTerrainRoughnesslengthTest() {
         // Only the first 5 first created buildings are selected for the tests
         h2GIS.execute("DROP TABLE IF EXISTS tempo_build, rsu_table, BUILDING_INTERSECTION, BUILDING_INTERSECTION_EXPL, BUILDINGFREE, BUILDINGLAYER; CREATE TABLE tempo_build AS SELECT * " +
                 "FROM building_test WHERE id_build < 6")
@@ -198,7 +198,7 @@ class RsuIndicatorsTests {
         h2GIS.execute "CREATE TABLE rsu_table AS SELECT a.*, b.geom_avg_height_roof, b.the_geom " +
                 "FROM test_rsu_projected_facade_area_distribution a, test_unweighted_operation_from_lower_scale b " +
                 "WHERE a.id_rsu = b.id_rsu"
-        def  p =  Geoindicators.RsuIndicators.effectiveTerrainRoughnessHeight()
+        def  p =  Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength()
         assertTrue p.execute([rsuTable: "rsu_table",
                               projectedFacadeAreaName: "projected_facade_area_distribution",
                               geometricMeanBuildingHeightName: "geom_avg_height_roof",
@@ -208,8 +208,8 @@ class RsuIndicatorsTests {
                               datasource: h2GIS])
 
         def concat = 0
-        h2GIS.eachRow("SELECT * FROM test_rsu_effective_terrain_roughness WHERE id_rsu = 1"){
-            row -> concat += row["effective_terrain_roughness"].round(2)
+        h2GIS.eachRow("SELECT * FROM test_rsu_effective_terrain_roughness_length WHERE id_rsu = 1"){
+            row -> concat += row["effective_terrain_roughness_length"].round(2)
         }
         assertEquals(1.6, concat)
     }
@@ -257,10 +257,10 @@ class RsuIndicatorsTests {
     void effectiveTerrainRoughnessClassTest() {
         // Only the first 5 first created buildings are selected for the tests
         h2GIS.execute "DROP TABLE IF EXISTS rsu_tempo; CREATE TABLE rsu_tempo AS SELECT *, CASEWHEN(id_rsu = 1, 2.3," +
-                "CASEWHEN(id_rsu = 2, 0.1, null)) AS effective_terrain_roughness_height FROM rsu_test"
+                "CASEWHEN(id_rsu = 2, 0.1, null)) AS effective_terrain_roughness_length FROM rsu_test"
 
         def p =  Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass()
-        assertTrue p.execute([datasource: h2GIS, rsuTable: "rsu_tempo", effectiveTerrainRoughnessHeight: "effective_terrain_roughness_height",
+        assertTrue p.execute([datasource: h2GIS, rsuTable: "rsu_tempo", effectiveTerrainRoughnessLength: "effective_terrain_roughness_length",
                    prefixName: "test"])
         def concat = ""
         h2GIS.eachRow("SELECT * FROM test_rsu_effective_terrain_roughness_class WHERE id_rsu < 4 ORDER BY id_rsu ASC"){

@@ -63,11 +63,11 @@ class GenericIndicatorsTests {
             row ->
                 concat[3]+= "${row.avg_number_building_neighbor}\n"
                 concat[3]+= "${row.sum_area}\n"
-                concat[3]+= "${row.dens_area}\n"
-                concat[3]+= "${row.nb_dens_area}\n"
+                concat[3]+= "${row.area_density}\n"
+                concat[3]+= "${row.area_number_density}\n"
         }
         def nb_rsu = h2GIS.firstRow "SELECT COUNT(*) AS NB FROM ${pgeom_avg.results.outputTableName}"
-        def val_zero = h2GIS.firstRow "SELECT dens_area AS val FROM ${pdens.results.outputTableName} "+
+        def val_zero = h2GIS.firstRow "SELECT area_density AS val FROM ${pdens.results.outputTableName} "+
                                       "WHERE id_rsu = 14"
         assertEquals("156.0\n310.0\n", concat[0])
         assertEquals("0.4\n0.0\n", concat[1])
