@@ -237,7 +237,7 @@ IProcess geometryProperties() {
 /**
  * This process is used to compute (within a block or a RSU) the main building direction and
  * indicators that qualify the repartition of the direction distribution. This second indicator may be:
- * - an indicator of general inequality: the Perkins Skill Score is calculated
+ * - an indicator of general inequality: the Perkins Skill Score is calculated (Perkins et al., 2007)
  * - an indicator of uniqueness: t
  * The building direction distribution is calculated according to the length of the building SMBR sides (width and length).
  * Note that the distribution has an "angle_range_size" interval that has to be defined by the user (default 15).
@@ -253,6 +253,11 @@ IProcess geometryProperties() {
  *      --> "inequality": the Perkins Skill Score is calculated
  *      --> "uniqueness": the weight of the first main direction is divided by the weight of the second main direction
  * @param prefixName String use as prefix to name the output table
+ *
+ * Reference:
+ * -> Perkins, S. E., Pitman, A. J., Holbrook, N. J., & McAneney, J. (2007). Evaluation of the AR4 climate models’
+ * simulated daily maximum temperature, minimum temperature, and precipitation over Australia using probability
+ * density functions. Journal of climate, 20(17), 4356-4376.
  *
  * @return A database table name.
  * @author Jérémy Bernard
