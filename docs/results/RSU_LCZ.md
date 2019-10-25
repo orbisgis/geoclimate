@@ -12,15 +12,15 @@ The distance of each RSU to each of the LCZ types is calculated in the normalize
 
 
 
-![](./images/icons/github.png) The LCZ classification source code is available [here](https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/TypologyClassification.groovy).
+![](../images/icons/github.png) The LCZ classification source code is available [here](https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/TypologyClassification.groovy).
 
-## Table definition ![](./images/icons/table.png)
+## Table definition ![](../images/icons/table.png)
 
-![](./images/icons/pk.png) PK = Primary Key
+![](../images/icons/pk.png) PK = Primary Key
 
 | Field name                                                   | Field type       | Definition         |
 | :----------------------------------------------------------- | :--------------- | ------------------ |
-| **ID_RSU** ![](./images/icons/pk.png) | integer  | RSU's unique id |
+| **ID_RSU** ![](../images/icons/pk.png) | integer  | RSU's unique id |
 | LCZ1 | integer | Main LCZ type  |
 | LCZ2 | integer  | Secondary LCZ type |
 | MIN_DISTANCE | double precision | Minimum distance to each LCZ |
@@ -60,5 +60,5 @@ Two `.sld` style files, based on this classification, are provided in the `/proc
 - `lcz1.sld` : the style ready to be applied to the field `LCZ1`
 - `lcz2.sld` : the style ready to be applied to the field `LCZ2`
 
-![](./images/lcz_legend.png)
+![](../images/lcz_legend.png)
 

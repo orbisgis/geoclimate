@@ -2,18 +2,18 @@
 
 This table stores all the indicators computed at the building's scale.
 
-![](./images/icons/github.png) The indicators source code is available [here](https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy).
+![](../images/icons/github.png) The indicators source code is available [here](https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy).
 
 
 
-## Table definition ![](./images/icons/table.png)
+## Table definition ![](../images/icons/table.png)
 
-![](./images/icons/pk.png) PK = Primary Key
+![](../images/icons/pk.png) PK = Primary Key
 
 | Field name   | Field type       | Definition         |
 | :----------- | :--------------- | ------------------ |
 | THE_GEOM       | geometry          | Building's geometry |
-| **ID_BUILD** ![](./images/icons/pk.png) | integer | Building's unique id |
+| **ID_BUILD** ![](../images/icons/pk.png) | integer | Building's unique id |
 | ID_SOURCE | varchar | Original unique id |
 | ID_BLOCK | integer | Belonging block id |
 | ID_RSU | integer | Belonging RSU id |
@@ -30,16 +30,16 @@ This table stores all the indicators computed at the building's scale.
 | TOTAL_FACADE_LENGTH | double precision | [Full definition](#TOTAL_FACADE_LENGTH) |
 | COMMON_WALL_FRACTION | double precision | [Full definition](#COMMON_WALL_FRACTION) |
 | CONTIGUITY | double precision | [Full definition](#CONTIGUITY) |
-| CONCAVITY | double precision | [Full definition](#CONCAVITY) |
+| AREA_CONCAVITY | double precision | [Full definition](#AREA_CONCAVITY) |
 | FORM_FACTOR | double precision | [Full definition](#FORM_FACTOR) |
 | RAW_COMPACTNESS | double precision | [Full definition](#RAW_COMPACTNESS) |
-| CONVEXHULL_PERIMETER_DENSITY | double precision | [Full definition](#CONVEXHULL_PERIMETER_DENSITY) |
+| PERIMETER_CONVEXITY | double precision | [Full definition](#**PERIMETER_CONVEXITY**) |
 | MINIMUM_BUILDING_SPACING | double precision | [Full definition](#MINIMUM_BUILDING_SPACING) |
 | NUMBER_BUILDING_NEIGHBOR | bigint | [Full definition](#NUMBER_BUILDING_NEIGHBOR) |
 | ROAD_DISTANCE | double precision | [Full definition](#ROAD_DISTANCE) |
 | LIKELIHOOD_LARGE_BUILDING | double precision | [Full definition](#LIKELIHOOD_LARGE_BUILDING) |
 
-## Indicators definition  ![](./images/icons/dico.png)
+## Indicators definition  ![](../images/icons/dico.png)
 
 ### `ZINDEX`
 
@@ -91,7 +91,7 @@ This table stores all the indicators computed at the building's scale.
 **Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L141
 
 
-### `CONCAVITY`
+### `AREA_CONCAVITY`
 
 **Definition**: Calculates how close is a building from its smallest [convex](http://www.h2gis.org/docs/dev/ST_ConvexHull/) footprint.
 
@@ -118,11 +118,11 @@ This table stores all the indicators computed at the building's scale.
 **Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L243
 
 
-### `CONVEXHULL_PERIMETER_DENSITY`
+### `PERIMETER_CONVEXITY`
 
 **Definition**: Ratio between building [Convex Hull](http://www.h2gis.org/docs/dev/ST_ConvexHull/) perimeter and building perimeter.
 
-**Formula**: `Convex Hull perimeter / perimeter`
+**Formula**: `Perimeter / Convex Hull perimeter`
 
 **Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L250
 

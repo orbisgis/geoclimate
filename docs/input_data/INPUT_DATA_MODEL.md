@@ -12,7 +12,7 @@ This page presents the data dictionary used to describe the geographic data that
 
 **Source code**
 
-![](./images/icons/github.png) The input model source code is available [here](https://github.com/gpetit/geoclimate/blob/add_docs/prepare_data/src/main/groovy/org/orbisgis/common/AbstractTablesInitialization.groovy).
+![](../images/icons/github.png) The input model source code is available [here](https://github.com/gpetit/geoclimate/blob/add_docs/prepare_data/src/main/groovy/org/orbisgis/common/AbstractTablesInitialization.groovy).
 
 
 ## Buildings

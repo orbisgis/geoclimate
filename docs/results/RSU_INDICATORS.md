@@ -2,16 +2,16 @@
 
 This table stores all the indicators computed at the RSU's scale.
 
-![](./images/icons/github.png) The indicators source code is available [here](https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/RsuIndicators.groovy).
+![](../images/icons/github.png) The indicators source code is available [here](https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/RsuIndicators.groovy).
 
-## Table definition ![](./images/icons/table.png)
+## Table definition ![](../images/icons/table.png)
 
-![](./images/icons/pk.png) PK = Primary Key
+![](../images/icons/pk.png) PK = Primary Key
 
 | Field name   | Field type       | Definition         |
 | :----------- | :--------------: | :----------------: |
 | THE_GEOM       | geometry          | RSU's geometry    |
-| **ID_RSU** ![](./images/icons/pk.png) | integer | RSU's unique id    |
+| **ID_RSU** ![](../images/icons/pk.png) | integer | RSU's unique id    |
 | AREA | double precision | RSU's area |
 | BUILDING_AREA_FRACTION | double precision | [Full definition](#BUILDING_AREA_FRACTION) |
 | BUILDING_FLOOR_AREA_DENSITY | double precision | [Full definition](#BUILDING_FLOOR_AREA_DENSITY) |
@@ -97,7 +97,7 @@ This table stores all the indicators computed at the RSU's scale.
 | IMPERVIOUS_FRACTION | double precision | [Full definition](#IMPERVIOUS_FRACTION) |
 
 
-## Indicators definition  ![](./images/icons/dico.png)
+## Indicators definition  ![](../images/icons/dico.png)
 
 
 

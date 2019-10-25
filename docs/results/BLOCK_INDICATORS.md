@@ -2,16 +2,16 @@
 
 This table stores all the indicators computed at the block's scale.
 
-![](./images/icons/github.png) The indicators source code is available [here](https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BlockIndicators.groovy).
+![](../images/icons/github.png) The indicators source code is available [here](https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BlockIndicators.groovy).
 
-## Table definition ![](./images/icons/table.png)
+## Table definition ![](../images/icons/table.png)
 
-![](./images/icons/pk.png) PK = Primary Key
+![](../images/icons/pk.png) PK = Primary Key
 
 | Field name   | Field type       | Definition         |
 | :----------- | :--------------- | ------------------ |
 | THE_GEOM       | geometry          | Block's geometry |
-| **ID_BLOCK** ![](./images/icons/pk.png) | integer | Block's unique id    |
+| **ID_BLOCK** ![](../images/icons/pk.png) | integer | Block's unique id    |
 | ID_RSU | integer | Belonging RSU id |
 | AREA | double precision | Block's area ([Full definition](#AREA)) |
 | FLOOR_AREA | double precision | [Full definition](#FLOOR_AREA) |
@@ -26,11 +26,11 @@ This table stores all the indicators computed at the block's scale.
 
 
 
-## Indicators definition  ![](./images/icons/dico.png)
+## Indicators definition  ![](../images/icons/dico.png)
 
 
 
-### AREA`
+### `AREA`
 
 Definition: Block's area.
 
