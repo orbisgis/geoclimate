@@ -248,8 +248,8 @@ def formProperties() {
                                 "($HEIGHT_WALL+$HEIGHT_ROOF)/2, 2./3) AS $operation,"
                         break
                     case OP_CONVEX_HULL_PERIMETER_DENSITY:
-                        query += "ST_PERIMETER(ST_CONVEXHULL($GEOMETRIC_FIELD))/(ST_PERIMETER($GEOMETRIC_FIELD)+" +
-                                "ST_PERIMETER(ST_HOLES($GEOMETRIC_FIELD))) AS $operation,"
+                        query += "(ST_PERIMETER($GEOMETRIC_FIELD)+ST_PERIMETER(ST_HOLES($GEOMETRIC_FIELD)))" +
+                                "/ST_PERIMETER(ST_CONVEXHULL($GEOMETRIC_FIELD)) AS $operation,"
                         break
                 }
             }

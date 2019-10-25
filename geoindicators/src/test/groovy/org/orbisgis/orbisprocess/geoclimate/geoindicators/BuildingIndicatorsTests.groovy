@@ -93,7 +93,7 @@ class BuildingIndicatorsTests {
         assertEquals("1.0\n0.94\n".toString(),concat[0].toString())
         assertEquals("${(0.0380859375).round(5)}\n${(0.0522222222222222).round(5)}\n".toString(), concat[1].toString())
         assertEquals("5.607\n".toString(),  concat[2].toString())
-        assertEquals("1.0\n0.78947\n0.85714\n".toString(), concat[3].toString())
+        assertEquals("1.0\n1.26667\n1.16667\n".toString(), concat[3].toString())
     }
 
     @Test

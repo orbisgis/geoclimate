@@ -233,7 +233,7 @@ def computeBlockIndicators(){
 
             //Perkins SKill Score of the distribution of building direction within a block
             // block_perkins_skill_score_building_direction
-            def computePerkinsSkillScoreBuildingDirection = Geoindicators.GenericIndicators.perkinsSkillScoreBuildingDirection()
+            def computePerkinsSkillScoreBuildingDirection = Geoindicators.GenericIndicators.buildingDirectionDistribution()
             if(!computePerkinsSkillScoreBuildingDirection([buildingTableName: inputBuildingTableName,
                                                            inputIdUp        : id_block,
                                                            angleRangeSize   : 15,
@@ -706,7 +706,7 @@ def computeRSUIndicators() {
 
             // rsu_perkins_skill_score_building_direction_variability
             if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
-                 def computePerkinsDirection = Geoindicators.GenericIndicators.perkinsSkillScoreBuildingDirection()
+                 def computePerkinsDirection = Geoindicators.GenericIndicators.buildingDirectionDistribution()
                 if (!computePerkinsDirection([buildingTableName: buildingTable, inputIdUp: columnIdRsu,
                                               angleRangeSize   : angleRangeSizeBuDirection, prefixName: temporaryPrefName,
                                               datasource       : datasource])) {
