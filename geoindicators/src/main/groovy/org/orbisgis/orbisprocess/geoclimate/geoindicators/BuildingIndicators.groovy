@@ -214,7 +214,7 @@ def formProperties() {
     def final OP_CONCAVITY = "concavity"
     def final OP_FORM_FACTOR = "form_factor"
     def final OP_RAW_COMPACTNESS = "raw_compactness"
-    def final OP_CONVEX_HULL_PERIMETER_DENSITY = "convexhull_perimeter_density"
+    def final OP_CONVEXITY = "convexity"
     def final BASE_NAME = "building_form_properties"
 
     return create({
@@ -247,7 +247,7 @@ def formProperties() {
                                 "($HEIGHT_ROOF-$HEIGHT_WALL))/POWER(ST_AREA($GEOMETRIC_FIELD)*" +
                                 "($HEIGHT_WALL+$HEIGHT_ROOF)/2, 2./3) AS $operation,"
                         break
-                    case OP_CONVEX_HULL_PERIMETER_DENSITY:
+                    case OP_CONVEXITY:
                         query += "(ST_PERIMETER($GEOMETRIC_FIELD)+ST_PERIMETER(ST_HOLES($GEOMETRIC_FIELD)))" +
                                 "/ST_PERIMETER(ST_CONVEXHULL($GEOMETRIC_FIELD)) AS $operation,"
                         break

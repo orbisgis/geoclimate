@@ -75,7 +75,7 @@ class BuildingIndicatorsTests {
         def  p =  Geoindicators.BuildingIndicators.formProperties()
         assertTrue p.execute([inputBuildingTableName: "tempo_build",
                    operations:["concavity","form_factor",
-                               "raw_compactness", "convexhull_perimeter_density"],
+                               "raw_compactness", "convexity"],
                    prefixName : "test",datasource:h2GIS])
         def concat = ["", "", "", ""]
         h2GIS.eachRow("SELECT * FROM test_building_form_properties WHERE id_build = 1 OR id_build = 7 ORDER BY id_build ASC"){
@@ -88,7 +88,7 @@ class BuildingIndicatorsTests {
         }
         h2GIS.eachRow("SELECT * FROM test_building_form_properties WHERE id_build = 1 OR id_build = 7 OR " +
                 "id_build = 30 ORDER BY id_build ASC"){
-            row -> concat[3]+= "${row.convexhull_perimeter_density.round(5)}\n"
+            row -> concat[3]+= "${row.convexity.round(5)}\n"
         }
         assertEquals("1.0\n0.94\n".toString(),concat[0].toString())
         assertEquals("${(0.0380859375).round(5)}\n${(0.0522222222222222).round(5)}\n".toString(), concat[1].toString())
