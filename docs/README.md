@@ -44,9 +44,7 @@ The Geoclimate chain is made up of the 3 following modules:
 
 ### Input data preparation
 
-The user chooses the data set of his choice and ensures that the information present corresponds to the Geoclimate input model. 
-
-![](./images/icons/arrow.png) [See more](./input_data/INPUT_DATA_MODEL.md)
+The user chooses the data set of his choice and ensures that the information present corresponds to the![](./images/icons/arrow.png) [Geoclimate input model](./input_data/INPUT_DATA_MODEL.md).
 
 ### Formating and quality control
 
