@@ -508,7 +508,7 @@ static int getNbLevels (b_lev ,r_lev,b_r_lev) {
     int result = 0
     if (b_lev != null && b_lev.isFloat()) {
         if ((r_lev != null && r_lev.isFloat()) || (b_r_lev != null && b_r_lev.isFloat())) {
-            if (r_lev.isFloat()) {
+            if (r_lev != null && r_lev.isFloat()) {
                 result = b_lev.toFloat() + r_lev.toFloat()
             } else {
                 result = b_lev.toFloat() + b_r_lev.toFloat()
