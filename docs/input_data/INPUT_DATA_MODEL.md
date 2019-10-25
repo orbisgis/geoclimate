@@ -24,6 +24,7 @@ This page presents the data dictionary used to describe the geographic data that
 
 - Table name : `input_building`
 - EPSG Code : Any metric coordinate system
+- Content: any building
 
 |    Name     |  Type   |    Constaints    | Definition                                                   |
 | :---------: | :-----: | :--------------: | ------------------------------------------------------------ |
@@ -38,11 +39,11 @@ This page presents the data dictionary used to describe the geographic data that
 
 ### BUILDING use and type
 
-List of the values that can be used to describe the `type` and the `main_use` of a building feature in the `input_building` table. We consider that a same value can be used to qualify a `type` or a use (`main_use`).
+List of all possible values for the `type` and the `main_use` attributes, in the `input_building` table. We consider that a same value can be used to qualify a `type` or a use (`main_use`).
 
-- Term: value used to describe the type and the main use of a building
+- Term: value used to describe the `type` and the `main_use` of a building
 
-- Definition: provides a definition of the type or use
+- Definition: provides a definition of the `type` or `main_use`
 
 - Source: most of the values are based on concepts from existing thesauri. In this case, we indicate their source.  
 
@@ -89,9 +90,9 @@ List of the values that can be used to describe the `type` and the `main_use` of
 
 ### BUILDING level
 
-For each individual value concerning the `type` or `use` of a building (values listed in the [BUILDING_use and type](#BUILDING-use-and-type) metadata section), this list specifies the rules for calculating the number of levels of a building in order to feed the `nb_lvl` field in the `input_building` table.
+For each individual value concerning the building `type`  (values listed in the [BUILDING_use and type](#BUILDING-use-and-type) metadata section), this list specifies the rules for calculating the number of levels of a building in order to feed the `nb_lvl` field in the `input_building` table.
 
-- Term: value used to describe the `type` and the `main_use` of a building
+- Term: value used to describe the building `type`
 
 - Nb_lev_rule: Specifies whether or not the building type is taken into account when calculating the number of levels (`0` = not taken into account (in this case, the number of levels will be forced to 1) / `1`= taken into account (in this case, a formula will be used to deduct the number) / `2` = other situtation (rule).
 
@@ -335,7 +336,7 @@ Lists of all possible values for the `crossing` attribute in the `input_rail` ta
 
 ### VEGET type
 
-Lists of all possible values for `type` attribute in the `input_veget` table.
+List of all possible values for `type` attribute in the `input_veget` table.
 
 - Term: value used to qualify the `type` of the vegetation
 - Definition: provides a definition of the `type` attribute
@@ -362,7 +363,7 @@ Lists of all possible values for `type` attribute in the `input_veget` table.
 
 ### VEGET height
 
-Lists of the expected values for the `height_class` attribute, regarding the `type` of vegetation, in the `input_veget` table.
+List of all possible values for the `height_class` attribute, regarding the `type` of vegetation, in the `input_veget` table.
 
 - Term: value used to qualify the `height_class` of the vegetation
 - Height_class: vegetation height class (`low` or `high`)
