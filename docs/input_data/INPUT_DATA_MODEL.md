@@ -8,6 +8,7 @@ This page presents the data dictionary used to describe the geographic data that
 - [Rail ways](#Rail-ways): `input_RAIL`, RAIL Abstract type
 - [Vegetation areas](#Vegetation-areas): `input_VEGET`, VEGET Abstract type, VEGET Abstract height
 - [Hydrographic areas](#Hydrographic-areas): `input_HYDRO`
+- [Impervious areas](#Impervious-areas): `input_impervious`
 - [Zones](#Zones): `ZONE`, `ZONE_NEIGHBORS`
 
 **Source code**
@@ -24,7 +25,7 @@ This page presents the data dictionary used to describe the geographic data that
 - Table name : `input_building`
 - EPSG Code : Any metric coordinate system
 
-**Abstract dictionary table used to define building data:**
+**Table dictionary used to define building data:**
 
 |    Name     |  Type   |    Constaints    | Definition                                                   |
 | :---------: | :-----: | :--------------: | ------------------------------------------------------------ |
@@ -153,7 +154,7 @@ For each individual value concerning the `type` or `use` of a building (values l
 
 
 
-**Abstract dictionary table used to define the road data:**
+**Table dictionary used to define the road data:**
 
 |   Name    |    Type    |    Constraints    | Definition                                                   |
 | :-------: | :--------: | :---------------: | ------------------------------------------------------------ |
@@ -291,7 +292,7 @@ Lists of all possible values for `crossing` attribute in the `input_road table.
 * Table name : `input_rail`
 * EPSG Code : Any metric coordinate system
 
-**Abstract dictionary table used to define the rail data:**
+**Table dictionary used to define the rail data:**
 
 |   Name    |    Type    |    Constraints    | Definition                                                   |
 | :-------: | :--------: | :---------------: | ------------------------------------------------------------ |
@@ -355,7 +356,7 @@ Lists of all possible values for `crossing` attribute in the `input_rail` table.
 - Table name: `input_veget`
 - EPSG Code: Any metric coordinate system
 
-**Abstract table used to store the vegetation data:**
+**Table dictionary used to store the vegetation data:**
 
 | Name         | Type    | Constraints       | Definition                                          |
 | :----------: | :-----: | :---------------: | --------------------------------------------------- |
@@ -430,12 +431,27 @@ Lists of all possible values for the `height_class` attribute in the `input_vege
 - Table name: `input_hydro`
 - EPSG Code: Any metric coordinate system
 
-**Abstract table used to store the hydrographic data:**
+**Table dictionary used to store the hydrographic data:**
 
 | Name      | Type    | Constraints       | Definition                                          |
 | :-------: | :-----: | :---------------: | --------------------------------------------------- |
 | the_geom  | POLYGON | ST_DIMENSION() =2 | Geometry                                            |
 | id_source | VARCHAR |                   | Identifier of the feature from the input datasource |
+
+[back to top](#Input-data-model)
+
+## Impervious areas
+
+### IMPERVIOUS input table dictionary
+- Table name: `input_impervious`
+- EPSG Code: Any metric coordinate system
+
+**Table dictionary used to store the impervious data:**
+
+|   Name   |  Type   |    Constraints    | Definition              |
+| :------: | :-----: | :---------------: | ----------------------- |
+| the_geom | POLYGON | ST_DIMENSION() =2 | Geometry                |
+|   type   | VARCHAR |                   | Type of impervious area |
 
 [back to top](#Input-data-model)
 
@@ -445,7 +461,7 @@ Lists of all possible values for the `height_class` attribute in the `input_vege
 - Table name: `zone`
 - EPSG Code: Any metric coordinate system
 
-**Abstract table used to store the studied zone area:**
+**Table dictionary used to store the studied zone area:**
 
 | Name     | Type    | Constraints       | Definition                  |
 | :------: | :-----: | :---------------: | --------------------------- |
@@ -456,7 +472,7 @@ Lists of all possible values for the `height_class` attribute in the `input_vege
 - Table name: `zone_neighbors`
 - EPSG Code: Any metric coordinate system
 
-**Abstract table used to store every neighboring zones of the studied zone:**
+**Table dictionary used to store every neighboring zones of the studied zone:**
 
 | Name     | Type    | Constraints       | Definition                  |
 | :------: | :-----: | :---------------: | --------------------------- |
@@ -464,3 +480,4 @@ Lists of all possible values for the `height_class` attribute in the `input_vege
 | id_zone  | VARCHAR |                   | Identifier of the zone area |
 
 [back to top](#Input-data-model)
+
