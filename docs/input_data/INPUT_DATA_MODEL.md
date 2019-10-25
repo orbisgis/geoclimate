@@ -3,10 +3,10 @@
 
 
 This page presents the data dictionary used to describe the geographic data that feed the GeoClimate chain. The data are organized by topics. For each of them, we provide the input tables dictionary (with the name and type of the fields – prefixed with `input_`) and their associated metadata, in which description and parameters are presented:
-- [Building](#Buildings):  `input_BUILDING`, BUILDING Abstract use and type, BUILDING Abstract level
-- [Roads](#Roads): `input_ROAD`, ROAD Abstract type, ROAD Abstract surface, ROAD Abstract width
-- [Rail ways](#Rail-ways): `input_RAIL`, RAIL Abstract type
-- [Vegetation areas](#Vegetation-areas): `input_VEGET`, VEGET Abstract type, VEGET Abstract height
+- [Buildings](#Buildings):  `input_BUILDING`, BUILDING use and type, BUILDING level
+- [Roads](#Roads): `input_ROAD`, ROAD type, ROAD surface, ROAD width, ROAD crossing
+- [Railways](#Railways): `input_RAIL`, RAIL type, RAIL crossing
+- [Vegetation areas](#Vegetation-areas): `input_VEGET`, VEGET type, VEGET height
 - [Hydrographic areas](#Hydrographic-areas): `input_HYDRO`
 - [Impervious areas](#Impervious-areas): `input_impervious`
 - [Zones](#Zones): `ZONE`, `ZONE_NEIGHBORS`
@@ -20,12 +20,10 @@ This page presents the data dictionary used to describe the geographic data that
 
 
 
-### BUILDING input table dictionary
+### BUILDING table structure
 
 - Table name : `input_building`
 - EPSG Code : Any metric coordinate system
-
-**Table dictionary used to define building data:**
 
 |    Name     |  Type   |    Constaints    | Definition                                                   |
 | :---------: | :-----: | :--------------: | ------------------------------------------------------------ |
@@ -40,10 +38,7 @@ This page presents the data dictionary used to describe the geographic data that
 
 ### BUILDING use and type
 
-- Concerned table : `input_building`
-- Concerned fields : `type` and `main_use`
-
-List the values that can be used to describe the `type` and the `main_use` of a building feature in the `input_building` table. We consider that a same value can be used to qualify a `type` or a use (`main_use`).
+List of the values that can be used to describe the `type` and the `main_use` of a building feature in the `input_building` table. We consider that a same value can be used to qualify a `type` or a use (`main_use`).
 
 - Term: value used to describe the type and the main use of a building
 
@@ -94,67 +89,60 @@ List the values that can be used to describe the `type` and the `main_use` of a 
 
 ### BUILDING level
 
-- Concerned table : `input_building`
-
-- Concerned field : `nb_lev`
-
 For each individual value concerning the `type` or `use` of a building (values listed in the [BUILDING_use and type](#BUILDING-use-and-type) metadata section), this list specifies the rules for calculating the number of levels of a building in order to feed the `nb_lvl` field in the `input_building` table.
 
 - Term: value used to describe the `type` and the `main_use` of a building
 
-- Nb_lev: Specifies whether or not the building type is taken into account when calculating the number of levels (`0` = not taken into account (in this case, the number of levels will be forced to 1) / `1`= taken into account (in this case, a formula will be used to deduct the number) / `2` = other situtation (rule).
+- Nb_lev_rule: Specifies whether or not the building type is taken into account when calculating the number of levels (`0` = not taken into account (in this case, the number of levels will be forced to 1) / `1`= taken into account (in this case, a formula will be used to deduct the number) / `2` = other situtation (rule).
 
-| Term                            | Nb_lev |
-| :-----------------------------: | :----: |
-| building                        |   1    |
-| house                           |   1    |
-| detached                        |   1    |
-| residential                     |   1    |
-| apartments                      |   1    |
-| bungalow                        |   0    |
-| historic                        |   0    |
-| monument                        |   0    |
-| ruins                           |   0    |
-| castle                          |   0    |
-| agricultural                    |   0    |
-| farm                            |   0    |
-| farm_auxiliary                  |   0    |
-| barn                            |   0    |
-| greenhouse                      |   0    |
-| silo                            |   0    |
-| commercial                      |   2    |
-| industrial                      |   0    |
-| sport                           |   0    |
-| sports_centre                   |   0    |
-| grandstand                      |   0    |
-| transportation                  |   0    |
-| train_station                   |   0    |
-| toll_booth                      |   0    |
-| terminal                        |   0    |
-| healthcare                      |   1    |
-| education                       |   1    |
-| entertainment, arts and culture |   0    |
-| sustenance                      |   1    |
-| military                        |   0    |
-| religious                       |   0    |
-| chapel                          |   0    |
-| church                          |   0    |
-| government                      |   1    |
-| townhall                        |   1    |
-| office                          |   1    |
+|              Term               | Nb_lev_rule |
+| :-----------------------------: | :---------: |
+|            building             |      1      |
+|              house              |      1      |
+|            detached             |      1      |
+|           residential           |      1      |
+|           apartments            |      1      |
+|            bungalow             |      0      |
+|            historic             |      0      |
+|            monument             |      0      |
+|              ruins              |      0      |
+|             castle              |      0      |
+|          agricultural           |      0      |
+|              farm               |      0      |
+|         farm_auxiliary          |      0      |
+|              barn               |      0      |
+|           greenhouse            |      0      |
+|              silo               |      0      |
+|           commercial            |      2      |
+|           industrial            |      0      |
+|              sport              |      0      |
+|          sports_centre          |      0      |
+|           grandstand            |      0      |
+|         transportation          |      0      |
+|          train_station          |      0      |
+|           toll_booth            |      0      |
+|            terminal             |      0      |
+|           healthcare            |      1      |
+|            education            |      1      |
+| entertainment, arts and culture |      0      |
+|           sustenance            |      1      |
+|            military             |      0      |
+|            religious            |      0      |
+|             chapel              |      0      |
+|             church              |      0      |
+|           government            |      1      |
+|            townhall             |      1      |
+|             office              |      1      |
 
 [back to top](#Input-data-model)
 
 ## Roads
 
-### ROAD input table dictionary
+### ROAD table structure
 
 - Table name: `input_road`
 - EPSG Code: Any metric coordinate system
-
-
-
-**Table dictionary used to define the road data:**
+- Content: any road network
 
 |   Name    |    Type    |    Constraints    | Definition                                                   |
 | :-------: | :--------: | :---------------: | ------------------------------------------------------------ |
@@ -171,13 +159,10 @@ For each individual value concerning the `type` or `use` of a building (values l
 
 ### ROAD type
 
-- Concerned table : `input_road`
-- Concerned fields: `type`
+Lists of all possible values for the `type` attribute in the `input_road` table.
 
-Below are listed the possible values for the `type` attributes in the `input_road` table.
-
-- Term: value used to qualify the type of the road
-- Definition: provides a definition of the type attribute
+- Term: value used to qualify the `type` of the road
+- Definition: provides a definition of the `type` attribute
 - Source: most of the values are based on concepts from existing thesauri. In this case, we indicate their sources.
 
 | Term         | Definition                                                   | Source                                                       |
@@ -203,42 +188,36 @@ Below are listed the possible values for the `type` attributes in the `input_roa
 
 ### ROAD surface
 
-- Concerned table : `input_road`
-- Concerned field : `surface`
-
-Lists of all possible values for the `surface` attributes in the `input_road` table.
+Lists of all possible values for the `surface` attribute in the `input_road` table.
 
 - Term: value used to qualify the material on the road surface
-- Definition: provides a definition of the surface attribute
+- Definition: provides a definition of the `surface` attribute
 - Source: most of the values are based on concepts from existing thesauri. In this case, we indicate their
   sources.
 
-| Term        | Definition                                                   |                        Source                        |
+|    Term     | Definition                                                   |                        Source                        |
 | :---------: | ------------------------------------------------------------ | :--------------------------------------------------: |
-| unpaved     | "Generic term to qualify the surface of a highway that is predominantly unsealed along its length; i.e., it has a loose covering ranging from compacted stone chippings to ground." | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
-| paved       | Surface with coating. Generic term for a highway with a stabilized and hard surface. | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
-| ground      | Surface of the ground itself with no specific fraction of rock. | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
-| gravel      | Surface composed of broken/crushed rock larger than sand grains and thinner than pebblestone. | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
-| concrete    | Cement based concrete surface.                               | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
-| grass       | Grass covered ground.                                        | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
-| compacted   | "A mixture of larger (e.g., gravel) and smaller (e.g., sand) parts, compacted." | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
-| sand        | Small to very small fractions of rock as findable alongside body of water. | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
+|   unpaved   | Generic term to qualify the surface of a highway that is predominantly unsealed along its length; i.e., it has a loose covering ranging from compacted stone chippings to ground. | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
+|    paved    | Surface with coating. Generic term for a highway with a stabilized and hard surface. | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
+|   ground    | Surface of the ground itself with no specific fraction of rock. | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
+|   gravel    | Surface composed of broken/crushed rock larger than sand grains and thinner than pebblestone. | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
+|  concrete   | Cement based concrete surface.                               | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
+|    grass    | Grass covered ground.                                        | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
+|  compacted  | A mixture of larger (e.g., gravel) and smaller (e.g., sand) parts, compacted. | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
+|    sand     | Small to very small fractions of rock as findable alongside body of water. | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
 | cobblestone | Any cobbled surface.                                         | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
-| wood        | Highway made of wooden surface.                              | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
+|    wood     | Highway made of wooden surface.                              | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
 | pebblestone | Surface made of rounded rock as pebblestone findable alongside body of water. | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
-| mud         | Wet unpaved surface.                                         | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
-| metal       | Metallic surface.                                            | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
-| water       | "Used to qualify the surface of ferry route that uses water (waterbodies, watercourses, seas,...) as a traffic surface." | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
+|     mud     | Wet unpaved surface.                                         | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
+|    metal    | Metallic surface.                                            | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
+|    water    | Used to qualify the surface of ferry route that uses water (waterbodies, watercourses, seas,...) as a traffic surface. | [1](https://wiki.openstreetmap.org/wiki/Key:surface) |
 
 
 
 ### ROAD width
 
-- Concerned table : `input_road`
-- Concerned field : `width`
-
 For each individual value concerning the `type` of a roads (values listed in the [ROAD type](#ROAD-type) metadata section), this list specifies the minimum road width in order to feed the `width` field of the
-`input_road` table when no information are provided.
+`input_road` table **when no information are provided**.
 
 - Term: value used to qualify the type of the road
 - Min_width: minimum road width *(in meter)* to apply
@@ -266,33 +245,29 @@ For each individual value concerning the `type` of a roads (values listed in the
 
 ### ROAD crossing
 
-- Concerned table : `input_road`
-- Concerned field : `crossing`
+Lists of all possible values for the `crossing` attribute in the `input_road` table.
 
-Lists of all possible values for `crossing` attribute in the `input_road table.
-
-- Term: value used to qualify the crossing type of the road
-- Definition: provides a definition of the crossing attribute
+- Term: value used to qualify the `crossing` type of the road
+- Definition: provides a definition of the `crossing` attribute
 - Source: Most of the values are based on concepts from existing thesauri. In this case, we indicate their sources.
 
-|   Term   | Definition                                                   |                       Source                        |
-| :------: | ------------------------------------------------------------ | :-------------------------------------------------: |
-|  bridge  | Artificial construction that spans features such as roads, railways,  waterways or valleys and carries a road, railway or other feature | [1](https://wiki.openstreetmap.org/wiki/Key:bridge) |
-|  tunnel  | Underground passage for roads, railways or similar           | [2](https://wiki.openstreetmap.org/wiki/Key:tunnel) |
-| crossing | Everything but a bridge or a tunnel                          |                                                     |
+|  Term  | Definition                                                   |                       Source                        |
+| :----: | ------------------------------------------------------------ | :-------------------------------------------------: |
+| bridge | Artificial construction that spans features such as roads, railways,  waterways or valleys and carries a road, railway or other feature | [1](https://wiki.openstreetmap.org/wiki/Key:bridge) |
+| tunnel | Underground passage for roads, railways or similar           | [2](https://wiki.openstreetmap.org/wiki/Key:tunnel) |
+| *null* | Everything but a bridge or a tunnel                          |                                                     |
 
 [back to top](#Input-data-model)
 
 
 
-## Rail ways
+## Railways
 
-### RAIL input table dictionary
+### RAIL table structure
 
 * Table name : `input_rail`
 * EPSG Code : Any metric coordinate system
-
-**Table dictionary used to define the rail data:**
+* Content: any railways network
 
 |   Name    |    Type    |    Constraints    | Definition                                                   |
 | :-------: | :--------: | :---------------: | ------------------------------------------------------------ |
@@ -305,13 +280,10 @@ Lists of all possible values for `crossing` attribute in the `input_road table.
 
 ### RAIL type
 
-- Concerned table : `input_rail`
-- Concerned field : `type`
+Lists of all possible values for the `type` attribute in the `input_rail` table.
 
-Lists of all possible values for `type` attribute in the `input_rail` table.
-
-- Term: value used to qualify the type of the rail
-- Definition: provides a definition of the type attribute
+- Term: value used to qualify the `type` of the railway
+- Definition: provides a definition of the `type` attribute
 - Source: Most of the values are based on concepts from existing thesauri. In this case, we indicate their
   sources.
 
@@ -329,20 +301,17 @@ Lists of all possible values for `type` attribute in the `input_rail` table.
 
 ### RAIL crossing
 
-- Concerned table : `input_rail`
-- Concerned field : `crossing`
+Lists of all possible values for the `crossing` attribute in the `input_rail` table.
 
-Lists of all possible values for `crossing` attribute in the `input_rail` table.
-
-- Term: value used to qualify the crossingtype of the rail
-- Definition: provides a definition of the crossing attribute
+- Term: value used to qualify the `crossing` type of the railway
+- Definition: provides a definition of the `crossing` attribute
 - Source: Most of the values are based on concepts from existing thesauri. In this case, we indicate their sources.
 
-|   Term   | Definition                                                   |                       Source                        |
-| :------: | ------------------------------------------------------------ | :-------------------------------------------------: |
-|  bridge  | Artificial construction that spans features such as roads, railways,  waterways or valleys and carries a road, railway or other feature | [1](https://wiki.openstreetmap.org/wiki/Key:bridge) |
-|  tunnel  | Underground passage for roads, railways or similar           | [2](https://wiki.openstreetmap.org/wiki/Key:tunnel) |
-| crossing | Everything but a bridge or a tunnel                          |                                                     |
+|  Term  | Definition                                                   |                       Source                        |
+| :----: | ------------------------------------------------------------ | :-------------------------------------------------: |
+| bridge | Artificial construction that spans features such as roads, railways,  waterways or valleys and carries a road, railway or other feature | [1](https://wiki.openstreetmap.org/wiki/Key:bridge) |
+| tunnel | Underground passage for roads, railways or similar           | [2](https://wiki.openstreetmap.org/wiki/Key:tunnel) |
+| *null* | Everything but a bridge or a tunnel                          |                                                     |
 
 [back to top](#Input-data-model)
 
@@ -351,12 +320,11 @@ Lists of all possible values for `crossing` attribute in the `input_rail` table.
 
 ## Vegetation areas
 
-### VEGET input table dictionary
+### VEGET table structure
 
 - Table name: `input_veget`
 - EPSG Code: Any metric coordinate system
-
-**Table dictionary used to store the vegetation data:**
+- Content: any vegetation areas
 
 | Name         | Type    | Constraints       | Definition                                          |
 | :----------: | :-----: | :---------------: | --------------------------------------------------- |
@@ -366,9 +334,6 @@ Lists of all possible values for `crossing` attribute in the `input_rail` table.
 | height_class | VARCHAR |                   | Height class (`low` or `high`)                      |
 
 ### VEGET type
-
-- Concerned table : `input_veget`
-- Concerned field : `type`
 
 Lists of all possible values for `type` attribute in the `input_veget` table.
 
@@ -397,15 +362,11 @@ Lists of all possible values for `type` attribute in the `input_veget` table.
 
 ### VEGET height
 
-- Concerned table : `input_veget`
-- Concerned field : `height_class`
-
-Lists of all possible values for the `height_class` attribute in the `input_veget` table.
+Lists of the expected values for the `height_class` attribute, regarding the `type` of vegetation, in the `input_veget` table.
 
 - Term: value used to qualify the `height_class` of the vegetation
 - Height_class: vegetation height class (`low` or `high`)
 
-  
 
 | Term | Height_class |
 | :-----------: | :-----------: |
@@ -427,11 +388,10 @@ Lists of all possible values for the `height_class` attribute in the `input_vege
 
 ## Hydrographic areas
 
-### HYDRO input table dictionary
+### HYDRO table structure
 - Table name: `input_hydro`
 - EPSG Code: Any metric coordinate system
-
-**Table dictionary used to store the hydrographic data:**
+- Content: any hydrographic areas (river, sea, ...)
 
 | Name      | Type    | Constraints       | Definition                                          |
 | :-------: | :-----: | :---------------: | --------------------------------------------------- |
@@ -442,11 +402,10 @@ Lists of all possible values for the `height_class` attribute in the `input_vege
 
 ## Impervious areas
 
-### IMPERVIOUS input table dictionary
+### IMPERVIOUS table structure
 - Table name: `input_impervious`
 - EPSG Code: Any metric coordinate system
-
-**Table dictionary used to store the impervious data:**
+- Content: any impervious surfaces, in addition to buildings and roads already present in the layers `input_building` and `input_road`
 
 |   Name   |  Type   |    Constraints    | Definition              |
 | :------: | :-----: | :---------------: | ----------------------- |
@@ -457,9 +416,10 @@ Lists of all possible values for the `height_class` attribute in the `input_vege
 
 ## Zones
 
-### ZONE input table dictionary
+### ZONE table structure
 - Table name: `zone`
 - EPSG Code: Any metric coordinate system
+- Content: the studied zone *(only one geometry expected)*
 
 **Table dictionary used to store the studied zone area:**
 
@@ -468,16 +428,15 @@ Lists of all possible values for the `height_class` attribute in the `input_vege
 | the_geom | POLYGON | ST_DIMENSION() =2 | Geometry                    |
 | id_zone  | VARCHAR |                   | Identifier of the zone area |
 
-### ZONE NEIGHBORS input table dictionary
+### ZONE NEIGHBORS table structure
 - Table name: `zone_neighbors`
 - EPSG Code: Any metric coordinate system
+- Content: the studied zone and its neighbors
 
-**Table dictionary used to store every neighboring zones of the studied zone:**
-
-| Name     | Type    | Constraints       | Definition                  |
-| :------: | :-----: | :---------------: | --------------------------- |
-| the_geom | POLYGON | ST_DIMENSION() =2 | Geometry                    |
-| id_zone  | VARCHAR |                   | Identifier of the zone area |
+|   Name   |  Type   |    Constraints    | Definition             |
+| :------: | :-----: | :---------------: | ---------------------- |
+| the_geom | POLYGON | ST_DIMENSION() =2 | Geometry               |
+| id_zone  | VARCHAR |                   | Identifier of the zone |
 
 [back to top](#Input-data-model)
 
