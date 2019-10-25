@@ -72,6 +72,8 @@ IProcess unweightedOperationFromLowerScale() {
                             query += "COALESCE(COUNT(a.*)/ST_AREA(b.$GEOMETRIC_FIELD_UP),0) AS ${var + "_NUMBER_DENSITY"},"
                             break
                         case SUM:
+                            query += "COALESCE(SUM(a.$var::float),0) AS ${op + "_" + var},"
+                            break
                         case AVG:
                             query += "$op(a.$var::float) AS ${op + "_" + var},"
                             break
