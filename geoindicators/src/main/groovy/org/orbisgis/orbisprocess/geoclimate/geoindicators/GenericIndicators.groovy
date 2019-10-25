@@ -338,12 +338,12 @@ IProcess buildingDirectionDistribution() {
                 sqlQueryTot = sqlQueryTot[0..-3] + "AS ANG_TOT FROM $build_dir_dist;"
 
                 if(distribIndicator.contains("inequality")){
-                    sqlQueryMain = """$sqlQueryMain AS main_building_direction,
+                    sqlQueryMain = """$sqlQueryMain AS main_building_direction, $sqlQueryGreatest AS max_surf,
                                     ${sqlQueryPerkins[0..-3]} AS $INEQUALITY
                                     FROM $build_dir_tot;"""
                 }
                 else{
-                    sqlQueryMain = """$sqlQueryMain AS main_building_direction
+                    sqlQueryMain = """$sqlQueryMain AS main_building_direction, $sqlQueryGreatest AS max_surf
                                     FROM $build_dir_tot;"""
                 }
 
@@ -352,6 +352,8 @@ IProcess buildingDirectionDistribution() {
                 datasource.execute sqlQueryMain
 
                 if (distribIndicator.contains("uniqueness")){
+                    // Reorganise the distribution Table (having the same number of column than the number
+                    // of direction of analysis) into a simple two column table (ID and SURF)
                     def sqlQueryUnique = "DROP TABLE IF EXISTS $build_dir_bdd; CREATE TABLE $build_dir_bdd AS SELECT "
                     def columnNames = datasource.getTable(build_dir_dist).getColumnNames()
                     columnNames.remove(inputIdUp)
@@ -369,13 +371,12 @@ IProcess buildingDirectionDistribution() {
                     if (distribIndicator.contains("inequality")) {
                         sqlQueryLast += " a.$INEQUALITY, "
                     }
-                    sqlQueryLast += """MAX(b.SURF)/(SELECT MAX(SURF)
-                                                    FROM $build_dir_dist 
-                                                    WHERE SURF < MAX(SURF)
-                                                    GROUP BY $inputIdUp) AS $UNIQUENESS 
-                                       FROM $build_perk_fin a RIGHT JOIN $build_dir_bdd b
-                                       ON a.$inputIdUp = b.$inputIdUp
-                                       GROUP BY b.$inputIdUp, b.SURF;"""
+                    sqlQueryLast += """a.max_surf/MAX(b.SURF) AS $UNIQUENESS  
+                                       FROM         $build_perk_fin a 
+                                       RIGHT JOIN   $build_dir_bdd b
+                                       ON           a.$inputIdUp = b.$inputIdUp
+                                       WHERE        b.SURF < a.max_surf
+                                       GROUP BY     b.$inputIdUp;"""
 
                     datasource.execute sqlQueryLast
                 }
