@@ -160,7 +160,7 @@ For each individual value concerning the building `type`  (values listed in the 
 
 ### ROAD type
 
-Lists of all possible values for the `type` attribute in the `input_road` table.
+List of all possible values for the `type` attribute in the `input_road` table.
 
 - Term: value used to qualify the `type` of the road
 - Definition: provides a definition of the `type` attribute
@@ -189,7 +189,7 @@ Lists of all possible values for the `type` attribute in the `input_road` table.
 
 ### ROAD surface
 
-Lists of all possible values for the `surface` attribute in the `input_road` table.
+List of all possible values for the `surface` attribute in the `input_road` table.
 
 - Term: value used to qualify the material on the road surface
 - Definition: provides a definition of the `surface` attribute
@@ -281,7 +281,7 @@ Lists of all possible values for the `crossing` attribute in the `input_road` ta
 
 ### RAIL type
 
-Lists of all possible values for the `type` attribute in the `input_rail` table.
+List of all possible values for the `type` attribute in the `input_rail` table.
 
 - Term: value used to qualify the `type` of the railway
 - Definition: provides a definition of the `type` attribute
@@ -302,7 +302,7 @@ Lists of all possible values for the `type` attribute in the `input_rail` table.
 
 ### RAIL crossing
 
-Lists of all possible values for the `crossing` attribute in the `input_rail` table.
+List of all possible values for the `crossing` attribute in the `input_rail` table.
 
 - Term: value used to qualify the `crossing` type of the railway
 - Definition: provides a definition of the `crossing` attribute
