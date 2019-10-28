@@ -39,6 +39,9 @@ When necessary, a list of values that a column must take, with :
 This table content any kind of building.
 
 ![](../images/icons/arrow.png) Table name : `input_building`
+
+
+
 |    Name     |  Type   |    Constaints    | Definition                                                   |
 | :---------: | :-----: | :--------------: | ------------------------------------------------------------ |
 |  the_geom   | POLYGON | ST_DIMENSION()=2 | Geometry                                                     |
@@ -150,7 +153,10 @@ For each individual value concerning the building `type`  (values listed in the 
 
 This table content any kind of road network.
 
-![](../images/icons/arrow.png)Table name: `input_road`
+![](../images/icons/arrow.png) Table name: `input_road`
+
+
+
 |   Name    |    Type    |    Constraints    | Definition                                                   |
 | :-------: | :--------: | :---------------: | ------------------------------------------------------------ |
 | the_geom  | LINESTRING | ST_DIMENSION() =1 | Geometry                                                     |
@@ -309,6 +315,9 @@ List of all possible values for the `crossing` attribute in the `input_rail` tab
 This table content any kind of vegetation area.
 
 ![](../images/icons/arrow.png) Table name: `input_veget`
+
+
+
 | Name         | Type    | Constraints       | Definition                                          |
 | :----------: | :-----: | :---------------: | --------------------------------------------------- |
 | the_geom     | POLYGON | ST_DIMENSION() =2 | Geometry                                            |
@@ -369,6 +378,9 @@ List of expected values for the `height_class` attribute, regarding the `type` o
 This table content any kind of hydrographic area (river, sea, ...).
 
 ![](../images/icons/arrow.png) Table name: `input_hydro`
+
+
+
 | Name      | Type    | Constraints       | Definition                                          |
 | :-------: | :-----: | :---------------: | --------------------------------------------------- |
 | the_geom  | POLYGON | ST_DIMENSION() =2 | Geometry                                            |
@@ -383,6 +395,8 @@ This table content any kind of hydrographic area (river, sea, ...).
 This table content any impervious surface, in addition to buildings and roads already present in the layers `input_building` and `input_road`.
 
 ![](../images/icons/arrow.png) Table name: `input_impervious`
+
+
 
 
 |   Name   |  Type   |    Constraints    | Definition              |
