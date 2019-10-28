@@ -44,19 +44,27 @@ On each of these scales, various indicators and analysis are processed.
 
 The Geoclimate chain is made up of the 3 following modules:
 
+<img src="./images/modules.png" style="zoom:80%;" />
+
 ### M1 - Input data preparation
 
-The user chooses the data set of his choice and ensures that the information present corresponds to the ***Geoclimate input data model*** described ![](./images/icons/arrow.png) [here](./input_data/INPUT_DATA_MODEL.md).
+The user chooses the data set of his choice and ensures that the information present corresponds to the ***Geoclimate input data model*** described [HERE](./input_data/INPUT_DATA_MODEL.md). So **M1 is feeding M2**.
+
+![](./images/icons/arrow.png) [Read more](./data_preparation/XXXXX.md) about this module.
 
 ### M2 - Formating and quality control
 
-The prepared data provided by the user, according to the input model, are controlled and enriched on the basis of pre-established rules. The resulting layers will be used in "M3".
+The prepared data provided by the user, according to the input model, are controlled and enriched on the basis of pre-established rules. So **M2 is feeding M3**.
+
+![](./images/icons/arrow.png) [Read more](./data_formating/DATA_FORMATING.md) about this module.
 
 ### M3 - Geoindicators and LCZ's production
 
 The data are processed automatically, without user intervention, and the resulting layers are provided ([See](#Resulting-layers)).
 
+### Remark
 
+The user has the choice to merge or to skip M1 and M2. The only requirement is that the M3 input data must comply with the model defined [HERE](./input_data/INPUT_DATA_MODEL.md).
 
 ## Resulting layers
 
@@ -82,7 +90,7 @@ In a technical point of view, the algorithms of the Geoclimate chain are impleme
 
 Geoclimate has been developed in a modular and as generic way as possible. It is therefore possible for the user to use his own data sets, as long as he follows the instructions for their preparation / formatting.
 
-Below we present two use cases: 
+Below we present two use cases developped by the Lab-STICC team: 
 
 - [OpenStreetMap](https://www.openstreetmap.org) (OSM), on a worldwide context,
 - BD Topo [V2.2](http://professionnels.ign.fr/ancienne-bdtopo) (from [IGN](http://ign.fr/)), only on the french scale.

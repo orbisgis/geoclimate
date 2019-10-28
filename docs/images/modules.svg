@@ -16,7 +16,7 @@
    id="svg8"
    inkscape:version="0.92.4 (f8dce91, 2019-08-02)"
    sodipodi:docname="modules.svg"
-   inkscape:export-filename="/home/gpetit/Documents/Codes/geoclimate/docs/images/modules.png"
+   inkscape:export-filename="/home/gpetit/Documents/Codes/geoclimate/docs/images/modules_outputs.png"
    inkscape:export-xdpi="104.14547"
    inkscape:export-ydpi="104.14547">
   <defs
@@ -28,9 +28,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.98994949"
-     inkscape:cx="513.69588"
-     inkscape:cy="393.49304"
+     inkscape:zoom="0.7"
+     inkscape:cx="586.25459"
+     inkscape:cy="377.35786"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -47,7 +47,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -61,7 +61,9 @@
        inkscape:connector-curvature="0"
        id="path1293"
        d="m 190.78971,147.89858 -11.04636,-6.25565 v 3.12782 h -6.25564 v 6.25565 h 6.25564 v 3.12782 z"
-       style="fill:#ffa354;fill-opacity:1;stroke:none;stroke-width:0.15677905px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+       style="fill:#ffa354;fill-opacity:1;stroke:none;stroke-width:0.15677905px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       inkscape:export-xdpi="104"
+       inkscape:export-ydpi="104" />
     <rect
        y="-236.00504"
        x="33.937271"
@@ -76,12 +78,16 @@
        width="61.421001"
        height="18.898809"
        x="33.937271"
-       y="138.44917" />
+       y="138.44917"
+       inkscape:export-xdpi="104"
+       inkscape:export-ydpi="104" />
     <flowRoot
        transform="matrix(0.18869397,0,0,0.18869397,6.699994,81.539498)"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:39.99958801px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:center;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none"
        id="flowRoot883"
-       xml:space="preserve"><flowRegion
+       xml:space="preserve"
+       inkscape:export-xdpi="104"
+       inkscape:export-ydpi="104"><flowRegion
          id="flowRegion865"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:39.99958801px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:center;writing-mode:lr-tb;text-anchor:middle"><rect
            y="296.55795"
@@ -105,12 +111,16 @@
        width="61.421127"
        height="18.898809"
        x="190.82448"
-       y="138.44917" />
+       y="138.44917"
+       inkscape:export-xdpi="104"
+       inkscape:export-ydpi="104" />
     <flowRoot
        transform="matrix(0.18869397,0,0,0.18869397,163.58726,81.539498)"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:39.99958801px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:center;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none"
        id="flowRoot938"
-       xml:space="preserve"><flowRegion
+       xml:space="preserve"
+       inkscape:export-xdpi="104"
+       inkscape:export-ydpi="104"><flowRegion
          id="flowRegion934"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:39.99958801px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:center;writing-mode:lr-tb;text-anchor:middle"><rect
            y="296.55795"
@@ -176,12 +186,16 @@
        height="18.898809"
        width="61.421001"
        id="rect920"
-       style="opacity:1;fill:#ffa354;fill-opacity:1;stroke:none;stroke-width:0.06317938;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+       style="opacity:1;fill:#ffa354;fill-opacity:1;stroke:none;stroke-width:0.06317938;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       inkscape:export-xdpi="104"
+       inkscape:export-ydpi="104" />
     <flowRoot
        xml:space="preserve"
        id="flowRoot928"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:39.99958801px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:center;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none"
-       transform="matrix(0.18869397,0,0,0.18869397,85.143602,81.539498)"><flowRegion
+       transform="matrix(0.18869397,0,0,0.18869397,85.143602,81.539498)"
+       inkscape:export-xdpi="104"
+       inkscape:export-ydpi="104"><flowRegion
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:39.99958801px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:center;writing-mode:lr-tb;text-anchor:middle"
          id="flowRegion924"><rect
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:39.99958801px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:center;writing-mode:lr-tb;text-anchor:middle"
@@ -268,6 +282,8 @@
        d="m 112.35965,147.89858 -11.04636,-6.25565 v 3.12782 h -6.255644 v 6.25565 h 6.255644 v 3.12782 z"
        id="path1291"
        inkscape:connector-curvature="0"
-       sodipodi:nodetypes="cccccccc" />
+       sodipodi:nodetypes="cccccccc"
+       inkscape:export-xdpi="104"
+       inkscape:export-ydpi="104" />
   </g>
 </svg>

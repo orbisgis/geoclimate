@@ -11,9 +11,9 @@ The user has the choice to enter the Geoclimate chain with two kinds of formalis
 - the resulting layers from the Module 1. In this case, the user has then to execute the Module 2 
 - the resulting layers from the Module 2. In this case, the user is ready to execute the Module 3
 
-<img src="../images/modules.png" style="zoom:80%;" />
+<img src="../images/modules_outputs.png" style="zoom:80%;" />
 
-Below we are presenting both approaches.
+Below are presented both approaches.
 
 ## Presentation
 
@@ -175,7 +175,7 @@ For each individual value concerning the building `type`  (values listed in the 
 
 This table content any kind of road network.
 
-![](../images/icons/arrow.png) Table name: `input_road`
+![](../images/icons/arrow.png) Table name: `input_road` (M1) or `ROAD` (M2)
 
 
 
@@ -290,7 +290,7 @@ Lists of all possible values for the `crossing` attribute in the `input_road` ta
 
 This table content any kind of railways network.
 
-![](../images/icons/arrow.png) Table name : `input_rail`
+![](../images/icons/arrow.png) Table name : `input_rail` (M1) or `RAIL` (M2)
 
 
 
@@ -341,14 +341,14 @@ List of all possible values for the `crossing` attribute in the `input_rail` tab
 
 This table content any kind of vegetation area.
 
-![](../images/icons/arrow.png) Table name: `input_veget`
+![](../images/icons/arrow.png) Table name: `input_veget` (M1) or `VEGET` (M2)
 
 
 
 |     Name     |  Type   |                         Constraints                          | Definition                                          |
 | :----------: | :-----: | :----------------------------------------------------------: | --------------------------------------------------- |
 |   the_geom   | POLYGON |                      ST_DIMENSION() =2                       | Geometry                                            |
-|   id_veget   | INTEGER |           ![](../images/icons/pk.png) Primary Key            | Unique Identifier *(added in M2)*                   |
+| **id_veget** | INTEGER |           ![](../images/icons/pk.png) Primary Key            | Unique Identifier *(added in M2)*                   |
 |  id_source   | VARCHAR |                          *not null*                          | Identifier of the feature from the input datasource |
 |     type     | VARCHAR |                          *not null*                          | Type of vegetation.                                 |
 | height_class | VARCHAR | ![](../images/icons/warning.png) M1 : may be null / M2 : *not null* | Height class (`low` or `high`)                      |
@@ -405,7 +405,7 @@ List of expected values for the `height_class` attribute, regarding the `type` o
 
 This table content any kind of hydrographic area (river, sea, ...).
 
-![](../images/icons/arrow.png) Table name: `input_hydro`
+![](../images/icons/arrow.png) Table name: `input_hydro` (M1) or `HYDRO` (M2)
 
 
 
@@ -423,7 +423,7 @@ This table content any kind of hydrographic area (river, sea, ...).
 
 This table content any impervious surface, in addition to buildings and roads already present in the layers `input_building` and `input_road`.
 
-![](../images/icons/arrow.png) Table name: `input_impervious`
+![](../images/icons/arrow.png) Table name: `input_impervious` (M1) or `IMPERVIOUS` (M2)
 
 
 
@@ -461,7 +461,7 @@ List of all possible values for the `type` attribute in the `input_impervious` t
 
 This table content the studied zone *(so, only one geometry expected)*.
 
-![](../images/icons/arrow.png) Table name: `zone`
+![](../images/icons/arrow.png) Table name: `ZONE`
 
 |   Name   |  Type   |    Constraints    | Definition                  |
 | :------: | :-----: | :---------------: | --------------------------- |
