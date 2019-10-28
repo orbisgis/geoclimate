@@ -268,6 +268,9 @@ Lists of all possible values for the `crossing` attribute in the `input_road` ta
 This table content any kind of railways network.
 
 ![](../images/icons/arrow.png) Table name : `input_rail`
+
+
+
 |   Name    |    Type    |    Constraints    | Definition                                                   |
 | :-------: | :--------: | :---------------: | ------------------------------------------------------------ |
 | the_geom  | LINESTRING | ST_DIMENSION() =1 | Geometry                                                     |
