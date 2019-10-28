@@ -18,7 +18,7 @@ This table stores all the indicators computed at the block's scale.
 | VOLUME | double precision | Block's volume ([Full definition](#VOLUME)) |
 | HOLE_AREA_DENSITY | double precision |  [Full definition](#HOLE_AREA_DENSITY) |
 | MAIN_BUILDING_DIRECTION | double precision |  [Full definition](#MAIN_BUILDING_DIRECTION) |
-| PERKINS_SKILL_SCORE_BUILDING_DIRECTION | double precision |  [Full definition](#PERKINS_SKILL_SCORE_BUILDING_DIRECTION) |
+| INEQUALITY_BUILDING_DIRECTION | double precision | [Full definition](#INEQUALITY_BUILDING_DIRECTION) |
 | CLOSINGNESS | double precision |  [Full definition](#CLOSINGNESS) |
 | NET_COMPACTNESS | double precision | [Full definition](#NET_COMPACTNESS) |
 | AVG_HEIGHT_ROOF_AREA_WEIGHTED | double precision |  [Full definition](#AVG_HEIGHT_ROOF_AREA_WEIGHTED) |
@@ -68,7 +68,7 @@ Formula: `xxxxxxx`
 
 Source code: 
 
-### `PERKINS_SKILL_SCORE_BUILDING_DIRECTION`
+### `INEQUALITY_BUILDING_DIRECTION`
 
 Definition: 
 

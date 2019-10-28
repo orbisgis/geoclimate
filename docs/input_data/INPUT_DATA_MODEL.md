@@ -2,7 +2,25 @@
 
 
 
-This page presents the data dictionary used to describe the geographic data that feed the GeoClimate chain. The data are organized by topics. For each of them, we provide the input tables dictionary (with the name and type of the fields – prefixed with `input_`) and their associated metadata, in which description and parameters are presented:
+This page presents the input data model used to describe the geographic data that feed the GeoClimate chain. The data are organized by topics. For each of them, we provide the following informations:
+
+### The input table structure ![](../images/icons/table.png)
+
+- the expected **table name** :  `input_xxxx` if you use the "Module 1" or `XXXXX` if you use 
+- the **name** and the **type** of the **columns** 
+
+![](../images/icons/earth.png) The tables have to use a same [EPSG](https://spatialreference.org/ref/epsg/) code, pointing to a **metric** coordinate system.
+
+### The expected values ![](../images/icons/table_values.png)
+
+When necessary, a list of values that a column must take, with :
+
+- the expected **Term**,
+- a **Definition**,
+- a **Source**: most of the values are based on concepts from existing thesauri. In this case, we indicate their source.
+
+### Topics
+
 - [Buildings](#Buildings):  `input_BUILDING`, BUILDING use and type, BUILDING level
 - [Roads](#Roads): `input_ROAD`, ROAD type, ROAD surface, ROAD width, ROAD crossing
 - [Railways](#Railways): `input_RAIL`, RAIL type, RAIL crossing
@@ -11,21 +29,16 @@ This page presents the data dictionary used to describe the geographic data that
 - [Impervious areas](#Impervious-areas): `input_impervious`
 - [Zones](#Zones): `ZONE`, `ZONE_NEIGHBORS`
 
-**Source code**
-
-![](../images/icons/github.png) The input model source code is available [here](https://github.com/gpetit/geoclimate/blob/add_docs/prepare_data/src/main/groovy/org/orbisgis/common/AbstractTablesInitialization.groovy).
-
 
 ## Buildings
 
 
 
-### BUILDING table structure
+### ![](../images/icons/table.png) BUILDING table structure
 
-- Table name : `input_building`
-- EPSG Code : Any metric coordinate system
-- Content: any building
+This table content any kind of building.
 
+![](../images/icons/arrow.png) Table name : `input_building`
 |    Name     |  Type   |    Constaints    | Definition                                                   |
 | :---------: | :-----: | :--------------: | ------------------------------------------------------------ |
 |  the_geom   | POLYGON | ST_DIMENSION()=2 | Geometry                                                     |
@@ -37,15 +50,9 @@ This page presents the data dictionary used to describe the geographic data that
 |  main_use   | VARCHAR |                  | Main use of the building. The use of a building corresponds to a de facto element, relating to what it is used for. These values are listed in the  [BUILDING_use_and_type](#BUILDING-use-and-type) section. |
 |   zindex    | INTEGER |                  | Defines the position with respect to the ground. 0 indicates that the object is on the ground. 1 to 4 indicates that the objects above the ground surface. -4 to -1 value indicates that the object is underground. |
 
-### BUILDING use and type
+### ![](../images/icons/table_values.png) BUILDING use and type
 
-List of all possible values for the `type` and the `main_use` attributes, in the `input_building` table. We consider that a same value can be used to qualify a `type` or a use (`main_use`).
-
-- Term: value used to describe the `type` and the `main_use` of a building
-
-- Definition: provides a definition of the `type` or `main_use`
-
-- Source: most of the values are based on concepts from existing thesauri. In this case, we indicate their source.  
+List of all possible values for the `type` and the `main_use` attributes, in the `input_building` table. We consider that a same value can be used to qualify a `type` or a `main_use`.
 
 | Term | Definition | Source |
 | :--: | ---------- | :----: |
@@ -88,9 +95,9 @@ List of all possible values for the `type` and the `main_use` attributes, in the
 
 
 
-### BUILDING level
+### ![](../images/icons/table_values.png) BUILDING level
 
-For each individual value concerning the building `type`  (values listed in the [BUILDING_use and type](#BUILDING-use-and-type) metadata section), this list specifies the rules for calculating the number of levels of a building in order to feed the `nb_lvl` field in the `input_building` table.
+For each individual value concerning the building `type`  (values listed in the [BUILDING_use and type](#BUILDING-use-and-type) section), this list specifies the rules for calculating the number of levels of a building in order to feed the `nb_lvl` field in the `input_building` table.
 
 - Term: value used to describe the building `type`
 
@@ -139,12 +146,11 @@ For each individual value concerning the building `type`  (values listed in the 
 
 ## Roads
 
-### ROAD table structure
+### ![](../images/icons/table.png) ROAD table structure
 
-- Table name: `input_road`
-- EPSG Code: Any metric coordinate system
-- Content: any road network
+This table content any kind of road network.
 
+![](../images/icons/arrow.png)Table name: `input_road`
 |   Name    |    Type    |    Constraints    | Definition                                                   |
 | :-------: | :--------: | :---------------: | ------------------------------------------------------------ |
 | the_geom  | LINESTRING | ST_DIMENSION() =1 | Geometry                                                     |
@@ -158,13 +164,9 @@ For each individual value concerning the building `type`  (values listed in the 
 
 
 
-### ROAD type
+### ![](../images/icons/table_values.png) ROAD type
 
 List of all possible values for the `type` attribute in the `input_road` table.
-
-- Term: value used to qualify the `type` of the road
-- Definition: provides a definition of the `type` attribute
-- Source: most of the values are based on concepts from existing thesauri. In this case, we indicate their sources.
 
 | Term         | Definition                                                   | Source                                                       |
 | :----------: | ------------------------------------------------------------ | :----------------------------------------------------------: |
@@ -187,14 +189,9 @@ List of all possible values for the `type` attribute in the `input_road` table.
 
 
 
-### ROAD surface
+### ![](../images/icons/table_values.png) ROAD surface
 
 List of all possible values for the `surface` attribute in the `input_road` table.
-
-- Term: value used to qualify the material on the road surface
-- Definition: provides a definition of the `surface` attribute
-- Source: most of the values are based on concepts from existing thesauri. In this case, we indicate their
-  sources.
 
 |    Term     | Definition                                                   |                        Source                        |
 | :---------: | ------------------------------------------------------------ | :--------------------------------------------------: |
@@ -215,7 +212,7 @@ List of all possible values for the `surface` attribute in the `input_road` tabl
 
 
 
-### ROAD width
+### ![](../images/icons/table_values.png) ROAD width
 
 For each individual value concerning the `type` of a roads (values listed in the [ROAD type](#ROAD-type) metadata section), this list specifies the minimum road width in order to feed the `width` field of the
 `input_road` table **when no information are provided**.
@@ -244,13 +241,9 @@ For each individual value concerning the `type` of a roads (values listed in the
 
 
 
-### ROAD crossing
+### ![](../images/icons/table_values.png) ROAD crossing
 
 Lists of all possible values for the `crossing` attribute in the `input_road` table.
-
-- Term: value used to qualify the `crossing` type of the road
-- Definition: provides a definition of the `crossing` attribute
-- Source: Most of the values are based on concepts from existing thesauri. In this case, we indicate their sources.
 
 |  Term  | Definition                                                   |                       Source                        |
 | :----: | ------------------------------------------------------------ | :-------------------------------------------------: |
@@ -264,12 +257,11 @@ Lists of all possible values for the `crossing` attribute in the `input_road` ta
 
 ## Railways
 
-### RAIL table structure
+### ![](../images/icons/table.png) RAIL table structure
 
-* Table name : `input_rail`
-* EPSG Code : Any metric coordinate system
-* Content: any railways network
+This table content any kind of railways network.
 
+![](../images/icons/arrow.png) Table name : `input_rail`
 |   Name    |    Type    |    Constraints    | Definition                                                   |
 | :-------: | :--------: | :---------------: | ------------------------------------------------------------ |
 | the_geom  | LINESTRING | ST_DIMENSION() =1 | Geometry                                                     |
@@ -279,14 +271,9 @@ Lists of all possible values for the `crossing` attribute in the `input_road` ta
 | crossing  |  VARCHAR   |                   | Indicates whether the rail section is located on a `bridge`, in a `tunnel` or neither (value=`crossing`). |
 
 
-### RAIL type
+### ![](../images/icons/table_values.png) RAIL type
 
 List of all possible values for the `type` attribute in the `input_rail` table.
-
-- Term: value used to qualify the `type` of the railway
-- Definition: provides a definition of the `type` attribute
-- Source: Most of the values are based on concepts from existing thesauri. In this case, we indicate their
-  sources.
 
 | Term          | Definition                                                   |                            Source                            |
 | :-----------: | ------------------------------------------------------------ | :----------------------------------------------------------: |
@@ -300,13 +287,9 @@ List of all possible values for the `type` attribute in the `input_rail` table.
 
 
 
-### RAIL crossing
+### ![](../images/icons/table_values.png) RAIL crossing
 
 List of all possible values for the `crossing` attribute in the `input_rail` table.
-
-- Term: value used to qualify the `crossing` type of the railway
-- Definition: provides a definition of the `crossing` attribute
-- Source: Most of the values are based on concepts from existing thesauri. In this case, we indicate their sources.
 
 |  Term  | Definition                                                   |                       Source                        |
 | :----: | ------------------------------------------------------------ | :-------------------------------------------------: |
@@ -321,12 +304,11 @@ List of all possible values for the `crossing` attribute in the `input_rail` tab
 
 ## Vegetation areas
 
-### VEGET table structure
+### ![](../images/icons/table.png) VEGET table structure
 
-- Table name: `input_veget`
-- EPSG Code: Any metric coordinate system
-- Content: any vegetation areas
+This table content any kind of vegetation area.
 
+![](../images/icons/arrow.png) Table name: `input_veget`
 | Name         | Type    | Constraints       | Definition                                          |
 | :----------: | :-----: | :---------------: | --------------------------------------------------- |
 | the_geom     | POLYGON | ST_DIMENSION() =2 | Geometry                                            |
@@ -334,13 +316,9 @@ List of all possible values for the `crossing` attribute in the `input_rail` tab
 | type         | VARCHAR |                   | Type of vegetation.                                 |
 | height_class | VARCHAR |                   | Height class (`low` or `high`)                      |
 
-### VEGET type
+### ![](../images/icons/table_values.png) VEGET type
 
 List of all possible values for `type` attribute in the `input_veget` table.
-
-- Term: value used to qualify the `type` of the vegetation
-- Definition: provides a definition of the `type` attribute
-- Source: most of the values are based on concepts from existing thesauri. In this case, we indicate their sources.
 
 
 | Term | Definition | Source |
@@ -361,12 +339,9 @@ List of all possible values for `type` attribute in the `input_veget` table.
 
 
 
-### VEGET height
+### ![](../images/icons/table_values.png) VEGET height
 
-List of all possible values for the `height_class` attribute, regarding the `type` of vegetation, in the `input_veget` table.
-
-- Term: value used to qualify the `height_class` of the vegetation
-- Height_class: vegetation height class (`low` or `high`)
+List of expected values for the `height_class` attribute, regarding the `type` of vegetation, in the `input_veget` table.
 
 
 | Term | Height_class |
@@ -389,11 +364,11 @@ List of all possible values for the `height_class` attribute, regarding the `typ
 
 ## Hydrographic areas
 
-### HYDRO table structure
-- Table name: `input_hydro`
-- EPSG Code: Any metric coordinate system
-- Content: any hydrographic areas (river, sea, ...)
+### ![](../images/icons/table.png) HYDRO table structure
 
+This table content any kind of hydrographic area (river, sea, ...).
+
+![](../images/icons/arrow.png) Table name: `input_hydro`
 | Name      | Type    | Constraints       | Definition                                          |
 | :-------: | :-----: | :---------------: | --------------------------------------------------- |
 | the_geom  | POLYGON | ST_DIMENSION() =2 | Geometry                                            |
@@ -403,36 +378,56 @@ List of all possible values for the `height_class` attribute, regarding the `typ
 
 ## Impervious areas
 
-### IMPERVIOUS table structure
-- Table name: `input_impervious`
-- EPSG Code: Any metric coordinate system
-- Content: any impervious surfaces, in addition to buildings and roads already present in the layers `input_building` and `input_road`
+### ![](../images/icons/table.png) IMPERVIOUS table structure
+
+This table content any impervious surface, in addition to buildings and roads already present in the layers `input_building` and `input_road`.
+
+![](../images/icons/arrow.png) Table name: `input_impervious`
+
 
 |   Name   |  Type   |    Constraints    | Definition              |
 | :------: | :-----: | :---------------: | ----------------------- |
 | the_geom | POLYGON | ST_DIMENSION() =2 | Geometry                |
 |   type   | VARCHAR |                   | Type of impervious area |
 
+
+
+### ![](../images/icons/table_values.png) IMPERVIOUS type
+
+List of all possible values for the `type` attribute in the `input_impervious` table.
+
+
+| Term | Definition |                            Source                            |
+| :--: | ---------- | :----------------------------------------------------------: |
+|      |            |  [1](https://wiki.openstreetmap.org/wiki/Tag:natural=tree)   |
+|      |            |  [2](https://wiki.openstreetmap.org/wiki/Tag:natural=wood)   |
+|      |            | [3](https://wiki.openstreetmap.org/wiki/Tag:landuse=forest)  |
+|      |            |  [4](https://wiki.openstreetmap.org/wiki/Tag:natural=scrub)  |
+|      |            | [5](https://wiki.openstreetmap.org/wiki/Tag:natural=grassland) |
+|      |            |  [6](https://wiki.openstreetmap.org/wiki/Tag:natural=heath)  |
+
+
+
 [back to top](#Input-data-model)
 
 ## Zones
 
-### ZONE table structure
-- Table name: `zone`
-- EPSG Code: Any metric coordinate system
-- Content: the studied zone *(only one geometry expected)*
+### ![](../images/icons/table.png) ZONE table structure
 
-**Table dictionary used to store the studied zone area:**
+This table content the studied zone *(so, only one geometry expected)*.
+
+![](../images/icons/arrow.png) Table name: `zone`
 
 | Name     | Type    | Constraints       | Definition                  |
 | :------: | :-----: | :---------------: | --------------------------- |
 | the_geom | POLYGON | ST_DIMENSION() =2 | Geometry                    |
 | id_zone  | VARCHAR |                   | Identifier of the zone area |
 
-### ZONE NEIGHBORS table structure
-- Table name: `zone_neighbors`
-- EPSG Code: Any metric coordinate system
-- Content: the studied zone and its neighbors
+### ![](../images/icons/table.png) ZONE NEIGHBORS table structure
+
+This table content the studied zone and its neighbors.
+
+![](../images/icons/arrow.png) Table name: `zone_neighbors`
 
 |   Name   |  Type   |    Constraints    | Definition             |
 | :------: | :-----: | :---------------: | ---------------------- |
@@ -441,3 +436,6 @@ List of all possible values for the `height_class` attribute, regarding the `typ
 
 [back to top](#Input-data-model)
 
+## Source code
+
+![](../images/icons/github.png) The input model source code is available [here](https://github.com/gpetit/geoclimate/blob/add_docs/prepare_data/src/main/groovy/org/orbisgis/common/AbstractTablesInitialization.groovy).
