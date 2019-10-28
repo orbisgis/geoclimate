@@ -34,6 +34,8 @@ As described in [Bocher et al, 2018](http://dx.doi.org/10.1016/j.uclim.2018.01.0
 - the **block** : a set of buildings that touches (at least one point in common)
 - the ***Reference Spatial Unit***, also called RSU, which is a continuous and homogeneous way to divide the space, using topographic constraint such as roads, rail ways, big vegetation and hydrographic areas in addition to administrative boundaries.
 
+<img src="./images/building_block_rsu.png" style="zoom:40%;" />
+
 On each of these scales, various indicators and analysis are processed.
 
 
@@ -42,17 +44,17 @@ On each of these scales, various indicators and analysis are processed.
 
 The Geoclimate chain is made up of the 3 following modules:
 
-### Input data preparation
+### M1 - Input data preparation
 
 The user chooses the data set of his choice and ensures that the information present corresponds to the ***Geoclimate input data model*** described ![](./images/icons/arrow.png) [here](./input_data/INPUT_DATA_MODEL.md).
 
-### Formating and quality control
+### M2 - Formating and quality control
 
-The prepared data provided by the user, according to the input model, are controlled and enriched on the basis of pre-established rules.
+The prepared data provided by the user, according to the input model, are controlled and enriched on the basis of pre-established rules. The resulting layers will be used in "M3".
 
-### Geoindicators and LCZ's production
+### M3 - Geoindicators and LCZ's production
 
-The data are processed automatically, without user intervention, and the resulting layers are provided.
+The data are processed automatically, without user intervention, and the resulting layers are provided ([See](#Resulting-layers)).
 
 
 
