@@ -3,7 +3,7 @@
 
 
 The purpose of this module is to format the data from M1 in order to feed M3. As such, it allows the following two tasks in particular:
-- [enrich the data](#Data-enrichment), in particular when there is missing values, based on pre-established rules. It concerns the add of a [primary key](#primary-key-) to input tables as well as the rules on [buildings](#building-rules-), [roads](##road-rules-) and [vegetation](##vegetation-rules-) surfaces.
+- [enrich the data](#Data-enrichment), in particular when there is missing values, based on pre-established rules. It concerns the add of a [primary key](#primary-key-) to input tables as well as the rules on [buildings](#building-rules-), [roads](#road-rules-) and [vegetation](#vegetation-rules-) surfaces.
 - [control data quality](#Quality-controls).
 
 
@@ -258,6 +258,69 @@ Below are listed the controls (with their column names) made:
 | LEV_RANGE | Number of building where `NB_LEV` <1  and `NB_LEV` > 200 *(SC)* |
 | NO_TYPE | Number of building with no `type` |
 | TYPE_RANGE | Number of building where the `type` is not defined in the "[expected list](../input_data/INPUT_DATA_MODEL.md#-building-use-and-type)" |
+
+
+
+[back to top](#Module-2---Formating-and-quality-control)
+
+
+
+### On roads
+
+- The controls are made twice, on two spatial scales : zone level / buffer zone level.
+- The controls are made in two steps : before / after the update of `WIDTH`. They are then merged into a common table called `ROAD_STATS_ZONE` or `ROAD_STATS_EXT_ZONE` depending the spatial scale of analysis.
+
+Below are listed the controls (with their column names) made:
+
+|   Column   | Description                                                  |
+| :--------: | ------------------------------------------------------------ |
+|  ID_ZONE   | Belong zone id                                               |
+|  NB_ROAD   | Number of road in the studied area (zone or buffer zone)     |
+| NOT_VALID  | Number of invalid geometries *(thanks to [ST_IsValid](http://www.h2gis.org/docs/dev/ST_IsValid/) function)* |
+|  IS_EMPTY  | Number of empty geometries *(thanks to [ST_IsValid](http://www.h2gis.org/docs/dev/ST_IsEmpty/) function)* |
+| IS_EQUALS  | Number of equal geometries *(thanks to [ST_Equals](http://www.h2gis.org/docs/dev/ST_Equals/) function)* |
+|  OVERLAP   | Number of overlapping geometries *(thanks to [ST_Overlaps](http://www.h2gis.org/docs/dev/ST_Overlaps/) function)* |
+| FC_W_ZERO  | Number of road where `WIDTH`= 0 *(FC = First control →before the enrichment [rules](#Data-enrichment))* |
+| FC_W_NULL  | Number of road where `WIDTH`is null *(FC)*                   |
+| FC_W_RANGE | Number of road where `WIDTH` < 0 or `WIDTH` > 100 *(FC)*     |
+|   W_NULL   | Number of road where `WIDTH`is null *(SC = Second control →after the enrichment [rules](#Data-enrichment))* |
+|  W_RANGE   | Number of road where `WIDTH` < 0 or `WIDTH` > 100 *(SC)*     |
+|  NO_TYPE   | Number of road with no `type`                                |
+| TYPE_RANGE | Number of road where the `type` is not defined in the "[expected list](../input_data/INPUT_DATA_MODEL.md#-road-type)" |
+
+
+
+[back to top](#Module-2---Formating-and-quality-control)
+
+
+
+### On railways
+
+- The controls are made once, on the zone level.
+- The controls are made in one steps since no enrichment rules have been applied. They are stored in table called `RAIL_STATS_ZONE`.
+
+Below are listed the controls (with their column names) made:
+
+|   Column   | Description                                                  |
+| :--------: | ------------------------------------------------------------ |
+|  ID_ZONE   | Belong zone id                                               |
+|  NB_RAIL   | Number of railways in the studied zone                       |
+| NOT_VALID  | Number of invalid geometries *(thanks to [ST_IsValid](http://www.h2gis.org/docs/dev/ST_IsValid/) function)* |
+|  IS_EMPTY  | Number of empty geometries *(thanks to [ST_IsValid](http://www.h2gis.org/docs/dev/ST_IsEmpty/) function)* |
+| IS_EQUALS  | Number of equal geometries *(thanks to [ST_Equals](http://www.h2gis.org/docs/dev/ST_Equals/) function)* |
+|  OVERLAP   | Number of overlapping geometries *(thanks to [ST_Overlaps](http://www.h2gis.org/docs/dev/ST_Overlaps/) function)* |
+|  NO_TYPE   | Number of railways with no `type`                            |
+| TYPE_RANGE | Number of railways where the `type` is not defined in the "[expected list](../input_data/INPUT_DATA_MODEL.md#-rail-type)" |
+
+
+
+
+
+
+
+
+
+
 
 
 
