@@ -55,19 +55,4 @@ class OSMGISLayersTests {
         //h2GIS.getTable(process.results.imperviousTableName).save("./target/osm_hydro.shp")
         assertEquals 45, h2GIS.getTable(process.results.imperviousTableName).rowCount
     }
-
-    @Test
-    void createImperviousTableTest() {
-        def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
-        //logger.info()
-        IProcess process = PrepareData.OSMGISLayers.createImperviousTable()
-        process.execute([
-                datasource : h2GIS,
-                osmFilePath: new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath(),
-                epsg :2154])
-        //h2GIS.getTable(process.results.imperviousTableName).save("./target/osm_impervious.shp")
-        assertEquals 45, h2GIS.getTable(process.results.imperviousTableName).rowCount
-
-    }
-
 }
