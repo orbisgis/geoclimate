@@ -32,9 +32,10 @@ class OSMGISLayersTests {
     void createGISLayersTest() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
         IProcess process = PrepareData.OSMGISLayers.createGISLayers()
+        def osmfile = new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath()
         process.execute([
                 datasource : h2GIS,
-                osmFilePath: new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath(),
+                osmFilePath: osmfile,
                 epsg :2154])
         //h2GIS.getTable(process.results.buildingTableName).save("./target/osm_building.shp")
         assertEquals 1038, h2GIS.getTable(process.results.buildingTableName).rowCount
@@ -50,5 +51,23 @@ class OSMGISLayersTests {
 
         //h2GIS.getTable(process.results.hydroTableName).save("./target/osm_hydro.shp")
         assertEquals 10, h2GIS.getTable(process.results.hydroTableName).rowCount
+
+        //h2GIS.getTable(process.results.imperviousTableName).save("./target/osm_hydro.shp")
+        assertEquals 45, h2GIS.getTable(process.results.imperviousTableName).rowCount
     }
+
+    @Test
+    void createImperviousTableTest() {
+        def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
+        //logger.info()
+        IProcess process = PrepareData.OSMGISLayers.createImperviousTable()
+        process.execute([
+                datasource : h2GIS,
+                osmFilePath: new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath(),
+                epsg :2154])
+        //h2GIS.getTable(process.results.imperviousTableName).save("./target/osm_impervious.shp")
+        assertEquals 45, h2GIS.getTable(process.results.imperviousTableName).rowCount
+
+    }
+
 }

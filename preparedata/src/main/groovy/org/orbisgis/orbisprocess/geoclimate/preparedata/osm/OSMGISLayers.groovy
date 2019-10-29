@@ -82,6 +82,7 @@ IProcess extractAndCreateGISLayers(){
                          railTableName      : createGISLayerProcess.getResults().railTableName,
                          vegetationTableName: createGISLayerProcess.getResults().vegetationTableName,
                          hydroTableName     : createGISLayerProcess.getResults().hydroTableName,
+                         imperviousTableName     : createGISLayerProcess.getResults().imperviousTableName,
                          zoneTableName      : outputZoneTable, zoneEnvelopeTableName: outputZoneEnvelopeTable,
                          epsg: epsg]
                     } else {
@@ -110,7 +111,7 @@ IProcess createGISLayers() {
         title "Create GIS layer from an OSM XML file"
         inputs datasource: JdbcDataSource, osmFilePath: String, epsg: -1
         outputs buildingTableName: String, roadTableName: String, railTableName: String,
-                vegetationTableName: String, hydroTableName: String, epsg: int
+                vegetationTableName: String, hydroTableName: String, imperviousTableName: String, epsg: int
         run { datasource, osmFilePath, epsg ->
             if(epsg<=-1){
                 logger.error "Invalid epsg code $epsg"
@@ -124,7 +125,8 @@ IProcess createGISLayers() {
                 def outputRoadTableName =null
                 def outputRailTableName =null
                 def outputVegetationTableName =null
-                def outputhydroTableName =null
+                def outputHydroTableName =null
+                def outputImperviousTableName =null
                 //Create building layer
                 def transform = OSMTools.Transform.toPolygons()
                 logger.info "Create the building layer"
@@ -179,14 +181,28 @@ IProcess createGISLayers() {
                 transform = OSMTools.Transform.toPolygons()
                 logger.info "Create the water layer"
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags)){
-                    outputhydroTableName = transform.results.outputTableName
+                    outputHydroTableName = transform.results.outputTableName
                     logger.info "Water layer created"
                 }
+
+                //Create impervious layer
+                paramsDefaultFile = this.class.getResourceAsStream("imperviousParams.json")
+                parametersMap = readJSONParameters(paramsDefaultFile)
+                tags  = parametersMap.get("tags")
+                columnsToKeep = parametersMap.get("columns")
+                transform = OSMTools.Transform.toPolygons()
+                logger.info "Create the impervious layer"
+                if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags,columnsToKeep: columnsToKeep)){
+                    outputImperviousTableName = transform.results.outputTableName
+                    logger.info "impervious layer created"
+                }
+
                 //Drop the OSM tables
                 OSMTools.Utilities.dropOSMTables(prefix, datasource)
 
                 [buildingTableName  : outputBuildingTableName, roadTableName: outputRoadTableName, railTableName: outputRailTableName,
-                 vegetationTableName: outputVegetationTableName, hydroTableName: outputhydroTableName, epsg: epsg]
+                 vegetationTableName: outputVegetationTableName, hydroTableName: outputHydroTableName,
+                 imperviousTableName: outputImperviousTableName, epsg: epsg]
             }
         }
     })
@@ -206,4 +222,47 @@ static Map readJSONParameters(def jsonFile) {
 
 
 
+/**
+ * This process is used to create the GIS layers from an osm xml file
+ * @param datasource A connexion to a DB to load the OSM file
+ * @param placeName the name of the place to extract
+ * @param epsg code to reproject the GIS layers, default is -1
+ *
+ * @return The name of the resulting GIS tables : buildingTableName, roadTableName,
+ * railTableName, vegetationTableName, hydroTableName
+ */
+IProcess createImperviousTable() {
+    return create({
+        title "Create ImperviousTable from an OSM XML file"
+        inputs datasource: JdbcDataSource, osmFilePath: String, epsg: -1
+        outputs imperviousTableName: String, epsg: int
+        run { datasource, osmFilePath, epsg ->
+            if(epsg<=-1){
+                logger.error "Invalid epsg code $epsg"
+                return null
+            }
+            def prefix = "OSM_DATA_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+            def load = OSMTools.Loader.load()
+            logger.info "Loading"
+            if (load(datasource: datasource, osmTablesPrefix: prefix, osmFilePath: osmFilePath)) {
+                def outputImperviousTableName =null
+                //Create impervious layer
+                def transform = OSMTools.Transform.toPolygons()
+                logger.info "Create the impervious table"
+                def paramsDefaultFile = this.class.getResourceAsStream("imperviousParams.json")
+                def parametersMap = readJSONParameters(paramsDefaultFile)
+                def tags = parametersMap.get("tags")
+                def columnsToKeep = parametersMap.get("columns")
+                if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep:columnsToKeep)){
+                    outputImperviousTableName = transform.results.outputTableName
+                    logger.info "Impervious table created"
+                }
+                //Drop the OSM tables
+                //OSMTools.Utilities.dropOSMTables(prefix, datasource)
+
+                [imperviousTableName  : outputImperviousTableName, epsg: epsg]
+            }
+        }
+    })
+}
 
