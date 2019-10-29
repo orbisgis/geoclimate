@@ -46,7 +46,7 @@ In the layer `input_building` coming from M1, the fields `HEIGHT_WALL`, `HEIGHT_
 
 These logical rules will depends on the building `type`. Indeed, we consider that a castle, a commercial area or a house should not be considered in the same way.
 
-So, for each individual value concerning the building `type`  (values listed in the [BUILDING_use and type](..input_data/INPUT_DATA_MODEL.md#-building-use-and-type) section), the following list specifies the rules for calculating the number of levels of a building in order to feed the `nb_lvl` field in the `input_building` table.
+So, for each individual value concerning the building `type`  (values listed in the [BUILDING_use and type](../input_data/INPUT_DATA_MODEL.md#-building-use-and-type) section), the following list specifies the rules for calculating the number of levels of a building in order to feed the `nb_lvl` field in the `input_building` table.
 
 - **Type**: value used to describe the building `type`
 - **Nb_lev_rule**: Specifies whether or not the building type is taken into account when calculating the number of levels:
