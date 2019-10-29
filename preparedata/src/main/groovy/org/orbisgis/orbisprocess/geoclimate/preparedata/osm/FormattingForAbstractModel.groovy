@@ -323,11 +323,11 @@ IProcess formatHydroLayer() {
 }
 
 /**
- * This process is used to transform the raw hydro table into a table that matches the constraints
+ * This process is used to transform the raw impervious table into a table that matches the constraints
  * of the geoClimate Input Model
- * @param datasource A connexion to a DB containing the raw hydro table
- * @param inputTableName The name of the raw hydro table in the DB
- * @return outputTableName The name of the final hydro table
+ * @param datasource A connexion to a DB containing the raw impervious table
+ * @param inputTableName The name of the raw impervious table in the DB
+ * @return outputTableName The name of the final impervious table
  */
 IProcess formatImperviousLayer() {
     return create({

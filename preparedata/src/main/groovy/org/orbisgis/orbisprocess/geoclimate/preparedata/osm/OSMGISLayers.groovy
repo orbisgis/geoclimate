@@ -104,7 +104,7 @@ IProcess extractAndCreateGISLayers(){
  * @param epsg code to reproject the GIS layers, default is -1
  *
  * @return The name of the resulting GIS tables : buildingTableName, roadTableName,
- * railTableName, vegetationTableName, hydroTableName
+ * railTableName, vegetationTableName, hydroTableName, imperviousTableName
  */
 IProcess createGISLayers() {
     return create({
@@ -223,19 +223,18 @@ static Map readJSONParameters(def jsonFile) {
 
 
 /**
- * This process is used to create the GIS layers from an osm xml file
+ * This process is used to create the impervious table from an osm xml file
  * @param datasource A connexion to a DB to load the OSM file
- * @param placeName the name of the place to extract
+ * @param osmFilePath The name of the OSM XML file
  * @param epsg code to reproject the GIS layers, default is -1
  *
- * @return The name of the resulting GIS tables : buildingTableName, roadTableName,
- * railTableName, vegetationTableName, hydroTableName
+ * @return imperviousTableName The name of the resulting GIS table
  */
 IProcess createImperviousTable() {
     return create({
         title "Create ImperviousTable from an OSM XML file"
         inputs datasource: JdbcDataSource, osmFilePath: String, epsg: -1
-        outputs imperviousTableName: String, epsg: int
+        outputs imperviousTableName: String
         run { datasource, osmFilePath, epsg ->
             if(epsg<=-1){
                 logger.error "Invalid epsg code $epsg"
@@ -260,7 +259,7 @@ IProcess createImperviousTable() {
                 //Drop the OSM tables
                 //OSMTools.Utilities.dropOSMTables(prefix, datasource)
 
-                [imperviousTableName  : outputImperviousTableName, epsg: epsg]
+                [imperviousTableName  : outputImperviousTableName]
             }
         }
     })
