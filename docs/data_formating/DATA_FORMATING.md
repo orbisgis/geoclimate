@@ -3,8 +3,8 @@
 
 
 The purpose of this module is to format the data from M1 in order to feed M3. As such, it allows the following two tasks in particular:
-- [enrich the data](#Data-enrichment), in particular when there is missing values, based on pre-established rules. It concerns the add of a [primary key](#primary-key-) to input tables as well as the rules on [buildings](#building-rules-), roads and vegetation surfaces.
-- [control data quality](#Quality-control).
+- [enrich the data](#Data-enrichment), in particular when there is missing values, based on pre-established rules. It concerns the add of a [primary key](#primary-key-) to input tables as well as the rules on [buildings](#building-rules-), [roads](##road-rules-) and [vegetation](##vegetation-rules-) surfaces.
+- [control data quality](#Quality-controls).
 
 
 
@@ -14,7 +14,7 @@ The purpose of this module is to format the data from M1 in order to feed M3. As
 
 ### Primary Key ![](../images/icons/pk.png)
 
-All the `input_table` coming from M1 have to have an `id_source` column, that identify the input object. Since this *id* is stored as a text value (`VARCHAR`) we prefer to add a new unique and optimized *id* called `id_xxxx` (with `xxxx` the name of the layer - *e.g* `id_building`) and stored as a numeric (INTEGER /  SERIAL). In the same time, the PRIMARY KEY constraint is added in order to create an `INDEX` on this column (will be useful for the following processes).
+All the `input_table` coming from M1 have to have an `id_source` column, that identify the input object. Since this *id* is stored as a text value (`VARCHAR`) we prefer to add a new unique and optimized *id* called `id_xxxx` (with `xxxx` the name of the layer - *e.g* `id_building`) and stored as a numeric (INTEGER /  SERIAL). In the same time, the [PRIMARY KEY](#https://www.w3schools.com/sql/sql_primarykey.asp) constraint is added in order to create an `INDEX` on this column (will be useful for the following processes).
 
 
 
@@ -229,5 +229,35 @@ The table below gives the correspondences between the `type` and the expected he
 
 [back to top](#Module-2---Formating-and-quality-control)
 
-## Quality control
+## Quality controls
+
+In order to have a view on the input data quality, before and after the application of the [rules](#Data-enrichment) seen above, we propose a series of controls listed below.
+
+### On buildings
+
+- The controls are made twice, on two spatial scales : zone level / buffer zone level.
+- The controls are made in two steps : before / after the update of `HEIGHT_WALL`. They are then merged into a common table called `BUILDING_STATS_ZONE` or `BUILDING_STATS_EXT_ZONE` depending the spatial scale of analysis.
+
+Below are listed the controls (with their column names) made:
+
+| Column    | Description                                                  |
+| :--------------: | ------------------------------------------------------------ |
+| ID_ZONE       | Belong zone id |
+| NB_BUILD       | Number of building in the studied area (zone or buffer zone) |
+| NOT_VALID       | Number of invalid geometries *(thanks to [ST_IsValid](http://www.h2gis.org/docs/dev/ST_IsValid/) function)* |
+| IS_EMPTY       | Number of empty geometries *(thanks to [ST_IsValid](http://www.h2gis.org/docs/dev/ST_IsEmpty/) function)* |
+| IS_EQUALS       | Number of equal geometries *(thanks to [ST_Equals](http://www.h2gis.org/docs/dev/ST_Equals/) function)* |
+| OVERLAP       | Number of overlapping geometries *(thanks to [ST_Overlaps](http://www.h2gis.org/docs/dev/ST_Overlaps/) function)* |
+| FC_H_ZERO  | Number of building where `HEIGHT_WALL`= 0 *(FC = First control →before the enrichment [rules](#Data-enrichment))* |
+| FC_H_NULL  | Number of building where `HEIGHT_WALL` is null *(FC)*       |
+| FC_H_RANGE | Number of building where `HEIGHT_WALL` < 0 or `HEIGHT_WALL` > 1000 *(FC)* |
+| H_NULL | Number of building where `HEIGHT_WALL` is null *(SC = Second control →after the enrichment [rules](#Data-enrichment))* |
+| H_RANGE | Number of building where `HEIGHT_WALL` < 0 or `HEIGHT_WALL` > 1000 *(SC)* |
+| H_ROOF_MIN_WALL | Number of building with a roof height lower than wall height *(SC)* |
+| LEV_NULL | Number of building where `NB_LEV` is null *(SC)* |
+| LEV_RANGE | Number of building where `NB_LEV` <1  and `NB_LEV` > 200 *(SC)* |
+| NO_TYPE | Number of building with no `type` |
+| TYPE_RANGE | Number of building where the `type` is not defined in the "[expected list](../input_data/INPUT_DATA_MODEL.md#-building-use-and-type)" |
+
+
 
