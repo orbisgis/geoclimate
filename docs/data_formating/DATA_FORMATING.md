@@ -173,7 +173,7 @@ If the `ZINDEX` is `null`, then it's initialized to `0`.
 
 #### Width 
 
-To calculates indicators such as the `GROUND_ROAD_FRACTION` ([See](../results/RSU_INDICATORS.md)), it is necessary to use the `width` column in the `input_road` layer. In case this information is missing in the input data, we deduce it from the road `type` (values listed in the [ROAD type](../input_data/INPUT_DATA_MODEL.md#ROAD-type) section) using the following matching table, where:
+To calculates indicators such as the `GROUND_ROAD_FRACTION` ([See](../results/RSU_INDICATORS.md)), it is necessary to use the `width` column in the `input_road` layer. In case this information is missing in the input data, we deduce it from the road `type` (values listed in the [ROAD type](../input_data/INPUT_DATA_MODEL.md#-road-type) section) using the following matching table, where:
 
 - **Type**: value used to qualify the `type` of the road
 - **Min_width**: minimum road width *(expressed in meter)* to apply, if no information provided
@@ -205,7 +205,7 @@ To calculates indicators such as the `GROUND_ROAD_FRACTION` ([See](../results/RS
 
 #### Height class 
 
-For climate models purposes, it is necessary to distinguish between `high` and `low` vegetation areas. Since this information is generally not available in the input data, we deduce it from the vegetation `type`.
+For climate models purposes, it is necessary to distinguish between `high` and `low` vegetation areas. Since this information is generally not available in the input data, we deduce it from the vegetation `type` (values listed in the [VEGET type](../input_data/INPUT_DATA_MODEL.md#-veget-type) section).
 
 The table below gives the correspondences between the `type` and the expected height class (`height_class` attribute) in the `input_veget` table.
 
