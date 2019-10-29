@@ -3,7 +3,7 @@
 
 
 The purpose of this module is to format the data from M1 in order to feed M3. As such, it allows the following two tasks in particular:
-- [enrich the data](#Data-enrichment), in particular when there is missing values, based on pre-established rules. It concerns the add of a [primary key](#primary-key) to input tables as well as the rules on [buildings](#building-rules), roads and vegetation surfaces.
+- [enrich the data](#Data-enrichment), in particular when there is missing values, based on pre-established rules. It concerns the add of a [primary key](#primary-key-) to input tables as well as the rules on [buildings](#building-rules-), roads and vegetation surfaces.
 - [control data quality](#Quality-control).
 
 
