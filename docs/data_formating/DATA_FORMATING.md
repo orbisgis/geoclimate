@@ -2,7 +2,7 @@
 
 
 
-The purpose of this module is to format the data from M1 in order to feed M3. As such, it allows the following two tasks in particular:
+The purpose of this module is to format the data coming from M1 in order to feed M3. As such, it allows the following two tasks in particular:
 - [enrich the data](#Data-enrichment), in particular when there is missing values, based on pre-established rules. It concerns the add of a [primary key](#primary-key-) to input tables as well as the rules on [buildings](#building-rules-), [roads](#road-rules-) and [vegetation](#vegetation-rules-) surfaces.
 
 - [control data quality](#Quality-controls), on [buildings](#On-buildings), [roads](#On-roads), [railways](#On-railways), [vegetation areas](#On-vegetation-areas) and [hydrographic areas](#On-hydrographic-areas) layers.
@@ -46,12 +46,12 @@ In the layer `input_building` coming from M1, the fields `HEIGHT_WALL`, `HEIGHT_
 
 These logical rules will depends on the building `type`. Indeed, we consider that a castle, a commercial area or a house should not be considered in the same way.
 
-So, for each individual value concerning the building `type`  (values listed in the [BUILDING_use and type](..input_data/INPUT_DATA_MODEL.md#BUILDING-use-and-type) section), the following list specifies the rules for calculating the number of levels of a building in order to feed the `nb_lvl` field in the `input_building` table.
+So, for each individual value concerning the building `type`  (values listed in the [BUILDING_use and type](..input_data/INPUT_DATA_MODEL.md#-building-use-and-type) section), the following list specifies the rules for calculating the number of levels of a building in order to feed the `nb_lvl` field in the `input_building` table.
 
 - **Type**: value used to describe the building `type`
 - **Nb_lev_rule**: Specifies whether or not the building type is taken into account when calculating the number of levels:
   - `0` = not taken into account: in this case, the number of levels will be forced to 1,
-  - `1`= taken into account: in this case, a formula will be used to deduce the number,
+  - `1` = taken into account: in this case, a formula will be used to deduce the number,
   - `2` = other situtation : we apply a specific rule.
 
 |              Type               | Nb_lev_rule |
