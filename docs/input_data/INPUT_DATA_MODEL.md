@@ -42,10 +42,10 @@ When necessary, a list of values that a column must take, with :
 
 ## Topics
 
-- [Buildings](#Buildings):  `input_BUILDING`, BUILDING use and type, BUILDING level
-- [Roads](#Roads): `input_ROAD`, ROAD type, ROAD surface, ROAD width, ROAD crossing
+- [Buildings](#Buildings):  `input_BUILDING`, BUILDING use and type
+- [Roads](#Roads): `input_ROAD`, ROAD type, ROAD surface, ROAD crossing
 - [Railways](#Railways): `input_RAIL`, RAIL type, RAIL crossing
-- [Vegetation areas](#Vegetation-areas): `input_VEGET`, VEGET type, VEGET height
+- [Vegetation areas](#Vegetation-areas): `input_VEGET`, VEGET type
 - [Hydrographic areas](#Hydrographic-areas): `input_HYDRO`
 - [Impervious areas](#Impervious-areas): `input_impervious`
 - [Zones](#Zones): `ZONE`, `ZONE_NEIGHBORS`
@@ -66,14 +66,16 @@ This table content any kind of building.
 |      Name       |  Type   |                          Constaints                          | Definition                                                   |
 | :-------------: | :-----: | :----------------------------------------------------------: | ------------------------------------------------------------ |
 |    the_geom     | POLYGON |                       ST_DIMENSION()=2                       | Geometry                                                     |
-| **id_building** | INTEGER |           ![](../images/icons/pk.png) Primary Key            | Unique Identifier *(added in M2)*                            |
+| **id_building** | INTEGER |           ![](../images/icons/pk.png) Primary Key            | Unique Identifier ***(added in M2)***                        |
 |    id_source    | VARCHAR |                          *not null*                          | Identifier of the feature from the input datasource          |
-|   height_wall   |  FLOAT  | ![](../images/icons/warning.png) M1 : may be null / M2 : *not null* | The (corrected) height of the building in meters. Height of the building measured between the ground and the gutter (maximum altitude of the polyline describing the building). *(exprimed in meters)* |
-|   height_roof   |  FLOAT  | ![](../images/icons/warning.png) M1 : may be null / M2 : *not null* | The maximum height of a building is the distance between the top edge of the building (including the roof, but excluding antennas, spires and other equipment mounted on the roof) and the lowest point at the bottom where the building meets the ground. *(exprimed in meters)* |
+|     id_zone     | VARCHAR |                          *not null*                          | Studied Zone Identifier ***(added in M2)***                  |
+|   height_wall   |  FLOAT  | ![](../images/icons/warning.png) M1 : may be null / M2 : *not null* | The (corrected) height of the building in meters. Height of the building measured between the ground and the gutter (maximum altitude of the polyline describing the building). *(expressed in meters)* |
+|   height_roof   |  FLOAT  | ![](../images/icons/warning.png) M1 : may be null / M2 : *not null* | The maximum height of a building is the distance between the top edge of the building (including the roof, but excluding antennas, spires and other equipment mounted on the roof) and the lowest point at the bottom where the building meets the ground. *(expressed in meters)* |
 |     nb_lev      | INTEGER | ![](../images/icons/warning.png) M1 : may be null / M2 : *not null* | Number of levels (have to be greater than 0)                 |
 |      type       | VARCHAR |                          *not null*                          | Value allowing to distinguish the type of building according to its architecture. These values are listed in the  [BUILDING_use_and_type](#BUILDING-use-and-type) section. |
 |    main_use     | VARCHAR |                                                              | Main use of the building. The use of a building corresponds to a de facto element, relating to what it is used for. These values are listed in the  [BUILDING_use_and_type](#BUILDING-use-and-type) section. |
 |     zindex      | INTEGER |                                                              | Defines the position with respect to the ground. 0 indicates that the object is on the ground. 1 to 4 indicates that the objects above the ground surface. -4 to -1 value indicates that the object is underground. |
+
 
 ### ![](../images/icons/table_values.png) BUILDING use and type
 
@@ -118,55 +120,6 @@ List of all possible values for the `type` and the `main_use` attributes, in the
 | townhall                        | Building that may serve as an administrative center, or may be merely a community meeting place | [38](https://wiki.openstreetmap.org/wiki/Tag:amenity=townhall) |
 | office                          | Office block typically houses companies, but offices may be also rented by any other kind of organization like charities, government, any NGO etc. | [39](https://wiki.openstreetmap.org/wiki/Tag:building=office) |
 
-
-
-### ![](../images/icons/table_values.png) BUILDING level
-
-For each individual value concerning the building `type`  (values listed in the [BUILDING_use and type](#BUILDING-use-and-type) section), this list specifies the rules for calculating the number of levels of a building in order to feed the `nb_lvl` field in the `input_building` table.
-
-- Term: value used to describe the building `type`
-
-- Nb_lev_rule: Specifies whether or not the building type is taken into account when calculating the number of levels (`0` = not taken into account (in this case, the number of levels will be forced to 1) / `1`= taken into account (in this case, a formula will be used to deduct the number) / `2` = other situtation (rule).
-
-|              Term               | Nb_lev_rule |
-| :-----------------------------: | :---------: |
-|            building             |      1      |
-|              house              |      1      |
-|            detached             |      1      |
-|           residential           |      1      |
-|           apartments            |      1      |
-|            bungalow             |      0      |
-|            historic             |      0      |
-|            monument             |      0      |
-|              ruins              |      0      |
-|             castle              |      0      |
-|          agricultural           |      0      |
-|              farm               |      0      |
-|         farm_auxiliary          |      0      |
-|              barn               |      0      |
-|           greenhouse            |      0      |
-|              silo               |      0      |
-|           commercial            |      2      |
-|           industrial            |      0      |
-|              sport              |      0      |
-|          sports_centre          |      0      |
-|           grandstand            |      0      |
-|         transportation          |      0      |
-|          train_station          |      0      |
-|           toll_booth            |      0      |
-|            terminal             |      0      |
-|           healthcare            |      1      |
-|            education            |      1      |
-| entertainment, arts and culture |      0      |
-|           sustenance            |      1      |
-|            military             |      0      |
-|            religious            |      0      |
-|             chapel              |      0      |
-|             church              |      0      |
-|           government            |      1      |
-|            townhall             |      1      |
-|             office              |      1      |
-
 [back to top](#Input-data-model)
 
 ## Roads
@@ -182,9 +135,9 @@ This table content any kind of road network.
 |    Name     |    Type    |                         Constraints                          | Definition                                                   |
 | :---------: | :--------: | :----------------------------------------------------------: | ------------------------------------------------------------ |
 |  the_geom   | LINESTRING |                      ST_DIMENSION() =1                       | Geometry                                                     |
-| **id_road** |  INTEGER   |           ![](../images/icons/pk.png) Primary Key            | Unique Identifier *(added in M2)*                            |
+| **id_road** |  INTEGER   |           ![](../images/icons/pk.png) Primary Key            | Unique Identifier ***(added in M2)***                        |
 |  id_source  |  VARCHAR   |                          *not null*                          | Identifier of the feature from the input datasource          |
-|    width    |   FLOAT    | ![](../images/icons/warning.png) M1 : may be null / M2 : *not null* | Width of the road *(exprimed in meters)*                     |
+|    width    |   FLOAT    | ![](../images/icons/warning.png) M1 : may be null / M2 : *not null* | Width of the road *(expressed in meters)*                    |
 |    type     |  VARCHAR   |                          *not null*                          | Type of road                                                 |
 |   surface   |  VARCHAR   |                                                              | The surface value is used to provide additional information about the physical surface of roads/footpaths and some other features, particularly regarding material composition and/or structure. |
 |  sidewalk   |  VARCHAR   |                                                              | Specify if the road has two, one or no sidewalk(s) - values=[two, one, no] |
@@ -241,35 +194,6 @@ List of all possible values for the `surface` attribute in the `input_road` tabl
 
 
 
-### ![](../images/icons/table_values.png) ROAD width
-
-For each individual value concerning the `type` of a roads (values listed in the [ROAD type](#ROAD-type) metadata section), this list specifies the minimum road width in order to feed the `width` field of the
-`input_road` table **when no information are provided**.
-
-- Term: value used to qualify the type of the road
-- Min_width: minimum road width *(in meter)* to apply
-
-| Term         | Min_width |
-| :----------: | :-------: |
-| residential  |     8     |
-| track        |     2     |
-| unclassified |     3     |
-| footway      |     1     |
-| path         |     1     |
-| tertiary     |     8     |
-| secondary    |    10     |
-| primary      |    10     |
-| cycleway     |     1     |
-| trunk        |    16     |
-| steps        |     1     |
-| motorway     |    24     |
-| highway_link |     8     |
-| roundabout   |     4     |
-| highway      |     8     |
-| ferry        |     0     |
-
-
-
 ### ![](../images/icons/table_values.png) ROAD crossing
 
 Lists of all possible values for the `crossing` attribute in the `input_road` table.
@@ -297,7 +221,7 @@ This table content any kind of railways network.
 |    Name     |    Type    |               Constraints               | Definition                                                   |
 | :---------: | :--------: | :-------------------------------------: | ------------------------------------------------------------ |
 |  the_geom   | LINESTRING |            ST_DIMENSION() =1            | Geometry                                                     |
-| **id_rail** |  INTEGER   | ![](../images/icons/pk.png) Primary Key | Unique Identifier *(added in M2)*                            |
+| **id_rail** |  INTEGER   | ![](../images/icons/pk.png) Primary Key | Unique Identifier ***(added in M2)***                        |
 |  id_source  |  VARCHAR   |               *not null*                | Identifier of the feature from the input datasource          |
 |    type     |  VARCHAR   |               *not null*                | Type of rail                                                 |
 |   zindex    |  INTEGER   |                                         | Defines the position with respect to the ground. 0 indicates that the object is on the ground. 1 to 4 indicates that the object is above the ground surface. -4 to -1 value indicates that the object is underground. |
@@ -348,7 +272,7 @@ This table content any kind of vegetation area.
 |     Name     |  Type   |                         Constraints                          | Definition                                          |
 | :----------: | :-----: | :----------------------------------------------------------: | --------------------------------------------------- |
 |   the_geom   | POLYGON |                      ST_DIMENSION() =2                       | Geometry                                            |
-| **id_veget** | INTEGER |           ![](../images/icons/pk.png) Primary Key            | Unique Identifier *(added in M2)*                   |
+| **id_veget** | INTEGER |           ![](../images/icons/pk.png) Primary Key            | Unique Identifier ***(added in M2)***               |
 |  id_source   | VARCHAR |                          *not null*                          | Identifier of the feature from the input datasource |
 |     type     | VARCHAR |                          *not null*                          | Type of vegetation.                                 |
 | height_class | VARCHAR | ![](../images/icons/warning.png) M1 : may be null / M2 : *not null* | Height class (`low` or `high`)                      |
@@ -376,26 +300,7 @@ List of all possible values for `type` attribute in the `input_veget` table.
 
 
 
-### ![](../images/icons/table_values.png) VEGET height
 
-List of expected values for the `height_class` attribute, regarding the `type` of vegetation, in the `input_veget` table.
-
-
-| Term | Height_class |
-| :-----------: | :-----------: |
-| tree | high |
-| wood          | high |
-| forest        | high |
-| scrub         | low     |
-| grassland     | low |
-| heath         | low |
-| tree_row      | high                                          |
-| hedge         | high |
-| mangrove      | high |
-| orchard       | high |
-| vineyard      | low                    |
-| banana_plants | high                                      |
-| sugar_cane    | low                |
 
 [back to top](#Input-data-model)
 
@@ -412,7 +317,7 @@ This table content any kind of hydrographic area (river, sea, ...).
 |     Name     |  Type   |               Constraints               | Definition                                          |
 | :----------: | :-----: | :-------------------------------------: | --------------------------------------------------- |
 |   the_geom   | POLYGON |            ST_DIMENSION() =2            | Geometry                                            |
-| **id_hydro** | INTEGER | ![](../images/icons/pk.png) Primary Key | Unique Identifier *(added in M2)*                   |
+| **id_hydro** | INTEGER | ![](../images/icons/pk.png) Primary Key | Unique Identifier ***(added in M2)***               |
 |  id_source   | VARCHAR |               *not null*                | Identifier of the feature from the input datasource |
 
 [back to top](#Input-data-model)
@@ -431,7 +336,7 @@ This table content any impervious surface, in addition to buildings and roads al
 |       Name        |  Type   |               Constraints               | Definition                                          |
 | :---------------: | :-----: | :-------------------------------------: | --------------------------------------------------- |
 |     the_geom      | POLYGON |            ST_DIMENSION() =2            | Geometry                                            |
-| **id_impervious** | INTEGER | ![](../images/icons/pk.png) Primary Key | Unique Identifier *(added in M2)*                   |
+| **id_impervious** | INTEGER | ![](../images/icons/pk.png) Primary Key | Unique Identifier ***(added in M2)***               |
 |     id_source     | VARCHAR |               *not null*                | Identifier of the feature from the input datasource |
 |       type        | VARCHAR |                                         | Type of impervious area                             |
 
