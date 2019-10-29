@@ -4,9 +4,10 @@
 
 The purpose of this module is to format the data from M1 in order to feed M3. As such, it allows the following two tasks in particular:
 - [enrich the data](#Data-enrichment), in particular when there is missing values, based on pre-established rules. It concerns the add of a [primary key](#primary-key-) to input tables as well as the rules on [buildings](#building-rules-), [roads](#road-rules-) and [vegetation](#vegetation-rules-) surfaces.
-- [control data quality](#Quality-controls).
 
+- [control data quality](#Quality-controls), on [buildings](#On-buildings), [roads](#On-roads), [railways](#On-railways), [vegetation areas](#On-vegetation-areas) and [hydrographic areas](#On-hydrographic-areas) layers.
 
+  
 
 ## Data enrichment
 
@@ -242,8 +243,8 @@ Below are listed the controls (with their column names) made:
 
 | Column    | Description                                                  |
 | :--------------: | ------------------------------------------------------------ |
-| ID_ZONE       | Belong zone id |
-| NB_BUILD       | Number of building in the studied area (zone or buffer zone) |
+| ID_ZONE       | Belonging zone id |
+| NB_BUILD       | Number of building in the studied area *(zone or buffer zone)* |
 | NOT_VALID       | Number of invalid geometries *(thanks to [ST_IsValid](http://www.h2gis.org/docs/dev/ST_IsValid/) function)* |
 | IS_EMPTY       | Number of empty geometries *(thanks to [ST_IsValid](http://www.h2gis.org/docs/dev/ST_IsEmpty/) function)* |
 | IS_EQUALS       | Number of equal geometries *(thanks to [ST_Equals](http://www.h2gis.org/docs/dev/ST_Equals/) function)* |
@@ -274,8 +275,8 @@ Below are listed the controls (with their column names) made:
 
 |   Column   | Description                                                  |
 | :--------: | ------------------------------------------------------------ |
-|  ID_ZONE   | Belong zone id                                               |
-|  NB_ROAD   | Number of road in the studied area (zone or buffer zone)     |
+|  ID_ZONE   | Belonging zone id                                            |
+|  NB_ROAD   | Number of road in the studied area *(zone or buffer zone)*   |
 | NOT_VALID  | Number of invalid geometries *(thanks to [ST_IsValid](http://www.h2gis.org/docs/dev/ST_IsValid/) function)* |
 |  IS_EMPTY  | Number of empty geometries *(thanks to [ST_IsValid](http://www.h2gis.org/docs/dev/ST_IsEmpty/) function)* |
 | IS_EQUALS  | Number of equal geometries *(thanks to [ST_Equals](http://www.h2gis.org/docs/dev/ST_Equals/) function)* |
@@ -303,7 +304,7 @@ Below are listed the controls (with their column names) made:
 
 |   Column   | Description                                                  |
 | :--------: | ------------------------------------------------------------ |
-|  ID_ZONE   | Belong zone id                                               |
+|  ID_ZONE   | Belonging zone id                                            |
 |  NB_RAIL   | Number of railways in the studied zone                       |
 | NOT_VALID  | Number of invalid geometries *(thanks to [ST_IsValid](http://www.h2gis.org/docs/dev/ST_IsValid/) function)* |
 |  IS_EMPTY  | Number of empty geometries *(thanks to [ST_IsValid](http://www.h2gis.org/docs/dev/ST_IsEmpty/) function)* |
@@ -314,13 +315,51 @@ Below are listed the controls (with their column names) made:
 
 
 
+[back to top](#Module-2---Formating-and-quality-control)
 
 
 
+### On vegetation areas
+
+- The controls are made twice, on two spatial scales : zone level / extended zone level.
+- The controls are made in one step and are stored in two table called `VEGET_STATS_ZONE` or `VEGET_STATS_EXT_ZONE` depending the spatial scale of analysis.
+
+Below are listed the controls (with their column names) made:
+
+|   Column   | Description                                                  |
+| :--------: | ------------------------------------------------------------ |
+|  ID_ZONE   | Belonging zone id                                            |
+|  NB_VEGET  | Number of vegetation areas in the studied zone *(zone or extended zone)* |
+| NOT_VALID  | Number of invalid geometries *(thanks to [ST_IsValid](http://www.h2gis.org/docs/dev/ST_IsValid/) function)* |
+|  IS_EMPTY  | Number of empty geometries *(thanks to [ST_IsValid](http://www.h2gis.org/docs/dev/ST_IsEmpty/) function)* |
+| IS_EQUALS  | Number of equal geometries *(thanks to [ST_Equals](http://www.h2gis.org/docs/dev/ST_Equals/) function)* |
+|  OVERLAP   | Number of overlapping geometries *(thanks to [ST_Overlaps](http://www.h2gis.org/docs/dev/ST_Overlaps/) function)* |
+|  NO_TYPE   | Number of vegetation areas with no `type`                    |
+| TYPE_RANGE | Number of vegetation areas where the `type` is not defined in the "[expected list](../input_data/INPUT_DATA_MODEL.md#-veget-type)" |
 
 
 
+[back to top](#Module-2---Formating-and-quality-control)
 
 
 
+### On hydrographic areas
+
+- The controls are made twice, on two spatial scales : zone level / extended zone level.
+- The controls are made in one step and are stored in two table called `HYDRO_STATS_ZONE` or `HYDRO_STATS_EXT_ZONE` depending the spatial scale of analysis.
+
+Below are listed the controls (with their column names) made:
+
+|  Column   | Description                                                  |
+| :-------: | ------------------------------------------------------------ |
+|  ID_ZONE  | Belonging zone id                                            |
+| NB_HYDRO  | Number of hydrographic areas in the studied zone *(zone or extended zone)* |
+| NOT_VALID | Number of invalid geometries *(thanks to [ST_IsValid](http://www.h2gis.org/docs/dev/ST_IsValid/) function)* |
+| IS_EMPTY  | Number of empty geometries *(thanks to [ST_IsValid](http://www.h2gis.org/docs/dev/ST_IsEmpty/) function)* |
+| IS_EQUALS | Number of equal geometries *(thanks to [ST_Equals](http://www.h2gis.org/docs/dev/ST_Equals/) function)* |
+|  OVERLAP  | Number of overlapping geometries *(thanks to [ST_Overlaps](http://www.h2gis.org/docs/dev/ST_Overlaps/) function)* |
+
+
+
+[back to top](#Module-2---Formating-and-quality-control)
 
