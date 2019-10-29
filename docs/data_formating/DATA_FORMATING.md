@@ -3,8 +3,8 @@
 
 
 The purpose of this module is to format the data from M1 in order to feed M3. As such, it allows the following two tasks in particular:
-- enrich the data, in particular when there is missing values, based on pre-established rules,
-- control data quality.
+- [enrich the data](#Data-enrichment), in particular when there is missing values, based on pre-established rules. It concerns the add of a [primary key](#primary-key) to input tables as well as the rules on [buildings](#building-rules), roads and vegetation surfaces.
+- [control data quality](#Quality-control).
 
 
 
@@ -22,7 +22,7 @@ All the `input_table` coming from M1 have to have an `id_source` column, that id
 
 
 
-#### Belonging zone Id
+#### 1- Belonging zone Id
 
 Since the input buildings are selected on a larger area than the studied zone (see [`ZONE`](../input_data/INPUT_DATA_MODEL.md#Zones) layer), we're going to have buildings:
 - inside the study area, 
@@ -31,13 +31,13 @@ Since the input buildings are selected on a larger area than the studied zone (s
 
 For the optimization of upcoming processes, it is necessary to assign to each building the id (`id_zone`) of the belonging zone.
 
-To determine this matching, we apply the "maximum area" rule, defined as follows:
+To determine this matching, we apply the "*maximum area*" rule, defined as follows:
 
 > The building is associated to the zone with which it has the largest intersection area 
 
 
 
-#### HEIGHTs and Number of levels 
+#### 2- HEIGHTs and Number of levels 
 
 In the layer `input_building` coming from M1, the fields `HEIGHT_WALL`, `HEIGHT_ROOF` and `NB_LEV` may have null values. For the upcoming processes (e.g when calculating morphological indicators), it may causes problems. So to resolve this issue, we propose a set of logical rules in order to deduce probable values, using `type` and potentially existing informations in the fields `HEIGHT_WALL`, `HEIGHT_ROOF` and `NB_LEV`.
 
@@ -45,7 +45,7 @@ In the layer `input_building` coming from M1, the fields `HEIGHT_WALL`, `HEIGHT_
 
 These logical rules will depends on the building `type`. Indeed, we consider that a castle, a commercial area or a house should not be considered in the same way.
 
-So, for each individual value concerning the building `type`  (values listed in the [BUILDING_use and type](#BUILDING-use-and-type) section), the following list specifies the rules for calculating the number of levels of a building in order to feed the `nb_lvl` field in the `input_building` table.
+So, for each individual value concerning the building `type`  (values listed in the [BUILDING_use and type](..input_data/INPUT_DATA_MODEL.md#BUILDING-use-and-type) section), the following list specifies the rules for calculating the number of levels of a building in order to feed the `nb_lvl` field in the `input_building` table.
 
 - **Type**: value used to describe the building `type`
 - **Nb_lev_rule**: Specifies whether or not the building type is taken into account when calculating the number of levels:
@@ -157,20 +157,22 @@ Else, `NB_LEV` is kept.
 
 
 
-#### Z Index
+#### 3- Z Index
 
 If the `ZINDEX` is `null`, then it's initialized to `0`.
 
 
+
+[back to top](#Module-2---Formating-and-quality-control)
 
 
 ### Road rules ![](../images/icons/road.png)
 
 
 
-### Width 
+#### Width 
 
-To calculates indicators such as the `GROUND_ROAD_FRACTION` ([See](../results/RSU_INDICATORS.md)), it is necessary to use the `width` column in the `input_road` layer. In case this information is missing in the input data, we deduce it from the road `type` (values listed in the [ROAD type](#ROAD-type) section) using the following matching table, where:
+To calculates indicators such as the `GROUND_ROAD_FRACTION` ([See](../results/RSU_INDICATORS.md)), it is necessary to use the `width` column in the `input_road` layer. In case this information is missing in the input data, we deduce it from the road `type` (values listed in the [ROAD type](../input_data/INPUT_DATA_MODEL.md#ROAD-type) section) using the following matching table, where:
 
 - **Type**: value used to qualify the `type` of the road
 - **Min_width**: minimum road width *(expressed in meter)* to apply, if no information provided
@@ -196,13 +198,13 @@ To calculates indicators such as the `GROUND_ROAD_FRACTION` ([See](../results/RS
 
 
 
-
+[back to top](#Module-2---Formating-and-quality-control)
 
 ### Vegetation rules ![](../images/icons/vegetation.png)
 
-### Height class 
+#### Height class 
 
-For Geoclimate purposes, it is necessary to distinguish between `high` and `low` vegetation areas. Since this information is generally not available in the input data, we deduce it from the vegetation `type`.
+For climate models purposes, it is necessary to distinguish between `high` and `low` vegetation areas. Since this information is generally not available in the input data, we deduce it from the vegetation `type`.
 
 The table below gives the correspondences between the `type` and the expected height class (`height_class` attribute) in the `input_veget` table.
 
@@ -225,7 +227,7 @@ The table below gives the correspondences between the `type` and the expected he
 
 
 
-
+[back to top](#Module-2---Formating-and-quality-control)
 
 ## Quality control
 
