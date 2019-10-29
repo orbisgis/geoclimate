@@ -92,21 +92,68 @@ So, for each individual value concerning the building `type`  (values listed in 
 |            townhall             |      1      |
 |             office              |      1      |
 
-
-
 ##### Logical rules
 
+The logical rules, presented below, are applied in the following order:
+
+1. HEIGH_WALL
+2. HEIGH_ROOF 
+3. NB_LEV
+4. Control
+
+
+→1. **HEIGH_WALL**: This rule is applied to any kind of buildings
+
+![](../images/rules_h_wall.png)
+
+→ 2. **HEIGHT_ROOF**: This rule is applied to any kind of buildings
+
+![](../images/rules_h_roof.png)
+
+→ 3. **NB_LEV**: This rule is applied only if: 
+
+- [`Nb_lev_rule`](#BUILDING-level-vs-type) = `1`  **or** 
+
+- [`Nb_lev_rule`](#BUILDING-level-vs-type) = `2` and `HEIGHT_WALL` > `10`m
+
+Else, `NB_LEV` is forced to `1`.
 
 
 
+![](../images/rules_nb_lev.png)
+
+→4. **Control**
+
+Once the 3 columns (`HEIGHT_WALL`, `HEIGHT_ROOF` and `NB_LEV`) have been updated, we carry out a final 3 steps control  (C1, C2 and C3) phase to eliminate possible outliers.
+
+C1: Check if `HEIGHT_ROOF` is lower than `HEIGHT_WALL`
+
+<img src="../images/rules_h_nb_lev_c1.png" style="zoom:30%;" />
 
 
 
+C2: Check if there is a high difference beetween the "real" and "theorical" roof heights (`HEIGHT_ROOF`), based on the following parameter:
+
+- `H_LEV_MIN`: indicates the theoretical minimum height of a level (default = 3m)
+
+<img src="../images/rules_h_nb_lev_c2.png" style="zoom:30%;" />
+
+C3: Check if there is a high difference beetween the "real" and "theorical" number of levels (`NB_LEV`), based on the following parameters:
+
+- `H_LEV_MIN`: indicates the theoretical minimum height of a level (default = 3m)
+- `H_LEV_MAX`: indicates the theoretical maximum height of a level (default = 15m)
+
+This control is applied only if: 
+
+- [`Nb_lev_rule`](#BUILDING-level-vs-type) = `1`  **or** 
+
+- [`Nb_lev_rule`](#BUILDING-level-vs-type) = `2` and `HEIGHT_WALL` > `10`m
+
+Else, `NB_LEV` is kept.
 
 
-```
-UPDATE $BUILDING SET HEIGHT_WALL = CASE WHEN HEIGHT_WALL is null or HEIGHT_WALL = 0 THEN(CASE WHEN HEIGHT_ROOF is null or HEIGHT_ROOF = 0 THEN (CASE WHEN NB_LEV is null or NB_LEV = 0 THEN $H_LEV_MIN ELSE (NB_LEV*$H_LEV_MIN) END) ELSE HEIGHT_ROOF END) ELSE HEIGHT_WALL END;-- Update HEIGHT_ROOFUPDATE $BUILDING SET HEIGHT_ROOF = CASE WHEN HEIGHT_ROOF is null or HEIGHT_ROOF = 0 THEN (CASE WHEN HEIGHT_WALL is null or HEIGHT_WALL = 0 THEN (CASE WHEN NB_LEV is null or NB_LEV = 0 THEN $H_LEV_MIN ELSE (NB_LEV*$H_LEV_MIN) END) ELSE HEIGHT_WALL END) ELSE HEIGHT_ROOF END;-- Update NB_LEV-- If the NB_LEV parameter (in the abstract table) is equal to 1 or 2 (and HEIGHT_WALL > 10m) then apply the rule. Else, the NB_LEV is equal to 1UPDATE $BUILDING SET NB_LEV = CASE WHEN TYPE in (SELECT TERM FROM $BUILDING_ABSTRACT_PARAMETERS WHERE NB_LEV=1) or(TYPE in (SELECT TERM FROM $BUILDING_ABSTRACT_PARAMETERS WHERE NB_LEV=2) and HEIGHT_WALL>$H_THRESHOLD_LEV2) THEN(CASE WHEN NB_LEV is null or NB_LEV = 0 THEN (CASE WHEN HEIGHT_WALL is null or HEIGHT_WALL = 0 THEN (CASE WHEN HEIGHT_ROOF is null or HEIGHT_ROOF = 0 THEN 1ELSE TRUNCATE(HEIGHT_ROOF /$H_LEV_MIN) END) ELSE TRUNCATE(HEIGHT_WALL /$H_LEV_MIN) END) ELSE NB_LEV END) ELSE 1 END;-- Control of heights and number of levels----------------------------------------------------------- Check if HEIGHT_ROOF is lower than HEIGHT_WALL. If yes, then correct HEIGHT_ROOFUPDATE $BUILDING SET HEIGHT_ROOF =     CASE WHEN HEIGHT_WALL > HEIGHT_ROOF THEN HEIGHT_WALL ELSE HEIGHT_ROOF END;-- Check if there is a high difference beetween the "real" and "theorical (based on the level number) roof heightsUPDATE $BUILDING SET HEIGHT_ROOF =     CASE WHEN (NB_LEV * $H_LEV_MIN) > HEIGHT_ROOF THEN (NB_LEV * $H_LEV_MIN) ELSE HEIGHT_ROOF END;-- Check if there is a high difference beetween the "real" and "theorical" (based on the level number) wall heightsUPDATE $BUILDING SET NB_LEV =  CASE WHEN TYPE in (SELECT TERM FROM $BUILDING_ABSTRACT_PARAMETERS WHERE NB_LEV=1) or (TYPE in (SELECT TERM FROM $BUILDING_ABSTRACT_PARAMETERS WHERE NB_LEV=2) and HEIGHT_WALL>$H_THRESHOLD_LEV2) THEN (                           CASE WHEN (NB_LEV * $H_LEV_MAX) < HEIGHT_WALL THEN (HEIGHT_WALL / $H_LEV_MAX) ELSE NB_LEV END)                        ELSE NB_LEV END;
-```
+
+<img src="../images/rules_h_nb_lev_c3.png" style="zoom:30%;" />
 
 
 
