@@ -24,9 +24,7 @@ Below are presented:
 | `ZONE_EXTENDED`  | An extended area around the `ZONE` , produce with the [ST_Expand](http://www.h2gis.org/docs/dev/ST_Expand/) operator. The size (expressed in meter) is defined with the `EXPAND` parameter. Default value = 1000m |
 | `ZONE_NEIGHBORS` | The neighboring zones. A zone is considered to be a neighbor if it intersects the `ZONE_EXTENDED` |
 
-![](/home/gpetit/Documents/Codes/geoclimate/docs/images/zones.png)
-
-
+![](../images/zones.png)
 
 
 
