@@ -1,10 +1,65 @@
 # BD Topo v2.2 use case
 
+The BD Topo is a topographic vector database, made by the french National Geographic Institute (IGN). This database is "*a 3D vectorial description (structured in objects) of the elements of the territory and its infrastructures, of metric precision, usable at scales ranging from 1: 5 000 to 1: 50 000.*"
+
+In this use case, we are working with the [version 2.2](http://professionnels.ign.fr/ancienne-bdtopo) (which was replaced in 2019 by the [version 3.0](http://professionnels.ign.fr/bdtopo) - a dedicated use case may be implemented in the coming months).
+
+In practice, this database is:
+
+- **not open**,
+- free of charge only for research or eduction purposes,
+- provided as shapefiles (.shp) or as PostGreSQL dumps, at the french department scale.
 
 
 
+In this use case, we are executing the three following modules:
+
+- M1 - Input data preparation
+- M2 - [Formating and quality control](../data_formating/DATA_FORMATING.md)
+- M3 - Geoindicators and LCZ's production
 
 
+
+## Input layers
+
+Below are listed the BD Topo layers used to feed the [input data model](../input_data/INPUT_DATA_MODEL.md).
+
+
+| BD Topo layer name | Input data model matching |
+| :--------: | :----: |
+| [BATI_INDIFFERENCIE](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=80) | input_building / BUILDING |
+| [BATI_INDUSTRIEL](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=89) | input_building / BUILDING |
+| [BATI_REMARQUABLE](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=85) | input_building / BUILDING |
+| [ROUTE](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=13) | input_road / ROAD |
+| [TRONCON_VOIE_FERREE](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=44) | input_rail / RAIL |
+| [ZONE_VEGETATION](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=116) | input_veget/ VEGET |
+| [SURFACE_EAU](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=66) | input_hydro / HYDRO |
+| [TERRAIN_SPORT](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=103) | input_impervious / IMPERVIOUS |
+| [CONSTRUCTION_SURFACIQUE](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=113) | input_impervious / IMPERVIOUS |
+| [SURFACE_ROUTE](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=35) | input_impervious / IMPERVIOUS |
+| [SURFACE_ACTIVITE](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=134) | input_impervious / IMPERVIOUS |
+
+
+
+## Filtering of objects
+
+In some cases, it is necessary to filter the input data, in order to keep only needed informations. 
+
+Below we are detailing for all layers from BD Topo wether a filter is applied or not (in this case, every objects are keeped).
+
+| BD Topo layer name | Filter ? |
+| :--------: | :----: |
+| BATI_INDIFFERENCIE | no filter |
+| BATI_INDUSTRIEL |                          no filter                           |
+| BATI_REMARQUABLE | no filter |
+| ROUTE | no filter |
+| TRONCON_VOIE_FERREE | no filter |
+| ZONE_VEGETATION | no filter |
+| SURFACE_EAU| no filter |
+| TERRAIN_SPORT | where [`NATURE`](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=104) = ['Piste de sport' / 'Terrain de tennis'] |
+| CONSTRUCTION_SURFACIQUE | where [`NATURE`](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=114) = ['Barrage' / 'Ecluse' / 'Escalier'] |
+| SURFACE_ROUTE | no filter |
+| SURFACE_ACTIVITE | where [`CATEGORIE`](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=135) = ['Administratif' / 'Enseignement' / 'Santé'] |
 
 
 
