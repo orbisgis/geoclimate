@@ -34,12 +34,12 @@ Below are presented:
 
 Depending on the working zones, the input data are selected. The table below list the conditions of selection:
 
-|       Theme        |                             ZONE                             |                         ZONE_BUFFER                          |                        ZONE_EXTENDED                         |
-| :----------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
-|     Buildings      |                                                              | ![](/home/gpetit/Documents/Codes/geoclimate/docs/images/icons/check.png) |                                                              |
-|       Roads        |                                                              | ![](/home/gpetit/Documents/Codes/geoclimate/docs/images/icons/check.png) |                                                              |
-|      Railways      | ![](/home/gpetit/Documents/Codes/geoclimate/docs/images/icons/check.png) |                                                              |                                                              |
-|  Vegetation areas  |                                                              |                                                              | ![](/home/gpetit/Documents/Codes/geoclimate/docs/images/icons/check.png) |
-| Hydrographic areas |                                                              |                                                              | ![](/home/gpetit/Documents/Codes/geoclimate/docs/images/icons/check.png) |
-|  Impervious areas  |                                                              |                                                              | ![](/home/gpetit/Documents/Codes/geoclimate/docs/images/icons/check.png) |
+|       Theme        |              ZONE              |          ZONE_BUFFER           |         ZONE_EXTENDED          |
+| :----------------: | :----------------------------: | :----------------------------: | :----------------------------: |
+|     Buildings      |                                | ![](../images/icons/check.png) |                                |
+|       Roads        |                                | ![](../images/icons/check.png) |                                |
+|      Railways      | ![](../images/icons/check.png) |                                |                                |
+|  Vegetation areas  |                                |                                | ![](../images/icons/check.png) |
+| Hydrographic areas |                                |                                | ![](../images/icons/check.png) |
+|  Impervious areas  |                                |                                | ![](../images/icons/check.png) |
 
