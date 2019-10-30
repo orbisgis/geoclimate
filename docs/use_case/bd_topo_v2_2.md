@@ -1,6 +1,6 @@
 # BD Topo v2.2 use case
 
-The BD Topo is a topographic vector database, made by the french National Geographic Institute (IGN). This database is "*a 3D vectorial description (structured in objects) of the elements of the territory and its infrastructures, of metric precision, usable at scales ranging from 1: 5 000 to 1: 50 000.*"
+The BD Topo is a topographic vector database, made by the french National Geographic Institute ([IGN](http://ign.fr/)). This database is "*a 3D vectorial description (structured in objects) of the elements of the territory and its infrastructures, of metric precision, usable at scales ranging from 1: 5 000 to 1: 50 000.*"
 
 In this use case, we are working with the [version 2.2](http://professionnels.ign.fr/ancienne-bdtopo) (which was replaced in 2019 by the [version 3.0](http://professionnels.ign.fr/bdtopo) - a dedicated use case may be implemented in the coming months).
 

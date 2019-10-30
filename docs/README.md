@@ -92,8 +92,8 @@ Geoclimate has been developed in a modular and as generic way as possible. It is
 
 Below we present two use cases developped by the Lab-STICC team: 
 
-- [OpenStreetMap](https://www.openstreetmap.org) (OSM), on a worldwide context,
-- BD Topo [V2.2](http://professionnels.ign.fr/ancienne-bdtopo) (from [IGN](http://ign.fr/)), only on the french scale.
+- [OpenStreetMap](https://www.openstreetmap.org) (OSM), on a worldwide context  ![](./images/icons/arrow.png) [Read more](./use_case/osm.md)
+- BD Topo [V2.2](http://professionnels.ign.fr/ancienne-bdtopo) (from [IGN](http://ign.fr/)), only on the french scale  ![](./images/icons/arrow.png) [Read more](./use_case/bd_topo_v2_2.md)
 
 
 
