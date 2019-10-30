@@ -50,7 +50,7 @@ The Geoclimate chain is made up of the 3 following modules:
 
 The user chooses the data set of his choice and ensures that the information present corresponds to the ***Geoclimate input data model*** described [HERE](./input_data/INPUT_DATA_MODEL.md). So **M1 is feeding M2**.
 
-![](./images/icons/arrow.png) [Read more](./data_preparation/XXXXX.md) about this module.
+![](./images/icons/arrow.png) [Read more](./data_preparation/DATA_PREPARATION.md) about this module.
 
 ### M2 - Formating and quality control
 
