@@ -1,0 +1,235 @@
+{
+  "tags" : {
+    "highway": ["yes",
+      "motorway", "trunk","primary","secondary", "tertiary", "unclassified",
+      "residential", "motorway_link",
+      "motorway_junction",
+      "trunk_link",
+      "primary_link",
+      "secondary_link",
+      "tertiary_link",
+      "junction","service",
+      "road","track"
+    ],"junction": ["roundabout",
+      "circular","jughandle","filter","yes"
+    ]
+  },
+  "columns":["width","highway", "surface", "sidewalk",
+    "layer","maxspeed","oneway",
+    "route","junction", "bridge"],
+    "surface":
+     {
+        "unpaved": {
+            "surface": [
+                "unpaved",
+                "grass_paver",
+                "artificial_turf"
+            ]
+        },
+        "paved": {
+            "surface": [
+                "paved",
+                "asphalt"
+            ]
+        },
+        "ground": {
+            "surface": [
+                "ground",
+                "dirt",
+                "earth",
+                "clay"
+            ]
+        },
+        "gravel": {
+            "surface": [
+                "gravel",
+                "fine_gravel",
+                "gravel_turf"
+            ]
+        },
+        "concrete": {
+            "surface": [
+                "concrete",
+                "concrete:lanes",
+                "concrete:plates",
+                "cement"
+            ]
+        },
+        "grass": {
+            "surface": [
+                "grass"
+            ]
+        },
+        "compacted": {
+            "surface": [
+                "compacted"
+            ]
+        },
+        "sand": {
+            "surface": [
+                "sand"
+            ]
+        },
+        "cobblestone": {
+            "surface": [
+                "cobblestone",
+                "paving_stones",
+                "sett",
+                "unhewn_cobblestone"
+            ]
+        },
+        "wood": {
+            "surface": [
+                "wood",
+                "woodchips"
+            ]
+        },
+        "pebblestone": {
+            "surface": [
+                "pebblestone"
+            ]
+        },
+        "mud": {
+            "surface": [
+                "mud"
+            ]
+        },
+        "metal": {
+            "surface": [
+                "metal"
+            ]
+        },
+        "water": {
+            "surface": [
+                "water"
+            ]
+        }
+    },
+    "type" : {
+        "cycleway": {
+            "highway": [
+                "cycleway"
+            ],
+            "cycleway": [
+                "track"
+            ],
+            "biclycle_road": [
+                "yes"
+            ]
+        },
+        "ferry": {
+            "route": [
+                "ferry"
+            ]
+        },
+        "footway": {
+            "highway": [
+                "footway",
+                "pedestrian"
+            ]
+        },
+        "highway": {
+            "highway": [
+                "service",
+                "road",
+                "raceway",
+                "escape"
+            ],
+            "cyclestreet": [
+                "yes"
+            ]
+        },
+        "highway_link": {
+            "highway": [
+                "motorway_link",
+                "motorway_junction",
+                "trunk_link",
+                "primary_link",
+                "secondary_link",
+                "tertiary_link",
+                "junction"
+            ]
+        },
+        "motorway": {
+            "highway": [
+                "motorway"
+            ]
+        },
+        "path": {
+            "highway": [
+                "path",
+                "bridleway"
+            ]
+        },
+        "primary": {
+            "highway": [
+                "primary"
+            ]
+        },
+        "residential": {
+            "highway": [
+                "residential",
+                "living_street"
+            ]
+        },
+        "roundabout": {
+            "junction": [
+                "roundabout",
+                "circular"
+            ]
+        },
+        "secondary": {
+            "highway": [
+                "secondary"
+            ]
+        },
+        "steps": {
+            "highway": [
+                "steps"
+            ]
+        },
+        "tertiary": {
+            "highway": [
+                "tertiary"
+            ]
+        },
+        "track": {
+            "highway": [
+                "track"
+            ]
+        },
+        "trunk": {
+            "highway": [
+                "trunk"
+            ]
+        },
+        "unclassified": {
+            "highway": [
+                "unclassified"
+            ]
+        }
+    },
+    "width" :
+     {
+        "highway": 8,
+        "motorway": 24,
+        "trunk": 16,
+        "primary": 10,
+        "secondary": 10,
+        "tertiary": 8,
+        "residential": 8,
+        "unclassified": 3,
+        "track": 2,
+        "path": 1,
+        "footway": 1,
+        "cycleway": 1,
+        "steps": 1,
+        "highway_link": 8,
+        "roundabout": 4,
+        "ferry": 0
+    },
+  "crossing":{"bridge" :
+  ["yes", "aqueduct", "cantilever", "covered", "low_water_crossing", "movable", "trestle",
+    "viaduct"]}
+
+}

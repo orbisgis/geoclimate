@@ -1,0 +1,52 @@
+{
+    "tags" : ["railway"],
+    "columns":["highspeed","railway","service",
+        "tunnel","layer","bridge"],
+    "type" :
+    {
+    "highspeed": {
+        "highspeed": [
+            "yes"
+        ]
+    },
+    "rail": {
+        "railway": [
+            "rail",
+            "light_rail",
+            "narrow_gauge"
+        ]
+    },
+    "service_track": {
+        "service": [
+            "yard",
+            "siding",
+            "spur",
+            "crossover"
+        ]
+    },
+    "disused": {
+        "railway": [
+            "disused"
+        ]
+    },
+    "funicular": {
+        "railway": [
+            "funicular"
+        ]
+    },
+    "subway": {
+        "railway": [
+            "subway"
+        ]
+    },
+    "tram": {
+        "railway": [
+            "tram"
+        ]
+    }
+},
+    "crossing":{"bridge" :
+    ["yes", "aqueduct", "cantilever", "covered", "low_water_crossing", "movable", "trestle",
+        "viaduct"]}
+
+}
