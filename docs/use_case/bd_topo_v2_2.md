@@ -206,7 +206,8 @@ Below we are listing all the initialization actions made on the input data
 - geometries (coming from `BATI_INDIFFERENCIE`, `BATI_INDUSTRIEL` and `BATI_REMARQUABLE`) are [exploded](http://www.h2gis.org/docs/dev/ST_Explode/) in order to works only with simple geometries.
 
 
-#### For roads
+#### For roads
+
 
 - Only objects having a `POS_SOL` (or `ZINDEX`) >= 0 are keeped
 - `ID` column is renamed `ID_SOURCE`
@@ -218,7 +219,8 @@ Below we are listing all the initialization actions made on the input data
 - `TYPE` column is feeded with values coming from `NATURE` column, using the [matching rules](#Matching-tables). 
 
 
-#### For railways
+#### For railways
+
 
 - Only objects having a `POS_SOL` (or `ZINDEX`) >= 0 are keeped
 
@@ -230,22 +232,22 @@ Below we are listing all the initialization actions made on the input data
 
 
 
-#### For hydrographic areas
-
-
-
-- `ID` column is renamed `ID_SOURCE`
-
-
-#### For vegetation areas
+#### For vegetation areas
 
 
 - `ID` column is renamed `ID_SOURCE`
 - `TYPE` column is feeded with values coming from `NATURE` column, using the [matching rules](#Matching-tables). 
 
 
+#### For hydrographic areas
 
-#### For impervious areas
+
+- `ID` column is renamed `ID_SOURCE`
+
+
+
+#### For impervious areas
+
 
 - Only objects having a `NATURE` or `CATEGORIE` listed [below](#Filtering-of-objects) are keeped
 - `ID` column is renamed `ID_SOURCE`
