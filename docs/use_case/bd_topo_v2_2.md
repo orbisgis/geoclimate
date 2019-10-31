@@ -35,13 +35,17 @@ Here, we are presenting;
 
 #### Zone layer
 
-As explained beforehand, we will process the BD Topo zone by zone. In this example, the ZONE will be a French city.
+As explained beforehand, we will process the BD Topo zone by zone. In this example, the `ZONE` will be a French city.
 
 In the meantime, for the purposes of the [PAENDORA](https://www.ademe.fr/sites/default/files/assets/documents/aprademeprojetsretenusen2017.pdf#page=39) project in which this example is included, we need to combine Geoclimate results with population data. In France, this kind of information is commonly provided at the [IRIS](https://www.insee.fr/fr/metadonnees/definition/c1523) scale. An IRIS (Ilots Regroupés pour l’Information Statistique - grouped islet for the statistical information) is a basic spatial scale for the dissemination of local data such as population statistics, household consumption, professional social categories, ...
 
 ##### IRIS *vs* city
 
-A city can consist of 1 to *n* IRIS and an IRIS belongs to only one city. So by merging IRIS geometries that have a common city Id, we can generate the city shape.
+A city can consist of 1 to *n* IRIS and an IRIS belongs to only one city. So by merging IRIS geometries (in a temporary table called `TMP_IRIS`) that have a common city Id (nammed `CODE_INSEE` - `ID_ZONE`), we can generate the city (`ZONE`) shape.
+
+![](../images/iris.png)
+
+
 
 ##### Input data
 
