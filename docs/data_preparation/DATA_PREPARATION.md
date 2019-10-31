@@ -17,10 +17,10 @@ Below are presented:
 
 ### Working areas
 
-| Name             | Description                                                  |
-| ---------------- | ------------------------------------------------------------ |
-| `ZONE`           | The studied zone, which may be a city, an agglomeration, ... |
-| `ZONE_BUFFER`    | A buffer area around the `ZONE` . The size *(expressed in meter)* is defined with the `DIST_BUFFER` parameter. Default value = `500`m |
+|       Name       | Description                                                  |
+| :--------------: | ------------------------------------------------------------ |
+|      `ZONE`      | The studied zone, which may be a city, an agglomeration, ... |
+|  `ZONE_BUFFER`   | A buffer area around the `ZONE` . The size *(expressed in meter)* is defined with the `DIST_BUFFER` parameter. Default value = `500`m |
 | `ZONE_EXTENDED`  | An extended area around the `ZONE` , produce with the [ST_Expand](http://www.h2gis.org/docs/dev/ST_Expand/) operator. The size *(expressed in meter)* is defined with the `EXPAND` parameter. Default value = `1000`m |
 | `ZONE_NEIGHBORS` | The neighboring zones. A zone is considered to be a neighbor if it intersects the `ZONE_EXTENDED`. This zone is only used to determine the relationship between buildings and their belonging zones ([See](../data_formating/DATA_FORMATING.md#1--belonging-zone-id)). |
 

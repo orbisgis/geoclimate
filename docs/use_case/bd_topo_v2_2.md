@@ -14,13 +14,33 @@ In practice, this database is:
 
 In this use case, we are executing the three following modules:
 
-- M1 - Input data preparation
+- M1 - [Input data preparation](../data_preparation/DATA_PREPARATION.md)
 - M2 - [Formating and quality control](../data_formating/DATA_FORMATING.md)
 - M3 - Geoindicators and LCZ's production
 
 
 
-## Input layers
+### Input layers
+
+#### Zone layer
+
+As explained beforehand, we will process the BD Topo zone by zone. In this example, the ZONE will be a French city.
+
+In the meantime, For the purposes of the [PAENDORA](https://www.ademe.fr/sites/default/files/assets/documents/aprademeprojetsretenusen2017.pdf#page=39) project in which this example is included, we need to combine Geoclimate results with population data. In France, this kind of information is commonly provided at the [IRIS](https://www.insee.fr/fr/metadonnees/definition/c1523) scale. An IRIS (Ilots Regroupés pour l’Information Statistique - grouped islet for the statistical information) is a basic spatial scale for the dissemination of local data such as population statistics, household consumption, professional social categories, ...
+
+##### IRIS *vs* city
+
+A city can consist of 1 to *n* IRIS and an IRIS belongs to only one city. So by merging IRIS geometries that have a common city Id, we can generate the city shape.
+
+##### Input data
+
+In this use case, we use the [`IRIS_GE`](http://professionnels.ign.fr/irisge) layer produced by the IGN, mainly because the geometries are consistent with the one from BD Topo.
+
+|                 IRIS layer name                  | Input data model matching |
+| :----------------------------------------------: | :-----------------------: |
+| [`IRIS_GE`](http://professionnels.ign.fr/irisge) |           ZONE            |
+
+#### Thematic layers
 
 Below are listed the BD Topo layers used to feed the [input data model](../input_data/INPUT_DATA_MODEL.md).
 
@@ -41,7 +61,7 @@ Below are listed the BD Topo layers used to feed the [input data model](../input
 
 
 
-## Filtering of objects
+### Filtering of objects
 
 In some cases, it is necessary to filter the input data, in order to keep only needed informations. 
 
@@ -63,7 +83,7 @@ Below we are detailing for all layers from BD Topo wether a filter is applied or
 
 
 
-## Matching tables
+### Matching tables
 
 Below are listed the correspondence tables between the values from the BD Topo (stored in a column called `NATURE`) and those expected in the [input data model](../input_data/INPUT_DATA_MODEL.md).
 
@@ -75,7 +95,7 @@ The tables are grouped by theme and present the following informations:
 
 
 
-### For buildings
+#### For buildings
 
 | Layer name | NATURE | TYPE ([see](../input_data/INPUT_DATA_MODEL.md#-building-use-and-type)) |
 | :--------: | :----: | :--: |
@@ -103,7 +123,7 @@ The tables are grouped by theme and present the following informations:
 | BATI_REMARQUABLE | Tour, donjon, moulin |historic|
 | BATI_REMARQUABLE | Tribune |grandstand|
 
-### For roads
+#### For roads
 
 | Layer name | NATURE | TYPE ([see](../input_data/INPUT_DATA_MODEL.md#-road-type)) |
 | :--------: | :----: | :--: |
@@ -121,7 +141,7 @@ The tables are grouped by theme and present the following informations:
 | ROUTE | Escalier |steps|
 
 
-### For railways
+#### For railways
 
 | Layer name | NATURE | TYPE ([see](../input_data/INPUT_DATA_MODEL.md#-rail-type)) |
 | :--------: | :----: | :--: |
@@ -135,7 +155,7 @@ The tables are grouped by theme and present the following informations:
 | TRONCON_VOIE_FERREE | Tramway |tram|
 
 
-### For vegetation areas
+#### For vegetation areas
 
 | Layer name | NATURE | TYPE ([see](../input_data/INPUT_DATA_MODEL.md#-veget-type)) |
 | :--------: | :----: | :--: |

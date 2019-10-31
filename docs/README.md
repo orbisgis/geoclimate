@@ -62,9 +62,10 @@ The prepared data provided by the user, according to the input model, are contro
 
 The data are processed automatically, without user intervention, and the resulting layers are provided ([See](#Resulting-layers)).
 
-### Remark
+### Remarks
 
-The user has the choice to merge or to skip M1 and M2. The only requirement is that the M3 input data must comply with the model defined [HERE](./input_data/INPUT_DATA_MODEL.md).
+- The user has the choice to merge or to skip M1 and M2. The only requirement is that the M3 input data must comply with the model defined [HERE](./input_data/INPUT_DATA_MODEL.md).
+- The Geoclimate chain is designed to execute only one [`ZONE`](./data_preparation/DATA_PREPARATION.md#Working-areas) at a time (so the chain will be executed as many times as there are zones to be processed).
 
 ## Resulting layers
 
@@ -90,7 +91,7 @@ In a technical point of view, the algorithms of the Geoclimate chain are impleme
 
 Geoclimate has been developed in a modular and as generic way as possible. It is therefore possible for the user to use his own data sets, as long as he follows the instructions for their preparation / formatting.
 
-Below we present two use cases developped by the Lab-STICC team: 
+Below we present two use cases developped by the DECIDE team from [Lab-STICC](https://www.labsticc.fr/): 
 
 - [OpenStreetMap](https://www.openstreetmap.org) (OSM), on a worldwide context  ![](./images/icons/arrow.png) [Read more](./use_case/osm.md)
 - BD Topo [V2.2](http://professionnels.ign.fr/ancienne-bdtopo) (from [IGN](http://ign.fr/)), only on the french scale  ![](./images/icons/arrow.png) [Read more](./use_case/bd_topo_v2_2.md)
