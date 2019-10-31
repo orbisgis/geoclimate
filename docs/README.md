@@ -65,7 +65,7 @@ The data are processed automatically, without user intervention, and the resulti
 ### Remarks
 
 - The user has the choice to merge or to skip M1 and M2. The only requirement is that the M3 input data must comply with the model defined [HERE](./input_data/INPUT_DATA_MODEL.md).
-- The Geoclimate chain is designed to execute only one [`ZONE`](./data_preparation/DATA_PREPARATION.md#Working-areas) at a time (so the chain will be executed as many times as there are zones to be processed).
+- The Geoclimate chain is designed to execute only one [`ZONE`](./data_preparation/DATA_PREPARATION.md#Working-areas) at a time (so the chain will be executed as many times as there are zones to be analyzed).
 
 ## Resulting layers
 
