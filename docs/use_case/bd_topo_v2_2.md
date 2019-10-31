@@ -257,7 +257,7 @@ Below we are listing all the initialization actions made on the input data
 
 
 - Objects from `TERRAIN_SPORT`, `CONSTRUCTION_SURFACIQUE`, `SURFACE_ROUTE` and `SURFACE_ACTIVITE` layers are merged into a common table
-- Only objects having a `NATURE` or `CATEGORIE` listed [below](#Filtering-of-objects) are keeped
+- Only objects having a `NATURE` or `CATEGORIE` listed [before](#Filtering-of-objects) are keeped
 - `ID` column is renamed `ID_SOURCE`
 
 
