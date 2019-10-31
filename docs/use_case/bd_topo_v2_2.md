@@ -266,7 +266,7 @@ Below we are listing all the initialization actions made on the input data
 
 ## M2 - Formating and quality control
 
-The [M1](#m1--input-data-preparation) steps seen before leads to the creation of the 8 following layers: `input_building`, `input_road`, `input_rail`, `input_veget`, `input_hydro`, `input_impervious`, `zone` and `zone_neighbors`.
+The [M1](#m1---input-data-preparation) steps seen before leads to the creation of the 8 following layers: `input_building`, `input_road`, `input_rail`, `input_veget`, `input_hydro`, `input_impervious`, `zone` and `zone_neighbors`.
 
 These layers are now formated and controled thanks to the [Module 2](../data_formating/DATA_FORMATING.md). To summarize we list below the main actions carried out:
 
