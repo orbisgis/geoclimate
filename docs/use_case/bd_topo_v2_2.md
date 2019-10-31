@@ -191,6 +191,7 @@ The tables are grouped by theme and present the following informations:
 
 Below we are listing all the initialization actions made on the input data
 
+
 #### For buildings
 
 - `ID` column is renamed `ID_SOURCE`
@@ -202,7 +203,6 @@ Below we are listing all the initialization actions made on the input data
   - `ZINDEX` is forced to be equal to `0` 
 - `TYPE` column is feeded with values coming from `NATURE` column, using the [matching rules](#Matching-tables). For the buildings from the `BATI_INDIFFERENCIE` layer, since there is no `NATURE` column, we forced the `TYPE` to `building`.
 - geometries (coming from `BATI_INDIFFERENCIE`, `BATI_INDUSTRIEL` and `BATI_REMARQUABLE`) are [exploded](http://www.h2gis.org/docs/dev/ST_Explode/) in order to works only with simple geometries.
-
 
 
 #### For roads
@@ -217,7 +217,6 @@ Below we are listing all the initialization actions made on the input data
 - `TYPE` column is feeded with values coming from `NATURE` column, using the [matching rules](#Matching-tables). 
 
 
-
 #### For railways
 
 - Only objects having a `POS_SOL` (or `ZINDEX`) >= 0 are keeped
@@ -228,12 +227,11 @@ Below we are listing all the initialization actions made on the input data
 
 - `TYPE` column is feeded with values coming from `NATURE` column, using the [matching rules](#Matching-tables). 
 
-  
+
 
 #### For hydrographic areas
 
 - `ID` column is renamed `ID_SOURCE`
-
 
 
 #### For vegetation areas
