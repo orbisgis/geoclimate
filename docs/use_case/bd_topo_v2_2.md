@@ -14,8 +14,8 @@ In practice, this database is:
 
 In this use case, we are executing the three following modules:
 
-- M1 - [Input data preparation](#m1--input-data-preparation)
-- M2 - [Formating and quality control](#m2--formating-and-quality-control)
+- M1 - [Input data preparation](#m1---input-data-preparation)
+- M2 - [Formating and quality control](#m2---formating-and-quality-control)
 - M3 - Geoindicators and LCZ's production
 
 
