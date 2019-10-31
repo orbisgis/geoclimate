@@ -192,7 +192,8 @@ The tables are grouped by theme and present the following informations:
 Below we are listing all the initialization actions made on the input data
 
 
-#### For buildings
+#### For buildings
+
 
 - `ID` column is renamed `ID_SOURCE`
 - `HAUTEUR` column is renamed `HEIGHT_WALL`
@@ -229,12 +230,15 @@ Below we are listing all the initialization actions made on the input data
 
 
 
-#### For hydrographic areas
+#### For hydrographic areas
+
+
 
 - `ID` column is renamed `ID_SOURCE`
 
 
 #### For vegetation areas
+
 
 - `ID` column is renamed `ID_SOURCE`
 - `TYPE` column is feeded with values coming from `NATURE` column, using the [matching rules](#Matching-tables). 
