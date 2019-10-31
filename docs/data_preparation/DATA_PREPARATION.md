@@ -20,13 +20,18 @@ Below are presented:
 | Name             | Description                                                  |
 | ---------------- | ------------------------------------------------------------ |
 | `ZONE`           | The studied zone, which may be a city, an agglomeration, ... |
-| `ZONE_BUFFER`    | A buffer area around the `ZONE` . The size (expressed in meter) is defined with the `DIST_BUFFER` parameter. Default value = 500m |
-| `ZONE_EXTENDED`  | An extended area around the `ZONE` , produce with the [ST_Expand](http://www.h2gis.org/docs/dev/ST_Expand/) operator. The size (expressed in meter) is defined with the `EXPAND` parameter. Default value = 1000m |
-| `ZONE_NEIGHBORS` | The neighboring zones. A zone is considered to be a neighbor if it intersects the `ZONE_EXTENDED` |
+| `ZONE_BUFFER`    | A buffer area around the `ZONE` . The size *(expressed in meter)* is defined with the `DIST_BUFFER` parameter. Default value = `500`m |
+| `ZONE_EXTENDED`  | An extended area around the `ZONE` , produce with the [ST_Expand](http://www.h2gis.org/docs/dev/ST_Expand/) operator. The size *(expressed in meter)* is defined with the `EXPAND` parameter. Default value = `1000`m |
+| `ZONE_NEIGHBORS` | The neighboring zones. A zone is considered to be a neighbor if it intersects the `ZONE_EXTENDED`. This zone is only used to determine the relationship between buildings and their belonging zones ([See](../data_formating/DATA_FORMATING.md#1--belonging-zone-id)). |
 
 ![](../images/zones.png)
 
 
+
+**Remark**
+
+- `ZONE` and `ZONE_NEIGHBORS` layers are expected in the [input data model](../input_data/INPUT_DATA_MODEL.md#zones).
+- `ZONE_BUFFER`  and `ZONE_EXTENDED`  are temporary layers, just needed for Module 1.
 
 ### Input data *vs* working areas
 
@@ -39,5 +44,5 @@ Depending on the working zones, the input data are selected. The table below lis
 |      Railways      | ![](../images/icons/check.png) |                                |                                |
 |  Vegetation areas  |                                |                                | ![](../images/icons/check.png) |
 | Hydrographic areas |                                |                                | ![](../images/icons/check.png) |
-|  Impervious areas  |                                |                                | ![](../images/icons/check.png) |
+|  Impervious areas  | ![](../images/icons/check.png) |                                |                                |
 
