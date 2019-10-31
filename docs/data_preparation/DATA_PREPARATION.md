@@ -1,7 +1,10 @@
 # M1 - Input data preparation
 
 This module consists of preparing the data chosen by the user for integration into the [Module 2](../data_formating/DATA_FORMATING.md).
-In particular, it allows the selection of the necessary input data, based on spatial and attribute filters
+In particular, it allows:
+
+- the selection of the necessary input data, based on spatial and attribute filters,
+- the compliance of the thematic descriptors.
 
 
 
@@ -45,4 +48,24 @@ Depending on the working zones, the input data are selected. The table below lis
 |  Vegetation areas  |                                |                                | ![](../images/icons/check.png) |
 | Hydrographic areas |                                |                                | ![](../images/icons/check.png) |
 |  Impervious areas  | ![](../images/icons/check.png) |                                |                                |
+
+
+
+## Attribute matching
+
+The attribute matching consist in converting the thematic descriptors, in the entry data, in order to be consistent with the expected values in the [input data model](../input_data/INPUT_DATA_MODEL.md#zones).
+
+For each of these values, the user has to determine conversion rules in order to update them.
+
+It is therefore a step that is implemented on a case-by-case basis, since it depends on the input data sets.
+
+Two examples are given with the OSM and [BD Topo](../use_case/bd_topo_v2_2.md#matching-tables) use cases.
+
+
+
+
+
+
+
+
 
