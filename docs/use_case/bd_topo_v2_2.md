@@ -20,13 +20,24 @@ In this use case, we are executing the three following modules:
 
 
 
+## M1 - Input data preparation
+
+Here, we are presenting;
+
+- the [input layers](#Input-layers)
+- the [filtering of objects](#Filtering-of-objects)
+- the [matching tables](#Matching-tables)
+- the [initialization actions](#Initialization-actions)
+
+
+
 ### Input layers
 
 #### Zone layer
 
 As explained beforehand, we will process the BD Topo zone by zone. In this example, the ZONE will be a French city.
 
-In the meantime, For the purposes of the [PAENDORA](https://www.ademe.fr/sites/default/files/assets/documents/aprademeprojetsretenusen2017.pdf#page=39) project in which this example is included, we need to combine Geoclimate results with population data. In France, this kind of information is commonly provided at the [IRIS](https://www.insee.fr/fr/metadonnees/definition/c1523) scale. An IRIS (Ilots Regroupés pour l’Information Statistique - grouped islet for the statistical information) is a basic spatial scale for the dissemination of local data such as population statistics, household consumption, professional social categories, ...
+In the meantime, for the purposes of the [PAENDORA](https://www.ademe.fr/sites/default/files/assets/documents/aprademeprojetsretenusen2017.pdf#page=39) project in which this example is included, we need to combine Geoclimate results with population data. In France, this kind of information is commonly provided at the [IRIS](https://www.insee.fr/fr/metadonnees/definition/c1523) scale. An IRIS (Ilots Regroupés pour l’Information Statistique - grouped islet for the statistical information) is a basic spatial scale for the dissemination of local data such as population statistics, household consumption, professional social categories, ...
 
 ##### IRIS *vs* city
 
@@ -59,7 +70,7 @@ Below are listed the BD Topo layers used to feed the [input data model](../input
 | [SURFACE_ROUTE](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=35) | input_impervious / IMPERVIOUS |
 | [SURFACE_ACTIVITE](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=134) | input_impervious / IMPERVIOUS |
 
-
+[back to top](#BD-Topo-v22-use-case)
 
 ### Filtering of objects
 
@@ -72,8 +83,8 @@ Below we are detailing for all layers from BD Topo wether a filter is applied or
 | BATI_INDIFFERENCIE | no filter |
 | BATI_INDUSTRIEL |                          no filter                           |
 | BATI_REMARQUABLE | no filter |
-| ROUTE | no filter |
-| TRONCON_VOIE_FERREE | no filter |
+| ROUTE | where [`POS_SOL`](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=23) >= 0 |
+| TRONCON_VOIE_FERREE | where [`POS_SOL`](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=47) >= 0 |
 | ZONE_VEGETATION | no filter |
 | SURFACE_EAU| no filter |
 | TERRAIN_SPORT | where [`NATURE`](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=104) = ['Piste de sport' / 'Terrain de tennis'] |
@@ -81,7 +92,7 @@ Below we are detailing for all layers from BD Topo wether a filter is applied or
 | SURFACE_ROUTE | no filter |
 | SURFACE_ACTIVITE | where [`CATEGORIE`](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=135) = ['Administratif' / 'Enseignement' / 'Santé'] |
 
-
+[back to top](#BD-Topo-v22-use-case)
 
 ### Matching tables
 
@@ -173,3 +184,70 @@ The tables are grouped by theme and present the following informations:
 | ZONE_VEGETATION | Bananeraie |banana_plants|
 | ZONE_VEGETATION | Mangrove |mangrove|
 | ZONE_VEGETATION | Canne à sucre |sugar_cane|
+
+[back to top](#BD-Topo-v22-use-case)
+
+### Initialization actions
+
+Below we are listing all the initialization actions made on the input data
+
+#### For buildings
+
+- `ID` column is renamed `ID_SOURCE`
+- `HAUTEUR` column is renamed `HEIGHT_WALL`
+- Since there is no such informations in the BD Topo:
+  - `HEIGHT_ROOF` is filled with the text value `''` (= null value)
+  - `NB_LEV` is filled with the text value `''` (= null value)
+  - `MAIN_USE` is filled with the text value `''` (= null value)
+  - `ZINDEX` is forced to be equal to `0` 
+- `TYPE` column is feeded with values coming from `NATURE` column, using the [matching rules](#Matching-tables). For the buildings from the `BATI_INDIFFERENCIE` layer, since there is no `NATURE` column, we forced the `TYPE` to `building`.
+- geometries (coming from `BATI_INDIFFERENCIE`, `BATI_INDUSTRIEL` and `BATI_REMARQUABLE`) are [exploded](http://www.h2gis.org/docs/dev/ST_Explode/) in order to works only with simple geometries.
+
+
+
+#### For roads
+
+- Only objects having a `POS_SOL` (or `ZINDEX`) >= 0 are keeped
+- `ID` column is renamed `ID_SOURCE`
+- `LARGEUR` column is renamed `WIDTH`
+- `POS_SOL` column is renamed `ZINDEX`
+- Since there is no such informations in the BD Topo:
+  - `SURFACE` is filled with the text value `''` (= null value)
+  - `SIDEWALK` is filled with the text value `''` (= null value)
+- `TYPE` column is feeded with values coming from `NATURE` column, using the [matching rules](#Matching-tables). 
+
+
+
+#### For railways
+
+- Only objects having a `POS_SOL` (or `ZINDEX`) >= 0 are keeped
+
+- `ID` column is renamed `ID_SOURCE`
+
+- `POS_SOL` column is renamed `ZINDEX`
+
+- `TYPE` column is feeded with values coming from `NATURE` column, using the [matching rules](#Matching-tables). 
+
+  
+
+#### For hydrographic areas
+
+- `ID` column is renamed `ID_SOURCE`
+
+
+
+#### For vegetation areas
+
+- `ID` column is renamed `ID_SOURCE`
+- `TYPE` column is feeded with values coming from `NATURE` column, using the [matching rules](#Matching-tables). 
+
+
+
+#### For impervious areas
+
+- Only objects having a `NATURE` or `CATEGORIE` listed [below](#Filtering-of-objects) are keeped
+- `ID` column is renamed `ID_SOURCE`
+
+
+
+[back to top](#BD-Topo-v22-use-case)
