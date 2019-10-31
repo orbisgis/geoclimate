@@ -14,15 +14,17 @@ In practice, this database is:
 
 In this use case, we are executing the three following modules:
 
-- M1 - [Input data preparation](../data_preparation/DATA_PREPARATION.md)
-- M2 - [Formating and quality control](../data_formating/DATA_FORMATING.md)
+- M1 - [Input data preparation](#m1--input-data-preparation)
+- M2 - [Formating and quality control](#m2--formating-and-quality-control)
 - M3 - Geoindicators and LCZ's production
 
 
 
 ## M1 - Input data preparation
 
-Here, we are presenting;
+This part aims to illustrate the steps described in the [Module 1](../data_preparation/DATA_PREPARATION.md). 
+
+Here, we are specifically presenting:
 
 - the [input layers](#Input-layers)
 - the [filtering of objects](#Filtering-of-objects)
@@ -62,17 +64,17 @@ Below are listed the BD Topo layers used to feed the [input data model](../input
 
 | BD Topo layer name | Input data model matching |
 | :--------: | :----: |
-| [BATI_INDIFFERENCIE](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=80) | input_building / BUILDING |
-| [BATI_INDUSTRIEL](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=89) | input_building / BUILDING |
-| [BATI_REMARQUABLE](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=85) | input_building / BUILDING |
-| [ROUTE](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=13) | input_road / ROAD |
-| [TRONCON_VOIE_FERREE](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=44) | input_rail / RAIL |
-| [ZONE_VEGETATION](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=116) | input_veget/ VEGET |
-| [SURFACE_EAU](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=66) | input_hydro / HYDRO |
-| [TERRAIN_SPORT](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=103) | input_impervious / IMPERVIOUS |
-| [CONSTRUCTION_SURFACIQUE](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=113) | input_impervious / IMPERVIOUS |
-| [SURFACE_ROUTE](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=35) | input_impervious / IMPERVIOUS |
-| [SURFACE_ACTIVITE](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=134) | input_impervious / IMPERVIOUS |
+| [BATI_INDIFFERENCIE](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=80) | input_building |
+| [BATI_INDUSTRIEL](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=89) | input_building |
+| [BATI_REMARQUABLE](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=85) | input_building |
+| [ROUTE](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=13) | input_road |
+| [TRONCON_VOIE_FERREE](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=44) | input_rail |
+| [ZONE_VEGETATION](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=116) | input_veget |
+| [SURFACE_EAU](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=66) | input_hydro |
+| [TERRAIN_SPORT](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=103) | input_impervious |
+| [CONSTRUCTION_SURFACIQUE](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=113) | input_impervious |
+| [SURFACE_ROUTE](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=35) | input_impervious |
+| [SURFACE_ACTIVITE](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=134) | input_impervious |
 
 [back to top](#BD-Topo-v22-use-case)
 
@@ -112,7 +114,7 @@ The tables are grouped by theme and present the following informations:
 
 #### For buildings
 
-| Layer name | NATURE | TYPE ([see](../input_data/INPUT_DATA_MODEL.md#-building-use-and-type)) |
+| Layer name | NATURE ([see](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=86)) | TYPE ([see](../input_data/INPUT_DATA_MODEL.md#-building-use-and-type)) |
 | :--------: | :----: | :--: |
 | BATI_INDIFFERENCIE |        | building |
 | BATI_INDUSTRIEL | Bâtiment agricole |farm_auxiliary|
@@ -140,7 +142,7 @@ The tables are grouped by theme and present the following informations:
 
 #### For roads
 
-| Layer name | NATURE | TYPE ([see](../input_data/INPUT_DATA_MODEL.md#-road-type)) |
+| Layer name | NATURE ([see](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=17)) | TYPE ([see](../input_data/INPUT_DATA_MODEL.md#-road-type)) |
 | :--------: | :----: | :--: |
 | ROUTE | Autoroute |motorway|
 | ROUTE | Quasi-autoroute |trunk|
@@ -158,7 +160,7 @@ The tables are grouped by theme and present the following informations:
 
 #### For railways
 
-| Layer name | NATURE | TYPE ([see](../input_data/INPUT_DATA_MODEL.md#-rail-type)) |
+| Layer name | NATURE ([see](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=45)) | TYPE ([see](../input_data/INPUT_DATA_MODEL.md#-rail-type)) |
 | :--------: | :----: | :--: |
 | TRONCON_VOIE_FERREE | LGV |highspeed|
 | TRONCON_VOIE_FERREE | Principale |rail|
@@ -172,7 +174,7 @@ The tables are grouped by theme and present the following informations:
 
 #### For vegetation areas
 
-| Layer name | NATURE | TYPE ([see](../input_data/INPUT_DATA_MODEL.md#-veget-type)) |
+| Layer name | NATURE ([see](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=117)) | TYPE ([see](../input_data/INPUT_DATA_MODEL.md#-veget-type)) |
 | :--------: | :----: | :--: |
 | ZONE_VEGETATION | Zone arborée |wood|
 | ZONE_VEGETATION | Forêt fermée de feuillus |forest|
@@ -199,6 +201,7 @@ Below we are listing all the initialization actions made on the input data
 #### For buildings
 
 
+- Objects from`BATI_INDIFFERENCIE`, `BATI_INDUSTRIEL` and `BATI_REMARQUABLE` layers are merged into a common table
 - `ID` column is renamed `ID_SOURCE`
 - `HAUTEUR` column is renamed `HEIGHT_WALL`
 - Since there is no such informations in the BD Topo:
@@ -253,9 +256,28 @@ Below we are listing all the initialization actions made on the input data
 #### For impervious areas
 
 
+- Objects from `TERRAIN_SPORT`, `CONSTRUCTION_SURFACIQUE`, `SURFACE_ROUTE` and `SURFACE_ACTIVITE` layers are merged into a common table
 - Only objects having a `NATURE` or `CATEGORIE` listed [below](#Filtering-of-objects) are keeped
 - `ID` column is renamed `ID_SOURCE`
 
 
 
 [back to top](#BD-Topo-v22-use-case)
+
+## M2 - Formating and quality control
+
+The [M1](#m1--input-data-preparation) steps seen before leads to the creation of the 8 following layers: `input_building`, `input_road`, `input_rail`, `input_veget`, `input_hydro`, `input_impervious`, `zone` and `zone_neighbors`.
+
+These layers are now formated and controled thanks to the [Module 2](../data_formating/DATA_FORMATING.md). To summarize we list below the main actions carried out:
+
+1. On each input layers, a PRIMARY KEY is added and stored in a column called `id_xxxx`
+2. Buildings are enriched with:
+   1. the belonging zone id
+   2. the update of wall / roof heights and number of levels
+3.  Roads width is updated
+4. Vegetation height class is deduced
+5. Quality controls are executed 
+
+
+
+Once finished, we obtain the 7 following layers `BUILDING`, `ROAD`, `RAIL`, `VEGET`, `HYDRO`, `IMPERVIOUS`, `ZONE`, ready to be used by the Module 3.
