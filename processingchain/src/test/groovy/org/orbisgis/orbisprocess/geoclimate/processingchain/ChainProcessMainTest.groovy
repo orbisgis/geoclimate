@@ -183,7 +183,7 @@ class ChainProcessMainTest {
         }
 
         // Calculate the LCZ indicators and the corresponding LCZ class of each RSU
-        IProcess pm_lcz =  ProcessingChain.BuildLCZ.crit eateLCZ()
+        IProcess pm_lcz =  ProcessingChain.BuildLCZ.createLCZ()
         if(!pm_lcz.execute([datasource: datasource, prefixName: prefixName, buildingTable: relationBuildings,
                             rsuTable: relationRSU, roadTable: roadTableName, vegetationTable: vegetationTableName,
                             hydrographicTable: hydrographicTableName, facadeDensListLayersBottom: [0, 50, 200], facadeDensNumberOfDirection: 8,
