@@ -251,7 +251,8 @@ IProcess geometryProperties() {
  * @param distribIndicator List containing the type of indicator to calculate to define the repartition of the distribution
  * (default ["inequality", "uniqueness"])
  *      --> "inequality": the Perkins Skill Score is calculated
- *      --> "uniqueness": the weight of the first main direction is divided by the weight of the second main direction
+ *      --> "uniqueness": the weight of the first main direction is divided by
+ *                      "the weight of the second main direction + the weight of the first main direction"
  * @param prefixName String use as prefix to name the output table
  *
  * Reference:
@@ -378,7 +379,7 @@ IProcess buildingDirectionDistribution() {
                     if (distribIndicator.contains("inequality")) {
                         sqlQueryLast += " a.$INEQUALITY, "
                     }
-                    sqlQueryLast += """a.max_surf/MAX(b.SURF) AS $UNIQUENESS  
+                    sqlQueryLast += """a.max_surf/(MAX(b.SURF)+a.max_surf) AS $UNIQUENESS  
                                        FROM         $build_perk_fin a 
                                        RIGHT JOIN   $build_dir_bdd b
                                        ON           a.$inputIdUp = b.$inputIdUp
