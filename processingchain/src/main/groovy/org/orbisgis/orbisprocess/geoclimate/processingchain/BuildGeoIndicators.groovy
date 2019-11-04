@@ -88,16 +88,16 @@ def computeBuildingsIndicators() {
                 finalTablesToJoin.put(buildTableComputeNeighborsProperties, idColumnBu)
 
                 if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
-                    // building_concavity + building_form_factor + building_raw_compactness + building_convexity
+                    // area_concavity + building_form_factor + building_raw_compactness + perimeter_convexity
                     def computeFormProperties = Geoindicators.BuildingIndicators.formProperties()
                     if (!computeFormProperties([inputBuildingTableName: inputBuildingTableName,
-                                                operations            : ["concavity", "form_factor",
+                                                operations            : ["area_concavity", "form_factor",
                                                                          "raw_compactness",
-                                                                         "convexity"],
+                                                                         "perimeter_convexity"],
                                                 prefixName            : buildingPrefixName,
                                                 datasource            : datasource])) {
-                        info "Cannot compute the building_concavity, building_form_factor, building_raw_compactness, " +
-                                "building_convexity indicators for the buildings"
+                        info "Cannot compute the area_concavity, form_factor, raw_compactness, " +
+                                "perimeter_convexity indicators for the buildings"
                         return
                     }
                     def buildTableFormProperties = computeFormProperties.results.outputTableName
