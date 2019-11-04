@@ -148,7 +148,7 @@ class GenericIndicatorsTests {
 
         def  p =  Geoindicators.GenericIndicators.buildingDirectionDistribution()
         assertTrue p.execute([buildingTableName: "tempo_build", inputIdUp: "id_block", angleRangeSize: 15,
-                              prefixName: "test", datasource: h2GIS, distribIndicator: ["inequality"]])
+                              prefixName: "test", datasource: h2GIS, distribIndicator: ["inequality", "uniqueness"]])
 
         assertEquals(4.0/12, h2GIS.firstRow("SELECT * FROM test_MAIN_BUILDING_DIRECTION " +
                 "WHERE id_block = 4")["BUILDING_DIRECTION_INEQUALITY"], 0.0001)
