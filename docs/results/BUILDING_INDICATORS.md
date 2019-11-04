@@ -39,126 +39,147 @@ This table stores all the indicators computed at the building's scale.
 | ROAD_DISTANCE | double precision | [Full definition](#ROAD_DISTANCE) |
 | LIKELIHOOD_LARGE_BUILDING | double precision | [Full definition](#LIKELIHOOD_LARGE_BUILDING) |
 
+
+
+[back to top](#the-building_indicators-table)
+
 ## Indicators definition  ![](../images/icons/dico.png)
 
 ### `ZINDEX`
 
-**Definition**: Position of the building relative to the ground. 0 means that the building is on the ground. A negative value means that it is under the ground *(e. g. a metro station)* while a value greater than 0 means that it is in the air *(e. g. a bridge)*.
+**Description**: Position of the building relative to the ground. 0 means that the building is on the ground. A negative value means that it is under the ground *(e. g. a metro station)* while a value greater than 0 means that it is in the air *(e. g. a bridge)*.
+
+
+
+### `AREA `
+
+**Description**: Building's area (footprint).
+
+**Method**: `Area`
+
+
 
 
 ### `VOLUME`
 
-**Definition**: Building's volume defined as the product of the surface with the average height between the wall and the roof.
+**Description**: Building's volume defined as the product of the surface with the average height between the wall and the roof.
 
-**Formula**: `Area * ((Wall height + Roof height)/2)`
+**Method**: `Area * ((Wall height + Roof height)/2)`
 
-**Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L60
+
 
 
 ### `FLOOR_AREA`
 
-**Definition**: Building's floor area as the product of the building’s area and the number of level.
+**Description**: Building's floor area as the product of the building’s area and the number of level.
 
-**Formula**: `Area * Number of level`
+**Method**: `Area * Number of level`
 
-**Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L63
+
 
 
 ### `TOTAL_FACADE_LENGTH`
 
-**Definition**: Total length of external facade, defined as the building’s external perimeter in addition to building's courtyard(s) perimeter.
+**Description**: Total length of external facade, defined as the building’s external perimeter in addition to building courtyard(s) perimeter
 
-**Formula**: `Perimeter + Courtyard perimeter `
+**Method**: `Building perimeter + Courtyard perimeter`
 
-**Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L65
+
 
 
 ### `COMMON_WALL_FRACTION`
 
-**Definition**: Fraction of linear of facade (also called “party walls”) shared with other buildings.
+**Description**: Fraction of linear of facade (also called “party walls”) shared with other buildings.
 
-**Formula**: `Shared facade length / total facade length`
+**Method**: `Shared facade length / total facade length`
 
-**Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L145
 
 
 ### `CONTIGUITY`
 
-**Definition**: Fraction of wall shared with other buildings.
+**Description**: Fraction of wall shared with other buildings
 
-**Formula**: `Shared wall area / total wall area `
+**Method**: `Shared wall area / total wall area`
 
-**Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L141
 
 
 ### `AREA_CONCAVITY`
 
-**Definition**: Calculates how close is a building from its smallest [convex](http://www.h2gis.org/docs/dev/ST_ConvexHull/) footprint.
+**Description**: Calculates a degree of convexity of a building (according to the building surface). Clother the result from 1, more convex is the building.
 
-**Formula**: `Area / Convex Hull area`
+**Method**: `Area / Convex Hull area`
 
-**Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L237
 
 
 ### `FORM_FACTOR`
 
-**Definition**: Ratio between the building’s area and the square of the building’s perimeter.
+**Description**: Ratio between the building’s area and the square of the external building’s perimeter
 
-**Formula**: `Area / (perimeter)^2 `
+**Method**: `Area / (perimeter)^2`
 
-**Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L240
 
 
 ### `RAW_COMPACTNESS`
 
-**Definition**: Ratio between building surfaces (walls and roof) and the building volume at the power 2/3. For the calculation, the roof is supposed to have a gable and the roof surface is calculated considering that the building is square (otherwise, the assumption related to the gable direction would strongly affect the result).
+**Description**: Ratio between building external surfaces (walls and roof) and the building volume at the power 2/3. 
 
-**Formula**: `(External walls area + courtyard walls area + roof area) / (volume^(2/3)) `
+**Method**: `(External walls area + courtyard walls area + roof area) / (volume^(2/3)) `
 
-**Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L243
+For the calculation, the roof is supposed to have a gable and the roof surface is calculated considering that the building is square (otherwise, the choice related to the gable direction - which is not known - would strongly affect the result).
+
 
 
 ### `PERIMETER_CONVEXITY`
 
-**Definition**: Ratio between building [Convex Hull](http://www.h2gis.org/docs/dev/ST_ConvexHull/) perimeter and building perimeter.
+**Description**: Calculates a degree of convexity of a building (according to the building perimeter). Clother the result from 1, more convex is the building.
 
-**Formula**: `Perimeter / Convex Hull perimeter`
+**Method**: `Convex Hull perimeter / Perimeter`
 
-**Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L250
 
 
 ### `MINIMUM_BUILDING_SPACING`
 
-**Definition**: Building closest distance to other buildings. A buffer of defined size (`bufferDist` argument, default 100 m) is used to get the buildings within the building of interest and then the minimum distance is calculated.
+**Description**: Building closest distance *(expressed in meter)* to an other building, within a buffer area whose size is defined in the `bufferDist` parameter *(default value = 100 m)*.
 
-**Formula**: `Min(distance(building, other buildings within bufferDist))`
+**Method**: `Min(distance(building, other buildings within bufferDist))`
 
-**Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L281
+**Consequence**:
+
+- If the building touches an other building, the result is 0.
+- If there is no building in a `bufferDist` m circle around the building, the result is set to `bufferDist` m.
+
 
 
 ### `NUMBER_BUILDING_NEIGHBOR`
 
-**Definition**: Number of neighboring buildings, in contact (at least one point) with the building.
+**Description**: Number of neighboring buildings, in contact with the building.
 
-**Formula**: `Count the number of buildings touching the building of interest`
+**Method**: `Count the number of buildings touching (at least one point) the building of interest`
 
-**Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L108
 
 
 ### `ROAD_DISTANCE`
 
-**Definition**: Building closest distance to roads. A buffer of defined size (`bufferDist` argument,  default 100m) is used to get the roads within the building of interest and then the minimum distance is calculated.
+**Description**: Building closest distance *(expressed in meter)* to a road, 
 
-**Formula**: `Min(distance(building, roads within bufferDist))`
+**Method**: the search is made within a buffer area whose size is defined in the `bufferDist` parameter *(default value = 100 m)*.
 
-**Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L338
+```
+Min(distance(building, roads within bufferDist))
+```
+**Consequence**:
+
+- If the building touches a road, the result is 0.
+- If the roads are further than `bufferDist` m from the building, the result is set to `bufferDist` m.
 
 
 
 ### `LIKELIHOOD_LARGE_BUILDING`
 
-**Definition**: Building closeness to a 50 m wide isolated building (where [NUMBER_BUILDING_NEIGHBOR](#NUMBER_BUILDING_NEIGHBOR) = 0). The step 9 of the manual decision tree for building type of the classification consists of checking whether buildings have a horizontal extent larger than 50 m. We therefore introduce an indicator which  measures the horizontal extent of buildings. This indicator is based on the largest side of the building  minimum rectangle. We use a logistic function to avoid threshold effects (e.g. totally different result for building sizes of 49 m and 51 m). The gamma and *x0* parameters in the logistic function are specified after analysis of the training data to identify the real size of the buildings classified as larger than 50 m in the subjective training process.
+**Description**: Building closeness to a 50 m wide isolated building (where `building_number_building_neighbor` = 0).
 
-**Formula**: `xxxxxx`
+**Method**: The step 9 of the decision tree used for the MaPUCE project manual building typology classification consists of checking whether buildings have a horizontal extent larger than 50 m. We therefore introduce an indicator which measures the horizontal extent of buildings. This indicator is based on the largest side of the building minimum rectangle. We use a logistic function to avoid threshold effects (e.g. totally different result for building sizes of 49 m and 51 m). The gamma and *x0* parameters in the logistic function are specified after analysis of the training data to identify the real size of the buildings classified as larger than 50 m in the subjective training process.
 
-**Source code**: https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy#L425
+
+
+[back to top](#the-building_indicators-table)
