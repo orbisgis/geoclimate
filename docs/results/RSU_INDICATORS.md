@@ -272,6 +272,7 @@ This table stores all the indicators computed at the RSU's scale.
 **Description**: aspect ratio such as defined by Stewart et Oke (2012): mean height-to-width ratio of street canyons (LCZs 1-7), building spacing (LCZs 8-10), and tree spacing (LCZs A - G).
 
 **Method**: A simple approach based on the street canyons assumption is used for the calculation. The sum of facade area within a given RSU area is divided by the area of free surfaces of the given RSU (not covered by buildings).
+
 → `RSU_free_external_facade_density / (1 - RSU_building_density)`
 
 
@@ -314,7 +315,7 @@ Using a grid of regular points, the density of points used for the calculation a
 
 **Warning**: the calculation of z0 is only performed for angles included in the range [0, 180[°. To simplify the calculation, z0 is considered as equal for a given orientation independently of the direction. This assumption is right when the RSU do not split buildings but could slightly overestimate the results otherwise (z0 is actually overestimated in one direction but OK in the opposite direction).
 
-References:
+**References**:
 
 - Stewart, Ian D., and Tim R. Oke. "[Local climate zones for urban temperature studies.](https://journals.ametsoc.org/doi/full/10.1175/BAMS-D-11-00019.1)" Bulletin of the American Meteorological Society 93, no. 12 (2012): 1879-1900.
 - Hanna, Steven R., and Rex E. Britter. [Wind flow and vapor cloud dispersion at industrial and urban sites](https://www.wiley.com/en-fr/Wind+Flow+and+Vapor+Cloud+Dispersion+at+Industrial+and+Urban+Sites-p-9780816908639). Vol. 7. John Wiley & Sons, 2010.
@@ -325,11 +326,9 @@ References:
 
 **Description**: Effective terrain class from the effective terrain roughness length (z0). The classes are defined according to the Davenport lookup Table (cf Table 5 in Stewart and Oke, 2012)
 
+**Method**: The Davenport definition defines a class for a unique z0 value (instead of a range). Then there is no definition of the z0 range corresponding to a certain class. We have arbitrarily defined the boundary between two classes as the arithmetic average between the z0 values of each class.
 
-
-**Method**: `xxxxxxx`
-
-**Warning**: the Davenport definition defines a class for a given z0 value. Then there is no definition of the z0 range corresponding to a certain class. Then we have arbitrarily defined the z0 value corresponding to a certain Davenport class as the average of each interval, and the boundary between two classes is defined as the arithmetic average between the z0 values of each class. A definition of the interval based on the profile of class = f(z0) could lead to different results (especially for classes 3, 4 and 5).
+**Warning**: The choice for the interval boundaries has been made arbitrarily. A definition of the interval based on a log profile of class = f(z0) could lead to different results (especially for classes 3, 4 and 5).
 
 **References**:
 
