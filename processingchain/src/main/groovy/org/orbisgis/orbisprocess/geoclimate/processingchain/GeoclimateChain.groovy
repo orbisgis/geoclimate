@@ -254,13 +254,17 @@ def buildGeoIndicators() {
             def buildingIndicators = computeBuildingsIndicators.results.outputTableName
 
             //Compute block indicators
-            def computeBlockIndicators = ProcessingChain.BuildGeoIndicators.computeBlockIndicators()
-            if (!computeBlockIndicators.execute([datasource            : datasource,
-                                                 inputBuildingTableName: buildingIndicators,
-                                                 inputBlockTableName   : relationBlocks,
-                                                 prefixName            : prefixName])) {
-                error "Cannot compute the block indicators"
-                return null
+            def blockIndicators = null
+            if(indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")){
+                def computeBlockIndicators = ProcessingChain.BuildGeoIndicators.computeBlockIndicators()
+                if (!computeBlockIndicators.execute([datasource            : datasource,
+                                                     inputBuildingTableName: buildingIndicators,
+                                                     inputBlockTableName   : relationBlocks,
+                                                     prefixName            : prefixName])) {
+                    error "Cannot compute the block indicators"
+                    return null
+                }
+                blockIndicators = computeBlockIndicators.results.outputTableName
             }
 
             //Compute RSU indicators
@@ -279,7 +283,7 @@ def buildGeoIndicators() {
             }
             info "All geoindicators have been computed"
             return [outputTableBuildingIndicators: computeBuildingsIndicators.getResults().outputTableName,
-                    outputTableBlockIndicators   : computeBlockIndicators.getResults().outputTableName,
+                    outputTableBlockIndicators   : blockIndicators,
                     outputTableRsuIndicators     : computeRSUIndicators.getResults().outputTableName]
         }
     })

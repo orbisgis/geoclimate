@@ -23,17 +23,58 @@ class ChainProcessMainTest {
         H2GIS datasource = H2GIS.open(directory.absolutePath+File.separator+"osm_chain_db;AUTO_SERVER=TRUE")
         String placeName = "Cliscouet, vannes"
         def distance = 0
-        def indicatorUse = ["LCZ", "URBAN_TYPOLOGY", "TEB"]
         boolean svfSimplified = false
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                             "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
 
+        logger.info("\n\n\nLCZ, URBAN_TYPOLOGY, TEB")
+        IProcess OSMGeoIndicatorsCompute1= ProcessingChain.GeoclimateChain.OSMGeoIndicators()
+        assertTrue OSMGeoIndicatorsCompute1.execute([datasource: datasource,        placeName: placeName,
+                                                    distance: distance,            indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+                                                    svfSimplified:svfSimplified,   prefixName: prefixName,
+                                                    mapOfWeights: mapOfWeights])
 
-        IProcess OSMGeoIndicatorsCompute= ProcessingChain.GeoclimateChain.OSMGeoIndicators()
-        assertTrue OSMGeoIndicatorsCompute.execute([datasource: datasource,        placeName: placeName,
-                                                    distance: distance,            indicatorUse: indicatorUse,
+        logger.info("\n\n\nLCZ, URBAN_TYPOLOGY")
+        IProcess OSMGeoIndicatorsCompute2= ProcessingChain.GeoclimateChain.OSMGeoIndicators()
+        assertTrue OSMGeoIndicatorsCompute2.execute([datasource: datasource,        placeName: placeName,
+                                                    distance: distance,            indicatorUse: ["LCZ", "URBAN_TYPOLOGY"],
+                                                    svfSimplified:svfSimplified,   prefixName: prefixName,
+                                                    mapOfWeights: mapOfWeights])
+
+        logger.info("\n\n\nLCZ")
+        IProcess OSMGeoIndicatorsCompute3= ProcessingChain.GeoclimateChain.OSMGeoIndicators()
+        assertTrue OSMGeoIndicatorsCompute3.execute([datasource: datasource,        placeName: placeName,
+                                                    distance: distance,            indicatorUse: ["LCZ"],
+                                                    svfSimplified:svfSimplified,   prefixName: prefixName,
+                                                    mapOfWeights: mapOfWeights])
+
+        logger.info("\n\n\nURBAN_TYPOLOGY")
+        IProcess OSMGeoIndicatorsCompute4= ProcessingChain.GeoclimateChain.OSMGeoIndicators()
+        assertTrue OSMGeoIndicatorsCompute4.execute([datasource: datasource,        placeName: placeName,
+                                                    distance: distance,            indicatorUse: ["URBAN_TYPOLOGY"],
+                                                    svfSimplified:svfSimplified,   prefixName: prefixName,
+                                                    mapOfWeights: mapOfWeights])
+
+        logger.info("\n\n\nURBAN_TYPOLOGY, TEB")
+        IProcess OSMGeoIndicatorsCompute5= ProcessingChain.GeoclimateChain.OSMGeoIndicators()
+        assertTrue OSMGeoIndicatorsCompute5.execute([datasource: datasource,        placeName: placeName,
+                                                    distance: distance,            indicatorUse: ["URBAN_TYPOLOGY", "TEB"],
+                                                    svfSimplified:svfSimplified,   prefixName: prefixName,
+                                                    mapOfWeights: mapOfWeights])
+
+        logger.info("\n\n\nTEB")
+        IProcess OSMGeoIndicatorsCompute6= ProcessingChain.GeoclimateChain.OSMGeoIndicators()
+        assertTrue OSMGeoIndicatorsCompute6.execute([datasource: datasource,        placeName: placeName,
+                                                    distance: distance,            indicatorUse: ["TEB"],
+                                                    svfSimplified:svfSimplified,   prefixName: prefixName,
+                                                    mapOfWeights: mapOfWeights])
+
+        logger.info("\n\n\nLCZ, TEB")
+        IProcess OSMGeoIndicatorsCompute7= ProcessingChain.GeoclimateChain.OSMGeoIndicators()
+        assertTrue OSMGeoIndicatorsCompute7.execute([datasource: datasource,        placeName: placeName,
+                                                    distance: distance,            indicatorUse: ["LCZ", "TEB"],
                                                     svfSimplified:svfSimplified,   prefixName: prefixName,
                                                     mapOfWeights: mapOfWeights])
 
