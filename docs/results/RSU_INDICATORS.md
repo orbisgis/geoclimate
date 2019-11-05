@@ -80,13 +80,13 @@ This table stores all the indicators computed at the RSU's scale.
 | PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D150_180    | double precision |  |
 | EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH | double precision | [Full definition](#EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH) |
 | EFFECTIVE_TERRAIN_ROUGHNESS_CLASS | integer | [Full definition](#EFFECTIVE_TERRAIN_ROUGHNESS_CLASS) |
-| ROAD_DIRECTION_DISTRIBUTION_H0_D0_30 | double precision | [Full definition](#ROAD_DIRECTION_DISTRIBUTION_H0_Dxx_xx) |
+| ROAD_DIRECTION_DISTRIBUTION_H0_D0_30 | double precision | [Full definition](#ROAD_DIRECTION_DISTRIBUTION_H0_Dw_z) |
 | ROAD_DIRECTION_DISTRIBUTION_H0_D30_60 | double precision |  |
 | ROAD_DIRECTION_DISTRIBUTION_H0_D60_90 | double precision |  |
 | ROAD_DIRECTION_DISTRIBUTION_H0_D90_120 | double precision |  |
 | ROAD_DIRECTION_DISTRIBUTION_H0_D120_150 | double precision |  |
 | ROAD_DIRECTION_DISTRIBUTION_H0_D150_180 | double precision |  |
-| GROUND_LINEAR_ROAD_DENSITY | double precision | [Full definition](#GROUND_LINEAR_ROAD_DENSITY) |
+| LINEAR_ROAD_DENSITY_H0 | double precision | [Full definition](#LINEAR_ROAD_DENSITY_H0) |
 | GROUND_ROAD_FRACTION | double precision | [Full definition](#GROUND_ROAD_FRACTION) |
 | OVERGROUND_ROAD_FRACTION | double precision | [Full definition](#OVERGROUND_ROAD_FRACTION) |
 | WATER_FRACTION | double precision | [Full definition](#WATER_FRACTION) |
@@ -108,7 +108,7 @@ This table stores all the indicators computed at the RSU's scale.
 
 **Description**: Fraction of building areas within the RSU.
 
-**Method**: `SUM(BU_AREA) / RSU_Area`
+**Method**:  `SUM(Bu_AREA) / RSU_Area`
 
 
 
@@ -116,7 +116,7 @@ This table stores all the indicators computed at the RSU's scale.
 
 **Description**: Density of building floor areas within the RSU.
 
-**Method**: `SUM(BU_FLOOR_AREA) / RSU_Area`
+**Method**: `SUM(Bu_FLOOR_AREA) / RSU_Area`
 
  
 
@@ -124,7 +124,7 @@ This table stores all the indicators computed at the RSU's scale.
 
 **Description**: Density of building volumes within the RSU.
 
-**Method**: `SUM(BU_VOLUME) / RSU_Area`
+**Method**: `SUM(Bu_VOLUME) / NB_Building`
 
 
 
@@ -140,7 +140,7 @@ This table stores all the indicators computed at the RSU's scale.
 
 **Description**: RSU geometric mean of the building roof heights.
 
-**Method**: `EXP(SUM(LOG(BU_ROOF_HEIGHT)) / NB_Building)`
+**Method**: `EXP(SUM(LOG(Bu_ROOF_HEIGHT)) / NB_Building)`
 
 
 
@@ -151,7 +151,7 @@ This table stores all the indicators computed at the RSU's scale.
 
 ### `AVG_HEIGHT_ROOF_AREA_WEIGHTED`
 
-**Description**: RSU average building’s roof height (the building heights being weighted by the building areas).
+**Description**: Mean building’s roof height within the RSU (the building heights being weighted by the building areas)
 
 **Method**: `SUM(Bu_Wall_Height * Bu_Area) / SUM(Bu_Area)`
 
@@ -159,11 +159,12 @@ This table stores all the indicators computed at the RSU's scale.
 
 ### `STD_HEIGHT_ROOF_AREA_WEIGHTED`
 
-**Description**: Block standard deviation building’s roof height (the building heights being weighted by the building areas).
+**Description**: Variability of the building’s roof height within the RSU (the building heights being weighted by the building areas)
 
-**Method**: `SUM(Bu_Area*(Bu_Wall_Height - AVG_HEIGHT_ROOF_AREA_WEIGHTED)^2)) / SUM (Bu_Area)`
+**Method**: By default, the indicator of variability is the Standard Deviation (STD) defined as :
 
- 
+→ `SUM(Bu_Area*(Bu_Wall_Height - AVG_HEIGHT_ROOF_AREA_WEIGHTED)^2)) / SUM (Bu_Area)`
+
 
 ### `FREE_EXTERNAL_FACADE_DENSITY`
 
@@ -175,7 +176,7 @@ This table stores all the indicators computed at the RSU's scale.
 
 ### `NON_VERT_ROOF_AREA_Hx_y`
 
-**Description**: Non-vertical (horizontal and tilted) roofs area is calculated within each vertical layer of a RSU (the bottom of the layer being at `x` meters from the ground while the top is at `y` meters).
+**Description**: The non-vertical (horizontal and tilted) roofs area is calculated within each vertical layer of a RSU (the bottom of the layer being at `x` meters from the ground while the top is at `y` meters).
 
 **Method**: The calculation is based on the assumption that all buildings having a roof height higher than the wall height have a gable roof (the other being horizontal). Since the direction of the gable is not taken into account for the moment, we consider that buildings are square in order to limit the potential calculation error (otherwise a choice should have been made to locate the line corresponding to the top of the roof).
 
@@ -271,10 +272,7 @@ This table stores all the indicators computed at the RSU's scale.
 **Description**: aspect ratio such as defined by Stewart et Oke (2012): mean height-to-width ratio of street canyons (LCZs 1-7), building spacing (LCZs 8-10), and tree spacing (LCZs A - G).
 
 **Method**: A simple approach based on the street canyons assumption is used for the calculation. The sum of facade area within a given RSU area is divided by the area of free surfaces of the given RSU (not covered by buildings).
-
-```
-RSU_free_external_facade_density / (1 - RSU_building_density)
-```
+→ `RSU_free_external_facade_density / (1 - RSU_building_density)`
 
 
 
@@ -300,7 +298,7 @@ Using a grid of regular points, the density of points used for the calculation a
 
 ### `PROJECTED_FACADE_AREA_DISTRIBUTION_Hx_y_Dw_z`
 
-**Description**: Distribution of projected facade area within a RSU per vertical layer (the height being from `x` to `y`) and per direction of analysis (ie. wind or sun direction - the angle range being from `w` to `z` within the range [0, 180[°). Note that the method used is an approximation if the RSU split a building into two parts (the facade included within the RSU is counted half).
+**Description**: Distribution of projected facade area within a RSU per vertical layer (the height being from `x` to `y`) and per direction of analysis (ie. wind or sun direction - the angle range being from `w` to `z` within the range [0, 180[°). 
 
 **Method**: Each line representing the facades of a building are projected in order to be perpendicular to the median of each angle range of analysis. Only free facades are considered. The projected surfaces are then summed within each layer and direction of analysis. The analysis is only performed within the [0, 180[° range since the projected facade of a building is identical for opposite directions. Thus because we consider all facades of a building in the calculation (facades upwind but also downwind), the final result is divided by 2.
 
@@ -339,19 +337,19 @@ References:
 
 
 
-### `ROAD_DIRECTION_DISTRIBUTION_H0_Dxx_xx`
+### `ROAD_DIRECTION_DISTRIBUTION_H0_Dw_z`
 
-**Description**: 
+**Description**: Distribution of road length within a RSU per direction of analysis (ie. wind or sun direction - the angle range being from `w` to `z` within the range [0, 180[°). Note that by default, only roads located at ground level are considered for the calculation (z_index = 0).
 
-**Method**: `xxxxxxx`
+**Method**: The direction of each segment of road is calculated. The percentage of linear of road in each range of direction is then calculated (a range is defined - default 30°) for directions included in [0, 180[°.
 
 
 
-### `GROUND_LINEAR_ROAD_DENSITY`
+### `LINEAR_ROAD_DENSITY_H0`
 
 **Description**: Road linear density, having a ZINDEX = 0, within the RSU.
 
-**Method**: `xxxxxxx`
+**Method**: Linear of road at zindex = 0 within a RSU divided by the RSU area
 
 
 
@@ -361,17 +359,17 @@ References:
 
 ### `GROUND_ROAD_FRACTION`
 
-**Description**: Fraction of road areas, having a `ZINDEX` = 0, within the RSU. The road area is determined thanks to it’s `WIDTH` information.
+**Description**: Fraction of road areas, having a `ZINDEX` = 0, within the RSU.
 
-**Method**: `xxxxxxx`
+**Method**: The road surfaces are determined thanks to the road `WIDTH` information. Then the sum of all road areas contained in a RSU (and having a `ZINDEX` = 0) is divided by the RSU area.
 
 
 
 ### `OVERGROUND_ROAD_FRACTION`
 
-**Description**: Fraction of road areas, having a `ZINDEX` > 0, within the RSU. The road area is determined thanks to it’s `WIDTH` information.
+**Description**: Fraction of road areas, having a `ZINDEX` > 0, within the RSU. 
 
-**Method**: `xxxxxxx`
+**Method**: The road surfaces are determined thanks to the road `WIDTH` information. Then the sum of all road areas contained in a RSU (and having a `ZINDEX` > 0) is divided by the RSU area.
 
 
 
@@ -413,7 +411,7 @@ References:
 
 ### `PERVIOUS_FRACTION`
 
-**Description**: Fraction of pervious areas within the RSU
+**Description**: Fraction of pervious areas within the RSU. By default, only low vegetation and water fractions are considered as pervious surfaces.
 
 **Method**: `SUM(pervious areas) / RSU area`
 
@@ -422,7 +420,7 @@ References:
 
 ### `IMPERVIOUS_FRACTION`
 
-**Description**: Fraction of impervious areas within the RSU
+**Description**: Fraction of impervious areas within the RSU. By default, only road fraction are considered as impervious.
 
 **Method**: `SUM(impervious areas) / RSU area`
 

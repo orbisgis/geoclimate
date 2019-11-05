@@ -53,9 +53,9 @@ This table stores all the indicators computed at the building's scale.
 
 ### `AREA `
 
-**Description**: Building's area (footprint).
+**Description**: Building's area.
 
-**Method**: `Area`
+**Method**: `Area of the building footprint`
 
 
 
@@ -71,7 +71,7 @@ This table stores all the indicators computed at the building's scale.
 
 ### `FLOOR_AREA`
 
-**Description**: Building's floor area as the product of the building’s area and the number of level.
+**Description**: Building's floor area.
 
 **Method**: `Area * Number of level`
 
@@ -80,7 +80,7 @@ This table stores all the indicators computed at the building's scale.
 
 ### `TOTAL_FACADE_LENGTH`
 
-**Description**: Total length of external facade, defined as the building’s external perimeter in addition to building courtyard(s) perimeter
+**Description**: Total length of external facade.
 
 **Method**: `Building perimeter + Courtyard perimeter`
 
@@ -105,9 +105,11 @@ This table stores all the indicators computed at the building's scale.
 
 ### `AREA_CONCAVITY`
 
-**Description**: Calculates a degree of convexity of a building (according to the building surface). Clother the result from 1, more convex is the building.
+**Description**: Calculates a degree of convexity of a building (according to the building surface).
 
 **Method**: `Area / Convex Hull area`
+
+**Range of values**: [`0`, `1`] - the closer the result from 1, the more convex the building.
 
 
 
@@ -125,28 +127,30 @@ This table stores all the indicators computed at the building's scale.
 
 **Method**: `(External walls area + courtyard walls area + roof area) / (volume^(2/3)) `
 
-For the calculation, the roof is supposed to have a gable and the roof surface is calculated considering that the building is square (otherwise, the choice related to the gable direction - which is not known - would strongly affect the result).
+**Warning**: For the calculation, the roof is supposed to have a gable and the roof surface is calculated considering that the building is square (otherwise, the choice related to the gable direction - which is not known - would strongly affect the result).
 
 
 
 ### `PERIMETER_CONVEXITY`
 
-**Description**: Calculates a degree of convexity of a building (according to the building perimeter). Clother the result from 1, more convex is the building.
+**Description**: Calculates a degree of convexity of a building (according to the building perimeter). 
 
 **Method**: `Convex Hull perimeter / Perimeter`
+
+**Range of values**: [`0`, `1`] - the closer the result from 1, the more convex the building.
 
 
 
 ### `MINIMUM_BUILDING_SPACING`
 
-**Description**: Building closest distance *(expressed in meter)* to an other building, within a buffer area whose size is defined in the `bufferDist` parameter *(default value = 100 m)*.
+**Description**: Building closest distance *(expressed in meter)* to an other building.
 
-**Method**: `Min(distance(building, other buildings within bufferDist))`
+**Method**: `Min(distance(building, other buildings within bufferDist))` , where the buffer size of search is defined in the `bufferDist` parameter *(default value = 100 m)*
 
-**Consequence**:
+**Warning**:
 
 - If the building touches an other building, the result is 0.
-- If there is no building in a `bufferDist` m circle around the building, the result is set to `bufferDist` m.
+- If there is no building in a 100m circle around the building, the result is set to 100m *(this value may be different if the `bufferDist` default value is modified)*.
 
 
 
@@ -154,7 +158,7 @@ For the calculation, the roof is supposed to have a gable and the roof surface i
 
 **Description**: Number of neighboring buildings, in contact with the building.
 
-**Method**: `Count the number of buildings touching (at least one point) the building of interest`
+**Method**: Count the number of buildings touching (at least one point) the building of interest.
 
 
 
@@ -162,23 +166,22 @@ For the calculation, the roof is supposed to have a gable and the roof surface i
 
 **Description**: Building closest distance *(expressed in meter)* to a road, 
 
-**Method**: the search is made within a buffer area whose size is defined in the `bufferDist` parameter *(default value = 100 m)*.
+**Method**: The search is made within a buffer area around the building whose size is defined in the `bufferDist` parameter *(default value = 100 m)*.
 
-```
-Min(distance(building, roads within bufferDist))
-```
-**Consequence**:
+→ `Min(distance(building, roads within bufferDist))`
+
+**Warning**:
 
 - If the building touches a road, the result is 0.
-- If the roads are further than `bufferDist` m from the building, the result is set to `bufferDist` m.
+- If the roads are further than 100m from the building, the result is set to 100m *(this value may be different if the `bufferDist` default value is modified)*.
 
 
 
 ### `LIKELIHOOD_LARGE_BUILDING`
 
-**Description**: Building closeness to a 50 m wide isolated building (where `building_number_building_neighbor` = 0).
+**Description**: Building closeness to a 50 m wide isolated building (where `NUMBER_BUILDING_NEIGHBOR` = 0).
 
-**Method**: The step 9 of the decision tree used for the MaPUCE project manual building typology classification consists of checking whether buildings have a horizontal extent larger than 50 m. We therefore introduce an indicator which measures the horizontal extent of buildings. This indicator is based on the largest side of the building minimum rectangle. We use a logistic function to avoid threshold effects (e.g. totally different result for building sizes of 49 m and 51 m). The gamma and *x0* parameters in the logistic function are specified after analysis of the training data to identify the real size of the buildings classified as larger than 50 m in the subjective training process.
+**Method**: The step 9 of the decision tree used for the MaPUCE project manual building typology classification consists of checking whether a building has a horizontal extent larger than 50 m. We therefore introduce an indicator which measures the horizontal extent of buildings. This indicator is based on the largest side of the building minimum rectangle. We then use a logistic function to avoid threshold effects (e.g. totally different result for building sizes of 49 m and 51 m). The gamma and *x0* parameters in the logistic function are specified after analysis of the training data to identify the real size of the buildings classified as larger than 50 m in the subjective training process.
 
 
 
