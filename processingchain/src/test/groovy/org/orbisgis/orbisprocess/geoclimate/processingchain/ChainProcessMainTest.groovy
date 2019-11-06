@@ -111,7 +111,6 @@ class ChainProcessMainTest {
 
         def ind_i = ["LCZ", "URBAN_TYPOLOGY", "TEB"]
 
-        logger.info("\n\n\n$ind_i")
         IProcess OSMGeoIndicatorsCompute_i = ProcessingChain.GeoclimateChain.OSMGeoIndicators()
         assertTrue OSMGeoIndicatorsCompute_i.execute([datasource   : datasource, placeName: placeName,
                                                       distance     : distance, indicatorUse: ind_i,
@@ -152,7 +151,6 @@ class ChainProcessMainTest {
 
         def ind_i = ["LCZ"]
 
-        logger.info("\n\n\n$ind_i")
         IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoclimateChain.buildGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(  datasource          : datasource,           zoneTable       : zoneTableName,
                                                     buildingTable       : buildingTableName,    roadTable       : roadTableName,
@@ -194,7 +192,6 @@ class ChainProcessMainTest {
 
         def ind_i = ["URBAN_TYPOLOGY"]
 
-        logger.info("\n\n\n$ind_i")
         IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoclimateChain.buildGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(  datasource          : datasource,           zoneTable       : zoneTableName,
                 buildingTable       : buildingTableName,    roadTable       : roadTableName,
@@ -236,7 +233,6 @@ class ChainProcessMainTest {
 
         def ind_i = ["URBAN_TYPOLOGY", "TEB"]
 
-        logger.info("\n\n\n$ind_i")
         IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoclimateChain.buildGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(  datasource          : datasource,           zoneTable       : zoneTableName,
                 buildingTable       : buildingTableName,    roadTable       : roadTableName,
@@ -278,7 +274,6 @@ class ChainProcessMainTest {
 
         def ind_i = ["TEB"]
 
-        logger.info("\n\n\n$ind_i")
         IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoclimateChain.buildGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(  datasource          : datasource,           zoneTable       : zoneTableName,
                 buildingTable       : buildingTableName,    roadTable       : roadTableName,
@@ -320,7 +315,6 @@ class ChainProcessMainTest {
 
         def ind_i = ["LCZ", "TEB"]
 
-        logger.info("\n\n\n$ind_i")
         IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoclimateChain.buildGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(  datasource          : datasource,           zoneTable       : zoneTableName,
                 buildingTable       : buildingTableName,    roadTable       : roadTableName,
@@ -362,7 +356,6 @@ class ChainProcessMainTest {
 
         def ind_i = ["URBAN_TYPOLOGY", "LCZ"]
 
-        logger.info("\n\n\n$ind_i")
         IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoclimateChain.buildGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(  datasource          : datasource,           zoneTable       : zoneTableName,
                 buildingTable       : buildingTableName,    roadTable       : roadTableName,
