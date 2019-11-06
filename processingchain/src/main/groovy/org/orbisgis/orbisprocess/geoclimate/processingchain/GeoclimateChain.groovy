@@ -46,9 +46,6 @@ import org.orbisgis.datamanager.JdbcDataSource
  *
  */
 def OSMGeoIndicators() {
-    def final COLUMN_ID_RSU = "id_rsu"
-    def final GEOMETRIC_COLUMN = "the_geom"
-
     return create({
         title "Create all geoindicators from OSM data"
         inputs datasource: JdbcDataSource, placeName: String, distance: 0,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
@@ -60,14 +57,8 @@ def OSMGeoIndicators() {
                 roadTable: String, railTable: String, vegetationTable: String,
                 hydrographicTable: String, buildingIndicators: String,
                 blockIndicators: String,
-                rsuIndicators: String
+                rsuIndicators: String, rsuLcz: String
         run { datasource, placeName, distance,indicatorUse, svfSimplified, prefixName, mapOfWeights ->
-
-            // Temporary tables are created
-            def lczIndicTable = "LCZ_INDIC_TABLE$uuid"
-
-            // Output Lcz table name is set to null in case LCZ indicators are not calculated
-            def rsuLcz = null
 
             IProcess prepareOSMData = ProcessingChain.PrepareOSM.buildGeoclimateLayers()
 
@@ -95,50 +86,12 @@ def OSMGeoIndicators() {
                                         buildingTable       : buildingTableName,    roadTable       : roadTableName,
                                         railTable           : railTableName,        vegetationTable : vegetationTableName,
                                         hydrographicTable   : hydrographicTableName,indicatorUse    : indicatorUse,
-                                        svfSimplified       : svfSimplified,        prefixName      : prefixName)) {
+                                        svfSimplified       : svfSimplified,        prefixName      : prefixName,
+                                        mapOfWeights        : mapOfWeights)) {
                 error "Cannot build the geoindicators"
                 return null
             }
 
-            // If the LCZ indicators should be calculated, we only affect a LCZ class to each RSU
-            if(indicatorUse.contains("LCZ")){
-                def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"             : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
-                                     "BUILDING_AREA_FRACTION"           : "BUILDING_SURFACE_FRACTION",
-                                     "ASPECT_RATIO"                     : "ASPECT_RATIO",
-                                     "GROUND_SKY_VIEW_FACTOR"           : "SKY_VIEW_FACTOR",
-                                     "PERVIOUS_FRACTION"                : "PERVIOUS_SURFACE_FRACTION",
-                                     "IMPERVIOUS_FRACTION"              : "IMPERVIOUS_SURFACE_FRACTION",
-                                     "EFFECTIVE_TERRAIN_ROUGHNESS_CLASS": "TERRAIN_ROUGHNESS_CLASS"]
-
-                // Get into an other table the ID, geometry column and the 7 indicators useful for LCZ classification
-                datasource.execute "DROP TABLE IF EXISTS $lczIndicTable;" +
-                        "CREATE TABLE $lczIndicTable AS SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, " +
-                        "${lczIndicNames.keySet().join(",")} FROM ${geoIndicators.results.outputTableRsuIndicators}"
-
-                // Rename the indicators in order to be consistent with the LCZ ones
-                def queryReplaceNames = ""
-
-                lczIndicNames.each { oldIndic, newIndic ->
-                    queryReplaceNames += "ALTER TABLE $lczIndicTable ALTER COLUMN $oldIndic RENAME TO $newIndic;"
-                }
-                datasource.execute "$queryReplaceNames"
-
-                // The classification algorithm is called
-                def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
-                if(!classifyLCZ([rsuLczIndicators   : lczIndicTable,
-                                 normalisationType  : "AVG",
-                                 mapOfWeights       : mapOfWeights,
-                                 prefixName         : prefixName,
-                                 datasource         : datasource,
-                                 prefixName         : prefixName])){
-                    info "Cannot compute the LCZ classification."
-                    return
-                }
-                rsuLcz = classifyLCZ.results.outputTableName
-
-            }
-
-            datasource.execute "DROP TABLE IF EXISTS $lczIndicTable;"
 
             return [zoneTable         : zoneTableName, zoneEnvelopeTableName: zoneEnvelopeTableName, buildingTable: buildingTableName,
                     roadTable         : roadTableName, railTable: railTableName, vegetationTable: vegetationTableName,
@@ -146,7 +99,7 @@ def OSMGeoIndicators() {
                     buildingIndicators: geoIndicators.results.outputTableBuildingIndicators,
                     blockIndicators   : geoIndicators.results.outputTableBlockIndicators,
                     rsuIndicators     : geoIndicators.results.outputTableRsuIndicators,
-                    rsuLcz            : rsuLcz]
+                    rsuLcz            : geoIndicators.results.outputTableRsuLcz]
         }
     })
 }
@@ -214,16 +167,28 @@ def OSMLCZ() {
  *
  */
 def buildGeoIndicators() {
+    def final COLUMN_ID_RSU = "id_rsu"
+    def final GEOMETRIC_COLUMN = "the_geom"
+
     return create({
         title "Compute all geoindicators"
         inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
                 roadTable: String, railTable: String, vegetationTable: String,
                 hydrographicTable: String, surface_vegetation: 100000, surface_hydro: 2500,
-                distance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified:false, prefixName: ""
+                distance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified:false, prefixName: "",
+                mapOfWeights: ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                               "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                               "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
         outputs outputTableBuildingIndicators: String, outputTableBlockIndicators: String, outputTableRsuIndicators: String
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
-              surface_vegetation, surface_hydro, distance,indicatorUse,svfSimplified, prefixName ->
+              surface_vegetation, surface_hydro, distance,indicatorUse,svfSimplified, prefixName, mapOfWeights ->
             info "Start computing the geoindicators..."
+
+            // Temporary tables are created
+            def lczIndicTable = "LCZ_INDIC_TABLE$uuid"
+
+            // Output Lcz table name is set to null in case LCZ indicators are not calculated
+            def rsuLcz = null
 
             //Create spatial units and relations : building, block, rsu
             IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
@@ -254,13 +219,17 @@ def buildGeoIndicators() {
             def buildingIndicators = computeBuildingsIndicators.results.outputTableName
 
             //Compute block indicators
-            def computeBlockIndicators = ProcessingChain.BuildGeoIndicators.computeBlockIndicators()
-            if (!computeBlockIndicators.execute([datasource            : datasource,
-                                                 inputBuildingTableName: buildingIndicators,
-                                                 inputBlockTableName   : relationBlocks,
-                                                 prefixName            : prefixName])) {
-                error "Cannot compute the block indicators"
-                return null
+            def blockIndicators = null
+            if(indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")){
+                def computeBlockIndicators = ProcessingChain.BuildGeoIndicators.computeBlockIndicators()
+                if (!computeBlockIndicators.execute([datasource            : datasource,
+                                                     inputBuildingTableName: buildingIndicators,
+                                                     inputBlockTableName   : relationBlocks,
+                                                     prefixName            : prefixName])) {
+                    error "Cannot compute the block indicators"
+                    return null
+                }
+                blockIndicators = computeBlockIndicators.results.outputTableName
             }
 
             //Compute RSU indicators
@@ -278,9 +247,51 @@ def buildGeoIndicators() {
                 return null
             }
             info "All geoindicators have been computed"
+
+            // If the LCZ indicators should be calculated, we only affect a LCZ class to each RSU
+            if(indicatorUse.contains("LCZ")){
+                def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"             : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
+                                     "BUILDING_AREA_FRACTION"           : "BUILDING_SURFACE_FRACTION",
+                                     "ASPECT_RATIO"                     : "ASPECT_RATIO",
+                                     "GROUND_SKY_VIEW_FACTOR"           : "SKY_VIEW_FACTOR",
+                                     "PERVIOUS_FRACTION"                : "PERVIOUS_SURFACE_FRACTION",
+                                     "IMPERVIOUS_FRACTION"              : "IMPERVIOUS_SURFACE_FRACTION",
+                                     "EFFECTIVE_TERRAIN_ROUGHNESS_CLASS": "TERRAIN_ROUGHNESS_CLASS"]
+
+                // Get into an other table the ID, geometry column and the 7 indicators useful for LCZ classification
+                datasource.execute "DROP TABLE IF EXISTS $lczIndicTable;" +
+                        "CREATE TABLE $lczIndicTable AS SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, " +
+                        "${lczIndicNames.keySet().join(",")} FROM ${computeRSUIndicators.results.outputTableName}"
+
+                // Rename the indicators in order to be consistent with the LCZ ones
+                def queryReplaceNames = ""
+
+                lczIndicNames.each { oldIndic, newIndic ->
+                    queryReplaceNames += "ALTER TABLE $lczIndicTable ALTER COLUMN $oldIndic RENAME TO $newIndic;"
+                }
+                datasource.execute "$queryReplaceNames"
+
+                // The classification algorithm is called
+                def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
+                if(!classifyLCZ([rsuLczIndicators   : lczIndicTable,
+                                 normalisationType  : "AVG",
+                                 mapOfWeights       : mapOfWeights,
+                                 prefixName         : prefixName,
+                                 datasource         : datasource,
+                                 prefixName         : prefixName])){
+                    info "Cannot compute the LCZ classification."
+                    return
+                }
+                rsuLcz = classifyLCZ.results.outputTableName
+            }
+
+            datasource.execute "DROP TABLE IF EXISTS $lczIndicTable;"
+
+
             return [outputTableBuildingIndicators: computeBuildingsIndicators.getResults().outputTableName,
-                    outputTableBlockIndicators   : computeBlockIndicators.getResults().outputTableName,
-                    outputTableRsuIndicators     : computeRSUIndicators.getResults().outputTableName]
+                    outputTableBlockIndicators   : blockIndicators,
+                    outputTableRsuIndicators     : computeRSUIndicators.getResults().outputTableName,
+                    outputTableRsuLcz                       : rsuLcz]
         }
     })
 }

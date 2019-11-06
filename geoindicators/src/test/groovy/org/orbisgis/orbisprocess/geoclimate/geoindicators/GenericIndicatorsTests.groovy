@@ -141,18 +141,20 @@ class GenericIndicatorsTests {
     }
 
     @Test
-    void perkinsSkillScoreBuildingDirectionTest() {
+    void buildingDirectionDistributionTest() {
         // Only the first 6 first created buildings are selected since any new created building may alter the results
-        h2GIS.execute "DROP TABLE IF EXISTS tempo_build, block_perkins_skill_score_building_direction; " +
+        h2GIS.execute "DROP TABLE IF EXISTS tempo_build, test_MAIN_BUILDING_DIRECTION; " +
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 9"
 
-        def  p =  Geoindicators.GenericIndicators.perkinsSkillScoreBuildingDirection()
+        def  p =  Geoindicators.GenericIndicators.buildingDirectionDistribution()
         assertTrue p.execute([buildingTableName: "tempo_build", inputIdUp: "id_block", angleRangeSize: 15,
-                              prefixName: "test", datasource: h2GIS])
+                              prefixName: "test", datasource: h2GIS, distribIndicator: ["inequality", "uniqueness"]])
 
-        assertEquals(4.0/12, h2GIS.firstRow("SELECT * FROM test_perkins_skill_score_building_direction " +
-                "WHERE id_block = 4")["perkins_skill_score_building_direction"], 0.0001)
-        assertEquals(97.5, h2GIS.firstRow("SELECT * FROM test_perkins_skill_score_building_direction " +
+        assertEquals(4.0/12, h2GIS.firstRow("SELECT * FROM test_MAIN_BUILDING_DIRECTION " +
+                "WHERE id_block = 4")["BUILDING_DIRECTION_INEQUALITY"], 0.0001)
+        assertEquals(97.5, h2GIS.firstRow("SELECT * FROM test_MAIN_BUILDING_DIRECTION " +
                 "WHERE id_block = 4")["main_building_direction"])
+        assertEquals(28.0/(22+28.0), h2GIS.firstRow("SELECT * FROM test_MAIN_BUILDING_DIRECTION " +
+                "WHERE id_block = 4")["BUILDING_DIRECTION_UNIQUENESS"], 0.0001)
     }
 }

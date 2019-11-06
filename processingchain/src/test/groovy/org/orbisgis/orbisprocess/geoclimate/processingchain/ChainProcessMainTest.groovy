@@ -1,5 +1,6 @@
 package org.orbisgis.orbisprocess.geoclimate.processingchain
 
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanager.h2gis.H2GIS
@@ -13,30 +14,376 @@ import static org.junit.jupiter.api.Assertions.assertTrue
 
 class ChainProcessMainTest {
 
+    private static H2GIS datasource
+
     public static Logger logger = LoggerFactory.getLogger(ChainProcessMainTest.class)
+
+    // Indicator list (at RSU scale) for each type of use
+    public static listNames = [
+            "TEB": ["VERT_ROOF_DENSITY", "NON_VERT_ROOF_DENSITY", "BUILDING_AREA_FRACTION",
+                    "LOW_VEGETATION_FRACTION", "HIGH_VEGETATION_FRACTION",
+                    "ALL_VEGETATION_FRACTION", "ROAD_DIRECTION_DISTRIBUTION_H0_D0_30", "ROAD_DIRECTION_DISTRIBUTION_H0_D60_90",
+                    "ROAD_DIRECTION_DISTRIBUTION_H0_D90_120", "ROAD_DIRECTION_DISTRIBUTION_H0_D120_150",
+                    "ROAD_DIRECTION_DISTRIBUTION_H0_D150_180", "ROAD_DIRECTION_DISTRIBUTION_H0_D30_60",
+                    "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D0_30", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D0_30",
+                    "PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D0_30", "PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D0_30",
+                    "PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D0_30", "PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D0_30",
+                    "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D30_60", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D30_60",
+                    "PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D30_60", "PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D30_60",
+                    "PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D30_60", "PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D30_60",
+                    "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D60_90", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D60_90",
+                    "PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D60_90", "PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D60_90",
+                    "PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D60_90", "PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D60_90",
+                    "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D90_120", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D90_120",
+                    "PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D90_120", "PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D90_120",
+                    "PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D90_120", "PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D90_120",
+                    "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D120_150", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D120_150",
+                    "PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D120_150", "PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D120_150",
+                    "PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D120_150", "PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D120_150",
+                    "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D150_180", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D150_180",
+                    "PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D150_180", "PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D150_180",
+                    "PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D150_180", "PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D150_180",
+                    "NON_VERT_ROOF_AREA_H0_10", "NON_VERT_ROOF_AREA_H10_20", "NON_VERT_ROOF_AREA_H20_30",
+                    "NON_VERT_ROOF_AREA_H30_40", "NON_VERT_ROOF_AREA_H40_50", "NON_VERT_ROOF_AREA_H50",
+                    "VERT_ROOF_AREA_H0_10", "VERT_ROOF_AREA_H10_20", "VERT_ROOF_AREA_H20_30", "VERT_ROOF_AREA_H30_40",
+                    "VERT_ROOF_AREA_H40_50", "VERT_ROOF_AREA_H50", "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH"],
+            "URBAN_TYPOLOGY": ["AREA", "BUILDING_AREA_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
+                               "AVG_NUMBER_BUILDING_NEIGHBOR", "AVG_HEIGHT_ROOF_AREA_WEIGHTED",
+                               "STD_HEIGHT_ROOF_AREA_WEIGHTED", "BUILDING_NUMBER_DENSITY", "BUILDING_VOLUME_DENSITY",
+                               "BUILDING_VOLUME_DENSITY", "AVG_VOLUME", "GROUND_ROAD_FRACTION",
+                               "OVERGROUND_ROAD_FRACTION", "GROUND_LINEAR_ROAD_DENSITY", "WATER_FRACTION",
+                               "ALL_VEGETATION_FRACTION", "GEOM_AVG_HEIGHT_ROOF", "BUILDING_FLOOR_AREA_DENSITY",
+                               "AVG_MINIMUM_BUILDING_SPACING", "MAIN_BUILDING_DIRECTION", "BUILDING_DIRECTION_UNIQUENESS",
+                               "BUILDING_DIRECTION_INEQUALITY"],
+            "LCZ": ["BUILDING_AREA_FRACTION", "ASPECT_RATIO", "GROUND_SKY_VIEW_FACTOR", "PERVIOUS_FRACTION",
+                    "IMPERVIOUS_FRACTION", "GEOM_AVG_HEIGHT_ROOF", "EFFECTIVE_TERRAIN_ROUGHNESS_CLASS"]]
+
+    // Extra columns at RSU scale
+    public static listColBasic = ["ID_RSU", "THE_GEOM"]
+
+    // Column names in the LCZ Table
+    public static listColLcz = ["LCZ1", "LCZ2", "MIN_DISTANCE", "PSS"]
+
+    // Indicator lists for urban typology use at building and block scales
+    public static listUrbTyp =
+            ["Bu": ["THE_GEOM", "ID_RSU", "ID_BUILD", "ID_BLOCK", "NB_LEV", "ZINDEX", "MAIN_USE", "TYPE", "ID_SOURCE",
+                    "HEIGHT_ROOF", "HEIGHT_WALL", "PERIMETER", "AREA", "VOLUME", "FLOOR_AREA", "TOTAL_FACADE_LENGTH", "COMMON_WALL_FRACTION",
+                    "CONTIGUITY", "AREA_CONCAVITY", "FORM_FACTOR", "RAW_COMPACTNESS", "PERIMETER_CONVEXITY",
+                    "MINIMUM_BUILDING_SPACING", "NUMBER_BUILDING_NEIGHBOR", "ROAD_DISTANCE", "LIKELIHOOD_LARGE_BUILDING"],
+             "Bl": ["THE_GEOM", "ID_RSU", "ID_BLOCK","AREA", "FLOOR_AREA", "VOLUME", "HOLE_AREA_DENSITY", "MAIN_BUILDING_DIRECTION",
+                    "BUILDING_DIRECTION_UNIQUENESS", "BUILDING_DIRECTION_INEQUALITY", "CLOSINGNESS", "NET_COMPACTNESS",
+                    "AVG_HEIGHT_ROOF_AREA_WEIGHTED", "STD_HEIGHT_ROOF_AREA_WEIGHTED"]]
+
+    public static File directory = new File("./target/geoclimateChain")
+
+    public static zoneTableName = "ZONE"
+    public static buildingTableName = "BUILDING"
+    public static roadTableName = "ROAD"
+    public static railTableName = "RAIL"
+    public static vegetationTableName = "VEGET"
+    public static hydrographicTableName = "HYDRO"
+
+    @BeforeAll
+    static void init(){
+        File directory = new File("./target/geoclimateChain")
+        H2GIS datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
+
+        // Names of the input tables downloaded from OpenStreetMap
+        datasource.load(ProcessingChain.class.getResource("BUILDING.geojson"), buildingTableName)
+        datasource.load(ProcessingChain.class.getResource("ROAD.geojson"), roadTableName)
+        datasource.load(ProcessingChain.class.getResource("RAIL.geojson"), railTableName)
+        datasource.load(ProcessingChain.class.getResource("VEGET.geojson"), vegetationTableName)
+        datasource.load(ProcessingChain.class.getResource("HYDRO.geojson"), hydrographicTableName)
+        datasource.load(ProcessingChain.class.getResource("ZONE.geojson"), zoneTableName)
+    }
 
 
     @Test
-    void OSMGeoIndicators() {
-        File directory = new File("./target/geoclimateChain")
-
-        H2GIS datasource = H2GIS.open(directory.absolutePath+File.separator+"osm_chain_db;AUTO_SERVER=TRUE")
+    void OSMGeoIndicatorsTest() {
+        datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
         String placeName = "Cliscouet, vannes"
         def distance = 0
-        def indicatorUse = ["LCZ", "URBAN_TYPOLOGY", "TEB"]
         boolean svfSimplified = false
         def prefixName = ""
-        def mapOfWeights = ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+        def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                             "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
 
+        def ind_i = ["LCZ", "URBAN_TYPOLOGY", "TEB"]
 
-        IProcess OSMGeoIndicatorsCompute= ProcessingChain.GeoclimateChain.OSMGeoIndicators()
-        assertTrue OSMGeoIndicatorsCompute.execute([datasource: datasource,        placeName: placeName,
-                                                    distance: distance,            indicatorUse: indicatorUse,
-                                                    svfSimplified:svfSimplified,   prefixName: prefixName,
-                                                    mapOfWeights: mapOfWeights])
+        IProcess OSMGeoIndicatorsCompute_i = ProcessingChain.GeoclimateChain.OSMGeoIndicators()
+        assertTrue OSMGeoIndicatorsCompute_i.execute([datasource   : datasource, placeName: placeName,
+                                                      distance     : distance, indicatorUse: ind_i,
+                                                      svfSimplified: svfSimplified, prefixName: prefixName,
+                                                      mapOfWeights : mapOfWeights])
 
+        if (ind_i.contains("URBAN_TYPOLOGY")) {
+            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(OSMGeoIndicatorsCompute_i.getResults().buildingIndicators).getColumnNames().sort())
+            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(OSMGeoIndicatorsCompute_i.results.blockIndicators).getColumnNames().sort())
+        }
+        def expectListRsuTempo = listColBasic
+        expectListRsuTempo = (expectListRsuTempo + ind_i.collect{listNames[it]}).flatten()
+        def expectListRsu = expectListRsuTempo.toUnique()
+        def realListRsu = datasource.getTable(OSMGeoIndicatorsCompute_i.results.rsuIndicators).getColumnNames()
+        // We test that there is no missing indicators in the RSU table
+        for(i in expectListRsu){
+            assertTrue realListRsu.contains(i)
+        }
+        if (ind_i.contains("LCZ")) {
+            def expectListLczTempo = listColLcz
+            expectListLczTempo = expectListLczTempo + listColBasic
+            def expectListLcz = expectListLczTempo.sort()
+            assertEquals(expectListLcz, datasource.getTable(OSMGeoIndicatorsCompute_i.results.rsuLcz).getColumnNames().sort())
+        } else {
+            assertEquals(null, OSMGeoIndicatorsCompute_i.results.rsuLcz)
+        }
+    }
+
+
+    @Test
+    void GeoIndicatorsTest1() {
+        datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
+        boolean svfSimplified = false
+        def prefixName = ""
+        def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                            "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                            "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+
+        def ind_i = ["LCZ"]
+
+        IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoclimateChain.buildGeoIndicators()
+        assertTrue GeoIndicatorsCompute_i.execute(  datasource          : datasource,           zoneTable       : zoneTableName,
+                                                    buildingTable       : buildingTableName,    roadTable       : roadTableName,
+                                                    railTable           : null,        vegetationTable : vegetationTableName,
+                                                    hydrographicTable   : hydrographicTableName,indicatorUse    : ind_i,
+                                                    svfSimplified       : svfSimplified,        prefixName      : prefixName,
+                                                    mapOfWeights        : mapOfWeights)
+
+        if (ind_i.contains("URBAN_TYPOLOGY")) {
+            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).getColumnNames().sort())
+            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).getColumnNames().sort())
+        }
+        def expectListRsuTempo = listColBasic
+        expectListRsuTempo = (expectListRsuTempo + ind_i.collect{listNames[it]}).flatten()
+        def expectListRsu = expectListRsuTempo.toUnique()
+        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).getColumnNames()
+        // We test that there is no missing indicators in the RSU table
+        for(i in expectListRsu){
+            assertTrue realListRsu.contains(i)
+        }
+        if (ind_i.contains("LCZ")) {
+            def expectListLczTempo = listColLcz
+            expectListLczTempo = expectListLczTempo + listColBasic
+            def expectListLcz = expectListLczTempo.sort()
+            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuLcz).getColumnNames().sort())
+        } else {
+            assertEquals(null, GeoIndicatorsCompute_i.results.outputTableRsuLcz)
+        }
+    }
+
+    @Test
+    void GeoIndicatorsTest2() {
+        datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
+        boolean svfSimplified = false
+        def prefixName = ""
+        def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                            "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                            "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+
+        def ind_i = ["URBAN_TYPOLOGY"]
+
+        IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoclimateChain.buildGeoIndicators()
+        assertTrue GeoIndicatorsCompute_i.execute(  datasource          : datasource,           zoneTable       : zoneTableName,
+                buildingTable       : buildingTableName,    roadTable       : roadTableName,
+                railTable           : null,        vegetationTable : vegetationTableName,
+                hydrographicTable   : hydrographicTableName,indicatorUse    : ind_i,
+                svfSimplified       : svfSimplified,        prefixName      : prefixName,
+                mapOfWeights        : mapOfWeights)
+
+        if (ind_i.contains("URBAN_TYPOLOGY")) {
+            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).getColumnNames().sort())
+            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).getColumnNames().sort())
+        }
+        def expectListRsuTempo = listColBasic
+        expectListRsuTempo = (expectListRsuTempo + ind_i.collect{listNames[it]}).flatten()
+        def expectListRsu = expectListRsuTempo.toUnique()
+        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).getColumnNames()
+        // We test that there is no missing indicators in the RSU table
+        for(i in expectListRsu){
+            assertTrue realListRsu.contains(i)
+        }
+        if (ind_i.contains("LCZ")) {
+            def expectListLczTempo = listColLcz
+            expectListLczTempo = expectListLczTempo + listColBasic
+            def expectListLcz = expectListLczTempo.sort()
+            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuLcz).getColumnNames().sort())
+        } else {
+            assertEquals(null, GeoIndicatorsCompute_i.results.outputTableRsuLcz)
+        }
+    }
+
+    @Test
+    void GeoIndicatorsTest3() {
+        datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
+        boolean svfSimplified = false
+        def prefixName = ""
+        def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                            "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                            "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+
+        def ind_i = ["URBAN_TYPOLOGY", "TEB"]
+
+        IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoclimateChain.buildGeoIndicators()
+        assertTrue GeoIndicatorsCompute_i.execute(  datasource          : datasource,           zoneTable       : zoneTableName,
+                buildingTable       : buildingTableName,    roadTable       : roadTableName,
+                railTable           : null,        vegetationTable : vegetationTableName,
+                hydrographicTable   : hydrographicTableName,indicatorUse    : ind_i,
+                svfSimplified       : svfSimplified,        prefixName      : prefixName,
+                mapOfWeights        : mapOfWeights)
+
+        if (ind_i.contains("URBAN_TYPOLOGY")) {
+            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).getColumnNames().sort())
+            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).getColumnNames().sort())
+        }
+        def expectListRsuTempo = listColBasic
+        expectListRsuTempo = (expectListRsuTempo + ind_i.collect{listNames[it]}).flatten()
+        def expectListRsu = expectListRsuTempo.toUnique()
+        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).getColumnNames()
+        // We test that there is no missing indicators in the RSU table
+        for(i in expectListRsu){
+            assertTrue realListRsu.contains(i)
+        }
+        if (ind_i.contains("LCZ")) {
+            def expectListLczTempo = listColLcz
+            expectListLczTempo = expectListLczTempo + listColBasic
+            def expectListLcz = expectListLczTempo.sort()
+            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuLcz).getColumnNames().sort())
+        } else {
+            assertEquals(null, GeoIndicatorsCompute_i.results.outputTableRsuLcz)
+        }
+    }
+
+    @Test
+    void GeoIndicatorsTest4() {
+        datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
+        boolean svfSimplified = false
+        def prefixName = ""
+        def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                            "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                            "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+
+        def ind_i = ["TEB"]
+
+        IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoclimateChain.buildGeoIndicators()
+        assertTrue GeoIndicatorsCompute_i.execute(  datasource          : datasource,           zoneTable       : zoneTableName,
+                buildingTable       : buildingTableName,    roadTable       : roadTableName,
+                railTable           : null,        vegetationTable : vegetationTableName,
+                hydrographicTable   : hydrographicTableName,indicatorUse    : ind_i,
+                svfSimplified       : svfSimplified,        prefixName      : prefixName,
+                mapOfWeights        : mapOfWeights)
+
+        if (ind_i.contains("URBAN_TYPOLOGY")) {
+            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).getColumnNames().sort())
+            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).getColumnNames().sort())
+        }
+        def expectListRsuTempo = listColBasic
+        expectListRsuTempo = (expectListRsuTempo + ind_i.collect{listNames[it]}).flatten()
+        def expectListRsu = expectListRsuTempo.toUnique()
+        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).getColumnNames()
+        // We test that there is no missing indicators in the RSU table
+        for(i in expectListRsu){
+            assertTrue realListRsu.contains(i)
+        }
+        if (ind_i.contains("LCZ")) {
+            def expectListLczTempo = listColLcz
+            expectListLczTempo = expectListLczTempo + listColBasic
+            def expectListLcz = expectListLczTempo.sort()
+            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuLcz).getColumnNames().sort())
+        } else {
+            assertEquals(null, GeoIndicatorsCompute_i.results.outputTableRsuLcz)
+        }
+    }
+
+    @Test
+    void GeoIndicatorsTest5() {
+        datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
+        boolean svfSimplified = false
+        def prefixName = ""
+        def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                            "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                            "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+
+        def ind_i = ["LCZ", "TEB"]
+
+        IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoclimateChain.buildGeoIndicators()
+        assertTrue GeoIndicatorsCompute_i.execute(  datasource          : datasource,           zoneTable       : zoneTableName,
+                buildingTable       : buildingTableName,    roadTable       : roadTableName,
+                railTable           : null,        vegetationTable : vegetationTableName,
+                hydrographicTable   : hydrographicTableName,indicatorUse    : ind_i,
+                svfSimplified       : svfSimplified,        prefixName      : prefixName,
+                mapOfWeights        : mapOfWeights)
+
+        if (ind_i.contains("URBAN_TYPOLOGY")) {
+            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).getColumnNames().sort())
+            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).getColumnNames().sort())
+        }
+        def expectListRsuTempo = listColBasic
+        expectListRsuTempo = (expectListRsuTempo + ind_i.collect{listNames[it]}).flatten()
+        def expectListRsu = expectListRsuTempo.toUnique()
+        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).getColumnNames()
+        // We test that there is no missing indicators in the RSU table
+        for(i in expectListRsu){
+            assertTrue realListRsu.contains(i)
+        }
+        if (ind_i.contains("LCZ")) {
+            def expectListLczTempo = listColLcz
+            expectListLczTempo = expectListLczTempo + listColBasic
+            def expectListLcz = expectListLczTempo.sort()
+            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuLcz).getColumnNames().sort())
+        } else {
+            assertEquals(null, GeoIndicatorsCompute_i.results.outputTableRsuLcz)
+        }
+    }
+
+    @Test
+    void GeoIndicatorsTest6() {
+        datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
+        boolean svfSimplified = false
+        def prefixName = ""
+        def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                            "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                            "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+
+        def ind_i = ["URBAN_TYPOLOGY", "LCZ"]
+
+        IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoclimateChain.buildGeoIndicators()
+        assertTrue GeoIndicatorsCompute_i.execute(  datasource          : datasource,           zoneTable       : zoneTableName,
+                buildingTable       : buildingTableName,    roadTable       : roadTableName,
+                railTable           : null,        vegetationTable : vegetationTableName,
+                hydrographicTable   : hydrographicTableName,indicatorUse    : ind_i,
+                svfSimplified       : svfSimplified,        prefixName      : prefixName,
+                mapOfWeights        : mapOfWeights)
+
+        if (ind_i.contains("URBAN_TYPOLOGY")) {
+            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).getColumnNames().sort())
+            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).getColumnNames().sort())
+        }
+        def expectListRsuTempo = listColBasic
+        expectListRsuTempo = (expectListRsuTempo + ind_i.collect{listNames[it]}).flatten()
+        def expectListRsu = expectListRsuTempo.toUnique()
+        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).getColumnNames()
+        // We test that there is no missing indicators in the RSU table
+        for(i in expectListRsu){
+            assertTrue realListRsu.contains(i)
+        }
+        if (ind_i.contains("LCZ")) {
+            def expectListLczTempo = listColLcz
+            expectListLczTempo = expectListLczTempo + listColBasic
+            def expectListLcz = expectListLczTempo.sort()
+            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuLcz).getColumnNames().sort())
+        } else {
+            assertEquals(null, GeoIndicatorsCompute_i.results.outputTableRsuLcz)
+        }
     }
 
 
