@@ -104,86 +104,94 @@ IProcess prepareRSUData() {
             if (numberZone == 1) {
                 def epsg = datasource.getSpatialTable(zoneTable).srid
                 if(vegetationTable && datasource.hasTable(vegetationTable)) {
-                    info "Preparing vegetation..."
+                    if (datasource.getSpatialTable(vegetationTable) != null) {
+                        info "Preparing vegetation..."
 
-                    datasource.execute "DROP TABLE IF EXISTS $vegetation_indice"
-                    datasource.execute "CREATE TABLE $vegetation_indice(THE_GEOM geometry, ID serial," +
-                            " CONTACT integer) AS (SELECT st_makevalid(THE_GEOM) as the_geom, null , 0 FROM ST_EXPLODE('" +
-                            "(SELECT * FROM $vegetationTable)') " +
-                            " where st_dimension(the_geom)>0 AND st_isempty(the_geom)=false)"
-                    datasource.execute "CREATE INDEX IF NOT EXISTS veg_indice_idx ON  $vegetation_indice(THE_GEOM) " +
-                            "using rtree"
-                    datasource.execute "UPDATE $vegetation_indice SET CONTACT=1 WHERE ID IN(SELECT DISTINCT(a.ID)" +
-                            " FROM $vegetation_indice a, $vegetation_indice b WHERE a.THE_GEOM && b.THE_GEOM AND " +
-                            "ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM) AND a.ID<>b.ID)"
+                        datasource.execute "DROP TABLE IF EXISTS $vegetation_indice"
+                        datasource.execute "CREATE TABLE $vegetation_indice(THE_GEOM geometry, ID serial," +
+                                " CONTACT integer) AS (SELECT st_makevalid(THE_GEOM) as the_geom, null , 0 FROM ST_EXPLODE('" +
+                                "(SELECT * FROM $vegetationTable)') " +
+                                " where st_dimension(the_geom)>0 AND st_isempty(the_geom)=false)"
+                        datasource.execute "CREATE INDEX IF NOT EXISTS veg_indice_idx ON  $vegetation_indice(THE_GEOM) " +
+                                "using rtree"
+                        datasource.execute "UPDATE $vegetation_indice SET CONTACT=1 WHERE ID IN(SELECT DISTINCT(a.ID)" +
+                                " FROM $vegetation_indice a, $vegetation_indice b WHERE a.THE_GEOM && b.THE_GEOM AND " +
+                                "ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM) AND a.ID<>b.ID)"
 
-                    datasource.execute "DROP TABLE IF EXISTS $vegetation_unified"
-                    datasource.execute "CREATE TABLE $vegetation_unified AS " +
-                            "(SELECT ST_SETSRID(the_geom, $epsg) as the_geom FROM ST_EXPLODE('(SELECT ST_UNION(ST_ACCUM(THE_GEOM))" +
-                            " AS THE_GEOM FROM $vegetation_indice WHERE CONTACT=1)') " +
-                            "where st_dimension(the_geom)>0 AND st_isempty(the_geom)=false AND " +
-                            "st_area(the_geom)> $surface_vegetation) " +
-                            "UNION ALL (SELECT THE_GEOM FROM $vegetation_indice WHERE contact=0 AND " +
-                            "st_area(the_geom)> $surface_vegetation)"
+                        datasource.execute "DROP TABLE IF EXISTS $vegetation_unified"
+                        datasource.execute "CREATE TABLE $vegetation_unified AS " +
+                                "(SELECT ST_SETSRID(the_geom, $epsg) as the_geom FROM ST_EXPLODE('(SELECT ST_UNION(ST_ACCUM(THE_GEOM))" +
+                                " AS THE_GEOM FROM $vegetation_indice WHERE CONTACT=1)') " +
+                                "where st_dimension(the_geom)>0 AND st_isempty(the_geom)=false AND " +
+                                "st_area(the_geom)> $surface_vegetation) " +
+                                "UNION ALL (SELECT THE_GEOM FROM $vegetation_indice WHERE contact=0 AND " +
+                                "st_area(the_geom)> $surface_vegetation)"
 
-                    datasource.execute "CREATE  INDEX IF NOT EXISTS veg_unified_idx ON  $vegetation_unified(THE_GEOM)" +
-                            " using rtree"
+                        datasource.execute "CREATE  INDEX IF NOT EXISTS veg_unified_idx ON  $vegetation_unified(THE_GEOM)" +
+                                " using rtree"
 
-                    datasource.execute "DROP TABLE IF EXISTS $vegetation_tmp"
-                    datasource.execute "CREATE TABLE $vegetation_tmp AS SELECT a.the_geom AS THE_GEOM FROM " +
-                            "$vegetation_unified AS a, $zoneTable AS b WHERE a.the_geom && b.the_geom " +
-                            "AND ST_INTERSECTS(a.the_geom, b.the_geom)"
+                        datasource.execute "DROP TABLE IF EXISTS $vegetation_tmp"
+                        datasource.execute "CREATE TABLE $vegetation_tmp AS SELECT a.the_geom AS THE_GEOM FROM " +
+                                "$vegetation_unified AS a, $zoneTable AS b WHERE a.the_geom && b.the_geom " +
+                                "AND ST_INTERSECTS(a.the_geom, b.the_geom)"
 
-                    queryCreateOutputTable+=[vegetation_tmp:"(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $vegetation_tmp)"]
+                        queryCreateOutputTable += [vegetation_tmp: "(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $vegetation_tmp)"]
+                    }
                 }
 
                 if(hydrographicTable && datasource.hasTable(hydrographicTable)) {
-                    //Extract water
-                    info "Preparing hydrographic..."
+                    if (datasource.getSpatialTable(hydrographicTable)!=null) {
+                        //Extract water
+                        info "Preparing hydrographic..."
 
-                    datasource.execute "DROP TABLE IF EXISTS $hydrographic_indice"
-                    datasource.execute "CREATE TABLE $hydrographic_indice(THE_GEOM geometry, ID serial," +
-                            " CONTACT integer) AS (SELECT st_makevalid(THE_GEOM) as the_geom, null , 0 FROM " +
-                            "ST_EXPLODE('(SELECT * FROM $hydrographicTable)')" +
-                            " where st_dimension(the_geom)>0 AND st_isempty(the_geom)=false)"
+                        datasource.execute "DROP TABLE IF EXISTS $hydrographic_indice"
+                        datasource.execute "CREATE TABLE $hydrographic_indice(THE_GEOM geometry, ID serial," +
+                                " CONTACT integer) AS (SELECT st_makevalid(THE_GEOM) as the_geom, null , 0 FROM " +
+                                "ST_EXPLODE('(SELECT * FROM $hydrographicTable)')" +
+                                " where st_dimension(the_geom)>0 AND st_isempty(the_geom)=false)"
 
-                    datasource.execute "CREATE  INDEX IF NOT EXISTS hydro_indice_idx ON $hydrographic_indice(THE_GEOM)"
-
-
-                    datasource.execute "UPDATE $hydrographic_indice SET CONTACT=1 WHERE ID IN(SELECT DISTINCT(a.ID)" +
-                            " FROM $hydrographic_indice a, $hydrographic_indice b WHERE a.THE_GEOM && b.THE_GEOM" +
-                            " AND ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM) AND a.ID<>b.ID)"
-                    datasource.execute "CREATE INDEX ON $hydrographic_indice(contact)"
+                        datasource.execute "CREATE  INDEX IF NOT EXISTS hydro_indice_idx ON $hydrographic_indice(THE_GEOM)"
 
 
-                    datasource.execute "DROP TABLE IF EXISTS $hydrographic_unified"
-                    datasource.execute "CREATE TABLE $hydrographic_unified AS (SELECT ST_SETSRID(the_geom, $epsg) as the_geom FROM " +
-                            "ST_EXPLODE('(SELECT ST_UNION(ST_ACCUM(THE_GEOM)) AS THE_GEOM FROM" +
-                            " $hydrographic_indice  WHERE CONTACT=1)') where st_dimension(the_geom)>0" +
-                            " AND st_isempty(the_geom)=false AND st_area(the_geom)> $surface_hydrographic) " +
-                            " UNION ALL (SELECT  the_geom FROM $hydrographic_indice WHERE contact=0 AND " +
-                            " st_area(the_geom)> $surface_hydrographic)"
+                        datasource.execute "UPDATE $hydrographic_indice SET CONTACT=1 WHERE ID IN(SELECT DISTINCT(a.ID)" +
+                                " FROM $hydrographic_indice a, $hydrographic_indice b WHERE a.THE_GEOM && b.THE_GEOM" +
+                                " AND ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM) AND a.ID<>b.ID)"
+                        datasource.execute "CREATE INDEX ON $hydrographic_indice(contact)"
 
 
-                    datasource.execute "CREATE INDEX IF NOT EXISTS hydro_unified_idx ON $hydrographic_unified(THE_GEOM)"
+                        datasource.execute "DROP TABLE IF EXISTS $hydrographic_unified"
+                        datasource.execute "CREATE TABLE $hydrographic_unified AS (SELECT ST_SETSRID(the_geom, $epsg) as the_geom FROM " +
+                                "ST_EXPLODE('(SELECT ST_UNION(ST_ACCUM(THE_GEOM)) AS THE_GEOM FROM" +
+                                " $hydrographic_indice  WHERE CONTACT=1)') where st_dimension(the_geom)>0" +
+                                " AND st_isempty(the_geom)=false AND st_area(the_geom)> $surface_hydrographic) " +
+                                " UNION ALL (SELECT  the_geom FROM $hydrographic_indice WHERE contact=0 AND " +
+                                " st_area(the_geom)> $surface_hydrographic)"
 
 
-                    datasource.execute "DROP TABLE IF EXISTS $hydrographic_tmp"
-                    datasource.execute "CREATE TABLE $hydrographic_tmp AS SELECT a.the_geom" +
-                            " AS THE_GEOM FROM $hydrographic_unified AS a, $zoneTable AS b " +
-                            "WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)"
+                        datasource.execute "CREATE INDEX IF NOT EXISTS hydro_unified_idx ON $hydrographic_unified(THE_GEOM)"
 
-                    queryCreateOutputTable+=[hydrographic_tmp:"(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $hydrographic_tmp)"]
+
+                        datasource.execute "DROP TABLE IF EXISTS $hydrographic_tmp"
+                        datasource.execute "CREATE TABLE $hydrographic_tmp AS SELECT a.the_geom" +
+                                " AS THE_GEOM FROM $hydrographic_unified AS a, $zoneTable AS b " +
+                                "WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)"
+
+                        queryCreateOutputTable += [hydrographic_tmp: "(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $hydrographic_tmp)"]
+                    }
                 }
 
                 if(roadTable && datasource.hasTable(roadTable)) {
-                    info "Preparing road..."
-                    queryCreateOutputTable+=[road_tmp:"(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $roadTable where zindex=0 or crossing = 'bridge')"]
+                    if(datasource.getSpatialTable(roadTable)!=null) {
+                        info "Preparing road..."
+                        queryCreateOutputTable += [road_tmp: "(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $roadTable where zindex=0 or crossing = 'bridge')"]
+                    }
                 }
 
                 if(railTable && datasource.hasTable(railTable)) {
-                    info "Preparing rail..."
-                    queryCreateOutputTable+=[rail_tmp:"(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $railTable where zindex=0 or crossing = 'bridge')"]
+                    if(datasource.getSpatialTable(railTable)!=null) {
+                        info "Preparing rail..."
+                        queryCreateOutputTable += [rail_tmp: "(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $railTable where zindex=0 or crossing = 'bridge')"]
+                    }
                 }
 
                 // The input table that contains the geometries to be transformed as RSU
