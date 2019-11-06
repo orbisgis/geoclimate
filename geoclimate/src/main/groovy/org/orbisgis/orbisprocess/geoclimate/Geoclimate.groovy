@@ -15,7 +15,6 @@ import org.orbisgis.orbisprocess.geoclimate.preparedata.common.InputDataFormatti
 import org.orbisgis.orbisprocess.geoclimate.preparedata.osm.FormattingForAbstractModel
 import org.orbisgis.orbisprocess.geoclimate.preparedata.osm.OSMGISLayers
 import org.orbisgis.orbisprocess.geoclimate.processingchain.BuildGeoIndicators
-import org.orbisgis.orbisprocess.geoclimate.processingchain.BuildLCZ
 import org.orbisgis.orbisprocess.geoclimate.processingchain.BuildSpatialUnits
 import org.orbisgis.orbisprocess.geoclimate.processingchain.GeoclimateChain
 import org.orbisgis.orbisprocess.geoclimate.processingchain.PrepareBDTopo
@@ -31,7 +30,6 @@ class Geoclimate {
     public static def PrepareOSM  = new PrepareOSM()
     public static def BuildGeoIndicators  = new BuildGeoIndicators()
     public static def BuildSpatialUnits  = new BuildSpatialUnits()
-    public static def BuildLCZ  = new BuildLCZ()
     public static def DataUtils  = new DataUtils()
     public static def GeoclimateChain  = new GeoclimateChain()
     public static def AbstractTablesInitialization = new AbstractTablesInitialization()

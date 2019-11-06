@@ -6,6 +6,9 @@ import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.processmanagerapi.IProcess
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 
+import static org.junit.jupiter.api.Assertions.assertNull
+import static org.junit.jupiter.api.Assertions.assertTrue
+
 class ProcessingChainOSMTest extends ChainProcessMainTest {
 
     @Disabled
@@ -170,27 +173,41 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
         String vegetationTableName="veget"
         String hydrographicTableName="hydro"
 
-        datasource.load(urlBuilding, buildingTableName)
-        datasource.load(urlRoad, roadTableName)
-        datasource.load(urlRail, railTableName)
-        datasource.load(urlVeget, vegetationTableName)
-        datasource.load(urlHydro, hydrographicTableName)
-        datasource.load(urlZone, zoneTableName)
+        datasource.load(urlBuilding, buildingTableName, true)
+        datasource.load(urlRoad, roadTableName, true)
+        datasource.load(urlRail, railTableName, true)
+        datasource.load(urlVeget, vegetationTableName, true)
+        datasource.load(urlHydro, hydrographicTableName, true)
+        datasource.load(urlZone, zoneTableName, true)
 
-        //Run tests
-        calcLcz(directory, datasource, zoneTableName, buildingTableName,roadTableName,null,vegetationTableName,
-                hydrographicTableName,saveResults, false, "")
+        def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                            "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                            "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+
+        IProcess geodindicators = ProcessingChain.GeoclimateChain.GeoIndicators()
+        assertTrue geodindicators.execute(datasource: datasource, zoneTable: zoneTableName,
+                buildingTable: buildingTableName, roadTable: roadTableName,
+                railTable: railTableName, vegetationTable: vegetationTableName,
+                hydrographicTable: hydrographicTableName, indicatorUse: ["LCZ"],
+                mapOfWeights: mapOfWeights)
+
+
+        assertTrue(datasource.getTable(geodindicators.results.outputTableBuildingIndicators).rowCount>0)
+        assertNull(geodindicators.results.outputTableBlockIndicators)
+        assertTrue(datasource.getTable(geodindicators.results.outputTableRsuIndicators).rowCount>0)
+        assertTrue(datasource.getTable(geodindicators.results.outputTableRsuLcz).rowCount>0)
+
     }
 
 
-    @Test
+    //@Test
     void testOSMGeoclimateChain() {
         String directory ="./target/geoclimate_chain"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
-        IProcess process = ProcessingChain.GeoclimateChain.OSMGeoIndicators()
+        IProcess process = ProcessingChain.GeoclimateChain.OSM()
         if(process.execute(datasource: datasource, placeName: "romainville")){
             IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
             saveTables.execute( [inputTableNames: process.getResults().values()
@@ -205,8 +222,8 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
         dirFile.delete()
         dirFile.mkdir()
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
-        IProcess process = ProcessingChain.GeoclimateChain.OSMLCZ()
-        if(process.execute(datasource: datasource, placeName: "romainville")){
+        IProcess process = ProcessingChain.GeoclimateChain.OSM()
+        if(process.execute(datasource: datasource, placeName: "romainville", indicatorUse: ["LCZ"])){
             IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
             saveTables.execute( [inputTableNames: process.getResults().values()
                                  , directory: directory, datasource: datasource])

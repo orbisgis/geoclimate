@@ -103,7 +103,7 @@ IProcess prepareRSUData() {
 
             if (numberZone == 1) {
                 def epsg = datasource.getSpatialTable(zoneTable).srid
-                if(vegetationTable) {
+                if(vegetationTable && datasource.hasTable(vegetationTable)) {
                     info "Preparing vegetation..."
 
                     datasource.execute "DROP TABLE IF EXISTS $vegetation_indice"
@@ -137,14 +137,14 @@ IProcess prepareRSUData() {
                     queryCreateOutputTable+=[vegetation_tmp:"(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $vegetation_tmp)"]
                 }
 
-                if(hydrographicTable) {
+                if(hydrographicTable && datasource.hasTable(hydrographicTable)) {
                     //Extract water
                     info "Preparing hydrographic..."
 
                     datasource.execute "DROP TABLE IF EXISTS $hydrographic_indice"
                     datasource.execute "CREATE TABLE $hydrographic_indice(THE_GEOM geometry, ID serial," +
                             " CONTACT integer) AS (SELECT st_makevalid(THE_GEOM) as the_geom, null , 0 FROM " +
-                            "ST_EXPLODE('(SELECT * FROM $zoneTable)')" +
+                            "ST_EXPLODE('(SELECT * FROM $hydrographicTable)')" +
                             " where st_dimension(the_geom)>0 AND st_isempty(the_geom)=false)"
 
                     datasource.execute "CREATE  INDEX IF NOT EXISTS hydro_indice_idx ON $hydrographic_indice(THE_GEOM)"
@@ -176,12 +176,12 @@ IProcess prepareRSUData() {
                     queryCreateOutputTable+=[hydrographic_tmp:"(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $hydrographic_tmp)"]
                 }
 
-                if(roadTable) {
+                if(roadTable && datasource.hasTable(roadTable)) {
                     info "Preparing road..."
                     queryCreateOutputTable+=[road_tmp:"(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $roadTable where zindex=0 or crossing = 'bridge')"]
                 }
 
-                if(railTable) {
+                if(railTable && datasource.hasTable(railTable)) {
                     info "Preparing rail..."
                     queryCreateOutputTable+=[rail_tmp:"(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $railTable where zindex=0 or crossing = 'bridge')"]
                 }
