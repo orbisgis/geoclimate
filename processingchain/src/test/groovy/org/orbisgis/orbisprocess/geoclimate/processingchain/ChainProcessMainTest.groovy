@@ -74,7 +74,7 @@ class ChainProcessMainTest {
                     "BUILDING_DIRECTION_UNIQUENESS", "BUILDING_DIRECTION_INEQUALITY", "CLOSINGNESS", "NET_COMPACTNESS",
                     "AVG_HEIGHT_ROOF_AREA_WEIGHTED", "STD_HEIGHT_ROOF_AREA_WEIGHTED"]]
 
-    public static File directory = new File("./target/geoclimateChain")
+    public static File directory = new File("./target/osm_workflow")
 
     public static zoneTableName = "ZONE"
     public static buildingTableName = "BUILDING"
@@ -85,7 +85,7 @@ class ChainProcessMainTest {
 
     @BeforeAll
     static void init() {
-        File directory = new File("./target/geoclimateChain")
+        File directory = new File("./target/osm_workflow")
         H2GIS datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
 
         // Names of the input tables downloaded from OpenStreetMap
@@ -111,7 +111,7 @@ class ChainProcessMainTest {
 
         def ind_i = ["LCZ", "URBAN_TYPOLOGY", "TEB"]
 
-        IProcess OSMGeoIndicatorsCompute_i = ProcessingChain.GeoclimateChain.OSM()
+        IProcess OSMGeoIndicatorsCompute_i = ProcessingChain.Workflow.OSM()
         assertTrue OSMGeoIndicatorsCompute_i.execute([datasource   : datasource, placeName: placeName,
                                                       distance     : distance, indicatorUse: ind_i,
                                                       svfSimplified: svfSimplified, prefixName: prefixName,
@@ -151,7 +151,7 @@ class ChainProcessMainTest {
 
         def ind_i = ["LCZ"]
 
-        IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoclimateChain.GeoIndicators()
+        IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: zoneTableName,
                 buildingTable: buildingTableName, roadTable: roadTableName,
                 railTable: null, vegetationTable: vegetationTableName,
@@ -192,7 +192,7 @@ class ChainProcessMainTest {
 
         def ind_i = ["URBAN_TYPOLOGY"]
 
-        IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoclimateChain.GeoIndicators()
+        IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: zoneTableName,
                 buildingTable: buildingTableName, roadTable: roadTableName,
                 railTable: null, vegetationTable: vegetationTableName,
@@ -233,7 +233,7 @@ class ChainProcessMainTest {
 
         def ind_i = ["URBAN_TYPOLOGY", "TEB"]
 
-        IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoclimateChain.GeoIndicators()
+        IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: zoneTableName,
                 buildingTable: buildingTableName, roadTable: roadTableName,
                 railTable: null, vegetationTable: vegetationTableName,
@@ -274,7 +274,7 @@ class ChainProcessMainTest {
 
         def ind_i = ["TEB"]
 
-        IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoclimateChain.GeoIndicators()
+        IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: zoneTableName,
                 buildingTable: buildingTableName, roadTable: roadTableName,
                 railTable: null, vegetationTable: vegetationTableName,
@@ -315,7 +315,7 @@ class ChainProcessMainTest {
 
         def ind_i = ["LCZ", "TEB"]
 
-        IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoclimateChain.GeoIndicators()
+        IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: zoneTableName,
                 buildingTable: buildingTableName, roadTable: roadTableName,
                 railTable: null, vegetationTable: vegetationTableName,
@@ -356,7 +356,7 @@ class ChainProcessMainTest {
 
         def ind_i = ["URBAN_TYPOLOGY", "LCZ"]
 
-        IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoclimateChain.GeoIndicators()
+        IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: zoneTableName,
                 buildingTable: buildingTableName, roadTable: roadTableName,
                 railTable: null, vegetationTable: vegetationTableName,

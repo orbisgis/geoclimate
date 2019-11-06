@@ -184,7 +184,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                             "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
 
-        IProcess geodindicators = ProcessingChain.GeoclimateChain.GeoIndicators()
+        IProcess geodindicators = ProcessingChain.Workflow.GeoIndicators()
         assertTrue geodindicators.execute(datasource: datasource, zoneTable: zoneTableName,
                 buildingTable: buildingTableName, roadTable: roadTableName,
                 railTable: railTableName, vegetationTable: vegetationTableName,
@@ -201,13 +201,13 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
 
 
     //@Test
-    void testOSMGeoclimateChain() {
+    void testOSMWorkflow() {
         String directory ="./target/geoclimate_chain"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
-        IProcess process = ProcessingChain.GeoclimateChain.OSM()
+        IProcess process = ProcessingChain.Workflow.OSM()
         if(process.execute(datasource: datasource, placeName: "romainville")){
             IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
             saveTables.execute( [inputTableNames: process.getResults().values()
@@ -222,7 +222,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
         dirFile.delete()
         dirFile.mkdir()
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
-        IProcess process = ProcessingChain.GeoclimateChain.OSM()
+        IProcess process = ProcessingChain.Workflow.OSM()
         if(process.execute(datasource: datasource, placeName: "romainville", indicatorUse: ["LCZ"])){
             IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
             saveTables.execute( [inputTableNames: process.getResults().values()

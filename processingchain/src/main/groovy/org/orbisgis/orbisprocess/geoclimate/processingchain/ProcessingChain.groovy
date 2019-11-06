@@ -15,7 +15,7 @@ abstract class ProcessingChain extends GroovyProcessFactory {
     public static BuildGeoIndicators  = new BuildGeoIndicators()
     public static BuildSpatialUnits  = new BuildSpatialUnits()
     public static DataUtils  = new DataUtils()
-    public static GeoclimateChain  = new GeoclimateChain()
+    public static Workflow  = new Workflow()
 
     //Utility methods
     static def uuid = { UUID.randomUUID().toString().replaceAll("-", "_") }

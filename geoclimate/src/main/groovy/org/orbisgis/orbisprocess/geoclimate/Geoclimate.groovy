@@ -16,7 +16,7 @@ import org.orbisgis.orbisprocess.geoclimate.preparedata.osm.FormattingForAbstrac
 import org.orbisgis.orbisprocess.geoclimate.preparedata.osm.OSMGISLayers
 import org.orbisgis.orbisprocess.geoclimate.processingchain.BuildGeoIndicators
 import org.orbisgis.orbisprocess.geoclimate.processingchain.BuildSpatialUnits
-import org.orbisgis.orbisprocess.geoclimate.processingchain.GeoclimateChain
+import org.orbisgis.orbisprocess.geoclimate.processingchain.Workflow
 import org.orbisgis.orbisprocess.geoclimate.processingchain.PrepareBDTopo
 import org.orbisgis.orbisprocess.geoclimate.processingchain.PrepareOSM
 import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
@@ -31,7 +31,7 @@ class Geoclimate {
     public static def BuildGeoIndicators  = new BuildGeoIndicators()
     public static def BuildSpatialUnits  = new BuildSpatialUnits()
     public static def DataUtils  = new DataUtils()
-    public static def GeoclimateChain  = new GeoclimateChain()
+    public static def Workflow  = new Workflow()
     public static def AbstractTablesInitialization = new AbstractTablesInitialization()
     public static def BDTopoGISLayers = new BDTopoGISLayers()
     public static def OSMGISLayers = new OSMGISLayers()
