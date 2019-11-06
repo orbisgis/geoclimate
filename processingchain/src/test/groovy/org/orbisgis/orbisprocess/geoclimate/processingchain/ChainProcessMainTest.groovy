@@ -126,7 +126,6 @@ class ChainProcessMainTest {
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect{listNames[it]}).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
         def realListRsu = datasource.getTable(OSMGeoIndicatorsCompute_i.results.rsuIndicators).getColumnNames()
-        println realListRsu
         // We test that there is no missing indicators in the RSU table
         for(i in expectListRsu){
             assertTrue realListRsu.contains(i)
@@ -297,9 +296,7 @@ class ChainProcessMainTest {
         def expectListRsu = expectListRsuTempo.toUnique()
         def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).getColumnNames()
         // We test that there is no missing indicators in the RSU table
-        println realListRsu
         for(i in expectListRsu){
-            println i
             assertTrue realListRsu.contains(i)
         }
         if (ind_i.contains("LCZ")) {
