@@ -338,23 +338,6 @@ This table content any impervious surface, in addition to buildings and roads al
 |     the_geom      | POLYGON |            ST_DIMENSION() =2            | Geometry                                            |
 | **id_impervious** | INTEGER | ![](../images/icons/pk.png) Primary Key | Unique Identifier ***(added in M2)***               |
 |     id_source     | VARCHAR |               *not null*                | Identifier of the feature from the input datasource |
-|       type        | VARCHAR |                                         | Type of impervious area                             |
-
-
-
-### ![](../images/icons/table_values.png) IMPERVIOUS type
-
-List of all possible values for the `type` attribute in the `input_impervious` table.
-
-
-| Term | Definition |                            Source                            |
-| :--: | ---------- | :----------------------------------------------------------: |
-|      |            |  [1](https://wiki.openstreetmap.org/wiki/Tag:natural=tree)   |
-|      |            |  [2](https://wiki.openstreetmap.org/wiki/Tag:natural=wood)   |
-|      |            | [3](https://wiki.openstreetmap.org/wiki/Tag:landuse=forest)  |
-|      |            |  [4](https://wiki.openstreetmap.org/wiki/Tag:natural=scrub)  |
-|      |            | [5](https://wiki.openstreetmap.org/wiki/Tag:natural=grassland) |
-|      |            |  [6](https://wiki.openstreetmap.org/wiki/Tag:natural=heath)  |
 
 
 
