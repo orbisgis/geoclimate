@@ -62,9 +62,11 @@ This table stores all the indicators computed at the building's scale.
 
 ### `VOLUME`
 
-**Description**: Building's volume defined as the product of the surface with the average height between the wall and the roof.
+**Description**: Building's volume.
 
-**Method**: `Area * ((Wall height + Roof height)/2)`
+**Method**: The building volume is calculated considering that all buildings have either horizontal or gable roofs. In this case, the building volume can be calculated using the following equation: 
+
+→ `Area * ((Wall height + Roof height)/2)`
 
 
 
