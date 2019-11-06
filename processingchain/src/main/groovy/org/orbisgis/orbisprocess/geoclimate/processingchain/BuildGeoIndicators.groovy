@@ -428,15 +428,15 @@ def computeRSUIndicators() {
                 intermediateJoin.put(rsu_free_ext_density, columnIdRsu)
             }
 
-            // rsu_building_density + rsu_building_volume_density + rsu_mean_building_neighbor_number
-            // + rsu_building_floor_density + rsu_roughness_length
+            // rsu_building_density + rsu_building_volume_density + rsu_mean_building_volume
+            // + rsu_mean_building_neighbor_number + rsu_building_floor_density + rsu_roughness_length
             // + rsu_building_number_density (RSU number of buildings divided RSU area)
             def inputVarAndOperations = [:]
-            if (indicatorUse*.toUpperCase().contains("LCZ")) {
+            if (indicatorUse*.toUpperCase().contains("LCZ") || indicatorUse*.toUpperCase().contains("TEB")) {
                 inputVarAndOperations = inputVarAndOperations << [(heightColumnName): ["GEOM_AVG"], "area": ["DENS"]]
             }
             if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
-                inputVarAndOperations = inputVarAndOperations << ["volume"                  : ["DENS"],
+                inputVarAndOperations = inputVarAndOperations << ["volume"                  : ["DENS", "AVG"],
                                                                   (heightColumnName)                 : ["GEOM_AVG"],
                                                                   "area"                             : ["DENS"],
                                                                   "number_building_neighbor": ["AVG"],
@@ -444,9 +444,6 @@ def computeRSUIndicators() {
                                                                   "minimum_building_spacing": ["AVG"],
                                                                   "building": ["NB_DENS"]]
                 def renameQuery = ""
-            }
-            if (indicatorUse*.toUpperCase().contains("TEB")) {
-                inputVarAndOperations = inputVarAndOperations << ["area": ["DENS"]]
             }
             def computeRSUStatisticsUnweighted = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
             if (!computeRSUStatisticsUnweighted([inputLowerScaleTableName: buildingTable,
@@ -514,14 +511,12 @@ def computeRSUIndicators() {
 
 
             // rsu_mean_building_height weighted by their area + rsu_std_building_height weighted by their area.
-            // + rsu_mean_building_volume RSU mean building volume weighted.
             if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
                 def computeRSUStatisticsWeighted = Geoindicators.GenericIndicators.weightedAggregatedStatistics()
                 if (!computeRSUStatisticsWeighted([inputLowerScaleTableName : buildingTable,
                                                    inputUpperScaleTableName : rsuTable,
                                                    inputIdUp                : columnIdRsu,
-                                                   inputVarWeightsOperations: ["height_roof"    : ["area": ["AVG", "STD"]],
-                                                                               "volume"         : ["area": ["AVG"]]],
+                                                   inputVarWeightsOperations: ["height_roof"    : ["area": ["AVG", "STD"]]],
                                                    prefixName               : temporaryPrefName,
                                                    datasource               : datasource])) {
                     info "Cannot compute the weighted indicators mean, std height building and \n\
@@ -675,7 +670,7 @@ def computeRSUIndicators() {
             }
 
             // rsu_effective_terrain_roughness
-            if (indicatorUse*.toUpperCase().contains("LCZ")) {
+            if (indicatorUse*.toUpperCase().contains("LCZ") || indicatorUse*.toUpperCase().contains("TEB")) {
                 // Create the join tables to have all needed input fields for aspect ratio computation
                 def computeEffRoughHeight = Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength()
                 if (!computeEffRoughHeight([rsuTable                       : intermediateJoinTable,
@@ -692,17 +687,19 @@ def computeRSUIndicators() {
                 finalTablesToJoin.put(effRoughHeight, columnIdRsu)
 
                 // rsu_terrain_roughness_class
-                def computeRoughClass = Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass()
-                if (!computeRoughClass([datasource                     : datasource,
-                                        rsuTable                       : effRoughHeight,
-                                        effectiveTerrainRoughnessLength: "effective_terrain_roughness_length",
-                                        prefixName                     : temporaryPrefName])) {
-                    info "Cannot compute the SVF calculation."
-                    return
+                if (indicatorUse*.toUpperCase().contains("LCZ")){
+                    def computeRoughClass = Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass()
+                    if (!computeRoughClass([datasource                     : datasource,
+                                            rsuTable                       : effRoughHeight,
+                                            effectiveTerrainRoughnessLength: "effective_terrain_roughness_length",
+                                            prefixName                     : temporaryPrefName])) {
+                        info "Cannot compute the SVF calculation."
+                        return
+                    }
+                    def roughClass = computeRoughClass.results.outputTableName
+                    finalTablesToJoin.put(roughClass, columnIdRsu)
                 }
-                def roughClass = computeRoughClass.results.outputTableName
-                finalTablesToJoin.put(roughClass, columnIdRsu)
-            }
+                }
 
             // rsu_perkins_skill_score_building_direction_variability
             if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
