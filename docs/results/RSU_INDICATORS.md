@@ -39,7 +39,8 @@ This table stores all the indicators computed at the RSU's scale.
 | AVG_NUMBER_BUILDING_NEIGHBOR | double precision | [Full definition](#AVG_NUMBER_BUILDING_NEIGHBOR) |
 | BUILDING_NUMBER_DENSITY | double precision | [Full definition](#BUILDING_NUMBER_DENSITY) |
 | MAIN_BUILDING_DIRECTION | integer | [Full definition](#MAIN_BUILDING_DIRECTION) |
-| PERKINS_SKILL_SCORE_BUILDING_DIRECTION | double precision | [Full definition](#PERKINS_SKILL_SCORE_BUILDING_DIRECTION) |
+| INEQUALITY_BUILDING_DIRECTION | double precision | [Full definition](#INEQUALITY_BUILDING_DIRECTION) |
+| UNIQUENESS_BUILDING_DIRECTION | double precision | [Full definition](#UNIQUENESS_BUILDING_DIRECTION) |
 | ASPECT_RATIO | double precision | [Full definition](#ASPECT_RATIO) |
 | GROUND_SKY_VIEW_FACTOR | double precision | [Full definition](#GROUND_SKY_VIEW_FACTOR) |
 | PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D0_30     | double precision | [Full definition](#PROJECTED_FACADE_AREA_DISTRIBUTION_Hx_y_Dw_z) |
