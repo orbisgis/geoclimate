@@ -45,7 +45,7 @@ import org.orbisgis.datamanager.JdbcDataSource
  * Meteorological Society 93, no. 12 (2012): 1879-1900.
  *
  */
-def OSMGeoIndicators() {
+def OSM() {
     return create({
         title "Create all geoindicators from OSM data"
         inputs datasource: JdbcDataSource, placeName: String, distance: 0,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
@@ -81,7 +81,7 @@ def OSMGeoIndicators() {
 
             String zoneEnvelopeTableName = prepareOSMData.getResults().outputZoneEnvelope
 
-            IProcess geoIndicators = buildGeoIndicators()
+            IProcess geoIndicators = GeoIndicators()
             if (!geoIndicators.execute( datasource          : datasource,           zoneTable       : zoneTableName,
                                         buildingTable       : buildingTableName,    roadTable       : roadTableName,
                                         railTable           : railTableName,        vegetationTable : vegetationTableName,
@@ -104,69 +104,17 @@ def OSMGeoIndicators() {
     })
 }
 
-
-/**
- * Extract OSM data from a place name and compute the Local Climate Zone areas
- *
- * @return 10 tables : zoneTable , zoneEnvelopeTableName, buildingTable,
- * roadTable, railTable, vegetationTable,
- * hydrographicTable, lczTable
- *
- */
-def OSMLCZ() {
-    return create({
-        title "Compute the Local Climate Zone areas from OSM data"
-        inputs datasource: JdbcDataSource, placeName: String, distance: 0,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified:false
-        outputs zoneTable: String, zoneEnvelopeTableName: String, buildingTable: String,
-                roadTable: String, railTable: String, vegetationTable: String,
-                hydrographicTable: String, lczTable: String
-        run { datasource, placeName, distance,indicatorUse, svfSimplified ->
-
-            IProcess prepareOSMData = ProcessingChain.PrepareOSM.buildGeoclimateLayers()
-
-            if (!prepareOSMData.execute([datasource: datasource, placeName: placeName, distance: distance])) {
-                error "Cannot extract the GIS layers from the place name $placeName"
-                return null
-            }
-
-            String buildingTableName = prepareOSMData.getResults().outputBuilding
-
-            String roadTableName = prepareOSMData.getResults().outputRoad
-
-            String railTableName = prepareOSMData.getResults().outputRail
-
-            String hydrographicTableName = prepareOSMData.getResults().outputHydro
-
-            String vegetationTableName = prepareOSMData.getResults().outputVeget
-
-            String zoneTableName = prepareOSMData.getResults().outputZone
-
-            String zoneEnvelopeTableName = prepareOSMData.getResults().outputZoneEnvelope
-
-            IProcess lcz = buildLCZ()
-            if (!lcz.execute(datasource: datasource, zoneTable: zoneTableName, buildingTable: buildingTableName,
-                    roadTable: roadTableName, railTable: railTableName, vegetationTable: vegetationTableName,
-                    hydrographicTable: hydrographicTableName, svfSimplified: svfSimplified)) {
-                error "Cannot build the LCZ"
-                return null
-            }
-            return [zoneTable         : zoneTableName, zoneEnvelopeTableName: zoneEnvelopeTableName, buildingTable: buildingTableName,
-                    roadTable         : roadTableName, railTable: railTableName, vegetationTable: vegetationTableName,
-                    hydrographicTable : hydrographicTableName,
-                    lczTable: lcz.results.outputTableLCZ]
-        }
-    })
-}
-
 /**
  * Compute all geoindicators at the 3 scales :
  * building, block and RSU
+ * Compute also the LCZ classification and the urban typology
  *
- * @return 3 tables outputTableBuildingIndicators, outputTableBlockIndicators, outputTableRsuIndicators
- * that contain the indicators at the 3 scales
+ * @return 4 tables outputTableBuildingIndicators, outputTableBlockIndicators, outputTableRsuIndicators,
+ * outputTableRsuLcz . The first three tables contains the geoindicators and the last table the LCZ classification.
+ * This table can be empty if the user decides not to calculate it.
  *
  */
-def buildGeoIndicators() {
+def GeoIndicators() {
     def final COLUMN_ID_RSU = "id_rsu"
     def final GEOMETRIC_COLUMN = "the_geom"
 
@@ -179,7 +127,8 @@ def buildGeoIndicators() {
                 mapOfWeights: ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
-        outputs outputTableBuildingIndicators: String, outputTableBlockIndicators: String, outputTableRsuIndicators: String
+        outputs outputTableBuildingIndicators: String, outputTableBlockIndicators: String,
+                outputTableRsuIndicators: String, outputTableRsuLcz:String
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
               surface_vegetation, surface_hydro, distance,indicatorUse,svfSimplified, prefixName, mapOfWeights ->
             info "Start computing the geoindicators..."
@@ -197,7 +146,8 @@ def buildGeoIndicators() {
                                        railTable        : railTable,            vegetationTable     : vegetationTable,
                                        hydrographicTable: hydrographicTable,    surface_vegetation  : surface_vegetation,
                                        surface_hydro    : surface_hydro,        distance            : distance,
-                                       prefixName       : prefixName])) {
+                                       prefixName       : prefixName,
+                                       indicatorUse:indicatorUse])) {
                 error "Cannot create the spatial units"
                 return null
             }
@@ -291,68 +241,7 @@ def buildGeoIndicators() {
             return [outputTableBuildingIndicators: computeBuildingsIndicators.getResults().outputTableName,
                     outputTableBlockIndicators   : blockIndicators,
                     outputTableRsuIndicators     : computeRSUIndicators.getResults().outputTableName,
-                    outputTableRsuLcz                       : rsuLcz]
-        }
-    })
-}
-
-
-/**
- * Compute the Local Climate Zone areas
- *
- * @return the outputTableLCZ name
- *
- */
-def buildLCZ() {
-    return create({
-        title "Compute the Local Climate Zones"
-        inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
-                roadTable: String, railTable: String, vegetationTable: String,
-                hydrographicTable: String, surface_vegetation: 100000, surface_hydro: 2500,
-                distance: 0.01, svfSimplified:false, prefixName: "lcz",
-                mapOfWeights : ["sky_view_factor": 1, "aspect_ratio": 1, "building_surface_fraction": 4,
-                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                 "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
-        outputs outputTableLCZ: String
-        run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
-              surface_vegetation, surface_hydro, distance,svfSimplified,prefixName,mapOfWeights ->
-            info "Start computing the Local Climate Zones..."
-
-            //Create spatial units and relations : building, block, rsu
-            IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
-            if(!spatialUnits.execute([datasource : datasource, zoneTable: zoneTable,
-                                             buildingTable: buildingTable,
-                                             roadTable: roadTable, railTable: railTable,
-                                             vegetationTable: vegetationTable,
-                                             hydrographicTable: hydrographicTable,
-                                             surface_vegetation: 100000,
-                                             surface_hydro  : 2500, distance: distance,
-                                             prefixName: prefixName, indicatorUse: ["LCZ"]])){
-                error "Cannot compute the spatial units"
-                return null
-            }
-
-            String relationBuildings = spatialUnits.getResults().outputTableBuildingName
-            String relationRSU = spatialUnits.getResults().outputTableRsuName
-
-
-            // Calculate the LCZ indicators and the corresponding LCZ class of each RSU
-            IProcess pm_lcz =  ProcessingChain.BuildLCZ.createLCZ()
-            if(!pm_lcz.execute([datasource: datasource, prefixName: prefixName, buildingTable: relationBuildings,
-                                rsuTable: relationRSU, roadTable: roadTable, vegetationTable: vegetationTable,
-                                hydrographicTable: hydrographicTable,
-                                facadeDensListLayersBottom: [0, 50, 200], facadeDensNumberOfDirection: 8,
-                                svfPointDensity: 0.008, svfRayLength: 100, svfNumberOfDirection: 60,
-                                heightColumnName: "height_roof", fractionTypePervious: ["low_vegetation", "water"],
-                                fractionTypeImpervious: ["road"], inputFields: ["id_build"], levelForRoads: [0],
-                                svfSimplified : svfSimplified, mapOfWeights : mapOfWeights])){
-                logger.info("Cannot create the LCZ.")
-                return null
-            }
-            String lczResults = pm_lcz.results.outputTableName
-
-            info "The Local Climate Zones have been computed"
-            return [outputTableLCZ: pm_lcz.results.outputTableName]
+                    outputTableRsuLcz   : rsuLcz]
         }
     })
 }

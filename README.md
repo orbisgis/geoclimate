@@ -70,7 +70,7 @@ def dirFile = new File(directory)
 dirFile.delete()
 dirFile.mkdir()
 def datasource = H2GIS.open(dirFile.absolutePath+File.separator + "geoclimate_chain_db;AUTO_SERVER=TRUE")
-def process = Geoclimate.GeoclimateChain.OSMGeoIndicators()
+def process = Geoclimate.Workflow.OSM()
 if(process.execute(datasource: datasource, placeName: "Cliscouet,Vannes")){
     def saveTables = Geoclimate.DataUtils.saveTablesAsFiles()
     saveTables.execute( [inputTableNames: process.getResults().values()
