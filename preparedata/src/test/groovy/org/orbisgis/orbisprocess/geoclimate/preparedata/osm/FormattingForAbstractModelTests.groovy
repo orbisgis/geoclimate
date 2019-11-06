@@ -24,6 +24,7 @@ class FormattingForAbstractModelTests {
         assertEquals 44, h2GIS.getTable(extractData.results.railTableName).rowCount
         assertEquals 135, h2GIS.getTable(extractData.results.vegetationTableName).rowCount
         assertEquals 10, h2GIS.getTable(extractData.results.hydroTableName).rowCount
+        assertEquals 45, h2GIS.getTable(extractData.results.imperviousTableName).rowCount
 
         def epsg = extractData.results.epsg
 
@@ -93,6 +94,16 @@ class FormattingForAbstractModelTests {
                 epsg: epsg])
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_hydro_formated.shp")
         assertEquals 10, h2GIS.getTable(format.results.outputTableName).rowCount
+
+        //Impervious surfaces
+        format = PrepareData.FormattingForAbstractModel.formatImperviousLayer()
+        format.execute([
+                datasource : h2GIS,
+                inputTableName: extractData.results.imperviousTableName,
+                epsg: epsg])
+        h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_formated.shp")
+        assertEquals 45, h2GIS.getTable(format.results.outputTableName).rowCount
+
 
     }
 
@@ -170,6 +181,14 @@ class FormattingForAbstractModelTests {
                     inputTableName: extractData.results.hydroTableName,
                     epsg: epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_hydro_${formatedPlaceName}.geojson")
+
+            //Impervious
+            format = PrepareData.FormattingForAbstractModel.formatImperviousLayer()
+            format.execute([
+                    datasource : h2GIS,
+                    inputTableName: extractData.results.imperviousTableName,
+                    epsg: epsg])
+            h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_${formatedPlaceName}.geojson")
 
         }else {
             assertTrue(false)

@@ -1,0 +1,31 @@
+{
+  "tags" : {
+    "highway": [
+        "residential", 
+        "pedestrian"
+    ],
+    "amenity": [
+        "parking",
+        "bicycle_parking",
+        "car_sharing",
+        "parking_place"
+    ],
+    "landuse":[
+        "industrial",
+        "commercial",
+        "retail"
+    ],
+    "leisure": ["pitch"],
+    "railway": ["platform"]
+  },
+  "columns": [
+    "highway",
+    "surface",
+    "amenity",
+    "area",
+    "leisure",
+    "landuse",
+    "parking"
+  ]
+    
+}
