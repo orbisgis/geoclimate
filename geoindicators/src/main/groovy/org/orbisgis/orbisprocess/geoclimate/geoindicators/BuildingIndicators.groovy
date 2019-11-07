@@ -186,14 +186,14 @@ def neighborsProperties() {
  * the resulting database will be stored
  * @param inputBuildingTableName The name of the input ITable where are stored the building geometries
  * @param operations Operations that have to be applied. These operations should be in the following list:
- *              --> "building_concavity": defined as the building area divided by the convex hull area (cf. Bocher et al. - 2018)
- *              --> "building_form_factor": defined as ratio between the building area divided by the square of the building
+ *              --> "area_concavity": defined as the building area divided by the convex hull area (cf. Bocher et al. - 2018)
+ *              --> "form_factor": defined as ratio between the building area divided by the square of the building
  *              perimeter (cf. Bocher et al. - 2018)
- *              --> "building_raw_compactness": defined as the ratio between building surfaces (walls and roof) divided by the
+ *              --> "raw_compactness": defined as the ratio between building surfaces (walls and roof) divided by the
  *              building volume at the power 2./3. For the calculation, the roof is supposed to have a gable and the roof surface
  *              is calculated considering that the building is square (otherwise, the assumption related to the gable direction
  *              would strongly affect the result).
- *              --> "building_convexhull_perimeter_density": defined as the ratio between building convexhull perimeter and
+ *              --> "perimeter_convexity": defined as the ratio between building convexhull perimeter and
  *              building perimeter.
  * @param prefixName String use as prefix to name the output table
  *
@@ -211,10 +211,10 @@ def formProperties() {
     def final ID_FIELD = "id_build"
     def final HEIGHT_WALL = "height_wall"
     def final HEIGHT_ROOF = "height_roof"
-    def final OP_CONCAVITY = "concavity"
+    def final OP_CONCAVITY = "area_concavity"
     def final OP_FORM_FACTOR = "form_factor"
     def final OP_RAW_COMPACTNESS = "raw_compactness"
-    def final OP_CONVEX_HULL_PERIMETER_DENSITY = "convexhull_perimeter_density"
+    def final OP_CONVEXITY = "perimeter_convexity"
     def final BASE_NAME = "building_form_properties"
 
     return create({
@@ -247,9 +247,9 @@ def formProperties() {
                                 "($HEIGHT_ROOF-$HEIGHT_WALL))/POWER(ST_AREA($GEOMETRIC_FIELD)*" +
                                 "($HEIGHT_WALL+$HEIGHT_ROOF)/2, 2./3) AS $operation,"
                         break
-                    case OP_CONVEX_HULL_PERIMETER_DENSITY:
-                        query += "ST_PERIMETER(ST_CONVEXHULL($GEOMETRIC_FIELD))/(ST_PERIMETER($GEOMETRIC_FIELD)+" +
-                                "ST_PERIMETER(ST_HOLES($GEOMETRIC_FIELD))) AS $operation,"
+                    case OP_CONVEXITY:
+                        query += "ST_PERIMETER(ST_CONVEXHULL($GEOMETRIC_FIELD))/(ST_PERIMETER($GEOMETRIC_FIELD)+ST_PERIMETER(ST_HOLES($GEOMETRIC_FIELD)))" +
+                                " AS $operation,"
                         break
                 }
             }

@@ -39,9 +39,7 @@ def createUnitsOfAnalysis(){
         inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
                 roadTable: String, railTable: String, vegetationTable: String,
                 hydrographicTable: String, surface_vegetation: 100000, surface_hydro: 2500,
-                distance: double, prefixName: "", indicatorUse: ["LCZ",
-                                                                     "URBAN_TYPOLOGY",
-                                                                     "TEB"]
+                distance: double, prefixName: "", indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"]
         outputs outputTableBuildingName: String, outputTableBlockName: String, outputTableRsuName: String
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
               surface_vegetation, surface_hydro, distance, prefixName, indicatorUse ->

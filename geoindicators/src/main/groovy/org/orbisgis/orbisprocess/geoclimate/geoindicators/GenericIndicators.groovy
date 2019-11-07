@@ -72,6 +72,8 @@ IProcess unweightedOperationFromLowerScale() {
                             query += "COALESCE(COUNT(a.*)/ST_AREA(b.$GEOMETRIC_FIELD_UP),0) AS ${var + "_NUMBER_DENSITY"},"
                             break
                         case SUM:
+                            query += "COALESCE(SUM(a.$var::float),0) AS ${op + "_" + var},"
+                            break
                         case AVG:
                             query += "$op(a.$var::float) AS ${op + "_" + var},"
                             break
@@ -233,11 +235,12 @@ IProcess geometryProperties() {
 
 
 /**
- * This process is used to compute the Perkins SKill Score (included within a [0 - 1] interval) of the distribution
- * of building direction within a block or a RSU. This indicator gives an idea of the building direction variability within
- * each block / RSU. The length of the building SMBR sides is considered to calculate a distribution of building orientation.
- * Then the distribution is used to calculate the Perkins SKill Score. The distribution has an "angle_range_size"
- * interval that has to be defined by the user (default 15).
+ * This process is used to compute (within a block or a RSU) the main building direction and
+ * indicators that qualify the repartition of the direction distribution. This second indicator may be:
+ * - an indicator of general inequality: the Perkins Skill Score is calculated (Perkins et al., 2007)
+ * - an indicator of uniqueness: t
+ * The building direction distribution is calculated according to the length of the building SMBR sides (width and length).
+ * Note that the distribution has an "angle_range_size" interval that has to be defined by the user (default 15).
  *
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
@@ -245,27 +248,39 @@ IProcess geometryProperties() {
  * @param inputIdUp the ID of the upper scale
  * @param angleRangeSize the range size (in °) of each interval angle used to calculate the distribution of building direction
  * (should be a divisor of 180 - default 15°)
+ * @param distribIndicator List containing the type of indicator to calculate to define the repartition of the distribution
+ * (default ["inequality", "uniqueness"])
+ *      --> "inequality": the Perkins Skill Score is calculated
+ *      --> "uniqueness": the weight of the first main direction is divided by
+ *                      "the weight of the second main direction + the weight of the first main direction"
  * @param prefixName String use as prefix to name the output table
+ *
+ * Reference:
+ * -> Perkins, S. E., Pitman, A. J., Holbrook, N. J., & McAneney, J. (2007). Evaluation of the AR4 climate models’
+ * simulated daily maximum temperature, minimum temperature, and precipitation over Australia using probability
+ * density functions. Journal of climate, 20(17), 4356-4376.
  *
  * @return A database table name.
  * @author Jérémy Bernard
  */
-IProcess perkinsSkillScoreBuildingDirection() {
+IProcess buildingDirectionDistribution() {
     def final GEOMETIC_FIELD = "the_geom"
     def final ID_FIELD_BU = "id_build"
+    def final INEQUALITY = "BUILDING_DIRECTION_INEQUALITY"
+    def final UNIQUENESS = "BUILDING_DIRECTION_UNIQUENESS"
+    def final BASENAME = "MAIN_BUILDING_DIRECTION"
 
     return create({
         title "Perkins skill score building direction"
         inputs buildingTableName: String, inputIdUp: String, angleRangeSize: 15, prefixName: String,
-                datasource: JdbcDataSource
+                datasource: JdbcDataSource, distribIndicator: ["inequality", "uniqueness"]
         outputs outputTableName: String
-        run { buildingTableName, inputIdUp, angleRangeSize, prefixName, datasource ->
+        run { buildingTableName, inputIdUp, angleRangeSize, prefixName, datasource, distribIndicator ->
 
             info "Executing Perkins skill score building direction"
 
             // The name of the outputTableName is constructed
-            String baseName = "perkins_skill_score_building_direction"
-            def outputTableName = getOutputTableName(prefixName, baseName)
+            def outputTableName = getOutputTableName(prefixName, BASENAME)
 
             // Test whether the angleRangeSize is a divisor of 180°
             if ((180 % angleRangeSize) == 0 && (180 / angleRangeSize) > 1) {
@@ -277,6 +292,8 @@ IProcess perkinsSkillScoreBuildingDirection() {
                 def build_dir180 = "build_dir180$uuid"
                 def build_dir_dist = "build_dir_dist$uuid"
                 def build_dir_tot = "build_dir_tot$uuid"
+                def build_perk_fin = "build_perk_fin$uuid"
+                def build_dir_bdd = "build_dir_bdd$uuid"
 
                 // The minimum diameter of the minimum rectangle is created for each building
                 datasource.execute "DROP TABLE IF EXISTS $build_min_rec; CREATE TABLE $build_min_rec AS " +
@@ -306,9 +323,9 @@ IProcess perkinsSkillScoreBuildingDirection() {
 
                 String sqlQueryDist = "DROP TABLE IF EXISTS $build_dir_dist; CREATE TABLE $build_dir_dist AS SELECT "
                 String sqlQueryTot = "DROP TABLE IF EXISTS $build_dir_tot; CREATE TABLE $build_dir_tot AS SELECT *, "
-                String sqlQueryPerkins = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT $inputIdUp, "
+                String sqlQueryMain = "DROP TABLE IF EXISTS $build_perk_fin; CREATE TABLE $build_perk_fin AS SELECT $inputIdUp, "
                 String sqlQueryGreatest = "GREATEST("
-                String sqlQueryMain = ""
+                String sqlQueryPerkins = ""
                 String sqlQueryParenthesis = ""
 
                 // Gather all columns for recovering the main direction
@@ -325,19 +342,59 @@ IProcess perkinsSkillScoreBuildingDirection() {
                     sqlQueryMain += "CASEWHEN($sqlQueryGreatest = ANG$i, ${i-med_angle}, "
                 }
                 sqlQueryMain += "null" + sqlQueryParenthesis
-
                 sqlQueryDist += "$inputIdUp FROM $build_dir180 GROUP BY $inputIdUp;"
                 sqlQueryTot = sqlQueryTot[0..-3] + "AS ANG_TOT FROM $build_dir_dist;"
-                sqlQueryPerkins = sqlQueryPerkins[0..-3] + "AS perkins_skill_score_building_direction," +
-                        " $sqlQueryMain AS main_building_direction FROM $build_dir_tot;"
+
+                if(distribIndicator.contains("inequality")){
+                    sqlQueryMain = """$sqlQueryMain AS main_building_direction, $sqlQueryGreatest AS max_surf,
+                                    ${sqlQueryPerkins[0..-3]} AS $INEQUALITY
+                                    FROM $build_dir_tot;"""
+                }
+                else{
+                    sqlQueryMain = """$sqlQueryMain AS main_building_direction, $sqlQueryGreatest AS max_surf
+                                    FROM $build_dir_tot;"""
+                }
 
                 datasource.execute sqlQueryDist
                 datasource.execute sqlQueryTot
-                datasource.execute sqlQueryPerkins
+                datasource.execute sqlQueryMain
+
+                if (distribIndicator.contains("uniqueness")){
+                    // Reorganise the distribution Table (having the same number of column than the number
+                    // of direction of analysis) into a simple two column table (ID and SURF)
+                    def sqlQueryUnique = "DROP TABLE IF EXISTS $build_dir_bdd; CREATE TABLE $build_dir_bdd AS SELECT "
+                    def columnNames = datasource.getTable(build_dir_dist).getColumnNames()
+                    columnNames.remove(inputIdUp)
+                    for (col in columnNames.take(columnNames.size() - 1)){
+                        sqlQueryUnique += "$inputIdUp, $col AS SURF FROM $build_dir_dist UNION ALL SELECT "
+                    }
+                    sqlQueryUnique += """$inputIdUp, ${columnNames[-1]} AS SURF FROM $build_dir_dist; 
+                                        CREATE INDEX ON $build_dir_bdd($inputIdUp);
+                                        CREATE INDEX ON $build_dir_bdd(SURF);"""
+                    datasource.execute sqlQueryUnique
+
+                    def sqlQueryLast = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
+                                        "SELECT b.$inputIdUp, a.main_building_direction,"
+
+                    if (distribIndicator.contains("inequality")) {
+                        sqlQueryLast += " a.$INEQUALITY, "
+                    }
+                    sqlQueryLast += """a.max_surf/(MAX(b.SURF)+a.max_surf) AS $UNIQUENESS  
+                                       FROM         $build_perk_fin a 
+                                       RIGHT JOIN   $build_dir_bdd b
+                                       ON           a.$inputIdUp = b.$inputIdUp
+                                       WHERE        b.SURF < a.max_surf
+                                       GROUP BY     b.$inputIdUp;"""
+
+                    datasource.execute sqlQueryLast
+                }
+                else{
+                    datasource.execute "ALTER TABLE $build_perk_fin RENAME TO $outputTableName;"
+                }
 
                 // The temporary tables are deleted
                 datasource.execute "DROP TABLE IF EXISTS $build_min_rec, $build_dir360, $build_dir180, " +
-                        "$build_dir_dist, $build_dir_tot"
+                        "$build_dir_dist, $build_dir_tot, $build_perk_fin, $build_dir_bdd;"
 
                 [outputTableName: outputTableName]
             }
