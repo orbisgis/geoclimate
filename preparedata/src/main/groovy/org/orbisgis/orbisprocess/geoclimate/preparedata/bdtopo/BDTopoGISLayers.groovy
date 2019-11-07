@@ -21,15 +21,23 @@ import org.orbisgis.processmanagerapi.IProcess
  * @param tableRailName The table name in which the rail ways are stored
  * @param tableHydroName The table name in which the hydrographic areas are stored
  * @param tableVegetName The table name in which the vegetation areas are stored
- * @param distBuffer The distance (exprimed in meter) used to compute the buffer area around the ZONE
- * @param expand The distance (exprimed in meter) used to compute the extended area around the ZONE
+ * @param tableImperviousSportName The table name in which the impervious sport areas are stored
+ * @param tableImperviousBuildSurfName The table name in which the impervious surfacic buildings are stored
+ * @param tableImperviousRoadSurfName The table name in which the impervious road areas are stored
+ * @param tableImperviousActivSurfName The table name in which the impervious activities areas are stored
+ * @param distBuffer The distance (expressed in meter) used to compute the buffer area around the ZONE
+ * @param expand The distance (expressed in meter) used to compute the extended area around the ZONE
  * @param idZone The ZONE id
  * @param building_bd_topo_use_type The name of the table in which the BD Topo building's use and type are stored
  * @param building_abstract_use_type The name of the table in which the abstract building's use and type are stored
  * @param road_bd_topo_type The name of the table in which the BD Topo road's types are stored
  * @param road_abstract_type The name of the table in which the abstract road's types are stored
+ * @param road_bd_topo_crossing The name of the table in which the BD Topo road's crossing are stored
+ * @param road_abstract_crossing The name of the table in which the abstract road's crossing are stored
  * @param rail_bd_topo_type The name of the table in which the BD Topo rails's types are stored
  * @param rail_abstract_type The name of the table in which the abstract rails's types are stored
+ * @param rail_bd_topo_crossing The name of the table in which the BD Topo rails's crossing are stored
+ * @param rail_abstract_crossing The name of the table in which the abstract rails's crossing are stored
  * @param veget_bd_topo_type The name of the table in which the BD Topo vegetation's types are stored
  * @param veget_abstract_type The name of the table in which the abstract vegetation's types are stored
  *
@@ -38,26 +46,51 @@ import org.orbisgis.processmanagerapi.IProcess
  * @return outputRailName Table name in which the (ready to feed the GeoClimate model) rail ways are stored
  * @return outputHydroName Table name in which the (ready to feed the GeoClimate model) hydrographic areas are stored
  * @return outputVegetName Table name in which the (ready to feed the GeoClimate model) vegetation areas are stored
+ * @return outputImperviousName Table name in which the (ready to feed the GeoClimate model) impervious areas are stored
  * @return outputZoneName Table name in which the (ready to feed the GeoClimate model) zone is stored
  * @return outputZoneNeighborsName Table name in which the (ready to feed the GeoClimate model) neighboring zones are stored
  */
 IProcess importPreprocess(){
     return create({
         title 'Import and preprocess data from BD Topo in order to feed the abstract model'
-        inputs datasource               : JdbcDataSource, tableIrisName: String, tableBuildIndifName: String,
-         tableBuildIndusName      : String, tableBuildRemarqName: String, tableRoadName: String,
-         tableRailName            : String, tableHydroName: String, tableVegetName: String,
-         distBuffer               : int, expand: int, idZone: String,
-         building_bd_topo_use_type: String, building_abstract_use_type: String, road_bd_topo_type: String,
-         road_abstract_type       : String, rail_bd_topo_type: String, rail_abstract_type: String,
-         veget_bd_topo_type       : String, veget_abstract_type: String
+        inputs 	datasource: JdbcDataSource,
+                tableIrisName: String,
+                tableBuildIndifName: String,
+                tableBuildIndusName: String,
+                tableBuildRemarqName: String,
+                tableRoadName: String,
+                tableRailName: String,
+                tableHydroName: String,
+                tableVegetName: String,
+                tableImperviousSportName: String,
+                tableImperviousBuildSurfName: String,
+                tableImperviousRoadSurfName: String,
+                tableImperviousActivSurfName: String,
+                distBuffer: int,
+                expand: int,
+                idZone: String,
+                building_bd_topo_use_type: String,
+                building_abstract_use_type: String,
+                road_bd_topo_type: String,
+                road_abstract_type: String,
+                road_bd_topo_crossing: String,
+                road_abstract_crossing: String,
+                rail_bd_topo_type: String,
+                rail_abstract_type: String,
+                rail_bd_topo_crossing: String,
+                rail_abstract_crossing: String,
+                veget_bd_topo_type: String,
+                veget_abstract_type: String
         outputs outputBuildingName: String, outputRoadName: String, outputRailName: String, outputHydroName: String,
-                outputVegetName   : String, outputZoneName: String, outputZoneNeighborsName: String
+                outputVegetName   : String, outputImperviousName: String, outputZoneName: String, outputZoneNeighborsName: String
         run { datasource, tableIrisName, tableBuildIndifName, tableBuildIndusName,
-          tableBuildRemarqName, tableRoadName, tableRailName, tableHydroName,
-          tableVegetName, distBuffer, expand, idZone,
-          building_bd_topo_use_type, building_abstract_use_type, road_bd_topo_type, road_abstract_type,
-          rail_bd_topo_type, rail_abstract_type, veget_bd_topo_type, veget_abstract_type ->
+              tableBuildRemarqName, tableRoadName, tableRailName, tableHydroName, tableVegetName,
+              tableImperviousSportName, tableImperviousBuildSurfName, tableImperviousRoadSurfName,
+              tableImperviousActivSurfName, distBuffer, expand, idZone,
+              building_bd_topo_use_type, building_abstract_use_type,
+              road_bd_topo_type, road_abstract_type, road_bd_topo_crossing, road_abstract_crossing,
+              rail_bd_topo_type, rail_abstract_type, rail_bd_topo_crossing, rail_abstract_crossing,
+              veget_bd_topo_type, veget_abstract_type ->
 
             logger.info('Executing the importPreprocess.sql script')
             def uuid = UUID.randomUUID().toString().replaceAll('-', '_')
@@ -74,6 +107,11 @@ IProcess importPreprocess(){
             def input_rail = 'INPUT_RAIL'
             def input_hydro = 'INPUT_HYDRO'
             def input_veget = 'INPUT_VEGET'
+            def tmp_imperv_construction_surfacique = 'TMP_IMPERV_CONSTRUCTION_SURFACIQUE_' + uuid
+            def tmp_imperv_surface_route = 'TMP_IMPERV_SURFACE_ROUTE_' + uuid
+            def tmp_imperv_terrain_sport = 'TMP_IMPERV_TERRAIN_SPORT_' + uuid
+            def tmp_imperv_surface_activite = 'TMP_IMPERV_SURFACE_ACTIVITE_' + uuid
+            def input_impervious = 'INPUT_IMPERVIOUS'
 
             datasource.executeScript(getClass().getResourceAsStream('importPreprocess.sql'),
                     [ID_ZONE                  : idZone, DIST_BUFFER: distBuffer,
@@ -88,16 +126,22 @@ IProcess importPreprocess(){
                      BU_ZONE_REMARQ           : bu_zone_remarq, INPUT_BUILDING: input_building,
                      INPUT_ROAD               : input_road, INPUT_RAIL: input_rail,
                      INPUT_HYDRO              : input_hydro, INPUT_VEGET: input_veget,
+                     TMP_IMPERV_CONSTRUCTION_SURFACIQUE : tmp_imperv_construction_surfacique, TMP_IMPERV_SURFACE_ROUTE : tmp_imperv_surface_route,
+                     TMP_IMPERV_TERRAIN_SPORT : tmp_imperv_terrain_sport, TMP_IMPERV_SURFACE_ACTIVITE : tmp_imperv_surface_activite,
+                     INPUT_IMPERVIOUS: input_impervious,
                      BUILDING_BD_TOPO_USE_TYPE: building_bd_topo_use_type, BUILDING_ABSTRACT_USE_TYPE: building_abstract_use_type,
                      ROAD_BD_TOPO_TYPE        : road_bd_topo_type, ROAD_ABSTRACT_TYPE: road_abstract_type,
+                     ROAD_BD_TOPO_CROSSING    : road_bd_topo_crossing, ROAD_ABSTRACT_CROSSING: road_abstract_crossing,
                      RAIL_BD_TOPO_TYPE        : rail_bd_topo_type, RAIL_ABSTRACT_TYPE: rail_abstract_type,
+                     RAIL_BD_TOPO_CROSSING    : rail_bd_topo_crossing, RAIL_ABSTRACT_CROSSING: rail_abstract_crossing,
                      VEGET_BD_TOPO_TYPE       : veget_bd_topo_type, VEGET_ABSTRACT_TYPE: veget_abstract_type
                     ])
 
             logger.info('The importPreprocess.sql script has been executed')
 
             [outputBuildingName: input_building, outputRoadName: input_road,
-             outputRailName    : input_rail, outputHydroName: input_hydro, outputVegetName: input_veget,
+             outputRailName    : input_rail, outputHydroName: input_hydro,
+             outputVegetName   : input_veget, outputImperviousName : input_impervious,
              outputZoneName    : zone, outputZoneNeighborsName: zoneNeighbors
             ]
         }
@@ -110,12 +154,16 @@ IProcess importPreprocess(){
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...), in which the data to process will be stored
  * @param buildingAbstractUseType The name of the table in which the abstract building's use and type are stored
  * @param roadAbstractType The name of the table in which the abstract road's types are stored
+ * @param roadAbstractCrossing The name of the table in which the abstract road's crossing are stored
  * @param railAbstractType The name of the table in which the abstract rail's types are stored
+ * @param railAbstractCrossing The name of the table in which the abstract rail's crossing are stored
  * @param vegetAbstractType The name of the table in which the abstract vegetation's types are stored
  *
- * @return outputBuildingBDTopoUse Type The name of the table in which the BD Topo building's use and type are stored
+ * @return outputBuildingBDTopoUseType The name of the table in which the BD Topo building's use and type are stored
  * @return outputroadBDTopoType The name of the table in which the BD Topo road's types are stored
+ * @return outputroadBDTopoCrossing The name of the table in which the BD Topo road's crossing are stored
  * @return outputrailBDTopoType The name of the table in which the BD Topo rail's types are stored
+ * @return outputrailBDTopoCrossing The name of the table in which the BD Topo rail's crossing are stored
  * @return outputvegetBDTopoType The name of the table in which the BD Topo vegetation's types are stored
  */
 
@@ -123,31 +171,40 @@ IProcess initTypes(){
     return create({
         title 'Initialize the types tables for BD Topo and define the matching with the abstract types'
         inputs datasource: JdbcDataSource, buildingAbstractUseType: String, roadAbstractType: String,
-                railAbstractType: String, vegetAbstractType: String
-        outputs outputBuildingBDTopoUseType: String, outputroadBDTopoType: String,
-                outputrailBDTopoType: String, outputvegetBDTopoType: String
-        run { JdbcDataSource datasource, buildingAbstractUseType, roadAbstractType, railAbstractType, vegetAbstractType ->
+                roadAbstractCrossing: String, railAbstractType: String, railAbstractCrossing: String,
+                vegetAbstractType: String
+        outputs outputBuildingBDTopoUseType: String, outputroadBDTopoType: String, outputroadBDTopoCrossing: String,
+                outputrailBDTopoType: String, outputrailBDTopoCrossing: String, outputvegetBDTopoType: String
+        run { JdbcDataSource datasource, buildingAbstractUseType, roadAbstractType, roadAbstractCrossing,
+              railAbstractType, railAbstractCrossing, vegetAbstractType ->
             logger.info('Executing the typesMatching.sql script')
             def buildingBDTopoUseType = 'BUILDING_BD_TOPO_USE_TYPE'
             def roadBDTopoType = 'ROAD_BD_TOPO_TYPE'
+            def roadBDTopoCrossing = 'ROAD_BD_TOPO_CROSSING'
             def railBDTopoType = 'RAIL_BD_TOPO_TYPE'
+            def railBDTopoCrossing = 'RAIL_BD_TOPO_CROSSING'
             def vegetBDTopoType = 'VEGET_BD_TOPO_TYPE'
 
             datasource.executeScript(getClass().getResourceAsStream('typesMatching.sql'),
                     [BUILDING_ABSTRACT_USE_TYPE: buildingAbstractUseType,
                      ROAD_ABSTRACT_TYPE        : roadAbstractType,
+                     ROAD_ABSTRACT_CROSSING    : roadAbstractCrossing,
                      RAIL_ABSTRACT_TYPE        : railAbstractType,
+                     RAIL_ABSTRACT_CROSSING    : railAbstractCrossing,
                      VEGET_ABSTRACT_TYPE       : vegetAbstractType,
                      BUILDING_BD_TOPO_USE_TYPE : buildingBDTopoUseType,
                      ROAD_BD_TOPO_TYPE         : roadBDTopoType,
+                     ROAD_BD_TOPO_CROSSING     : roadBDTopoCrossing,
                      RAIL_BD_TOPO_TYPE         : railBDTopoType,
+                     RAIL_BD_TOPO_CROSSING     : railBDTopoCrossing,
                      VEGET_BD_TOPO_TYPE        : vegetBDTopoType,
                     ])
 
             logger.info('The typesMatching.sql script has been executed')
 
             [outputBuildingBDTopoUseType: buildingBDTopoUseType, outputroadBDTopoType: roadBDTopoType,
-             outputrailBDTopoType       : railBDTopoType, outputvegetBDTopoType: vegetBDTopoType
+             outputroadBDTopoCrossing: roadBDTopoCrossing, outputrailBDTopoType: railBDTopoType,
+             outputrailBDTopoCrossing: railBDTopoCrossing, outputvegetBDTopoType: vegetBDTopoType
             ]
         }
     })

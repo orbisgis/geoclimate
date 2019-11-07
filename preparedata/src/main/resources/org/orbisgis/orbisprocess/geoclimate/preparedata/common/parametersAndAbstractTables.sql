@@ -204,6 +204,19 @@ INSERT INTO $ROAD_ABSTRACT_PARAMETERS VALUES(null, 'roundabout', 4);
 INSERT INTO $ROAD_ABSTRACT_PARAMETERS VALUES(null, 'ferry', 0);
 
 
+--------------------------------------------------------
+-- Abstract table for the road crossing
+--------------------------------------------------------
+
+DROP TABLE IF EXISTS $ROAD_ABSTRACT_CROSSING;
+CREATE TABLE $ROAD_ABSTRACT_CROSSING (ID_CROSSING serial, TERM varchar, DEFINITION varchar, SOURCE varchar);
+
+-- Feed the table
+
+INSERT INTO $ROAD_ABSTRACT_CROSSING VALUES(null, 'bridge', 'Artificial construction that spans features such as roads, railways, waterways or valleys and carries a road, railway or other feature', 'https://wiki.openstreetmap.org/wiki/Key:bridge');
+INSERT INTO $ROAD_ABSTRACT_CROSSING VALUES(null, 'tunnel', 'Underground passage for roads, railways or similar', 'https://wiki.openstreetmap.org/wiki/Key:tunnel');
+INSERT INTO $ROAD_ABSTRACT_CROSSING VALUES(null, 'null', 'Everything but a bridge or a tunnel', '');
+
 
 ----------------------------------------------------------------------------------------------------------------------
 -- FOR RAIL
@@ -225,6 +238,20 @@ INSERT INTO $RAIL_ABSTRACT_TYPE VALUES(null, 'disused', 'A section of railway wh
 INSERT INTO $RAIL_ABSTRACT_TYPE VALUES(null, 'funicular', 'Cable railway in which a cable attached to a pair of tram-like vehicles on rails moves them up and down a steep slope, the ascending and descending vehicles counterbalancing each other', 'https://wiki.openstreetmap.org/wiki/Tag:railway=funicular');
 INSERT INTO $RAIL_ABSTRACT_TYPE VALUES(null, 'subway', 'Rails used for city public transport that are always completely separated from other traffic, often underground', 'https://wiki.openstreetmap.org/wiki/Tag:railway=subway');
 INSERT INTO $RAIL_ABSTRACT_TYPE VALUES(null, 'tram', 'Railway track which is mainly or exclusively used for trams, or where tram tracks are laid within a normal road open to all traffic, often called street running', 'https://wiki.openstreetmap.org/wiki/Tag:railway=tram');
+
+
+--------------------------------------------------------
+-- Abstract table for the rail crossing
+--------------------------------------------------------
+
+DROP TABLE IF EXISTS $RAIL_ABSTRACT_CROSSING;
+CREATE TABLE $RAIL_ABSTRACT_CROSSING (ID_CROSSING serial, TERM varchar, DEFINITION varchar, SOURCE varchar);
+
+-- Feed the table
+
+INSERT INTO $RAIL_ABSTRACT_CROSSING VALUES(null, 'bridge', 'Artificial construction that spans features such as roads, railways, waterways or valleys and carries a road, railway or other feature', 'https://wiki.openstreetmap.org/wiki/Key:bridge');
+INSERT INTO $RAIL_ABSTRACT_CROSSING VALUES(null, 'tunnel', 'Underground passage for roads, railways or similar', 'https://wiki.openstreetmap.org/wiki/Key:tunnel');
+INSERT INTO $RAIL_ABSTRACT_CROSSING VALUES(null, 'null', 'Everything but a bridge or a tunnel', '');
 
 
 ----------------------------------------------------------------------------------------------------------------------
