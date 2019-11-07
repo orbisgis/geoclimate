@@ -140,7 +140,7 @@ The tables are grouped by theme and present the following informations:
 | BATI_REMARQUABLE | Tour, donjon, moulin |historic|
 | BATI_REMARQUABLE | Tribune |grandstand|
 
-#### For roads
+#### For roads type
 
 | Layer name | NATURE ([see](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=17)) | TYPE ([see](../input_data/INPUT_DATA_MODEL.md#-road-type)) |
 | :--------: | :----: | :--: |
@@ -158,7 +158,19 @@ The tables are grouped by theme and present the following informations:
 | ROUTE | Escalier |steps|
 
 
-#### For railways
+
+#### For roads crossing
+
+| Layer name | FRANCHISSMT ([see](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=22)) | TYPE ([see](../input_data/INPUT_DATA_MODEL.md#-road-crossing)) |
+| :--------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
+|   ROUTE    |                        Gué ou radier                         |                             null                             |
+|   ROUTE    |                             Pont                             |                            bridge                            |
+|   ROUTE    |                            Tunnel                            |                            tunnel                            |
+|   ROUTE    |                              NC                              |                             null                             |
+
+
+
+#### For railways type
 
 | Layer name | NATURE ([see](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=45)) | TYPE ([see](../input_data/INPUT_DATA_MODEL.md#-rail-type)) |
 | :--------: | :----: | :--: |
@@ -170,6 +182,17 @@ The tables are grouped by theme and present the following informations:
 | TRONCON_VOIE_FERREE | Funiculaire ou crémaillère |funicular|
 | TRONCON_VOIE_FERREE | Metro |subway|
 | TRONCON_VOIE_FERREE | Tramway |tram|
+
+
+
+#### For railways crossing
+
+|     Layer name      | FRANCHISST ([see](http://professionnels.ign.fr/doc/DC_BDTOPO_2.pdf#page=46)) | TYPE ([see](../input_data/INPUT_DATA_MODEL.md#-road-crossing)) |
+| :-----------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
+| TRONCON_VOIE_FERREE |                             Pont                             |                            bridge                            |
+| TRONCON_VOIE_FERREE |                            Tunnel                            |                            tunnel                            |
+| TRONCON_VOIE_FERREE |                              NC                              |                             null                             |
+
 
 
 #### For vegetation areas
@@ -224,18 +247,19 @@ Below we are listing all the initialization actions made on the input data
   - `SURFACE` is filled with the text value `''` (= null value)
   - `SIDEWALK` is filled with the text value `''` (= null value)
 - `TYPE` column is feeded with values coming from `NATURE` column, using the [matching rules](#Matching-tables). 
+- `CROSSING` column is feeded with values coming from `FRANCHISSMT` column, using the [matching rules](#Matching-tables). 
+
+
 
 
 #### For railways
 
 
 - Only objects having a `POS_SOL` (or `ZINDEX`) >= 0 are keeped
-
 - `ID` column is renamed `ID_SOURCE`
-
 - `POS_SOL` column is renamed `ZINDEX`
-
 - `TYPE` column is feeded with values coming from `NATURE` column, using the [matching rules](#Matching-tables). 
+- `CROSSING` column is feeded with values coming from `FRANCHISST` column, using the [matching rules](#Matching-tables). 
 
 
 
