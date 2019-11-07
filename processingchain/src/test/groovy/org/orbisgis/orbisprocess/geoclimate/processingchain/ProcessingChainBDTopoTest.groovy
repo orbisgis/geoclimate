@@ -142,7 +142,7 @@ class ProcessingChainBDTopoTest extends ChainProcessMainTest{
 
         h2GIS.eachRow("SELECT * FROM ${pm_lcz.results.outputTableName}".toString()){row ->
             assertTrue(row.id_rsu != null)
-            println(row.lcz1)
+
             assertEquals("LCZ", row.lcz1[0..2])
             assertEquals("LCZ", row.lcz2[0..2])
 //            assertTrue(row.min_distance != null)

@@ -261,13 +261,6 @@ IProcess aspectRatio() {
  * be divisor of 360 AND a multiple of 2 (default 12)
  * @param prefixName String use as prefix to name the output table
  *
- * References:
- * --> Stewart, Ian D., and Tim R. Oke. "Local climate zones for urban temperature studies." Bulletin of
- * the American Meteorological Society 93, no. 12 (2012): 1879-1900.
- * --> Jérémy Bernard, Erwan Bocher, Gwendall Petit, Sylvain Palominos. Sky View Factor Calculation in
- * Urban Context: Computational Performance and Accuracy Analysis of Two Open and Free GIS Tools. Climate ,
- * MDPI, 2018, Urban Overheating - Progress on Mitigation Science and Engineering Applications, 6 (3), pp.60.
- *
  * @return A database table name.
  * @author Jérémy Bernard
  */

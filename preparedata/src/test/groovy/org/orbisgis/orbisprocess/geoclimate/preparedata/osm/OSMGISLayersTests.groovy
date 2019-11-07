@@ -14,15 +14,15 @@ class OSMGISLayersTests {
 
     private static final Logger logger = LoggerFactory.getLogger(OSMGISLayersTests.class)
 
-    //@Test //enable it to test data extraction from the overpass api
+    @Test //enable it to test data extraction from the overpass api
     void extractAndCreateGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
         IProcess process = PrepareData.OSMGISLayers.extractAndCreateGISLayers()
         process.execute([
                 datasource : h2GIS,
-                placeName: "Rennes"])
+                placeName: "Cliscouet, Vannes"])
         process.getResults().each {it ->
-            if(it.value!=null){
+            if(it.value!=null && it.key!="epsg"){
                 h2GIS.getTable(it.value).save("./target/${it.value}.shp")
             }
         }
@@ -32,9 +32,10 @@ class OSMGISLayersTests {
     void createGISLayersTest() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
         IProcess process = PrepareData.OSMGISLayers.createGISLayers()
+        def osmfile = new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath()
         process.execute([
                 datasource : h2GIS,
-                osmFilePath: new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath(),
+                osmFilePath: osmfile,
                 epsg :2154])
         //h2GIS.getTable(process.results.buildingTableName).save("./target/osm_building.shp")
         assertEquals 1038, h2GIS.getTable(process.results.buildingTableName).rowCount
@@ -50,5 +51,8 @@ class OSMGISLayersTests {
 
         //h2GIS.getTable(process.results.hydroTableName).save("./target/osm_hydro.shp")
         assertEquals 10, h2GIS.getTable(process.results.hydroTableName).rowCount
+
+        //h2GIS.getTable(process.results.imperviousTableName).save("./target/osm_hydro.shp")
+        assertEquals 45, h2GIS.getTable(process.results.imperviousTableName).rowCount
     }
 }

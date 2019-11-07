@@ -28,7 +28,7 @@ IProcess buildGeoclimateLayers() {
                 hLevMax: 15,
                 hThresholdLev2: 10
         outputs outputBuilding: String, outputRoad: String, outputRail: String,
-                outputHydro: String, outputVeget: String, outputZone: String, outputZoneEnvelope: String
+                outputHydro: String, outputVeget: String, outputImpervious: String, outputZone: String, outputZoneEnvelope: String
         run { datasource, placeName, distance, hLevMin, hLevMax, hThresholdLev2 ->
 
             if (datasource == null) {
@@ -50,53 +50,62 @@ IProcess buildGeoclimateLayers() {
                 def railTableName = res.railTableName
                 def vegetationTableName = res.vegetationTableName
                 def hydroTableName = res.hydroTableName
+                def imperviousTableName = res.imperviousTableName
                 def zoneTableName = res.zoneTableName
                 def zoneEnvelopeTableName = res.zoneEnvelopeTableName
                 def epsg = res.epsg
                 if(zoneTableName!=null) {
                     info "Formating OSM GIS layers"
-                        IProcess format = PrepareData.FormattingForAbstractModel.formatBuildingLayer()
-                        format.execute([
-                                datasource    : datasource,
-                                inputTableName: buildingTableName,
-                                epsg:epsg])
-                        buildingTableName = format.results.outputTableName
+                    IProcess format = PrepareData.FormattingForAbstractModel.formatBuildingLayer()
+                    format.execute([
+                            datasource    : datasource,
+                            inputTableName: buildingTableName,
+                            epsg:epsg])
+                    buildingTableName = format.results.outputTableName
 
-                        format = PrepareData.FormattingForAbstractModel.formatRoadLayer()
-                        format.execute([
-                                datasource    : datasource,
-                                inputTableName: roadTableName,
-                                epsg:epsg])
-                        roadTableName = format.results.outputTableName
+                    format = PrepareData.FormattingForAbstractModel.formatRoadLayer()
+                    format.execute([
+                            datasource    : datasource,
+                            inputTableName: roadTableName,
+                            epsg:epsg])
+                    roadTableName = format.results.outputTableName
 
 
-                        format = PrepareData.FormattingForAbstractModel.formatRailsLayer()
-                        format.execute([
-                                datasource    : datasource,
-                                inputTableName: railTableName,
-                                epsg:epsg])
-                        railTableName = format.results.outputTableName
+                    format = PrepareData.FormattingForAbstractModel.formatRailsLayer()
+                    format.execute([
+                            datasource    : datasource,
+                            inputTableName: railTableName,
+                            epsg:epsg])
+                    railTableName = format.results.outputTableName
 
-                        format = PrepareData.FormattingForAbstractModel.formatVegetationLayer()
-                        format.execute([
-                                datasource    : datasource,
-                                inputTableName: vegetationTableName,
-                                epsg:epsg])
-                        vegetationTableName = format.results.outputTableName
+                    format = PrepareData.FormattingForAbstractModel.formatVegetationLayer()
+                    format.execute([
+                            datasource    : datasource,
+                            inputTableName: vegetationTableName,
+                            epsg:epsg])
+                    vegetationTableName = format.results.outputTableName
 
-                        format = PrepareData.FormattingForAbstractModel.formatHydroLayer()
-                        format.execute([
-                                datasource    : datasource,
-                                inputTableName: hydroTableName,
-                                epsg:epsg])
-                        hydroTableName = format.results.outputTableName
+                    format = PrepareData.FormattingForAbstractModel.formatHydroLayer()
+                    format.execute([
+                            datasource    : datasource,
+                            inputTableName: hydroTableName,
+                            epsg:epsg])
+                    hydroTableName = format.results.outputTableName
 
-                        info "OSM GIS layers formated"
+                    format = PrepareData.FormattingForAbstractModel.formatImperviousLayer()
+                    format.execute([
+                            datasource    : datasource,
+                            inputTableName: imperviousTableName,
+                            epsg:epsg])
+                    imperviousTableName = format.results.outputTableName
+
+                    info "OSM GIS layers formated"
 
                 }
 
                 [outputBuilding: buildingTableName, outputRoad: roadTableName,
-                 outputRail    : railTableName, outputHydro: hydroTableName, outputVeget: vegetationTableName,
+                 outputRail    : railTableName, outputHydro: hydroTableName,
+                 outputVeget: vegetationTableName, outputImpervious: imperviousTableName,
                  outputZone: zoneTableName,outputZoneEnvelope:zoneEnvelopeTableName]
 
             }

@@ -67,7 +67,7 @@ def createLCZ() {
             def COLUMN_ID_RSU = "id_rsu"
             def geometricColumn = "the_geom"
             def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"             : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
-                                 "AREA_DENSITY"            : "BUILDING_SURFACE_FRACTION",
+                                 "BUILDING_AREA_FRACTION"                     : "BUILDING_SURFACE_FRACTION",
                                  "ASPECT_RATIO"                     : "ASPECT_RATIO",
                                  "GROUND_SKY_VIEW_FACTOR"           : "SKY_VIEW_FACTOR",
                                  "PERVIOUS_FRACTION"                : "PERVIOUS_SURFACE_FRACTION",
