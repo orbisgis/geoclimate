@@ -3,6 +3,7 @@ package org.orbisgis.orbisprocess.geoclimate.preparedata.osm
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.h2gis.functions.spatial.crs.ST_Transform
+import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
@@ -71,7 +72,9 @@ IProcess extractAndCreateGISLayers(){
                     ST_Transform.ST_Transform(datasource.getConnection(), geomAndEnv.filterArea, epsg).toString()
                 }',$epsg), '$placeName');"""
 
-                def query = OSMTools.Utilities.buildOSMQuery(geomAndEnv.filterArea, [], NODE, WAY, RELATION)
+                Envelope envelope  = geomAndEnv.filterArea.getEnvelopeInternal()
+                def query =  "[bbox:${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()}, ${envelope.getMaxX()}];((node;way;relation;);>;);out;"
+
                 def extract = OSMTools.Loader.extract()
                 if (extract.execute(overpassQuery: query)) {
                     IProcess createGISLayerProcess = createGISLayers()
