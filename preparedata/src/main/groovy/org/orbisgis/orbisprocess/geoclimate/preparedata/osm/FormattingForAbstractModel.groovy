@@ -291,7 +291,7 @@ IProcess formatVegetationLayer() {
 }
 
 /**
-* This process is used to transform the raw hydro table into a table that matches the constraints
+ * This process is used to transform the raw hydro table into a table that matches the constraints
  * of the geoClimate Input Model
  * @param datasource A connexion to a DB containing the raw hydro table
  * @param inputTableName The name of the raw hydro table in the DB
@@ -316,6 +316,43 @@ IProcess formatHydroLayer() {
                 }
             }
             logger.info('Hydro transformation finishes')
+            [outputTableName: outputTableName]
+        }
+    }
+    )
+}
+
+/**
+ * This process is used to transform the raw impervious table into a table that matches the constraints
+ * of the geoClimate Input Model
+ * @param datasource A connexion to a DB containing the raw impervious table
+ * @param inputTableName The name of the raw impervious table in the DB
+ * @return outputTableName The name of the final impervious table
+ */
+IProcess formatImperviousLayer() {
+    return create({
+        title "Format the raw impervious table into a table that matches the constraints of the GeoClimate Input Model"
+        inputs datasource    : JdbcDataSource, inputTableName: String, epsg: int
+        outputs outputTableName: String
+        run { datasource, inputTableName,epsg ->
+            logger.info('Impervious transformation starts')
+            outputTableName = "INPUT_IMPERVIOUS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+            datasource.execute """Drop table if exists $outputTableName;
+                        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_impervious serial, ID_SOURCE VARCHAR);"""
+            logger.info(inputTableName)
+            if(inputTableName!=null){
+                datasource.withBatch(1000) { stmt ->
+                    datasource.getTable(inputTableName).eachRow { row ->
+                        def toAdd = true
+                        if ((row.surface != null) && (row.surface == "grass")) {toAdd = false}
+                        if ((row.parking != null) && (row.parking == "underground"))  {toAdd = false}
+                        if (toAdd) {
+                            stmt.addBatch "insert into $outputTableName values(ST_MAKEVALID(ST_GEOMFROMTEXT('${row.the_geom}',$epsg)), null, '${row.id}')"
+                        }
+                    }
+                }
+            }
+            logger.info('Impervious transformation finishes')
             [outputTableName: outputTableName]
         }
     }

@@ -33,18 +33,21 @@ Put the following script and run it to extract OSM data from a place name and tr
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.orbisprocess.geoclimate.Geoclimate
 
+//Uncomment next line to override the Geoclimate logger
+//Geoclimate.logger = logger
+
 //Create a local H2GIS database
 def h2GIS = H2GIS.open('/tmp/osmdb;AUTO_SERVER=TRUE')
 
 //Run the process to extract OSM data from a place name and transform it to a set of GIS layers needed by Geoclimate
-def process = PrepareData.OSMGISLayers.extractAndCreateGISLayers()
+def process = Geoclimate.OSMGISLayers.extractAndCreateGISLayers()
          process.execute([
                 datasource : h2GIS,
                 placeName: "Vannes"])
  
  //Save the GIS layers in a shapeFile        
  process.getResults().each {it ->
-        if(it.value!=null && !it.value.isInteger()){
+        if(it.value!=null && it.key!="epsg"){
                 h2GIS.getTable(it.value).save("/tmp/${it.value}.shp")
             }
         }
@@ -67,7 +70,7 @@ def dirFile = new File(directory)
 dirFile.delete()
 dirFile.mkdir()
 def datasource = H2GIS.open(dirFile.absolutePath+File.separator + "geoclimate_chain_db;AUTO_SERVER=TRUE")
-def process = Geoclimate.GeoclimateChain.OSMGeoIndicators()
+def process = Geoclimate.Workflow.OSM()
 if(process.execute(datasource: datasource, placeName: "Cliscouet,Vannes")){
     def saveTables = Geoclimate.DataUtils.saveTablesAsFiles()
     saveTables.execute( [inputTableNames: process.getResults().values()
