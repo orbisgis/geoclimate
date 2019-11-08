@@ -107,7 +107,7 @@ class FormattingForAbstractModelTests {
 
     }
 
-    @Test //enable it to test data extraction from the overpass api
+    //@Test //enable it to test data extraction from the overpass api
     void extractCreateFormatGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
 
@@ -116,6 +116,7 @@ class FormattingForAbstractModelTests {
         placeName = "New York"
         placeName = "Québec, Québec (Agglomération), Capitale-Nationale, Québec, Canada"
         placeName = "Paimpol"
+        placeName = "Londres, Grand Londres, Angleterre, Royaume-Uni"
 
         IProcess extractData = PrepareData.OSMGISLayers.extractAndCreateGISLayers()
         extractData.execute([
