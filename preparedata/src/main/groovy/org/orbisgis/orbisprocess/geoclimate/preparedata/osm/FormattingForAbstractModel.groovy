@@ -230,7 +230,7 @@ IProcess formatBuildingLayer() {
                             def zIndex = getZIndex(row.'layer')
                             //special treatment if type is subway
                             if (type == "subway") {
-                                if (!((row.tunnel != null && row.tunnel == "no" && row.layer != null && row.layer.toInt() >= 0)
+                                if (!((row.tunnel != null && row.tunnel == "no" && zIndex >= 0)
                                         || (row.bridge != null && (row.bridge == "yes" || row.bridge == "viaduct")))) {
                                     type = null
                                 }
