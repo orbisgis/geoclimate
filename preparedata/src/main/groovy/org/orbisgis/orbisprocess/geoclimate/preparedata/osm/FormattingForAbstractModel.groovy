@@ -223,7 +223,6 @@ IProcess formatBuildingLayer() {
                     queryMapper += columnsMapper(columnNames, columnToMap)
                     queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) then st_intersection(st_force2D(a.the_geom), b.the_geom) else a.the_geom end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
 
-
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             String type = getTypeValue(row, columnNames, mappingType)
@@ -242,9 +241,8 @@ IProcess formatBuildingLayer() {
                             if (zIndex >= 0 && type) {
                                 Geometry geom = row.the_geom
                                 for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                    stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${
-                                        geom.getGeometryN(i)
-                                    }',$epsg), null, '${row.id}','${type}',${crossing},${zIndex})"""
+                                    stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT(
+                                        '${geom.getGeometryN(i)}',$epsg), null, '${row.id}','${type}',${crossing},${zIndex})"""
                                 }
                             }
                         }
@@ -291,7 +289,7 @@ IProcess formatVegetationLayer() {
                     columnNames.remove("THE_GEOM")
 
                     queryMapper += columnsMapper(columnNames, columnToMap)
-                    queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) then st_intersection(st_force2D(a.the_geom), b.the_geom) else a.the_geom end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
+                    queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) then st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom)) else st_makevalid(a.the_geom) end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
 
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
@@ -302,9 +300,8 @@ IProcess formatVegetationLayer() {
                                 for (int i = 0; i < geom.getNumGeometries(); i++) {
                                     Geometry subGeom = geom.getGeometryN(i)
                                     if (subGeom instanceof Polygon) {
-                                        stmt.addBatch """insert into $outputTableName values(ST_MAKEVALID(ST_GEOMFROMTEXT('${
-                                            subGeom
-                                        }',$epsg)), null, '${row.id}','${type}', '${height_class}')"""
+                                        stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${
+                                            subGeom}',$epsg), null, '${row.id}','${type}', '${height_class}')"""
                                     }
                                 }
                             }
@@ -340,7 +337,7 @@ IProcess formatHydroLayer() {
                 ISpatialTable inputSpatialTable = datasource.getSpatialTable(inputTableName)
                 if(inputSpatialTable.rowCount>0) {
                     inputSpatialTable.the_geom.createSpatialIndex()
-                    String query = "select id, CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) then st_intersection(st_force2D(a.the_geom), b.the_geom) else a.the_geom end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
+                    String query = "select id, CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) then st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom)) else st_makevalid(a.the_geom) end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
 
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(query) { row ->
@@ -391,8 +388,7 @@ IProcess formatImperviousLayer() {
                     def columnNames = inputSpatialTable.columnNames
                     columnNames.remove("THE_GEOM")
                     queryMapper += columnsMapper(columnNames, columnToMap)
-                    queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) then st_intersection(st_force2D(a.the_geom), b.the_geom) else a.the_geom end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
-
+                    queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) then st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom)) else st_makevalid(a.the_geom) end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
 
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
