@@ -128,6 +128,28 @@ class AbstractTablesInitializationTest {
             assertNotEquals('', row.MIN_WIDTH)
         }
 
+        // Check if the ROAD_ABSTRACT_CROSSING table has the correct number of columns and rows
+        tableName = process.getResults().outputRoadAbstractCrossing
+        assertNotNull(tableName)
+        table = h2GISDatabase.getTable(tableName)
+        assertNotNull(table)
+        assertEquals(4, table.columnCount)
+        assertEquals(3, table.rowCount)
+        // Check if the column types are correct
+        assertEquals('INTEGER', table.getColumnsType('ID_CROSSING'))
+        assertEquals('VARCHAR', table.getColumnsType('TERM'))
+        assertEquals('VARCHAR', table.getColumnsType('DEFINITION'))
+        assertEquals('VARCHAR', table.getColumnsType('SOURCE'))
+        table.eachRow { row ->
+            assertNotNull(row.ID_CROSSING)
+            assertNotEquals('', row.ID_CROSSING)
+            assertNotNull(row.TERM)
+            assertNotEquals('', row.TERM)
+            assertNotNull(row.DEFINITION)
+            assertNotEquals('', row.DEFINITION)
+            assertNotNull(row.SOURCE)
+        }
+
         // Check if the RAIL_ABSTRACT_TYPE table has the correct number of columns and rows
         tableName = process.getResults().outputRailAbstractType
         assertNotNull(tableName)
@@ -144,6 +166,28 @@ class AbstractTablesInitializationTest {
         table.eachRow { row ->
             assertNotNull(row.ID_TYPE)
             assertNotEquals('', row.ID_TYPE)
+            assertNotNull(row.TERM)
+            assertNotEquals('', row.TERM)
+            assertNotNull(row.DEFINITION)
+            assertNotEquals('', row.DEFINITION)
+            assertNotNull(row.SOURCE)
+        }
+
+        // Check if the RAIL_ABSTRACT_CROSSING table has the correct number of columns and rows
+        tableName = process.getResults().outputRailAbstractCrossing
+        assertNotNull(tableName)
+        table = h2GISDatabase.getTable(tableName)
+        assertNotNull(table)
+        assertEquals(4, table.columnCount)
+        assertEquals(3, table.rowCount)
+        // Check if the column types are correct
+        assertEquals('INTEGER', table.getColumnsType('ID_CROSSING'))
+        assertEquals('VARCHAR', table.getColumnsType('TERM'))
+        assertEquals('VARCHAR', table.getColumnsType('DEFINITION'))
+        assertEquals('VARCHAR', table.getColumnsType('SOURCE'))
+        table.eachRow { row ->
+            assertNotNull(row.ID_CROSSING)
+            assertNotEquals('', row.ID_CROSSING)
             assertNotNull(row.TERM)
             assertNotEquals('', row.TERM)
             assertNotNull(row.DEFINITION)
