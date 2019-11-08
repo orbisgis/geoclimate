@@ -1,6 +1,6 @@
 {
     "tags" : {
-        "natural":["water","waterway","bay"],
+        "natural":["water","waterway","bay", "strait"],
         "water":[],
         "waterway":[],
         "landuse":["basin", " salt_pond"]

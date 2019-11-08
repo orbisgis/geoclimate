@@ -73,7 +73,9 @@ IProcess extractAndCreateGISLayers(){
                 }',$epsg), '$placeName');"""
 
                 Envelope envelope  = geomAndEnv.filterArea.getEnvelopeInternal()
-                def query =  "[bbox:${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()}, ${envelope.getMaxX()}];((node;way;relation;);>;);out;"
+                def query =  "[maxsize:1073741824];((node(${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()}, ${envelope.getMaxX()});" +
+                        "way(${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()}, ${envelope.getMaxX()});" +
+                        "relation(${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()}, ${envelope.getMaxX()}););>;);out;"
 
                 def extract = OSMTools.Loader.extract()
                 if (extract.execute(overpassQuery: query)) {
@@ -86,7 +88,8 @@ IProcess extractAndCreateGISLayers(){
                          vegetationTableName: createGISLayerProcess.getResults().vegetationTableName,
                          hydroTableName     : createGISLayerProcess.getResults().hydroTableName,
                          imperviousTableName     : createGISLayerProcess.getResults().imperviousTableName,
-                         zoneTableName      : outputZoneTable, zoneEnvelopeTableName: outputZoneEnvelopeTable,
+                         zoneTableName      : outputZoneTable,
+                         zoneEnvelopeTableName: outputZoneEnvelopeTable,
                          epsg: epsg]
                     } else {
                         logger.error "Cannot load the OSM file ${extract.results.outputFilePath}"
@@ -140,7 +143,7 @@ IProcess createGISLayers() {
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep:columnsToKeep)){
                     outputBuildingTableName = transform.results.outputTableName
                     logger.info "Building layer created"
-                 }
+                }
 
                 //Create road layer
                 transform = OSMTools.Transform.extractWaysAsLines()
@@ -199,7 +202,6 @@ IProcess createGISLayers() {
                     outputImperviousTableName = transform.results.outputTableName
                     logger.info "impervious layer created"
                 }
-
                 //Drop the OSM tables
                 OSMTools.Utilities.dropOSMTables(prefix, datasource)
 

@@ -107,12 +107,15 @@ class FormattingForAbstractModelTests {
 
     }
 
-    //@Test //enable it to test data extraction from the overpass api
+    @Test //enable it to test data extraction from the overpass api
     void extractCreateFormatGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
 
         //def placeName ="Shanghai, Chine"
         def placeName ="École Lycée Joliot-Curie,Rennes"
+        placeName = "New York"
+        placeName = "Québec, Québec (Agglomération), Capitale-Nationale, Québec, Canada"
+        placeName = "Paimpol"
 
         IProcess extractData = PrepareData.OSMGISLayers.extractAndCreateGISLayers()
         extractData.execute([
@@ -137,6 +140,7 @@ class FormattingForAbstractModelTests {
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.buildingTableName,
+                    inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
                     epsg: epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_${formatedPlaceName}.geojson")
             assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count==0
@@ -152,6 +156,7 @@ class FormattingForAbstractModelTests {
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.roadTableName,
+                    inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
                     epsg: epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_${formatedPlaceName}.geojson")
 
@@ -161,6 +166,7 @@ class FormattingForAbstractModelTests {
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.railTableName,
+                    inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
                     epsg: epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_rails_${formatedPlaceName}.geojson")
 
@@ -170,6 +176,7 @@ class FormattingForAbstractModelTests {
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.vegetationTableName,
+                    inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
                     epsg: epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_vegetation_${formatedPlaceName}.geojson")
 
@@ -179,6 +186,7 @@ class FormattingForAbstractModelTests {
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.hydroTableName,
+                    inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
                     epsg: epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_hydro_${formatedPlaceName}.geojson")
 
@@ -187,6 +195,7 @@ class FormattingForAbstractModelTests {
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.imperviousTableName,
+                    inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
                     epsg: epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_${formatedPlaceName}.geojson")
 
