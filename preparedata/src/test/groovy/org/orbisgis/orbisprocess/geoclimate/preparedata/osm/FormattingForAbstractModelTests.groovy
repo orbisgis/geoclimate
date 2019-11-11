@@ -36,7 +36,7 @@ class FormattingForAbstractModelTests {
                 epsg: epsg,
                 jsonFilename: null])
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated.shp")
-        assertEquals 1038, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertEquals 1044, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL is null").count==0
@@ -81,7 +81,7 @@ class FormattingForAbstractModelTests {
                 jsonFilename: null
         ])
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_vegetation_formated.shp")
-        assertEquals 135, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertEquals 140, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where type is null").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_CLASS is null").count==0
 
