@@ -27,7 +27,7 @@ import groovy.json.JsonSlurper
 IProcess formatBuildingLayer() {
     return create({
         title "Transform OSM buildings table into a table that matches the constraints of the GeoClimate input model"
-        inputs datasource : JdbcDataSource , inputTableName:String, inputZoneEnvelopeTableName:String, epsg: int, h_lev_min:3, h_lev_max: 15, hThresholdLev2:10, jsonFilename : ""
+        inputs datasource : JdbcDataSource , inputTableName:String, inputZoneEnvelopeTableName:"", epsg: int, h_lev_min:3, h_lev_max: 15, hThresholdLev2:10, jsonFilename : ""
         outputs outputTableName: String
         run { JdbcDataSource datasource, inputTableName,inputZoneEnvelopeTableName, epsg, h_lev_min, h_lev_max, hThresholdLev2, jsonFilename ->
             def outputTableName = "INPUT_BUILDING_${UUID.randomUUID().toString().replaceAll("-", "_")}"
@@ -49,8 +49,12 @@ IProcess formatBuildingLayer() {
                     def columnNames = inputSpatialTable.columnNames
                     columnNames.remove("the_geom")
                     queryMapper += columnsMapper(columnNames, columnToMap)
-                    queryMapper += " , st_makevalid(a.the_geom) as the_geom FROM $inputTableName as a,  $inputZoneEnvelopeTableName as b WHERE a.the_geom && b.the_geom and st_intersects(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom)"
-
+                    if(inputZoneEnvelopeTableName) {
+                        queryMapper += " , st_makevalid(a.the_geom) as the_geom FROM $inputTableName as a,  $inputZoneEnvelopeTableName as b WHERE a.the_geom && b.the_geom and st_intersects(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom)"
+                    }
+                    else{
+                        queryMapper += " , st_makevalid(a.the_geom) as the_geom FROM $inputTableName as a"
+                    }
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             String height = row.'height'
@@ -115,7 +119,7 @@ IProcess formatBuildingLayer() {
  IProcess formatRoadLayer() {
     return create({
             title "Format the raw roads table into a table that matches the constraints of the GeoClimate Input Model"
-            inputs datasource  : JdbcDataSource, inputTableName : String, inputZoneEnvelopeTableName : String, epsg: int, jsonFilename : ""
+            inputs datasource  : JdbcDataSource, inputTableName : String, inputZoneEnvelopeTableName : "", epsg: int, jsonFilename : ""
             outputs outputTableName: String
             run { datasource, inputTableName,inputZoneEnvelopeTableName,epsg, jsonFilename ->
                     logger.info('Formating road layer')
@@ -139,8 +143,11 @@ IProcess formatBuildingLayer() {
                             def columnNames = inputSpatialTable.columnNames
                             columnNames.remove("THE_GEOM")
                             queryMapper += columnsMapper(columnNames, columnToMap)
-                            queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) then st_intersection(st_force2D(a.the_geom), b.the_geom) else a.the_geom end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
-
+                            if(inputZoneEnvelopeTableName) {
+                                queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) then st_intersection(st_force2D(a.the_geom), b.the_geom) else a.the_geom end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
+                            }else{
+                                queryMapper += ", a.the_geom FROM $inputTableName  as a"
+                            }
 
                             datasource.withBatch(1000) { stmt ->
                                 datasource.eachRow(queryMapper) { row ->
@@ -196,7 +203,7 @@ IProcess formatBuildingLayer() {
  IProcess formatRailsLayer() {
     return create({
         title "Format the raw rails table into a table that matches the constraints of the GeoClimate Input Model"
-        inputs datasource : JdbcDataSource , inputTableName: String, inputZoneEnvelopeTableName:String, epsg: int, jsonFilename : ""
+        inputs datasource : JdbcDataSource , inputTableName: String, inputZoneEnvelopeTableName:"", epsg: int, jsonFilename : ""
         outputs outputTableName: String
         run { datasource, inputTableName,inputZoneEnvelopeTableName,epsg, jsonFilename ->
             logger.info('Rails transformation starts')
@@ -221,8 +228,12 @@ IProcess formatBuildingLayer() {
                     columnNames.remove("THE_GEOM")
 
                     queryMapper += columnsMapper(columnNames, columnToMap)
+                    if(inputZoneEnvelopeTableName){
                     queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) then st_intersection(st_force2D(a.the_geom), b.the_geom) else a.the_geom end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
+                    }else{
+                        queryMapper += ", a.the_geom FROM $inputTableName  as a"
 
+                    }
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             String type = getTypeValue(row, columnNames, mappingType)
@@ -268,7 +279,7 @@ IProcess formatBuildingLayer() {
 IProcess formatVegetationLayer() {
     return create({
         title "Format the raw vegetation table into a table that matches the constraints of the GeoClimate Input Model"
-        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName:String,epsg: int, jsonFilename: ""
+        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName:"",epsg: int, jsonFilename: ""
         outputs outputTableName: String
         run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName,epsg, jsonFilename ->
             logger.info('Vegetation transformation starts')
@@ -289,8 +300,11 @@ IProcess formatVegetationLayer() {
                     columnNames.remove("THE_GEOM")
 
                     queryMapper += columnsMapper(columnNames, columnToMap)
+                    if(inputZoneEnvelopeTableName){
                     queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) then st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom)) else st_makevalid(a.the_geom) end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
-
+                    }else{
+                        queryMapper += ", st_makevalid(a.the_geom) the_geom FROM $inputTableName  as a"
+                    }
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             String type = getTypeValue(row, columnNames, mappingType)
@@ -325,7 +339,7 @@ IProcess formatVegetationLayer() {
 IProcess formatHydroLayer() {
     return create({
         title "Format the raw hydro table into a table that matches the constraints of the GeoClimate Input Model"
-        inputs datasource    : JdbcDataSource, inputTableName: String,inputZoneEnvelopeTableName : String,epsg: int
+        inputs datasource    : JdbcDataSource, inputTableName: String,inputZoneEnvelopeTableName : "",epsg: int
         outputs outputTableName: String
         run { datasource, inputTableName,inputZoneEnvelopeTableName,epsg ->
             logger.info('Hydro transformation starts')
@@ -337,8 +351,13 @@ IProcess formatHydroLayer() {
                 ISpatialTable inputSpatialTable = datasource.getSpatialTable(inputTableName)
                 if(inputSpatialTable.rowCount>0) {
                     inputSpatialTable.the_geom.createSpatialIndex()
-                    String query = "select id, CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) then st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom)) else st_makevalid(a.the_geom) end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
+                    String query
+                    if(inputZoneEnvelopeTableName) {
+                        query = "select id, CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) then st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom)) else st_makevalid(a.the_geom) end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
+                    }else{
+                        query = "select id, st_makevalid(a.the_geom) end as the_geom FROM $inputTableName  as a"
 
+                    }
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(query) { row ->
                             Geometry geom = row.the_geom
@@ -369,7 +388,7 @@ IProcess formatHydroLayer() {
 IProcess formatImperviousLayer() {
     return create({
         title "Format the raw impervious table into a table that matches the constraints of the GeoClimate Input Model"
-        inputs datasource    : JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName:String, epsg: int,jsonFilename: ""
+        inputs datasource    : JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName:"", epsg: int,jsonFilename: ""
         outputs outputTableName: String
         run { datasource, inputTableName,inputZoneEnvelopeTableName,epsg,jsonFilename ->
             logger.info('Impervious transformation starts')
@@ -388,8 +407,12 @@ IProcess formatImperviousLayer() {
                     def columnNames = inputSpatialTable.columnNames
                     columnNames.remove("THE_GEOM")
                     queryMapper += columnsMapper(columnNames, columnToMap)
+                    if(inputZoneEnvelopeTableName){
                     queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) then st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom)) else st_makevalid(a.the_geom) end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
-
+                    }
+                    else{
+                        queryMapper += ", st_makevalid(a.the_geom) end as the_geom FROM $inputTableName  as a"
+                    }
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             def toAdd = true
