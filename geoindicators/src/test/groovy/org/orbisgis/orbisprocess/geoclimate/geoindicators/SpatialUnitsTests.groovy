@@ -37,11 +37,11 @@ class SpatialUnitsTests {
     @Test
     void prepareGeometriesForRSUTest() {
         H2GIS h2GIS = H2GIS.open('./target/spatialunitsdb2;AUTO_SERVER=TRUE')
-        h2GIS.load(this.class.getResource("road_test.shp"), true)
-        h2GIS.load(this.class.getResource("rail_test.shp"), true)
-        h2GIS.load(this.class.getResource("veget_test.shp"), true)
-        h2GIS.load(this.class.getResource("hydro_test.shp"), true)
-        h2GIS.load(this.class.getResource("zone_test.shp"),true)
+        h2GIS.load(new File(getClass().getResource("road_test.shp").toURI()).absolutePath, true)
+        h2GIS.load(new File(getClass().getResource("rail_test.shp").toURI()).absolutePath, true)
+        h2GIS.load(new File(getClass().getResource("veget_test.shp").toURI()).absolutePath, true)
+        h2GIS.load(new File(getClass().getResource("hydro_test.shp").toURI()).absolutePath, true)
+        h2GIS.load(new File(getClass().getResource("zone_test.shp").toURI()).absolutePath,true)
 
         def  prepareData = Geoindicators.SpatialUnits.prepareRSUData()
         assertTrue prepareData.execute([zoneTable: 'zone_test', roadTable: 'road_test',  railTable: 'rail_test',
