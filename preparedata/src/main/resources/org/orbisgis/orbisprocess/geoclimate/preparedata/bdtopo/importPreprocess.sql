@@ -104,14 +104,12 @@ UNION SELECT THE_GEOM, ID_SOURCE, HEIGHT_WALL, null, null, TYPE, '', 0 FROM ST_E
 -- Update the BUILDING table with the new appropriate type key, coming from the abstract table
 UPDATE $INPUT_BUILDING SET TYPE=(SELECT c.TERM FROM $BUILDING_BD_TOPO_USE_TYPE b, $BUILDING_ABSTRACT_USE_TYPE c WHERE c.ID_TYPE=b.ID_TYPE and ${INPUT_BUILDING}.TYPE=b.NATURE) WHERE TYPE IN (SELECT b.NATURE FROM $BUILDING_BD_TOPO_USE_TYPE b);
 
-DROP TABLE IF EXISTS $BU_ZONE_INDIF, $BU_ZONE_INDUS, $BU_ZONE_REMARQ;
-
 -------------------------------------
 -- Road (from the layer "ROUTE") that are in the study area (ZONE_BUFFER)
 -------------------------------------
 DROP TABLE IF EXISTS $INPUT_ROAD;
 CREATE TABLE $INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH double precision, TYPE varchar, SURFACE varchar, SIDEWALK varchar, ZINDEX integer, CROSSING varchar)
-AS SELECT a.THE_GEOM, a.ID, a.LARGEUR, a.NATURE, '', '', a.POS_SOL, a.FRANCHISSMT FROM $ROUTE a, $ZONE_BUFFER b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
+AS SELECT a.THE_GEOM, a.ID, a.LARGEUR, a.NATURE, '', '', a.POS_SOL, a.FRANCHISST FROM $ROUTE a, $ZONE_BUFFER b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
 CREATE INDEX ON $INPUT_ROAD(the_geom) USING RTREE;
 
 -- Update the ROAD table with the new appropriate type key, coming from the abstract table

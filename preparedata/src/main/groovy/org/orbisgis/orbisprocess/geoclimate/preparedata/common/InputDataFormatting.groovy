@@ -197,14 +197,13 @@ IProcess inputDataFormatting(){
 
             logger.info('The inputDataFormatting.sql script has been executed')
 
-            [outputBuilding        : building,
-             outputBuildingStatZone: buildingStatsZone, outputBuildingStatZoneBuff: buildingStatsExtZone,
-             outputRoad            : road, outputRoadStatZone: roadStatsZone, outputRoadStatZoneBuff: roadStatsExtZone,
-             outputRail            : rail, outputRailStatZone: railStatsZone,
-             outputHydro           : hydro, outputHydroStatZone: hydroStatsZone, outputHydroStatZoneExt: hydroStatsExtZone,
-             outputVeget           : veget, outputVegetStatZone: vegetStatsZone, outputVegetStatZoneExt: vegetStatsExtZone,
-             outputImpervious      : impervious,
-             outputZone            : inputZone
+            [outputBuilding : building, outputBuildingStatZone: buildingStatsZone, outputBuildingStatZoneBuff: buildingStatsExtZone,
+             outputRoad: road, outputRoadStatZone: roadStatsZone, outputRoadStatZoneBuff: roadStatsExtZone,
+             outputRail: rail, outputRailStatZone: railStatsZone,
+             outputHydro: hydro, outputHydroStatZone: hydroStatsZone, outputHydroStatZoneExt: hydroStatsExtZone,
+             outputVeget: veget, outputVegetStatZone: vegetStatsZone, outputVegetStatZoneExt: vegetStatsExtZone,
+             outputImpervious: impervious,
+             outputZone: inputZone
             ]
         }
     })

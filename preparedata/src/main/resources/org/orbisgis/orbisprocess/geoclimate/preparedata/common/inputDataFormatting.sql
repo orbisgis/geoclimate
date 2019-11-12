@@ -251,12 +251,14 @@ DROP TABLE IF EXISTS $ROAD_FC_W_ZERO, $ROAD_FC_W_NULL, $ROAD_FC_W_RANGE;
 
 -- If the ZINDEX is null, then it's initialised to 0
 DROP TABLE IF EXISTS $ROAD;
-CREATE TABLE $ROAD (THE_GEOM geometry, ID_ROAD serial, ID_SOURCE varchar(24), WIDTH double precision, TYPE varchar, SURFACE varchar, SIDEWALK varchar, ZINDEX integer)
-    AS SELECT ST_FORCE2D(THE_GEOM), null, ID_SOURCE, WIDTH, TYPE, SURFACE, SIDEWALK, CASE WHEN ZINDEX is null THEN 0 ELSE ZINDEX END FROM ST_EXPLODE('$INPUT_ROAD');
-
+CREATE TABLE $ROAD (THE_GEOM geometry, ID_ROAD serial, ID_SOURCE varchar(24), WIDTH double precision, TYPE varchar, SURFACE varchar, SIDEWALK varchar, ZINDEX integer, CROSSING varchar)
+    AS SELECT ST_FORCE2D(THE_GEOM), null, ID_SOURCE, WIDTH, TYPE, SURFACE, SIDEWALK, CASE WHEN ZINDEX is null THEN 0 ELSE ZINDEX END, CROSSING FROM ST_EXPLODE('$INPUT_ROAD');
 
 -- Updating the width using the rule ("If null or equal to 0 then replace by the minimum width defined in the ROAD ABSTRACT_PARAMETERS table")
 UPDATE $ROAD SET WIDTH = (SELECT b.MIN_WIDTH FROM $ROAD_ABSTRACT_PARAMETERS b WHERE b.TERM=TYPE) WHERE WIDTH = 0 or WIDTH is null or WIDTH < 0;
+
+-- Filling the CROSSING column with a 'null' value when no value
+UPDATE $ROAD SET CROSSING = 'null' WHERE CROSSING is null;
 
 CREATE INDEX ON $ROAD(the_geom) USING RTREE;
 
@@ -343,8 +345,12 @@ DROP TABLE IF EXISTS $ROAD_ZONE, $INPUT_ROAD, $ROAD_NUMB, $ROAD_VALID, $ROAD_EMP
 
 -- If the ZINDEX is null, then it's initialised to 0
 DROP TABLE IF EXISTS $RAIL;
-CREATE TABLE $RAIL(THE_GEOM geometry, ID_RAIL serial, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer)
-	AS SELECT ST_FORCE2D(THE_GEOM), null, ID_SOURCE, TYPE, CASE WHEN ZINDEX is null THEN 0 ELSE ZINDEX END FROM ST_EXPLODE('$INPUT_RAIL');
+CREATE TABLE $RAIL(THE_GEOM geometry, ID_RAIL serial, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer, CROSSING varchar)
+	AS SELECT ST_FORCE2D(THE_GEOM), null, ID_SOURCE, TYPE, CASE WHEN ZINDEX is null THEN 0 ELSE ZINDEX END, CROSSING FROM ST_EXPLODE('$INPUT_RAIL');
+
+-- Filling the CROSSING column with a 'null' value when no value
+UPDATE $ROAD SET CROSSING = 'null' WHERE CROSSING is null;
+
 CREATE INDEX ON $RAIL(the_geom) USING RTREE;
 
 -- Clean not needed layers
