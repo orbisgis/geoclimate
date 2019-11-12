@@ -1,2 +1,0 @@
-# OpenStreetMap use case
-
