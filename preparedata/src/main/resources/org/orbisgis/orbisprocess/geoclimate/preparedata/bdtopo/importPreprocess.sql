@@ -148,7 +148,7 @@ UPDATE $INPUT_VEGET SET TYPE=(SELECT c.TERM FROM $VEGET_BD_TOPO_TYPE b, $VEGET_A
 -- Impervious areas (from the layers "TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE", "SURFACE_ROUTE" and "SURFACE_ACTIVITE") that are in the study area (ZONE)
 -------------------------------------
 DROP TABLE IF EXISTS $TMP_IMPERV_TERRAIN_SPORT, $TMP_IMPERV_CONSTRUCTION_SURFACIQUE, $TMP_IMPERV_SURFACE_ROUTE, $TMP_IMPERV_SURFACE_ACTIVITE;
-CREATE TABLE $TMP_IMPERV_TERRAIN_SPORT AS SELECT a.the_geom, a.ID as ID_SOURCE FROM $TERRAIN_SPORT a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) AND (a.NATURE='Piste de sport' OR a.NATURE='Terrain de tennis');
+CREATE TABLE $TMP_IMPERV_TERRAIN_SPORT AS SELECT a.the_geom, a.ID as ID_SOURCE FROM $TERRAIN_SPORT a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) AND a.NATURE='Piste de sport';
 CREATE TABLE $TMP_IMPERV_CONSTRUCTION_SURFACIQUE AS SELECT a.the_geom, a.ID as ID_SOURCE FROM $CONSTRUCTION_SURFACIQUE a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) AND (a.NATURE='Barrage' OR a.NATURE='Ecluse' OR a.NATURE='Escalier');
 CREATE TABLE $TMP_IMPERV_SURFACE_ROUTE AS SELECT a.the_geom, a.ID as ID_SOURCE FROM $SURFACE_ROUTE a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
 CREATE TABLE $TMP_IMPERV_SURFACE_ACTIVITE AS SELECT a.the_geom, a.ID as ID_SOURCE FROM $SURFACE_ACTIVITE a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) AND (a.CATEGORIE='Administratif' OR a.CATEGORIE='Enseignement' OR a.CATEGORIE='Santé');

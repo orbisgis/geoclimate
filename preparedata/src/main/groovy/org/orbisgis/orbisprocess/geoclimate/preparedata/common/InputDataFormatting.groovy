@@ -157,7 +157,7 @@ IProcess inputDataFormatting(){
             def impervious = 'IMPERVIOUS'
 
             //Run the sql script
-            datasource.executeScript(getClass().getResourceAsStream('inputDataFormatting.sql'),
+            def success = datasource.executeScript(getClass().getResourceAsStream('inputDataFormatting.sql'),
                     [INPUT_BUILDING: inputBuilding, INPUT_ROAD: inputRoad, INPUT_RAIL: inputRail,
                      INPUT_HYDRO: inputHydro, INPUT_VEGET: inputVeget, INPUT_IMPERVIOUS: inputImpervious,
                      ZONE: inputZone, ZONE_NEIGHBORS: inputZoneNeighbors,
@@ -194,17 +194,20 @@ IProcess inputDataFormatting(){
                      VEGET: veget, VEGET_STATS_ZONE: vegetStatsZone, VEGET_STATS_EXT_ZONE: vegetStatsExtZone,
                      IMPERVIOUS: impervious
                     ])
-
-            logger.info('The inputDataFormatting.sql script has been executed')
-
-            [outputBuilding : building, outputBuildingStatZone: buildingStatsZone, outputBuildingStatZoneBuff: buildingStatsExtZone,
-             outputRoad: road, outputRoadStatZone: roadStatsZone, outputRoadStatZoneBuff: roadStatsExtZone,
-             outputRail: rail, outputRailStatZone: railStatsZone,
-             outputHydro: hydro, outputHydroStatZone: hydroStatsZone, outputHydroStatZoneExt: hydroStatsExtZone,
-             outputVeget: veget, outputVegetStatZone: vegetStatsZone, outputVegetStatZoneExt: vegetStatsExtZone,
-             outputImpervious: impervious,
-             outputZone: inputZone
-            ]
+            if(!success){
+                logger.error("Error occurred on the execution of the inputDataFormatting.sql script")
+            }
+            else{
+                logger.info('The inputDataFormatting.sql script has been executed')
+                [outputBuilding : building, outputBuildingStatZone: buildingStatsZone, outputBuildingStatZoneBuff: buildingStatsExtZone,
+                 outputRoad: road, outputRoadStatZone: roadStatsZone, outputRoadStatZoneBuff: roadStatsExtZone,
+                 outputRail: rail, outputRailStatZone: railStatsZone,
+                 outputHydro: hydro, outputHydroStatZone: hydroStatsZone, outputHydroStatZoneExt: hydroStatsExtZone,
+                 outputVeget: veget, outputVegetStatZone: vegetStatsZone, outputVegetStatZoneExt: vegetStatsExtZone,
+                 outputImpervious: impervious,
+                 outputZone: inputZone
+                ]
+            }
         }
     })
 }

@@ -235,7 +235,7 @@ class BDTopoGISLayersTest {
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(2, table.columnCount)
-        assertEquals(91, table.rowCount)
+        assertEquals(71, table.rowCount)
         // Check if the column types are correct
         assertEquals('GEOMETRY', table.getColumnsType('THE_GEOM'))
         assertEquals('VARCHAR', table.getColumnsType('ID_SOURCE'))

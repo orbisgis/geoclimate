@@ -45,12 +45,12 @@ CREATE TABLE $BUILD_OUTER_ZONE AS SELECT * FROM $BU_ZONE WHERE ID_BUILD NOT IN (
 DROP TABLE IF EXISTS $BUILD_OUTER_ZONE_MATRIX ;
 CREATE TABLE $BUILD_OUTER_ZONE_MATRIX (ID_BUILD integer primary key, ID_ZONE integer) AS SELECT a.ID_BUILD , (SELECT ID_ZONE FROM $ZONE_NEIGHBORS b WHERE a.THE_GEOM && b.THE_GEOM ORDER BY ST_AREA(ST_INTERSECTION(a.THE_GEOM, b.THE_GEOM)) DESC LIMIT 1) AS ID_ZONE FROM $BUILD_OUTER_ZONE a WHERE ST_NUMGEOMETRIES(a.THE_GEOM)=1;
 
--- 4- Merge into one single table these informations
+-- 4- Merge into one single table these information
 DROP TABLE IF EXISTS $BUILD_ZONE_MATRIX ;
 CREATE TABLE $BUILD_ZONE_MATRIX (ID_BUILD integer primary key, ID_ZONE integer) AS SELECT * FROM $BUILD_WITHIN_ZONE UNION SELECT * FROM $BUILD_OUTER_ZONE_MATRIX;
 CREATE INDEX ON $BUILD_ZONE_MATRIX(ID_BUILD);
 
--- Join this "matrix" to the intial table (with all building informations) (FC = First Control)
+-- Join this "matrix" to the initial table (with all building information) (FC = First Control)
 DROP TABLE IF EXISTS $BUILDING_FC ;
 CREATE TABLE $BUILDING_FC AS SELECT a.*, b.ID_ZONE FROM $BU_ZONE a LEFT JOIN $BUILD_ZONE_MATRIX b ON a.ID_BUILD=b.ID_BUILD;
 -- Create indexes to improve upcoming controls
@@ -129,9 +129,9 @@ ELSE TRUNCATE(HEIGHT_ROOF /$H_LEV_MIN) END)
 
 -- Check if HEIGHT_ROOF is lower than HEIGHT_WALL. If yes, then correct HEIGHT_ROOF
 UPDATE $BUILDING SET HEIGHT_ROOF = 	CASE WHEN HEIGHT_WALL > HEIGHT_ROOF THEN HEIGHT_WALL ELSE HEIGHT_ROOF END;
--- Check if there is a high difference beetween the "real" and "theorical (based on the level number) roof heights
+-- Check if there is a high difference between the "real" and "theoretical" (based on the level number) roof heights
 UPDATE $BUILDING SET HEIGHT_ROOF = 	CASE WHEN (NB_LEV * $H_LEV_MIN) > HEIGHT_ROOF THEN (NB_LEV * $H_LEV_MIN) ELSE HEIGHT_ROOF END;
--- Check if there is a high difference beetween the "real" and "theorical" (based on the level number) wall heights
+-- Check if there is a high difference between the "real" and "theoretical" (based on the level number) wall heights
 UPDATE $BUILDING SET NB_LEV = 	CASE WHEN TYPE in (SELECT TERM FROM $BUILDING_ABSTRACT_PARAMETERS WHERE NB_LEV=1) or (TYPE in (SELECT TERM FROM $BUILDING_ABSTRACT_PARAMETERS WHERE NB_LEV=2) and HEIGHT_WALL>$H_THRESHOLD_LEV2) THEN (
 									CASE WHEN (NB_LEV * $H_LEV_MAX) < HEIGHT_WALL THEN (HEIGHT_WALL / $H_LEV_MAX) ELSE NB_LEV END)
 								ELSE NB_LEV END;
@@ -191,10 +191,10 @@ CREATE TABLE $BUILD_NUMB AS SELECT COUNT(*) as NB_BUILD FROM $BUILDING;
 CREATE TABLE $BUILD_VALID_EXT_ZONE AS SELECT COUNT(*) as NOT_VALID FROM $BUILDING WHERE NOT ST_IsValid(the_geom) AND ID_ZONE<>$ID_ZONE;
 CREATE TABLE $BUILD_EMPTY AS SELECT COUNT(*) as IS_EMPTY FROM $BUILDING WHERE ST_IsEmpty(the_geom);
 -- Count the number of building, that are not in the studied city, and which geometry is equal to an another one.
--- This information will then be merged with the number of builing that are equal, inside the studied city (from table $BUILD_EQUALS_ZONE), to compute the total number of buildings that are equal at the extended city level
+-- This information will then be merged with the number of building that are equal, inside the studied city (from table $BUILD_EQUALS_ZONE), to compute the total number of buildings that are equal at the extended city level
 CREATE TABLE $BUILD_EQUALS_EXT_ZONE AS SELECT COUNT(a.*) as IS_EQUALS FROM $BUILDING a, $BUILDING b WHERE a.the_geom && b.the_geom AND ST_Equals(a.the_geom, b.the_geom) AND a.ID_BUILD<>b.ID_BUILD AND a.ID_ZONE<>$ID_ZONE AND b.ID_ZONE<>$ID_ZONE;
--- Count the number of building, that are not in the studied city, and which overlaps with another builing (which can be outside or inside the studied city)
--- This information will then be merged with the number of builing that overlaps, inside the studied city (from table $BUILD_OVERLAP_ZONE), to compute the total number of buildings that overlaps at the extended city level
+-- Count the number of building, that are not in the studied city, and which overlaps with another building (which can be outside or inside the studied city)
+-- This information will then be merged with the number of building that overlaps, inside the studied city (from table $BUILD_OVERLAP_ZONE), to compute the total number of buildings that overlaps at the extended city level
 CREATE TABLE $BUILD_OVERLAP_EXT_ZONE AS SELECT COUNT(a.*) as OVERLAP FROM $BUILDING a, $BUILDING b WHERE a.the_geom && b.the_geom AND ST_OVERLAPS(a.the_geom, b.the_geom) AND a.ID_BUILD<>b.ID_BUILD AND a.ID_ZONE<>$ID_ZONE;
 CREATE TABLE $BUILD_H AS SELECT COUNT(*) as H_NULL FROM $BUILDING WHERE HEIGHT_WALL is null;
 CREATE TABLE $BUILD_H_RANGE AS SELECT COUNT(*) as H_RANGE FROM $BUILDING WHERE HEIGHT_WALL < 0 OR HEIGHT_WALL > 1000;
@@ -378,7 +378,7 @@ CREATE TABLE $RAIL_OVERLAP AS SELECT COUNT(a.*) as OVERLAP FROM $RAIL a, $RAIL b
 CREATE TABLE $RAIL_TYPE AS SELECT COUNT(*) as NO_TYPE FROM $RAIL WHERE TYPE is null;
 CREATE TABLE $RAIL_TYPE_RANGE AS SELECT COUNT(*) as TYPE_RANGE FROM $RAIL WHERE TYPE NOT IN (SELECT TERM FROM $RAIL_ABSTRACT_TYPE);
 
--- Merge all these informations into one single table
+-- Merge all these information into one single table
 CREATE TABLE $RAIL_STATS_ZONE AS SELECT a.ID_ZONE, b.NB_RAIL, c.NOT_VALID, d.IS_EMPTY, e.IS_EQUALS, f.OVERLAP, g.NO_TYPE, h.TYPE_RANGE FROM $ZONE a, $RAIL_NB b, $RAIL_VALID c, $RAIL_EMPTY d, $RAIL_EQUALS e, $RAIL_OVERLAP f, $RAIL_TYPE g, $RAIL_TYPE_RANGE h;
 
 
@@ -426,7 +426,7 @@ CREATE TABLE $HYDRO_EQUALS AS SELECT COUNT(a.*) as IS_EQUALS FROM $HYDRO a, $HYD
 -- Count the number of hydrographic areas which overlaps another one
 CREATE TABLE $HYDRO_OVERLAP AS SELECT COUNT(a.*) as OVERLAP FROM $HYDRO a, $HYDRO b, $ZONE c WHERE a.the_geom && c.the_geom AND ST_INTERSECTS(a.the_geom, c.the_geom) AND a.the_geom && b.the_geom AND ST_OVERLAPS(a.the_geom, b.the_geom) AND a.ID_HYDRO<>b.ID_HYDRO;
 
--- Merge all these informations into one single table
+-- Merge all these information into one single table
 CREATE TABLE $HYDRO_STATS_ZONE AS SELECT a.ID_ZONE, b.NB_HYDRO, c.NOT_VALID, d.IS_EMPTY, e.IS_EQUALS, f.OVERLAP FROM $ZONE a, $HYDRO_NUM_ZONE b, $HYDRO_VALID c, $HYDRO_EMPTY d, $HYDRO_EQUALS e, $HYDRO_OVERLAP f;
 
 
@@ -499,7 +499,7 @@ CREATE TABLE $VEGET_OVERLAP AS SELECT COUNT(a.*) as OVERLAP FROM $VEGET a, $VEGE
 CREATE TABLE $VEGET_TYPE AS SELECT COUNT(a.*) as NO_TYPE FROM $VEGET a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) AND a.TYPE is null;
 CREATE TABLE $VEGET_TYPE_RANGE AS SELECT COUNT(a.*) as TYPE_RANGE FROM $VEGET a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) AND a.TYPE NOT IN (SELECT TERM FROM $VEGET_ABSTRACT_TYPE);
 
--- Merge all these informations into one single table
+-- Merge all these information into one single table
 CREATE TABLE $VEGET_STATS_ZONE AS SELECT a.ID_ZONE, b.NB_VEGET, c.NOT_VALID, d.IS_EMPTY, e.IS_EQUALS, f.OVERLAP, g.NO_TYPE, h.TYPE_RANGE FROM $ZONE a, $VEGET_NUM_ZONE b, $VEGET_VALID c, $VEGET_EMPTY d, $VEGET_EQUALS e, $VEGET_OVERLAP f, $VEGET_TYPE g, $VEGET_TYPE_RANGE h;
 
 

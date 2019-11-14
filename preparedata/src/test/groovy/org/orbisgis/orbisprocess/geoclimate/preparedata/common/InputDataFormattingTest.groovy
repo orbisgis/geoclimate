@@ -970,7 +970,7 @@ class InputDataFormattingTest {
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(3, table.columnCount)
-        assertEquals(91, table.rowCount)
+        assertEquals(71, table.rowCount)
         // Check if the column types are correct
         assertEquals('GEOMETRY', table.getColumnsType('THE_GEOM'))
         assertEquals('INTEGER', table.getColumnsType('ID_IMPERVIOUS'))

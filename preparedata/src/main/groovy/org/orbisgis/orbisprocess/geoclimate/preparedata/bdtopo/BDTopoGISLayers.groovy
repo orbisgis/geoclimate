@@ -52,7 +52,7 @@ import org.orbisgis.processmanagerapi.IProcess
  */
 IProcess importPreprocess(){
     return create({
-        title 'Import and preprocess data from BD Topo in order to feed the abstract model'
+        title 'Import and prepare BDTopo layers'
         inputs 	datasource: JdbcDataSource,
                 tableIrisName: String,
                 tableBuildIndifName: String,
@@ -113,7 +113,8 @@ IProcess importPreprocess(){
             def tmp_imperv_surface_activite = 'TMP_IMPERV_SURFACE_ACTIVITE_' + uuid
             def input_impervious = 'INPUT_IMPERVIOUS'
 
-            datasource.executeScript(getClass().getResourceAsStream('importPreprocess.sql'),
+
+            def success = datasource.executeScript(getClass().getResourceAsStream('importPreprocess.sql'),
                     [ID_ZONE                  : idZone, DIST_BUFFER: distBuffer,
                      EXPAND                   : expand, IRIS_GE: tableIrisName,
                      BATI_INDIFFERENCIE       : tableBuildIndifName, BATI_INDUSTRIEL: tableBuildIndusName,
@@ -139,14 +140,17 @@ IProcess importPreprocess(){
                      RAIL_BD_TOPO_CROSSING    : rail_bd_topo_crossing, RAIL_ABSTRACT_CROSSING: rail_abstract_crossing,
                      VEGET_BD_TOPO_TYPE       : veget_bd_topo_type, VEGET_ABSTRACT_TYPE: veget_abstract_type
                     ])
-
-            logger.info('The importPreprocess.sql script has been executed')
-
-            [outputBuildingName: input_building, outputRoadName: input_road,
-             outputRailName    : input_rail, outputHydroName: input_hydro,
-             outputVegetName   : input_veget, outputImperviousName : input_impervious,
-             outputZoneName    : zone, outputZoneNeighborsName: zoneNeighbors
-            ]
+            if(!success){
+                logger.error("Error occurred on the execution of the importPreprocess.sql script")
+            }
+            else{
+                logger.info('The importPreprocess.sql script has been executed')
+                [outputBuildingName: input_building, outputRoadName: input_road,
+                 outputRailName    : input_rail, outputHydroName: input_hydro,
+                 outputVegetName   : input_veget, outputImperviousName : input_impervious,
+                 outputZoneName    : zone, outputZoneNeighborsName: zoneNeighbors
+                ]
+            }
         }
     })
 }
@@ -188,7 +192,7 @@ IProcess initTypes(){
             def railBDTopoCrossing = 'RAIL_BD_TOPO_CROSSING'
             def vegetBDTopoType = 'VEGET_BD_TOPO_TYPE'
 
-            datasource.executeScript(getClass().getResourceAsStream('typesMatching.sql'),
+            def success = datasource.executeScript(getClass().getResourceAsStream('typesMatching.sql'),
                     [BUILDING_ABSTRACT_USE_TYPE: buildingAbstractUseType,
                      ROAD_ABSTRACT_TYPE        : roadAbstractType,
                      ROAD_ABSTRACT_CROSSING    : roadAbstractCrossing,
@@ -202,13 +206,16 @@ IProcess initTypes(){
                      RAIL_BD_TOPO_CROSSING     : railBDTopoCrossing,
                      VEGET_BD_TOPO_TYPE        : vegetBDTopoType,
                     ])
-
-            logger.info('The typesMatching.sql script has been executed')
-
-            [outputBuildingBDTopoUseType: buildingBDTopoUseType, outputroadBDTopoType: roadBDTopoType,
-             outputroadBDTopoCrossing: roadBDTopoCrossing, outputrailBDTopoType: railBDTopoType,
-             outputrailBDTopoCrossing: railBDTopoCrossing, outputvegetBDTopoType: vegetBDTopoType
-            ]
+            if(!success){
+                logger.error("Error occurred on the execution of the typesMatching.sql script")
+            }
+            else{
+                logger.info('The typesMatching.sql script has been executed')
+                [outputBuildingBDTopoUseType: buildingBDTopoUseType, outputroadBDTopoType: roadBDTopoType,
+                 outputroadBDTopoCrossing: roadBDTopoCrossing, outputrailBDTopoType: railBDTopoType,
+                 outputrailBDTopoCrossing: railBDTopoCrossing, outputvegetBDTopoType: vegetBDTopoType
+                ]
+            }
         }
     })
 }
