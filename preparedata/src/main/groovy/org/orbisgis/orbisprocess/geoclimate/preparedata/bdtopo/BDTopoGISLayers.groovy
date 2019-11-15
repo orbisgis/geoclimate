@@ -113,6 +113,19 @@ IProcess importPreprocess(){
             def tmp_imperv_surface_activite = 'TMP_IMPERV_SURFACE_ACTIVITE_' + uuid
             def input_impervious = 'INPUT_IMPERVIOUS'
 
+            // If the impervious tables does not exists, we create corresponding empty tables
+            if(!datasource.hasTable(tableImperviousSportName)){
+                datasource.execute("CREATE TABLE $tableImperviousSportName (THE_GEOM geometry(geometry, 2154), ID varchar, NATURE varchar);")
+            }
+            if(!datasource.hasTable(tableImperviousBuildSurfName)){
+                datasource.execute("CREATE TABLE $tableImperviousBuildSurfName (THE_GEOM geometry(geometry, 2154), ID varchar, NATURE varchar);")
+            }
+            if(!datasource.hasTable(tableImperviousRoadSurfName)){
+                datasource.execute("CREATE TABLE $tableImperviousRoadSurfName (THE_GEOM geometry(geometry, 2154), ID varchar);")
+            }
+            if(!datasource.hasTable(tableImperviousActivSurfName)){
+                datasource.execute("CREATE TABLE $tableImperviousActivSurfName (THE_GEOM geometry(geometry, 2154), ID varchar, CATEGORIE varchar);")
+            }
 
             def success = datasource.executeScript(getClass().getResourceAsStream('importPreprocess.sql'),
                     [ID_ZONE                  : idZone, DIST_BUFFER: distBuffer,

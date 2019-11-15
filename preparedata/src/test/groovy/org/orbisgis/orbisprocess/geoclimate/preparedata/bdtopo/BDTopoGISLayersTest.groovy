@@ -286,6 +286,222 @@ class BDTopoGISLayersTest {
 
     }
 
+    // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the SURFACE_ACTIVITE table
+    @Test
+    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
+    void importPreprocessImperviousSurfActTest() {
+        h2GISDatabase.execute ("DROP TABLE IF EXISTS SURFACE_ACTIVITE;")
+        def process = PrepareData.BDTopoGISLayers.importPreprocess()
+        assertTrue process.execute([datasource: h2GISDatabase,
+                                    tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                    tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
+                                    tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
+                                    tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
+                                    tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
+                                    tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
+                                    distBuffer: 500, expand: 1000, idZone: '56260',
+                                    building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
+                                    road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
+                                    road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
+                                    rail_bd_topo_type: 'RAIL_BD_TOPO_TYPE', rail_abstract_type: 'RAIL_ABSTRACT_TYPE',
+                                    rail_bd_topo_crossing: 'RAIL_BD_TOPO_CROSSING', rail_abstract_crossing: 'RAIL_ABSTRACT_CROSSING',
+                                    veget_bd_topo_type: 'VEGET_BD_TOPO_TYPE', veget_abstract_type: 'VEGET_ABSTRACT_TYPE'
+        ])
+        process.getResults().each {
+            entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
+        }
+
+        // Check if the INPUT_IMPERVIOUS table has the correct number of columns and rows
+        def tableName = process.getResults().outputImperviousName
+        assertNotNull(tableName)
+        def table = h2GISDatabase.getTable(tableName)
+        assertNotNull(table)
+        assertEquals(2, table.columnCount)
+        assertEquals(41, table.rowCount)
+        // Check if the column types are correct
+        assertEquals('GEOMETRY', table.getColumnsType('THE_GEOM'))
+        assertEquals('VARCHAR', table.getColumnsType('ID_SOURCE'))
+        // For each rows, check if the fields contains the expected values
+        table.eachRow { row ->
+            assertNotNull(row.THE_GEOM)
+            assertNotEquals('', row.THE_GEOM)
+            assertNotNull(row.ID_SOURCE)
+            assertNotEquals('', row.ID_SOURCE)
+        }
+
+        // Check if the SURFACE_ACTIVITE table has the correct number of columns and rows
+        tableName = h2GISDatabase.getTable("SURFACE_ACTIVITE")
+        assertNotNull(tableName)
+        assertEquals(3, tableName.columnCount)
+        assertEquals(0, tableName.rowCount)
+        // Check if the column types are correct
+        assertEquals('GEOMETRY', tableName.getColumnsType('THE_GEOM'))
+        assertEquals('VARCHAR', tableName.getColumnsType('ID'))
+        assertEquals('VARCHAR', tableName.getColumnsType('CATEGORIE'))
+    }
+
+    // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the TERRAIN_SPORT table
+    @Test
+    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
+    void importPreprocessImperviousSportTest() {
+        h2GISDatabase.execute ("DROP TABLE IF EXISTS TERRAIN_SPORT;")
+        def process = PrepareData.BDTopoGISLayers.importPreprocess()
+        assertTrue process.execute([datasource: h2GISDatabase,
+                                    tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                    tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
+                                    tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
+                                    tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
+                                    tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
+                                    tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
+                                    distBuffer: 500, expand: 1000, idZone: '56260',
+                                    building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
+                                    road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
+                                    road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
+                                    rail_bd_topo_type: 'RAIL_BD_TOPO_TYPE', rail_abstract_type: 'RAIL_ABSTRACT_TYPE',
+                                    rail_bd_topo_crossing: 'RAIL_BD_TOPO_CROSSING', rail_abstract_crossing: 'RAIL_ABSTRACT_CROSSING',
+                                    veget_bd_topo_type: 'VEGET_BD_TOPO_TYPE', veget_abstract_type: 'VEGET_ABSTRACT_TYPE'
+        ])
+        process.getResults().each {
+            entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
+        }
+
+        // Check if the INPUT_IMPERVIOUS table has the correct number of columns and rows
+        def tableName = process.getResults().outputImperviousName
+        assertNotNull(tableName)
+        def table = h2GISDatabase.getTable(tableName)
+        assertNotNull(table)
+        assertEquals(2, table.columnCount)
+        assertEquals(69, table.rowCount)
+        // Check if the column types are correct
+        assertEquals('GEOMETRY', table.getColumnsType('THE_GEOM'))
+        assertEquals('VARCHAR', table.getColumnsType('ID_SOURCE'))
+        // For each rows, check if the fields contains the expected values
+        table.eachRow { row ->
+            assertNotNull(row.THE_GEOM)
+            assertNotEquals('', row.THE_GEOM)
+            assertNotNull(row.ID_SOURCE)
+            assertNotEquals('', row.ID_SOURCE)
+        }
+
+        // Check if the TERRAIN_SPORT table has the correct number of columns and rows
+        tableName = h2GISDatabase.getTable("TERRAIN_SPORT")
+        assertNotNull(tableName)
+        assertEquals(3, tableName.columnCount)
+        assertEquals(0, tableName.rowCount)
+        // Check if the column types are correct
+        assertEquals('GEOMETRY', tableName.getColumnsType('THE_GEOM'))
+        assertEquals('VARCHAR', tableName.getColumnsType('ID'))
+        assertEquals('VARCHAR', tableName.getColumnsType('NATURE'))
+    }
+
+    // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the CONSTRUCTION_SURFACIQUE table
+    @Test
+    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
+    void importPreprocessImperviousConstrSurfTest() {
+        h2GISDatabase.execute ("DROP TABLE IF EXISTS CONSTRUCTION_SURFACIQUE;")
+        def process = PrepareData.BDTopoGISLayers.importPreprocess()
+        assertTrue process.execute([datasource: h2GISDatabase,
+                                    tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                    tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
+                                    tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
+                                    tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
+                                    tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
+                                    tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
+                                    distBuffer: 500, expand: 1000, idZone: '56260',
+                                    building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
+                                    road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
+                                    road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
+                                    rail_bd_topo_type: 'RAIL_BD_TOPO_TYPE', rail_abstract_type: 'RAIL_ABSTRACT_TYPE',
+                                    rail_bd_topo_crossing: 'RAIL_BD_TOPO_CROSSING', rail_abstract_crossing: 'RAIL_ABSTRACT_CROSSING',
+                                    veget_bd_topo_type: 'VEGET_BD_TOPO_TYPE', veget_abstract_type: 'VEGET_ABSTRACT_TYPE'
+        ])
+        process.getResults().each {
+            entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
+        }
+
+        // Check if the INPUT_IMPERVIOUS table has the correct number of columns and rows
+        def tableName = process.getResults().outputImperviousName
+        assertNotNull(tableName)
+        def table = h2GISDatabase.getTable(tableName)
+        assertNotNull(table)
+        assertEquals(2, table.columnCount)
+        assertEquals(71, table.rowCount)
+        // Check if the column types are correct
+        assertEquals('GEOMETRY', table.getColumnsType('THE_GEOM'))
+        assertEquals('VARCHAR', table.getColumnsType('ID_SOURCE'))
+        // For each rows, check if the fields contains the expected values
+        table.eachRow { row ->
+            assertNotNull(row.THE_GEOM)
+            assertNotEquals('', row.THE_GEOM)
+            assertNotNull(row.ID_SOURCE)
+            assertNotEquals('', row.ID_SOURCE)
+        }
+
+        // Check if the CONSTRUCTION_SURFACIQUE table has the correct number of columns and rows
+        tableName = h2GISDatabase.getTable("CONSTRUCTION_SURFACIQUE")
+        assertNotNull(tableName)
+        assertEquals(3, tableName.columnCount)
+        assertEquals(0, tableName.rowCount)
+        // Check if the column types are correct
+        assertEquals('GEOMETRY', tableName.getColumnsType('THE_GEOM'))
+        assertEquals('VARCHAR', tableName.getColumnsType('ID'))
+        assertEquals('VARCHAR', tableName.getColumnsType('NATURE'))
+    }
+
+    // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the SURFACE_ROUTE table
+    @Test
+    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
+    void importPreprocessImperviousSurfRoadTest() {
+        h2GISDatabase.execute ("DROP TABLE IF EXISTS SURFACE_ROUTE;")
+        def process = PrepareData.BDTopoGISLayers.importPreprocess()
+        assertTrue process.execute([datasource: h2GISDatabase,
+                                    tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                    tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
+                                    tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
+                                    tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
+                                    tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
+                                    tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
+                                    distBuffer: 500, expand: 1000, idZone: '56260',
+                                    building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
+                                    road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
+                                    road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
+                                    rail_bd_topo_type: 'RAIL_BD_TOPO_TYPE', rail_abstract_type: 'RAIL_ABSTRACT_TYPE',
+                                    rail_bd_topo_crossing: 'RAIL_BD_TOPO_CROSSING', rail_abstract_crossing: 'RAIL_ABSTRACT_CROSSING',
+                                    veget_bd_topo_type: 'VEGET_BD_TOPO_TYPE', veget_abstract_type: 'VEGET_ABSTRACT_TYPE'
+        ])
+        process.getResults().each {
+            entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
+        }
+
+        // Check if the INPUT_IMPERVIOUS table has the correct number of columns and rows
+        def tableName = process.getResults().outputImperviousName
+        assertNotNull(tableName)
+        def table = h2GISDatabase.getTable(tableName)
+        assertNotNull(table)
+        assertEquals(2, table.columnCount)
+        assertEquals(32, table.rowCount)
+        // Check if the column types are correct
+        assertEquals('GEOMETRY', table.getColumnsType('THE_GEOM'))
+        assertEquals('VARCHAR', table.getColumnsType('ID_SOURCE'))
+        // For each rows, check if the fields contains the expected values
+        table.eachRow { row ->
+            assertNotNull(row.THE_GEOM)
+            assertNotEquals('', row.THE_GEOM)
+            assertNotNull(row.ID_SOURCE)
+            assertNotEquals('', row.ID_SOURCE)
+        }
+
+        // Check if the SURFACE_ROUTE table has the correct number of columns and rows
+        tableName = h2GISDatabase.getTable("SURFACE_ROUTE")
+        assertNotNull(tableName)
+        assertEquals(2, tableName.columnCount)
+        assertEquals(0, tableName.rowCount)
+        // Check if the column types are correct
+        assertEquals('GEOMETRY', tableName.getColumnsType('THE_GEOM'))
+        assertEquals('VARCHAR', tableName.getColumnsType('ID'))
+    }
+
+
 
 
     @Test
