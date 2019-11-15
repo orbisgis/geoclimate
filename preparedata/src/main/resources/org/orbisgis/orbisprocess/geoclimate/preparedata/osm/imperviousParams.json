@@ -10,11 +10,6 @@
         "car_sharing",
         "parking_place"
     ],
-    "landuse":[
-        "industrial",
-        "commercial",
-        "retail"
-    ],
     "leisure": ["pitch"],
     "railway": ["platform"]
   },
@@ -24,8 +19,6 @@
     "amenity",
     "area",
     "leisure",
-    "landuse",
     "parking"
   ]
-    
 }

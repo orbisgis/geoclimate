@@ -3,6 +3,7 @@ package org.orbisgis.orbisprocess.geoclimate.preparedata.osm
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.h2gis.functions.spatial.crs.ST_Transform
+import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
@@ -71,7 +72,11 @@ IProcess extractAndCreateGISLayers(){
                     ST_Transform.ST_Transform(datasource.getConnection(), geomAndEnv.filterArea, epsg).toString()
                 }',$epsg), '$placeName');"""
 
-                def query = OSMTools.Utilities.buildOSMQuery(geomAndEnv.filterArea, [], NODE, WAY, RELATION)
+                Envelope envelope  = geomAndEnv.filterArea.getEnvelopeInternal()
+                def query =  "[maxsize:1073741824];((node(${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()}, ${envelope.getMaxX()});" +
+                        "way(${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()}, ${envelope.getMaxX()});" +
+                        "relation(${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()}, ${envelope.getMaxX()}););>;);out;"
+
                 def extract = OSMTools.Loader.extract()
                 if (extract.execute(overpassQuery: query)) {
                     IProcess createGISLayerProcess = createGISLayers()
@@ -83,7 +88,8 @@ IProcess extractAndCreateGISLayers(){
                          vegetationTableName: createGISLayerProcess.getResults().vegetationTableName,
                          hydroTableName     : createGISLayerProcess.getResults().hydroTableName,
                          imperviousTableName     : createGISLayerProcess.getResults().imperviousTableName,
-                         zoneTableName      : outputZoneTable, zoneEnvelopeTableName: outputZoneEnvelopeTable,
+                         zoneTableName      : outputZoneTable,
+                         zoneEnvelopeTableName: outputZoneEnvelopeTable,
                          epsg: epsg]
                     } else {
                         logger.error "Cannot load the OSM file ${extract.results.outputFilePath}"
@@ -137,7 +143,7 @@ IProcess createGISLayers() {
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep:columnsToKeep)){
                     outputBuildingTableName = transform.results.outputTableName
                     logger.info "Building layer created"
-                 }
+                }
 
                 //Create road layer
                 transform = OSMTools.Transform.extractWaysAsLines()
@@ -196,7 +202,6 @@ IProcess createGISLayers() {
                     outputImperviousTableName = transform.results.outputTableName
                     logger.info "impervious layer created"
                 }
-
                 //Drop the OSM tables
                 OSMTools.Utilities.dropOSMTables(prefix, datasource)
 

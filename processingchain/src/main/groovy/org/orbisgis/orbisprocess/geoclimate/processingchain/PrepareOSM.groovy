@@ -60,6 +60,7 @@ IProcess buildGeoclimateLayers() {
                     format.execute([
                             datasource    : datasource,
                             inputTableName: buildingTableName,
+                            inputZoneEnvelopeTableName : zoneEnvelopeTableName,
                             epsg:epsg])
                     buildingTableName = format.results.outputTableName
 
@@ -67,6 +68,7 @@ IProcess buildGeoclimateLayers() {
                     format.execute([
                             datasource    : datasource,
                             inputTableName: roadTableName,
+                            inputZoneEnvelopeTableName : zoneEnvelopeTableName,
                             epsg:epsg])
                     roadTableName = format.results.outputTableName
 
@@ -75,6 +77,7 @@ IProcess buildGeoclimateLayers() {
                     format.execute([
                             datasource    : datasource,
                             inputTableName: railTableName,
+                            inputZoneEnvelopeTableName : zoneEnvelopeTableName,
                             epsg:epsg])
                     railTableName = format.results.outputTableName
 
@@ -82,6 +85,7 @@ IProcess buildGeoclimateLayers() {
                     format.execute([
                             datasource    : datasource,
                             inputTableName: vegetationTableName,
+                            inputZoneEnvelopeTableName : zoneEnvelopeTableName,
                             epsg:epsg])
                     vegetationTableName = format.results.outputTableName
 
@@ -89,6 +93,7 @@ IProcess buildGeoclimateLayers() {
                     format.execute([
                             datasource    : datasource,
                             inputTableName: hydroTableName,
+                            inputZoneEnvelopeTableName : zoneEnvelopeTableName,
                             epsg:epsg])
                     hydroTableName = format.results.outputTableName
 
@@ -96,6 +101,7 @@ IProcess buildGeoclimateLayers() {
                     format.execute([
                             datasource    : datasource,
                             inputTableName: imperviousTableName,
+                            inputZoneEnvelopeTableName : zoneEnvelopeTableName,
                             epsg:epsg])
                     imperviousTableName = format.results.outputTableName
 

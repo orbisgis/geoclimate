@@ -19,4 +19,19 @@ abstract class PrepareData extends GroovyProcessFactory {
     public static FormattingForAbstractModel = new FormattingForAbstractModel()
     public static InputDataFormatting = new InputDataFormatting()
 
+    /**
+     * Utility method to generate a name
+     * @param prefixName
+     * @param baseName
+     * @return
+     */
+    static def getOutputTableName(prefixName, baseName){
+        if (!prefixName){
+            return baseName
+        }
+        else{
+            return prefixName + "_" + baseName
+        }
+    }
+
 }
