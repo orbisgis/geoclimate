@@ -29,6 +29,10 @@ import org.orbisgis.processmanager.ProcessMapper
  * @param tableRailName The table name in which the rail ways are stored
  * @param tableHydroName The table name in which the hydrographic areas are stored
  * @param tableVegetName The table name in which the vegetation areas are stored
+ * @param tableImperviousSportName The table name in which the impervious sport areas are stored
+ * @param tableImperviousBuildSurfName The table name in which the impervious surfacic buildings are stored
+ * @param tableImperviousRoadSurfName The table name in which the impervious road areas are stored
+ * @param tableImperviousActivSurfName The table name in which the impervious activities areas are stored
  * @param hLevMin Minimum building level height
  * @param hLevMax Maximum building level height
  * @param hThresholdLev2 Threshold on the building height, used to determine the number of levels
@@ -38,6 +42,7 @@ import org.orbisgis.processmanager.ProcessMapper
  * @return outputRail Table name in which the (ready to be used in the GeoIndicators part) rail ways are stored
  * @return outputHydro Table name in which the (ready to be used in the GeoIndicators part) hydrographic areas are stored
  * @return outputVeget Table name in which the (ready to be used in the GeoIndicators part) vegetation areas are stored
+ * @return outputImpervious Table name in which the (ready to be used in the GeoIndicators part) impervious areas are stored
  * @return outputZone Table name in which the (ready to be used in the GeoIndicators part) zone is stored
  * @return outputStats List that stores the name of the statistic tables for each layer at different scales
  *
@@ -57,12 +62,17 @@ def prepareBDTopo() {
              tableRailName : String,
              tableHydroName : String,
              tableVegetName : String,
+             tableImperviousSportName: String,
+             tableImperviousBuildSurfName: String,
+             tableImperviousRoadSurfName: String,
+             tableImperviousActivSurfName: String,
              hLevMin : 3,
              hLevMax : 15,
              hThresholdLev2 : 10
-        outputs outputBuilding : String, outputRoad:String, outputRail : String, outputHydro:String, outputVeget:String, outputZone:String,outputStats : String[]
+        outputs outputBuilding : String, outputRoad:String, outputRail : String, outputHydro:String, outputVeget:String, outputImpervious:String, outputZone:String, outputStats : String[]
         run { datasource, distBuffer, expand, idZone, tableIrisName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName, tableRoadName, tableRailName,
-              tableHydroName, tableVegetName, hLevMin, hLevMax, hThresholdLev2 ->
+              tableHydroName, tableVegetName, tableImperviousSportName, tableImperviousBuildSurfName, tableImperviousRoadSurfName, tableImperviousActivSurfName,
+              hLevMin, hLevMax, hThresholdLev2 ->
 
             if (datasource == null) {
                 error "Cannot create the database to store the BD Topo data"
@@ -79,8 +89,10 @@ def prepareBDTopo() {
 
             //Init BD Topo parameters
             def initTypes = PrepareData.BDTopoGISLayers.initTypes()
-            if (!initTypes([datasource       : datasource, buildingAbstractUseType: abstractTables.outputBuildingAbstractUseType,
-                            roadAbstractType : abstractTables.outputRoadAbstractType, railAbstractType: abstractTables.outputRailAbstractType,
+            if (!initTypes([datasource: datasource,
+                            buildingAbstractUseType: abstractTables.outputBuildingAbstractUseType,
+                            roadAbstractType: abstractTables.outputRoadAbstractType, roadAbstractCrossing: abstractTables.outputRoadAbstractCrossing,
+                            railAbstractType: abstractTables.outputRailAbstractType, railAbstractCrossing: abstractTables.outputRailAbstractCrossing,
                             vegetAbstractType: abstractTables.outputVegetAbstractType])) {
                 info "Cannot initialize the BD Topo parameters."
                 return
@@ -89,20 +101,32 @@ def prepareBDTopo() {
 
             //Import preprocess
             def importPreprocess = PrepareData.BDTopoGISLayers.importPreprocess()
-            if (!importPreprocess([datasource                : datasource, tableIrisName: tableIrisName,
-                                   tableBuildIndifName       : tableBuildIndifName,
-                                   tableBuildIndusName       : tableBuildIndusName, tableBuildRemarqName: tableBuildRemarqName,
-                                   tableRoadName             : tableRoadName, tableRailName: tableRailName,
-                                   tableHydroName            : tableHydroName, tableVegetName: tableVegetName,
-                                   distBuffer                : distBuffer, expand: expand, idZone: idZone,
-                                   building_bd_topo_use_type : initTables.outputBuildingBDTopoUseType,
+            if (!importPreprocess([datasource: datasource,
+                                   tableIrisName: tableIrisName,
+                                   tableBuildIndifName: tableBuildIndifName,
+                                   tableBuildIndusName: tableBuildIndusName,
+                                   tableBuildRemarqName: tableBuildRemarqName,
+                                   tableRoadName: tableRoadName,
+                                   tableRailName: tableRailName,
+                                   tableHydroName: tableHydroName,
+                                   tableVegetName: tableVegetName,
+                                   tableImperviousSportName: tableImperviousSportName,
+                                   tableImperviousBuildSurfName: tableImperviousBuildSurfName,
+                                   tableImperviousRoadSurfName: tableImperviousRoadSurfName,
+                                   tableImperviousActivSurfName: tableImperviousActivSurfName,
+                                   distBuffer: distBuffer, expand: expand, idZone: idZone,
+                                   building_bd_topo_use_type: initTables.outputBuildingBDTopoUseType,
                                    building_abstract_use_type: abstractTables.outputBuildingAbstractUseType,
-                                   road_bd_topo_type         : initTables.outputroadBDTopoType,
-                                   road_abstract_type        : abstractTables.outputRoadAbstractType,
-                                   rail_bd_topo_type         : initTables.outputrailBDTopoType,
-                                   rail_abstract_type        : abstractTables.outputRailAbstractType,
-                                   veget_bd_topo_type        : initTables.outputvegetBDTopoType,
-                                   veget_abstract_type       : abstractTables.outputVegetAbstractType])) {
+                                   road_bd_topo_type: initTables.outputroadBDTopoType,
+                                   road_abstract_type: abstractTables.outputRoadAbstractType,
+                                   road_bd_topo_crossing: initTables.outputroadBDTopoCrossing,
+                                   road_abstract_crossing: abstractTables.outputRoadAbstractCrossing,
+                                   rail_bd_topo_type: initTables.outputrailBDTopoType,
+                                   rail_abstract_type: abstractTables.outputRailAbstractType,
+                                   rail_bd_topo_crossing: initTables.outputrailBDTopoCrossing,
+                                   rail_abstract_crossing: abstractTables.outputRailAbstractCrossing,
+                                   veget_bd_topo_type: initTables.outputvegetBDTopoType,
+                                   veget_abstract_type: abstractTables.outputVegetAbstractType])) {
                 info "Cannot import preprocess."
                 return
             }
@@ -110,15 +134,24 @@ def prepareBDTopo() {
 
             // Input data formatting and statistics
             def inputDataFormatting = PrepareData.InputDataFormatting.inputDataFormatting()
-            if (!inputDataFormatting([datasource             : datasource,
-                                      inputBuilding          : preprocessTables.outputBuildingName, inputRoad: preprocessTables.outputRoadName, inputRail: preprocessTables.outputRailName,
-                                      inputHydro             : preprocessTables.outputHydroName, inputVeget: preprocessTables.outputVegetName,
-                                      inputZone              : preprocessTables.outputZoneName, inputZoneNeighbors: preprocessTables.outputZoneNeighborsName,
-                                      hLevMin                : hLevMin, hLevMax: hLevMax, hThresholdLev2: hThresholdLev2, idZone: idZone,
-                                      buildingAbstractUseType: abstractTables.outputBuildingAbstractUseType, buildingAbstractParameters: abstractTables.outputBuildingAbstractParameters,
-                                      roadAbstractType       : abstractTables.outputRoadAbstractType, roadAbstractParameters: abstractTables.outputRoadAbstractParameters,
-                                      railAbstractType       : abstractTables.outputRailAbstractType,
-                                      vegetAbstractType      : abstractTables.outputVegetAbstractType,
+            if (!inputDataFormatting([datasource: datasource,
+                                      inputBuilding: preprocessTables.outputBuildingName,
+                                      inputRoad: preprocessTables.outputRoadName,
+                                      inputRail: preprocessTables.outputRailName,
+                                      inputHydro: preprocessTables.outputHydroName,
+                                      inputVeget: preprocessTables.outputVegetName,
+                                      inputImpervious: preprocessTables.outputImperviousName,
+                                      inputZone: preprocessTables.outputZoneName,
+                                      inputZoneNeighbors: preprocessTables.outputZoneNeighborsName,
+                                      hLevMin: hLevMin, hLevMax: hLevMax, hThresholdLev2: hThresholdLev2, idZone: idZone,
+                                      buildingAbstractUseType: abstractTables.outputBuildingAbstractUseType,
+                                      buildingAbstractParameters: abstractTables.outputBuildingAbstractParameters,
+                                      roadAbstractType: abstractTables.outputRoadAbstractType,
+                                      roadAbstractParameters: abstractTables.outputRoadAbstractParameters,
+                                      roadAbstractCrossing: abstractTables.outputRoadAbstractCrossing,
+                                      railAbstractType: abstractTables.outputRailAbstractType,
+                                      railAbstractCrossing: abstractTables.outputRailAbstractCrossing,
+                                      vegetAbstractType: abstractTables.outputVegetAbstractType,
                                       vegetAbstractParameters: abstractTables.outputVegetAbstractParameters])) {
                 info "Cannot format data and compute statistics."
                 return
@@ -131,6 +164,7 @@ def prepareBDTopo() {
             def finalRails = inputDataFormatting.getResults().outputRail
             def finalHydro = inputDataFormatting.getResults().outputHydro
             def finalVeget = inputDataFormatting.getResults().outputVeget
+            def finalImpervious = inputDataFormatting.getResults().outputImpervious
             def finalZone = inputDataFormatting.getResults().outputZone
 
             def finalOutputBuildingStatZone = inputDataFormatting.getResults().outputBuildingStatZone
@@ -143,10 +177,12 @@ def prepareBDTopo() {
             def finalOutputVegetStatZone = inputDataFormatting.getResults().outputVegetStatZone
             def finalOutputVegetStatZoneExt = inputDataFormatting.getResults().outputVegetStatZoneExt
 
-            [outputBuilding: finalBuildings, outputRoad: finalRoads,
-             outputRail    : finalRails, outputHydro: finalHydro, outputVeget: finalVeget, outputZone: finalZone,
-             outputStats   : [finalOutputBuildingStatZone, finalOutputBuildingStatZoneBuff, finalOutputRoadStatZone,
-                              finalOutputRoadStatZoneBuff, finalOutputRailStatZone, finalOutputHydroStatZone, finalOutputHydroStatZoneExt,
+            [outputBuilding: finalBuildings, outputRoad: finalRoads, outputRail: finalRails, outputHydro: finalHydro,
+             outputVeget: finalVeget, outputImpervious: finalImpervious, outputZone: finalZone,
+             outputStats   : [finalOutputBuildingStatZone, finalOutputBuildingStatZoneBuff,
+                              finalOutputRoadStatZone, finalOutputRoadStatZoneBuff,
+                              finalOutputRailStatZone,
+                              finalOutputHydroStatZone, finalOutputHydroStatZoneExt,
                               finalOutputVegetStatZone, finalOutputVegetStatZoneExt]]
 
         }})
