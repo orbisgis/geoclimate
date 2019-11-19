@@ -53,6 +53,6 @@ class OSMGISLayersTests {
         assertEquals 10, h2GIS.getTable(process.results.hydroTableName).rowCount
 
         //h2GIS.getTable(process.results.imperviousTableName).save("./target/osm_hydro.shp")
-        assertEquals 45, h2GIS.getTable(process.results.imperviousTableName).rowCount
+        assertEquals 43, h2GIS.getTable(process.results.imperviousTableName).rowCount
     }
 }
