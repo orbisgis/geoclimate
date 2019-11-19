@@ -10,6 +10,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.assertNotNull
+import static org.junit.jupiter.api.Assertions.assertNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.junit.jupiter.api.Assertions.assertEquals
 
@@ -171,34 +172,42 @@ class ProcessingChainBDTopoTest extends ChainProcessMainTest{
     @Test
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void bdtopoLczFromTestFiles() {
-        H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb;AUTO_SERVER=TRUE")
+        H2GIS datasource = H2GIS.open("./target/myh2gisbdtopodb;AUTO_SERVER=TRUE")
         def process = ProcessingChain.PrepareBDTopo.prepareBDTopo()
-        assertTrue process.execute([datasource: h2GISDatabase, tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+        assertTrue process.execute([datasource: datasource,
+                                    tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
                                     tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
+                                    tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
+                                    tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
                                     distBuffer: 500, expand: 1000, idZone: '56260',
                                     hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
         ])
         def abstractTables = process.getResults()
 
-        boolean saveResults = true
         String directory ="./target/bdtopo_processchain_lcz"
 
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
 
-        def prefixName = ""
-        def svfSimplified = false
         // Define the weights of each indicator in the LCZ creation
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
-                       "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                       "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
-        //Run tests
-        calcLcz(directory, h2GISDatabase, abstractTables.outputZone, abstractTables.outputBuilding,abstractTables.outputRoad,
-                abstractTables.outputRail, abstractTables.outputVeget, abstractTables.outputHydro,saveResults,
-                svfSimplified, prefixName, mapOfWeights)
+                            "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                            "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+
+        IProcess geodindicators = ProcessingChain.Workflow.GeoIndicators()
+        assertTrue geodindicators.execute(datasource: datasource, zoneTable: abstractTables.outputZone,
+                buildingTable: abstractTables.outputBuilding, roadTable: abstractTables.outputRoad,
+                railTable: abstractTables.outputRail, vegetationTable: abstractTables.outputVeget,
+                hydrographicTable: abstractTables.outputHydro, indicatorUse: ["LCZ"],
+                mapOfWeights: mapOfWeights)
+
+        assertTrue(datasource.getTable(geodindicators.results.outputTableBuildingIndicators).rowCount>0)
+        assertNull(geodindicators.results.outputTableBlockIndicators)
+        assertTrue(datasource.getTable(geodindicators.results.outputTableRsuIndicators).rowCount>0)
+        assertTrue(datasource.getTable(geodindicators.results.outputTableRsuLcz).rowCount>0)
     }
 
 
@@ -230,7 +239,7 @@ class ProcessingChainBDTopoTest extends ChainProcessMainTest{
         dirFile.mkdir()
 
         //Run tests
-        osmGeoIndicators(dirFile.absolutePath, h2GISDatabase, abstractTables.outputZone, abstractTables.outputBuilding,
+        geoIndicatorsCalc(dirFile.absolutePath, h2GISDatabase, abstractTables.outputZone, abstractTables.outputBuilding,
                 abstractTables.outputRoad, abstractTables.outputRail, abstractTables.outputVeget,
                 abstractTables.outputHydro, saveResults, svfSimplified, indicatorUse,  prefixName)
     }

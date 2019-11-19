@@ -399,10 +399,10 @@ class ChainProcessMainTest {
      * @param saveResults
      * @param indicatorUse
      */
-    void osmGeoIndicators(String directory, JdbcDataSource datasource, String zoneTableName, String buildingTableName,
-                          String roadTableName, String railTableName, String vegetationTableName,
-                          String hydrographicTableName, boolean saveResults, boolean svfSimplified = false, indicatorUse,
-                          String prefixName = "") {
+    void geoIndicatorsCalc(String directory, JdbcDataSource datasource, String zoneTableName, String buildingTableName,
+                           String roadTableName, String railTableName, String vegetationTableName,
+                           String hydrographicTableName, boolean saveResults, boolean svfSimplified = false, indicatorUse,
+                           String prefixName = "") {
         //Create spatial units and relations : building, block, rsu
         IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
         assertTrue spatialUnits.execute([datasource       : datasource, zoneTable: zoneTableName, buildingTable: buildingTableName,
