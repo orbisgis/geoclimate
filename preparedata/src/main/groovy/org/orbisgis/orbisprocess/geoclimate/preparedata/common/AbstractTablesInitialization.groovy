@@ -19,7 +19,9 @@ import org.orbisgis.processmanagerapi.IProcess
  * @return outputRoadAbstractType The name of the table in which the abstract road's types are stored
  * @return outputRoadAbstractSurface The name of the table in which the abstract road's surfaces are stored
  * @return outputRoadAbstractParameters The name of the table in which the abstract road's parameters are stored
+ * @return outputRoadAbstractCrossing The name of the table in which the abstract road's crossing are stored
  * @return outputRailAbstractType The name of the table in which the abstract rail's types stored
+ * @return outputRailAbstractCrossing The name of the table in which the abstract rail's crossing are stored
  * @return outputVegetAbstractType The name of the table in which the abstract vegetation's types are stored
  * @return outputVegetAbstractParameters The name of the table in which the abstract vegetation's parameters are stored
  */
@@ -30,7 +32,8 @@ IProcess initParametersAbstract(){
         inputs datasource: JdbcDataSource
         outputs outputBuildingAbstractUseType: String, outputBuildingAbstractParameters: String,
                 outputRoadAbstractType: String, outputRoadAbstractSurface: String, outputRoadAbstractParameters: String,
-                outputRailAbstractType: String, outputVegetAbstractType: String, outputVegetAbstractParameters: String
+                outputRoadAbstractCrossing: String, outputRailAbstractType: String, outputRailAbstractCrossing: String,
+                outputVegetAbstractType: String, outputVegetAbstractParameters: String
         run { JdbcDataSource datasource ->
             logger.info('Executing the parametersAndAbstractTables.sql script')
             def buildingAbstractUseType = 'BUILDING_ABSTRACT_USE_TYPE'
@@ -38,7 +41,9 @@ IProcess initParametersAbstract(){
             def roadAbstractType = 'ROAD_ABSTRACT_TYPE'
             def roadAbstractSurface = 'ROAD_ABSTRACT_SURFACE'
             def roadAbstractParam = 'ROAD_ABSTRACT_PARAMETERS'
+            def roadAbstractCrossing = 'ROAD_ABSTRACT_CROSSING'
             def railAbstractType = 'RAIL_ABSTRACT_TYPE'
+            def railAbstractCrossing = 'RAIL_ABSTRACT_CROSSING'
             def vegetAbstractType = 'VEGET_ABSTRACT_TYPE'
             def vegetAbstractParam = 'VEGET_ABSTRACT_PARAMETERS'
 
@@ -48,7 +53,9 @@ IProcess initParametersAbstract(){
                      ROAD_ABSTRACT_TYPE          : roadAbstractType,
                      ROAD_ABSTRACT_SURFACE       : roadAbstractSurface,
                      ROAD_ABSTRACT_PARAMETERS    : roadAbstractParam,
+                     ROAD_ABSTRACT_CROSSING      : roadAbstractCrossing,
                      RAIL_ABSTRACT_TYPE          : railAbstractType,
+                     RAIL_ABSTRACT_CROSSING      : railAbstractCrossing,
                      VEGET_ABSTRACT_TYPE         : vegetAbstractType,
                      VEGET_ABSTRACT_PARAMETERS   : vegetAbstractParam
                     ])
@@ -60,7 +67,9 @@ IProcess initParametersAbstract(){
              outputRoadAbstractType          : roadAbstractType,
              outputRoadAbstractSurface       : roadAbstractSurface,
              outputRoadAbstractParameters    : roadAbstractParam,
+             outputRoadAbstractCrossing      : roadAbstractCrossing,
              outputRailAbstractType          : railAbstractType,
+             outputRailAbstractCrossing      : railAbstractCrossing,
              outputVegetAbstractType         : vegetAbstractType,
              outputVegetAbstractParameters   : vegetAbstractParam
             ]
