@@ -38,7 +38,7 @@ def computeBuildingsIndicators() {
 
             // building_area + building_perimeter
             def geometryOperations = ["st_area"]
-            if (indicatorUse.toUpperCase().contains("URBAN_TYPOLOGY")) {
+            if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
                 geometryOperations = ["st_perimeter", "st_area"]
             }
             def computeGeometryProperties = Geoindicators.GenericIndicators.geometryProperties()
@@ -52,10 +52,10 @@ def computeBuildingsIndicators() {
             finalTablesToJoin.put(buildTableGeometryProperties, idColumnBu)
 
             // For indicators that are useful for urban_typology OR for LCZ classification
-            if (indicatorUse.toUpperCase().contains("LCZ") || indicatorUse.toUpperCase().contains("URBAN_TYPOLOGY")) {
+            if (indicatorUse*.toUpperCase().contains("LCZ") || indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
                 // building_volume + building_floor_area + building_total_facade_length
                 def sizeOperations = ["volume", "floor_area", "total_facade_length"]
-                if (!indicatorUse.toUpperCase().contains("URBAN_TYPOLOGY")) {
+                if (!indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
                     sizeOperations = ["total_facade_length"]
                 }
                 def computeSizeProperties = Geoindicators.BuildingIndicators.sizeProperties()
@@ -72,7 +72,7 @@ def computeBuildingsIndicators() {
 
                 // building_contiguity + building_common_wall_fraction + building_number_building_neighbor
                 def neighborOperations = ["contiguity", "common_wall_fraction", "number_building_neighbor"]
-                if (indicatorUse.toUpperCase().contains("LCZ") && !indicatorUse.toUpperCase().contains("URBAN_TYPOLOGY")) {
+                if (indicatorUse*.toUpperCase().contains("LCZ") && !indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
                     neighborOperations = ["contiguity"]
                 }
                 def computeNeighborsProperties = Geoindicators.BuildingIndicators.neighborsProperties()
@@ -87,7 +87,7 @@ def computeBuildingsIndicators() {
                 def buildTableComputeNeighborsProperties = computeNeighborsProperties.results.outputTableName
                 finalTablesToJoin.put(buildTableComputeNeighborsProperties, idColumnBu)
 
-                if (indicatorUse.toUpperCase().contains("URBAN_TYPOLOGY")) {
+                if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
                     // area_concavity + building_form_factor + building_raw_compactness + perimeter_convexity
                     def computeFormProperties = Geoindicators.BuildingIndicators.formProperties()
                     if (!computeFormProperties([inputBuildingTableName: inputBuildingTableName,
@@ -400,7 +400,7 @@ def computeRSUIndicators() {
             def computeExtFF
 
             // rsu_area (note that the uuid is used as prefix for intermediate tables - indicator alone in a table)
-            if (indicatorUse.toUpperCase().contains("URBAN_TYPOLOGY")) {
+            if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
                 def computeGeometryProperties = Geoindicators.GenericIndicators.geometryProperties()
                 if (!computeGeometryProperties([inputTableName: rsuTable, inputFields: [columnIdRsu],
                                                 operations    : ["st_area"], prefixName: temporaryPrefName,
@@ -414,7 +414,7 @@ def computeRSUIndicators() {
 
 
             // Building free external facade density
-            if (indicatorUse.toUpperCase().contains("URBAN_TYPOLOGY") || indicatorUse.toUpperCase().contains("LCZ")) {
+            if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY") || indicatorUse*.toUpperCase().contains("LCZ")) {
                 def computeFreeExtDensity = Geoindicators.RsuIndicators.freeExternalFacadeDensity()
                 if (!computeFreeExtDensity([buildingTable            : buildingTable, rsuTable: rsuTable,
                                             buContiguityColumn       : "contiguity",
@@ -432,10 +432,10 @@ def computeRSUIndicators() {
             // + rsu_mean_building_neighbor_number + rsu_building_floor_density + rsu_roughness_length
             // + rsu_building_number_density (RSU number of buildings divided RSU area)
             def inputVarAndOperations = [:]
-            if (indicatorUse.toUpperCase().contains("LCZ") || indicatorUse.toUpperCase().contains("TEB")) {
+            if (indicatorUse*.toUpperCase().contains("LCZ") || indicatorUse*.toUpperCase().contains("TEB")) {
                 inputVarAndOperations = inputVarAndOperations << [(heightColumnName): ["GEOM_AVG"], "area": ["DENS"]]
             }
-            if (indicatorUse.toUpperCase().contains("URBAN_TYPOLOGY")) {
+            if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
                 inputVarAndOperations = inputVarAndOperations << ["volume"                  : ["DENS", "AVG"],
                                                                   (heightColumnName)                 : ["GEOM_AVG"],
                                                                   "area"                             : ["DENS"],
@@ -462,7 +462,7 @@ def computeRSUIndicators() {
 
 
             // rsu_road_fraction
-            if (indicatorUse.toUpperCase().contains("URBAN_TYPOLOGY") || indicatorUse.toUpperCase().contains("LCZ")) {
+            if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY") || indicatorUse*.toUpperCase().contains("LCZ")) {
                 def computeRoadFraction = Geoindicators.RsuIndicators.roadFraction()
                 if (!computeRoadFraction([rsuTable        : rsuTable,
                                           roadTable       : roadTable,
@@ -477,7 +477,7 @@ def computeRSUIndicators() {
             }
 
             // rsu_water_fraction
-            if (indicatorUse.toUpperCase().contains("URBAN_TYPOLOGY") || indicatorUse.toUpperCase().contains("LCZ")) {
+            if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY") || indicatorUse*.toUpperCase().contains("LCZ")) {
                 def computeWaterFraction = Geoindicators.RsuIndicators.waterFraction()
                 if (!computeWaterFraction([rsuTable  : rsuTable,
                                            waterTable: hydrographicTable,
@@ -493,7 +493,7 @@ def computeRSUIndicators() {
 
             // rsu_vegetation_fraction + rsu_high_vegetation_fraction + rsu_low_vegetation_fraction
             def fractionTypeVeg = ["low", "high", "all"]
-            if (!indicatorUse.toUpperCase().contains("LCZ") && !indicatorUse.toUpperCase().contains("TEB")) {
+            if (!indicatorUse*.toUpperCase().contains("LCZ") && !indicatorUse*.toUpperCase().contains("TEB")) {
                 fractionTypeVeg = ["all"]
             }
             def computeVegetationFraction = Geoindicators.RsuIndicators.vegetationFraction()
@@ -511,7 +511,7 @@ def computeRSUIndicators() {
 
 
             // rsu_mean_building_height weighted by their area + rsu_std_building_height weighted by their area.
-            if (indicatorUse.toUpperCase().contains("URBAN_TYPOLOGY")) {
+            if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
                 def computeRSUStatisticsWeighted = Geoindicators.GenericIndicators.weightedAggregatedStatistics()
                 if (!computeRSUStatisticsWeighted([inputLowerScaleTableName : buildingTable,
                                                    inputUpperScaleTableName : rsuTable,
@@ -528,9 +528,9 @@ def computeRSUIndicators() {
             }
 
             // rsu_linear_road_density + rsu_road_direction_distribution
-            if (indicatorUse.toUpperCase().contains("URBAN_TYPOLOGY") || indicatorUse.toUpperCase().contains("TEB")) {
+            if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY") || indicatorUse*.toUpperCase().contains("TEB")) {
                 def roadOperations = ["linear_road_density"]
-                if (indicatorUse.toUpperCase().contains("TEB")) {
+                if (indicatorUse*.toUpperCase().contains("TEB")) {
                     roadOperations = ["road_direction_distribution", "linear_road_density"]
                 }
                 def computeLinearRoadOperations = Geoindicators.RsuIndicators.linearRoadOperations()
@@ -548,7 +548,7 @@ def computeRSUIndicators() {
             }
 
             // rsu_free_vertical_roof_area_distribution + rsu_free_non_vertical_roof_area_distribution
-            if (indicatorUse.toUpperCase().contains("TEB")) {
+            if (indicatorUse*.toUpperCase().contains("TEB")) {
                 def computeRoofAreaDist = Geoindicators.RsuIndicators.roofAreaDistribution()
                 if (!computeRoofAreaDist([rsuTable        : rsuTable,
                                           buildingTable   : buildingTable,
@@ -563,8 +563,8 @@ def computeRSUIndicators() {
             }
 
             // rsu_projected_facade_area_distribution
-            if (indicatorUse.toUpperCase().contains("LCZ") || indicatorUse.toUpperCase().contains("TEB")) {
-                if (!indicatorUse.toUpperCase().contains("TEB")) {
+            if (indicatorUse*.toUpperCase().contains("LCZ") || indicatorUse*.toUpperCase().contains("TEB")) {
+                if (!indicatorUse*.toUpperCase().contains("TEB")) {
                     facadeDensListLayersBottom:
                     [0, 50, 200]
                     facadeDensNumberOfDirection: 8
@@ -596,7 +596,7 @@ def computeRSUIndicators() {
 
 
             // rsu_aspect_ratio
-            if (indicatorUse.toUpperCase().contains("LCZ")) {
+            if (indicatorUse*.toUpperCase().contains("LCZ")) {
                 def computeAspectRatio = Geoindicators.RsuIndicators.aspectRatio()
                 if (!computeAspectRatio([rsuTable                          : intermediateJoinTable,
                                          rsuFreeExternalFacadeDensityColumn: "free_external_facade_density",
@@ -611,7 +611,7 @@ def computeRSUIndicators() {
             }
 
             // rsu_ground_sky_view_factor
-            if (indicatorUse.toUpperCase().contains("LCZ")) {
+            if (indicatorUse*.toUpperCase().contains("LCZ")) {
                 // If the fast version is chosen (SVF derived from extended RSU free facade fraction
                 if (svfSimplified == true) {
                     computeExtFF =  Geoindicators.RsuIndicators.extendedFreeFacadeFraction()
@@ -645,7 +645,7 @@ def computeRSUIndicators() {
             }
 
             // rsu_pervious_fraction + rsu_impervious_fraction
-            if (indicatorUse.toUpperCase().contains("LCZ")) {
+            if (indicatorUse*.toUpperCase().contains("LCZ")) {
                 def perv_type = fractionTypePervious.collect { "${it}_fraction" }
                 def imp_type = fractionTypeImpervious.collect {
                     if (it == "building") {
@@ -670,7 +670,7 @@ def computeRSUIndicators() {
             }
 
             // rsu_effective_terrain_roughness
-            if (indicatorUse.toUpperCase().contains("LCZ") || indicatorUse.toUpperCase().contains("TEB")) {
+            if (indicatorUse*.toUpperCase().contains("LCZ") || indicatorUse*.toUpperCase().contains("TEB")) {
                 // Create the join tables to have all needed input fields for aspect ratio computation
                 def computeEffRoughHeight = Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength()
                 if (!computeEffRoughHeight([rsuTable                       : intermediateJoinTable,
@@ -687,7 +687,7 @@ def computeRSUIndicators() {
                 finalTablesToJoin.put(effRoughHeight, columnIdRsu)
 
                 // rsu_terrain_roughness_class
-                if (indicatorUse.toUpperCase().contains("LCZ")){
+                if (indicatorUse*.toUpperCase().contains("LCZ")){
                     def computeRoughClass = Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass()
                     if (!computeRoughClass([datasource                     : datasource,
                                             rsuTable                       : effRoughHeight,
@@ -702,7 +702,7 @@ def computeRSUIndicators() {
                 }
 
             // rsu_perkins_skill_score_building_direction_variability
-            if (indicatorUse.toUpperCase().contains("URBAN_TYPOLOGY")) {
+            if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
                  def computePerkinsDirection = Geoindicators.GenericIndicators.buildingDirectionDistribution()
                 if (!computePerkinsDirection([buildingTableName: buildingTable, inputIdUp: columnIdRsu,
                                               angleRangeSize   : angleRangeSizeBuDirection, prefixName: temporaryPrefName,

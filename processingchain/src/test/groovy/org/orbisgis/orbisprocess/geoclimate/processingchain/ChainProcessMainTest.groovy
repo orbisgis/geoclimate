@@ -431,7 +431,7 @@ class ChainProcessMainTest {
         assertEquals(countRSU.count, maxRSUBlocks.max)
 
         //Compute building indicators
-        def computeBuildingsIndicators = ProcessingChain.BuildGeoIndicators.computeBuildingsIndicators()
+        def computeBuildingsIndicators = ProcessingChain.BuildGeoIndicators.computeBuildingsadd Indicators()
         assertTrue computeBuildingsIndicators.execute([datasource            : datasource,
                                                        inputBuildingTableName: relationBuildings,
                                                        inputRoadTableName    : roadTableName,

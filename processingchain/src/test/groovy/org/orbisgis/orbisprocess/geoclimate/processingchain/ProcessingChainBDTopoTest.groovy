@@ -231,7 +231,7 @@ class ProcessingChainBDTopoTest extends ChainProcessMainTest{
         boolean saveResults = true
         def prefixName = ""
         def svfSimplified = false
-        String indicatorUse = ["TEB", "URBAN_TYPOLOGY", "LCZ"]
+        def indicatorUse = ["TEB", "URBAN_TYPOLOGY", "LCZ"]
         String directory ="./target/bdtopo_processchain_lcz"
 
         File dirFile = new File(directory)
