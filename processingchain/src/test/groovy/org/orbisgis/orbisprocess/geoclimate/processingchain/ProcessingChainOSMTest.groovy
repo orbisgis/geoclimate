@@ -135,7 +135,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
                                  , directory: dirFile.absolutePath, datasource: datasource])
         }
 
-        String indicatorUse = ["TEB", "URBAN_TYPOLOGY", "LCZ"]
+        def indicatorUse = ["TEB", "URBAN_TYPOLOGY", "LCZ"]
 
         //Run tests
         geoIndicatorsCalc(dirFile.absolutePath, datasource, zoneTableName, buildingTableName,roadTableName,railTableName,vegetationTableName,
