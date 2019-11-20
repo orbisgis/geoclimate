@@ -399,10 +399,10 @@ class ChainProcessMainTest {
      * @param saveResults
      * @param indicatorUse
      */
-    void osmGeoIndicators(String directory, JdbcDataSource datasource, String zoneTableName, String buildingTableName,
-                          String roadTableName, String railTableName, String vegetationTableName,
-                          String hydrographicTableName, boolean saveResults, boolean svfSimplified = false, indicatorUse,
-                          String prefixName = "") {
+    void geoIndicatorsCalc(String directory, JdbcDataSource datasource, String zoneTableName, String buildingTableName,
+                           String roadTableName, String railTableName, String vegetationTableName,
+                           String hydrographicTableName, boolean saveResults, boolean svfSimplified = false, indicatorUse,
+                           String prefixName = "") {
         //Create spatial units and relations : building, block, rsu
         IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
         assertTrue spatialUnits.execute([datasource       : datasource, zoneTable: zoneTableName, buildingTable: buildingTableName,
@@ -431,7 +431,7 @@ class ChainProcessMainTest {
         assertEquals(countRSU.count, maxRSUBlocks.max)
 
         //Compute building indicators
-        def computeBuildingsIndicators = ProcessingChain.BuildGeoIndicators.computeBuildingsIndicators()
+        def computeBuildingsIndicators = ProcessingChain.BuildGeoIndicators.computeBuildingsadd Indicators()
         assertTrue computeBuildingsIndicators.execute([datasource            : datasource,
                                                        inputBuildingTableName: relationBuildings,
                                                        inputRoadTableName    : roadTableName,
