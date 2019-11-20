@@ -107,7 +107,6 @@ IProcess identifyLczType() {
                         "('106',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.3,0.5,2.5)," +
                         "('107',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.0,0.5,1.5);"
 
-                println "ok"
                 // For each LCZ indicator...
                 datasource.getTable(rsuLczIndicators).columnNames.collect { indicCol ->
                     if (!indicCol.equalsIgnoreCase(ID_FIELD_RSU) && !indicCol.equalsIgnoreCase(GEOMETRIC_FIELD)) {

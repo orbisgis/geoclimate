@@ -158,8 +158,8 @@ class ProcessingChainBDTopoTest extends ChainProcessMainTest{
         h2GIS.eachRow("SELECT * FROM ${pm_lcz.results.outputTableName}".toString()){row ->
             assertTrue(row.id_rsu != null)
 
-            assertTrue((row.lcz1>0) && (row.lcz1<11) && (row.lcz1>100) && (row.lcz1<108))
-            assertTrue((row.lcz2>0) && (row.lcz2<11) && (row.lcz2>100) && (row.lcz2<108))
+            assertTrue((row.lcz1>0) && (row.lcz1<11) || (row.lcz1>100) && (row.lcz1<108))
+            assertTrue((row.lcz2>0) && (row.lcz2<11) || (row.lcz2>100) && (row.lcz2<108))
 //            assertTrue(row.min_distance != null)
 //            assertTrue(row.pss <= 1)
         }
