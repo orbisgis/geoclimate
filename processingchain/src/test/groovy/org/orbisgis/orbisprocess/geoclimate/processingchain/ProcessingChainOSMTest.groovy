@@ -89,7 +89,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
         datasource.load(urlZone, zoneTableName)
 
         //Run tests
-        osmGeoIndicators(dirFile.absolutePath+File, datasource, zoneTableName, buildingTableName,roadTableName,
+        geoIndicatorsCalc(dirFile.absolutePath+File, datasource, zoneTableName, buildingTableName,roadTableName,
                 null,vegetationTableName, hydrographicTableName,saveResults, svfSimplified, indicatorUse, prefixName)
 
     }
@@ -135,15 +135,10 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
                                  , directory: dirFile.absolutePath, datasource: datasource])
         }
 
-        String indicatorUse = ["TEB", "URBAN_TYPOLOGY", "LCZ"]
-
-        // Run LCZ
-        /*calcLcz(directory, datasource, zoneTableName, buildingTableName,
-                roadTableName, railTableName, vegetationTableName,
-                hydrographicTableName, saveResults )*/
+        def indicatorUse = ["TEB", "URBAN_TYPOLOGY", "LCZ"]
 
         //Run tests
-        osmGeoIndicators(dirFile.absolutePath, datasource, zoneTableName, buildingTableName,roadTableName,railTableName,vegetationTableName,
+        geoIndicatorsCalc(dirFile.absolutePath, datasource, zoneTableName, buildingTableName,roadTableName,railTableName,vegetationTableName,
                 hydrographicTableName,saveResults, svfSimplified,indicatorUse,  prefixName)
 
     }

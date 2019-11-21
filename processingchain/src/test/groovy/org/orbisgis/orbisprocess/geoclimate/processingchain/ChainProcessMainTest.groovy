@@ -89,12 +89,12 @@ class ChainProcessMainTest {
         H2GIS datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
 
         // Names of the input tables downloaded from OpenStreetMap
-        datasource.load(ProcessingChain.class.getResource("BUILDING.geojson"), buildingTableName)
-        datasource.load(ProcessingChain.class.getResource("ROAD.geojson"), roadTableName)
-        datasource.load(ProcessingChain.class.getResource("RAIL.geojson"), railTableName)
-        datasource.load(ProcessingChain.class.getResource("VEGET.geojson"), vegetationTableName)
-        datasource.load(ProcessingChain.class.getResource("HYDRO.geojson"), hydrographicTableName)
-        datasource.load(ProcessingChain.class.getResource("ZONE.geojson"), zoneTableName)
+        datasource.load(ProcessingChain.class.getResource("BUILDING.geojson"), buildingTableName, true)
+        datasource.load(ProcessingChain.class.getResource("ROAD.geojson"), roadTableName, true)
+        datasource.load(ProcessingChain.class.getResource("RAIL.geojson"), railTableName, true)
+        datasource.load(ProcessingChain.class.getResource("VEGET.geojson"), vegetationTableName, true)
+        datasource.load(ProcessingChain.class.getResource("HYDRO.geojson"), hydrographicTableName, true)
+        datasource.load(ProcessingChain.class.getResource("ZONE.geojson"), zoneTableName, true)
     }
 
 
@@ -399,10 +399,10 @@ class ChainProcessMainTest {
      * @param saveResults
      * @param indicatorUse
      */
-    void osmGeoIndicators(String directory, JdbcDataSource datasource, String zoneTableName, String buildingTableName,
-                          String roadTableName, String railTableName, String vegetationTableName,
-                          String hydrographicTableName, boolean saveResults, boolean svfSimplified = false, indicatorUse,
-                          String prefixName = "") {
+    void geoIndicatorsCalc(String directory, JdbcDataSource datasource, String zoneTableName, String buildingTableName,
+                           String roadTableName, String railTableName, String vegetationTableName,
+                           String hydrographicTableName, boolean saveResults, boolean svfSimplified = false, indicatorUse,
+                           String prefixName = "") {
         //Create spatial units and relations : building, block, rsu
         IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
         assertTrue spatialUnits.execute([datasource       : datasource, zoneTable: zoneTableName, buildingTable: buildingTableName,

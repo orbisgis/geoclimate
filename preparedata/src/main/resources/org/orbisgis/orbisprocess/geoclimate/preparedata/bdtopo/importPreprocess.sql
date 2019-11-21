@@ -6,47 +6,45 @@
 --			  to feed (at the end of this script) the GeoClimate model.	                        --
 --																								--
 -- Author : Gwendall Petit (DECIDE Team, Lab-STICC CNRS UMR 6285)								--
--- Last update : 15/03/2019																		--
+-- Last update : 21/11/2019																		--
 -- Licence : GPLv3 (https://www.gnu.org/licenses/gpl-3.0.html)                                  --
 -- Comments :																					--
 --   - Input layers : IRIS_GE,BATI_INDIFFERENCIE, BATI_INDUSTRIEL, BATI_REMARQUABLE,            --
---					  ROUTE, TRONCON_VOIE_FERREE, SURFACE_EAU and ZONE_VEGETATION               --
+--					  ROUTE, TRONCON_VOIE_FERREE, SURFACE_EAU, ZONE_VEGETATION                  --
+--					  TERRAIN_SPORT, CONSTRUCTION_SURFACIQUE, SURFACE_ROUTE, SURFACE_ACTIVITE   --
 --   - Output layers, that will feed the GeoClimate model :                                     --
---					  ZONE, ZONE_BUFFER, ZONE_EXTENDED, ZONE_NEIGHBORS,                         --
---					  INPUT_BUILDING, INPUT_ROAD, INPUT_RAIL, INPUT_HYDRO, INPUT_VEGET          --
---																								--
+--					  ZONE, ZONE_BUFFER, ZONE_EXTENDED, INPUT_BUILDING, INPUT_ROAD              --
+--					  INPUT_RAIL, INPUT_HYDRO, INPUT_VEGET, INPUT_IMPERVIOUS                    --
+--	 - Variables, to be used in this script:                                                    --
+--       - ID_ZONE : The zone unique ID (in France, a commune is defined by its INSEE CODE)    --
+--       - DIST_BUFFER : The distance used to generate the buffer area around the studied      --
+--         zone (expressed in meters - default value = 500)                                     --
+--       - EXPAND : The distance used to select objects around the studied zone                --
+--         (expressed in meters - default value = 1000)										    --
+--                                                                                              --
 -- -*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/--
 
-
 --------------------------------------------------------------------------------------------------
--- 1- Declaration of variables, to be used in this script
---------------------------------------------------------------------------------------------------
-
--- The unique ID of the zone (in France, a commune defined by its INSEE CODE)
---SET @ID_ZONE=56260;
--- The distance (exprimed in meters) used to generate the buffer area around the studied zone
---SET @DIST_BUFFER=500;
--- The distance (exprimed in meters) used to select objects around the studied zone
---SET @EXPAND=1000;
-
-
---------------------------------------------------------------------------------------------------
--- 2- Create (spatial) indexes if not already exists on the input layers
+-- 1- Create (spatial) indexes if not already exists on the input layers
 --------------------------------------------------------------------------------------------------
 
-CREATE INDEX IF NOT EXISTS idx_geom ON $IRIS_GE(the_geom) USING RTREE;
-CREATE INDEX IF NOT EXISTS idx_insee ON $IRIS_GE(INSEE_COM);
-CREATE INDEX IF NOT EXISTS idx_geom ON $BATI_INDIFFERENCIE(the_geom) USING RTREE;
-CREATE INDEX IF NOT EXISTS idx_geom ON $BATI_INDUSTRIEL(the_geom) USING RTREE;
-CREATE INDEX IF NOT EXISTS idx_geom ON $BATI_REMARQUABLE(the_geom) USING RTREE;
-CREATE INDEX IF NOT EXISTS idx_geom ON $ROUTE(the_geom) USING RTREE;
-CREATE INDEX IF NOT EXISTS idx_geom ON $TRONCON_VOIE_FERREE(the_geom) USING RTREE;
-CREATE INDEX IF NOT EXISTS idx_geom ON $SURFACE_EAU(the_geom) USING RTREE;
-CREATE INDEX IF NOT EXISTS idx_geom ON $ZONE_VEGETATION(the_geom) USING RTREE;
+CREATE INDEX IF NOT EXISTS idx_geom_IRIS_GE ON $IRIS_GE(the_geom) USING RTREE;
+CREATE INDEX IF NOT EXISTS idx_insee_IRIS_GE ON $IRIS_GE(INSEE_COM);
+CREATE INDEX IF NOT EXISTS idx_geom_BATI_INDIFFERENCIE ON $BATI_INDIFFERENCIE(the_geom) USING RTREE;
+CREATE INDEX IF NOT EXISTS idx_geom_BATI_INDUSTRIEL ON $BATI_INDUSTRIEL(the_geom) USING RTREE;
+CREATE INDEX IF NOT EXISTS idx_geom_BATI_REMARQUABLE ON $BATI_REMARQUABLE(the_geom) USING RTREE;
+CREATE INDEX IF NOT EXISTS idx_geom_ROUTE ON $ROUTE(the_geom) USING RTREE;
+CREATE INDEX IF NOT EXISTS idx_geom_TRONCON_VOIE_FERREE ON $TRONCON_VOIE_FERREE(the_geom) USING RTREE;
+CREATE INDEX IF NOT EXISTS idx_geom_SURFACE_EAU ON $SURFACE_EAU(the_geom) USING RTREE;
+CREATE INDEX IF NOT EXISTS idx_geom_ZONE_VEGETATION ON $ZONE_VEGETATION(the_geom) USING RTREE;
+CREATE INDEX IF NOT EXISTS idx_geom_TERRAIN_SPORT ON $TERRAIN_SPORT(the_geom) USING RTREE;
+CREATE INDEX IF NOT EXISTS idx_geom_CONSTRUCTION_SURFACIQUE ON $CONSTRUCTION_SURFACIQUE(the_geom) USING RTREE;
+CREATE INDEX IF NOT EXISTS idx_geom_SURFACE_ROUTE ON $SURFACE_ROUTE(the_geom) USING RTREE;
+CREATE INDEX IF NOT EXISTS idx_geom_SURFACE_ACTIVITE ON $SURFACE_ACTIVITE(the_geom) USING RTREE;
 
 
 --------------------------------------------------------------------------------------------------
--- 3- Preparation of the study area (zone_xx)
+-- 2- Preparation of the study area (zone_xx)
 --    In the Paendora (BD Topo) context, a zone is defined by a city ("commune" in french)
 --------------------------------------------------------------------------------------------------
 
@@ -77,7 +75,7 @@ CREATE INDEX ON $ZONE_NEIGHBORS(the_geom) USING RTREE;
 
 
 --------------------------------------------------------------------------------------------------
--- 4- Call needed data from BD TOPO
+-- 3- Call needed data from BD TOPO
 --------------------------------------------------------------------------------------------------
 
 -------------------------------------
@@ -104,21 +102,26 @@ UPDATE $INPUT_BUILDING SET TYPE=(SELECT c.TERM FROM $BUILDING_BD_TOPO_USE_TYPE b
 -- Road (from the layer "ROUTE") that are in the study area (ZONE_BUFFER)
 -------------------------------------
 DROP TABLE IF EXISTS $INPUT_ROAD;
-CREATE TABLE $INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH double precision, TYPE varchar, SURFACE varchar, SIDEWALK varchar, ZINDEX integer)
-AS SELECT a.THE_GEOM, a.ID, a.LARGEUR, a.NATURE, '', '', a.POS_SOL FROM $ROUTE a, $ZONE_BUFFER b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
+CREATE TABLE $INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH double precision, TYPE varchar, SURFACE varchar, SIDEWALK varchar, ZINDEX integer, CROSSING varchar)
+AS SELECT a.THE_GEOM, a.ID, a.LARGEUR, a.NATURE, '', '', a.POS_SOL, a.FRANCHISST FROM $ROUTE a, $ZONE_BUFFER b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
 CREATE INDEX ON $INPUT_ROAD(the_geom) USING RTREE;
 
 -- Update the ROAD table with the new appropriate type key, coming from the abstract table
 UPDATE $INPUT_ROAD SET TYPE=(SELECT c.TERM FROM $ROAD_BD_TOPO_TYPE b, $ROAD_ABSTRACT_TYPE c WHERE c.ID_TYPE=b.ID_TYPE and ${INPUT_ROAD}.TYPE=b.NATURE) WHERE TYPE IN (SELECT b.NATURE FROM $ROAD_BD_TOPO_TYPE b);
+-- Update the ROAD table with the new appropriate crossing key, coming from the abstract table
+UPDATE $INPUT_ROAD SET CROSSING=(SELECT c.TERM FROM $ROAD_BD_TOPO_CROSSING b, $ROAD_ABSTRACT_CROSSING c WHERE c.ID_CROSSING=b.ID_CROSSING and ${INPUT_ROAD}.CROSSING=b.FRANCHISST) WHERE CROSSING IN (SELECT b.FRANCHISST FROM $ROAD_BD_TOPO_CROSSING b);
 
 -------------------------------------
 -- Rail (from the layer "TRONCON_VOIE_FERREE") that are in the study area (ZONE)
 -------------------------------------
 DROP TABLE IF EXISTS $INPUT_RAIL;
-CREATE TABLE $INPUT_RAIL AS SELECT a.THE_GEOM, a.ID as ID_SOURCE, a.NATURE as TYPE, a.POS_SOL as ZINDEX FROM $TRONCON_VOIE_FERREE a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
+CREATE TABLE $INPUT_RAIL (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer, CROSSING varchar)
+AS SELECT a.THE_GEOM, a.ID, a.NATURE, a.POS_SOL, a.FRANCHISST FROM $TRONCON_VOIE_FERREE a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
 
 -- Update the RAIL table with the new appropriate type key, coming from the abstract table
 UPDATE $INPUT_RAIL SET TYPE=(SELECT c.TERM FROM $RAIL_BD_TOPO_TYPE b, $RAIL_ABSTRACT_TYPE c WHERE c.ID_TYPE=b.ID_TYPE and ${INPUT_RAIL}.TYPE=b.NATURE) WHERE TYPE IN (SELECT b.NATURE FROM $RAIL_BD_TOPO_TYPE b);
+-- Update the ROAD table with the new appropriate crossing key, coming from the abstract table
+UPDATE $INPUT_RAIL SET CROSSING=(SELECT c.TERM FROM $RAIL_BD_TOPO_CROSSING b, $RAIL_ABSTRACT_CROSSING c WHERE c.ID_CROSSING=b.ID_CROSSING and ${INPUT_RAIL}.CROSSING=b.FRANCHISST) WHERE CROSSING IN (SELECT b.FRANCHISST FROM $RAIL_BD_TOPO_CROSSING b);
 
 -------------------------------------
 -- Hydrography (from the layer "SURFACE_EAU") that are in the study area (ZONE_EXTENDED)
@@ -134,6 +137,24 @@ CREATE TABLE $INPUT_VEGET AS SELECT a.the_geom, a.ID as ID_SOURCE, a.NATURE as T
 
 -- Update the VEGET table with the new appropriate type key, coming from the abstract table
 UPDATE $INPUT_VEGET SET TYPE=(SELECT c.TERM FROM $VEGET_BD_TOPO_TYPE b, $VEGET_ABSTRACT_TYPE c WHERE c.ID_TYPE=b.ID_TYPE and ${INPUT_VEGET}.TYPE=b.NATURE) WHERE TYPE IN (SELECT b.NATURE FROM $VEGET_BD_TOPO_TYPE b);
+
+-------------------------------------
+-- Impervious areas (from the layers "TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE", "SURFACE_ROUTE" and "SURFACE_ACTIVITE") that are in the study area (ZONE)
+-------------------------------------
+DROP TABLE IF EXISTS $TMP_IMPERV_TERRAIN_SPORT, $TMP_IMPERV_CONSTRUCTION_SURFACIQUE, $TMP_IMPERV_SURFACE_ROUTE, $TMP_IMPERV_SURFACE_ACTIVITE;
+CREATE TABLE $TMP_IMPERV_TERRAIN_SPORT AS SELECT a.the_geom, a.ID as ID_SOURCE FROM $TERRAIN_SPORT a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) AND a.NATURE='Piste de sport';
+CREATE TABLE $TMP_IMPERV_CONSTRUCTION_SURFACIQUE AS SELECT a.the_geom, a.ID as ID_SOURCE FROM $CONSTRUCTION_SURFACIQUE a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) AND (a.NATURE='Barrage' OR a.NATURE='Ecluse' OR a.NATURE='Escalier');
+CREATE TABLE $TMP_IMPERV_SURFACE_ROUTE AS SELECT a.the_geom, a.ID as ID_SOURCE FROM $SURFACE_ROUTE a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
+CREATE TABLE $TMP_IMPERV_SURFACE_ACTIVITE AS SELECT a.the_geom, a.ID as ID_SOURCE FROM $SURFACE_ACTIVITE a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) AND (a.CATEGORIE='Administratif' OR a.CATEGORIE='Enseignement' OR a.CATEGORIE='Santé');
+
+DROP TABLE IF EXISTS $INPUT_IMPERVIOUS;
+CREATE TABLE $INPUT_IMPERVIOUS (THE_GEOM geometry, ID_SOURCE varchar(24))
+	AS SELECT THE_GEOM, ID_SOURCE FROM ST_EXPLODE('$TMP_IMPERV_TERRAIN_SPORT')
+ UNION SELECT THE_GEOM, ID_SOURCE FROM ST_EXPLODE('$TMP_IMPERV_CONSTRUCTION_SURFACIQUE')
+ UNION SELECT THE_GEOM, ID_SOURCE FROM ST_EXPLODE('$TMP_IMPERV_SURFACE_ROUTE')
+ UNION SELECT THE_GEOM, ID_SOURCE FROM ST_EXPLODE('$TMP_IMPERV_SURFACE_ACTIVITE');
+
+DROP TABLE IF EXISTS $TMP_IMPERV_TERRAIN_SPORT, $TMP_IMPERV_CONSTRUCTION_SURFACIQUE, $TMP_IMPERV_SURFACE_ROUTE, $TMP_IMPERV_SURFACE_ACTIVITE;
 
 
 --------------------------------------------------------------------------------------------------

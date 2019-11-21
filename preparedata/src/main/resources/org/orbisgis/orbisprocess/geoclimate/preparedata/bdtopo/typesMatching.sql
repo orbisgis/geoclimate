@@ -6,7 +6,7 @@
 --     and to define the corresponding values in the respective tables from the abstract model	--
 --																								--
 -- Author: Gwendall Petit (DECIDE Team, Lab-STICC CNRS UMR 6285)								--
--- Last update: 18/03/2019																		--
+-- Last update: 21/11/2019																		--
 -- Licence : GPLv3 (https://www.gnu.org/licenses/gpl-3.0.html)                                  --
 --																								--
 -- -*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/--
@@ -125,6 +125,29 @@ UPDATE $ROAD_BD_TOPO_TYPE SET ID_TYPE=(SELECT b.ID_TYPE FROM $ROAD_ABSTRACT_TYPE
 UPDATE $ROAD_BD_TOPO_TYPE SET ID_TYPE=(SELECT b.ID_TYPE FROM $ROAD_ABSTRACT_TYPE b WHERE b.TERM='steps') WHERE NATURE ='Escalier';
 
 
+--------------------------------------------------------
+-- Road crossing, from BD Topo
+--------------------------------------------------------
+
+-- Initialize the table with all available CROSSING (FRANCHISST in the BD Topo v2.0)
+DROP TABLE IF EXISTS $ROAD_BD_TOPO_CROSSING;
+CREATE TABLE $ROAD_BD_TOPO_CROSSING (ID_FRANCHISST serial, FRANCHISST varchar, TABLE_NAME varchar, ID_CROSSING integer);
+
+-- Feed the table
+
+INSERT INTO $ROAD_BD_TOPO_CROSSING VALUES(null, 'Gué ou radier', 'ROUTE', null);
+INSERT INTO $ROAD_BD_TOPO_CROSSING VALUES(null, 'Pont', 'ROUTE', null);
+INSERT INTO $ROAD_BD_TOPO_CROSSING VALUES(null, 'Tunnel', 'ROUTE', null);
+INSERT INTO $ROAD_BD_TOPO_CROSSING VALUES(null, 'NC', 'ROUTE', null);
+
+-- Define the correspondences between the BD Topo and the abstract table "$ROAD_ABSTRACT_CROSSING"
+
+UPDATE $ROAD_BD_TOPO_CROSSING SET ID_CROSSING=(SELECT b.ID_CROSSING FROM $ROAD_ABSTRACT_CROSSING b WHERE b.TERM='null') WHERE FRANCHISST ='Gué ou radier';
+UPDATE $ROAD_BD_TOPO_CROSSING SET ID_CROSSING=(SELECT b.ID_CROSSING FROM $ROAD_ABSTRACT_CROSSING b WHERE b.TERM='bridge') WHERE FRANCHISST ='Pont';
+UPDATE $ROAD_BD_TOPO_CROSSING SET ID_CROSSING=(SELECT b.ID_CROSSING FROM $ROAD_ABSTRACT_CROSSING b WHERE b.TERM='tunnel') WHERE FRANCHISST ='Tunnel';
+UPDATE $ROAD_BD_TOPO_CROSSING SET ID_CROSSING=(SELECT b.ID_CROSSING FROM $ROAD_ABSTRACT_CROSSING b WHERE b.TERM='null') WHERE FRANCHISST ='NC';
+
+
 ----------------------------------------------------------------------------------------------------------------------
 -- FOR RAIL
 ----------------------------------------------------------------------------------------------------------------------
@@ -158,6 +181,27 @@ UPDATE $RAIL_BD_TOPO_TYPE SET ID_TYPE=(SELECT b.ID_TYPE FROM $RAIL_ABSTRACT_TYPE
 UPDATE $RAIL_BD_TOPO_TYPE SET ID_TYPE=(SELECT b.ID_TYPE FROM $RAIL_ABSTRACT_TYPE b WHERE b.TERM='funicular') WHERE NATURE ='Funiculaire ou crémaillère';
 UPDATE $RAIL_BD_TOPO_TYPE SET ID_TYPE=(SELECT b.ID_TYPE FROM $RAIL_ABSTRACT_TYPE b WHERE b.TERM='subway') WHERE NATURE ='Metro';
 UPDATE $RAIL_BD_TOPO_TYPE SET ID_TYPE=(SELECT b.ID_TYPE FROM $RAIL_ABSTRACT_TYPE b WHERE b.TERM='tram') WHERE NATURE ='Tramway';
+
+
+--------------------------------------------------------
+-- Rail crossing, from BD Topo
+--------------------------------------------------------
+
+-- Initialize the table with all available CROSSING (FRANCHISST in the BD Topo v2.0)
+DROP TABLE IF EXISTS $RAIL_BD_TOPO_CROSSING;
+CREATE TABLE $RAIL_BD_TOPO_CROSSING (ID_FRANCHISST serial, FRANCHISST varchar, TABLE_NAME varchar, ID_CROSSING integer);
+
+-- Feed the table
+
+INSERT INTO $RAIL_BD_TOPO_CROSSING VALUES(null, 'Pont', 'TRONCON_VOIE_FERREE', null);
+INSERT INTO $RAIL_BD_TOPO_CROSSING VALUES(null, 'Tunnel', 'TRONCON_VOIE_FERREE', null);
+INSERT INTO $RAIL_BD_TOPO_CROSSING VALUES(null, 'NC', 'TRONCON_VOIE_FERREE', null);
+
+-- Define the correspondences between the BD Topo and the abstract table "$RAIL_ABSTRACT_CROSSING"
+
+UPDATE $RAIL_BD_TOPO_CROSSING SET ID_CROSSING=(SELECT b.ID_CROSSING FROM $RAIL_ABSTRACT_CROSSING b WHERE b.TERM='bridge') WHERE FRANCHISST ='Pont';
+UPDATE $RAIL_BD_TOPO_CROSSING SET ID_CROSSING=(SELECT b.ID_CROSSING FROM $RAIL_ABSTRACT_CROSSING b WHERE b.TERM='tunnel') WHERE FRANCHISST ='Tunnel';
+UPDATE $RAIL_BD_TOPO_CROSSING SET ID_CROSSING=(SELECT b.ID_CROSSING FROM $RAIL_ABSTRACT_CROSSING b WHERE b.TERM='null') WHERE FRANCHISST ='NC';
 
 
 ----------------------------------------------------------------------------------------------------------------------

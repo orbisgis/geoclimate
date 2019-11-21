@@ -16,6 +16,7 @@ abstract class ProcessingChain extends GroovyProcessFactory {
     public static BuildSpatialUnits  = new BuildSpatialUnits()
     public static DataUtils  = new DataUtils()
     public static Workflow  = new Workflow()
+    public static BuildLCZ  = new BuildLCZ()
 
     //Utility methods
     static def uuid = { UUID.randomUUID().toString().replaceAll("-", "_") }
