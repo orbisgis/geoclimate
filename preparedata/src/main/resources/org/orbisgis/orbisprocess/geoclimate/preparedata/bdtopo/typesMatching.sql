@@ -6,7 +6,7 @@
 --     and to define the corresponding values in the respective tables from the abstract model	--
 --																								--
 -- Author: Gwendall Petit (DECIDE Team, Lab-STICC CNRS UMR 6285)								--
--- Last update: 18/03/2019																		--
+-- Last update: 21/11/2019																		--
 -- Licence : GPLv3 (https://www.gnu.org/licenses/gpl-3.0.html)                                  --
 --																								--
 -- -*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/--

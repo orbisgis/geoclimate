@@ -6,32 +6,26 @@
 --			  to feed (at the end of this script) the GeoClimate model.	                        --
 --																								--
 -- Author : Gwendall Petit (DECIDE Team, Lab-STICC CNRS UMR 6285)								--
--- Last update : 15/03/2019																		--
+-- Last update : 21/11/2019																		--
 -- Licence : GPLv3 (https://www.gnu.org/licenses/gpl-3.0.html)                                  --
 -- Comments :																					--
 --   - Input layers : IRIS_GE,BATI_INDIFFERENCIE, BATI_INDUSTRIEL, BATI_REMARQUABLE,            --
---					  ROUTE, TRONCON_VOIE_FERREE, SURFACE_EAU and ZONE_VEGETATION               --
+--					  ROUTE, TRONCON_VOIE_FERREE, SURFACE_EAU, ZONE_VEGETATION                  --
+--					  TERRAIN_SPORT, CONSTRUCTION_SURFACIQUE, SURFACE_ROUTE, SURFACE_ACTIVITE   --
 --   - Output layers, that will feed the GeoClimate model :                                     --
---					  ZONE, ZONE_BUFFER, ZONE_EXTENDED, ZONE_NEIGHBORS,                         --
---					  INPUT_BUILDING, INPUT_ROAD, INPUT_RAIL, INPUT_HYDRO, INPUT_VEGET          --
---																								--
+--					  ZONE, ZONE_BUFFER, ZONE_EXTENDED, INPUT_BUILDING, INPUT_ROAD              --
+--					  INPUT_RAIL, INPUT_HYDRO, INPUT_VEGET, INPUT_IMPERVIOUS                    --
+--	 - Variables, to be used in this script:                                                    --
+--       - ID_ZONE : The zone unique ID (in France, a commune is defined by its INSEE CODE)    --
+--       - DIST_BUFFER : The distance used to generate the buffer area around the studied      --
+--         zone (expressed in meters - default value = 500)                                     --
+--       - EXPAND : The distance used to select objects around the studied zone                --
+--         (expressed in meters - default value = 1000)										    --
+--                                                                                              --
 -- -*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/--
 
-
 --------------------------------------------------------------------------------------------------
--- 1- Declaration of variables, to be used in this script
---------------------------------------------------------------------------------------------------
-
--- The unique ID of the zone (in France, a commune defined by its INSEE CODE)
---SET @ID_ZONE=56260;
--- The distance (exprimed in meters) used to generate the buffer area around the studied zone
---SET @DIST_BUFFER=500;
--- The distance (exprimed in meters) used to select objects around the studied zone
---SET @EXPAND=1000;
-
-
---------------------------------------------------------------------------------------------------
--- 2- Create (spatial) indexes if not already exists on the input layers
+-- 1- Create (spatial) indexes if not already exists on the input layers
 --------------------------------------------------------------------------------------------------
 
 CREATE INDEX IF NOT EXISTS idx_geom_IRIS_GE ON $IRIS_GE(the_geom) USING RTREE;
@@ -50,7 +44,7 @@ CREATE INDEX IF NOT EXISTS idx_geom_SURFACE_ACTIVITE ON $SURFACE_ACTIVITE(the_ge
 
 
 --------------------------------------------------------------------------------------------------
--- 3- Preparation of the study area (zone_xx)
+-- 2- Preparation of the study area (zone_xx)
 --    In the Paendora (BD Topo) context, a zone is defined by a city ("commune" in french)
 --------------------------------------------------------------------------------------------------
 
@@ -81,7 +75,7 @@ CREATE INDEX ON $ZONE_NEIGHBORS(the_geom) USING RTREE;
 
 
 --------------------------------------------------------------------------------------------------
--- 4- Call needed data from BD TOPO
+-- 3- Call needed data from BD TOPO
 --------------------------------------------------------------------------------------------------
 
 -------------------------------------

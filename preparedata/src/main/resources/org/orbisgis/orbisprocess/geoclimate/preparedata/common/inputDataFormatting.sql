@@ -1,12 +1,18 @@
 -- -*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/--
 -- 																								--
 -- Title : Data Input Model pre-process 														--
--- Project : URCLIM / Paendora (ADEME - MODEVAL 2017-5)													--
+-- Project : URCLIM / Paendora (ADEME - MODEVAL 2017-5)											--
 -- Abstract : This script aims at pre-process input data that will then feed the RSU chain.		--
 --																								--
 -- Author : Gwendall Petit (DECIDE Team, Lab-STICC CNRS UMR 6285)								--
--- Last update : 04/04/2019																		--
+-- Last update : 21/11/2019																		--
 -- Licence : GPLv3 (https://www.gnu.org/licenses/gpl-3.0.html)                                  --
+-- Comments :																					--
+--	- Variables, to be used in this script:                                                     --
+--      - hLevMin: theoretical minimum (building) level height (in meters - default value = 3)  --
+--      - hLevMax: theoretical maximum (building) level height (in meters - default value = 15) --
+--      - hThresholdLev2: threshold used to take into account (or not) commercial buildings     --
+--        (where Nb_lev_rule = 2) (in meters - default value = 10)                              --
 --																								--
 -- -*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/--
 
