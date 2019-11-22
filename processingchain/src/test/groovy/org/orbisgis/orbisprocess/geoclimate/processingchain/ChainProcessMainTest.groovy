@@ -154,7 +154,7 @@ class ChainProcessMainTest {
         IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: zoneTableName,
                 buildingTable: buildingTableName, roadTable: roadTableName,
-                railTable: null, vegetationTable: vegetationTableName,
+                railTable: railTableName, vegetationTable: vegetationTableName,
                 hydrographicTable: hydrographicTableName, indicatorUse: ind_i,
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
@@ -195,7 +195,7 @@ class ChainProcessMainTest {
         IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: zoneTableName,
                 buildingTable: buildingTableName, roadTable: roadTableName,
-                railTable: null, vegetationTable: vegetationTableName,
+                railTable: railTableName, vegetationTable: vegetationTableName,
                 hydrographicTable: hydrographicTableName, indicatorUse: ind_i,
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
@@ -236,7 +236,7 @@ class ChainProcessMainTest {
         IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: zoneTableName,
                 buildingTable: buildingTableName, roadTable: roadTableName,
-                railTable: null, vegetationTable: vegetationTableName,
+                railTable: railTableName, vegetationTable: vegetationTableName,
                 hydrographicTable: hydrographicTableName, indicatorUse: ind_i,
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
@@ -277,7 +277,7 @@ class ChainProcessMainTest {
         IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: zoneTableName,
                 buildingTable: buildingTableName, roadTable: roadTableName,
-                railTable: null, vegetationTable: vegetationTableName,
+                railTable: railTableName, vegetationTable: vegetationTableName,
                 hydrographicTable: hydrographicTableName, indicatorUse: ind_i,
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
@@ -318,7 +318,7 @@ class ChainProcessMainTest {
         IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: zoneTableName,
                 buildingTable: buildingTableName, roadTable: roadTableName,
-                railTable: null, vegetationTable: vegetationTableName,
+                railTable: railTableName, vegetationTable: vegetationTableName,
                 hydrographicTable: hydrographicTableName, indicatorUse: ind_i,
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
@@ -359,7 +359,7 @@ class ChainProcessMainTest {
         IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: zoneTableName,
                 buildingTable: buildingTableName, roadTable: roadTableName,
-                railTable: null, vegetationTable: vegetationTableName,
+                railTable: railTableName, vegetationTable: vegetationTableName,
                 hydrographicTable: hydrographicTableName, indicatorUse: ind_i,
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
