@@ -88,7 +88,7 @@ class InputDataFormattingTest {
                          inputBuilding: resultsImport.outputBuildingName, inputRoad: resultsImport.outputRoadName,
                          inputRail: resultsImport.outputRailName, inputHydro: resultsImport.outputHydroName,
                          inputVeget: resultsImport.outputVegetName, inputImpervious: resultsImport.outputImperviousName,
-                         inputZone: resultsImport.outputZoneName, inputZoneNeighbors: resultsImport.outputZoneNeighborsName,
+                         inputZone: resultsImport.outputZoneName, //inputZoneNeighbors: resultsImport.outputZoneNeighborsName,
 
                          hLevMin: 3, hLevMax: 15, hThresholdLev2: 10, idZone: '56260',
 
@@ -269,16 +269,16 @@ class InputDataFormattingTest {
         // ... with the building (INDIF) 'BATIMENT0000000290126764' which in Vannes (56260)
         assertEquals('56260', h2GISDatabase.firstRow("SELECT ID_ZONE FROM BUILDING " +
                 "WHERE ID_SOURCE='BATIMENT0000000290126764';")["ID_ZONE"])
-        // ... with the building (INDIF) 'BATIMENT0000000292059008' which in Saint-Avé (56206)
-        assertEquals('56206', h2GISDatabase.firstRow("SELECT ID_ZONE FROM BUILDING " +
+        // ... with the building (INDIF) 'BATIMENT0000000292059008' which in Saint-Avé (56206 - so 'outside' expected)
+        assertEquals('outside', h2GISDatabase.firstRow("SELECT ID_ZONE FROM BUILDING " +
                 "WHERE ID_SOURCE='BATIMENT0000000292059008';")["ID_ZONE"])
-        // ... with the building (INDIF) 'BATIMENT0000000291363628' which in Arradon (56003)
-        assertEquals('56003', h2GISDatabase.firstRow("SELECT ID_ZONE FROM BUILDING " +
+        // ... with the building (INDIF) 'BATIMENT0000000291363628' which in Arradon (56003 - so 'outside' expected)
+        assertEquals('outside', h2GISDatabase.firstRow("SELECT ID_ZONE FROM BUILDING " +
                 "WHERE ID_SOURCE='BATIMENT0000000291363628';")["ID_ZONE"])
 
         // Verifies that a building that straddles two communes is assigned to the right area
-        // ... with the building (INDIF) 'BATIMENT0000000290543985' which main part is in Séné (56243)
-        assertEquals('56243', h2GISDatabase.firstRow("SELECT ID_ZONE FROM BUILDING " +
+        // ... with the building (INDIF) 'BATIMENT0000000290543985' which main part is in Séné (56243 - so 'outside' expected)
+        assertEquals('outside', h2GISDatabase.firstRow("SELECT ID_ZONE FROM BUILDING " +
                 "WHERE ID_SOURCE='BATIMENT0000000290543985';")["ID_ZONE"])
         // ... with the building (INDIF) 'BATIMENT0000000087495765' which main part is in Vannes (56260)
         assertEquals('56260', h2GISDatabase.firstRow("SELECT ID_ZONE FROM BUILDING " +
