@@ -12,10 +12,6 @@ import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
 import org.orbisgis.osm.OSMTools
 import org.orbisgis.processmanagerapi.IProcess
 
-import static org.orbisgis.osm.utils.OSMElement.NODE
-import static org.orbisgis.osm.utils.OSMElement.RELATION
-import static org.orbisgis.osm.utils.OSMElement.WAY
-
 @BaseScript PrepareData prepareData
 
 
