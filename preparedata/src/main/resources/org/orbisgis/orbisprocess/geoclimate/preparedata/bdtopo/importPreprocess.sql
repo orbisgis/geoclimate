@@ -70,7 +70,7 @@ CREATE INDEX ON $ZONE_EXTENDED(the_geom) USING RTREE;
 
 -- Generation of the geometries of the neighbouring communes to the one studied
 DROP TABLE IF EXISTS $ZONE_NEIGHBORS;
-CREATE TABLE $ZONE_NEIGHBORS AS SELECT ST_UNION(ST_ACCUM(a.the_geom)) as the_geom, INSEE_COM as ID_ZONE FROM $IRIS_GE a, $ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) GROUP BY a.INSEE_COM;
+CREATE TABLE $ZONE_NEIGHBORS (the_geom geometry, ID_ZONE varchar) AS SELECT the_geom, ID_ZONE FROM $ZONE UNION SELECT ST_DIFFERENCE(b.the_geom, a.the_geom) as the_geom, 'outside' FROM $ZONE a, $ZONE_EXTENDED b;
 CREATE INDEX ON $ZONE_NEIGHBORS(the_geom) USING RTREE;
 
 
@@ -160,4 +160,4 @@ DROP TABLE IF EXISTS $TMP_IMPERV_TERRAIN_SPORT, $TMP_IMPERV_CONSTRUCTION_SURFACI
 --------------------------------------------------------------------------------------------------
 -- Clear not needed tables
 --------------------------------------------------------------------------------------------------
-DROP TABLE $TMP_IRIS, $ZONE_BUFFER, $ZONE_EXTENDED, $BU_ZONE_INDIF, $BU_ZONE_INDUS, $BU_ZONE_REMARQ;
+DROP TABLE $ZONE_NEIGHBORS, $TMP_IRIS, $ZONE_BUFFER, $ZONE_EXTENDED, $BU_ZONE_INDIF, $BU_ZONE_INDUS, $BU_ZONE_REMARQ;

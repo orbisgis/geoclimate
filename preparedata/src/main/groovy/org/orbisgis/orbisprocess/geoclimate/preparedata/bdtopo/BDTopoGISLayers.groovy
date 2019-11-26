@@ -48,7 +48,6 @@ import org.orbisgis.processmanagerapi.IProcess
  * @return outputVegetName Table name in which the (ready to feed the GeoClimate model) vegetation areas are stored
  * @return outputImperviousName Table name in which the (ready to feed the GeoClimate model) impervious areas are stored
  * @return outputZoneName Table name in which the (ready to feed the GeoClimate model) zone is stored
- * @return outputZoneNeighborsName Table name in which the (ready to feed the GeoClimate model) neighboring zones are stored
  */
 IProcess importPreprocess(){
     return create({
@@ -66,8 +65,8 @@ IProcess importPreprocess(){
                 tableImperviousBuildSurfName: String,
                 tableImperviousRoadSurfName: String,
                 tableImperviousActivSurfName: String,
-                distBuffer: int,
-                expand: int,
+                distBuffer: 500,
+                expand: 1000,
                 idZone: String,
                 building_bd_topo_use_type: String,
                 building_abstract_use_type: String,
@@ -82,7 +81,7 @@ IProcess importPreprocess(){
                 veget_bd_topo_type: String,
                 veget_abstract_type: String
         outputs outputBuildingName: String, outputRoadName: String, outputRailName: String, outputHydroName: String,
-                outputVegetName   : String, outputImperviousName: String, outputZoneName: String, outputZoneNeighborsName: String
+                outputVegetName   : String, outputImperviousName: String, outputZoneName: String
         run { datasource, tableIrisName, tableBuildIndifName, tableBuildIndusName,
               tableBuildRemarqName, tableRoadName, tableRailName, tableHydroName, tableVegetName,
               tableImperviousSportName, tableImperviousBuildSurfName, tableImperviousRoadSurfName,
@@ -128,40 +127,39 @@ IProcess importPreprocess(){
             }
 
             def success = datasource.executeScript(getClass().getResourceAsStream('importPreprocess.sql'),
-                    [ID_ZONE                  : idZone, DIST_BUFFER: distBuffer,
-                     EXPAND                   : expand, IRIS_GE: tableIrisName,
-                     BATI_INDIFFERENCIE       : tableBuildIndifName, BATI_INDUSTRIEL: tableBuildIndusName,
-                     BATI_REMARQUABLE         : tableBuildRemarqName, ROUTE: tableRoadName,
-                     TRONCON_VOIE_FERREE      : tableRailName, SURFACE_EAU: tableHydroName,
-                     ZONE_VEGETATION          : tableVegetName,
+                    [ID_ZONE: idZone, DIST_BUFFER: distBuffer, EXPAND: expand,
+                     IRIS_GE: tableIrisName, BATI_INDIFFERENCIE: tableBuildIndifName,
+                     BATI_INDUSTRIEL: tableBuildIndusName, BATI_REMARQUABLE: tableBuildRemarqName,
+                     ROUTE: tableRoadName, TRONCON_VOIE_FERREE: tableRailName,
+                     SURFACE_EAU: tableHydroName, ZONE_VEGETATION: tableVegetName,
                      TERRAIN_SPORT: tableImperviousSportName, CONSTRUCTION_SURFACIQUE: tableImperviousBuildSurfName,
                      SURFACE_ROUTE: tableImperviousRoadSurfName, SURFACE_ACTIVITE: tableImperviousActivSurfName,
                      TMP_IRIS: tmpIris,
-                     ZONE                     : zone, ZONE_BUFFER: zoneBuffer,
-                     ZONE_EXTENDED            : zoneExtended, ZONE_NEIGHBORS: zoneNeighbors,
-                     BU_ZONE_INDIF            : bu_zone_indif, BU_ZONE_INDUS: bu_zone_indus,
-                     BU_ZONE_REMARQ           : bu_zone_remarq, INPUT_BUILDING: input_building,
-                     INPUT_ROAD               : input_road, INPUT_RAIL: input_rail,
-                     INPUT_HYDRO              : input_hydro, INPUT_VEGET: input_veget,
+                     ZONE: zone, ZONE_BUFFER: zoneBuffer, ZONE_EXTENDED: zoneExtended, ZONE_NEIGHBORS: zoneNeighbors,
+                     BU_ZONE_INDIF: bu_zone_indif, BU_ZONE_INDUS: bu_zone_indus, BU_ZONE_REMARQ: bu_zone_remarq,
+                     INPUT_BUILDING: input_building,
+                     INPUT_ROAD: input_road,
+                     INPUT_RAIL: input_rail,
+                     INPUT_HYDRO: input_hydro,
+                     INPUT_VEGET: input_veget,
                      TMP_IMPERV_CONSTRUCTION_SURFACIQUE : tmp_imperv_construction_surfacique, TMP_IMPERV_SURFACE_ROUTE : tmp_imperv_surface_route,
                      TMP_IMPERV_TERRAIN_SPORT : tmp_imperv_terrain_sport, TMP_IMPERV_SURFACE_ACTIVITE : tmp_imperv_surface_activite,
                      INPUT_IMPERVIOUS: input_impervious,
                      BUILDING_BD_TOPO_USE_TYPE: building_bd_topo_use_type, BUILDING_ABSTRACT_USE_TYPE: building_abstract_use_type,
-                     ROAD_BD_TOPO_TYPE        : road_bd_topo_type, ROAD_ABSTRACT_TYPE: road_abstract_type,
-                     ROAD_BD_TOPO_CROSSING    : road_bd_topo_crossing, ROAD_ABSTRACT_CROSSING: road_abstract_crossing,
-                     RAIL_BD_TOPO_TYPE        : rail_bd_topo_type, RAIL_ABSTRACT_TYPE: rail_abstract_type,
-                     RAIL_BD_TOPO_CROSSING    : rail_bd_topo_crossing, RAIL_ABSTRACT_CROSSING: rail_abstract_crossing,
-                     VEGET_BD_TOPO_TYPE       : veget_bd_topo_type, VEGET_ABSTRACT_TYPE: veget_abstract_type
+                     ROAD_BD_TOPO_TYPE: road_bd_topo_type, ROAD_ABSTRACT_TYPE: road_abstract_type,
+                     ROAD_BD_TOPO_CROSSING: road_bd_topo_crossing, ROAD_ABSTRACT_CROSSING: road_abstract_crossing,
+                     RAIL_BD_TOPO_TYPE: rail_bd_topo_type, RAIL_ABSTRACT_TYPE: rail_abstract_type,
+                     RAIL_BD_TOPO_CROSSING: rail_bd_topo_crossing, RAIL_ABSTRACT_CROSSING: rail_abstract_crossing,
+                     VEGET_BD_TOPO_TYPE: veget_bd_topo_type, VEGET_ABSTRACT_TYPE: veget_abstract_type
                     ])
             if(!success){
                 logger.error("Error occurred on the execution of the importPreprocess.sql script")
             }
             else{
                 logger.info('The importPreprocess.sql script has been executed')
-                [outputBuildingName: input_building, outputRoadName: input_road,
-                 outputRailName    : input_rail, outputHydroName: input_hydro,
-                 outputVegetName   : input_veget, outputImperviousName : input_impervious,
-                 outputZoneName    : zone, outputZoneNeighborsName: zoneNeighbors
+                [outputBuildingName: input_building, outputRoadName: input_road, outputRailName: input_rail,
+                 outputHydroName: input_hydro, outputVegetName: input_veget, outputImperviousName : input_impervious,
+                 outputZoneName: zone
                 ]
             }
         }

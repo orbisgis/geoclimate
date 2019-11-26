@@ -266,24 +266,6 @@ class BDTopoGISLayersTest {
             assertEquals('56260', row.ID_ZONE)
         }
 
-        // Check if the ZONE_NEIGHBORS table has the correct number of columns and rows
-        tableName = process.getResults().outputZoneNeighborsName
-        assertNotNull(tableName)
-        table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(2, table.columnCount)
-        assertEquals(11, table.rowCount)
-        // Check if the column types are correct
-        assertEquals('VARCHAR', table.getColumnsType('ID_ZONE'))
-        assertEquals('GEOMETRY', table.getColumnsType('THE_GEOM'))
-        // For each rows, check if the fields contains the expected values
-        table.eachRow { row ->
-            assertNotNull(row.THE_GEOM)
-            assertNotEquals('', row.THE_GEOM)
-            assertNotNull(row.ID_ZONE)
-            assertNotEquals('', row.ID_ZONE)
-        }
-
     }
 
     // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the SURFACE_ACTIVITE table
