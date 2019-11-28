@@ -414,6 +414,7 @@ class ChainProcessMainTest {
         String relationBlocks = spatialUnits.getResults().outputTableBlockName
         String relationRSU = spatialUnits.getResults().outputTableRsuName
 
+        datasource.
         if (saveResults) {
             logger.info("Saving spatial units")
             IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
