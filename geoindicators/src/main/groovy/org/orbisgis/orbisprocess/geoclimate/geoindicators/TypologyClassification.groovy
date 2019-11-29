@@ -4,6 +4,31 @@ import groovy.transform.BaseScript
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanagerapi.IProcess
 
+import java.io.FileOutputStream;
+import java.sql.DriverManager;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.ArrayList;
+
+import smile.data.type.DataType;
+import smile.data.DataFrame
+import smile.data.type.DataTypes;
+import smile.data.type.StructField;
+import smile.math.matrix.DenseMatrix;
+import smile.util.Paths;
+import smile.data.formula.Formula;
+import smile.classification.RandomForest;
+import smile.validation.Validation;
+import smile.validation.Accuracy;
+import smile.validation.Error;
+import smile.base.cart.SplitRule;
+
+import com.thoughtworks.xstream.XStream;
+
 
 @BaseScript Geoindicators geoindicators
 
@@ -40,7 +65,7 @@ IProcess identifyLczType() {
     def final VARIABILITY_NAME = "variability"
     def final BASE_NAME = "RSU_LCZ"
     def final GEOMETRIC_FIELD = "the_geom"
-    
+
     return create({
         title "Set the LCZ type of each RSU"
         inputs rsuLczIndicators: String, prefixName: String, datasource: JdbcDataSource, normalisationType: "AVG",
@@ -237,6 +262,85 @@ IProcess identifyLczType() {
             } else {
                 error "The 'normalisationType' argument is not valid."
             }
+        }
+    })
+}
+
+/**
+ * This process is used to create a classification model based on a RandomForest algorithm.
+ * The training dataset and the variables to use for the training may be gathered in a
+ * same table. All parameters of the randomForest algorithm have default values but may be
+ * modified. The resulting model is returned and may also be saved into a file.
+ *
+ * Note that the algorithm is based on the Smile library (cf. https://github.com/haifengl/smile)
+ *
+ * @param trainingTableName The name of the training table where are stored ONLY the explicative variables
+ * and the one to model
+ * @param varToModel String where is saved the name of the field to model
+ * @param save Boolean to save the model into a file if needed
+ * @param pathAndFileName String of the path and name where the model has to be saved (default "/home/RfModel")
+ * @param ntrees the number of trees to build the forest
+ * @param mtry the number of input variables to be used to determine the decision
+ * at a node of the tree. p/3 seems to give generally good performance,
+ * where p is the number of variables
+ * @param maxDepth the maximum depth of the tree.
+ * @param maxNodes the maximum number of leaf nodes in the tree.
+ * @param nodeSize the number of instances in a node below which the tree will
+ * not split, setting nodeSize = 5 generally gives good results.
+ * @param subsample the sampling rate for training tree. 1.0 means sampling with replacement. < 1.0 means
+ * sampling without replacement.
+ * @param datasource A connection to a database
+ *
+ * @return A randomForest model (see smile library for further information about the object)
+ * @author Jérémy Bernard
+ */
+IProcess createRandomForestClassif() {
+    def final BASE_NAME = "RF_MODEL"
+    def final GEOMETRIC_FIELD = "the_geom"
+    return create({
+        title "Create a Random Forest model"
+        inputs trainingTableName: String, varToModel: String, save: boolean, pathAndFileName: String,
+                ntrees: int, mtry: int, maxDepth: int, maxNodes: int, nodeSize: int,
+                subsample: double, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { trainingTableName, varToModel, save, pathAndFileName, ntrees, mtry,
+              maxDepth, maxNodes, nodeSize, subsample, datasource ->
+
+            info "Create a Random Forest model"
+
+            // Get a list of all fields
+            def listOfColumns = datasource.getTable(trainingTableName).getColumns().keySet()
+
+            // Read the training table as a DataFrame
+            def df = DataFrame.of(datasource.getTable(trainingTableName));
+
+            // Identify the column where is stored the typo
+            def df_typo = df.select(varToModel)
+
+            Formula formula = Formula.lhs(varToModel);
+
+            // Convert the variable to model into factors (if string for example) and remove rows containing null values
+            df = df.factorize(varToModel).omitNullRows()
+
+            // Create the randomForest
+            RandomForest model = RandomForest.fit(formula, df, ntrees = ntrees, mtry = mtry,
+                    rule = rule, maxDepth = maxDepth, maxNodes = maxNodes, nodeSize = nodeSize,
+                    subsample = subsample);
+
+            // Calculate the prediction using the same sample in order to identify what is the
+            // data rate that has been well classified
+            int[] prediction = Validation.test(model, df);
+            int[] truth = df.apply(varToModel).toIntArray()
+            double accuracy = Accuracy.of(truth, prediction);
+            logger.info "The percentage of the data that have been well classified is : ${accuracy*100}%"
+
+            if (save){
+                XStream xs = new XStream();
+                FileOutputStream fs = new FileOutputStream("/home/decide/Bureau/model.txt");
+                xs.toXML(model, fs);
+            }
+
+            return model
         }
     })
 }

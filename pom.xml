@@ -91,6 +91,11 @@
                 <artifactId>smile-netlib</artifactId>
                 <version>2.0.0</version>
             </dependency>
+            <dependency>
+                <groupId>com.thoughtworks.xstream</groupId>
+                <artifactId>xstream</artifactId>
+                <version>1.4.10</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
