@@ -4,4 +4,4 @@ jdk:
   - oraclejdk8
   - openjdk8
 
-script: mvn clean install
+script: mvn dependency:purge-local-repository clean install

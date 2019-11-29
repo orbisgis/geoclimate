@@ -7,12 +7,13 @@
 -- Author : Gwendall Petit (DECIDE Team, Lab-STICC CNRS UMR 6285)								--
 -- Last update : 21/11/2019																		--
 -- Licence : GPLv3 (https://www.gnu.org/licenses/gpl-3.0.html)                                  --
--- Comments :																					--
---	- Variables, to be used in this script:                                                     --
---      - hLevMin: theoretical minimum (building) level height (in meters - default value = 3)  --
---      - hLevMax: theoretical maximum (building) level height (in meters - default value = 15) --
---      - hThresholdLev2: threshold used to take into account (or not) commercial buildings     --
---        (where Nb_lev_rule = 2) (in meters - default value = 10)                              --
+-- 																					            --
+-- Parameters, to be used in this script:                                                       --
+--  - EXPAND : The distance used to select objects around the ZONE (in meters - default 1000)   --
+--  - hLevMin: theoretical minimum (building) level height (in meters - default value = 3)      --
+--  - hLevMax: theoretical maximum (building) level height (in meters - default value = 15)     --
+--  - hThresholdLev2: threshold used to take into account (or not) commercial buildings         --
+--    (where Nb_lev_rule = 2) (in meters - default value = 10)                                  --
 --																								--
 -- -*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/--
 
@@ -22,6 +23,13 @@
 --------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------------
 
+---------------------------------------------------------------------------------
+-- 0. CREATE ZONE_NEIGHBORS TABLE (using the EXPAND parameter and ZONE table)
+---------------------------------------------------------------------------------
+
+DROP TABLE IF EXISTS $ZONE_NEIGHBORS;
+CREATE TABLE $ZONE_NEIGHBORS (the_geom geometry, ID_ZONE varchar) AS SELECT the_geom, ID_ZONE FROM $ZONE UNION SELECT ST_DIFFERENCE(ST_EXPAND(the_geom, 1000), the_geom) as the_geom, 'outside' FROM $ZONE;
+CREATE INDEX ON $ZONE_NEIGHBORS(the_geom) USING RTREE;
 
 ---------------------------------------------------------------------------------
 -- 1. PROCESS BUILDINGS
@@ -49,11 +57,11 @@ CREATE TABLE $BUILD_OUTER_ZONE AS SELECT * FROM $BU_ZONE WHERE ID_BUILD NOT IN (
 
 -- 3- Associate building to city, depending on the maximum surface of intersection, only for buildings that are not within a city
 DROP TABLE IF EXISTS $BUILD_OUTER_ZONE_MATRIX ;
-CREATE TABLE $BUILD_OUTER_ZONE_MATRIX (ID_BUILD integer primary key, ID_ZONE integer) AS SELECT a.ID_BUILD , (SELECT ID_ZONE FROM $ZONE_NEIGHBORS b WHERE a.THE_GEOM && b.THE_GEOM ORDER BY ST_AREA(ST_INTERSECTION(a.THE_GEOM, b.THE_GEOM)) DESC LIMIT 1) AS ID_ZONE FROM $BUILD_OUTER_ZONE a WHERE ST_NUMGEOMETRIES(a.THE_GEOM)=1;
+CREATE TABLE $BUILD_OUTER_ZONE_MATRIX (ID_BUILD integer primary key, ID_ZONE varchar) AS SELECT a.ID_BUILD , (SELECT ID_ZONE FROM $ZONE_NEIGHBORS b WHERE a.THE_GEOM && b.THE_GEOM ORDER BY ST_AREA(ST_INTERSECTION(a.THE_GEOM, b.THE_GEOM)) DESC LIMIT 1) AS ID_ZONE FROM $BUILD_OUTER_ZONE a WHERE ST_NUMGEOMETRIES(a.THE_GEOM)=1;
 
 -- 4- Merge into one single table these information
 DROP TABLE IF EXISTS $BUILD_ZONE_MATRIX ;
-CREATE TABLE $BUILD_ZONE_MATRIX (ID_BUILD integer primary key, ID_ZONE integer) AS SELECT * FROM $BUILD_WITHIN_ZONE UNION SELECT * FROM $BUILD_OUTER_ZONE_MATRIX;
+CREATE TABLE $BUILD_ZONE_MATRIX (ID_BUILD integer primary key, ID_ZONE varchar) AS SELECT * FROM $BUILD_WITHIN_ZONE UNION SELECT * FROM $BUILD_OUTER_ZONE_MATRIX;
 CREATE INDEX ON $BUILD_ZONE_MATRIX(ID_BUILD);
 
 -- Join this "matrix" to the initial table (with all building information) (FC = First Control)
@@ -63,7 +71,7 @@ CREATE TABLE $BUILDING_FC AS SELECT a.*, b.ID_ZONE FROM $BU_ZONE a LEFT JOIN $BU
 CREATE INDEX ON $BUILDING_FC(ID_ZONE);
 CREATE INDEX ON $BUILDING_FC(HEIGHT_WALL);
 
-DROP TABLE IF EXISTS $BUILD_WITHIN_ZONE, $BUILD_OUTER_ZONE, $BUILD_OUTER_ZONE_MATRIX, $BUILD_ZONE_MATRIX;
+DROP TABLE IF EXISTS $ZONE_NEIGHBORS, $BUILD_WITHIN_ZONE, $BUILD_OUTER_ZONE, $BUILD_OUTER_ZONE_MATRIX, $BUILD_ZONE_MATRIX;
 
 
 -------------------------------------------------------
@@ -74,9 +82,9 @@ DROP TABLE IF EXISTS $BUILD_WITHIN_ZONE, $BUILD_OUTER_ZONE, $BUILD_OUTER_ZONE_MA
 -----------------------
 
 DROP TABLE IF EXISTS $FC_BUILD_H_ZERO, $FC_BUILD_H_NULL, $FC_BUILD_H_RANGE;
-CREATE TABLE $FC_BUILD_H_ZERO AS SELECT $ID_ZONE as ID_ZONE, COUNT(*) as FC_H_ZERO FROM $BUILDING_FC WHERE HEIGHT_WALL=0 AND ID_ZONE=$ID_ZONE;
-CREATE TABLE $FC_BUILD_H_NULL AS SELECT COUNT(*) as FC_H_NULL FROM $BUILDING_FC WHERE HEIGHT_WALL is null AND ID_ZONE=$ID_ZONE;
-CREATE TABLE $FC_BUILD_H_RANGE AS SELECT COUNT(*) as FC_H_RANGE FROM $BUILDING_FC WHERE (HEIGHT_WALL < 0 OR HEIGHT_WALL > 1000) AND ID_ZONE=$ID_ZONE;
+CREATE TABLE $FC_BUILD_H_ZERO AS SELECT '$ID_ZONE' as ID_ZONE, COUNT(*) as FC_H_ZERO FROM $BUILDING_FC WHERE HEIGHT_WALL=0 AND ID_ZONE='$ID_ZONE';
+CREATE TABLE $FC_BUILD_H_NULL AS SELECT COUNT(*) as FC_H_NULL FROM $BUILDING_FC WHERE HEIGHT_WALL is null AND ID_ZONE='$ID_ZONE';
+CREATE TABLE $FC_BUILD_H_RANGE AS SELECT COUNT(*) as FC_H_RANGE FROM $BUILDING_FC WHERE (HEIGHT_WALL < 0 OR HEIGHT_WALL > 1000) AND ID_ZONE='$ID_ZONE';
 
 DROP TABLE IF EXISTS $FC_BUILD_STATS_ZONE;
 CREATE TABLE $FC_BUILD_STATS_ZONE AS SELECT a.ID_ZONE, a.FC_H_ZERO, b.FC_H_NULL, c.FC_H_RANGE FROM $FC_BUILD_H_ZERO a, $FC_BUILD_H_NULL b, $FC_BUILD_H_RANGE c;
@@ -88,7 +96,7 @@ DROP TABLE IF EXISTS $FC_BUILD_H_ZERO, $FC_BUILD_H_NULL, $FC_BUILD_H_RANGE;
 -----------------------
 
 DROP TABLE IF EXISTS $FC_BUILD_H_ZERO, $FC_BUILD_H_NULL, $FC_BUILD_H_RANGE;
-CREATE TABLE $FC_BUILD_H_ZERO AS SELECT $ID_ZONE as ID_ZONE, COUNT(*) as FC_H_ZERO FROM $BUILDING_FC WHERE HEIGHT_WALL=0;
+CREATE TABLE $FC_BUILD_H_ZERO AS SELECT '$ID_ZONE' as ID_ZONE, COUNT(*) as FC_H_ZERO FROM $BUILDING_FC WHERE HEIGHT_WALL=0;
 CREATE TABLE $FC_BUILD_H_NULL AS SELECT COUNT(*) as FC_H_NULL FROM $BUILDING_FC WHERE HEIGHT_WALL is null;
 CREATE TABLE $FC_BUILD_H_RANGE AS SELECT COUNT(*) as FC_H_RANGE FROM $BUILDING_FC WHERE HEIGHT_WALL < 0 OR HEIGHT_WALL > 1000;
 
@@ -157,27 +165,27 @@ CREATE INDEX ON $BUILDING(ID_ZONE);
 
 DROP TABLE IF EXISTS $BUILD_NUMB, $BUILD_VALID_ZONE, $BUILD_EMPTY, $BUILD_EQUALS_ZONE, $BUILD_OVERLAP_ZONE, $BUILD_H, $BUILD_H_RANGE, $BUILD_H_WALL_ROOF, $BUILD_LEV, $BUILD_LEV_RANGE, $BUILD_TYPE, $BUILD_TYPE_RANGE, $BUILDING_STATS_ZONE;
 
-CREATE TABLE $BUILD_NUMB AS SELECT COUNT(*) as NB_BUILD FROM $BUILDING WHERE ID_ZONE=$ID_ZONE;
+CREATE TABLE $BUILD_NUMB AS SELECT COUNT(*) as NB_BUILD FROM $BUILDING WHERE ID_ZONE='$ID_ZONE';
 -- Count the number of buildings which geometry is not valid
-CREATE TABLE $BUILD_VALID_ZONE AS SELECT COUNT(*) as NOT_VALID FROM $BUILDING WHERE NOT ST_IsValid(the_geom) AND ID_ZONE=$ID_ZONE;
+CREATE TABLE $BUILD_VALID_ZONE AS SELECT COUNT(*) as NOT_VALID FROM $BUILDING WHERE NOT ST_IsValid(the_geom) AND ID_ZONE='$ID_ZONE';
 -- Count the number of buildings which geometry is empty
-CREATE TABLE $BUILD_EMPTY AS SELECT COUNT(*) as IS_EMPTY FROM $BUILDING WHERE ST_IsEmpty(the_geom) AND ID_ZONE=$ID_ZONE;
+CREATE TABLE $BUILD_EMPTY AS SELECT COUNT(*) as IS_EMPTY FROM $BUILDING WHERE ST_IsEmpty(the_geom) AND ID_ZONE='$ID_ZONE';
 -- Count the number of buildings which geometry is equal to an another one
-CREATE TABLE $BUILD_EQUALS_ZONE AS SELECT COUNT(a.*) as IS_EQUALS FROM $BUILDING a, $BUILDING b WHERE a.the_geom && b.the_geom AND ST_Equals(a.the_geom, b.the_geom) AND a.ID_BUILD<>b.ID_BUILD AND a.ID_ZONE=$ID_ZONE AND b.ID_ZONE=$ID_ZONE;
+CREATE TABLE $BUILD_EQUALS_ZONE AS SELECT COUNT(a.*) as IS_EQUALS FROM $BUILDING a, $BUILDING b WHERE a.the_geom && b.the_geom AND ST_Equals(a.the_geom, b.the_geom) AND a.ID_BUILD<>b.ID_BUILD AND a.ID_ZONE='$ID_ZONE' AND b.ID_ZONE='$ID_ZONE';
 -- Count the number of building which overlaps another one.
 -- Remark : The building ids have to be different and the buildings from table A (where we count) have to be in the studied city
-CREATE TABLE $BUILD_OVERLAP_ZONE AS SELECT COUNT(a.*) as OVERLAP FROM $BUILDING a, $BUILDING b WHERE a.the_geom && b.the_geom AND ST_OVERLAPS(a.the_geom, b.the_geom) AND a.ID_BUILD<>b.ID_BUILD AND a.ID_ZONE=$ID_ZONE;
+CREATE TABLE $BUILD_OVERLAP_ZONE AS SELECT COUNT(a.*) as OVERLAP FROM $BUILDING a, $BUILDING b WHERE a.the_geom && b.the_geom AND ST_OVERLAPS(a.the_geom, b.the_geom) AND a.ID_BUILD<>b.ID_BUILD AND a.ID_ZONE='$ID_ZONE';
 -- Count the number of buildings which height is null or is outside the range [0;1000]
-CREATE TABLE $BUILD_H AS SELECT COUNT(*) as H_NULL FROM $BUILDING WHERE HEIGHT_WALL is null AND ID_ZONE=$ID_ZONE;
-CREATE TABLE $BUILD_H_RANGE AS SELECT COUNT(*) as H_RANGE FROM $BUILDING WHERE (HEIGHT_WALL < 0 OR HEIGHT_WALL > 1000) AND ID_ZONE=$ID_ZONE;
+CREATE TABLE $BUILD_H AS SELECT COUNT(*) as H_NULL FROM $BUILDING WHERE HEIGHT_WALL is null AND ID_ZONE='$ID_ZONE';
+CREATE TABLE $BUILD_H_RANGE AS SELECT COUNT(*) as H_RANGE FROM $BUILDING WHERE (HEIGHT_WALL < 0 OR HEIGHT_WALL > 1000) AND ID_ZONE='$ID_ZONE';
 -- Count the number of buildings where H_ROOF is smaller than H_WALL
-CREATE TABLE $BUILD_H_WALL_ROOF AS SELECT COUNT(*) as H_ROOF_MIN_WALL FROM $BUILDING WHERE HEIGHT_WALL > HEIGHT_ROOF AND ID_ZONE=$ID_ZONE;
+CREATE TABLE $BUILD_H_WALL_ROOF AS SELECT COUNT(*) as H_ROOF_MIN_WALL FROM $BUILDING WHERE HEIGHT_WALL > HEIGHT_ROOF AND ID_ZONE='$ID_ZONE';
 -- Count the number of buildings which number of level is null or is outside the range [1;200]
-CREATE TABLE $BUILD_LEV AS SELECT COUNT(*) as LEV_NULL FROM $BUILDING WHERE NB_LEV is null AND ID_ZONE=$ID_ZONE;
-CREATE TABLE $BUILD_LEV_RANGE AS SELECT COUNT(*) as LEV_RANGE FROM $BUILDING WHERE (NB_LEV < 1 OR NB_LEV > 200) AND ID_ZONE=$ID_ZONE;
+CREATE TABLE $BUILD_LEV AS SELECT COUNT(*) as LEV_NULL FROM $BUILDING WHERE NB_LEV is null AND ID_ZONE='$ID_ZONE';
+CREATE TABLE $BUILD_LEV_RANGE AS SELECT COUNT(*) as LEV_RANGE FROM $BUILDING WHERE (NB_LEV < 1 OR NB_LEV > 200) AND ID_ZONE='$ID_ZONE';
 -- Count the number of buildings with no TYPE or where TYPE is not in the list of tags (Table NATURE_TAGS)
-CREATE TABLE $BUILD_TYPE AS SELECT COUNT(*) as NO_TYPE FROM $BUILDING WHERE TYPE is null AND ID_ZONE=$ID_ZONE;
-CREATE TABLE $BUILD_TYPE_RANGE AS SELECT COUNT(*) as TYPE_RANGE FROM $BUILDING WHERE TYPE NOT IN (SELECT TERM FROM $BUILDING_ABSTRACT_USE_TYPE) AND ID_ZONE=$ID_ZONE;
+CREATE TABLE $BUILD_TYPE AS SELECT COUNT(*) as NO_TYPE FROM $BUILDING WHERE TYPE is null AND ID_ZONE='$ID_ZONE';
+CREATE TABLE $BUILD_TYPE_RANGE AS SELECT COUNT(*) as TYPE_RANGE FROM $BUILDING WHERE TYPE NOT IN (SELECT TERM FROM $BUILDING_ABSTRACT_USE_TYPE) AND ID_ZONE='$ID_ZONE';
 
 -- Merge all these information into one single table
 CREATE TABLE $BUILDING_STATS_ZONE AS SELECT a.ID_ZONE, b.NB_BUILD, c.NOT_VALID, d.IS_EMPTY, e.IS_EQUALS, f.OVERLAP, g.FC_H_ZERO, g.FC_H_NULL, g.FC_H_RANGE, h.H_NULL, i.H_RANGE, j.H_ROOF_MIN_WALL, k.LEV_NULL, l.LEV_RANGE, m.NO_TYPE, n.TYPE_RANGE FROM $ZONE a, $BUILD_NUMB b, $BUILD_VALID_ZONE c, $BUILD_EMPTY d, $BUILD_EQUALS_ZONE e, $BUILD_OVERLAP_ZONE f, $FC_BUILD_STATS_ZONE g, $BUILD_H h, $BUILD_H_RANGE i, $BUILD_H_WALL_ROOF j, $BUILD_LEV k, $BUILD_LEV_RANGE l, $BUILD_TYPE m, $BUILD_TYPE_RANGE n;
@@ -194,14 +202,14 @@ DROP TABLE IF EXISTS $BUILD_VALID_EXT_ZONE, $BUILD_EMPTY, $BUILD_EQUALS_EXT_ZONE
 CREATE TABLE $BUILD_NUMB AS SELECT COUNT(*) as NB_BUILD FROM $BUILDING;
 -- Count the number of invalid building, that are not in the studied city
 -- This information will then be merged with the number of invalid building, inside the studied city (from table $BUILD_VALID_ZONE), to compute the total number of invalid buildings at the extended city level
-CREATE TABLE $BUILD_VALID_EXT_ZONE AS SELECT COUNT(*) as NOT_VALID FROM $BUILDING WHERE NOT ST_IsValid(the_geom) AND ID_ZONE<>$ID_ZONE;
+CREATE TABLE $BUILD_VALID_EXT_ZONE AS SELECT COUNT(*) as NOT_VALID FROM $BUILDING WHERE NOT ST_IsValid(the_geom) AND ID_ZONE<>'$ID_ZONE';
 CREATE TABLE $BUILD_EMPTY AS SELECT COUNT(*) as IS_EMPTY FROM $BUILDING WHERE ST_IsEmpty(the_geom);
 -- Count the number of building, that are not in the studied city, and which geometry is equal to an another one.
 -- This information will then be merged with the number of building that are equal, inside the studied city (from table $BUILD_EQUALS_ZONE), to compute the total number of buildings that are equal at the extended city level
-CREATE TABLE $BUILD_EQUALS_EXT_ZONE AS SELECT COUNT(a.*) as IS_EQUALS FROM $BUILDING a, $BUILDING b WHERE a.the_geom && b.the_geom AND ST_Equals(a.the_geom, b.the_geom) AND a.ID_BUILD<>b.ID_BUILD AND a.ID_ZONE<>$ID_ZONE AND b.ID_ZONE<>$ID_ZONE;
+CREATE TABLE $BUILD_EQUALS_EXT_ZONE AS SELECT COUNT(a.*) as IS_EQUALS FROM $BUILDING a, $BUILDING b WHERE a.the_geom && b.the_geom AND ST_Equals(a.the_geom, b.the_geom) AND a.ID_BUILD<>b.ID_BUILD AND a.ID_ZONE<>'$ID_ZONE' AND b.ID_ZONE<>'$ID_ZONE';
 -- Count the number of building, that are not in the studied city, and which overlaps with another building (which can be outside or inside the studied city)
 -- This information will then be merged with the number of building that overlaps, inside the studied city (from table $BUILD_OVERLAP_ZONE), to compute the total number of buildings that overlaps at the extended city level
-CREATE TABLE $BUILD_OVERLAP_EXT_ZONE AS SELECT COUNT(a.*) as OVERLAP FROM $BUILDING a, $BUILDING b WHERE a.the_geom && b.the_geom AND ST_OVERLAPS(a.the_geom, b.the_geom) AND a.ID_BUILD<>b.ID_BUILD AND a.ID_ZONE<>$ID_ZONE;
+CREATE TABLE $BUILD_OVERLAP_EXT_ZONE AS SELECT COUNT(a.*) as OVERLAP FROM $BUILDING a, $BUILDING b WHERE a.the_geom && b.the_geom AND ST_OVERLAPS(a.the_geom, b.the_geom) AND a.ID_BUILD<>b.ID_BUILD AND a.ID_ZONE<>'$ID_ZONE';
 CREATE TABLE $BUILD_H AS SELECT COUNT(*) as H_NULL FROM $BUILDING WHERE HEIGHT_WALL is null;
 CREATE TABLE $BUILD_H_RANGE AS SELECT COUNT(*) as H_RANGE FROM $BUILDING WHERE HEIGHT_WALL < 0 OR HEIGHT_WALL > 1000;
 CREATE TABLE $BUILD_H_WALL_ROOF AS SELECT COUNT(*) as H_ROOF_MIN_WALL FROM $BUILDING WHERE HEIGHT_WALL > HEIGHT_ROOF;
