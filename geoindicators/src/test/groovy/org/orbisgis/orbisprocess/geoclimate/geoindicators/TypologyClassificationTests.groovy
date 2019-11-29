@@ -139,7 +139,7 @@ class TypologyClassificationTests {
         XStream xs = new XStream()
         FileInputStream fs = new FileInputStream(fileAndPath)
         RandomForest modelRead = xs.fromXML(fs)
-        assertEquals h2GIS.getTable(tableTraining).getColumns().keySet().join(","),
-                modelRead.formula.x(df).names().join(",")
+        assertEquals h2GIS.getTable(tableTraining).getColumns().keySet().minus(var2model).sort().join(","),
+                modelRead.formula.x(df).names().sort().join(",")
     }
 }
