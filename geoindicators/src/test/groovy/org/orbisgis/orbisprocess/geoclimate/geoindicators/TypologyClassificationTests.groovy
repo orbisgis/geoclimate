@@ -5,13 +5,17 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.orbisgis.datamanager.h2gis.H2GIS
 
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
+
 import smile.base.cart.SplitRule
 import smile.data.DataFrame
-import smile.classification.RandomForest;
-import smile.validation.Validation;
-import smile.validation.Accuracy;
+import smile.classification.RandomForest
+import smile.validation.Validation
+import smile.validation.Accuracy
 
-import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.XStream
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertTrue
@@ -85,9 +89,10 @@ class TypologyClassificationTests {
                 CREATE TABLE tempo_rsu_for_lcz AS SELECT a.*, b.the_geom FROM rsu_test_for_lcz a LEFT JOIN rsu_test b
                 ON a.id_rsu = b.id_rsu;
         """
-        // Load the training dataset into the H2GIS Database
+        // Informations about where to find the training dataset for the test
         def tableTraining = "testRandomForest"
-        def pathAndNameFile = "/home/decide/Documents/CloudS/LABSTICC/ClassificationSupervisee/Data/DATA_APPRENTISSAGE_CITIES.shp"
+        def urlToDownload = ""
+        def pathAndNameFile = System.getProperty("user.home") + "/geoclimate/"+ tableTraining
 
         // Variable to model
         def var2model = "I_TYPO"
@@ -104,7 +109,16 @@ class TypologyClassificationTests {
                      "U_H_STD", "U_PASSIV_V", "U_VOL", "U_VOL_MEAN", "U_BH_STD_M",\
                      "U_BCOMP_NW", "U_BCOMP_WM", "U_BCOMP_ST", "U_FWALL_A"]
 
+        // If the training dataset is not already loaded in the database...
         if (h2GIS.getTable(tableTraining) == null){
+            // Test if the training dataset file if already exists...
+            File file = new File(pathAndNameFile)
+            if (!file){
+                // If not, download it
+                InputStream inputStream = new URL(urlToDownload).openStream()
+                Files.copy(inputStream, Paths.get(pathAndNameFile),
+                        StandardCopyOption.REPLACE_EXISTING)
+            }
             h2GIS.execute """DROP TABLE IF EXISTS $tableTraining; 
                                     CALL SHPREAD('$pathAndNameFile', '$tableTraining'); 
                                     ALTER TABLE $tableTraining DROP COLUMN ${colsToRemove.join(",")};"""
@@ -117,14 +131,14 @@ class TypologyClassificationTests {
                                  maxNodes: 300, nodeSize: 5, subsample: 0.25, datasource: h2GIS])
 
         // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
-        def df = DataFrame.of(h2GIS.getTable(tableTraining))
-        def model = pmed.RfModel
-         0.844, Accuracy.of(df.select(var2model).toIntArray().join(), Validation.test(model, df)).round(3)
+        DataFrame df = DataFrame.of(h2GIS.getTable(tableTraining)).factorize(var2model).omitNullRows()
+        def model = pmed.results.RfModel
+        assertEquals 0.844, Accuracy.of(df.apply(var2model).toIntArray(), Validation.test(model, df)).round(3), 0.002
 
         // Test that the model is well written in the file and can be used to recover the variable names for example
-        XStream xs = new XStream();
-        FileInputStream fs = new FileInputStream(fileAndPath);
-        RandomForest modelRead = xs.fromXML(fs);
+        XStream xs = new XStream()
+        FileInputStream fs = new FileInputStream(fileAndPath)
+        RandomForest modelRead = xs.fromXML(fs)
         assertEquals h2GIS.getTable(tableTraining).getColumns().keySet().join(","),
                 modelRead.formula.x(df).names().join(",")
     }

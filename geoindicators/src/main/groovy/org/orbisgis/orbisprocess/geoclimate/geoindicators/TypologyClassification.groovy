@@ -3,7 +3,7 @@ package org.orbisgis.orbisprocess.geoclimate.geoindicators
 import groovy.transform.BaseScript
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanagerapi.IProcess
-
+import smile.base.cart.SplitRule
 import smile.data.DataFrame
 import smile.data.formula.Formula;
 import smile.classification.RandomForest;
@@ -266,6 +266,8 @@ IProcess identifyLczType() {
  * @param mtry the number of input variables to be used to determine the decision
  * at a node of the tree. p/3 seems to give generally good performance,
  * where p is the number of variables
+ * @param rule Decision tree split rule (The function to measure the quality of a split. Supported rules
+ * are “gini” for the Gini impurity and “entropy” for the information gain)
  * @param maxDepth the maximum depth of the tree.
  * @param maxNodes the maximum number of leaf nodes in the tree.
  * @param nodeSize the number of instances in a node below which the tree will
@@ -281,22 +283,16 @@ IProcess createRandomForestClassif() {
     return create({
         title "Create a Random Forest model"
         inputs trainingTableName: String, varToModel: String, save: boolean, pathAndFileName: String,
-                ntrees: int, mtry: int, maxDepth: int, maxNodes: int, nodeSize: int,
+                ntrees: int, mtry: int, rule: SplitRule, maxDepth: int, maxNodes: int, nodeSize: int,
                 subsample: double, datasource: JdbcDataSource
-        outputs outputTableName: String
-        run { trainingTableName, varToModel, save, pathAndFileName, ntrees, mtry,
+        outputs RfModel: RandomForest
+        run { trainingTableName, varToModel, save, pathAndFileName, ntrees, mtry, rule,
               maxDepth, maxNodes, nodeSize, subsample, datasource ->
 
             info "Create a Random Forest model"
 
-            // Get a list of all fields
-            def listOfColumns = datasource.getTable(trainingTableName).getColumns().keySet()
-
             // Read the training table as a DataFrame
             def df = DataFrame.of(datasource.getTable(trainingTableName))
-
-            // Identify the column where is stored the typo
-            def df_typo = df.select(varToModel)
 
             Formula formula = Formula.lhs(varToModel)
 
@@ -304,24 +300,23 @@ IProcess createRandomForestClassif() {
             df = df.factorize(varToModel).omitNullRows()
 
             // Create the randomForest
-            RandomForest RfModel = RandomForest.fit(formula, df, ntrees = ntrees, mtry = mtry,
-                    rule = rule, maxDepth = maxDepth, maxNodes = maxNodes, nodeSize = nodeSize,
-                    subsample = subsample)
+            RandomForest model = RandomForest.fit(formula, df, ntrees, mtry,
+                    rule, maxDepth, maxNodes, nodeSize, subsample)
 
             // Calculate the prediction using the same sample in order to identify what is the
             // data rate that has been well classified
-            int[] prediction = Validation.test(RfModel, df)
+            int[] prediction = Validation.test(model, df)
             int[] truth = df.apply(varToModel).toIntArray()
             double accuracy = Accuracy.of(truth, prediction)
             logger.info "The percentage of the data that have been well classified is : ${accuracy*100}%"
 
             if (save){
                 XStream xs = new XStream()
-                FileOutputStream fs = new FileOutputStream("/home/decide/Bureau/model.txt")
-                xs.toXML(RfModel, fs)
+                FileOutputStream fs = new FileOutputStream(pathAndFileName)
+                xs.toXML(model, fs)
             }
 
-            [outputTableName: RfModel]
+            [RfModel: model]
         }
     })
 }
