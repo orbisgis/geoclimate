@@ -4,28 +4,11 @@ import groovy.transform.BaseScript
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanagerapi.IProcess
 
-import java.io.FileOutputStream;
-import java.sql.DriverManager;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.ArrayList;
-
-import smile.data.type.DataType;
 import smile.data.DataFrame
-import smile.data.type.DataTypes;
-import smile.data.type.StructField;
-import smile.math.matrix.DenseMatrix;
-import smile.util.Paths;
 import smile.data.formula.Formula;
 import smile.classification.RandomForest;
 import smile.validation.Validation;
 import smile.validation.Accuracy;
-import smile.validation.Error;
-import smile.base.cart.SplitRule;
 
 import com.thoughtworks.xstream.XStream;
 
@@ -291,12 +274,10 @@ IProcess identifyLczType() {
  * sampling without replacement.
  * @param datasource A connection to a database
  *
- * @return A randomForest model (see smile library for further information about the object)
+ * @return RfModel A randomForest model (see smile library for further information about the object)
  * @author Jérémy Bernard
  */
 IProcess createRandomForestClassif() {
-    def final BASE_NAME = "RF_MODEL"
-    def final GEOMETRIC_FIELD = "the_geom"
     return create({
         title "Create a Random Forest model"
         inputs trainingTableName: String, varToModel: String, save: boolean, pathAndFileName: String,
@@ -312,35 +293,35 @@ IProcess createRandomForestClassif() {
             def listOfColumns = datasource.getTable(trainingTableName).getColumns().keySet()
 
             // Read the training table as a DataFrame
-            def df = DataFrame.of(datasource.getTable(trainingTableName));
+            def df = DataFrame.of(datasource.getTable(trainingTableName))
 
             // Identify the column where is stored the typo
             def df_typo = df.select(varToModel)
 
-            Formula formula = Formula.lhs(varToModel);
+            Formula formula = Formula.lhs(varToModel)
 
             // Convert the variable to model into factors (if string for example) and remove rows containing null values
             df = df.factorize(varToModel).omitNullRows()
 
             // Create the randomForest
-            RandomForest model = RandomForest.fit(formula, df, ntrees = ntrees, mtry = mtry,
+            RandomForest RfModel = RandomForest.fit(formula, df, ntrees = ntrees, mtry = mtry,
                     rule = rule, maxDepth = maxDepth, maxNodes = maxNodes, nodeSize = nodeSize,
-                    subsample = subsample);
+                    subsample = subsample)
 
             // Calculate the prediction using the same sample in order to identify what is the
             // data rate that has been well classified
-            int[] prediction = Validation.test(model, df);
+            int[] prediction = Validation.test(RfModel, df)
             int[] truth = df.apply(varToModel).toIntArray()
-            double accuracy = Accuracy.of(truth, prediction);
+            double accuracy = Accuracy.of(truth, prediction)
             logger.info "The percentage of the data that have been well classified is : ${accuracy*100}%"
 
             if (save){
-                XStream xs = new XStream();
-                FileOutputStream fs = new FileOutputStream("/home/decide/Bureau/model.txt");
-                xs.toXML(model, fs);
+                XStream xs = new XStream()
+                FileOutputStream fs = new FileOutputStream("/home/decide/Bureau/model.txt")
+                xs.toXML(RfModel, fs)
             }
 
-            return model
+            [outputTableName: RfModel]
         }
     })
 }
