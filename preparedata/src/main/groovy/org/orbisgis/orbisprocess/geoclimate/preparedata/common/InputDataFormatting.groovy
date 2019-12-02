@@ -18,11 +18,11 @@ import org.orbisgis.processmanagerapi.IProcess
  * @param inputVeget Table name in which the input vegetation areas are stored
  * @param inputImpervious Table name in which the input impervious areas are stored
  * @param inputZone Table name in which the input zone stored
- * @param inputZoneNeighbors Table name in which the neighboring zones are stored
  * @param hLevMin Minimum building level height
  * @param hLevMax Maximum building level height
  * @param hThresholdLev2 Threshold on the building height, used to determine the number of levels
  * @param idZone The Zone id
+ * @param expand The distance (expressed in meter) used to compute the extended area around the ZONE
  * @param buildingAbstractUseType The name of the table in which the abstract building's uses and types are stored
  * @param buildingAbstractParameters The name of the table in which the abstract building's parameters are stored
  * @param roadAbstractType The name of the table in which the abstract road's types are stored
@@ -55,8 +55,8 @@ IProcess inputDataFormatting(){
     return create({
         title 'Allows to control, format and enrich the input data in order to feed the GeoClimate model'
         inputs datasource: JdbcDataSource, inputBuilding: String, inputRoad: String, inputRail: String,
-                inputHydro: String, inputVeget: String, inputImpervious: String, inputZone: String, inputZoneNeighbors: String,
-                hLevMin: int, hLevMax: int, hThresholdLev2: int, idZone: String,
+                inputHydro: String, inputVeget: String, inputImpervious: String, inputZone: String,
+                hLevMin: 3, hLevMax: 15, hThresholdLev2: 10, expand: 1000, idZone: String,
                 buildingAbstractUseType: String, buildingAbstractParameters: String,
                 roadAbstractType: String, roadAbstractParameters: String, roadAbstractCrossing: String,
                 railAbstractType: String, railAbstractCrossing: String,
@@ -68,14 +68,15 @@ IProcess inputDataFormatting(){
                 outputVeget: String , outputVegetStatZone: String , outputVegetStatZoneExt: String ,
                 outputImpervious: String , outputZone: String
         run { JdbcDataSource datasource, inputBuilding, inputRoad, inputRail,
-              inputHydro, inputVeget, inputImpervious, inputZone, inputZoneNeighbors,
-              hLevMin = 3, hLevMax = 15, hThresholdLev2 = 10, idZone,
+              inputHydro, inputVeget, inputImpervious, inputZone,
+              hLevMin, hLevMax, hThresholdLev2, expand, idZone,
               buildingAbstractUseType, buildingAbstractParameters,
               roadAbstractType, roadAbstractParameters, roadAbstractCrossing,
               railAbstractType, railAbstractCrossing,
               vegetAbstractType, vegetAbstractParameters ->
             logger.info('Executing the inputDataFormatting.sql script')
             def uuid = UUID.randomUUID().toString().replaceAll('-', '_')
+            def zoneNeighbors = 'ZONE_NEIGHBORS_' + uuid
             def buZone = 'BU_ZONE_' + uuid
             def buildWithZone = 'BUILD_WITHIN_ZONE_' + uuid
             def buildOuterZone = 'BUILD_OUTER_ZONE_' + uuid
@@ -160,7 +161,7 @@ IProcess inputDataFormatting(){
             def success = datasource.executeScript(getClass().getResourceAsStream('inputDataFormatting.sql'),
                     [INPUT_BUILDING: inputBuilding, INPUT_ROAD: inputRoad, INPUT_RAIL: inputRail,
                      INPUT_HYDRO: inputHydro, INPUT_VEGET: inputVeget, INPUT_IMPERVIOUS: inputImpervious,
-                     ZONE: inputZone, ZONE_NEIGHBORS: inputZoneNeighbors,
+                     ZONE: inputZone, ZONE_NEIGHBORS: zoneNeighbors,
                      H_LEV_MIN: hLevMin, H_LEV_MAX: hLevMax, H_THRESHOLD_LEV2: hThresholdLev2, ID_ZONE: idZone,
                      BUILDING_ABSTRACT_USE_TYPE: buildingAbstractUseType, BUILDING_ABSTRACT_PARAMETERS: buildingAbstractParameters,
                      ROAD_ABSTRACT_TYPE: roadAbstractType, ROAD_ABSTRACT_PARAMETERS: roadAbstractParameters, ROAD_ABSTRACT_CROSSING: roadAbstractCrossing,
