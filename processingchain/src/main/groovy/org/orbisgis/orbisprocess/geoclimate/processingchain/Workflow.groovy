@@ -58,7 +58,7 @@ def BBTOPO_V2() {
                                 "height_of_roughness_elements": 1, "terrain_roughness_class": 1],
                 outputFolder:""
         outputs outputFolder: String
-        run {JdbcDataSource datasource, inputFolder, distance,indicatorUse, svfSimplified, prefixName, mapOfWeights, outputFolder ->
+        run {datasource, inputFolder, distance,indicatorUse, svfSimplified, prefixName, mapOfWeights, outputFolder ->
 
             if(inputFolder){
                 def outputDir = new File(outputFolder)
@@ -95,7 +95,7 @@ def BBTOPO_V2() {
                         //Let's run the BDTopo process for each insee code
                         def prepareBDTopoData = ProcessingChain.PrepareBDTopo.prepareBDTopo()
                         int nbAreas = inseeCodes.size();
-                        info "$nbAreas will be processed"
+                        info "$nbAreas areas will be processed"
                         inseeCodes.eachWithIndex { code, index->
                          if(prepareBDTopoData.execute([datasource                 : datasource,
                                                     tableIrisName              : 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
@@ -150,7 +150,7 @@ def BBTOPO_V2() {
                     error "The input folder must be a directory"
                     return null
                 }
-                return [outputFolder : outputDir]
+                return [outputFolder : outputDir.getAbsolutePath()]
             }
 
 
