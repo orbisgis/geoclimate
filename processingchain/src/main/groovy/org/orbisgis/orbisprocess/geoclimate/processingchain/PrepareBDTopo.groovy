@@ -142,7 +142,7 @@ def prepareBDTopo() {
                                       inputVeget: preprocessTables.outputVegetName,
                                       inputImpervious: preprocessTables.outputImperviousName,
                                       inputZone: preprocessTables.outputZoneName,
-                                      inputZoneNeighbors: preprocessTables.outputZoneNeighborsName,
+                                      //inputZoneNeighbors: preprocessTables.outputZoneNeighborsName,
                                       hLevMin: hLevMin, hLevMax: hLevMax, hThresholdLev2: hThresholdLev2, idZone: idZone,
                                       buildingAbstractUseType: abstractTables.outputBuildingAbstractUseType,
                                       buildingAbstractParameters: abstractTables.outputBuildingAbstractParameters,
@@ -187,34 +187,6 @@ def prepareBDTopo() {
 
         }})
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 public static ProcessMapper createMapper(){
     def abstractTablesInit = AbstractTablesInitialization.initParametersAbstract()
