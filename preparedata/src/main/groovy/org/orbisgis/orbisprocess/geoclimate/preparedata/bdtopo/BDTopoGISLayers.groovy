@@ -112,7 +112,37 @@ IProcess importPreprocess(){
             def tmp_imperv_surface_activite = 'TMP_IMPERV_SURFACE_ACTIVITE_' + uuid
             def input_impervious = 'INPUT_IMPERVIOUS'
 
-            // If the impervious tables does not exists, we create corresponding empty tables
+
+            // -------------------------------------------------------------------------------
+            // Check if the input files are present
+
+            // If the IRIS_GE table does not exist or is empty, then the process is stopped
+            if(!datasource.hasTable(tableIrisName) || datasource.getTable(tableIrisName).isEmpty()){
+                logger.error 'The process has been stopped since the table IRIS_GE does not exist or is empty'
+                return null}
+
+            // If the following tables does not exists, we create corresponding empty tables
+            if(!datasource.hasTable(tableBuildIndifName)){
+                datasource.execute("CREATE TABLE $tableBuildIndifName (THE_GEOM geometry(geometry, 2154), ID varchar, HAUTEUR integer);")
+            }
+            if(!datasource.hasTable(tableBuildIndusName)){
+                datasource.execute("CREATE TABLE $tableBuildIndusName (THE_GEOM geometry(geometry, 2154), ID varchar, HAUTEUR integer, NATURE varchar);")
+            }
+            if(!datasource.hasTable(tableBuildRemarqName)){
+                datasource.execute("CREATE TABLE $tableBuildRemarqName (THE_GEOM geometry(geometry, 2154), ID varchar, HAUTEUR integer, NATURE varchar);")
+            }
+            if(!datasource.hasTable(tableRoadName)){
+                datasource.execute("CREATE TABLE $tableRoadName (THE_GEOM geometry(geometry, 2154), ID varchar, LARGEUR double precision, NATURE varchar, POS_SOL integer, FRANCHISST varchar);")
+            }
+            if(!datasource.hasTable(tableRailName)){
+                datasource.execute("CREATE TABLE $tableRailName (THE_GEOM geometry(geometry, 2154), ID varchar, NATURE varchar, POS_SOL integer, FRANCHISST varchar);")
+            }
+            if(!datasource.hasTable(tableHydroName)){
+                datasource.execute("CREATE TABLE $tableHydroName (THE_GEOM geometry(geometry, 2154), ID varchar);")
+            }
+            if(!datasource.hasTable(tableVegetName)){
+                datasource.execute("CREATE TABLE $tableVegetName (THE_GEOM geometry(geometry, 2154), ID varchar, NATURE varchar);")
+            }
             if(!datasource.hasTable(tableImperviousSportName)){
                 datasource.execute("CREATE TABLE $tableImperviousSportName (THE_GEOM geometry(geometry, 2154), ID varchar, NATURE varchar);")
             }
@@ -125,6 +155,7 @@ IProcess importPreprocess(){
             if(!datasource.hasTable(tableImperviousActivSurfName)){
                 datasource.execute("CREATE TABLE $tableImperviousActivSurfName (THE_GEOM geometry(geometry, 2154), ID varchar, CATEGORIE varchar);")
             }
+            // -------------------------------------------------------------------------------
 
             def success = datasource.executeScript(getClass().getResourceAsStream('importPreprocess.sql'),
                     [ID_ZONE: idZone, DIST_BUFFER: distBuffer, EXPAND: expand,
