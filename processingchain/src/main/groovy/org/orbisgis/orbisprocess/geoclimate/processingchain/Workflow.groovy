@@ -61,19 +61,23 @@ def BBTOPO_V2() {
         run {JdbcDataSource datasource, inputFolder, distance,indicatorUse, svfSimplified, prefixName, mapOfWeights, outputFolder ->
 
             if(inputFolder){
-                def outputDir
+                def outputDir = new File(outputFolder)
                 def folder = new File(inputFolder)
                 if(folder.isDirectory()){
-
                     def shapeFiles  = []
                     folder.traverse(type: groovy.io.FileType.FILES, nameFilter: ~/.*\.shp/) { File shapeFile ->
                         shapeFiles << shapeFile.getAbsolutePath()
                     }
-
                     if(!outputFolder){
                         outputDir=new File("$inputFolder${File.separator}results")
                         if(!outputDir.exists()){
                             outputDir.mkdir()
+                        }
+                    }
+                    else {
+                        if(!outputDir.isDirectory()){
+                            error "Please set a valid output folder"
+                            return null
                         }
                     }
                     //Looking for IRIS_GE shape file
@@ -90,9 +94,9 @@ def BBTOPO_V2() {
 
                         //Let's run the BDTopo process for each insee code
                         def prepareBDTopoData = ProcessingChain.PrepareBDTopo.prepareBDTopo()
-                        def saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
-                        info "${inseeCodes.size()} will be processed"
-                        inseeCodes..eachWithIndex { code, index->
+                        int nbAreas = inseeCodes.size();
+                        info "$nbAreas will be processed"
+                        inseeCodes.eachWithIndex { code, index->
                          if(prepareBDTopoData.execute([datasource                 : datasource,
                                                     tableIrisName              : 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                                     tableBuildIndusName        : 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -126,14 +130,14 @@ def BBTOPO_V2() {
                                  error "Cannot build the geoindicators for the area $code"
                              }
                              else{
-                                 def tablesToSave = geoIndicators.getResults().collect {code+it.value}
-                                 saveTables.execute([inputTableNames: tablesToSave, directory: outputDir,
-                                                     datasource: datasource])
+                                 def tablesToSave = geoIndicators.getResults().collect {
+                                     datasource.save(it.value,"${outputDir.getAbsolutePath()}${File.separator}${code}_${it.value}.geojson")
+                                     }
                                  info "${code} has been processed"
                              }
 
                          }
-                            info "Number of area processed ${index}"
+                            info "Number of area processed $index on $nbAreas"
                     }
 
                     }
