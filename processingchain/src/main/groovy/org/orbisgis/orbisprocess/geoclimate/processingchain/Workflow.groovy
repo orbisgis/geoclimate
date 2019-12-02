@@ -32,10 +32,7 @@ import org.orbisgis.datamanager.JdbcDataSource
  * in the subfolder "results" in the inputFolder
  *
  *
- * @return 10 tables : zoneTable , zoneEnvelopeTableName, buildingTable,
- * roadTable, railTable, vegetationTable,
- * hydrographicTable, buildingIndicators,
- * blockIndicators, rsuIndicators, rsuLcz
+ * @return the path of the folder that contains the geojson files
  *
  *
  * References:
