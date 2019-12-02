@@ -18,9 +18,10 @@ import org.orbisgis.processmanagerapi.IProcess
 IProcess joinTables() {
     create({
         title "Utility process to join tables in one"
-        inputs inputTableNamesWithId: Map, outputTableName: String, datasource: JdbcDataSource
+        inputs inputTableNamesWithId: Map, outputTableName: String, datasource: JdbcDataSource,
+                prefixWithTabName : false
         outputs outputTableName: String
-        run { inputTableNamesWithId, outputTableName, datasource ->
+        run { inputTableNamesWithId, outputTableName, datasource, prefixWithTabName ->
 
             info "Executing Utility process to join tables in one"
 
@@ -34,14 +35,27 @@ IProcess joinTables() {
             inputTableNamesWithId.each { key, value ->
                 if (alias == "a") {
                     columnKey = "$alias.${value}"
-                    columns = datasource.getTable(key).columnNames.collect {
-                        alias + "." + it
+                    // Whether or not the table name is add as prefix of the indicator in the new table
+                    if (prefixWithTabName){
+                        columns = datasource.getTable(key).columnNames.collect {
+                            alias + "." + it + " AS ${key}_$it"
+                        }
+                    }
+                    else{
+                        columns = datasource.getTable(key).columnNames.collect {
+                            alias + "." + it
+                        }
                     }
                     leftQuery += " FROM ${key} as $alias "
                 } else {
                     datasource.getTable(key).columnNames.forEach() { item ->
                         if (!item.equalsIgnoreCase(value)) {
-                            columns.add(alias + "." + item)
+                            if (prefixWithTabName){
+                                columns.add(alias + "." + item + " AS ${key}_$item")
+                            }
+                            else {
+                                columns.add(alias + "." + item)
+                            }
                         }
                     }
                     leftQuery += " LEFT JOIN ${key} as ${alias} ON ${alias}.${value} = ${columnKey} "
