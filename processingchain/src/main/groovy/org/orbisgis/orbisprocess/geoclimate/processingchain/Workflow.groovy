@@ -7,6 +7,154 @@ import org.orbisgis.datamanager.JdbcDataSource
 
 @BaseScript ProcessingChain processingChain
 
+
+/**
+ * Load the BDTopo layers from a folder and compute geoindicators (by default the ones needed for the LCZ classification,
+ * for the urban typology classification and for the TEB model). Note that the LCZ classification is performed but
+ * should not be trusted now.
+ *
+ * @param datasource A connection to a database
+ * @param inputFolder The path of the folder that must contains the BDTopo V2 shapefiles
+ * @param distance The integer value to expand the envelope of zone when recovering the data from OSM
+ * (some objects may be badly truncated if they are not within the envelope)
+ * @param indicatorUse List of geoindicator types to compute (default ["LCZ", "URBAN_TYPOLOGY", "TEB"]
+ *                  --> "LCZ" : compute the indicators needed for the LCZ classification (Stewart et Oke, 2012)
+ *                  --> "URBAN TYPOLOGY" : compute the indicators needed for the urban typology classification (Bocher et al., 2017)
+ *                  --> "TEB" : compute the indicators needed for the Town Energy Balance model
+ * @param svfSimplified A boolean indicating whether or not the simplified version of the SVF should be used. This
+ * version is faster since it is based on a simple relationship between ground SVF calculated at RSU scale and
+ * facade density (Bernard et al. 2018).
+ * @param prefixName A prefix used to name the output table (default ""). Could be useful in case the user wants to
+ * investigate the sensibility of the chain to some input parameters
+ * @param mapOfWeights Values that will be used to increase or decrease the weight of an indicator (which are the key
+ * of the map) for the LCZ classification step (default : all values to 1)
+ * @param outputFolder The path of the folder to store the results as geojson files. By default, the files are stored
+ * in the subfolder "results" in the inputFolder
+ *
+ *
+ * @return 10 tables : zoneTable , zoneEnvelopeTableName, buildingTable,
+ * roadTable, railTable, vegetationTable,
+ * hydrographicTable, buildingIndicators,
+ * blockIndicators, rsuIndicators, rsuLcz
+ *
+ *
+ * References:
+ * --> Bocher, E., Petit, G., Bernard, J., & Palominos, S. (2018). A geoprocessing framework to compute
+ * urban indicators: The MApUCE tools chain. Urban climate, 24, 153-174.
+ * --> Jérémy Bernard, Erwan Bocher, Gwendall Petit, Sylvain Palominos. Sky View Factor Calculation in
+ * Urban Context: Computational Performance and Accuracy Analysis of Two Open and Free GIS Tools. Climate ,
+ * MDPI, 2018, Urban Overheating - Progress on Mitigation Science and Engineering Applications, 6 (3), pp.60.
+ * --> Stewart, Ian D., and Tim R. Oke. "Local climate zones for urban temperature studies." Bulletin of the American
+ * Meteorological Society 93, no. 12 (2012): 1879-1900.
+ *
+ */
+def BBTOPO_V2() {
+    create({
+        title "Create all geoindicators from OSM data"
+        inputs datasource: JdbcDataSource, inputFolder: String, distance: 0,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+                svfSimplified:false, prefixName: "",
+                mapOfWeights : ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                                "height_of_roughness_elements": 1, "terrain_roughness_class": 1],
+                outputFolder:""
+        outputs outputFolder: String
+        run {JdbcDataSource datasource, inputFolder, distance,indicatorUse, svfSimplified, prefixName, mapOfWeights, outputFolder ->
+
+            if(inputFolder){
+                def outputDir
+                def folder = new File(inputFolder)
+                if(folder.isDirectory()){
+
+                    def shapeFiles  = []
+                    folder.traverse(type: groovy.io.FileType.FILES, nameFilter: ~/.*\.shp/) { File shapeFile ->
+                        shapeFiles << shapeFile.getAbsolutePath()
+                    }
+
+                    if(!outputFolder){
+                        outputDir=new File("$inputFolder${File.separator}results")
+                        if(!outputDir.exists()){
+                            outputDir.mkdir()
+                        }
+                    }
+                    //Looking for IRIS_GE shape file
+                    if(shapeFiles.find{ it.toLowerCase().endsWith("iris_ge.shp")}) {
+                        //Load the shapefiles
+                        shapeFiles.each { shp ->
+                            datasource.load(shp, true)
+                        }
+                        //Prepare iteration on each insee code
+                        def inseeCodes = []
+                        datasource.eachRow("select distinct insee_com from IRIS_GE group by insee_com ;") { row ->
+                            inseeCodes << row.insee_com
+                        }
+
+                        //Let's run the BDTopo process for each insee code
+                        def prepareBDTopoData = ProcessingChain.PrepareBDTopo.prepareBDTopo()
+                        def saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
+                        info "${inseeCodes.size()} will be processed"
+                        inseeCodes..eachWithIndex { code, index->
+                         if(prepareBDTopoData.execute([datasource                 : datasource,
+                                                    tableIrisName              : 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                                    tableBuildIndusName        : 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
+                                                    tableRoadName              : 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
+                                                    tableHydroName             : 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
+                                                    tableImperviousSportName   : 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
+                                                    tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
+                                                    distBuffer                 : 500, expand: 1000, idZone: code,
+                                                    hLevMin                    : 3, hLevMax: 15, hThresholdLev2: 10
+                        ])){
+
+                             String buildingTableName = prepareBDTopoData.getResults().outputBuilding
+
+                             String roadTableName = prepareBDTopoData.getResults().outputRoad
+
+                             String railTableName = prepareBDTopoData.getResults().outputRail
+
+                             String hydrographicTableName = prepareBDTopoData.getResults().outputHydro
+
+                             String vegetationTableName = prepareBDTopoData.getResults().outputVeget
+
+                             String zoneTableName = prepareBDTopoData.getResults().outputZone
+
+                             IProcess geoIndicators = GeoIndicators()
+                             if (!geoIndicators.execute( datasource          : datasource,           zoneTable       : zoneTableName,
+                                     buildingTable       : buildingTableName,    roadTable       : roadTableName,
+                                     railTable           : railTableName,        vegetationTable : vegetationTableName,
+                                     hydrographicTable   : hydrographicTableName,indicatorUse    : indicatorUse,
+                                     svfSimplified       : svfSimplified,        prefixName      : prefixName,
+                                     mapOfWeights        : mapOfWeights)) {
+                                 error "Cannot build the geoindicators for the area $code"
+                             }
+                             else{
+                                 def tablesToSave = geoIndicators.getResults().collect {code+it.value}
+                                 saveTables.execute([inputTableNames: tablesToSave, directory: outputDir,
+                                                     datasource: datasource])
+                                 info "${code} has been processed"
+                             }
+
+                         }
+                            info "Number of area processed ${index}"
+                    }
+
+                    }
+                    else{
+                        error "The input folder must be contains the iris_ge.shp file"
+                        return null
+                    }
+                }
+                else{
+                    error "The input folder must be a directory"
+                    return null
+                }
+                return [outputFolder : outputDir]
+            }
+
+
+        }
+    })
+
+}
+
 /**
  * Extract OSM data from a place name and compute geoindicators (by default the ones needed for the LCZ classification,
  * for the urban typology classification and for the TEB model). Note that the LCZ classification is performed but
