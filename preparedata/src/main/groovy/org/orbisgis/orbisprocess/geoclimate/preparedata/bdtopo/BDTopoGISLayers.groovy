@@ -22,7 +22,7 @@ import org.orbisgis.processmanagerapi.IProcess
  * @param tableHydroName The table name in which the hydrographic areas are stored
  * @param tableVegetName The table name in which the vegetation areas are stored
  * @param tableImperviousSportName The table name in which the impervious sport areas are stored
- * @param tableImperviousBuildSurfName The table name in which the impervious surfacic buildings are stored
+ * @param tableImperviousBuildSurfName The table name in which the building impervious surfaces are stored
  * @param tableImperviousRoadSurfName The table name in which the impervious road areas are stored
  * @param tableImperviousActivSurfName The table name in which the impervious activities areas are stored
  * @param distBuffer The distance (expressed in meter) used to compute the buffer area around the ZONE
@@ -123,37 +123,37 @@ IProcess importPreprocess(){
 
             // If the following tables does not exists, we create corresponding empty tables
             if(!datasource.hasTable(tableBuildIndifName)){
-                datasource.execute("CREATE TABLE $tableBuildIndifName (THE_GEOM geometry(geometry, 2154), ID varchar, HAUTEUR integer);")
+                datasource.execute("CREATE TABLE $tableBuildIndifName (THE_GEOM geometry(polygon, 2154), ID varchar, HAUTEUR integer);")
             }
             if(!datasource.hasTable(tableBuildIndusName)){
-                datasource.execute("CREATE TABLE $tableBuildIndusName (THE_GEOM geometry(geometry, 2154), ID varchar, HAUTEUR integer, NATURE varchar);")
+                datasource.execute("CREATE TABLE $tableBuildIndusName (THE_GEOM geometry(polygon, 2154), ID varchar, HAUTEUR integer, NATURE varchar);")
             }
             if(!datasource.hasTable(tableBuildRemarqName)){
-                datasource.execute("CREATE TABLE $tableBuildRemarqName (THE_GEOM geometry(geometry, 2154), ID varchar, HAUTEUR integer, NATURE varchar);")
+                datasource.execute("CREATE TABLE $tableBuildRemarqName (THE_GEOM geometry(polygon, 2154), ID varchar, HAUTEUR integer, NATURE varchar);")
             }
             if(!datasource.hasTable(tableRoadName)){
-                datasource.execute("CREATE TABLE $tableRoadName (THE_GEOM geometry(geometry, 2154), ID varchar, LARGEUR double precision, NATURE varchar, POS_SOL integer, FRANCHISST varchar);")
+                datasource.execute("CREATE TABLE $tableRoadName (THE_GEOM geometry(linestring, 2154), ID varchar, LARGEUR double precision, NATURE varchar, POS_SOL integer, FRANCHISST varchar);")
             }
             if(!datasource.hasTable(tableRailName)){
-                datasource.execute("CREATE TABLE $tableRailName (THE_GEOM geometry(geometry, 2154), ID varchar, NATURE varchar, POS_SOL integer, FRANCHISST varchar);")
+                datasource.execute("CREATE TABLE $tableRailName (THE_GEOM geometry(linestring, 2154), ID varchar, NATURE varchar, POS_SOL integer, FRANCHISST varchar);")
             }
             if(!datasource.hasTable(tableHydroName)){
-                datasource.execute("CREATE TABLE $tableHydroName (THE_GEOM geometry(geometry, 2154), ID varchar);")
+                datasource.execute("CREATE TABLE $tableHydroName (THE_GEOM geometry(polygon, 2154), ID varchar);")
             }
             if(!datasource.hasTable(tableVegetName)){
-                datasource.execute("CREATE TABLE $tableVegetName (THE_GEOM geometry(geometry, 2154), ID varchar, NATURE varchar);")
+                datasource.execute("CREATE TABLE $tableVegetName (THE_GEOM geometry(polygon, 2154), ID varchar, NATURE varchar);")
             }
             if(!datasource.hasTable(tableImperviousSportName)){
-                datasource.execute("CREATE TABLE $tableImperviousSportName (THE_GEOM geometry(geometry, 2154), ID varchar, NATURE varchar);")
+                datasource.execute("CREATE TABLE $tableImperviousSportName (THE_GEOM geometry(polygon, 2154), ID varchar, NATURE varchar);")
             }
             if(!datasource.hasTable(tableImperviousBuildSurfName)){
-                datasource.execute("CREATE TABLE $tableImperviousBuildSurfName (THE_GEOM geometry(geometry, 2154), ID varchar, NATURE varchar);")
+                datasource.execute("CREATE TABLE $tableImperviousBuildSurfName (THE_GEOM geometry(polygon, 2154), ID varchar, NATURE varchar);")
             }
             if(!datasource.hasTable(tableImperviousRoadSurfName)){
-                datasource.execute("CREATE TABLE $tableImperviousRoadSurfName (THE_GEOM geometry(geometry, 2154), ID varchar);")
+                datasource.execute("CREATE TABLE $tableImperviousRoadSurfName (THE_GEOM geometry(polygon, 2154), ID varchar);")
             }
             if(!datasource.hasTable(tableImperviousActivSurfName)){
-                datasource.execute("CREATE TABLE $tableImperviousActivSurfName (THE_GEOM geometry(geometry, 2154), ID varchar, CATEGORIE varchar);")
+                datasource.execute("CREATE TABLE $tableImperviousActivSurfName (THE_GEOM geometry(polygon, 2154), ID varchar, CATEGORIE varchar);")
             }
             // -------------------------------------------------------------------------------
 

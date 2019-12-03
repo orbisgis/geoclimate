@@ -631,41 +631,6 @@ class BDTopoGISLayersTest {
         assertEquals('VARCHAR', tableName.getColumnsType('NATURE'))
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the SURFACE_ACTIVITE table
     @Test
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
