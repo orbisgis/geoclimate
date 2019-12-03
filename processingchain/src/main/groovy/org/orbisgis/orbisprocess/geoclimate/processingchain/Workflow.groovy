@@ -28,9 +28,11 @@ import org.orbisgis.datamanager.JdbcDataSource
  * investigate the sensibility of the chain to some input parameters
  * @param mapOfWeights Values that will be used to increase or decrease the weight of an indicator (which are the key
  * of the map) for the LCZ classification step (default : all values to 1)
+ * @param hLevMin Minimum building level height
+ * @param hLevMax Maximum building level height
+ * @param hThresholdLev2 Threshold on the building height, used to determine the number of levels
  * @param outputFolder The path of the folder to store the results as geojson files. By default, the files are stored
  * in the subfolder "results" in the inputFolder
- *
  *
  * @return the path of the folder that contains the geojson files
  *
@@ -53,9 +55,10 @@ def BBTOPO_V2() {
                 mapOfWeights : ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                 "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                 "height_of_roughness_elements": 1, "terrain_roughness_class": 1],
+                hLevMin : 3, hLevMax: 15, hThresholdLev2: 10,
                 outputFolder:""
         outputs outputFolder: String
-        run {datasource, inputFolder, distance,indicatorUse, svfSimplified, prefixName, mapOfWeights, outputFolder ->
+        run {datasource, inputFolder, distance,indicatorUse, svfSimplified, prefixName, mapOfWeights, hLevMin, hLevMax, hThresholdLev2,outputFolder ->
 
             if(inputFolder){
                 def outputDir = new File(outputFolder)
@@ -101,8 +104,8 @@ def BBTOPO_V2() {
                                                     tableHydroName             : 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                                     tableImperviousSportName   : 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                                    distBuffer                 : 500, expand: 1000, idZone: code,
-                                                    hLevMin                    : 3, hLevMax: 15, hThresholdLev2: 10
+                                                    distBuffer                 : 500, expand: distance, idZone: code,
+                                                    hLevMin                    : hLevMin, hLevMax: hLevMax, hThresholdLev2: hThresholdLev2
                         ])){
 
                              String buildingTableName = prepareBDTopoData.getResults().outputBuilding
@@ -122,19 +125,20 @@ def BBTOPO_V2() {
                                      buildingTable       : buildingTableName,    roadTable       : roadTableName,
                                      railTable           : railTableName,        vegetationTable : vegetationTableName,
                                      hydrographicTable   : hydrographicTableName,indicatorUse    : indicatorUse,
-                                     svfSimplified       : svfSimplified,        prefixName      : prefixName,
+                                     svfSimplified       : svfSimplified,        prefixName      : "zone_$code",
                                      mapOfWeights        : mapOfWeights)) {
                                  error "Cannot build the geoindicators for the area $code"
                              }
                              else{
                                  def tablesToSave = geoIndicators.getResults().collect {
-                                     datasource.save(it.value,"${outputDir.getAbsolutePath()}${File.separator}${code}_${it.value}.geojson")
+                                     datasource.save(it.value,"${outputDir.getAbsolutePath()}${File.separator}${it.value}.geojson")
+                                     datasource.execute "DROP TABLE IF EXISTS ${it.value};"
                                      }
                                  info "${code} has been processed"
                              }
 
                          }
-                            info "Number of area processed $index on $nbAreas"
+                            info "Number of areas processed $index on $nbAreas"
                     }
 
                     }
@@ -149,8 +153,6 @@ def BBTOPO_V2() {
                 }
                 return [outputFolder : outputDir.getAbsolutePath()]
             }
-
-
         }
     })
 
@@ -176,6 +178,9 @@ def BBTOPO_V2() {
  * investigate the sensibility of the chain to some input parameters
  * @param mapOfWeights Values that will be used to increase or decrease the weight of an indicator (which are the key
  * of the map) for the LCZ classification step (default : all values to 1)
+ * @param hLevMin Minimum building level height
+ * @param hLevMax Maximum building level height
+ * @param hThresholdLev2 Threshold on the building height, used to determine the number of levels
  *
  *
  * @return 10 tables : zoneTable , zoneEnvelopeTableName, buildingTable,
@@ -201,17 +206,19 @@ def OSM() {
                 svfSimplified:false, prefixName: "",
                 mapOfWeights : ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                  "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                                 "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+                                 "height_of_roughness_elements": 1, "terrain_roughness_class": 1],
+                hLevMin : 3, hLevMax: 15, hThresholdLev2: 10
         outputs zoneTable: String, zoneEnvelopeTableName: String, buildingTable: String,
                 roadTable: String, railTable: String, vegetationTable: String,
                 hydrographicTable: String, buildingIndicators: String,
                 blockIndicators: String,
                 rsuIndicators: String, rsuLcz: String
-        run { datasource, placeName, distance,indicatorUse, svfSimplified, prefixName, mapOfWeights ->
+        run { datasource, placeName, distance,indicatorUse, svfSimplified, prefixName, mapOfWeights,hLevMin, hLevMax, hThresholdLev2 ->
 
             IProcess prepareOSMData = ProcessingChain.PrepareOSM.buildGeoclimateLayers()
 
-            if (!prepareOSMData.execute([datasource: datasource, placeName: placeName, distance: distance])) {
+            if (!prepareOSMData.execute([datasource: datasource, placeName: placeName, distance: distance, hLevMin: hLevMin,
+                     hLevMax: hLevMax, hThresholdLev2: hThresholdLev2])) {
                 error "Cannot extract the GIS layers from the place name $placeName"
                 return null
             }

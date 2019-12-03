@@ -225,18 +225,7 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
         }
     }
 
-    //@Test
-    void testBDTOPO_V2Workflow() {
-        String directory ="./target/geoclimate_chain"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
-        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
-        IProcess process = ProcessingChain.Workflow.BBTOPO_V2()
-        assertTrue(process.execute(datasource: datasource,
-                inputFolder: "./target/bdtopofolder/",
-            outputFolder :"./target/geoclimate_chain/"))
-    }
+
 
 
 }
