@@ -32,6 +32,28 @@ class DataUtilsTests {
     }
 
     @Test
+    void joinTest2() {
+        def h2GIS = H2GIS.open( './target/datautils;AUTO_SERVER=TRUE')
+
+        h2GIS.execute "DROP TABLE IF EXISTS tablea, tableb, tablec; CREATE TABLE tablea (ida integer, name varchar); insert into tablea values(1,'orbisgis');" +
+                "CREATE TABLE tableb (idb integer, lab varchar); insert into tableb values(1,'CNRS');" +
+                "CREATE TABLE tablec (idc integer, location varchar); insert into tablec values(1,'Vannes');"
+
+        IProcess joinProcess = Geoindicators.DataUtils.joinTables()
+        assertTrue joinProcess.execute([inputTableNamesWithId: [tablea:"ida", tableb:"idb", tablec:"idc"]
+                                        , outputTableName: "test", datasource: h2GIS, prefixWithTabName: true])
+
+        def table = h2GIS.getTable(joinProcess.getResults().outputTableName)
+        assertEquals"TABLEA_IDA,TABLEA_NAME,TABLEB_LAB,TABLEC_LOCATION", table.columnNames.join(",")
+        assertEquals(1, table.rowCount)
+
+        table.eachRow { row ->
+            assertTrue(row.tableb_lab.equals('CNRS'))
+            assertTrue(row.tablec_location.equals('Vannes'))
+        }
+    }
+
+    @Test
     void saveTablesAsFiles() {
         def directory = "./target/savedFiles"
         def h2GIS = H2GIS.open( './target/datautils;AUTO_SERVER=TRUE')
