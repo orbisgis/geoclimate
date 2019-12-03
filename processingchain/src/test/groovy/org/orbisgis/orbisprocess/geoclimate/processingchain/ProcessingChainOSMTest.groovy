@@ -224,6 +224,4 @@ class ProcessingChainOSMTest extends ChainProcessMainTest {
                                  , directory: directory, datasource: datasource])
         }
     }
-
-
 }
