@@ -12,9 +12,8 @@ import org.slf4j.LoggerFactory
 import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertNull
 import static org.junit.jupiter.api.Assertions.assertTrue
-import static org.junit.jupiter.api.Assertions.assertEquals
 
-class ProcessingChainBDTopoTest extends ChainProcessMainTest{
+class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 
     public static Logger logger = LoggerFactory.getLogger(ProcessingChainBDTopoTest.class)
 

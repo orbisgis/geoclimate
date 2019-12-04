@@ -9,7 +9,7 @@ import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 import static org.junit.jupiter.api.Assertions.assertNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 
-class ProcessingChainOSMTest extends ChainProcessMainTest {
+class ProcessingChainOSMTest extends ChainProcessAbstractTest {
 
     @Disabled
     @Test

@@ -1,22 +1,16 @@
 package org.orbisgis.orbisprocess.geoclimate.processingchain
 
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertTrue
 
+class GeoIndicatorsChainTest extends ChainProcessAbstractTest{
 
-class ChainProcessMainTest {
-
-    private static H2GIS datasource
-
-    public static Logger logger = LoggerFactory.getLogger(ChainProcessMainTest.class)
+    public static Logger logger = LoggerFactory.getLogger(GeoIndicatorsChainTest.class)
 
     // Indicator list (at RSU scale) for each type of use
     public static listNames = [
@@ -74,33 +68,26 @@ class ChainProcessMainTest {
                     "BUILDING_DIRECTION_UNIQUENESS", "BUILDING_DIRECTION_INEQUALITY", "CLOSINGNESS", "NET_COMPACTNESS",
                     "AVG_HEIGHT_ROOF_AREA_WEIGHTED", "STD_HEIGHT_ROOF_AREA_WEIGHTED"]]
 
-    public static File directory = new File("./target/osm_workflow")
-
-    public static zoneTableName = "ZONE"
-    public static buildingTableName = "BUILDING"
-    public static roadTableName = "ROAD"
-    public static railTableName = "RAIL"
-    public static vegetationTableName = "VEGET"
-    public static hydrographicTableName = "HYDRO"
-
-    @BeforeAll
-    static void init() {
-        File directory = new File("./target/osm_workflow")
-        H2GIS datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
-
-        // Names of the input tables downloaded from OpenStreetMap
-        datasource.load(ProcessingChain.class.getResource("BUILDING.geojson"), buildingTableName, true)
-        datasource.load(ProcessingChain.class.getResource("ROAD.geojson"), roadTableName, true)
-        datasource.load(ProcessingChain.class.getResource("RAIL.geojson"), railTableName, true)
-        datasource.load(ProcessingChain.class.getResource("VEGET.geojson"), vegetationTableName, true)
-        datasource.load(ProcessingChain.class.getResource("HYDRO.geojson"), hydrographicTableName, true)
-        datasource.load(ProcessingChain.class.getResource("ZONE.geojson"), zoneTableName, true)
+    /**
+     * Method to init the tables
+     * @param datasource
+     * @return
+     */
+    def initTables(def datasource){
+        datasource.load(ProcessingChain.class.getResource("BUILDING.geojson"), "BUILDING", true)
+        datasource.load(ProcessingChain.class.getResource("ROAD.geojson"), "ROAD", true)
+        datasource.load(ProcessingChain.class.getResource("RAIL.geojson"), "RAIL", true)
+        datasource.load(ProcessingChain.class.getResource("VEGET.geojson"), "VEGET", true)
+        datasource.load(ProcessingChain.class.getResource("HYDRO.geojson"), "HYDRO", true)
+        datasource.load(ProcessingChain.class.getResource("ZONE.geojson"), "ZONE", true)
+        return [zoneTable: "ZONE", buildingTable: "BUILDING", roadTable: "ROAD",
+                railTable: "RAIL", vegetationTable: "VEGET", hydrographicTable: "HYDRO"]
     }
-
 
     @Test
     void OSMGeoIndicatorsTest() {
-        datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
+        File directory = new File("./target/geoindicators_workflow")
+        H2GIS datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
         String placeName = "Cliscouet, vannes"
         def distance = 0
         boolean svfSimplified = false
@@ -118,13 +105,13 @@ class ChainProcessMainTest {
                                                       mapOfWeights : mapOfWeights])
 
         if (ind_i.contains("URBAN_TYPOLOGY")) {
-            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(OSMGeoIndicatorsCompute_i.getResults().buildingIndicators).columns().sort())
-            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(OSMGeoIndicatorsCompute_i.results.blockIndicators).columns().sort())
+            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(OSMGeoIndicatorsCompute_i.getResults().buildingIndicators).columns.sort())
+            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(OSMGeoIndicatorsCompute_i.results.blockIndicators).columns.sort())
         }
         def expectListRsuTempo = listColBasic
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
-        def realListRsu = datasource.getTable(OSMGeoIndicatorsCompute_i.results.rsuIndicators).columns()
+        def realListRsu = datasource.getTable(OSMGeoIndicatorsCompute_i.results.rsuIndicators).columns
         // We test that there is no missing indicators in the RSU table
         for (i in expectListRsu) {
             assertTrue realListRsu.contains(i)
@@ -133,7 +120,7 @@ class ChainProcessMainTest {
             def expectListLczTempo = listColLcz
             expectListLczTempo = expectListLczTempo + listColBasic
             def expectListLcz = expectListLczTempo.sort()
-            assertEquals(expectListLcz, datasource.getTable(OSMGeoIndicatorsCompute_i.results.rsuLcz).columns().sort())
+            assertEquals(expectListLcz, datasource.getTable(OSMGeoIndicatorsCompute_i.results.rsuLcz).columns.sort())
         } else {
             assertEquals(null, OSMGeoIndicatorsCompute_i.results.rsuLcz)
         }
@@ -142,7 +129,9 @@ class ChainProcessMainTest {
 
     @Test
     void GeoIndicatorsTest1() {
-        datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
+        File directory = new File("./target/geoindicators_workflow")
+        H2GIS datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
+        def inputTableNames = initTables(datasource)
         boolean svfSimplified = false
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
@@ -152,10 +141,10 @@ class ChainProcessMainTest {
         def ind_i = ["LCZ"]
 
         IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
-        assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: zoneTableName,
-                buildingTable: buildingTableName, roadTable: roadTableName,
-                railTable: railTableName, vegetationTable: vegetationTableName,
-                hydrographicTable: hydrographicTableName, indicatorUse: ind_i,
+        assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
+                buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
+                railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
+                hydrographicTable: inputTableNames.hydrographicTable, indicatorUse: ind_i,
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
 
@@ -166,7 +155,7 @@ class ChainProcessMainTest {
         def expectListRsuTempo = listColBasic
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
-        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).columns()
+        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).columns
         // We test that there is no missing indicators in the RSU table
         for (i in expectListRsu) {
             assertTrue realListRsu.contains(i)
@@ -183,7 +172,9 @@ class ChainProcessMainTest {
 
     @Test
     void GeoIndicatorsTest2() {
-        datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
+        File directory = new File("./target/geoindicators_workflow")
+        H2GIS datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
+        def inputTableNames = initTables(datasource)
         boolean svfSimplified = false
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
@@ -193,10 +184,10 @@ class ChainProcessMainTest {
         def ind_i = ["URBAN_TYPOLOGY"]
 
         IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
-        assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: zoneTableName,
-                buildingTable: buildingTableName, roadTable: roadTableName,
-                railTable: railTableName, vegetationTable: vegetationTableName,
-                hydrographicTable: hydrographicTableName, indicatorUse: ind_i,
+        assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
+                buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
+                railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
+                hydrographicTable: inputTableNames.hydrographicTable, indicatorUse: ind_i,
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
 
@@ -224,7 +215,9 @@ class ChainProcessMainTest {
 
     @Test
     void GeoIndicatorsTest3() {
-        datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
+        File directory = new File("./target/geoindicators_workflow")
+        H2GIS datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
+        def inputTableNames = initTables(datasource)
         boolean svfSimplified = false
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
@@ -234,10 +227,10 @@ class ChainProcessMainTest {
         def ind_i = ["URBAN_TYPOLOGY", "TEB"]
 
         IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
-        assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: zoneTableName,
-                buildingTable: buildingTableName, roadTable: roadTableName,
-                railTable: railTableName, vegetationTable: vegetationTableName,
-                hydrographicTable: hydrographicTableName, indicatorUse: ind_i,
+        assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
+                buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
+                railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
+                hydrographicTable: inputTableNames.hydrographicTable, indicatorUse: ind_i,
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
 
@@ -265,7 +258,9 @@ class ChainProcessMainTest {
 
     @Test
     void GeoIndicatorsTest4() {
-        datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
+        File directory = new File("./target/geoindicators_workflow")
+        H2GIS datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
+        def inputTableNames = initTables(datasource)
         boolean svfSimplified = false
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
@@ -275,10 +270,10 @@ class ChainProcessMainTest {
         def ind_i = ["TEB"]
 
         IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
-        assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: zoneTableName,
-                buildingTable: buildingTableName, roadTable: roadTableName,
-                railTable: railTableName, vegetationTable: vegetationTableName,
-                hydrographicTable: hydrographicTableName, indicatorUse: ind_i,
+        assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
+                buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
+                railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
+                hydrographicTable: inputTableNames.hydrographicTable, indicatorUse: ind_i,
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
 
@@ -306,7 +301,9 @@ class ChainProcessMainTest {
 
     @Test
     void GeoIndicatorsTest5() {
-        datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
+        File directory = new File("./target/geoindicators_workflow")
+        H2GIS datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
+        def inputTableNames = initTables(datasource)
         boolean svfSimplified = false
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
@@ -316,10 +313,10 @@ class ChainProcessMainTest {
         def ind_i = ["LCZ", "TEB"]
 
         IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
-        assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: zoneTableName,
-                buildingTable: buildingTableName, roadTable: roadTableName,
-                railTable: railTableName, vegetationTable: vegetationTableName,
-                hydrographicTable: hydrographicTableName, indicatorUse: ind_i,
+        assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
+                buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
+                railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
+                hydrographicTable: inputTableNames.hydrographicTable, indicatorUse: ind_i,
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
 
@@ -347,7 +344,9 @@ class ChainProcessMainTest {
 
     @Test
     void GeoIndicatorsTest6() {
-        datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
+        File directory = new File("./target/geoindicators_workflow")
+        H2GIS datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
+        def inputTableNames = initTables(datasource)
         boolean svfSimplified = false
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
@@ -357,10 +356,10 @@ class ChainProcessMainTest {
         def ind_i = ["URBAN_TYPOLOGY", "LCZ"]
 
         IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
-        assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: zoneTableName,
-                buildingTable: buildingTableName, roadTable: roadTableName,
-                railTable: railTableName, vegetationTable: vegetationTableName,
-                hydrographicTable: hydrographicTableName, indicatorUse: ind_i,
+        assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
+                buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
+                railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
+                hydrographicTable: inputTableNames.hydrographicTable, indicatorUse: ind_i,
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
 
@@ -384,108 +383,5 @@ class ChainProcessMainTest {
         } else {
             assertEquals(null, GeoIndicatorsCompute_i.results.outputTableRsuLcz)
         }
-    }
-
-    /**
-     * A method to compute geomorphological indicators
-     * @param directory
-     * @param datasource
-     * @param zoneTableName
-     * @param buildingTableName
-     * @param roadTableName
-     * @param railTableName
-     * @param vegetationTableName
-     * @param hydrographicTableName
-     * @param saveResults
-     * @param indicatorUse
-     */
-    void geoIndicatorsCalc(String directory, JdbcDataSource datasource, String zoneTableName, String buildingTableName,
-                           String roadTableName, String railTableName, String vegetationTableName,
-                           String hydrographicTableName, boolean saveResults, boolean svfSimplified = false, indicatorUse,
-                           String prefixName = "") {
-        //Create spatial units and relations : building, block, rsu
-        IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
-        assertTrue spatialUnits.execute([datasource       : datasource, zoneTable: zoneTableName, buildingTable: buildingTableName,
-                                         roadTable        : roadTableName, railTable: railTableName, vegetationTable: vegetationTableName,
-                                         hydrographicTable: hydrographicTableName, surface_vegetation: 100000,
-                                         surface_hydro    : 2500, distance: 0.01, prefixName: prefixName])
-
-        String relationBuildings = spatialUnits.getResults().outputTableBuildingName
-        String relationBlocks = spatialUnits.getResults().outputTableBlockName
-        String relationRSU = spatialUnits.getResults().outputTableRsuName
-
-        if (saveResults) {
-            logger.info("Saving spatial units")
-            IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
-            saveTables.execute([inputTableNames: spatialUnits.getResults().values()
-                                , directory    : directory, datasource: datasource])
-        }
-
-        def maxBlocks = datasource.firstRow("select max(id_block) as max from ${relationBuildings}".toString())
-        def countBlocks = datasource.firstRow("select count(*) as count from ${relationBlocks}".toString())
-        assertEquals(countBlocks.count, maxBlocks.max)
-
-
-        def maxRSUBlocks = datasource.firstRow("select count(distinct id_block) as max from ${relationBuildings} where id_rsu is not null".toString())
-        def countRSU = datasource.firstRow("select count(*) as count from ${relationBlocks} where id_rsu is not null".toString())
-        assertEquals(countRSU.count, maxRSUBlocks.max)
-
-        //Compute building indicators
-        def computeBuildingsIndicators = ProcessingChain.BuildGeoIndicators.computeBuildingsIndicators()
-        assertTrue computeBuildingsIndicators.execute([datasource            : datasource,
-                                                       inputBuildingTableName: relationBuildings,
-                                                       inputRoadTableName    : roadTableName,
-                                                       indicatorUse          : indicatorUse,
-                                                       prefixName            : prefixName])
-        String buildingIndicators = computeBuildingsIndicators.getResults().outputTableName
-        if (saveResults) {
-            logger.info("Saving building indicators")
-            datasource.save(buildingIndicators, directory + File.separator + "${buildingIndicators}.geojson")
-        }
-
-        //Check we have the same number of buildings
-        def countRelationBuilding = datasource.firstRow("select count(*) as count from ${relationBuildings}".toString())
-        def countBuildingIndicators = datasource.firstRow("select count(*) as count from ${buildingIndicators}".toString())
-        assertEquals(countRelationBuilding.count, countBuildingIndicators.count)
-
-        //Compute block indicators
-        if (indicatorUse.contains("URBAN_TYPOLOGY")) {
-            def computeBlockIndicators = ProcessingChain.BuildGeoIndicators.computeBlockIndicators()
-            assertTrue computeBlockIndicators.execute([datasource            : datasource,
-                                                       inputBuildingTableName: buildingIndicators,
-                                                       inputBlockTableName   : relationBlocks,
-                                                       prefixName            : prefixName])
-            String blockIndicators = computeBlockIndicators.getResults().outputTableName
-            if (saveResults) {
-                logger.info("Saving block indicators")
-                datasource.save(blockIndicators, directory + File.separator + "${blockIndicators}.geojson")
-            }
-            //Check if we have the same number of blocks
-            def countRelationBlocks = datasource.firstRow("select count(*) as count from ${relationBlocks}".toString())
-            def countBlocksIndicators = datasource.firstRow("select count(*) as count from ${blockIndicators}".toString())
-            assertEquals(countRelationBlocks.count, countBlocksIndicators.count)
-        }
-
-        //Compute RSU indicators
-        def computeRSUIndicators = ProcessingChain.BuildGeoIndicators.computeRSUIndicators()
-        assertTrue computeRSUIndicators.execute([datasource       : datasource,
-                                                 buildingTable    : buildingIndicators,
-                                                 rsuTable         : relationRSU,
-                                                 vegetationTable  : vegetationTableName,
-                                                 roadTable        : roadTableName,
-                                                 hydrographicTable: hydrographicTableName,
-                                                 indicatorUse     : indicatorUse,
-                                                 prefixName       : prefixName,
-                                                 svfSimplified    : svfSimplified])
-        String rsuIndicators = computeRSUIndicators.getResults().outputTableName
-        if (saveResults) {
-            logger.info("Saving RSU indicators")
-            datasource.save(rsuIndicators, directory + File.separator + "${rsuIndicators}.geojson")
-        }
-
-        //Check if we have the same number of RSU
-        def countRelationRSU = datasource.firstRow("select count(*) as count from ${relationRSU}".toString())
-        def countRSUIndicators = datasource.firstRow("select count(*) as count from ${rsuIndicators}".toString())
-        assertEquals(countRelationRSU.count, countRSUIndicators.count)
     }
 }
