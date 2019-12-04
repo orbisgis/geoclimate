@@ -118,13 +118,13 @@ class ChainProcessMainTest {
                                                       mapOfWeights : mapOfWeights])
 
         if (ind_i.contains("URBAN_TYPOLOGY")) {
-            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(OSMGeoIndicatorsCompute_i.getResults().buildingIndicators).columns().sort())
-            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(OSMGeoIndicatorsCompute_i.results.blockIndicators).columns().sort())
+            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(OSMGeoIndicatorsCompute_i.getResults().buildingIndicators).columns.sort())
+            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(OSMGeoIndicatorsCompute_i.results.blockIndicators).columns.sort())
         }
         def expectListRsuTempo = listColBasic
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
-        def realListRsu = datasource.getTable(OSMGeoIndicatorsCompute_i.results.rsuIndicators).columns()
+        def realListRsu = datasource.getTable(OSMGeoIndicatorsCompute_i.results.rsuIndicators).columns
         // We test that there is no missing indicators in the RSU table
         for (i in expectListRsu) {
             assertTrue realListRsu.contains(i)
@@ -133,7 +133,7 @@ class ChainProcessMainTest {
             def expectListLczTempo = listColLcz
             expectListLczTempo = expectListLczTempo + listColBasic
             def expectListLcz = expectListLczTempo.sort()
-            assertEquals(expectListLcz, datasource.getTable(OSMGeoIndicatorsCompute_i.results.rsuLcz).columns().sort())
+            assertEquals(expectListLcz, datasource.getTable(OSMGeoIndicatorsCompute_i.results.rsuLcz).columns.sort())
         } else {
             assertEquals(null, OSMGeoIndicatorsCompute_i.results.rsuLcz)
         }
@@ -166,7 +166,7 @@ class ChainProcessMainTest {
         def expectListRsuTempo = listColBasic
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
-        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).columns()
+        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).columns
         // We test that there is no missing indicators in the RSU table
         for (i in expectListRsu) {
             assertTrue realListRsu.contains(i)
