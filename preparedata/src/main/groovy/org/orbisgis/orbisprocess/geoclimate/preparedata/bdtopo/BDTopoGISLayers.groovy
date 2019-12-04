@@ -115,7 +115,7 @@ IProcess importPreprocess(){
             // -------------------------------------------------------------------------------
             // Control the SRIDs from input tables
 
-            def list = [tableBuildIndifName, tableIrisName, tableBuildIndusName, tableBuildRemarqName,
+            def list = [tableIrisName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName,
                         tableRoadName, tableRailName, tableHydroName, tableVegetName,
                         tableImperviousSportName, tableImperviousBuildSurfName,
                         tableImperviousRoadSurfName, tableImperviousActivSurfName]
