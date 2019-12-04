@@ -1,6 +1,6 @@
 package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
-import org.orbisgis.processmanager.GroovyProcessFactory
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import org.slf4j.LoggerFactory
 
 /**

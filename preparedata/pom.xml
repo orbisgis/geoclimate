@@ -36,12 +36,12 @@
             <artifactId>junit-jupiter-engine</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.orbisgis</groupId>
-            <artifactId>data-manager</artifactId>
+            <groupId>org.orbisgis.orbisdata.datamanager</groupId>
+            <artifactId>jdbc</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.orbisgis</groupId>
-            <artifactId>process-manager</artifactId>
+            <groupId>org.orbisgis.orbisdata.processmanager</groupId>
+            <artifactId>process</artifactId>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

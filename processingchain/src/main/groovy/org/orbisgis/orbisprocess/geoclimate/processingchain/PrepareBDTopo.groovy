@@ -5,8 +5,8 @@ import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
 import org.orbisgis.orbisprocess.geoclimate.preparedata.bdtopo.BDTopoGISLayers
 import org.orbisgis.orbisprocess.geoclimate.preparedata.common.AbstractTablesInitialization
 import org.orbisgis.orbisprocess.geoclimate.preparedata.common.InputDataFormatting
-import org.orbisgis.datamanager.JdbcDataSource
-import org.orbisgis.processmanager.ProcessMapper
+import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
+import org.orbisgis.orbisdata.processmanager.process.ProcessMapper
 
 
 @BaseScript ProcessingChain processingChain

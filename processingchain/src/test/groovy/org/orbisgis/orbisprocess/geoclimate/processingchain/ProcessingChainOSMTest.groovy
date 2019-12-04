@@ -2,8 +2,8 @@ package org.orbisgis.orbisprocess.geoclimate.processingchain
 
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import org.orbisgis.datamanager.h2gis.H2GIS
-import org.orbisgis.processmanagerapi.IProcess
+import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 
 import static org.junit.jupiter.api.Assertions.assertNull

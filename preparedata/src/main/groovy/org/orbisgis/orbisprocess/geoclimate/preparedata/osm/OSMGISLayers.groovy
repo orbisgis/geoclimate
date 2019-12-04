@@ -7,10 +7,10 @@ import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
-import org.orbisgis.datamanager.JdbcDataSource
+import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
 import org.orbisgis.osm.OSMTools
-import org.orbisgis.processmanagerapi.IProcess
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 
 @BaseScript PrepareData prepareData
 

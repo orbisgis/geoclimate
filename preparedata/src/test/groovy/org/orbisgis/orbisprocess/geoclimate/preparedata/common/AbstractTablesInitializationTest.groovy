@@ -3,7 +3,7 @@ package org.orbisgis.orbisprocess.geoclimate.preparedata.common
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty
 import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
-import org.orbisgis.datamanager.h2gis.H2GIS
+import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 
 import static org.junit.jupiter.api.Assertions.*
 
@@ -27,10 +27,10 @@ class AbstractTablesInitializationTest {
         assertEquals(4, table.columnCount)
         assertEquals(36, table.rowCount)
         // Check if the column types are correct
-        assertEquals('INTEGER', table.getColumnsType('ID_TYPE'))
-        assertEquals('VARCHAR', table.getColumnsType('TERM'))
-        assertEquals('VARCHAR', table.getColumnsType('DEFINITION'))
-        assertEquals('VARCHAR', table.getColumnsType('SOURCE'))
+        assertEquals('INTEGER', table.columnType('ID_TYPE'))
+        assertEquals('VARCHAR', table.columnType('TERM'))
+        assertEquals('VARCHAR', table.columnType('DEFINITION'))
+        assertEquals('VARCHAR', table.columnType('SOURCE'))
         // For each rows, check if the fields contains null or empty values
         table.eachRow { row ->
             assertNotNull(row.ID_TYPE)
@@ -50,9 +50,9 @@ class AbstractTablesInitializationTest {
         assertEquals(3, table.columnCount)
         assertEquals(36, table.rowCount)
         // Check if the column types are correct
-        assertEquals('INTEGER', table.getColumnsType('ID_TYPE'))
-        assertEquals('VARCHAR', table.getColumnsType('TERM'))
-        assertEquals('INTEGER', table.getColumnsType('NB_LEV'))
+        assertEquals('INTEGER', table.columnType('ID_TYPE'))
+        assertEquals('VARCHAR', table.columnType('TERM'))
+        assertEquals('INTEGER', table.columnType('NB_LEV'))
         table.eachRow { row ->
             assertNotNull(row.ID_TYPE)
             assertNotEquals('', row.ID_TYPE)
@@ -70,10 +70,10 @@ class AbstractTablesInitializationTest {
         assertEquals(4, table.columnCount)
         assertEquals(16, table.rowCount)
         // Check if the column types are correct
-        assertEquals('INTEGER', table.getColumnsType('ID_TYPE'))
-        assertEquals('VARCHAR', table.getColumnsType('TERM'))
-        assertEquals('VARCHAR', table.getColumnsType('DEFINITION'))
-        assertEquals('VARCHAR', table.getColumnsType('SOURCE'))
+        assertEquals('INTEGER', table.columnType('ID_TYPE'))
+        assertEquals('VARCHAR', table.columnType('TERM'))
+        assertEquals('VARCHAR', table.columnType('DEFINITION'))
+        assertEquals('VARCHAR', table.columnType('SOURCE'))
         // For each rows, check if the fields contains null or empty values
         table.eachRow { row ->
             assertNotNull(row.ID_TYPE)
@@ -93,10 +93,10 @@ class AbstractTablesInitializationTest {
         assertEquals(4, table.columnCount)
         assertEquals(14, table.rowCount)
         // Check if the column types are correct
-        assertEquals('INTEGER', table.getColumnsType('ID_TYPE'))
-        assertEquals('VARCHAR', table.getColumnsType('TERM'))
-        assertEquals('VARCHAR', table.getColumnsType('DEFINITION'))
-        assertEquals('VARCHAR', table.getColumnsType('SOURCE'))
+        assertEquals('INTEGER', table.columnType('ID_TYPE'))
+        assertEquals('VARCHAR', table.columnType('TERM'))
+        assertEquals('VARCHAR', table.columnType('DEFINITION'))
+        assertEquals('VARCHAR', table.columnType('SOURCE'))
         // For each rows, check if the fields contains null or empty values
         table.eachRow { row ->
             assertNotNull(row.ID_TYPE)
@@ -116,9 +116,9 @@ class AbstractTablesInitializationTest {
         assertEquals(3, table.columnCount)
         assertEquals(16, table.rowCount)
         // Check if the column types are correct
-        assertEquals('INTEGER', table.getColumnsType('ID_TYPE'))
-        assertEquals('VARCHAR', table.getColumnsType('TERM'))
-        assertEquals('INTEGER', table.getColumnsType('MIN_WIDTH'))
+        assertEquals('INTEGER', table.columnType('ID_TYPE'))
+        assertEquals('VARCHAR', table.columnType('TERM'))
+        assertEquals('INTEGER', table.columnType('MIN_WIDTH'))
         table.eachRow { row ->
             assertNotNull(row.ID_TYPE)
             assertNotEquals('', row.ID_TYPE)
@@ -136,10 +136,10 @@ class AbstractTablesInitializationTest {
         assertEquals(4, table.columnCount)
         assertEquals(3, table.rowCount)
         // Check if the column types are correct
-        assertEquals('INTEGER', table.getColumnsType('ID_CROSSING'))
-        assertEquals('VARCHAR', table.getColumnsType('TERM'))
-        assertEquals('VARCHAR', table.getColumnsType('DEFINITION'))
-        assertEquals('VARCHAR', table.getColumnsType('SOURCE'))
+        assertEquals('INTEGER', table.columnType('ID_CROSSING'))
+        assertEquals('VARCHAR', table.columnType('TERM'))
+        assertEquals('VARCHAR', table.columnType('DEFINITION'))
+        assertEquals('VARCHAR', table.columnType('SOURCE'))
         table.eachRow { row ->
             assertNotNull(row.ID_CROSSING)
             assertNotEquals('', row.ID_CROSSING)
@@ -158,10 +158,10 @@ class AbstractTablesInitializationTest {
         assertEquals(4, table.columnCount)
         assertEquals(7, table.rowCount)
         // Check if the column types are correct
-        assertEquals('INTEGER', table.getColumnsType('ID_TYPE'))
-        assertEquals('VARCHAR', table.getColumnsType('TERM'))
-        assertEquals('VARCHAR', table.getColumnsType('DEFINITION'))
-        assertEquals('VARCHAR', table.getColumnsType('SOURCE'))
+        assertEquals('INTEGER', table.columnType('ID_TYPE'))
+        assertEquals('VARCHAR', table.columnType('TERM'))
+        assertEquals('VARCHAR', table.columnType('DEFINITION'))
+        assertEquals('VARCHAR', table.columnType('SOURCE'))
         // For each rows, check if the fields contains null or empty values
         table.eachRow { row ->
             assertNotNull(row.ID_TYPE)
@@ -181,10 +181,10 @@ class AbstractTablesInitializationTest {
         assertEquals(4, table.columnCount)
         assertEquals(3, table.rowCount)
         // Check if the column types are correct
-        assertEquals('INTEGER', table.getColumnsType('ID_CROSSING'))
-        assertEquals('VARCHAR', table.getColumnsType('TERM'))
-        assertEquals('VARCHAR', table.getColumnsType('DEFINITION'))
-        assertEquals('VARCHAR', table.getColumnsType('SOURCE'))
+        assertEquals('INTEGER', table.columnType('ID_CROSSING'))
+        assertEquals('VARCHAR', table.columnType('TERM'))
+        assertEquals('VARCHAR', table.columnType('DEFINITION'))
+        assertEquals('VARCHAR', table.columnType('SOURCE'))
         table.eachRow { row ->
             assertNotNull(row.ID_CROSSING)
             assertNotEquals('', row.ID_CROSSING)
@@ -203,10 +203,10 @@ class AbstractTablesInitializationTest {
         assertEquals(4, table.columnCount)
         assertEquals(13, table.rowCount)
         // Check if the column types are correct
-        assertEquals('INTEGER', table.getColumnsType('ID_TYPE'))
-        assertEquals('VARCHAR', table.getColumnsType('TERM'))
-        assertEquals('VARCHAR', table.getColumnsType('DEFINITION'))
-        assertEquals('VARCHAR', table.getColumnsType('SOURCE'))
+        assertEquals('INTEGER', table.columnType('ID_TYPE'))
+        assertEquals('VARCHAR', table.columnType('TERM'))
+        assertEquals('VARCHAR', table.columnType('DEFINITION'))
+        assertEquals('VARCHAR', table.columnType('SOURCE'))
         // For each rows, check if the fields contains null or empty values
         table.eachRow { row ->
             assertNotNull(row.ID_TYPE)
@@ -226,9 +226,9 @@ class AbstractTablesInitializationTest {
         assertEquals(3, table.columnCount)
         assertEquals(13, table.rowCount)
         // Check if the column types are correct
-        assertEquals('INTEGER', table.getColumnsType('ID_TYPE'))
-        assertEquals('VARCHAR', table.getColumnsType('TERM'))
-        assertEquals('VARCHAR', table.getColumnsType('HEIGHT_CLASS'))
+        assertEquals('INTEGER', table.columnType('ID_TYPE'))
+        assertEquals('VARCHAR', table.columnType('TERM'))
+        assertEquals('VARCHAR', table.columnType('HEIGHT_CLASS'))
         // For each rows, check if the fields contains null or empty values
         table.eachRow { row ->
             assertNotNull(row.ID_TYPE)

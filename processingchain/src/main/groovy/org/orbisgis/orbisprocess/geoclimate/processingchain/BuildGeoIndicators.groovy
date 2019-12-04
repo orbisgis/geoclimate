@@ -2,7 +2,7 @@ package org.orbisgis.orbisprocess.geoclimate.processingchain
 
 import groovy.transform.BaseScript
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
-import org.orbisgis.datamanager.JdbcDataSource
+import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 
 @BaseScript ProcessingChain processingChain
 
@@ -296,7 +296,7 @@ def computeBlockIndicators(){
                     "ALTER TABLE ${blockTableJoin.results.outputTableName} RENAME TO $outputTableName"
 
             // Modify all indicators which do not have the expected name
-            def listColumnNames = datasource.getTable(outputTableName).getColumnNames()
+            def listColumnNames = datasource.getTable(outputTableName).columns()
             def mapIndic2Change = ["SUM_AREA": "AREA", "SUM_FLOOR_AREA": "FLOOR_AREA",
                                    "SUM_VOLUME": "VOLUME"]
             def query2ModifyNames = ""
@@ -726,7 +726,7 @@ def computeRSUIndicators() {
             }
 
             // Modify all indicators which do not have the expected name
-            def listColumnNames = datasource.getTable(outputTableName).getColumnNames()
+            def listColumnNames = datasource.getTable(outputTableName).columns()
             def mapIndic2Change = ["AREA_DENSITY"           : "BUILDING_AREA_FRACTION",
                                    "FLOOR_AREA_DENSITY"     : "BUILDING_FLOOR_AREA_DENSITY",
                                    "VOLUME_DENSITY"         : "BUILDING_VOLUME_DENSITY",
