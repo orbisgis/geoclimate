@@ -1,8 +1,8 @@
 package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
-import org.orbisgis.datamanager.JdbcDataSource
-import org.orbisgis.processmanagerapi.IProcess
+import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 
 
 @BaseScript Geoindicators geoindicators
@@ -108,7 +108,7 @@ IProcess identifyLczType() {
                         "('107',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.0,0.5,1.5);"
 
                 // For each LCZ indicator...
-                datasource.getTable(rsuLczIndicators).columnNames.collect { indicCol ->
+                datasource.getTable(rsuLczIndicators).columns.collect { indicCol ->
                     if (!indicCol.equalsIgnoreCase(ID_FIELD_RSU) && !indicCol.equalsIgnoreCase(GEOMETRIC_FIELD)) {
                         // The values used for normalization ("mean" and "standard deviation") are calculated
                         // (for each column) and stored into maps
@@ -161,7 +161,7 @@ IProcess identifyLczType() {
                 datasource.eachRow("SELECT * FROM $normalizedRange") { LCZ ->
                     def queryLczDistance = ""
                     // For each indicator...
-                    datasource.getTable(rsuLczIndicators).columnNames.collect { indic ->
+                    datasource.getTable(rsuLczIndicators).columns.collect { indic ->
                         if (!indic.equalsIgnoreCase(ID_FIELD_RSU) && !indic.equalsIgnoreCase(GEOMETRIC_FIELD)) {
                             // Define columns names where are stored lower and upper range values of the current LCZ
                             // and current indicator

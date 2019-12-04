@@ -1,8 +1,8 @@
 package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
-import org.orbisgis.datamanager.JdbcDataSource
-import org.orbisgis.processmanagerapi.IProcess
+import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 
 
 @BaseScript Geoindicators geoindicators
@@ -363,7 +363,7 @@ IProcess buildingDirectionDistribution() {
                     // Reorganise the distribution Table (having the same number of column than the number
                     // of direction of analysis) into a simple two column table (ID and SURF)
                     def sqlQueryUnique = "DROP TABLE IF EXISTS $build_dir_bdd; CREATE TABLE $build_dir_bdd AS SELECT "
-                    def columnNames = datasource.getTable(build_dir_dist).getColumnNames()
+                    def columnNames = datasource.getTable(build_dir_dist).columns
                     columnNames.remove(inputIdUp)
                     for (col in columnNames.take(columnNames.size() - 1)){
                         sqlQueryUnique += "$inputIdUp, $col AS SURF FROM $build_dir_dist UNION ALL SELECT "

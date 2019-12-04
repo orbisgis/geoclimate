@@ -3,7 +3,7 @@ package org.orbisgis.orbisprocess.geoclimate.geoindicators
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.orbisgis.datamanager.h2gis.H2GIS
+import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertTrue

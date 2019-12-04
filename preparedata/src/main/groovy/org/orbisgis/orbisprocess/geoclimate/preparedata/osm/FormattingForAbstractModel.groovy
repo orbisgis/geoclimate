@@ -3,10 +3,10 @@ package org.orbisgis.orbisprocess.geoclimate.preparedata.osm
 import groovy.transform.BaseScript
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.Polygon
-import org.orbisgis.datamanagerapi.dataset.ISpatialTable
+import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
 import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
-import org.orbisgis.datamanager.JdbcDataSource
-import org.orbisgis.processmanagerapi.IProcess
+import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 import groovy.json.JsonSlurper
 
 
@@ -46,7 +46,7 @@ IProcess formatBuildingLayer() {
                 ISpatialTable inputSpatialTable = datasource.getSpatialTable(inputTableName)
                 if(inputSpatialTable.rowCount>0) {
                     inputSpatialTable.the_geom.createSpatialIndex()
-                    def columnNames = inputSpatialTable.columnNames
+                    def columnNames = inputSpatialTable.columns
                     columnNames.remove("THE_GEOM")
                     queryMapper += columnsMapper(columnNames, columnToMap)
                     if(inputZoneEnvelopeTableName) {
@@ -140,7 +140,7 @@ IProcess formatBuildingLayer() {
                         ISpatialTable inputSpatialTable = datasource.getSpatialTable(inputTableName)
                         if(inputSpatialTable.rowCount>0) {
                             inputSpatialTable.the_geom.createSpatialIndex()
-                            def columnNames = inputSpatialTable.columnNames
+                            def columnNames = inputSpatialTable.columns
                             columnNames.remove("THE_GEOM")
                             queryMapper += columnsMapper(columnNames, columnToMap)
                             if(inputZoneEnvelopeTableName) {
@@ -224,7 +224,7 @@ IProcess formatBuildingLayer() {
                 ISpatialTable inputSpatialTable = datasource.getSpatialTable(inputTableName)
                 if(inputSpatialTable.rowCount>0) {
                     inputSpatialTable.the_geom.createSpatialIndex()
-                    def columnNames = inputSpatialTable.columnNames
+                    def columnNames = inputSpatialTable.columns
                     columnNames.remove("THE_GEOM")
 
                     queryMapper += columnsMapper(columnNames, columnToMap)
@@ -296,7 +296,7 @@ IProcess formatVegetationLayer() {
                 ISpatialTable inputSpatialTable = datasource.getSpatialTable(inputTableName)
                 if(inputSpatialTable.rowCount>0) {
                     inputSpatialTable.the_geom.createSpatialIndex()
-                    def columnNames = inputSpatialTable.columnNames
+                    def columnNames = inputSpatialTable.columns
                     columnNames.remove("THE_GEOM")
 
                     queryMapper += columnsMapper(columnNames, columnToMap)
@@ -404,7 +404,7 @@ IProcess formatImperviousLayer() {
                 ISpatialTable inputSpatialTable = datasource.getSpatialTable(inputTableName)
                 if(inputSpatialTable.rowCount>0) {
                     inputSpatialTable.the_geom.createSpatialIndex()
-                    def columnNames = inputSpatialTable.columnNames
+                    def columnNames = inputSpatialTable.columns
                     columnNames.remove("THE_GEOM")
                     queryMapper += columnsMapper(columnNames, columnToMap)
                     if(inputZoneEnvelopeTableName){

@@ -2,9 +2,9 @@ package org.orbisgis.orbisprocess.geoclimate.processingchain
 
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.orbisgis.datamanager.JdbcDataSource
-import org.orbisgis.datamanager.h2gis.H2GIS
-import org.orbisgis.processmanagerapi.IProcess
+import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
+import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -118,13 +118,13 @@ class ChainProcessMainTest {
                                                       mapOfWeights : mapOfWeights])
 
         if (ind_i.contains("URBAN_TYPOLOGY")) {
-            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(OSMGeoIndicatorsCompute_i.getResults().buildingIndicators).getColumnNames().sort())
-            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(OSMGeoIndicatorsCompute_i.results.blockIndicators).getColumnNames().sort())
+            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(OSMGeoIndicatorsCompute_i.getResults().buildingIndicators).columns().sort())
+            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(OSMGeoIndicatorsCompute_i.results.blockIndicators).columns().sort())
         }
         def expectListRsuTempo = listColBasic
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
-        def realListRsu = datasource.getTable(OSMGeoIndicatorsCompute_i.results.rsuIndicators).getColumnNames()
+        def realListRsu = datasource.getTable(OSMGeoIndicatorsCompute_i.results.rsuIndicators).columns()
         // We test that there is no missing indicators in the RSU table
         for (i in expectListRsu) {
             assertTrue realListRsu.contains(i)
@@ -133,7 +133,7 @@ class ChainProcessMainTest {
             def expectListLczTempo = listColLcz
             expectListLczTempo = expectListLczTempo + listColBasic
             def expectListLcz = expectListLczTempo.sort()
-            assertEquals(expectListLcz, datasource.getTable(OSMGeoIndicatorsCompute_i.results.rsuLcz).getColumnNames().sort())
+            assertEquals(expectListLcz, datasource.getTable(OSMGeoIndicatorsCompute_i.results.rsuLcz).columns().sort())
         } else {
             assertEquals(null, OSMGeoIndicatorsCompute_i.results.rsuLcz)
         }
@@ -160,13 +160,13 @@ class ChainProcessMainTest {
                 mapOfWeights: mapOfWeights)
 
         if (ind_i.contains("URBAN_TYPOLOGY")) {
-            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).getColumnNames().sort())
-            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).getColumnNames().sort())
+            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
+            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
         }
         def expectListRsuTempo = listColBasic
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
-        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).getColumnNames()
+        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).columns()
         // We test that there is no missing indicators in the RSU table
         for (i in expectListRsu) {
             assertTrue realListRsu.contains(i)
@@ -175,7 +175,7 @@ class ChainProcessMainTest {
             def expectListLczTempo = listColLcz
             expectListLczTempo = expectListLczTempo + listColBasic
             def expectListLcz = expectListLczTempo.sort()
-            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuLcz).getColumnNames().sort())
+            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuLcz).columns.sort())
         } else {
             assertEquals(null, GeoIndicatorsCompute_i.results.outputTableRsuLcz)
         }
@@ -201,13 +201,13 @@ class ChainProcessMainTest {
                 mapOfWeights: mapOfWeights)
 
         if (ind_i.contains("URBAN_TYPOLOGY")) {
-            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).getColumnNames().sort())
-            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).getColumnNames().sort())
+            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
+            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
         }
         def expectListRsuTempo = listColBasic
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
-        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).getColumnNames()
+        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).columns
         // We test that there is no missing indicators in the RSU table
         for (i in expectListRsu) {
             assertTrue realListRsu.contains(i)
@@ -216,7 +216,7 @@ class ChainProcessMainTest {
             def expectListLczTempo = listColLcz
             expectListLczTempo = expectListLczTempo + listColBasic
             def expectListLcz = expectListLczTempo.sort()
-            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuLcz).getColumnNames().sort())
+            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuLcz).columns.sort())
         } else {
             assertEquals(null, GeoIndicatorsCompute_i.results.outputTableRsuLcz)
         }
@@ -242,13 +242,13 @@ class ChainProcessMainTest {
                 mapOfWeights: mapOfWeights)
 
         if (ind_i.contains("URBAN_TYPOLOGY")) {
-            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).getColumnNames().sort())
-            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).getColumnNames().sort())
+            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
+            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
         }
         def expectListRsuTempo = listColBasic
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
-        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).getColumnNames()
+        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).columns
         // We test that there is no missing indicators in the RSU table
         for (i in expectListRsu) {
             assertTrue realListRsu.contains(i)
@@ -257,7 +257,7 @@ class ChainProcessMainTest {
             def expectListLczTempo = listColLcz
             expectListLczTempo = expectListLczTempo + listColBasic
             def expectListLcz = expectListLczTempo.sort()
-            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuLcz).getColumnNames().sort())
+            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuLcz).columns.sort())
         } else {
             assertEquals(null, GeoIndicatorsCompute_i.results.outputTableRsuLcz)
         }
@@ -283,13 +283,13 @@ class ChainProcessMainTest {
                 mapOfWeights: mapOfWeights)
 
         if (ind_i.contains("URBAN_TYPOLOGY")) {
-            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).getColumnNames().sort())
-            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).getColumnNames().sort())
+            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
+            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
         }
         def expectListRsuTempo = listColBasic
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
-        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).getColumnNames()
+        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).columns
         // We test that there is no missing indicators in the RSU table
         for (i in expectListRsu) {
             assertTrue realListRsu.contains(i)
@@ -298,7 +298,7 @@ class ChainProcessMainTest {
             def expectListLczTempo = listColLcz
             expectListLczTempo = expectListLczTempo + listColBasic
             def expectListLcz = expectListLczTempo.sort()
-            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuLcz).getColumnNames().sort())
+            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuLcz).columns.sort())
         } else {
             assertEquals(null, GeoIndicatorsCompute_i.results.outputTableRsuLcz)
         }
@@ -324,13 +324,13 @@ class ChainProcessMainTest {
                 mapOfWeights: mapOfWeights)
 
         if (ind_i.contains("URBAN_TYPOLOGY")) {
-            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).getColumnNames().sort())
-            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).getColumnNames().sort())
+            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
+            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
         }
         def expectListRsuTempo = listColBasic
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
-        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).getColumnNames()
+        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).columns
         // We test that there is no missing indicators in the RSU table
         for (i in expectListRsu) {
             assertTrue realListRsu.contains(i)
@@ -339,7 +339,7 @@ class ChainProcessMainTest {
             def expectListLczTempo = listColLcz
             expectListLczTempo = expectListLczTempo + listColBasic
             def expectListLcz = expectListLczTempo.sort()
-            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuLcz).getColumnNames().sort())
+            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuLcz).columns.sort())
         } else {
             assertEquals(null, GeoIndicatorsCompute_i.results.outputTableRsuLcz)
         }
@@ -365,13 +365,13 @@ class ChainProcessMainTest {
                 mapOfWeights: mapOfWeights)
 
         if (ind_i.contains("URBAN_TYPOLOGY")) {
-            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).getColumnNames().sort())
-            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).getColumnNames().sort())
+            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
+            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
         }
         def expectListRsuTempo = listColBasic
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
-        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).getColumnNames()
+        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).columns
         // We test that there is no missing indicators in the RSU table
         for (i in expectListRsu) {
             assertTrue realListRsu.contains(i)
@@ -380,7 +380,7 @@ class ChainProcessMainTest {
             def expectListLczTempo = listColLcz
             expectListLczTempo = expectListLczTempo + listColBasic
             def expectListLcz = expectListLczTempo.sort()
-            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuLcz).getColumnNames().sort())
+            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuLcz).columns.sort())
         } else {
             assertEquals(null, GeoIndicatorsCompute_i.results.outputTableRsuLcz)
         }

@@ -1,7 +1,7 @@
 package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
-import org.orbisgis.datamanager.h2gis.H2GIS
-import org.orbisgis.processmanagerapi.IProcess
+import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 
 import static org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
@@ -22,7 +22,7 @@ class DataUtilsTests {
                                         , outputTableName: "test", datasource: h2GIS])
 
         def table = h2GIS.getTable(joinProcess.getResults().outputTableName)
-        assertEquals"IDA,NAME,LAB,LOCATION", table.columnNames.join(",")
+        assertEquals"IDA,NAME,LAB,LOCATION", table.columns.join(",")
         assertEquals(1, table.rowCount)
 
         table.eachRow { row ->
@@ -44,7 +44,7 @@ class DataUtilsTests {
                                         , outputTableName: "test", datasource: h2GIS, prefixWithTabName: true])
 
         def table = h2GIS.getTable(joinProcess.getResults().outputTableName)
-        assertEquals"TABLEA_IDA,TABLEA_NAME,TABLEB_LAB,TABLEC_LOCATION", table.columnNames.join(",")
+        assertEquals"TABLEA_IDA,TABLEA_NAME,TABLEB_LAB,TABLEC_LOCATION", table.columns.join(",")
         assertEquals(1, table.rowCount)
 
         table.eachRow { row ->
