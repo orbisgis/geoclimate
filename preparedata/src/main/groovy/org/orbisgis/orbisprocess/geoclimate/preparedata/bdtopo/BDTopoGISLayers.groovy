@@ -3,8 +3,8 @@ package org.orbisgis.orbisprocess.geoclimate.preparedata.bdtopo
 
 import groovy.transform.BaseScript
 import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
-import org.orbisgis.datamanager.JdbcDataSource
-import org.orbisgis.processmanagerapi.IProcess
+import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 
 
 @BaseScript PrepareData prepareData

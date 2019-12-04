@@ -5,7 +5,7 @@ import org.orbisgis.orbisprocess.geoclimate.preparedata.common.AbstractTablesIni
 import org.orbisgis.orbisprocess.geoclimate.preparedata.osm.FormattingForAbstractModel
 import org.orbisgis.orbisprocess.geoclimate.preparedata.common.InputDataFormatting
 import org.orbisgis.orbisprocess.geoclimate.preparedata.osm.OSMGISLayers
-import org.orbisgis.processmanager.GroovyProcessFactory
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import org.slf4j.LoggerFactory
 
 abstract class PrepareData extends GroovyProcessFactory {

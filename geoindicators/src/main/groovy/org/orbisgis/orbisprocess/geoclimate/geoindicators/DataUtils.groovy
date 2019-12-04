@@ -1,8 +1,8 @@
 package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
-import org.orbisgis.datamanager.JdbcDataSource
-import org.orbisgis.processmanagerapi.IProcess
+import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 
 @BaseScript Geoindicators geoindicators
 
@@ -37,18 +37,18 @@ IProcess joinTables() {
                     columnKey = "$alias.${value}"
                     // Whether or not the table name is add as prefix of the indicator in the new table
                     if (prefixWithTabName){
-                        columns = datasource.getTable(key).columnNames.collect {
+                        columns = datasource.getTable(key).columns.collect {
                             alias + "." + it + " AS ${key}_$it"
                         }
                     }
                     else{
-                        columns = datasource.getTable(key).columnNames.collect {
+                        columns = datasource.getTable(key).columns.collect {
                             alias + "." + it
                         }
                     }
                     leftQuery += " FROM ${key} as $alias "
                 } else {
-                    datasource.getTable(key).columnNames.forEach() { item ->
+                    datasource.getTable(key).columns.forEach() { item ->
                         if (!item.equalsIgnoreCase(value)) {
                             if (prefixWithTabName){
                                 columns.add(alias + "." + item + " AS ${key}_$item")
