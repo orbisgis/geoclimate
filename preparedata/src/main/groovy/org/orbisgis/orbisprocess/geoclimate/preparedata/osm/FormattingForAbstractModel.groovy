@@ -17,9 +17,9 @@ import groovy.json.JsonSlurper
  * of the geoClimate Input Model
  * @param datasource A connexion to a DB containing the raw buildings table
  * @param inputTableName The name of the raw buildings table in the DB
- * @param h_lev_min minimum height level
- * @param h_lev_max maximum height level
- * @param hThresholdLev2 ???
+ * @param hLevMin Minimum building level height
+ * @param hLevMax Maximum building level height
+ * @param hThresholdLev2 Threshold on the building height, used to determine the number of levels
  * @param epsg epsgcode to apply
  * @param jsonFilename name of the json formatted file containing the filtering parameters
  * @return outputTableName The name of the final buildings table

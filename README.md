@@ -65,6 +65,7 @@ The next script computes all geoindicators needed by the [TEB](http://www.umr-cn
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.orbisprocess.geoclimate.Geoclimate
 
+//Folder to create the H2GIS database
 def directory ="/tmp/geoclimate_chain"
 def dirFile = new File(directory)
 dirFile.delete()
@@ -76,6 +77,31 @@ if(process.execute(datasource: datasource, placeName: "Cliscouet,Vannes")){
     saveTables.execute( [inputTableNames: process.getResults().values()
                          , directory: directory, datasource: datasource])
 }
+```
+The next script shows how to run the Geoclimate chain on the BDTopo data (version 2.0). The user must set to the script the path to an input folder that contains the BDTopo data plus the IRIS_GE as shapefiles. 
+The results are stored in geojson files on a folder set by the user.
+
+```groovy
+@GrabResolver(name='orbisgis', root='http://nexus-ng.orbisgis.org/repository/orbisgis/')
+@Grab(group='org.orbisgis.orbisprocess', module='geoclimate', version='1.0.0-SNAPSHOT')
+
+//Uncomment next line to override the Geoclimate logger
+//Geoclimate.logger = logger
+
+import org.orbisgis.datamanager.h2gis.H2GIS
+import org.orbisgis.orbisprocess.geoclimate.Geoclimate
+
+//Folder to create the H2GIS database
+def directory ="/tmp/geoclimate_chain"
+def dirFile = new File(directory)
+dirFile.delete()
+dirFile.mkdir()
+def datasource = H2GIS.open(dirFile.absolutePath+File.separator + "geoclimate_chain_db;AUTO_SERVER=TRUE")
+def process = Geoclimate.Workflow.BBTOPO_V2()
+process.execute(datasource: datasource,
+                inputFolder: "../target/bdtopofolder/",
+                outputFolder :"../target/geoclimate_chain/")
+
 ```
 
 # Use Geoclimate in DBeaver
