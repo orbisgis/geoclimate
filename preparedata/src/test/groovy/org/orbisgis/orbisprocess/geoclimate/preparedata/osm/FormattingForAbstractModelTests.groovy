@@ -107,23 +107,23 @@ class FormattingForAbstractModelTests {
 
     }
 
-    //@Test //enable it to test data extraction from the overpass api
+    @Test //enable it to test data extraction from the overpass api
     void extractCreateFormatGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
 
-        //def placeName ="Shanghai, Chine"
-        def placeName ="École Lycée Joliot-Curie,Rennes"
-        placeName = "New York"
-        placeName = "Québec, Québec (Agglomération), Capitale-Nationale, Québec, Canada"
-        placeName = "Paimpol"
-        //placeName = "Londres, Grand Londres, Angleterre, Royaume-Uni"
+        //def zoneToExtract ="Shanghai, Chine"
+        def zoneToExtract ="École Lycée Joliot-Curie,Rennes"
+        zoneToExtract = "New York"
+        zoneToExtract = "Québec, Québec (Agglomération), Capitale-Nationale, Québec, Canada"
+        zoneToExtract = "Paimpol"
+        //zoneToExtract = "Londres, Grand Londres, Angleterre, Royaume-Uni"
 
         IProcess extractData = PrepareData.OSMGISLayers.extractAndCreateGISLayers()
         extractData.execute([
                 datasource : h2GIS,
-                placeName:placeName ])
+                zoneToExtract:zoneToExtract ])
 
-        String formatedPlaceName = placeName.trim().split("\\s*(,|\\s)\\s*").join("_");
+        String formatedPlaceName = zoneToExtract.trim().split("\\s*(,|\\s)\\s*").join("_");
 
 
         if(extractData.results.zoneTableName!=null) {

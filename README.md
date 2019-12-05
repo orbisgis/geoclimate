@@ -43,7 +43,7 @@ def h2GIS = H2GIS.open('/tmp/osmdb;AUTO_SERVER=TRUE')
 def process = Geoclimate.OSMGISLayers.extractAndCreateGISLayers()
          process.execute([
                 datasource : h2GIS,
-                placeName: "Vannes"])
+                zoneToExtract: "Vannes"])
  
  //Save the GIS layers in a shapeFile        
  process.getResults().each {it ->
@@ -72,7 +72,7 @@ dirFile.delete()
 dirFile.mkdir()
 def datasource = H2GIS.open(dirFile.absolutePath+File.separator + "geoclimate_chain_db;AUTO_SERVER=TRUE")
 def process = Geoclimate.Workflow.OSM()
-if(process.execute(datasource: datasource, placeName: "Cliscouet,Vannes")){
+if(process.execute(datasource: datasource, zoneToExtract: "Cliscouet,Vannes")){
     def saveTables = Geoclimate.DataUtils.saveTablesAsFiles()
     saveTables.execute( [inputTableNames: process.getResults().values()
                          , directory: directory, datasource: datasource])
