@@ -3,6 +3,9 @@ package org.orbisgis.orbisprocess.geoclimate.geoindicators
 import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
+import smile.regression.RandomForest
+import smile.data.formula.Formula
+import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 
 
 @BaseScript Geoindicators geoindicators
@@ -237,6 +240,78 @@ IProcess identifyLczType() {
             } else {
                 error "The 'normalisationType' argument is not valid."
             }
+        }
+    })
+}
+
+/**
+ * This process is used to create a classification model based on a RandomForest algorithm.
+ * The training dataset and the variables to use for the training may be gathered in a
+ * same table. All parameters of the randomForest algorithm have default values but may be
+ * modified. The resulting model is returned and may also be saved into a file.
+ *
+ * Note that the algorithm is based on the Smile library (cf. https://github.com/haifengl/smile)
+ *
+ * @param trainingTableName The name of the training table where are stored ONLY the explicative variables
+ * and the one to model
+ * @param varToModel String where is saved the name of the field to model
+ * @param save Boolean to save the model into a file if needed
+ * @param pathAndFileName String of the path and name where the model has to be saved (default "/home/RfModel")
+ * @param ntrees the number of trees to build the forest
+ * @param mtry the number of input variables to be used to determine the decision
+ * at a node of the tree. p/3 seems to give generally good performance,
+ * where p is the number of variables
+ * @param rule Decision tree split rule (The function to measure the quality of a split. Supported rules
+ * are “gini” for the Gini impurity and “entropy” for the information gain)
+ * @param maxDepth the maximum depth of the tree.
+ * @param maxNodes the maximum number of leaf nodes in the tree.
+ * @param nodeSize the number of instances in a node below which the tree will
+ * not split, setting nodeSize = 5 generally gives good results.
+ * @param subsample the sampling rate for training tree. 1.0 means sampling with replacement. < 1.0 means
+ * sampling without replacement.
+ * @param datasource A connection to a database
+ *
+ * @return RfModel A randomForest model (see smile library for further information about the object)
+ * @author Jérémy Bernard
+ */
+IProcess createRandomForestClassif() {
+    return create({
+        title "Create a Random Forest model"
+        inputs trainingTableName: String, varToModel: String, save: boolean, pathAndFileName: String,
+                ntrees: int, mtry: int, rule: SplitRule, maxDepth: int, maxNodes: int, nodeSize: int,
+                subsample: double, datasource: JdbcDataSource
+        outputs RfModel: RandomForest
+        run { trainingTableName, varToModel, save, pathAndFileName, ntrees, mtry, rule,
+              maxDepth, maxNodes, nodeSize, subsample, datasource ->
+
+            info "Create a Random Forest model"
+
+            // Read the training table as a DataFrame
+            def df = DataFrame.of(datasource.getTable(trainingTableName))
+
+            Formula formula = Formula.lhs(varToModel)
+
+            // Convert the variable to model into factors (if string for example) and remove rows containing null values
+            df = df.factorize(varToModel).omitNullRows()
+
+            // Create the randomForest
+            RandomForest model = RandomForest.fit(formula, df, ntrees, mtry,
+                    rule, maxDepth, maxNodes, nodeSize, subsample)
+
+            // Calculate the prediction using the same sample in order to identify what is the
+            // data rate that has been well classified
+            int[] prediction = Validation.test(model, df)
+            int[] truth = df.apply(varToModel).toIntArray()
+            double accuracy = Accuracy.of(truth, prediction)
+            logger.info "The percentage of the data that have been well classified is : ${accuracy*100}%"
+
+            if (save){
+                //XStream xs = new XStream()
+                //FileOutputStream fs = new FileOutputStream(pathAndFileName)
+                //xs.toXML(model, fs)
+            }
+
+            [RfModel: model]
         }
     })
 }
