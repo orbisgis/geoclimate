@@ -197,7 +197,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
     }
 
 
-    @Test
+    //@Test
     void testOSMWorkflowFromPlaceName() {
         String directory ="./target/geoclimate_chain"
         File dirFile = new File(directory)
