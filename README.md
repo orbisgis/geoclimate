@@ -117,7 +117,7 @@ The results are stored in geojson files on a folder set by the user.
 //Uncomment next line to override the Geoclimate logger
 //Geoclimate.logger = logger
 
-import org.orbisgis.datamanager.h2gis.H2GIS
+import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS;
 import org.orbisgis.orbisprocess.geoclimate.Geoclimate
 
 //Folder to create the H2GIS database
@@ -126,7 +126,7 @@ def dirFile = new File(directory)
 dirFile.delete()
 dirFile.mkdir()
 def datasource = H2GIS.open(dirFile.absolutePath+File.separator + "geoclimate_chain_db;AUTO_SERVER=TRUE")
-def process = Geoclimate.Workflow.BBTOPO_V2()
+def process = Geoclimate.Workflow.BDTOPO_V2()
 process.execute(datasource: datasource,
                 inputFolder: "../target/bdtopofolder/",
                 outputFolder :"../target/geoclimate_chain/")
