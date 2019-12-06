@@ -36,7 +36,7 @@ class FormattingForAbstractModelTests {
                 epsg: epsg,
                 jsonFilename: null])
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated.shp")
-        assertEquals 1044, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertEquals 1040, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL is null").count==0
@@ -211,6 +211,16 @@ class FormattingForAbstractModelTests {
         def zoneToExtract =  [48.87644088590647,2.3938433825969696,48.877258515821225,2.3952582478523254]
         createGISLayersCheckHeight(zoneToExtract)
     }
+
+    @Test
+    void apiOSMGISBuildingCheckHeight2() {
+        //OSM URL https://www.openstreetmap.org/way/79083537
+        //negative building:levels
+        def zoneToExtract =  [48.82043541804379,2.364395409822464,48.82125396297273,2.36581027507782]
+        createGISLayersCheckHeight(zoneToExtract)
+    }
+
+
 
     /**
      * Method to check value from  the building layer

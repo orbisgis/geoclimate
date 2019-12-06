@@ -50,10 +50,10 @@ IProcess formatBuildingLayer() {
                     columnNames.remove("THE_GEOM")
                     queryMapper += columnsMapper(columnNames, columnToMap)
                     if(inputZoneEnvelopeTableName) {
-                        queryMapper += " , case when st_isvalid(a.the_geom) then a.the_geom else st_makevalid(st_force2D(a.the_geom)) end  as the_geom FROM $inputTableName as a,  $inputZoneEnvelopeTableName as b WHERE a.the_geom && b.the_geom and st_intersects(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom)"
+                        queryMapper += " , case when st_isvalid(a.the_geom) then a.the_geom else st_makevalid(st_force2D(a.the_geom)) end  as the_geom FROM $inputTableName as a,  $inputZoneEnvelopeTableName as b WHERE a.the_geom && b.the_geom and st_intersects(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) and st_area(a.the_geom)>1"
                     }
                     else{
-                        queryMapper += " , case when st_isvalid(a.the_geom) then a.the_geom else st_makevalid(st_force2D(a.the_geom)) end as the_geom FROM $inputTableName as a"
+                        queryMapper += " , case when st_isvalid(a.the_geom) then a.the_geom else st_makevalid(st_force2D(a.the_geom)) end as the_geom FROM $inputTableName as a where st_area(a.the_geom)>1"
                     }
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
@@ -68,30 +68,33 @@ IProcess formatBuildingLayer() {
                             def heightRoof = getHeightRoof(height, b_height)
 
                             def nbLevels = getNbLevels(b_lev, roof_lev, b_roof_lev)
-                            def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
-                            def use = typeAndUseValues[1]
-                            def type = typeAndUseValues[0]
-                            if (type == null || type.isEmpty()) {
-                                type = 'building'
-                            }
 
-                            def nbLevelFromType = typeAndLevel[type]
+                            if (nbLevels >= 0) {
+                                def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
+                                def use = typeAndUseValues[1]
+                                def type = typeAndUseValues[0]
+                                if (type == null || type.isEmpty()) {
+                                    type = 'building'
+                                }
 
-                            def formatedHeight = formatHeightsAndNbLevels(heightWall, heightRoof, nbLevels, h_lev_min,
-                                    h_lev_max, hThresholdLev2, nbLevelFromType == null ? 0 : nbLevelFromType)
+                                def nbLevelFromType = typeAndLevel[type]
 
-                            def zIndex = getZIndex(row.'layer')
+                                def formatedHeight = formatHeightsAndNbLevels(heightWall, heightRoof, nbLevels, h_lev_min,
+                                        h_lev_max, hThresholdLev2, nbLevelFromType == null ? 0 : nbLevelFromType)
 
-                            if (formatedHeight.nbLevels > 0 && zIndex >= 0 && type) {
-                                Geometry geom = row.the_geom
-                                for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                    Geometry subGeom = geom.getGeometryN(i)
-                                    if (subGeom instanceof Polygon) {
-                                        stmt.addBatch """insert into ${outputTableName} values(ST_GEOMFROMTEXT('${
-                                            subGeom
-                                        }',$epsg), null, '${row.id}',${formatedHeight.heightWall},${
-                                            formatedHeight.heightRoof
-                                        },${formatedHeight.nbLevels},'${type}','${use}',${zIndex})""".toString()
+                                def zIndex = getZIndex(row.'layer')
+
+                                if (formatedHeight.nbLevels > 0 && zIndex >= 0 && type) {
+                                    Geometry geom = row.the_geom
+                                    for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                        Geometry subGeom = geom.getGeometryN(i)
+                                        if (subGeom instanceof Polygon) {
+                                            stmt.addBatch """insert into ${outputTableName} values(ST_GEOMFROMTEXT('${
+                                                subGeom
+                                            }',$epsg), null, '${row.id}',${formatedHeight.heightWall},${
+                                                formatedHeight.heightRoof
+                                            },${formatedHeight.nbLevels},'${type}','${use}',${zIndex})""".toString()
+                                        }
                                     }
                                 }
                             }
