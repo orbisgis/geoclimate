@@ -7,6 +7,7 @@ import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 
+import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.junit.jupiter.api.Assertions.assertNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 
@@ -196,7 +197,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
     }
 
 
-    //@Test
+    @Test
     void testOSMWorkflowFromPlaceName() {
         String directory ="./target/geoclimate_chain"
         File dirFile = new File(directory)
@@ -205,9 +206,9 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
         IProcess process = ProcessingChain.Workflow.OSM()
         if(process.execute(datasource: datasource, zoneToExtract: "romainville")){
-            IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
-            saveTables.execute( [inputTableNames: process.getResults().values()
-                                 , directory: directory, datasource: datasource])
+            process.getResults().values().each { it ->
+                assertTrue datasource.hasTable(it)
+            }
         }
     }
 
@@ -219,11 +220,33 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         dirFile.mkdir()
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
         IProcess process = ProcessingChain.Workflow.OSM()
-        if(process.execute(datasource: datasource, zoneToExtract: [-3.0961382389068604, 48.76661349201755,-3.1055688858032227,48.77155634881654,])){
-            IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
-            saveTables.execute( [inputTableNames: process.getResults().values()
-                                 , directory: directory, datasource: datasource])
+        if(process.execute(datasource: datasource, zoneToExtract: [-3.0961382389068604, 48.76661349201755,-3.1055688858032227,48.77155634881654])) {
+            process.getResults().values().each { it ->
+                assertTrue datasource.hasTable(it)
+            }
         }
+    }
+
+    @Test
+    void testOSMWorkflowFromBadBbox1() {
+        String directory ="./target/geoclimate_chain"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
+        IProcess process = ProcessingChain.Workflow.OSM()
+        assertFalse(process.execute(datasource: datasource, zoneToExtract: [-3.0961382389068604, -3.1055688858032227,48.77155634881654,]))
+    }
+
+    @Test
+    void testOSMWorkflowFromBadBbox2() {
+        String directory ="./target/geoclimate_chain"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
+        IProcess process = ProcessingChain.Workflow.OSM()
+        assertFalse(process.execute(datasource: datasource, zoneToExtract: []))
     }
 
     @Test

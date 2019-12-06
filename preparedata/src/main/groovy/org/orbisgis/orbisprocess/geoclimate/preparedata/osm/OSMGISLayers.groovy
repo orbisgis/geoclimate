@@ -47,15 +47,10 @@ IProcess extractAndCreateGISLayers(){
                 if(zoneToExtract in Collection){
                      GEOMETRY_TYPE = "POLYGON"
                      geom = OSMTools.Utilities.buildGeometry(zoneToExtract)
-                     epsg =4326
                     if (!geom) {
-                        //We look for another bbox values
-                        geom = buildGeometry(zoneToExtract)
-                        epsg=-1
-                        if(!geom){
                         logger.error("The bounding box cannot be null")
                         return null
-                        }
+
                     }
                 }
                 else if(zoneToExtract instanceof  String){
@@ -247,36 +242,3 @@ static Map readJSONParameters(def jsonFile) {
             return jsonSlurper.parse(jsonFile)
     }
 }
-
-
-/**
- * This method is used to build a new geometry from the following input parameters :
- * minx , maxx , miny, maxy
- *
- * @author Erwan Bocher (CNRS LAB-STICC)
- *
- * @param geom The input geometry.
- *
- */
-Geometry buildGeometry(def bbox) {
-    if(!bbox){
-        error "The values cannot be null or empty"
-        return
-    }
-    if(!bbox in Collection){
-        error "The values must be set as an array"
-        return
-    }
-    if(bbox.size==4){
-        def minX = bbox[0]
-        def maxX = bbox[1]
-        def minY = bbox[2]
-        def maxY =  bbox[3]
-            GeometryFactory geometryFactory = new GeometryFactory()
-            Geometry geom =  geometryFactory.toGeometry(new Envelope(minX,maxX,minY,maxY))
-            return geom.isValid()?geom:null
-    }
-    error("The bbox must be defined with 4 values")
-    return
-}
-
