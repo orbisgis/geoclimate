@@ -78,6 +78,35 @@ if(process.execute(datasource: datasource, zoneToExtract: "Cliscouet,Vannes")){
                          , directory: directory, datasource: datasource])
 }
 ```
+
+OSM workflow is able also to extract data from a bounding box area that follows the overpass signature : south ,west, north, east expressed in latitude, longitude.
+
+```groovy
+@GrabResolver(name='orbisgis', root='http://nexus-ng.orbisgis.org/repository/orbisgis/')
+@Grab(group='org.orbisgis.orbisprocess', module='geoclimate', version='1.0.0-SNAPSHOT')
+
+//Uncomment next line to override the Geoclimate logger
+//Geoclimate.logger = logger
+
+import org.orbisgis.datamanager.h2gis.H2GIS
+import org.orbisgis.orbisprocess.geoclimate.Geoclimate
+
+//Folder to create the H2GIS database
+def directory ="/tmp/geoclimate_chain"
+def dirFile = new File(directory)
+dirFile.delete()
+dirFile.mkdir()
+def datasource = H2GIS.open(dirFile.absolutePath+File.separator + "geoclimate_chain_db;AUTO_SERVER=TRUE")
+def process = Geoclimate.Workflow.OSM()
+//Capitole place Toulouse (FR)
+if(process.execute(datasource: datasource, zoneToExtract: [43.60266920799841,1.4410436153411863,43.60627011352819,1.4467030763626099])){
+    def saveTables = Geoclimate.DataUtils.saveTablesAsFiles()
+    saveTables.execute( [inputTableNames: process.getResults().values()
+                         , directory: directory, datasource: datasource])
+}
+```
+
+
 The next script shows how to run the Geoclimate chain on the BDTopo data (version 2.0). The user must set to the script the path to an input folder that contains the BDTopo data plus the IRIS_GE as shapefiles. 
 The results are stored in geojson files on a folder set by the user.
 
