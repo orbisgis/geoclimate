@@ -48,7 +48,7 @@ import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
  * Meteorological Society 93, no. 12 (2012): 1879-1900.
  *
  */
-def BBTOPO_V2() {
+def BDTOPO_V2() {
     create({
         title "Create all geoindicators from BDTopo data"
         inputs datasource: JdbcDataSource, inputFolder: String, distance: 0,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],

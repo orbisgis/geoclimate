@@ -46,7 +46,7 @@ IProcess extractAndCreateGISLayers(){
                 Geometry geom
                 if(zoneToExtract in Collection){
                      GEOMETRY_TYPE = "POLYGON"
-                     geom = OSMTools.Utilities.buildGeometry(zoneToExtract)
+                     geom = OSMTools.Utilities.geometryFromOverpass(zoneToExtract)
                     if (!geom) {
                         logger.error("The bounding box cannot be null")
                         return null

@@ -205,7 +205,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         dirFile.mkdir()
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
         IProcess process = ProcessingChain.Workflow.OSM()
-        if(process.execute(datasource: datasource, zoneToExtract: "romainville")){
+        if(process.execute(datasource: datasource, zoneToExtract: "paris")){
             process.getResults().values().each { it ->
                 assertTrue datasource.hasTable(it)
             }
@@ -220,7 +220,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         dirFile.mkdir()
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
         IProcess process = ProcessingChain.Workflow.OSM()
-        if(process.execute(datasource: datasource, zoneToExtract: [-3.0961382389068604, 48.76661349201755,-3.1055688858032227,48.77155634881654])) {
+        if(process.execute(datasource: datasource, zoneToExtract: [38.89557963573336,-77.03930318355559,38.89944983078282,-77.03364372253417])) {
             process.getResults().values().each { it ->
                 assertTrue datasource.hasTable(it)
             }

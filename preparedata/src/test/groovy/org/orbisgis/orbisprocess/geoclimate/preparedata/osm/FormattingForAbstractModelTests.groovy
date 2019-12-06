@@ -107,7 +107,7 @@ class FormattingForAbstractModelTests {
 
     }
 
-    @Test //enable it to test data extraction from the overpass api
+    //@Test //enable it to test data extraction from the overpass api
     void extractCreateFormatGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
 
@@ -199,6 +199,47 @@ class FormattingForAbstractModelTests {
                     inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
                     epsg: epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_${formatedPlaceName}.geojson")
+
+        }else {
+            assertTrue(false)
+        }
+    }
+
+    @Test
+    void apiOSMGISBuildingCheckHeight1() {
+        //OSM URL https://www.openstreetmap.org/way/227927910
+        def zoneToExtract =  [48.87644088590647,2.3938433825969696,48.877258515821225,2.3952582478523254]
+        createGISLayersCheckHeight(zoneToExtract)
+    }
+
+    /**
+     * Method to check value from  the building layer
+     * @param zoneToExtract
+     */
+    void createGISLayersCheckHeight(def zoneToExtract) {
+        def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
+
+        IProcess extractData = PrepareData.OSMGISLayers.extractAndCreateGISLayers()
+        extractData.execute([
+                datasource : h2GIS,
+                zoneToExtract:zoneToExtract ])
+
+        if(extractData.results.zoneTableName!=null) {
+            def epsg = extractData.results.epsg
+
+            //Buildings
+            IProcess format = PrepareData.FormattingForAbstractModel.formatBuildingLayer()
+            format.execute([
+                    datasource : h2GIS,
+                    inputTableName: extractData.results.buildingTableName,
+                    inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
+                    epsg: epsg])
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count==0
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count==0
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL is null").count==0
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL<0").count==0
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF is null").count==0
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0").count==0
 
         }else {
             assertTrue(false)
