@@ -1,6 +1,7 @@
 package org.orbisgis.orbisprocess.geoclimate.processingchain
 
 import groovy.transform.BaseScript
+import org.locationtech.jts.geom.Envelope
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
@@ -47,9 +48,9 @@ import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
  * Meteorological Society 93, no. 12 (2012): 1879-1900.
  *
  */
-def BBTOPO_V2() {
+def BDTOPO_V2() {
     create({
-        title "Create all geoindicators from OSM data"
+        title "Create all geoindicators from BDTopo data"
         inputs datasource: JdbcDataSource, inputFolder: String, distance: 0,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
                 svfSimplified:false, prefixName: "",
                 mapOfWeights : ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
@@ -164,7 +165,8 @@ def BBTOPO_V2() {
  * should not be trusted now.
  *
  * @param datasource A connection to a database
- * @param placeName The name of the place to extract (neighborhood, city, etc. - cf https://wiki.openstreetmap.org/wiki/Key:level)
+ * @param zoneToExtract A zone to extract. Can be, a name of the place (neighborhood, city, etc. - cf https://wiki.openstreetmap.org/wiki/Key:level)
+ * or a bounding box specified as a JTS envelope
  * @param distance The integer value to expand the envelope of zone when recovering the data from OSM
  * (some objects may be badly truncated if they are not within the envelope)
  * @param indicatorUse List of geoindicator types to compute (default ["LCZ", "URBAN_TYPOLOGY", "TEB"]
@@ -202,7 +204,7 @@ def BBTOPO_V2() {
 def OSM() {
     return create({
         title "Create all geoindicators from OSM data"
-        inputs datasource: JdbcDataSource, placeName: String, distance: 0,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+        inputs datasource: JdbcDataSource, zoneToExtract: Object, distance: 0,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
                 svfSimplified:false, prefixName: "",
                 mapOfWeights : ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                  "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
@@ -213,49 +215,48 @@ def OSM() {
                 hydrographicTable: String, buildingIndicators: String,
                 blockIndicators: String,
                 rsuIndicators: String, rsuLcz: String
-        run { datasource, placeName, distance,indicatorUse, svfSimplified, prefixName, mapOfWeights,hLevMin, hLevMax, hThresholdLev2 ->
+        run { datasource, zoneToExtract, distance, indicatorUse, svfSimplified, prefixName, mapOfWeights, hLevMin, hLevMax, hThresholdLev2 ->
 
-            IProcess prepareOSMData = ProcessingChain.PrepareOSM.buildGeoclimateLayers()
+                IProcess prepareOSMData = ProcessingChain.PrepareOSM.buildGeoclimateLayers()
 
-            if (!prepareOSMData.execute([datasource: datasource, placeName: placeName, distance: distance, hLevMin: hLevMin,
-                     hLevMax: hLevMax, hThresholdLev2: hThresholdLev2])) {
-                error "Cannot extract the GIS layers from the place name $placeName"
-                return null
-            }
+                if (!prepareOSMData.execute([datasource: datasource, zoneToExtract: zoneToExtract, distance: distance, hLevMin: hLevMin,
+                                             hLevMax   : hLevMax, hThresholdLev2: hThresholdLev2])) {
+                    error "Cannot extract the GIS layers from the zone to extract  ${zoneToExtract}"
+                    return null
+                }
 
-            String buildingTableName = prepareOSMData.getResults().outputBuilding
+                String buildingTableName = prepareOSMData.getResults().outputBuilding
 
-            String roadTableName = prepareOSMData.getResults().outputRoad
+                String roadTableName = prepareOSMData.getResults().outputRoad
 
-            String railTableName = prepareOSMData.getResults().outputRail
+                String railTableName = prepareOSMData.getResults().outputRail
 
-            String hydrographicTableName = prepareOSMData.getResults().outputHydro
+                String hydrographicTableName = prepareOSMData.getResults().outputHydro
 
-            String vegetationTableName = prepareOSMData.getResults().outputVeget
+                String vegetationTableName = prepareOSMData.getResults().outputVeget
 
-            String zoneTableName = prepareOSMData.getResults().outputZone
+                String zoneTableName = prepareOSMData.getResults().outputZone
 
-            String zoneEnvelopeTableName = prepareOSMData.getResults().outputZoneEnvelope
+                String zoneEnvelopeTableName = prepareOSMData.getResults().outputZoneEnvelope
 
-            IProcess geoIndicators = GeoIndicators()
-            if (!geoIndicators.execute( datasource          : datasource,           zoneTable       : zoneTableName,
-                                        buildingTable       : buildingTableName,    roadTable       : roadTableName,
-                                        railTable           : railTableName,        vegetationTable : vegetationTableName,
-                                        hydrographicTable   : hydrographicTableName,indicatorUse    : indicatorUse,
-                                        svfSimplified       : svfSimplified,        prefixName      : prefixName,
-                                        mapOfWeights        : mapOfWeights)) {
-                error "Cannot build the geoindicators"
-                return null
-            }
+                IProcess geoIndicators = GeoIndicators()
+                if (!geoIndicators.execute(datasource: datasource, zoneTable: zoneTableName,
+                        buildingTable: buildingTableName, roadTable: roadTableName,
+                        railTable: railTableName, vegetationTable: vegetationTableName,
+                        hydrographicTable: hydrographicTableName, indicatorUse: indicatorUse,
+                        svfSimplified: svfSimplified, prefixName: prefixName,
+                        mapOfWeights: mapOfWeights)) {
+                    error "Cannot build the geoindicators"
+                    return null
+                }
 
-
-            return [zoneTable         : zoneTableName, zoneEnvelopeTableName: zoneEnvelopeTableName, buildingTable: buildingTableName,
-                    roadTable         : roadTableName, railTable: railTableName, vegetationTable: vegetationTableName,
-                    hydrographicTable : hydrographicTableName,
-                    buildingIndicators: geoIndicators.results.outputTableBuildingIndicators,
-                    blockIndicators   : geoIndicators.results.outputTableBlockIndicators,
-                    rsuIndicators     : geoIndicators.results.outputTableRsuIndicators,
-                    rsuLcz            : geoIndicators.results.outputTableRsuLcz]
+                return [zoneTable         : zoneTableName, zoneEnvelopeTableName: zoneEnvelopeTableName, buildingTable: buildingTableName,
+                        roadTable         : roadTableName, railTable: railTableName, vegetationTable: vegetationTableName,
+                        hydrographicTable : hydrographicTableName,
+                        buildingIndicators: geoIndicators.results.outputTableBuildingIndicators,
+                        blockIndicators   : geoIndicators.results.outputTableBlockIndicators,
+                        rsuIndicators     : geoIndicators.results.outputTableRsuIndicators,
+                        rsuLcz            : geoIndicators.results.outputTableRsuLcz]
         }
     })
 }

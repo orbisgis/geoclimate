@@ -36,7 +36,7 @@ class FormattingForAbstractModelTests {
                 epsg: epsg,
                 jsonFilename: null])
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated.shp")
-        assertEquals 1044, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertEquals 1040, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL is null").count==0
@@ -111,19 +111,19 @@ class FormattingForAbstractModelTests {
     void extractCreateFormatGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
 
-        //def placeName ="Shanghai, Chine"
-        def placeName ="École Lycée Joliot-Curie,Rennes"
-        placeName = "New York"
-        placeName = "Québec, Québec (Agglomération), Capitale-Nationale, Québec, Canada"
-        placeName = "Paimpol"
-        //placeName = "Londres, Grand Londres, Angleterre, Royaume-Uni"
+        //def zoneToExtract ="Shanghai, Chine"
+        def zoneToExtract ="École Lycée Joliot-Curie,Rennes"
+        zoneToExtract = "New York"
+        zoneToExtract = "Québec, Québec (Agglomération), Capitale-Nationale, Québec, Canada"
+        zoneToExtract = "Paimpol"
+        //zoneToExtract = "Londres, Grand Londres, Angleterre, Royaume-Uni"
 
         IProcess extractData = PrepareData.OSMGISLayers.extractAndCreateGISLayers()
         extractData.execute([
                 datasource : h2GIS,
-                placeName:placeName ])
+                zoneToExtract:zoneToExtract ])
 
-        String formatedPlaceName = placeName.trim().split("\\s*(,|\\s)\\s*").join("_");
+        String formatedPlaceName = zoneToExtract.trim().split("\\s*(,|\\s)\\s*").join("_");
 
 
         if(extractData.results.zoneTableName!=null) {
@@ -199,6 +199,57 @@ class FormattingForAbstractModelTests {
                     inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
                     epsg: epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_${formatedPlaceName}.geojson")
+
+        }else {
+            assertTrue(false)
+        }
+    }
+
+    @Test
+    void apiOSMGISBuildingCheckHeight1() {
+        //OSM URL https://www.openstreetmap.org/way/227927910
+        def zoneToExtract =  [48.87644088590647,2.3938433825969696,48.877258515821225,2.3952582478523254]
+        createGISLayersCheckHeight(zoneToExtract)
+    }
+
+    @Test
+    void apiOSMGISBuildingCheckHeight2() {
+        //OSM URL https://www.openstreetmap.org/way/79083537
+        //negative building:levels
+        def zoneToExtract =  [48.82043541804379,2.364395409822464,48.82125396297273,2.36581027507782]
+        createGISLayersCheckHeight(zoneToExtract)
+    }
+
+
+
+    /**
+     * Method to check value from  the building layer
+     * @param zoneToExtract
+     */
+    void createGISLayersCheckHeight(def zoneToExtract) {
+        def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
+
+        IProcess extractData = PrepareData.OSMGISLayers.extractAndCreateGISLayers()
+        extractData.execute([
+                datasource : h2GIS,
+                zoneToExtract:zoneToExtract ])
+
+        if(extractData.results.zoneTableName!=null) {
+            def epsg = extractData.results.epsg
+
+            //Buildings
+            IProcess format = PrepareData.FormattingForAbstractModel.formatBuildingLayer()
+            format.execute([
+                    datasource : h2GIS,
+                    inputTableName: extractData.results.buildingTableName,
+                    inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
+                    epsg: epsg])
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count==0
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count==0
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL is null").count==0
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL<0").count==0
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF is null").count==0
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0").count==0
 
         }else {
             assertTrue(false)

@@ -2,10 +2,12 @@ package org.orbisgis.orbisprocess.geoclimate.processingchain
 
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.locationtech.jts.geom.Envelope
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 
+import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.junit.jupiter.api.Assertions.assertNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 
@@ -20,12 +22,12 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
         def h2GIS = H2GIS.open(dirFile.absolutePath+File.separator+'osm_chain_db;AUTO_SERVER=TRUE')
-        def placeName = "Pont de veyle"
+        def zoneToExtract = "Pont de veyle"
         IProcess process = ProcessingChain.PrepareOSM.buildGeoclimateLayers()
 
-        process.execute([datasource: h2GIS, placeName :placeName, distance: 0])
+        process.execute([datasource: h2GIS, zoneToExtract :zoneToExtract, distance: 0])
 
-        def prefixName  = placeName.trim().split("\\s*(,|\\s)\\s*").join("_");
+        def prefixName  = zoneToExtract.trim().split("\\s*(,|\\s)\\s*").join("_");
 
         // Create the RSU
         def prepareRSUData = Geoindicators.SpatialUnits.prepareRSUData()
@@ -109,11 +111,11 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osm_chain_db;AUTO_SERVER=TRUE")
 
         //Extract and transform OSM data
-        def placeName = "Strasbourg"
+        def zoneToExtract = "Strasbourg"
 
         IProcess prepareOSMData = ProcessingChain.PrepareOSM.buildGeoclimateLayers()
 
-        prepareOSMData.execute([datasource: datasource, placeName :placeName, distance: 0])
+        prepareOSMData.execute([datasource: datasource, zoneToExtract :zoneToExtract, distance: 0])
 
         String buildingTableName = prepareOSMData.getResults().outputBuilding
 
@@ -196,18 +198,55 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
 
 
     //@Test
-    void testOSMWorkflow() {
+    void testOSMWorkflowFromPlaceName() {
         String directory ="./target/geoclimate_chain"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
         IProcess process = ProcessingChain.Workflow.OSM()
-        if(process.execute(datasource: datasource, placeName: "romainville")){
-            IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
-            saveTables.execute( [inputTableNames: process.getResults().values()
-                                 , directory: directory, datasource: datasource])
+        if(process.execute(datasource: datasource, zoneToExtract: "paris")){
+            process.getResults().values().each { it ->
+                assertTrue datasource.hasTable(it)
+            }
         }
+    }
+
+    @Test
+    void testOSMWorkflowFromBbox() {
+        String directory ="./target/geoclimate_chain"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
+        IProcess process = ProcessingChain.Workflow.OSM()
+        if(process.execute(datasource: datasource, zoneToExtract: [38.89557963573336,-77.03930318355559,38.89944983078282,-77.03364372253417])) {
+            process.getResults().values().each { it ->
+                assertTrue datasource.hasTable(it)
+            }
+        }
+    }
+
+    @Test
+    void testOSMWorkflowFromBadBbox1() {
+        String directory ="./target/geoclimate_chain"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
+        IProcess process = ProcessingChain.Workflow.OSM()
+        assertFalse(process.execute(datasource: datasource, zoneToExtract: [-3.0961382389068604, -3.1055688858032227,48.77155634881654,]))
+    }
+
+    @Test
+    void testOSMWorkflowFromBadBbox2() {
+        String directory ="./target/geoclimate_chain"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
+        IProcess process = ProcessingChain.Workflow.OSM()
+        assertFalse(process.execute(datasource: datasource, zoneToExtract: []))
     }
 
     @Test
@@ -218,7 +257,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         dirFile.mkdir()
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
         IProcess process = ProcessingChain.Workflow.OSM()
-        if(process.execute(datasource: datasource, placeName: "romainville", indicatorUse: ["LCZ"])){
+        if(process.execute(datasource: datasource, zoneToExtract: "romainville", indicatorUse: ["LCZ"])){
             IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
             saveTables.execute( [inputTableNames: process.getResults().values()
                                  , directory: directory, datasource: datasource])
