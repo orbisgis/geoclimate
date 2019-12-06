@@ -30,7 +30,7 @@ Put the following script and run it to extract OSM data from a place name and tr
 @GrabResolver(name='orbisgis', root='http://nexus-ng.orbisgis.org/repository/orbisgis/')
 @Grab(group='org.orbisgis.orbisprocess', module='geoclimate', version='1.0.0-SNAPSHOT')
 
-import org.orbisgis.datamanager.h2gis.H2GIS
+import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS;
 import org.orbisgis.orbisprocess.geoclimate.Geoclimate
 
 //Uncomment next line to override the Geoclimate logger
