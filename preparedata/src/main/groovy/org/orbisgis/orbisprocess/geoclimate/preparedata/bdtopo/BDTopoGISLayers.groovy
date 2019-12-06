@@ -22,7 +22,7 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
  * @param tableHydroName The table name in which the hydrographic areas are stored
  * @param tableVegetName The table name in which the vegetation areas are stored
  * @param tableImperviousSportName The table name in which the impervious sport areas are stored
- * @param tableImperviousBuildSurfName The table name in which the impervious surfacic buildings are stored
+ * @param tableImperviousBuildSurfName The table name in which the building impervious surfaces are stored
  * @param tableImperviousRoadSurfName The table name in which the impervious road areas are stored
  * @param tableImperviousActivSurfName The table name in which the impervious activities areas are stored
  * @param distBuffer The distance (expressed in meter) used to compute the buffer area around the ZONE
@@ -112,19 +112,76 @@ IProcess importPreprocess(){
             def tmp_imperv_surface_activite = 'TMP_IMPERV_SURFACE_ACTIVITE_' + uuid
             def input_impervious = 'INPUT_IMPERVIOUS'
 
-            // If the impervious tables does not exists, we create corresponding empty tables
+            // -------------------------------------------------------------------------------
+            // Control the SRIDs from input tables
+
+            def list = [tableIrisName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName,
+                        tableRoadName, tableRailName, tableHydroName, tableVegetName,
+                        tableImperviousSportName, tableImperviousBuildSurfName,
+                        tableImperviousRoadSurfName, tableImperviousActivSurfName]
+
+            // The SRID is stored and initialized to -1
+            def srid = -1
+
+            // For each tables in the list, we check the SRID and compare to the srid variable. If different, the process is stopped
+            for(String name : list){
+                def table = datasource.getTable(name)
+                if(table != null){
+                    if(srid == -1){
+                        srid = table.srid
+                    }
+                    else{
+                        if(srid != table.srid){
+                            logger.error "The process has been stopped since the table $name has a different SRID from the others"
+                            return null
+                        }
+                    }
+                }
+            }
+
+            // -------------------------------------------------------------------------------
+            // Check if the input files are present
+
+            // If the IRIS_GE table does not exist or is empty, then the process is stopped
+            if(!datasource.hasTable(tableIrisName) || datasource.getTable(tableIrisName).isEmpty()){
+                logger.error 'The process has been stopped since the table IRIS_GE does not exist or is empty'
+                return null}
+
+            // If the following tables does not exists, we create corresponding empty tables
+            if(!datasource.hasTable(tableBuildIndifName)){
+                datasource.execute("CREATE TABLE $tableBuildIndifName (THE_GEOM geometry(polygon, $srid), ID varchar, HAUTEUR integer);")
+            }
+            if(!datasource.hasTable(tableBuildIndusName)){
+                datasource.execute("CREATE TABLE $tableBuildIndusName (THE_GEOM geometry(polygon, $srid), ID varchar, HAUTEUR integer, NATURE varchar);")
+            }
+            if(!datasource.hasTable(tableBuildRemarqName)){
+                datasource.execute("CREATE TABLE $tableBuildRemarqName (THE_GEOM geometry(polygon, $srid), ID varchar, HAUTEUR integer, NATURE varchar);")
+            }
+            if(!datasource.hasTable(tableRoadName)){
+                datasource.execute("CREATE TABLE $tableRoadName (THE_GEOM geometry(linestring, $srid), ID varchar, LARGEUR double precision, NATURE varchar, POS_SOL integer, FRANCHISST varchar);")
+            }
+            if(!datasource.hasTable(tableRailName)){
+                datasource.execute("CREATE TABLE $tableRailName (THE_GEOM geometry(linestring, $srid), ID varchar, NATURE varchar, POS_SOL integer, FRANCHISST varchar);")
+            }
+            if(!datasource.hasTable(tableHydroName)){
+                datasource.execute("CREATE TABLE $tableHydroName (THE_GEOM geometry(polygon, $srid), ID varchar);")
+            }
+            if(!datasource.hasTable(tableVegetName)){
+                datasource.execute("CREATE TABLE $tableVegetName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);")
+            }
             if(!datasource.hasTable(tableImperviousSportName)){
-                datasource.execute("CREATE TABLE $tableImperviousSportName (THE_GEOM geometry(geometry, 2154), ID varchar, NATURE varchar);")
+                datasource.execute("CREATE TABLE $tableImperviousSportName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);")
             }
             if(!datasource.hasTable(tableImperviousBuildSurfName)){
-                datasource.execute("CREATE TABLE $tableImperviousBuildSurfName (THE_GEOM geometry(geometry, 2154), ID varchar, NATURE varchar);")
+                datasource.execute("CREATE TABLE $tableImperviousBuildSurfName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);")
             }
             if(!datasource.hasTable(tableImperviousRoadSurfName)){
-                datasource.execute("CREATE TABLE $tableImperviousRoadSurfName (THE_GEOM geometry(geometry, 2154), ID varchar);")
+                datasource.execute("CREATE TABLE $tableImperviousRoadSurfName (THE_GEOM geometry(polygon, $srid), ID varchar);")
             }
             if(!datasource.hasTable(tableImperviousActivSurfName)){
-                datasource.execute("CREATE TABLE $tableImperviousActivSurfName (THE_GEOM geometry(geometry, 2154), ID varchar, CATEGORIE varchar);")
+                datasource.execute("CREATE TABLE $tableImperviousActivSurfName (THE_GEOM geometry(polygon, $srid), ID varchar, CATEGORIE varchar);")
             }
+            // -------------------------------------------------------------------------------
 
             def success = datasource.executeScript(getClass().getResourceAsStream('importPreprocess.sql'),
                     [ID_ZONE: idZone, DIST_BUFFER: distBuffer, EXPAND: expand,
