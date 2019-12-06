@@ -20,7 +20,7 @@ class OSMGISLayersTests {
         IProcess process = PrepareData.OSMGISLayers.extractAndCreateGISLayers()
         process.execute([
                 datasource : h2GIS,
-                placeName: "Cliscouet, Vannes"])
+                zoneToExtract: "Cliscouet, Vannes"])
         process.getResults().each {it ->
             if(it.value!=null && it.key!="epsg"){
                 h2GIS.getTable(it.value).save("./target/${it.value}.shp")

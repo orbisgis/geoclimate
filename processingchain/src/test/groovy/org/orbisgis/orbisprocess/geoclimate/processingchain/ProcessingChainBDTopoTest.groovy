@@ -250,7 +250,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         dirFile.delete()
         dirFile.mkdir()
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
-        IProcess process = ProcessingChain.Workflow.BBTOPO_V2()
+        IProcess process = ProcessingChain.Workflow.BDTOPO_V2()
         assertTrue(process.execute(datasource: datasource,
                 inputFolder: "./target/bdtopofolder/",
                 outputFolder :"./target/geoclimate_chain/"))

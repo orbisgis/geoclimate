@@ -88,7 +88,7 @@ class GeoIndicatorsChainTest extends ChainProcessAbstractTest{
     void OSMGeoIndicatorsTest() {
         File directory = new File("./target/geoindicators_workflow")
         H2GIS datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
-        String placeName = "Cliscouet, vannes"
+        String zoneToExtract = "Cliscouet, vannes"
         def distance = 0
         boolean svfSimplified = false
         def prefixName = ""
@@ -99,7 +99,7 @@ class GeoIndicatorsChainTest extends ChainProcessAbstractTest{
         def ind_i = ["LCZ", "URBAN_TYPOLOGY", "TEB"]
 
         IProcess OSMGeoIndicatorsCompute_i = ProcessingChain.Workflow.OSM()
-        assertTrue OSMGeoIndicatorsCompute_i.execute([datasource   : datasource, placeName: placeName,
+        assertTrue OSMGeoIndicatorsCompute_i.execute([datasource   : datasource, zoneToExtract: zoneToExtract,
                                                       distance     : distance, indicatorUse: ind_i,
                                                       svfSimplified: svfSimplified, prefixName: prefixName,
                                                       mapOfWeights : mapOfWeights])

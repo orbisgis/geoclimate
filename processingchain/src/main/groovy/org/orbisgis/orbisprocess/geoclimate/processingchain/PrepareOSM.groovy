@@ -14,7 +14,8 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
  *
  * @param datasource a connection to the database where the result files should be stored
  * @param osmTablesPrefix The prefix used for naming the 11 OSM tables build from the OSM file
- * @param placeName the name of the place to extract
+ * @param zoneToExtract A zone to extract. Can be, a name of the place (neighborhood, city, etc. - cf https://wiki.openstreetmap.org/wiki/Key:level)
+ * or a bounding box specified as a JTS envelope
  * @param distance The integer value to expand the envelope of zone
  * @return
  */
@@ -22,14 +23,14 @@ IProcess buildGeoclimateLayers() {
     return create({
         title "Extract and transform OSM data to the Geoclimate model"
         inputs datasource: JdbcDataSource,
-                placeName: String,
+                zoneToExtract: Object,
                 distance: 500,
                 hLevMin: 3,
                 hLevMax: 15,
                 hThresholdLev2: 10
         outputs outputBuilding: String, outputRoad: String, outputRail: String,
                 outputHydro: String, outputVeget: String, outputImpervious: String, outputZone: String, outputZoneEnvelope: String
-        run { datasource, placeName, distance, hLevMin, hLevMax, hThresholdLev2 ->
+        run { datasource, zoneToExtract, distance, hLevMin, hLevMax, hThresholdLev2 ->
 
             if (datasource == null) {
                 error "Cannot access to the database to store the osm data"
@@ -38,7 +39,7 @@ IProcess buildGeoclimateLayers() {
 
             info "Building OSM GIS layers"
             IProcess process = PrepareData.OSMGISLayers.extractAndCreateGISLayers()
-            if (process.execute([datasource: datasource, placeName : placeName,
+            if (process.execute([datasource: datasource, zoneToExtract : zoneToExtract,
                     distance: distance])) {
 
                 info "OSM GIS layers created"
