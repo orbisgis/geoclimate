@@ -51,7 +51,7 @@ import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 def BDTOPO_V2() {
     create({
         title "Create all geoindicators from BDTopo data"
-        inputs datasource: JdbcDataSource, inputFolder: String, distance: 0,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+        inputs datasource: JdbcDataSource, inputFolder: String, distance: 1000,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
                 svfSimplified:false, prefixName: "",
                 mapOfWeights : ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                 "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
