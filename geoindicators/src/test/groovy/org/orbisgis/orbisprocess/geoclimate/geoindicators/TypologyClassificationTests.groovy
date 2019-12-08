@@ -11,20 +11,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue
 
 class TypologyClassificationTests {
 
-    private static H2GIS h2GIS
-
-    @BeforeAll
-    static void init(){
-        h2GIS = H2GIS.open( './target/buildingdb;AUTO_SERVER=TRUE')
-    }
-
-    @BeforeEach
-    void initData(){
-        h2GIS.executeScript(getClass().getResourceAsStream("data_for_tests.sql"))
-    }
-
     @Test
     void identifyLczTypeTest() {
+        H2GIS h2GIS = H2GIS.open( './target/buildingdb;AUTO_SERVER=TRUE')
+        h2GIS.executeScript(getClass().getResourceAsStream("data_for_tests.sql"))
         h2GIS.execute """
                 DROP TABLE IF EXISTS tempo_rsu_for_lcz;
                 CREATE TABLE tempo_rsu_for_lcz AS SELECT a.*, b.the_geom FROM rsu_test_for_lcz a LEFT JOIN rsu_test b
@@ -73,6 +63,8 @@ class TypologyClassificationTests {
 
     @Test
     void createRandomForestClassifTest() {
+        H2GIS h2GIS = H2GIS.open( './target/buildingdb;AUTO_SERVER=TRUE')
+        h2GIS.executeScript(getClass().getResourceAsStream("data_for_tests.sql"))
         h2GIS.execute """
                 DROP TABLE IF EXISTS tempo_rsu_for_lcz;
                 CREATE TABLE tempo_rsu_for_lcz AS SELECT a.*, b.the_geom FROM rsu_test_for_lcz a LEFT JOIN rsu_test b
@@ -81,22 +73,15 @@ class TypologyClassificationTests {
         // Informations about where to find the training dataset for the test
         def tableTraining = "testRandomForest"
         def urlToDownload = ""
-        def pathAndNameFile = System.getProperty("user.home") + "/geoclimate/"+ tableTraining
+        def trainingFile = new File("/home/ebocher/Autres/codes/geoclimate/model/rf/training_data.shp")
+
+        h2GIS.load(trainingFile,true)
 
         // Variable to model
         def var2model = "I_TYPO"
-        // File path to save the model
-        def fileAndPath = "/tmp/model.txt"
 
         // Columns useless for the classification
-        String[] colsToRemove = ["THE_GEOM", "CITY", "PK_BUILDIN", "PK2", "PK_USR", "PK",\
-                        "PK_BLOCK_Z", "ID", "I_INHAB", "U_INHAB", "U_HOUSE", "U_COL_HOU", "U_HOUSE_A",\
-                     "U_COL_HOU_", "I_H_ORIGIN", "I_H", "I_LEVELS", "I_FLOOR", \
-                     "I_VOL", "I_COMP_B", "I_COMP_N", "I_WALL_A", "I_PWALL_A",\
-                     "I_FREE_EXT", "B_VOL", "B_H_MEAN", "B_H_STD", "B_COMP_N",\
-                     "U_FLOOR", "U_COS", "U_COMP_NWM", "U_COMP_WME", "U_H_MEAN",\
-                     "U_H_STD", "U_PASSIV_V", "U_VOL", "U_VOL_MEAN", "U_BH_STD_M",\
-                     "U_BCOMP_NW", "U_BCOMP_WM", "U_BCOMP_ST", "U_FWALL_A"]
+        String[] colsToRemove = ["THE_GEOM", "PK"]
 
         // If the training dataset is not already loaded in the database...
         if (h2GIS.getTable(tableTraining) == null){

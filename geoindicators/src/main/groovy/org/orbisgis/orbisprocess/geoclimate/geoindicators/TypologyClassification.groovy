@@ -1,6 +1,7 @@
 package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
+import org.orbisgis.orbisdata.datamanager.api.dataset.ITable
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import smile.regression.RandomForest
@@ -286,8 +287,15 @@ IProcess createRandomForestClassif() {
 
             info "Create a Random Forest model"
 
+            //Check if the column names exists
+            def columnTypo = "I_TYPO"
+
+            ITable trainingTable = datasource.getTable(trainingTableName)
+
+            assert trainingTable.hasColumn(columnTypo, String.class)
+
             // Read the training table as a DataFrame
-            def df = DataFrame.of(datasource.getTable(trainingTableName))
+            def df = DataFrame.of(trainingTable)
 
             Formula formula = Formula.lhs(varToModel)
 
