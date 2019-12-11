@@ -163,7 +163,7 @@ def neighborsProperties() {
                      WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD AND 
                     ST_INTERSECTS(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD) AND a.$ID_FIELD <> b.$ID_FIELD)
                      GROUP BY $ID_FIELD;
-                    CREATE INDEX IF NOT EXISTS buff_id ON $build_intersec($ID_FIELD);
+                    CREATE INDEX IF NOT EXISTS buff_id ON $build_intersec USING BTREE($ID_FIELD);
                     DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS 
                     SELECT  ${list.join(",")} ,  a.$ID_FIELD
                      FROM $inputBuildingTableName a LEFT JOIN $build_intersec b ON a.$ID_FIELD = b.$ID_FIELD;"""
@@ -303,7 +303,7 @@ def minimumBuildingSpacing() {
             datasource.execute """DROP TABLE IF EXISTS $build_min_distance; CREATE TABLE $build_min_distance AS 
                      SELECT b.$ID_FIELD, min(ST_distance(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD)) AS min_distance FROM $inputBuildingTableName a, $inputBuildingTableName b 
                     WHERE st_expand(a.$GEOMETRIC_FIELD, $bufferDist) && b.$GEOMETRIC_FIELD AND a.$ID_FIELD <> b.$ID_FIELD GROUP BY b.$ID_FIELD;
-                     CREATE INDEX IF NOT EXISTS with_buff_id ON $build_min_distance($ID_FIELD); """
+                     CREATE INDEX IF NOT EXISTS with_buff_id ON $build_min_distance USING BTREE($ID_FIELD); """
 
             // The minimum distance is calculated (The minimum distance is set to the $inputE value for buildings
             // having no building neighbors in a envelope meters distance
@@ -365,19 +365,19 @@ def roadDistance() {
                     "CREATE TABLE $build_buffer AS SELECT $ID_FIELD_BU," +
                     " ST_BUFFER($GEOMETRIC_FIELD, $bufferDist)" +
                     " AS $GEOMETRIC_FIELD FROM $inputBuildingTableName; " +
-                    "CREATE INDEX IF NOT EXISTS buff_ids ON $build_buffer($GEOMETRIC_FIELD) USING RTREE"
+                    "CREATE INDEX IF NOT EXISTS buff_ids ON $build_buffer USING RTREE($GEOMETRIC_FIELD)"
             // The road surfaces are created
             datasource.execute "DROP TABLE IF EXISTS $road_surf;" +
                     "CREATE TABLE $road_surf AS " +
                     "SELECT ST_BUFFER($GEOMETRIC_FIELD, $ROAD_WIDTH/2,'endcap=flat') " +
                     "AS $GEOMETRIC_FIELD FROM $inputRoadTableName; " +
-                    "CREATE INDEX IF NOT EXISTS buff_ids ON $road_surf($GEOMETRIC_FIELD) USING RTREE"
+                    "CREATE INDEX IF NOT EXISTS buff_ids ON $road_surf USING RTREE($GEOMETRIC_FIELD)"
             // The roads located within the buffer are identified
             datasource.execute "DROP TABLE IF EXISTS $road_within_buffer; CREATE TABLE $road_within_buffer AS " +
                     "SELECT a.$ID_FIELD_BU, b.$GEOMETRIC_FIELD FROM $build_buffer a, $road_surf b " +
                     "WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD AND " +
                     "ST_INTERSECTS(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD); " +
-                    "CREATE INDEX IF NOT EXISTS with_buff_id ON $road_within_buffer($ID_FIELD_BU); "
+                    "CREATE INDEX IF NOT EXISTS with_buff_id ON $road_within_buffer USING BTREE($ID_FIELD_BU); "
 
             // The minimum distance is calculated between each building and the surrounding roads (the minimum
             // distance is set to the bufferDist value for buildings having no road within a bufferDist meters

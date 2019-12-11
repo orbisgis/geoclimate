@@ -112,8 +112,7 @@ IProcess prepareRSUData() {
                                 " CONTACT integer) AS (SELECT st_makevalid(THE_GEOM) as the_geom, null , 0 FROM ST_EXPLODE('" +
                                 "(SELECT * FROM $vegetationTable)') " +
                                 " where st_dimension(the_geom)>0 AND st_isempty(the_geom)=false)"
-                        datasource.execute "CREATE INDEX IF NOT EXISTS veg_indice_idx ON  $vegetation_indice(THE_GEOM) " +
-                                "using rtree"
+                        datasource.execute "CREATE INDEX IF NOT EXISTS veg_indice_idx ON $vegetation_indice USING RTREE(THE_GEOM)"
                         datasource.execute "UPDATE $vegetation_indice SET CONTACT=1 WHERE ID IN(SELECT DISTINCT(a.ID)" +
                                 " FROM $vegetation_indice a, $vegetation_indice b WHERE a.THE_GEOM && b.THE_GEOM AND " +
                                 "ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM) AND a.ID<>b.ID)"
@@ -127,8 +126,7 @@ IProcess prepareRSUData() {
                                 "UNION ALL (SELECT THE_GEOM FROM $vegetation_indice WHERE contact=0 AND " +
                                 "st_area(the_geom)> $surface_vegetation)"
 
-                        datasource.execute "CREATE  INDEX IF NOT EXISTS veg_unified_idx ON  $vegetation_unified(THE_GEOM)" +
-                                " using rtree"
+                        datasource.execute "CREATE INDEX IF NOT EXISTS veg_unified_idx ON $vegetation_unified USING RTREE(THE_GEOM)"
 
                         datasource.execute "DROP TABLE IF EXISTS $vegetation_tmp"
                         datasource.execute "CREATE TABLE $vegetation_tmp AS SELECT a.the_geom AS THE_GEOM FROM " +
@@ -150,13 +148,13 @@ IProcess prepareRSUData() {
                                 "ST_EXPLODE('(SELECT * FROM $hydrographicTable)')" +
                                 " where st_dimension(the_geom)>0 AND st_isempty(the_geom)=false)"
 
-                        datasource.execute "CREATE  INDEX IF NOT EXISTS hydro_indice_idx ON $hydrographic_indice(THE_GEOM)"
+                        datasource.execute "CREATE INDEX IF NOT EXISTS hydro_indice_idx ON $hydrographic_indice USING RTREE(THE_GEOM)"
 
 
                         datasource.execute "UPDATE $hydrographic_indice SET CONTACT=1 WHERE ID IN(SELECT DISTINCT(a.ID)" +
                                 " FROM $hydrographic_indice a, $hydrographic_indice b WHERE a.THE_GEOM && b.THE_GEOM" +
                                 " AND ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM) AND a.ID<>b.ID)"
-                        datasource.execute "CREATE INDEX ON $hydrographic_indice(contact)"
+                        datasource.execute "CREATE INDEX ON $hydrographic_indice USING BTREE(contact)"
 
 
                         datasource.execute "DROP TABLE IF EXISTS $hydrographic_unified"
@@ -168,7 +166,7 @@ IProcess prepareRSUData() {
                                 " st_area(the_geom)> $surface_hydrographic)"
 
 
-                        datasource.execute "CREATE INDEX IF NOT EXISTS hydro_unified_idx ON $hydrographic_unified(THE_GEOM)"
+                        datasource.execute "CREATE INDEX IF NOT EXISTS hydro_unified_idx ON $hydrographic_unified USING RTREE(THE_GEOM)"
 
 
                         datasource.execute "DROP TABLE IF EXISTS $hydrographic_tmp"
@@ -275,7 +273,7 @@ IProcess createBlocks(){
             info "Merging spatial clusters..."
 
             datasource.execute """
-            CREATE INDEX ON $subGraphTableNodes(NODE_ID);
+            CREATE INDEX ON $subGraphTableNodes USING BTREE(NODE_ID);
             DROP TABLE IF EXISTS $subGraphBlocks;
             CREATE TABLE $subGraphBlocks
             AS SELECT ST_UNION(ST_ACCUM(ST_MAKEVALID(A.THE_GEOM))) AS THE_GEOM

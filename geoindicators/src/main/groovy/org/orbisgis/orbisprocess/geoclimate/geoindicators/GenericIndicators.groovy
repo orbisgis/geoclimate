@@ -154,7 +154,7 @@ IProcess weightedAggregatedStatistics() {
             datasource.execute weightedMeanQuery
 
             // The weighted std is calculated if needed and only the needed fields are returned
-            def weightedStdQuery = "CREATE INDEX IF NOT EXISTS id_lcorr ON $weighted_mean($inputIdUp); " +
+            def weightedStdQuery = "CREATE INDEX IF NOT EXISTS id_lcorr ON $weighted_mean USING BTREE($inputIdUp); " +
                     "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT b.$inputIdUp,"
             inputVarWeightsOperations.each { var, weights ->
                 weights.each { weight, operations ->
@@ -303,7 +303,7 @@ IProcess buildingDirectionDistribution() {
                 datasource.getSpatialTable(buildingTableName).id_build.createIndex()
 
                 // The length and direction of the smallest and the longest sides of the Minimum rectangle are calculated
-                datasource.execute "CREATE INDEX IF NOT EXISTS id_bua ON $build_min_rec($ID_FIELD_BU);" +
+                datasource.execute "CREATE INDEX IF NOT EXISTS id_bua ON $build_min_rec USING BTREE($ID_FIELD_BU);" +
                         "DROP TABLE IF EXISTS $build_dir360; CREATE TABLE $build_dir360 AS " +
                         "SELECT a.$inputIdUp, ST_LENGTH(a.the_geom) AS LEN_L, " +
                         "ST_AREA(b.the_geom)/ST_LENGTH(a.the_geom) AS LEN_H, " +
@@ -369,8 +369,8 @@ IProcess buildingDirectionDistribution() {
                         sqlQueryUnique += "$inputIdUp, $col AS SURF FROM $build_dir_dist UNION ALL SELECT "
                     }
                     sqlQueryUnique += """$inputIdUp, ${columnNames[-1]} AS SURF FROM $build_dir_dist; 
-                                        CREATE INDEX ON $build_dir_bdd($inputIdUp);
-                                        CREATE INDEX ON $build_dir_bdd(SURF);"""
+                                        CREATE INDEX ON $build_dir_bdd USING BTREE($inputIdUp);
+                                        CREATE INDEX ON $build_dir_bdd USING BTREE(SURF);"""
                     datasource.execute sqlQueryUnique
 
                     def sqlQueryLast = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +

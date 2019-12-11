@@ -192,7 +192,7 @@ IProcess identifyLczType() {
 
                 // The name of the two closest LCZ types are conserved
                 datasource.execute "DROP TABLE IF EXISTS $mainLczTable;" +
-                        "CREATE INDEX IF NOT EXISTS all_id ON $allLczTable($ID_FIELD_RSU); " +
+                        "CREATE INDEX IF NOT EXISTS all_id ON $allLczTable USING BTREE($ID_FIELD_RSU); " +
                         "CREATE TABLE $mainLczTable AS SELECT a.$ID_FIELD_RSU, a.$GEOMETRIC_FIELD, " +
                         "CAST(SELECT b.lcz FROM $allLczTable b " +
                         "WHERE a.$ID_FIELD_RSU = b.$ID_FIELD_RSU " +
@@ -223,8 +223,8 @@ IProcess identifyLczType() {
                         "CREATE TABLE $pivotedTable AS SELECT $ID_FIELD_RSU," +
                         "${queryForPivot[0..-2]} FROM $allLczTable GROUP BY $ID_FIELD_RSU;" +
                         "DROP TABLE IF EXISTS $outputTableName;" +
-                        "CREATE INDEX IF NOT EXISTS main_id ON $mainLczTable($ID_FIELD_RSU);" +
-                        "CREATE INDEX IF NOT EXISTS piv_id ON $pivotedTable($ID_FIELD_RSU);" +
+                        "CREATE INDEX IF NOT EXISTS main_id ON $mainLczTable USING BTREE($ID_FIELD_RSU);" +
+                        "CREATE INDEX IF NOT EXISTS piv_id ON $pivotedTable USING BTREE($ID_FIELD_RSU);" +
                         "CREATE TABLE $outputTableName AS SELECT a.*, LEAST(b.\"${lczType.join("\",b.\"")}\") AS min_distance, " +
                         "${queryPerkinsSkill[0..-2]} AS PSS FROM $mainLczTable a LEFT JOIN " +
                         "$pivotedTable b ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU;"
