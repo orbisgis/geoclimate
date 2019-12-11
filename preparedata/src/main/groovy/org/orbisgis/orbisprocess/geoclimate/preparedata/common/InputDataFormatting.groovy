@@ -162,7 +162,7 @@ IProcess inputDataFormatting(){
                     [INPUT_BUILDING: inputBuilding, INPUT_ROAD: inputRoad, INPUT_RAIL: inputRail,
                      INPUT_HYDRO: inputHydro, INPUT_VEGET: inputVeget, INPUT_IMPERVIOUS: inputImpervious,
                      ZONE: inputZone, ZONE_NEIGHBORS: zoneNeighbors,
-                     H_LEV_MIN: hLevMin, H_LEV_MAX: hLevMax, H_THRESHOLD_LEV2: hThresholdLev2, ID_ZONE: idZone,
+                     H_LEV_MIN: hLevMin, H_LEV_MAX: hLevMax, H_THRESHOLD_LEV2: hThresholdLev2, EXPAND: expand, ID_ZONE: idZone,
                      BUILDING_ABSTRACT_USE_TYPE: buildingAbstractUseType, BUILDING_ABSTRACT_PARAMETERS: buildingAbstractParameters,
                      ROAD_ABSTRACT_TYPE: roadAbstractType, ROAD_ABSTRACT_PARAMETERS: roadAbstractParameters, ROAD_ABSTRACT_CROSSING: roadAbstractCrossing,
                      RAIL_ABSTRACT_TYPE: railAbstractType, RAIL_ABSTRACT_CROSSING: railAbstractCrossing,

@@ -90,7 +90,7 @@ class InputDataFormattingTest {
                          inputVeget: resultsImport.outputVegetName, inputImpervious: resultsImport.outputImperviousName,
                          inputZone: resultsImport.outputZoneName, //inputZoneNeighbors: resultsImport.outputZoneNeighborsName,
 
-                         hLevMin: 3, hLevMax: 15, hThresholdLev2: 10, idZone: '56260',
+                         hLevMin: 3, hLevMax: 15, hThresholdLev2: 10, idZone: '56260', expand: 1000,
 
                          buildingAbstractUseType: 'BUILDING_ABSTRACT_USE_TYPE', buildingAbstractParameters: 'BUILDING_ABSTRACT_PARAMETERS',
                          roadAbstractType: 'ROAD_ABSTRACT_TYPE', roadAbstractParameters: 'ROAD_ABSTRACT_PARAMETERS', roadAbstractCrossing: 'ROAD_ABSTRACT_CROSSING',

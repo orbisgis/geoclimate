@@ -60,7 +60,7 @@ IProcess joinTables() {
                     }
                     leftQuery += " LEFT JOIN ${key} as ${alias} ON ${alias}.${value} = ${columnKey} "
                 }
-                indexes += "CREATE INDEX IF NOT EXISTS ${key}_ids ON ${key}($value);"
+                indexes += "CREATE INDEX IF NOT EXISTS ${key}_ids ON ${key} USING BTREE($value);"
                 alias++
             }
 
