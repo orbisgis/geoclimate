@@ -143,7 +143,7 @@ IProcess groundSkyViewFactor() {
                                 b.$GEOMETRIC_COLUMN_BU)
                     GROUP BY    a.$ID_COLUMN_RSU);"""
 
-            datasource.execute"""CREATE INDEX ON $rsuDiff($ID_COLUMN_RSU);
+            datasource.execute"""CREATE INDEX ON $rsuDiff USING BTREE($ID_COLUMN_RSU);
                                 CREATE TABLE $rsuDiffTot AS SELECT b.$ID_COLUMN_RSU, 
                                 case when a.$ID_COLUMN_RSU is null then b.the_geom else a.the_geom end as the_geom FROM
                                 $rsuTable as b left join $rsuDiff as a on a.$ID_COLUMN_RSU=b.$ID_COLUMN_RSU;"""
@@ -524,10 +524,9 @@ IProcess roofAreaDistribution() {
 
 
             // Indexes and spatial indexes are created on rsu and building Tables
-            datasource.execute "CREATE INDEX IF NOT EXISTS ids_ina ON $buildRoofSurfIni($GEOMETRIC_COLUMN_BU) " +
-                    "USING RTREE; " +
-                    "CREATE INDEX IF NOT EXISTS id_ina ON $buildRoofSurfIni($ID_COLUMN_BU); " +
-                    "CREATE INDEX IF NOT EXISTS id_ina ON $buildRoofSurfIni($ID_COLUMN_RSU); "
+            datasource.execute "CREATE INDEX IF NOT EXISTS ids_ina ON $buildRoofSurfIni USING RTREE($GEOMETRIC_COLUMN_BU);" +
+                    "CREATE INDEX IF NOT EXISTS id_ina ON $buildRoofSurfIni USING BTREE($ID_COLUMN_BU);" +
+                    "CREATE INDEX IF NOT EXISTS id_ina ON $buildRoofSurfIni USING BTREE($ID_COLUMN_RSU);"
 
             // Vertical roofs that are potentially in contact with the facade of a building neighbor are identified
             // and the corresponding area is estimated (only if the building roof does not overpass the building
@@ -541,7 +540,7 @@ IProcess roofAreaDistribution() {
                     "AND a.$ID_COLUMN_BU <> b.$ID_COLUMN_BU AND a.z_min >= b.z_max GROUP BY b.$ID_COLUMN_BU);"
 
             // Indexes and spatial indexes are created on rsu and building Tables
-            datasource.execute "CREATE INDEX IF NOT EXISTS id_bu ON $buildVertRoofInter(id_build);"
+            datasource.execute "CREATE INDEX IF NOT EXISTS id_bu ON $buildVertRoofInter USING BTREE(id_build);"
 
             // Vertical roofs that are potentially in contact with the facade of a building neighbor are identified
             // and the corresponding area is estimated (only if the building roof does not overpass the building wall
@@ -557,9 +556,9 @@ IProcess roofAreaDistribution() {
                     "$buildVertRoofInter b ON a.$ID_COLUMN_BU=b.$ID_COLUMN_BU);"
 
             // Indexes and spatial indexes are created on rsu and building Tables
-            datasource.execute "CREATE INDEX IF NOT EXISTS ids_bu ON $buildVertRoofAll(the_geom) USING RTREE; " +
-                    "CREATE INDEX IF NOT EXISTS id_bu ON $buildVertRoofAll(id_build); " +
-                    "CREATE INDEX IF NOT EXISTS id_rsu ON $buildVertRoofAll(id_rsu);"
+            datasource.execute "CREATE INDEX IF NOT EXISTS ids_bu ON $buildVertRoofAll USING RTREE(the_geom); " +
+                    "CREATE INDEX IF NOT EXISTS id_bu ON $buildVertRoofAll USING BTREE(id_build); " +
+                    "CREATE INDEX IF NOT EXISTS id_rsu ON $buildVertRoofAll USING BTREE(id_rsu);"
 
             //PEUT-ETRE MIEUX VAUT-IL FAIRE L'INTERSECTION À PART POUR ÉVITER DE LA FAIRE 2 FOIS ICI ?
 
@@ -612,7 +611,7 @@ IProcess roofAreaDistribution() {
             // Calculate the roof density if needed
             if (density) {
                 def optionalQuery = "ALTER TABLE $outputTableName RENAME TO $optionalTempo;" +
-                        "CREATE INDEX IF NOT EXISTS id ON $optionalTempo($ID_COLUMN_RSU);" +
+                        "CREATE INDEX IF NOT EXISTS id ON $optionalTempo USING BTREE($ID_COLUMN_RSU);" +
                         "DROP TABLE IF EXISTS $outputTableName; " +
                         "CREATE TABLE $outputTableName AS SELECT a.*, "
                 def optionalNonVert = "("
@@ -882,7 +881,7 @@ IProcess linearRoadOperations() {
                             def queryDistrib = queryExpl + "CREATE TABLE $roadDistrib AS SELECT id_rsu, " +
                                     caseQueryDistrib[0..-2] +
                                     " FROM $roadExpl GROUP BY id_rsu;" +
-                                    "CREATE INDEX IF NOT EXISTS id_d ON $roadDistrib(id_rsu);" +
+                                    "CREATE INDEX IF NOT EXISTS id_d ON $roadDistrib USING BTREE(id_rsu);" +
                                     "DROP TABLE IF EXISTS $roadDistTot; CREATE TABLE $roadDistTot($ID_COLUMN_RSU INTEGER," +
                                     "${nameDistrib.join(" double,")} double) AS (SELECT a.$ID_COLUMN_RSU," +
                                     "COALESCE(b.${nameDistrib.join(",0),COALESCE(b.")},0)  " +
@@ -900,7 +899,7 @@ IProcess linearRoadOperations() {
                             String queryDensity = "DROP TABLE IF EXISTS $roadDens;" +
                                     "CREATE TABLE $roadDens AS SELECT id_rsu, " + caseQueryDens[0..-2] +
                                     " FROM $roadInter GROUP BY id_rsu;" +
-                                    "CREATE INDEX IF NOT EXISTS id_d ON $roadDens(id_rsu);" +
+                                    "CREATE INDEX IF NOT EXISTS id_d ON $roadDens USING BTREE(id_rsu);" +
                                     "DROP TABLE IF EXISTS $roadDensTot; CREATE TABLE $roadDensTot($ID_COLUMN_RSU INTEGER," +
                                     "${nameDens.join(" double,")} double) AS (SELECT a.$ID_COLUMN_RSU," +
                                     "COALESCE(b.${nameDens.join(",0),COALESCE(b.")},0) " +
@@ -1051,8 +1050,8 @@ IProcess vegetationFraction() {
 
             // Vegetation Fraction is calculated at RSU scale for different vegetation types
             def buffQuery = interQuery + "DROP TABLE IF EXISTS $buffTable;" +
-                    "CREATE INDEX IF NOT EXISTS idi_i ON $interTable($idColumnRsu);" +
-                    "CREATE INDEX IF NOT EXISTS idt_i ON $interTable($vegetClass);" +
+                    "CREATE INDEX IF NOT EXISTS idi_i ON $interTable USING BTREE($idColumnRsu);" +
+                    "CREATE INDEX IF NOT EXISTS idt_i ON $interTable USING BTREE($vegetClass);" +
                     "CREATE TABLE $buffTable AS SELECT $idColumnRsu,"
             def names = []
 
@@ -1070,7 +1069,7 @@ IProcess vegetationFraction() {
             buffQuery = buffQuery[0..-2] + " FROM $interTable GROUP BY $idColumnRsu;"
 
             def finalQuery = buffQuery + "DROP TABLE IF EXISTS $outputTableName; " +
-                    "CREATE INDEX IF NOT EXISTS ids_r ON $buffTable($idColumnRsu); " +
+                    "CREATE INDEX IF NOT EXISTS ids_r ON $buffTable USING BTREE($idColumnRsu); " +
                     "CREATE TABLE $outputTableName($idColumnRsu INTEGER, ${names.join(" DOUBLE DEFAULT 0,")} " +
                     " DOUBLE DEFAULT 0) AS (SELECT a.$idColumnRsu, COALESCE(b.${names.join(",0), COALESCE(b.")},0) " +
                     "FROM $rsuTable a LEFT JOIN $buffTable b ON a.$idColumnRsu = b.$idColumnRsu)"
@@ -1133,7 +1132,7 @@ IProcess roadFraction() {
 
             // Intersections between road surfaces and RSU are calculated
             def interQuery = "DROP TABLE IF EXISTS $interTable; " +
-                    "CREATE INDEX IF NOT EXISTS ids_v ON $surfTable($GEOMETRIC_COLUMN_ROAD) USING RTREE;" +
+                    "CREATE INDEX IF NOT EXISTS ids_v ON $surfTable USING RTREE($GEOMETRIC_COLUMN_ROAD);" +
                     "CREATE TABLE $interTable AS SELECT b.$ID_COLUMN_RSU, a.$Z_INDEX_ROAD, " +
                     "ST_AREA(b.$GEOMETRIC_COLUMN_RSU) AS RSU_AREA, " +
                     "ST_AREA(ST_INTERSECTION(a.$GEOMETRIC_COLUMN_ROAD, b.$GEOMETRIC_COLUMN_RSU)) AS ROAD_AREA " +
@@ -1143,8 +1142,8 @@ IProcess roadFraction() {
 
             // Road fraction is calculated at RSU scale for different road types (combinations of levels)
             def buffQuery = "DROP TABLE IF EXISTS $buffTable;" +
-                    "CREATE INDEX IF NOT EXISTS idi_i ON $interTable($ID_COLUMN_RSU);" +
-                    "CREATE INDEX IF NOT EXISTS idt_i ON $interTable($Z_INDEX_ROAD);" +
+                    "CREATE INDEX IF NOT EXISTS idi_i ON $interTable USING BTREE($ID_COLUMN_RSU);" +
+                    "CREATE INDEX IF NOT EXISTS idt_i ON $interTable USING BTREE($Z_INDEX_ROAD);" +
                     "CREATE TABLE $buffTable AS SELECT $ID_COLUMN_RSU,"
             def names = []
             levelToConsiders.each { name, levels ->
@@ -1158,7 +1157,7 @@ IProcess roadFraction() {
             buffQuery = buffQuery[0..-2] + " FROM $interTable GROUP BY $ID_COLUMN_RSU; "
 
             def finalQuery = "DROP TABLE IF EXISTS $outputTableName; " +
-                    "CREATE INDEX IF NOT EXISTS ids_r ON $buffTable($ID_COLUMN_RSU); " +
+                    "CREATE INDEX IF NOT EXISTS ids_r ON $buffTable USING BTREE($ID_COLUMN_RSU); " +
                     "CREATE TABLE $outputTableName($ID_COLUMN_RSU INTEGER, ${names.join(" DOUBLE DEFAULT 0,")} " +
                     " DOUBLE DEFAULT 0) AS (SELECT a.$ID_COLUMN_RSU, COALESCE(b.${names.join(",0), COALESCE(b.")},0) " +
                     "FROM $rsuTable a LEFT JOIN $buffTable b ON a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU)"
@@ -1219,7 +1218,7 @@ IProcess waterFraction() {
                     "ST_INTERSECTS(a.$GEOMETRIC_COLUMN_WATER, b.$GEOMETRIC_COLUMN_RSU) GROUP BY b.$ID_COLUMN_RSU;"
 
             def finalQuery = "DROP TABLE IF EXISTS $outputTableName; " +
-                    "CREATE INDEX IF NOT EXISTS ids_r ON $buffTable($ID_COLUMN_RSU); " +
+                    "CREATE INDEX IF NOT EXISTS ids_r ON $buffTable USING BTREE($ID_COLUMN_RSU); " +
                     "CREATE TABLE $outputTableName($ID_COLUMN_RSU INTEGER, $BASE_NAME DOUBLE DEFAULT 0) AS " +
                     "(SELECT a.$ID_COLUMN_RSU, COALESCE(b.$BASE_NAME,0) FROM $rsuTable a LEFT JOIN $buffTable b ON " +
                     "a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU)"
