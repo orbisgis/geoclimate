@@ -54,6 +54,11 @@
             <artifactId>smile-core</artifactId>
             <version>2.0.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.thoughtworks.xstream</groupId>
+            <artifactId>xstream</artifactId>
+            <version>1.4.11.1</version>
+        </dependency>
 
         <!-- Test dependencies -->
         <dependency>

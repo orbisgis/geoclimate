@@ -1,12 +1,19 @@
 package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
+import com.thoughtworks.xstream.XStream
 import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.api.dataset.ITable
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import smile.regression.RandomForest
+import smile.classification.RandomForest;
 import smile.data.formula.Formula
 import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
+import smile.base.cart.SplitRule
+import smile.validation.Validation;
+import smile.validation.Accuracy
+
+import java.util.zip.GZIPOutputStream;
+
 
 
 @BaseScript Geoindicators geoindicators
@@ -279,12 +286,30 @@ IProcess createRandomForestClassif() {
     return create({
         title "Create a Random Forest model"
         inputs trainingTableName: String, varToModel: String, save: boolean, pathAndFileName: String,
-                ntrees: int, mtry: int, rule: SplitRule, maxDepth: int, maxNodes: int, nodeSize: int,
+                ntrees: int, mtry: int, rule: "GINI", maxDepth: int, maxNodes: int, nodeSize: int,
                 subsample: double, datasource: JdbcDataSource
         outputs RfModel: RandomForest
-        run { trainingTableName, varToModel, save, pathAndFileName, ntrees, mtry, rule,
+        run { trainingTableName, varToModel, save, pathAndFileName,  ntrees, mtry, rule,
               maxDepth, maxNodes, nodeSize, subsample, datasource ->
 
+            SplitRule splitRule
+            if(rule){
+                switch(rule.toUpperCase()) {
+                    case "GINI":
+                        splitRule = SplitRule.GINI
+                        break
+                    case "ENTROPY":
+                        splitRule = SplitRule.ENTROPY
+                        break
+                    default:
+                        error "The rule value ${rule} is not supported. Please use GINI or ENTROPY"
+                        return null;
+                }
+            }
+            else{
+                error "The rule value cannot be null or empty. Please use GINI or ENTROPY"
+                return null;
+            }
             info "Create a Random Forest model"
 
             //Check if the column names exists
@@ -304,7 +329,8 @@ IProcess createRandomForestClassif() {
 
             // Create the randomForest
             RandomForest model = RandomForest.fit(formula, df, ntrees, mtry,
-                    rule, maxDepth, maxNodes, nodeSize, subsample)
+                    splitRule, maxDepth, maxNodes, nodeSize, subsample)
+
 
             // Calculate the prediction using the same sample in order to identify what is the
             // data rate that has been well classified
@@ -313,10 +339,17 @@ IProcess createRandomForestClassif() {
             double accuracy = Accuracy.of(truth, prediction)
             logger.info "The percentage of the data that have been well classified is : ${accuracy*100}%"
 
-            if (save){
-                //XStream xs = new XStream()
-                //FileOutputStream fs = new FileOutputStream(pathAndFileName)
-                //xs.toXML(model, fs)
+            try {
+                if (save) {
+                    def zOut =
+                            new GZIPOutputStream(new FileOutputStream(pathAndFileName));
+                    XStream xs = new XStream()
+                    xs.toXML(model, zOut)
+                    zOut.close()
+                }
+            }
+            catch (Exception e){
+                logger.error("Cannot save the model", e)
             }
 
             [RfModel: model]

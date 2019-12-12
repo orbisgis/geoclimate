@@ -1,10 +1,16 @@
 package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
+import com.thoughtworks.xstream.XStream
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
+import smile.classification.RandomForest
+import smile.validation.Accuracy
+import smile.validation.Validation
+
+import java.util.zip.GZIPInputStream
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertTrue
@@ -71,50 +77,44 @@ class TypologyClassificationTests {
                 ON a.id_rsu = b.id_rsu;
         """
         // Informations about where to find the training dataset for the test
-        def tableTraining = "testRandomForest"
+        def tableTraining = "training_table"
         def urlToDownload = ""
-        def trainingFile = new File("/home/ebocher/Autres/codes/geoclimate/model/rf/training_data.shp")
+        def trainingFile = "/home/ebocher/Autres/codes/geoclimate/model/rf/training_data.shp"
 
-        h2GIS.load(trainingFile,true)
+        def fileAndPath =  "/tmp/geoclimate_rf.model"
+
+        h2GIS.load(trainingFile, tableTraining,true)
 
         // Variable to model
         def var2model = "I_TYPO"
 
         // Columns useless for the classification
-        String[] colsToRemove = ["THE_GEOM", "PK"]
+        String[] colsToRemove = ["PK2", "THE_GEOM", "PK"]
 
-        // If the training dataset is not already loaded in the database...
-        if (h2GIS.getTable(tableTraining) == null){
-            // Test if the training dataset file if already exists...
-            File file = new File(pathAndNameFile)
-            if (!file){
-                // If not, download it
-                InputStream inputStream = new URL(urlToDownload).openStream()
-                Files.copy(inputStream, Paths.get(pathAndNameFile),
-                        StandardCopyOption.REPLACE_EXISTING)
-            }
-            h2GIS.execute """DROP TABLE IF EXISTS $tableTraining; 
-                                    CALL SHPREAD('$pathAndNameFile', '$tableTraining'); 
-                                    ALTER TABLE $tableTraining DROP COLUMN ${colsToRemove.join(",")};"""
+        // Remove unnecessary column
+        if (h2GIS.getTable(tableTraining) != null){
+            h2GIS.execute """ ALTER TABLE $tableTraining DROP COLUMN ${colsToRemove.join(",")};"""
         }
-
+        
         def  pmed =  Geoindicators.TypologyClassification.createRandomForestClassif()
         assertTrue pmed.execute([trainingTableName: tableTraining, varToModel: var2model,
                                  save: true, pathAndFileName: fileAndPath,
-                                 ntrees: 300, mtry: 7, rule: SplitRule.GINI, maxDepth: 100,
+                                 ntrees: 300, mtry: 7, rule: "GINI", maxDepth: 100,
                                  maxNodes: 300, nodeSize: 5, subsample: 0.25, datasource: h2GIS])
 
         // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
-        DataFrame df = DataFrame.of(h2GIS.getTable(tableTraining)).factorize(var2model).omitNullRows()
+        def df = DataFrame.of(h2GIS.getTable(tableTraining)).factorize(var2model).omitNullRows()
         def model = pmed.results.RfModel
         assertEquals 0.844, Accuracy.of(df.apply(var2model).toIntArray(), Validation.test(model, df)).round(3), 0.002
 
+
         // Test that the model is well written in the file and can be used to recover the variable names for example
-        /*XStream xs = new XStream()
-        FileInputStream fs = new FileInputStream(fileAndPath)
-        RandomForest modelRead = xs.fromXML(fs)
-        assertEquals h2GIS.getTable(tableTraining).getColumns().keySet().minus(var2model).sort().join(","),
-                modelRead.formula.x(df).names().sort().join(",")*/
+        XStream xs = new XStream()
+        def fs = new GZIPInputStream(new FileInputStream(fileAndPath))
+        def modelRead = xs.fromXML(fs)
+        assertEquals h2GIS.getTable(tableTraining).getColumns().minus(var2model).sort().join(","),
+                modelRead.formula.x(df).names().sort().join(",")
+        fs.close()
     }
 
 }
