@@ -67,19 +67,24 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>org.orbisgis.orbisdata.datamanager</groupId>
-                <artifactId>jdbc</artifactId>
-                <version>1.0.1-SNAPSHOT</version>
+                <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
+                <artifactId>preparedata</artifactId>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.orbisgis.orbisdata.processmanager</groupId>
-                <artifactId>process</artifactId>
-                <version>1.0.1-SNAPSHOT</version>
+                <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
+                <artifactId>geoindicators</artifactId>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.orbisgis</groupId>
-                <artifactId>osm</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
+                <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
+                <artifactId>processingchain</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
+                <artifactId>geoclimate</artifactId>
+                <version>${project.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -94,9 +99,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <argLine>-Xms800m -Xmx800m -XX:MaxPermSize=1024m -da</argLine>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -161,7 +163,6 @@
             </releases>
         </repository>
     </repositories>
-
 
     <reporting>
         <plugins>

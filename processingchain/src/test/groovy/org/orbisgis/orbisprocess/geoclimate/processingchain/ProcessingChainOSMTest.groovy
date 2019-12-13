@@ -2,14 +2,11 @@ package org.orbisgis.orbisprocess.geoclimate.processingchain
 
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import org.locationtech.jts.geom.Envelope
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 
-import static org.junit.jupiter.api.Assertions.assertFalse
-import static org.junit.jupiter.api.Assertions.assertNull
-import static org.junit.jupiter.api.Assertions.assertTrue
+import static org.junit.jupiter.api.Assertions.*
 
 class ProcessingChainOSMTest extends ChainProcessAbstractTest {
 

@@ -1,12 +1,12 @@
 package org.orbisgis.orbisprocess.geoclimate.preparedata.osm
 
-
 import org.junit.jupiter.api.Test
-import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
 
-import static org.junit.jupiter.api.Assertions.*
+import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertTrue
 
 class FormattingForAbstractModelTests {
 
