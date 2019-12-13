@@ -1,11 +1,11 @@
 package org.orbisgis.orbisprocess.geoclimate.preparedata
 
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import org.orbisgis.orbisprocess.geoclimate.preparedata.bdtopo.BDTopoGISLayers
 import org.orbisgis.orbisprocess.geoclimate.preparedata.common.AbstractTablesInitialization
-import org.orbisgis.orbisprocess.geoclimate.preparedata.osm.FormattingForAbstractModel
 import org.orbisgis.orbisprocess.geoclimate.preparedata.common.InputDataFormatting
+import org.orbisgis.orbisprocess.geoclimate.preparedata.osm.FormattingForAbstractModel
 import org.orbisgis.orbisprocess.geoclimate.preparedata.osm.OSMGISLayers
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import org.slf4j.LoggerFactory
 
 abstract class PrepareData extends GroovyProcessFactory {

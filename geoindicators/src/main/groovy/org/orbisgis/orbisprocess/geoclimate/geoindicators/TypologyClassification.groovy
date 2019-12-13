@@ -3,18 +3,16 @@ package org.orbisgis.orbisprocess.geoclimate.geoindicators
 import com.thoughtworks.xstream.XStream
 import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.api.dataset.ITable
+import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import smile.classification.RandomForest;
-import smile.data.formula.Formula
-import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 import smile.base.cart.SplitRule
-import smile.validation.Validation;
+import smile.classification.RandomForest
+import smile.data.formula.Formula
 import smile.validation.Accuracy
+import smile.validation.Validation
 
-import java.util.zip.GZIPOutputStream;
-
-
+import java.util.zip.GZIPOutputStream
 
 @BaseScript Geoindicators geoindicators
 

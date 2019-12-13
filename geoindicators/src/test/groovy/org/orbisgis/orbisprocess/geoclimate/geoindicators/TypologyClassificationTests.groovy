@@ -1,12 +1,9 @@
 package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
 import com.thoughtworks.xstream.XStream
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
-import smile.classification.RandomForest
 import smile.validation.Accuracy
 import smile.validation.Validation
 
