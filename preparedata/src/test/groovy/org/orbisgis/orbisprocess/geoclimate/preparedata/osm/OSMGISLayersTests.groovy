@@ -1,14 +1,13 @@
 package org.orbisgis.orbisprocess.geoclimate.preparedata.osm
 
-
-import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
+import org.junit.jupiter.api.Test
+import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import static org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Test
-import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
+import static org.junit.jupiter.api.Assertions.assertEquals
 
 class OSMGISLayersTests {
 

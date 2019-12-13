@@ -6,21 +6,31 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
-import smile.classification.RandomForest
+import smile.classification.DataFrameClassifier
 import smile.validation.Accuracy
 import smile.validation.Validation
-
 import java.util.zip.GZIPInputStream
 
 import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertFalse
+import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 class TypologyClassificationTests {
 
+    private static H2GIS h2GIS
+
+    @BeforeAll
+    static void init(){
+        h2GIS = H2GIS.open( './target/buildingdb;AUTO_SERVER=TRUE')
+    }
+
+    @BeforeEach
+    void initData(){
+        h2GIS.executeScript(getClass().getResourceAsStream("data_for_tests.sql"))
+    }
     @Test
     void identifyLczTypeTest() {
-        H2GIS h2GIS = H2GIS.open( './target/buildingdb;AUTO_SERVER=TRUE')
-        h2GIS.executeScript(getClass().getResourceAsStream("data_for_tests.sql"))
         h2GIS.execute """
                 DROP TABLE IF EXISTS tempo_rsu_for_lcz;
                 CREATE TABLE tempo_rsu_for_lcz AS SELECT a.*, b.the_geom FROM rsu_test_for_lcz a LEFT JOIN rsu_test b
@@ -69,52 +79,92 @@ class TypologyClassificationTests {
 
     @Test
     void createRandomForestClassifTest() {
-        H2GIS h2GIS = H2GIS.open( './target/buildingdb;AUTO_SERVER=TRUE')
-        h2GIS.executeScript(getClass().getResourceAsStream("data_for_tests.sql"))
         h2GIS.execute """
                 DROP TABLE IF EXISTS tempo_rsu_for_lcz;
-                CREATE TABLE tempo_rsu_for_lcz AS SELECT a.*, b.the_geom FROM rsu_test_for_lcz a LEFT JOIN rsu_test b
-                ON a.id_rsu = b.id_rsu;
+                CREATE TABLE tempo_rsu_for_lcz AS SELECT a.*, b.the_geom 
+                        FROM rsu_test_for_lcz a 
+                                LEFT JOIN rsu_test b
+                                ON a.id_rsu = b.id_rsu;
         """
-        // Informations about where to find the training dataset for the test
-        def tableTraining = "training_table"
-        def urlToDownload = ""
-        def trainingFile = "/home/ebocher/Autres/codes/geoclimate/model/rf/training_data.shp"
+        // Information about where to find the training dataset for the test
+        def trainingTableName = "training_table"
+        def trainingURL = TypologyClassificationTests.getResource("model/rf/training_data.shp")
 
-        def fileAndPath =  "/tmp/geoclimate_rf.model"
+        def uuid = UUID.randomUUID().toString().replaceAll("-", "_")
+        def savePath =  "target/geoclimate_rf_${uuid}.model"
 
-        h2GIS.load(trainingFile, tableTraining,true)
+        def trainingTable = h2GIS.load(trainingURL, trainingTableName,true)
+        assertNotNull trainingTable
+        assertFalse trainingTable.isEmpty()
 
         // Variable to model
         def var2model = "I_TYPO"
 
         // Columns useless for the classification
-        String[] colsToRemove = ["PK2", "THE_GEOM", "PK"]
+        def colsToRemove = ["PK2", "THE_GEOM", "PK"]
 
         // Remove unnecessary column
-        if (h2GIS.getTable(tableTraining) != null){
-            h2GIS.execute """ ALTER TABLE $tableTraining DROP COLUMN ${colsToRemove.join(",")};"""
-        }
+        h2GIS.execute "ALTER TABLE $trainingTableName DROP COLUMN ${colsToRemove.join(",")};"
         
         def  pmed =  Geoindicators.TypologyClassification.createRandomForestClassif()
-        assertTrue pmed.execute([trainingTableName: tableTraining, varToModel: var2model,
-                                 save: true, pathAndFileName: fileAndPath,
+        assertTrue pmed.execute([trainingTableName: trainingTableName, varToModel: var2model,
+                                 save: true, pathAndFileName: savePath,
                                  ntrees: 300, mtry: 7, rule: "GINI", maxDepth: 100,
                                  maxNodes: 300, nodeSize: 5, subsample: 0.25, datasource: h2GIS])
+        def obj = pmed.results.RfModel
+        assertNotNull obj
+        assertTrue obj instanceof DataFrameClassifier
+        def model = (DataFrameClassifier)obj
 
         // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
-        def df = DataFrame.of(h2GIS.getTable(tableTraining)).factorize(var2model).omitNullRows()
-        def model = pmed.results.RfModel
-        assertEquals 0.844, Accuracy.of(df.apply(var2model).toIntArray(), Validation.test(model, df)).round(3), 0.002
+        def df = DataFrame.of(trainingTable)
+        assertNotNull df
+        df = df.factorize(var2model)
+        assertNotNull df
+        df = df.omitNullRows()
+        def vector = df.apply(var2model)
+        assertNotNull vector
+        def truth = vector.toIntArray()
+        assertNotNull truth
+        def prediction = Validation.test(model, df)
+        assertNotNull prediction
+        def accuracy = Accuracy.of(truth, prediction)
+        assertNotNull accuracy
+        assertEquals 0.844, accuracy.round(3), 0.002
 
 
         // Test that the model is well written in the file and can be used to recover the variable names for example
-        XStream xs = new XStream()
-        def fs = new GZIPInputStream(new FileInputStream(fileAndPath))
-        def modelRead = xs.fromXML(fs)
-        assertEquals h2GIS.getTable(tableTraining).getColumns().minus(var2model).sort().join(","),
-                modelRead.formula.x(df).names().sort().join(",")
-        fs.close()
+        def xs = new XStream()
+        def fileInputStream = new FileInputStream(savePath)
+        assertNotNull fileInputStream
+        def gzipInputStream = new GZIPInputStream(fileInputStream)
+        assertNotNull gzipInputStream
+        def objRead = xs.fromXML(gzipInputStream)
+        assertNotNull objRead
+        assertTrue objRead instanceof DataFrameClassifier
+        def modelRead = (DataFrameClassifier)objRead
+        def formula = modelRead.formula()
+        assertNotNull formula
+        def x = formula.x(df)
+        assertNotNull x
+        def names = x.names()
+        assertNotNull names
+        names = names.sort()
+        assertNotNull names
+        def namesStr = names.join(",")
+        assertNotNull namesStr
+
+        def columns = trainingTable.getColumns()
+        assertNotNull columns
+        columns = columns.minus(var2model)
+        assertNotNull columns
+        columns = columns.sort()
+        assertNotNull columns
+        def columnsStr = columns.join(",")
+        assertNotNull columnsStr
+
+
+        assertEquals columnsStr, namesStr
     }
 
 }

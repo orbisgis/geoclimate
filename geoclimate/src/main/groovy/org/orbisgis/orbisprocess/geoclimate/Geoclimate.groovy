@@ -1,25 +1,13 @@
 package org.orbisgis.orbisprocess.geoclimate
 
-import org.orbisgis.orbisprocess.geoclimate.geoindicators.BlockIndicators
-import org.orbisgis.orbisprocess.geoclimate.geoindicators.BuildingIndicators
-import org.orbisgis.orbisprocess.geoclimate.geoindicators.DataUtils
-import org.orbisgis.orbisprocess.geoclimate.geoindicators.GenericIndicators
-import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
-import org.orbisgis.orbisprocess.geoclimate.geoindicators.RsuIndicators
-import org.orbisgis.orbisprocess.geoclimate.geoindicators.SpatialUnits
-import org.orbisgis.orbisprocess.geoclimate.geoindicators.TypologyClassification
+import org.orbisgis.orbisprocess.geoclimate.geoindicators.*
 import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
 import org.orbisgis.orbisprocess.geoclimate.preparedata.bdtopo.BDTopoGISLayers
 import org.orbisgis.orbisprocess.geoclimate.preparedata.common.AbstractTablesInitialization
 import org.orbisgis.orbisprocess.geoclimate.preparedata.common.InputDataFormatting
 import org.orbisgis.orbisprocess.geoclimate.preparedata.osm.FormattingForAbstractModel
 import org.orbisgis.orbisprocess.geoclimate.preparedata.osm.OSMGISLayers
-import org.orbisgis.orbisprocess.geoclimate.processingchain.BuildGeoIndicators
-import org.orbisgis.orbisprocess.geoclimate.processingchain.BuildSpatialUnits
-import org.orbisgis.orbisprocess.geoclimate.processingchain.Workflow
-import org.orbisgis.orbisprocess.geoclimate.processingchain.PrepareBDTopo
-import org.orbisgis.orbisprocess.geoclimate.processingchain.PrepareOSM
-import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
+import org.orbisgis.orbisprocess.geoclimate.processingchain.*
 
 /**
  * Root access point to the Geoindicators processes.

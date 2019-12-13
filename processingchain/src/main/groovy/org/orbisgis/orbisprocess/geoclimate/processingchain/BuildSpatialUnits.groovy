@@ -1,9 +1,8 @@
 package org.orbisgis.orbisprocess.geoclimate.processingchain
 
 import groovy.transform.BaseScript
-import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
-
+import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 
 @BaseScript ProcessingChain processingChain
 

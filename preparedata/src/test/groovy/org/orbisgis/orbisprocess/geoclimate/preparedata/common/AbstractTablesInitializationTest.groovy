@@ -2,8 +2,8 @@ package org.orbisgis.orbisprocess.geoclimate.preparedata.common
 
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty
-import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
+import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
 
 import static org.junit.jupiter.api.Assertions.*
 

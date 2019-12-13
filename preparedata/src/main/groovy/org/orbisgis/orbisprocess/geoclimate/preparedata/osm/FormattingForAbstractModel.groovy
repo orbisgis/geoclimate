@@ -1,14 +1,13 @@
 package org.orbisgis.orbisprocess.geoclimate.preparedata.osm
 
+import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
-import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import groovy.json.JsonSlurper
-
+import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
 
 @BaseScript PrepareData prepareData
 
