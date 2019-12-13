@@ -1,7 +1,7 @@
 package org.orbisgis.orbisprocess.geoclimate.processingchain
 
-import org.orbisgis.orbisprocess.geoclimate.geoindicators.DataUtils
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
+import org.orbisgis.orbisprocess.geoclimate.geoindicators.DataUtils
 import org.slf4j.LoggerFactory
 
 /**
