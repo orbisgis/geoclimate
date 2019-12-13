@@ -1,10 +1,11 @@
 package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
+import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 
-import static org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Test
+import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertTrue
 
 class DataUtilsTests {
 

@@ -5,13 +5,12 @@ import groovy.transform.BaseScript
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
 import org.orbisgis.osm.OSMTools
-import org.orbisgis.orbisdata.processmanager.api.IProcess
 
 @BaseScript PrepareData prepareData
 

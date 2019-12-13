@@ -1,9 +1,18 @@
 package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
+import com.thoughtworks.xstream.XStream
 import groovy.transform.BaseScript
+import org.orbisgis.orbisdata.datamanager.api.dataset.ITable
+import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
+import smile.base.cart.SplitRule
+import smile.classification.RandomForest
+import smile.data.formula.Formula
+import smile.validation.Accuracy
+import smile.validation.Validation
 
+import java.util.zip.GZIPOutputStream
 
 @BaseScript Geoindicators geoindicators
 
@@ -31,6 +40,7 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
  * the American Meteorological Society 93, no. 12 (2012): 1879-1900.
  *
  * @return A database table name.
+ *
  * @author Jérémy Bernard
  */
 IProcess identifyLczType() {
@@ -237,6 +247,112 @@ IProcess identifyLczType() {
             } else {
                 error "The 'normalisationType' argument is not valid."
             }
+        }
+    })
+}
+
+/**
+ * This process is used to create a classification model based on a RandomForest algorithm.
+ * The training dataset and the variables to use for the training may be gathered in a
+ * same table. All parameters of the randomForest algorithm have default values but may be
+ * modified. The resulting model is returned and may also be saved into a file.
+ *
+ * Note that the algorithm is based on the Smile library (cf. https://github.com/haifengl/smile)
+ *
+ * @param trainingTableName The name of the training table where are stored ONLY the explicative variables
+ * and the one to model
+ * @param varToModel String where is saved the name of the field to model
+ * @param save Boolean to save the model into a file if needed
+ * @param pathAndFileName String of the path and name where the model has to be saved (default "/home/RfModel")
+ * @param ntrees The number of trees to build the forest
+ * @param mtry The number of input variables to be used to determine the decision
+ * at a node of the tree. p/3 seems to give generally good performance,
+ * where p is the number of variables
+ * @param rule Decision tree split rule (The function to measure the quality of a split. Supported rules
+ * are “gini” for the Gini impurity and “entropy” for the information gain)
+ * @param maxDepth The maximum depth of the tree.
+ * @param maxNodes The maximum number of leaf nodes in the tree.
+ * @param nodeSize The number of instances in a node below which the tree will
+ * not split, setting nodeSize = 5 generally gives good results.
+ * @param subsample The sampling rate for training tree. 1.0 means sampling with replacement. < 1.0 means
+ * sampling without replacement.
+ * @param datasource A connection to a database
+ *
+ * @return RfModel A randomForest model (see smile library for further information about the object)
+ *
+ * @author Jérémy Bernard
+ */
+IProcess createRandomForestClassif() {
+    return create({
+        title "Create a Random Forest model"
+        inputs trainingTableName: String, varToModel: String, save: boolean, pathAndFileName: String, ntrees: int,
+                mtry: int, rule: "GINI", maxDepth: int, maxNodes: int, nodeSize: int, subsample: double,
+                datasource: JdbcDataSource
+        outputs RfModel: RandomForest
+        run { String trainingTableName, String varToModel, save, pathAndFileName,  ntrees, mtry, rule, maxDepth,
+              maxNodes, nodeSize, subsample, JdbcDataSource datasource ->
+
+            def splitRule
+            if(rule){
+                switch(rule.toUpperCase()) {
+                    case "GINI":
+                    case "ENTROPY":
+                        splitRule = SplitRule.valueOf(rule)
+                        break
+                    default:
+                        error "The rule value ${rule} is not supported. Please use 'GINI' or 'ENTROPY'"
+                        return null;
+                }
+            }
+            else{
+                error "The rule value cannot be null or empty. Please use 'GINI' or 'ENTROPY'"
+                return null;
+            }
+            info "Create a Random Forest model"
+
+            //Check if the column names exists
+            def columnTypo = "I_TYPO"
+
+            def trainingTable = datasource.getTable(trainingTableName)
+
+            if(!trainingTable.hasColumn(columnTypo, String.class)){
+                error "The training table should have a String column name 'I_TYPO'"
+                return null
+            }
+
+            // Read the training table as a DataFrame
+            def df = DataFrame.of(trainingTable)
+
+            def formula = Formula.lhs(varToModel)
+
+            // Convert the variable to model into factors (if string for example) and remove rows containing null values
+            df = df.factorize(varToModel).omitNullRows()
+
+            // Create the randomForest
+            def model = RandomForest.fit(formula, df, ntrees, mtry, splitRule, maxDepth, maxNodes, nodeSize, subsample)
+
+
+            // Calculate the prediction using the same sample in order to identify what is the
+            // data rate that has been well classified
+            int[] prediction = Validation.test(model, df)
+            int[] truth = df.apply(varToModel).toIntArray()
+            def accuracy = Accuracy.of(truth, prediction)
+            logger.info "The percentage of the data that have been well classified is : ${accuracy*100}%"
+
+            try {
+                if (save) {
+                    def zOut = new GZIPOutputStream(new FileOutputStream(pathAndFileName));
+                    def xs = new XStream()
+                    xs.toXML(model, zOut)
+                    zOut.close()
+                }
+            }
+            catch (Exception e){
+                logger.error("Cannot save the model", e)
+                return null
+            }
+
+            [RfModel: model]
         }
     })
 }

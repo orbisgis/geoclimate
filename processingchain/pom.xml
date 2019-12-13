@@ -24,14 +24,6 @@
             <artifactId>groovy</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.orbisgis.orbisdata.datamanager</groupId>
             <artifactId>jdbc</artifactId>
         </dependency>
@@ -42,19 +34,23 @@
         <dependency>
             <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
             <artifactId>preparedata</artifactId>
-            <version>${project.version}</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
             <artifactId>geoindicators</artifactId>
-            <version>${project.version}</version>
-            <scope>compile</scope>
         </dependency>
         <!-- Test dependencies -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
         </dependency>
     </dependencies>
 
