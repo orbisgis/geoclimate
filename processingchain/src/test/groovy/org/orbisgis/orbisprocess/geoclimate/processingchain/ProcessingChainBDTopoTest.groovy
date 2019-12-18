@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -19,6 +20,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         if(ProcessingChainBDTopoTest.class.getResource("bdtopofolder") != null &&
                 new File(ProcessingChainBDTopoTest.class.getResource("bdtopofolder").toURI()).exists()) {
             System.properties.setProperty("data.bd.topo", "true")
+
             H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb;AUTO_SERVER=TRUE", "sa", "")
             h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/IRIS_GE.shp"), "IRIS_GE", true)
             h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/BATI_INDIFFERENCIE.shp"), "BATI_INDIFFERENCIE", true)
@@ -240,16 +242,22 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                 abstractTables.outputHydro, saveResults, svfSimplified, indicatorUse,  prefixName)
     }
 
-    //@Test
+    // Test the workflow on the commune INSEE 56184
+    @Test
+    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void testBDTOPO_V2Workflow() {
         String directory ="./target/geoclimate_chain"
         File dirFile = new File(directory)
+        File inpFolder = new File(ProcessingChainBDTopoTest.class.getResource("bdtopofolder").toURI())
         dirFile.delete()
         dirFile.mkdir()
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
-        IProcess process = ProcessingChain.Workflow.BDTOPO_V2()
-        assertTrue(process.execute(datasource: datasource,
-                inputFolder: "./target/bdtopofolder/",
-                outputFolder :"./target/geoclimate_chain/"))
+        IProcess processBDTopo = ProcessingChain.Workflow.BDTOPO_V2()
+        assertTrue(processBDTopo.execute(datasource: datasource,
+                inputFolder: inpFolder.getAbsolutePath().toString(),
+                outputFolder :"./target/geoclimate_chain/",
+                indicatorUse: ["TEB"]))
+        assertFalse(new File((processBDTopo.getResults().outputFolder+File.separator+"ZONE_56003_RSU_INDICATORS").toURI()).exists())
+        assertFalse(new File((processBDTopo.getResults().outputFolder+File.separator+"ZONE_56003_RSU_LCZ").toURI()).exists())
     }
 }

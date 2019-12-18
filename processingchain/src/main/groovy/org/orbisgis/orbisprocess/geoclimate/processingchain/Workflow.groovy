@@ -131,7 +131,7 @@ def BDTOPO_V2() {
                              }
                              else{
                                  def tablesToSave = geoIndicators.getResults().collect {
-                                     if (datasource.hasTable(it)){
+                                     if (it.value != null){
                                          datasource.save(it.value,"${outputDir.getAbsolutePath()}${File.separator}${it.value}.geojson")
                                          datasource.execute "DROP TABLE IF EXISTS ${it.value};"
                                         }
