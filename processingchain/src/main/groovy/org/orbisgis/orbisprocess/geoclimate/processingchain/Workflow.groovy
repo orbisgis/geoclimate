@@ -140,7 +140,7 @@ def BDTOPO_V2() {
                              }
 
                          }
-                            info "Number of areas processed $index on $nbAreas"
+                            info "Number of areas processed ${index+1} on $nbAreas"
                     }
 
                     }
