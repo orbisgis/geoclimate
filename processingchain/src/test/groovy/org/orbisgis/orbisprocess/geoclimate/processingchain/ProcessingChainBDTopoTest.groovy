@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -14,26 +13,19 @@ import static org.junit.jupiter.api.Assertions.*
 class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 
     public static Logger logger = LoggerFactory.getLogger(ProcessingChainBDTopoTest.class)
+    public static String h2db = "./target/myh2gisbdtopodb;AUTO_SERVER=TRUE"
+    public static String bdtopoFoldName = "bdtopofolder"
+    public static String[] listTables = ["IRIS_GE", "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL", "BATI_REMARQUABLE",
+    "ROUTE", "SURFACE_EAU", "ZONE_VEGETATION", "TRONCON_VOIE_FERREE", "TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE",
+    "SURFACE_ROUTE", "SURFACE_ACTIVITE"]
 
     @BeforeAll
     static void init(){
-        if(ProcessingChainBDTopoTest.class.getResource("bdtopofolder") != null &&
-                new File(ProcessingChainBDTopoTest.class.getResource("bdtopofolder").toURI()).exists()) {
+        if(ProcessingChainBDTopoTest.class.getResource(bdtopoFoldName) != null &&
+                new File(ProcessingChainBDTopoTest.class.getResource(bdtopoFoldName).toURI()).exists()) {
             System.properties.setProperty("data.bd.topo", "true")
 
-            H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb;AUTO_SERVER=TRUE", "sa", "")
-            h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/IRIS_GE.shp"), "IRIS_GE", true)
-            h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/BATI_INDIFFERENCIE.shp"), "BATI_INDIFFERENCIE", true)
-            h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/BATI_INDUSTRIEL.shp"), "BATI_INDUSTRIEL", true)
-            h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/BATI_REMARQUABLE.shp"), "BATI_REMARQUABLE", true)
-            h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/ROUTE.shp"), "ROUTE", true)
-            h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/SURFACE_EAU.shp"), "SURFACE_EAU", true)
-            h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/ZONE_VEGETATION.shp"), "ZONE_VEGETATION", true)
-            h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/TRONCON_VOIE_FERREE.shp"), "TRONCON_VOIE_FERREE", true)
-            h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/TERRAIN_SPORT.shp"), "TERRAIN_SPORT", true)
-            h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/CONSTRUCTION_SURFACIQUE.shp"), "CONSTRUCTION_SURFACIQUE", true)
-            h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/SURFACE_ROUTE.shp"), "SURFACE_ROUTE", true)
-            h2GISDatabase.load(ProcessingChain.class.getResource("bdtopofolder/SURFACE_ACTIVITE.shp"), "SURFACE_ACTIVITE", true)
+            H2GIS h2GISDatabase = H2GIS.open(h2db, "sa", "")
 
             h2GISDatabase.load(ProcessingChain.class.getResource("BUILDING_ABSTRACT_PARAMETERS.csv"), "BUILDING_ABSTRACT_PARAMETERS", true)
             h2GISDatabase.load(ProcessingChain.class.getResource("BUILDING_ABSTRACT_USE_TYPE.csv"), "BUILDING_ABSTRACT_USE_TYPE", true)
@@ -60,10 +52,39 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         }
     }
 
+    def loadFiles(String inseeCode){
+        H2GIS h2GISDatabase = H2GIS.open(h2db, "sa", "")
+        String relativePath = bdtopoFoldName + File.separator + inseeCode
+
+        // Test whether there is a folder containing .shp files for the corresponding INSEE code
+        if(ProcessingChain.class.getResource(relativePath) != null){
+            // Test is the URL is a folder
+            if(new File(ProcessingChain.class.getResource(relativePath).toURI()).isDirectory()){
+                listTables.each {
+                    String filePath = ProcessingChain.class.getResource(relativePath + File.separator + it + ".shp")
+                    // If some layers are missing, do not try to load them...
+                    if (filePath != null) {
+                        h2GISDatabase.load(filePath, it, true)
+                    }
+                }
+            }
+            else{
+                logger.error  "There is no folder containing shapefiles for commune insee $inseeCode"
+            }
+        }
+        else{
+            logger.error  "There is no folder containing shapefiles for commune insee $inseeCode"
+        }
+
+
+        return h2GISDatabase
+    }
+
     @Test
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void prepareBDTopoTest(){
-        H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb;AUTO_SERVER=TRUE")
+        String inseeCode = "01306"
+        H2GIS h2GISDatabase = loadFiles(inseeCode)
         def process = ProcessingChain.PrepareBDTopo.prepareBDTopo()
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
@@ -84,7 +105,6 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     }
 
     @Test
-    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void CreateUnitsOfAnalysisTest(){
         H2GIS h2GIS = H2GIS.open("./target/processingchainscales;AUTO_SERVER=TRUE")
         String sqlString = new File(getClass().getResource("data_for_tests.sql").toURI()).text
@@ -118,7 +138,6 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     }
 
     @Test
-    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void createLCZTest(){
         H2GIS h2GIS = H2GIS.open("./target/processinglcz;AUTO_SERVER=TRUE")
         String sqlString = new File(getClass().getResource("data_for_tests.sql").toURI()).text
@@ -170,7 +189,8 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     @Test
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void bdtopoLczFromTestFiles() {
-        H2GIS datasource = H2GIS.open("./target/myh2gisbdtopodb;AUTO_SERVER=TRUE")
+        String inseeCode = "01306"
+        H2GIS datasource = loadFiles(inseeCode)
         def process = ProcessingChain.PrepareBDTopo.prepareBDTopo()
         assertTrue process.execute([datasource: datasource,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
@@ -212,7 +232,8 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     @Test
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void bdtopoGeoIndicatorsFromTestFiles() {
-        H2GIS h2GISDatabase = H2GIS.open("./target/myh2gisbdtopodb;AUTO_SERVER=TRUE")
+        String inseeCode = "56260"
+        H2GIS h2GISDatabase = loadFiles(inseeCode)
         def process = ProcessingChain.PrepareBDTopo.prepareBDTopo()
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
@@ -242,22 +263,27 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                 abstractTables.outputHydro, saveResults, svfSimplified, indicatorUse,  prefixName)
     }
 
-    // Test the workflow on the commune INSEE 56184
+    // Test the workflow on the commune INSEE 01306 only for TEB in order to verify that only RSU_INDICATORS and BUILDING_INDICATORS are saved
     @Test
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void testBDTOPO_V2Workflow() {
+        String inseeCode = "01306"
+        H2GIS datasource = loadFiles(inseeCode)
+
         String directory ="./target/geoclimate_chain"
         File dirFile = new File(directory)
         File inpFolder = new File(ProcessingChainBDTopoTest.class.getResource("bdtopofolder").toURI())
         dirFile.delete()
         dirFile.mkdir()
-        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
         IProcess processBDTopo = ProcessingChain.Workflow.BDTOPO_V2()
         assertTrue(processBDTopo.execute(datasource: datasource,
                 inputFolder: inpFolder.getAbsolutePath().toString(),
                 outputFolder :"./target/geoclimate_chain/",
                 indicatorUse: ["TEB"]))
-        assertFalse(new File((processBDTopo.getResults().outputFolder+File.separator+"ZONE_56003_RSU_INDICATORS").toURI()).exists())
-        assertFalse(new File((processBDTopo.getResults().outputFolder+File.separator+"ZONE_56003_RSU_LCZ").toURI()).exists())
+        String baseNamePathAndFileOut = processBDTopo.getResults().outputFolder + File.separator + "zone_" + inseeCode + "_"
+        assertTrue(new File(baseNamePathAndFileOut + "rsu_indicators.geojson").exists())
+        assertFalse(new File(baseNamePathAndFileOut + "rsu_lcz.geojson").exists())
+        assertFalse(new File(baseNamePathAndFileOut + "block_indicators.geojson").exists())
+        assertTrue(new File(baseNamePathAndFileOut + "building_indicators.geojson").exists())
     }
 }
