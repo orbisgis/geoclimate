@@ -6,7 +6,7 @@
 --			  to feed (at the end of this script) the GeoClimate model.	                        --
 --																								--
 -- Author : Gwendall Petit (DECIDE Team, Lab-STICC CNRS UMR 6285)								--
--- Last update : 21/11/2019																		--
+-- Last update : 17/12/2019																		--
 -- Licence : GPLv3 (https://www.gnu.org/licenses/gpl-3.0.html)                                  --
 -- Comments :																					--
 --   - Input layers : IRIS_GE,BATI_INDIFFERENCIE, BATI_INDUSTRIEL, BATI_REMARQUABLE,            --
@@ -82,9 +82,12 @@ CREATE INDEX ON $ZONE_NEIGHBORS USING RTREE(the_geom);
 -- Building (from the layers "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL" and "BATI_REMARQUABLE") that are in the study area (ZONE_BUFFER)
 -------------------------------------
 DROP TABLE IF EXISTS $BU_ZONE_INDIF, $BU_ZONE_INDUS, $BU_ZONE_REMARQ;
-CREATE TABLE $BU_ZONE_INDIF AS SELECT a.the_geom, a.ID as ID_SOURCE, a.HAUTEUR as HEIGHT_WALL FROM $BATI_INDIFFERENCIE a, $ZONE_BUFFER b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.HAUTEUR>=0;
-CREATE TABLE $BU_ZONE_INDUS AS SELECT a.the_geom, a.ID as ID_SOURCE, a.HAUTEUR as HEIGHT_WALL, a.NATURE as TYPE FROM $BATI_INDUSTRIEL a, $ZONE_BUFFER b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)  and a.HAUTEUR>=0;
-CREATE TABLE $BU_ZONE_REMARQ AS SELECT a.the_geom, a.ID as ID_SOURCE, a.HAUTEUR as HEIGHT_WALL, a.NATURE as TYPE FROM $BATI_REMARQUABLE a, $ZONE_BUFFER b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)  and a.HAUTEUR>=0;
+CREATE TABLE $BU_ZONE_INDIF (THE_GEOM geometry, ID_SOURCE varchar(24), HEIGHT_WALL integer)
+    AS SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(ST_NORMALIZE(a.THE_GEOM)) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID, a.HAUTEUR FROM $BATI_INDIFFERENCIE a, $ZONE_BUFFER b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.HAUTEUR>=0;
+CREATE TABLE $BU_ZONE_INDUS (THE_GEOM geometry, ID_SOURCE varchar(24), HEIGHT_WALL integer, TYPE varchar)
+    AS SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(ST_NORMALIZE(a.THE_GEOM)) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID, a.HAUTEUR, a.NATURE FROM $BATI_INDUSTRIEL a, $ZONE_BUFFER b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)  and a.HAUTEUR>=0;
+CREATE TABLE $BU_ZONE_REMARQ (THE_GEOM geometry, ID_SOURCE varchar(24), HEIGHT_WALL integer, TYPE varchar)
+    AS SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(ST_NORMALIZE(a.THE_GEOM)) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID, a.HAUTEUR, a.NATURE FROM $BATI_REMARQUABLE a, $ZONE_BUFFER b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)  and a.HAUTEUR>=0;
 
 -- Merge the 3 tables into one, keeping informations about the initial table name
 -- The fields 'HEIGHT_ROOF' and 'NB_LEV' fields are left empty. They will be updated later in the geoclimate procedure
@@ -103,7 +106,7 @@ UPDATE $INPUT_BUILDING SET TYPE=(SELECT c.TERM FROM $BUILDING_BD_TOPO_USE_TYPE b
 -------------------------------------
 DROP TABLE IF EXISTS $INPUT_ROAD;
 CREATE TABLE $INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH double precision, TYPE varchar, SURFACE varchar, SIDEWALK varchar, ZINDEX integer, CROSSING varchar)
-AS SELECT a.THE_GEOM, a.ID, a.LARGEUR, a.NATURE, '', '', a.POS_SOL, a.FRANCHISST FROM $ROUTE a, $ZONE_BUFFER b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
+AS SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(a.THE_GEOM) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID, a.LARGEUR, a.NATURE, '', '', a.POS_SOL, a.FRANCHISST FROM $ROUTE a, $ZONE_BUFFER b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
 CREATE INDEX ON $INPUT_ROAD USING RTREE(the_geom);
 
 -- Update the ROAD table with the new appropriate type key, coming from the abstract table
@@ -116,7 +119,7 @@ UPDATE $INPUT_ROAD SET CROSSING=(SELECT c.TERM FROM $ROAD_BD_TOPO_CROSSING b, $R
 -------------------------------------
 DROP TABLE IF EXISTS $INPUT_RAIL;
 CREATE TABLE $INPUT_RAIL (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer, CROSSING varchar)
-AS SELECT a.THE_GEOM, a.ID, a.NATURE, a.POS_SOL, a.FRANCHISST FROM $TRONCON_VOIE_FERREE a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
+AS SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(a.THE_GEOM) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID, a.NATURE, a.POS_SOL, a.FRANCHISST FROM $TRONCON_VOIE_FERREE a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
 
 -- Update the RAIL table with the new appropriate type key, coming from the abstract table
 UPDATE $INPUT_RAIL SET TYPE=(SELECT c.TERM FROM $RAIL_BD_TOPO_TYPE b, $RAIL_ABSTRACT_TYPE c WHERE c.ID_TYPE=b.ID_TYPE and ${INPUT_RAIL}.TYPE=b.NATURE) WHERE TYPE IN (SELECT b.NATURE FROM $RAIL_BD_TOPO_TYPE b);
@@ -127,13 +130,15 @@ UPDATE $INPUT_RAIL SET CROSSING=(SELECT c.TERM FROM $RAIL_BD_TOPO_CROSSING b, $R
 -- Hydrography (from the layer "SURFACE_EAU") that are in the study area (ZONE_EXTENDED)
 -------------------------------------
 DROP TABLE IF EXISTS $INPUT_HYDRO;
-CREATE TABLE $INPUT_HYDRO AS SELECT a.the_geom, a.ID as ID_SOURCE FROM $SURFACE_EAU a, $ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
+CREATE TABLE $INPUT_HYDRO (THE_GEOM geometry, ID_SOURCE varchar(24))
+AS SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(a.THE_GEOM) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID FROM $SURFACE_EAU a, $ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
 
 -------------------------------------
 -- Vegetation (from the layer "ZONE_VEGETATION") that are in the study area (ZONE_EXTENDED)
 -------------------------------------
 DROP TABLE IF EXISTS $INPUT_VEGET;
-CREATE TABLE $INPUT_VEGET AS SELECT a.the_geom, a.ID as ID_SOURCE, a.NATURE as TYPE FROM $ZONE_VEGETATION a, $ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
+CREATE TABLE $INPUT_VEGET (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar)
+AS SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(a.THE_GEOM) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID, a.NATURE FROM $ZONE_VEGETATION a, $ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
 
 -- Update the VEGET table with the new appropriate type key, coming from the abstract table
 UPDATE $INPUT_VEGET SET TYPE=(SELECT c.TERM FROM $VEGET_BD_TOPO_TYPE b, $VEGET_ABSTRACT_TYPE c WHERE c.ID_TYPE=b.ID_TYPE and ${INPUT_VEGET}.TYPE=b.NATURE) WHERE TYPE IN (SELECT b.NATURE FROM $VEGET_BD_TOPO_TYPE b);
@@ -142,10 +147,14 @@ UPDATE $INPUT_VEGET SET TYPE=(SELECT c.TERM FROM $VEGET_BD_TOPO_TYPE b, $VEGET_A
 -- Impervious areas (from the layers "TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE", "SURFACE_ROUTE" and "SURFACE_ACTIVITE") that are in the study area (ZONE)
 -------------------------------------
 DROP TABLE IF EXISTS $TMP_IMPERV_TERRAIN_SPORT, $TMP_IMPERV_CONSTRUCTION_SURFACIQUE, $TMP_IMPERV_SURFACE_ROUTE, $TMP_IMPERV_SURFACE_ACTIVITE;
-CREATE TABLE $TMP_IMPERV_TERRAIN_SPORT AS SELECT a.the_geom, a.ID as ID_SOURCE FROM $TERRAIN_SPORT a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) AND a.NATURE='Piste de sport';
-CREATE TABLE $TMP_IMPERV_CONSTRUCTION_SURFACIQUE AS SELECT a.the_geom, a.ID as ID_SOURCE FROM $CONSTRUCTION_SURFACIQUE a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) AND (a.NATURE='Barrage' OR a.NATURE='Ecluse' OR a.NATURE='Escalier');
-CREATE TABLE $TMP_IMPERV_SURFACE_ROUTE AS SELECT a.the_geom, a.ID as ID_SOURCE FROM $SURFACE_ROUTE a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
-CREATE TABLE $TMP_IMPERV_SURFACE_ACTIVITE AS SELECT a.the_geom, a.ID as ID_SOURCE FROM $SURFACE_ACTIVITE a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) AND (a.CATEGORIE='Administratif' OR a.CATEGORIE='Enseignement' OR a.CATEGORIE='Santé');
+CREATE TABLE $TMP_IMPERV_TERRAIN_SPORT (THE_GEOM geometry, ID_SOURCE varchar(24))
+    AS SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(a.THE_GEOM) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID FROM $TERRAIN_SPORT a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) AND a.NATURE='Piste de sport';
+CREATE TABLE $TMP_IMPERV_CONSTRUCTION_SURFACIQUE (THE_GEOM geometry, ID_SOURCE varchar(24))
+    AS SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(a.THE_GEOM) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID FROM $CONSTRUCTION_SURFACIQUE a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) AND (a.NATURE='Barrage' OR a.NATURE='Ecluse' OR a.NATURE='Escalier');
+CREATE TABLE $TMP_IMPERV_SURFACE_ROUTE (THE_GEOM geometry, ID_SOURCE varchar(24))
+    AS SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(a.THE_GEOM) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID FROM $SURFACE_ROUTE a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
+CREATE TABLE $TMP_IMPERV_SURFACE_ACTIVITE (THE_GEOM geometry, ID_SOURCE varchar(24))
+    AS SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(a.THE_GEOM) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID FROM $SURFACE_ACTIVITE a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) AND (a.CATEGORIE='Administratif' OR a.CATEGORIE='Enseignement' OR a.CATEGORIE='Santé');
 
 DROP TABLE IF EXISTS $INPUT_IMPERVIOUS;
 CREATE TABLE $INPUT_IMPERVIOUS (THE_GEOM geometry, ID_SOURCE varchar(24))

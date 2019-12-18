@@ -847,7 +847,32 @@ class BDTopoGISLayersTest {
     }
 
 
+    // Check that the conversion (to valid) of an invalid building (ID = BATIMENT0000000290122667 from BATI_INDIFFERENCIE) is well done
+    @Test
+    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
+    void checkMakeValidBuildingIndif() {
+        def process = PrepareData.BDTopoGISLayers.importPreprocess()
+        assertTrue process.execute([datasource: h2GISDatabase,
+                                    tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                    tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
+                                    tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
+                                    tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
+                                    tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
+                                    tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
+                                    distBuffer: 500, expand: 1000, idZone: '56260',
+                                    building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
+                                    road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
+                                    road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
+                                    rail_bd_topo_type: 'RAIL_BD_TOPO_TYPE', rail_abstract_type: 'RAIL_ABSTRACT_TYPE',
+                                    rail_bd_topo_crossing: 'RAIL_BD_TOPO_CROSSING', rail_abstract_crossing: 'RAIL_ABSTRACT_CROSSING',
+                                    veget_bd_topo_type: 'VEGET_BD_TOPO_TYPE', veget_abstract_type: 'VEGET_ABSTRACT_TYPE'
+        ])
+        process.getResults().each {
+            entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
+        }
 
+        assertEquals('true', h2GISDatabase.firstRow("SELECT ST_IsValid(THE_GEOM) as valid FROM INPUT_BUILDING WHERE ID_SOURCE='BATIMENT0000000290122667';")["valid"].toString())
+    }
 
     @Test
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
