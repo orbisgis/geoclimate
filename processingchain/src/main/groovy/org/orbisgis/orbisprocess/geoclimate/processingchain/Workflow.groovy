@@ -97,15 +97,16 @@ def BDTOPO_V2() {
                         int nbAreas = inseeCodes.size();
                         info "$nbAreas areas will be processed"
                         inseeCodes.eachWithIndex { code, index->
-                         if(prepareBDTopoData.execute([datasource                 : datasource,
-                                                    tableIrisName              : 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
-                                                    tableBuildIndusName        : 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
-                                                    tableRoadName              : 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
-                                                    tableHydroName             : 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
-                                                    tableImperviousSportName   : 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
-                                                    tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                                    distBuffer                 : 500, expand: distance, idZone: code,
-                                                    hLevMin                    : hLevMin, hLevMax: hLevMax, hThresholdLev2: hThresholdLev2
+                            info "Starting to process insee code $code"
+                             if(prepareBDTopoData.execute([datasource                 : datasource,
+                                                        tableIrisName              : 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                                        tableBuildIndusName        : 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
+                                                        tableRoadName              : 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
+                                                        tableHydroName             : 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
+                                                        tableImperviousSportName   : 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
+                                                        tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
+                                                        distBuffer                 : 500, expand: distance, idZone: code,
+                                                        hLevMin                    : hLevMin, hLevMax: hLevMax, hThresholdLev2: hThresholdLev2
                         ])){
 
                              String buildingTableName = prepareBDTopoData.getResults().outputBuilding
@@ -131,14 +132,16 @@ def BDTOPO_V2() {
                              }
                              else{
                                  def tablesToSave = geoIndicators.getResults().collect {
-                                     datasource.save(it.value,"${outputDir.getAbsolutePath()}${File.separator}${it.value}.geojson")
-                                     datasource.execute "DROP TABLE IF EXISTS ${it.value};"
+                                     if (it.value){
+                                         datasource.save(it.value,"${outputDir.getAbsolutePath()}${File.separator}${it.value}.geojson")
+                                         datasource.execute "DROP TABLE IF EXISTS ${it.value};"
+                                        }
                                      }
                                  info "${code} has been processed"
                              }
 
                          }
-                            info "Number of areas processed $index on $nbAreas"
+                            info "Number of areas processed ${index+1} on $nbAreas"
                     }
 
                     }

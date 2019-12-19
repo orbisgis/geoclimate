@@ -243,6 +243,8 @@ IProcess identifyLczType() {
                 datasource.execute "DROP TABLE IF EXISTS $LCZ_classes, $normalizedValues, $normalizedRange," +
                         "$buffLczTable, $allLczTable, $pivotedTable, $mainLczTable;"
 
+                info "The LCZ classification has been performed."
+
                 [outputTableName: outputTableName]
             } else {
                 error "The 'normalisationType' argument is not valid."
