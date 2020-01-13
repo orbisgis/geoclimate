@@ -10,7 +10,7 @@ import org.locationtech.jts.geom.Polygon
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
-import org.orbisgis.osm.OSMTools
+import org.orbisgis.orbisanalysis.osm.OSMTools
 
 @BaseScript PrepareData prepareData
 
