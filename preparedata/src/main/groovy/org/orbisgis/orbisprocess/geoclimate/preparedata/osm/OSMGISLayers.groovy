@@ -3,14 +3,17 @@ package org.orbisgis.orbisprocess.geoclimate.preparedata.osm
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.h2gis.functions.spatial.crs.ST_Transform
+import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.jts_utils.GeographyUtils
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
+import org.orbisgis.orbisanalysis.osm.utils.OSMElement
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
-import org.orbisgis.osm.OSMTools
+import org.orbisgis.orbisanalysis.osm.OSMTools
 
 @BaseScript PrepareData prepareData
 
@@ -18,22 +21,22 @@ import org.orbisgis.osm.OSMTools
 /**
   * This process is used to create the GIS layers using the Overpass API
   * @param datasource A connexion to a DB to load the OSM file
-  * @param zoneToExtract A zone to extract. Can be, a name of the place (neighborhood, city, etc. - cf https://wiki.openstreetmap.org/wiki/Key:level)
+  * @param zoneToExtract A zone to extract.
+  * Can be, a name of the place (neighborhood, city, etc. - cf https://wiki.openstreetmap.org/wiki/Key:level)
   * or a bounding box specified as a JTS envelope
-  * @param epsg code to reproject the GIS layers, default is -1
-  * @param distance to expand the envelope of the query box. Default is 0
+  * @param distance in meters to expand the envelope of the query box. Default is 0
   * @return The name of the resulting GIS tables : buildingTableName, roadTableName,
-  * railTableName, vegetationTableName, hydroTableName, zoneTableName, zoneEnvelopeTableName
- *  and the epsg of the processed zone
+  * railTableName, vegetationTableName, hydroTableName, zoneTableName, zoneEnvelopeTableName.
+  * Note that the GIS tables are projected in a local utm projection
  */
 IProcess extractAndCreateGISLayers(){
     return create({
         title "Create GIS layer from the OSM data model"
-        inputs datasource: JdbcDataSource, zoneToExtract: Object, epsg:-1,distance:0
+        inputs datasource: JdbcDataSource, zoneToExtract: Object, distance:0
         outputs buildingTableName: String, roadTableName: String, railTableName: String,
                 vegetationTableName: String,hydroTableName: String, zoneTableName: String,
-                zoneEnvelopeTableName: String, epsg: int
-        run { datasource, zoneToExtract, epsg, distance ->
+                zoneEnvelopeTableName: String
+        run { datasource, zoneToExtract, distance ->
             def outputZoneTable = "ZONE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             def outputZoneEnvelopeTable = "ZONE_ENVELOPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             if (datasource == null) {
@@ -74,21 +77,24 @@ IProcess extractAndCreateGISLayers(){
                 /**
                  * Extract the OSM file from the envelope of the geometry
                  */
-                def geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, epsg, distance, datasource)
-                epsg = geomAndEnv.geom.getSRID()
+                def envelope = GeographyUtils.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance)
+
+                //Find the best utm zone
+                //Reproject the geometry and its envelope to the UTM zone
+                def con = datasource.getConnection();
+                def interiorPoint = envelope.centre()
+                def epsg = SFSUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
+                Geometry geomUTM = ST_Transform.ST_Transform(con, geom, epsg)
+                Geometry tmpGeomEnv = geom.getFactory().toGeometry(envelope)
+                tmpGeomEnv.setSRID(4326)
 
                 datasource.execute """create table ${outputZoneTable} (the_geom GEOMETRY(${GEOMETRY_TYPE}, $epsg), ID_ZONE VARCHAR);
-            INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT('${geomAndEnv.geom.toString()}', $epsg), '$zoneToExtract');"""
+            INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT('${geomUTM.toString()}', $epsg), '$zoneToExtract');"""
 
                 datasource.execute """create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
-            INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${
-                    ST_Transform.ST_Transform(datasource.getConnection(), geomAndEnv.filterArea, epsg).toString()
-                }',$epsg), '$zoneToExtract');"""
+            INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${ST_Transform.ST_Transform(con,tmpGeomEnv,epsg).toString()}',$epsg), '$zoneToExtract');"""
 
-                Envelope envelope  = geomAndEnv.filterArea.getEnvelopeInternal()
-                def query =  "[maxsize:1073741824];((node(${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()}, ${envelope.getMaxX()});" +
-                        "way(${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()}, ${envelope.getMaxX()});" +
-                        "relation(${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()}, ${envelope.getMaxX()}););>;);out;"
+                def query =  "[maxsize:1073741824]" + OSMTools.Utilities.buildOSMQuery(envelope,null,OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
 
                 def extract = OSMTools.Loader.extract()
                 if (extract.execute(overpassQuery: query)) {
@@ -102,8 +108,7 @@ IProcess extractAndCreateGISLayers(){
                          hydroTableName     : createGISLayerProcess.getResults().hydroTableName,
                          imperviousTableName     : createGISLayerProcess.getResults().imperviousTableName,
                          zoneTableName      : outputZoneTable,
-                         zoneEnvelopeTableName: outputZoneEnvelopeTable,
-                         epsg: epsg]
+                         zoneEnvelopeTableName: outputZoneEnvelopeTable]
                     } else {
                         logger.error "Cannot load the OSM file ${extract.results.outputFilePath}"
                     }
@@ -134,7 +139,7 @@ IProcess createGISLayers() {
         title "Create GIS layer from an OSM XML file"
         inputs datasource: JdbcDataSource, osmFilePath: String, epsg: -1
         outputs buildingTableName: String, roadTableName: String, railTableName: String,
-                vegetationTableName: String, hydroTableName: String, imperviousTableName: String, epsg: int
+                vegetationTableName: String, hydroTableName: String, imperviousTableName: String
         run { datasource, osmFilePath, epsg ->
             if(epsg<=-1){
                 logger.error "Invalid epsg code $epsg"
@@ -224,7 +229,7 @@ IProcess createGISLayers() {
 
                 [buildingTableName  : outputBuildingTableName, roadTableName: outputRoadTableName, railTableName: outputRailTableName,
                  vegetationTableName: outputVegetationTableName, hydroTableName: outputHydroTableName,
-                 imperviousTableName: outputImperviousTableName, epsg: epsg]
+                 imperviousTableName: outputImperviousTableName]
             }
         }
     })

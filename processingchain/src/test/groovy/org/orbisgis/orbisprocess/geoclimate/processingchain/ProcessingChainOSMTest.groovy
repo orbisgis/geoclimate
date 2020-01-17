@@ -194,7 +194,8 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
     }
 
 
-    //@Test
+    @Disabled
+    @Test
     void testOSMWorkflowFromPlaceName() {
         String directory ="./target/geoclimate_chain"
         File dirFile = new File(directory)
@@ -202,9 +203,12 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         dirFile.mkdir()
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
         IProcess process = ProcessingChain.Workflow.OSM()
-        if(process.execute(datasource: datasource, zoneToExtract: "paris")){
+        def placeName = "Boston"
+        if(process.execute(datasource: datasource, zoneToExtract: placeName)){
             process.getResults().values().each { it ->
-                assertTrue datasource.hasTable(it)
+                if(datasource.hasTable(it)){
+                    datasource.save(it, "/tmp/${placeName}_${it}.shp")
+                }
             }
         }
     }
