@@ -54,7 +54,7 @@ IProcess buildGeoclimateLayers() {
                 def imperviousTableName = res.imperviousTableName
                 def zoneTableName = res.zoneTableName
                 def zoneEnvelopeTableName = res.zoneEnvelopeTableName
-                def epsg = res.epsg
+                def epsg = datasource.getSpatialTable(zoneTableName).srid
                 if(zoneTableName!=null) {
                     info "Formating OSM GIS layers"
                     IProcess format = PrepareData.FormattingForAbstractModel.formatBuildingLayer()

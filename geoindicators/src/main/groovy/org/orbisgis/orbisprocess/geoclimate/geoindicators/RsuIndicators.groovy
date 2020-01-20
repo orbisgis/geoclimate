@@ -525,8 +525,8 @@ IProcess roofAreaDistribution() {
 
             // Indexes and spatial indexes are created on rsu and building Tables
             datasource.execute "CREATE INDEX IF NOT EXISTS ids_ina ON $buildRoofSurfIni USING RTREE($GEOMETRIC_COLUMN_BU);" +
-                    "CREATE INDEX IF NOT EXISTS id_ina ON $buildRoofSurfIni USING BTREE($ID_COLUMN_BU);" +
-                    "CREATE INDEX IF NOT EXISTS id_ina ON $buildRoofSurfIni USING BTREE($ID_COLUMN_RSU);"
+                    "CREATE INDEX IF NOT EXISTS id_ina ON $buildRoofSurfIni ($ID_COLUMN_BU);" +
+                    "CREATE INDEX IF NOT EXISTS id_ina ON $buildRoofSurfIni ($ID_COLUMN_RSU);"
 
             // Vertical roofs that are potentially in contact with the facade of a building neighbor are identified
             // and the corresponding area is estimated (only if the building roof does not overpass the building
@@ -540,7 +540,7 @@ IProcess roofAreaDistribution() {
                     "AND a.$ID_COLUMN_BU <> b.$ID_COLUMN_BU AND a.z_min >= b.z_max GROUP BY b.$ID_COLUMN_BU);"
 
             // Indexes and spatial indexes are created on rsu and building Tables
-            datasource.execute "CREATE INDEX IF NOT EXISTS id_bu ON $buildVertRoofInter USING BTREE(id_build);"
+            datasource.execute "CREATE INDEX IF NOT EXISTS id_bu ON $buildVertRoofInter (id_build);"
 
             // Vertical roofs that are potentially in contact with the facade of a building neighbor are identified
             // and the corresponding area is estimated (only if the building roof does not overpass the building wall
@@ -557,8 +557,8 @@ IProcess roofAreaDistribution() {
 
             // Indexes and spatial indexes are created on rsu and building Tables
             datasource.execute "CREATE INDEX IF NOT EXISTS ids_bu ON $buildVertRoofAll USING RTREE(the_geom); " +
-                    "CREATE INDEX IF NOT EXISTS id_bu ON $buildVertRoofAll USING BTREE(id_build); " +
-                    "CREATE INDEX IF NOT EXISTS id_rsu ON $buildVertRoofAll USING BTREE(id_rsu);"
+                    "CREATE INDEX IF NOT EXISTS id_bu ON $buildVertRoofAll (id_build); " +
+                    "CREATE INDEX IF NOT EXISTS id_rsu ON $buildVertRoofAll (id_rsu);"
 
             //PEUT-ETRE MIEUX VAUT-IL FAIRE L'INTERSECTION À PART POUR ÉVITER DE LA FAIRE 2 FOIS ICI ?
 
