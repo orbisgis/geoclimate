@@ -1,5 +1,6 @@
 package org.orbisgis.orbisprocess.geoclimate.preparedata.osm
 
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
@@ -13,11 +14,12 @@ class FormattingForAbstractModelTests {
     @Test
    void formattingGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
+        def epsg =2154
         IProcess extractData = PrepareData.OSMGISLayers.createGISLayers()
         extractData.execute([
                 datasource : h2GIS,
                 osmFilePath: new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath(),
-                epsg :2154])
+                epsg :epsg])
 
         assertEquals 1038, h2GIS.getTable(extractData.results.buildingTableName).rowCount
         assertEquals 198, h2GIS.getTable(extractData.results.roadTableName).rowCount
@@ -26,7 +28,6 @@ class FormattingForAbstractModelTests {
         assertEquals 10, h2GIS.getTable(extractData.results.hydroTableName).rowCount
         assertEquals 43, h2GIS.getTable(extractData.results.imperviousTableName).rowCount
 
-        def epsg = extractData.results.epsg
 
         //Buildings
         IProcess format = PrepareData.FormattingForAbstractModel.formatBuildingLayer()
@@ -107,7 +108,8 @@ class FormattingForAbstractModelTests {
 
     }
 
-    //@Test //enable it to test data extraction from the overpass api
+    @Disabled
+    @Test //enable it to test data extraction from the overpass api
     void extractCreateFormatGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
 
@@ -117,6 +119,8 @@ class FormattingForAbstractModelTests {
         zoneToExtract = "Québec, Québec (Agglomération), Capitale-Nationale, Québec, Canada"
         zoneToExtract = "Paimpol"
         //zoneToExtract = "Londres, Grand Londres, Angleterre, Royaume-Uni"
+        //zoneToExtract="Cliscouet, Vannes"
+        zoneToExtract="Boston"
 
         IProcess extractData = PrepareData.OSMGISLayers.extractAndCreateGISLayers()
         extractData.execute([
@@ -128,13 +132,12 @@ class FormattingForAbstractModelTests {
 
         if(extractData.results.zoneTableName!=null) {
             //Zone
+            def epsg = h2GIS.getSpatialTable(extractData.results.zoneTableName).srid
             h2GIS.getTable(extractData.results.zoneTableName).save("./target/osm_zone_${formatedPlaceName}.geojson")
 
             //Zone envelope
             h2GIS.getTable(extractData.results.zoneEnvelopeTableName).save("./target/osm_zone_envelope_${formatedPlaceName}.geojson")
 
-
-            def epsg = extractData.results.epsg
 
             //Buildings
             IProcess format = PrepareData.FormattingForAbstractModel.formatBuildingLayer()
@@ -235,7 +238,8 @@ class FormattingForAbstractModelTests {
                 zoneToExtract:zoneToExtract ])
 
         if(extractData.results.zoneTableName!=null) {
-            def epsg = extractData.results.epsg
+            def epsg = h2GIS.getSpatialTable(extractData.results.zoneTableName).srid
+
 
             //Buildings
             IProcess format = PrepareData.FormattingForAbstractModel.formatBuildingLayer()
