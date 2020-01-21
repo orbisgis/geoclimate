@@ -84,8 +84,8 @@ IProcess extractAndCreateGISLayers(){
                 def con = datasource.getConnection();
                 def interiorPoint = envelope.centre()
                 def epsg = SFSUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
-                Geometry geomUTM = ST_Transform.ST_Transform(con, geom, epsg)
-                Geometry tmpGeomEnv = geom.getFactory().toGeometry(envelope)
+                def geomUTM = ST_Transform.ST_Transform(con, geom, epsg)
+                def tmpGeomEnv = geom.getFactory().toGeometry(envelope)
                 tmpGeomEnv.setSRID(4326)
 
                 datasource.execute """create table ${outputZoneTable} (the_geom GEOMETRY(${GEOMETRY_TYPE}, $epsg), ID_ZONE VARCHAR);
