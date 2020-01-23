@@ -324,7 +324,8 @@ IProcess projectedFacadeAreaDistribution() {
                         ST_INTERSECTS(a.$GEOMETRIC_COLUMN_BU, b.$GEOMETRIC_COLUMN_BU) 
                         AND a.$ID_COLUMN_BU <> b.$ID_COLUMN_BU) as t"""
 
-                datasource.getSpatialTable(buildingIntersection).ID_build_a.createIndex()
+                datasource.getSpatialTable(buildingIntersection).id_build_a.createIndex()
+                datasource.getSpatialTable(buildingIntersection).id_build_b.createIndex()
 
 
                 // Each free facade is stored TWICE (an intersection could be seen from the point of view of two
@@ -524,9 +525,8 @@ IProcess roofAreaDistribution() {
 
 
             // Indexes and spatial indexes are created on rsu and building Tables
-            datasource.execute "CREATE INDEX IF NOT EXISTS ids_ina ON $buildRoofSurfIni USING RTREE($GEOMETRIC_COLUMN_BU);" +
-                    "CREATE INDEX IF NOT EXISTS id_ina ON $buildRoofSurfIni ($ID_COLUMN_BU);" +
-                    "CREATE INDEX IF NOT EXISTS id_ina ON $buildRoofSurfIni ($ID_COLUMN_RSU);"
+            datasource.execute """CREATE INDEX IF NOT EXISTS ids_ina ON $buildRoofSurfIni USING RTREE($GEOMETRIC_COLUMN_BU);
+                    CREATE INDEX IF NOT EXISTS id_ina ON $buildRoofSurfIni ($ID_COLUMN_BU);"""
 
             // Vertical roofs that are potentially in contact with the facade of a building neighbor are identified
             // and the corresponding area is estimated (only if the building roof does not overpass the building
@@ -540,7 +540,7 @@ IProcess roofAreaDistribution() {
                     "AND a.$ID_COLUMN_BU <> b.$ID_COLUMN_BU AND a.z_min >= b.z_max GROUP BY b.$ID_COLUMN_BU);"
 
             // Indexes and spatial indexes are created on rsu and building Tables
-            datasource.execute "CREATE INDEX IF NOT EXISTS id_bu ON $buildVertRoofInter (id_build);"
+            datasource.execute "CREATE INDEX IF NOT EXISTS id_bu ON $buildVertRoofInter ($ID_COLUMN_BU);"
 
             // Vertical roofs that are potentially in contact with the facade of a building neighbor are identified
             // and the corresponding area is estimated (only if the building roof does not overpass the building wall
@@ -779,6 +779,7 @@ IProcess linearRoadOperations() {
             datasource.getSpatialTable(rsuTable).the_geom.createSpatialIndex()
             datasource.getSpatialTable(rsuTable).id_rsu.createIndex()
             datasource.getSpatialTable(roadTable).the_geom.createSpatialIndex()
+            datasource.getSpatialTable(roadTable).zindex.createIndex()
 
             // Test whether the angleRangeSize is a divisor of 180°
             if (180 % angleRangeSize == 0 && 180 / angleRangeSize > 1) {
@@ -912,9 +913,12 @@ IProcess linearRoadOperations() {
                         }
                         if (operations.contains("road_direction_distribution") &&
                                 operations.contains("linear_road_density")) {
-                            datasource.execute "DROP TABLE if exists $outputTableName; CREATE TABLE $outputTableName AS SELECT a.*," +
-                                    "b.${nameDens.join(",b.")} FROM $roadDistTot a LEFT JOIN $roadDensTot b " +
-                                    "ON a.id_rsu=b.id_rsu"
+                            datasource.execute """DROP TABLE if exists $outputTableName; 
+                                    CREATE INDEX IF NOT EXISTS idx_$roadDistTot ON $roadDistTot USING BTREE(id_rsu);
+                                    CREATE INDEX IF NOT EXISTS idx_$roadDensTot ON $roadDensTot USING BTREE(id_rsu);
+                                    CREATE TABLE $outputTableName AS SELECT a.*,
+                                    b.${nameDens.join(",b.")} FROM $roadDistTot a LEFT JOIN $roadDensTot b 
+                                    ON a.id_rsu=b.id_rsu"""
                         }
 
                         datasource.execute "DROP TABLE IF EXISTS $roadInter, $roadExpl, $roadDistrib," +
