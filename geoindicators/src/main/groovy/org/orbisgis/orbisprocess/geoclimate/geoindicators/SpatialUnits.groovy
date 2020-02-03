@@ -35,7 +35,7 @@ IProcess createRSU(){
             def epsg = datasource.getSpatialTable(inputTableName).srid
 
             if(inputZoneTableName!=null && !inputZoneTableName.isEmpty()){
-
+                datasource.getSpatialTable(inputTableName).the_geom.createSpatialIndex()
                 datasource.execute """DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName as  select  EXPLOD_ID as $COLUMN_ID_NAME, st_setsrid(a.the_geom, $epsg) as the_geom
                      from st_explode ('(select st_polygonize(st_union(

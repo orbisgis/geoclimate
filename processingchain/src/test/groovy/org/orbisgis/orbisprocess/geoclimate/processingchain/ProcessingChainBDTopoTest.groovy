@@ -1,6 +1,7 @@
 package org.orbisgis.orbisprocess.geoclimate.processingchain
 
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
@@ -262,25 +263,43 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     @Test
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void testBDTOPO_V2Workflow() {
-        def dbSuffixName = "_workflow"
-        String inseeCode = "01306"
-        H2GIS datasource = loadFiles(inseeCode, dbSuffixName)
-
-        String directory ="./target/geoclimate_chain"
+        String directory ="./target/geoclimate_chain/bdtopo_config/"
         File dirFile = new File(directory)
-        File inpFolder = new File(ProcessingChainBDTopoTest.class.getResource("bdtopofolder").toURI())
         dirFile.delete()
         dirFile.mkdir()
-        IProcess processBDTopo = ProcessingChain.Workflow.BDTOPO_V2()
-        assertTrue(processBDTopo.execute(datasource: datasource,
-                inputFolder: inpFolder.getAbsolutePath().toString(),
-                outputFolder :"./target/geoclimate_chain/",
-                indicatorUse: ["TEB"]))
+        IProcess processBDTopo = ProcessingChain.Workflow.BDTOPO_V2_CONFIG()
+        assertTrue(processBDTopo.execute(fileParameters: getClass().getResource("bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()))
         assertNotNull(processBDTopo.getResults().outputFolder)
         def baseNamePathAndFileOut = processBDTopo.getResults().outputFolder + File.separator + "zone_" + inseeCode + "_"
         assertTrue(new File(baseNamePathAndFileOut + "rsu_indicators.geojson").exists())
         assertFalse(new File(baseNamePathAndFileOut + "rsu_lcz.geojson").exists())
         assertFalse(new File(baseNamePathAndFileOut + "block_indicators.geojson").exists())
         assertTrue(new File(baseNamePathAndFileOut + "building_indicators.geojson").exists())
+    }
+
+    @Test
+    @Disabled
+    void testBDTopoConfigFolderInputFolderOutput() {
+        IProcess process = ProcessingChain.Workflow.BDTOPO_V2_CONFIG()
+        assertTrue(process.execute(configurationFile: getClass().getResource("/config/bdtopo_workflow_folderinput_folderoutput.json").toURI()))
+    }
+    @Test
+    @Disabled
+    void testBDTopoConfigInputFolderId_Zones() {
+        IProcess process = ProcessingChain.Workflow.BDTOPO_V2_CONFIG()
+        assertTrue(process.execute(configurationFile: getClass().getResource("/config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()))
+    }
+    @Test
+    @Disabled
+    void testBDTopoConfigFolderInputDbOutput() {
+        IProcess process = ProcessingChain.Workflow.BDTOPO_V2_CONFIG()
+        assertTrue(process.execute(configurationFile: getClass().getResource("/config/bdtopo_workflow_folderinput_dboutput.json").toURI()))
+    }
+
+    @Test
+    @Disabled
+    void testBDTopoConfigInputDBOutputDB() {
+        IProcess process = ProcessingChain.Workflow.BDTOPO_V2_CONFIG()
+        assertTrue(process.execute(configurationFile: getClass().getResource("/config/bdtopo_workflow_dbinput_dboutput.json").toURI()))
     }
 }

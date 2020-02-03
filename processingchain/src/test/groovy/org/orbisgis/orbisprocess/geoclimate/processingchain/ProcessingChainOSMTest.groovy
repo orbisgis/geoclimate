@@ -93,7 +93,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
 
     }
 
-    @Disabled
+    //@Disabled
     @Test
     void osmGeoIndicatorsFromApi() {
         String directory ="./target/osm_processchain_full"
@@ -108,7 +108,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osm_chain_db;AUTO_SERVER=TRUE")
 
         //Extract and transform OSM data
-        def zoneToExtract = "Strasbourg"
+        def zoneToExtract = "Rezé"
 
         IProcess prepareOSMData = ProcessingChain.PrepareOSM.buildGeoclimateLayers()
 
@@ -194,7 +194,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
     }
 
 
-    @Disabled
+    //@Disabled
     @Test
     void testOSMWorkflowFromPlaceName() {
         String directory ="./target/geoclimate_chain"
@@ -203,7 +203,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         dirFile.mkdir()
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
         IProcess process = ProcessingChain.Workflow.OSM()
-        def placeName = "Boston"
+        def placeName = "Paris"
         if(process.execute(datasource: datasource, zoneToExtract: placeName)){
             process.getResults().values().each { it ->
                 if(datasource.hasTable(it)){
