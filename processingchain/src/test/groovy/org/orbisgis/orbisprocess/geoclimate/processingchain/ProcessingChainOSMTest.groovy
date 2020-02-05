@@ -93,7 +93,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
 
     }
 
-    //@Disabled
+    @Disabled
     @Test
     void osmGeoIndicatorsFromApi() {
         String directory ="./target/osm_processchain_full"
@@ -194,7 +194,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
     }
 
 
-    //@Disabled
+    @Disabled
     @Test
     void testOSMWorkflowFromPlaceName() {
         String directory ="./target/geoclimate_chain"
