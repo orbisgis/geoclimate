@@ -141,11 +141,10 @@ To use Geoclimate scripts in DBeaver, user must install the Groovy Editor develo
 
 In DBeaver, go to 
 
-    1. Main menu Help -> Install New Software
-    2. Paste extension P2 repository URL http://devs.orbisgis.org/eclipse-repo into Work with field,
-    press Enter
-    3. Select Groovy Editor item
-    4. Click Next-> Finish. Restart DBeaver.
+1. Main menu `Help` -> `Install New Software...`
+2. In the `Work with` field, paste the following URL http://devs.orbisgis.org/eclipse-repo (which is an extension P2 repository URL) and press `Enter`
+3. Select `Groovy Editor` item
+4. Click `Next` -> `Finish` and Restart DBeaver.
 
 Once DBeaver has restarted, select the main menu Groovy Editor, clic on `Open editor`, then you will have a Groovy Console.
 Copy-paste the previous script to use Geoclimate.
