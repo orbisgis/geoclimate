@@ -1,0 +1,56 @@
+{
+    "description" :"Example of configuration file to load data from a database and save the result into the same database",
+    "geoclimatedb" : {
+        "path" : "/tmp/.../geoclimate_db;AUTO_SERVER=TRUE",
+        "delete" :true
+    },
+    "input" : {
+        "database": {
+            "user": "-",
+            "password": "-",
+            "url": "jdbc:postgresql://-",
+            "id_zones":["id zone here"],
+            "tables": {"iris_ge":"ign_iris.iris_ge_2016",
+                "bati_indifferencie":"ign_bdtopo_2017.bati_indifferencie",
+                "bati_industriel":"ign_bdtopo_2017.bati_industriel",
+                "bati_remarquable":"ign_bdtopo_2017.bati_remarquable",
+                "route":"ign_bdtopo_2017.route",
+                "troncon_voie_ferree":"ign_bdtopo_2017.troncon_voie_ferree",
+                "surface_eau":"ign_bdtopo_2017.surface_eau",
+                "zone_vegetation":"ign_bdtopo_2017.zone_vegetation",
+                "terrain_sport":"ign_bdtopo_2017.terrain_sport",
+                "construction_surfacique":"ign_bdtopo_2017.construction_surfacique",
+                "surface_route":"ign_bdtopo_2017.surface_route",
+                "surface_activite":"ign_bdtopo_2017.surface_activite"}
+        }
+    },
+    "output" :{
+        "database": {
+            "user": "-",
+            "password": "-",
+            "url": "jdbc:postgresql://-",
+            "tables": {"building_indicators":"building_indicators_2154",
+                "block_indicators":"block_indicators_2154",
+                "rsu_indicators":"rsu_indicators_2154",
+                 "rsu_lcz":"rsu_lcz_2154",
+            "zones":"zones_2154"}
+        }
+    },
+    "parameters":
+    {"distance" : 1000,
+        "indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+        "svfSimplified": false,
+        "prefixName": "",
+        "mapOfWeights":
+        {"sky_view_factor": 1,
+            "aspect_ratio": 1,
+            "building_surface_fraction": 1,
+            "impervious_surface_fraction" : 1,
+            "pervious_surface_fraction": 1,
+            "height_of_roughness_elements": 1,
+            "terrain_roughness_class": 1},
+        "hLevMin": 3,
+        "hLevMax": 15,
+        "hThresholdLev2": 10
+    }
+}

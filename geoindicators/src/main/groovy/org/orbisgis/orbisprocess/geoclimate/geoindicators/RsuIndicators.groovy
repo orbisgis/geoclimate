@@ -171,7 +171,7 @@ IProcess groundSkyViewFactor() {
             datasource.execute """
                     CREATE TABLE $svfPts 
                     AS SELECT   a.$ID_COLUMN_RSU, 
-                                ST_SVF(ST_GEOMETRYN(a.the_geom,1), ST_ACCUM(ST_UPDATEZ(b.$GEOMETRIC_COLUMN_BU, b.$HEIGHT_WALL)), 
+                                ST_SVF(ST_GEOMETRYN(a.the_geom,1), ST_ACCUM(ST_UPDATEZ(st_force3D(b.$GEOMETRIC_COLUMN_BU), b.$HEIGHT_WALL)), 
                                        $rayLength, $numberOfDirection, 5) AS SVF
                     FROM        $multiptsRSUtot AS a, $correlationBuildingTable AS b 
                     WHERE       ST_EXPAND(a.the_geom, $rayLength) && b.$GEOMETRIC_COLUMN_BU AND 
@@ -208,7 +208,7 @@ IProcess groundSkyViewFactor() {
  * is divided by the area of free surfaces of the given RSU (not covered by buildings). The
  * "rsu_free_external_facade_density" and "rsu_building_density" are used for the calculation.
  *
- * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input table and in which
  * the resulting database will be stored
  * @param rsuTable The name of the input ITable where are stored the RSU
  * @param rsuFreeExternalFacadeDensityColumn The name of the column where are stored the free external density

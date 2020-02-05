@@ -125,7 +125,7 @@ IProcess importPreprocess(){
             // For each tables in the list, we check the SRID and compare to the srid variable. If different, the process is stopped
             for(String name : list){
                 def table = datasource.getTable(name)
-                if(table != null){
+                if(table != null && !table.isEmpty()){
                     if(srid == -1){
                         srid = table.srid
                     }
@@ -135,6 +135,8 @@ IProcess importPreprocess(){
                             return null
                         }
                     }
+                }else {
+                    datasource.execute """DROP TABLE IF EXISTS $name"""
                 }
             }
 
