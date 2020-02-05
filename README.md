@@ -146,7 +146,7 @@ In DBeaver, go to
 3. Select `Groovy Editor` item
 4. Click `Next` -> `Finish` and Restart DBeaver.
 
-Once DBeaver has restarted, select the main menu Groovy Editor, clic on `Open editor`, then you will have a Groovy Console.
+Once DBeaver has restarted, select the main menu `Groovy Editor`, clic on `Open editor`, then you will have a Groovy Console.
 Copy-paste the previous script to use Geoclimate.
 If you want to log the message of the processes into DBeaver, you must add `Geoclimate.logger = logger` just after the imports.
 
