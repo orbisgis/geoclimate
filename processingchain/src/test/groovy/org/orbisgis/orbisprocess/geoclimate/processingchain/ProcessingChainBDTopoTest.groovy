@@ -277,29 +277,15 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         assertTrue(new File(baseNamePathAndFileOut + "building_indicators.geojson").exists())
     }
 
-    @Test
+    @Test //Integration tests
     @Disabled
-    void testBDTopoConfigFolderInputFolderOutput() {
-        IProcess process = ProcessingChain.Workflow.BDTOPO_V2_CONFIG()
-        assertTrue(process.execute(configurationFile: getClass().getResource("/config/bdtopo_workflow_folderinput_folderoutput.json").toURI()))
-    }
-    @Test
-    @Disabled
-    void testBDTopoConfigInputFolderId_Zones() {
-        IProcess process = ProcessingChain.Workflow.BDTOPO_V2_CONFIG()
-        assertTrue(process.execute(configurationFile: getClass().getResource("/config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()))
-    }
-    @Test
-    @Disabled
-    void testBDTopoConfigFolderInputDbOutput() {
-        IProcess process = ProcessingChain.Workflow.BDTOPO_V2_CONFIG()
-        assertTrue(process.execute(configurationFile: getClass().getResource("/config/bdtopo_workflow_folderinput_dboutput.json").toURI()))
-    }
-
-    @Test
-    @Disabled
-    void testBDTopoConfigInputDBOutputDB() {
-        IProcess process = ProcessingChain.Workflow.BDTOPO_V2_CONFIG()
-        assertTrue(process.execute(configurationFile: getClass().getResource("/config/bdtopo_workflow_dbinput_dboutput.json").toURI()))
+    void testBDTopoConfigurationFile() {
+        def configFile = getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput.json").toURI()
+        configFile =getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()
+        configFile =getClass().getResource("config/bdtopo_workflow_folderinput_dboutput.json").toURI()
+        configFile =getClass().getResource("config/bdtopo_workflow_dbinput_dboutput.json").toURI()
+        configFile = "/home/ebocher/applications/paendora/bdtopo_workflow_folderinput_id_zones_folderoutput_tablenames.json"
+        IProcess process = ProcessingChain.Workflow.BDTOPO_V2()
+        assertTrue(process.execute(configurationFile: configFile))
     }
 }

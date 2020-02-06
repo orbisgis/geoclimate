@@ -1,0 +1,28 @@
+{
+    "description" :"Example of configuration file to run the OSM workflow with an output folder",
+    "geoclimatedb" : {
+        "path" : "/tmp/.../geoclimate_db;AUTO_SERVER=TRUE",
+        "delete" :true
+    },
+    "input" : {
+        "osm" : [[38.89557963573336,-77.03930318355559,38.89944983078282,-77.03364372253417]]},
+    "output" :{
+     "folder" : "/tmp/..."},
+    "parameters":
+    {"distance" : 1000,
+        "indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+        "svfSimplified": false,
+        "prefixName": "",
+        "mapOfWeights":
+        {"sky_view_factor": 1,
+            "aspect_ratio": 1,
+            "building_surface_fraction": 1,
+            "impervious_surface_fraction" : 1,
+            "pervious_surface_fraction": 1,
+            "height_of_roughness_elements": 1,
+            "terrain_roughness_class": 1},
+        "hLevMin": 3,
+        "hLevMax": 15,
+        "hThresholdLev2": 10
+    }
+}
