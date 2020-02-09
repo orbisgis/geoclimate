@@ -17,6 +17,8 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
 
+import java.sql.SQLException
+
 @BaseScript ProcessingChain processingChain
 
 
@@ -182,6 +184,17 @@ def BDTOPO_V2() {
                                 id_zones = inputFolder.id_zones
                             }
                             if(output) {
+                                def geoclimatetTableNames = ["building_indicators",
+                                                             "block_indicators",
+                                                             "rsu_indicators",
+                                                             "rsu_lcz",
+                                                             "zones",
+                                                             "building",
+                                                             "road",
+                                                             "rail" ,
+                                                             "water",
+                                                             "vegetation",
+                                                             "impervious"]
                                 //Get processing parameters
                                 def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
                                 def outputDataBase = output.get("database")
@@ -195,13 +208,13 @@ def BDTOPO_V2() {
                                     }
                                     //Check not the conditions for the output database
                                     def outputTableNames = outputDataBase.get("tables")
-                                    def asValues = outputTableNames.every { it.key in ["building_indicators","block_indicators",
-                                                                                       "rsu_indicators", "rsu_lcz", "zones"] && it.value }
-                                    def notSameTableNames = outputTableNames.groupBy { it.value }.size()!=outputTableNames.size()
-                                    if(!asValues && notSameTableNames){
+                                    def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
+                                    def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size()!=allowedOutputTableNames.size()
+                                    if(!allowedOutputTableNames && notSameTableNames){
                                         outputDataBase=null
                                         outputTableNames=null
                                     }
+                                    def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
                                     def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
                                     if(!output_datasource){
                                         return null
@@ -209,7 +222,7 @@ def BDTOPO_V2() {
                                     def h2gis_datasource = H2GIS.open(h2gis_properties)
                                     id_zones = loadDataFromFolder(inputFolderPath, h2gis_datasource, id_zones)
                                     if(id_zones) {
-                                        bdtopo_processing(h2gis_datasource, processing_parameters, id_zones, file_outputFolder, outputFolderProperties.tables, output_datasource, outputTableNames)
+                                        bdtopo_processing(h2gis_datasource, processing_parameters, id_zones, file_outputFolder, outputFolderProperties.tables, output_datasource, finalOutputTables)
                                         if(delete_h2gis){
                                             h2gis_datasource.execute("DROP ALL OBJECTS DELETE FILES")
                                             info "The local H2GIS database has been deleted"
@@ -246,10 +259,10 @@ def BDTOPO_V2() {
 
                                 } else if (outputDataBase) {
                                     def outputTableNames = outputDataBase.get("tables")
-                                    def asValues = outputTableNames.every { it.key in ["building_indicators","block_indicators",
-                                                                                      "rsu_indicators", "rsu_lcz", "zones"] && it.value }
-                                    def notSameTableNames = outputTableNames.groupBy { it.value }.size()!=outputTableNames.size()
-                                    if(asValues && !notSameTableNames){
+                                    def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
+                                    def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size()!=allowedOutputTableNames.size()
+                                    if(allowedOutputTableNames && !notSameTableNames){
+                                    def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
                                         def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
                                         if(!output_datasource){
                                             return null
@@ -257,7 +270,7 @@ def BDTOPO_V2() {
                                         def h2gis_datasource = H2GIS.open(h2gis_properties)
                                         id_zones = loadDataFromFolder(inputFolderPath, h2gis_datasource, id_zones)
                                         if(id_zones) {
-                                            bdtopo_processing(h2gis_datasource, processing_parameters, id_zones, null,null, output_datasource, outputTableNames)
+                                            bdtopo_processing(h2gis_datasource, processing_parameters, id_zones, null,null, output_datasource, finalOutputTables)
                                             if(delete_h2gis){
                                                 h2gis_datasource.execute("DROP ALL OBJECTS DELETE FILES")
                                                 info "The local H2GIS database has been deleted"
@@ -284,6 +297,17 @@ def BDTOPO_V2() {
                         }
                         else if(inputDataBase){
                             if(output) {
+                                def geoclimatetTableNames = ["building_indicators",
+                                                             "block_indicators",
+                                                             "rsu_indicators",
+                                                             "rsu_lcz",
+                                                             "zones",
+                                                             "building",
+                                                             "road",
+                                                             "rail" ,
+                                                             "water",
+                                                             "vegetation",
+                                                             "impervious"]
                                 //Get processing parameters
                                 def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
                                 def outputDataBase = output.get("database")
@@ -296,14 +320,13 @@ def BDTOPO_V2() {
                                         file_outputFolder = null
                                     }
                                     //Check not the conditions for the output database
-                                    def outputTableNames = outputDataBase.get("tables")
-                                    def asValues = outputTableNames.every { it.key in ["building_indicators","block_indicators",
-                                                                                       "rsu_indicators", "rsu_lcz", "zones"] && it.value }
-                                    def notSameTableNames = outputTableNames.groupBy { it.value }.size()!=outputTableNames.size()
-                                    if(!asValues && notSameTableNames){
+                                    def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
+                                    def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size()!=allowedOutputTableNames.size()
+                                    if(!allowedOutputTableNames && notSameTableNames){
                                         outputDataBase=null
                                         outputTableNames=null
                                     }
+                                    def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
                                     def codes = inputDataBase.id_zones
                                     if (codes && codes in Collection) {
                                         def inputTableNames = inputDataBase.tables
@@ -314,7 +337,7 @@ def BDTOPO_V2() {
                                         }
                                         for (code in codes) {
                                             if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]), code, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
-                                                bdtopo_processing(h2gis_datasource, processing_parameters, code, file_outputFolder,outputFolderProperties.tables, output_datasource, outputTableNames)
+                                                bdtopo_processing(h2gis_datasource, processing_parameters, code, file_outputFolder,outputFolderProperties.tables, output_datasource, finalOutputTables)
                                             }
                                             else{
                                                 return null
@@ -340,7 +363,7 @@ def BDTOPO_V2() {
                                             }
                                             for (id_zone in id_zones) {
                                                 if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]), id_zone, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
-                                                    if(!bdtopo_processing(h2gis_datasource, processing_parameters, id_zone, file_outputFolder, outputFolderProperties.tables,output_datasource, outputTableNames)){
+                                                    if(!bdtopo_processing(h2gis_datasource, processing_parameters, id_zone, file_outputFolder, outputFolderProperties.tables,output_datasource, finalOutputTables)){
                                                         error "Cannot execute the geoclimate processing chain on $id_zone"
                                                         return null
                                                     }
@@ -384,12 +407,10 @@ def BDTOPO_V2() {
                                     }
                                 }
                                 else if (outputDataBase) {
-                                    def outputTableNames = outputDataBase.get("tables")
-                                    def asValues = outputTableNames.every { it.key in ["building_indicators","block_indicators",
-                                                                                       "rsu_indicators", "rsu_lcz", "zones"] && it.value }
-                                    def notSameTableNames = outputTableNames.groupBy { it.value }.size()!=outputTableNames.size()
-
-                                    if(asValues && !notSameTableNames){
+                                    def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
+                                    def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size()!=allowedOutputTableNames.size()
+                                    if(allowedOutputTableNames && !notSameTableNames){
+                                    def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
                                         def codes = inputDataBase.id_zones
                                         if (codes && codes in Collection) {
                                             def inputTableNames = inputDataBase.tables
@@ -400,7 +421,7 @@ def BDTOPO_V2() {
                                             }
                                             for (code in codes) {
                                                 if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]), code, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
-                                                    bdtopo_processing(h2gis_datasource, processing_parameters, code, null,null, output_datasource, outputTableNames)
+                                                    bdtopo_processing(h2gis_datasource, processing_parameters, code, null,null, output_datasource, finalOutputTables)
                                                 }
                                                 else{
                                                     return null
@@ -424,7 +445,7 @@ def BDTOPO_V2() {
                                                 }
                                                 for (id_zone in id_zones) {
                                                     if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]), id_zone, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
-                                                        if(!bdtopo_processing(h2gis_datasource, processing_parameters, id_zone,null, null, output_datasource, outputTableNames)){
+                                                        if(!bdtopo_processing(h2gis_datasource, processing_parameters, id_zone,null, null, output_datasource, finalOutputTables)){
                                                             error "Cannot execute the geoclimate processing chain on $id_zone"
                                                             return null
                                                         }
@@ -909,20 +930,20 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
                 geoIndicatorsComputed = true
                 info "${id_zone} has been processed"
             }
-                if(outputFolder && geoIndicatorsComputed && outputFiles) {
-                    def results = geoIndicators.getResults()
-                    results.put("buildingTableName", buildingTableName)
-                    results.put("roadTableName", roadTableName)
-                    results.put("railTableName", railTableName)
-                    results.put("hydrographicTableName", hydrographicTableName)
-                    results.put("vegetationTableName", vegetationTableName)
-                    results.put("imperviousTableName", imperviousTableName)
-                    saveOutputFiles(h2gis_datasource, id_zone, results, outputFiles, outputFolder, "bdtopo_v2_")
-                }
-                if(output_datasource && geoIndicatorsComputed){
-                    saveTablesInDatabase(output_datasource,h2gis_datasource, outputTableNames, geoIndicators.getResults(), id_zone, srid, true)
+            def results = geoIndicators.getResults()
+            results.put("buildingTableName", buildingTableName)
+            results.put("roadTableName", roadTableName)
+            results.put("railTableName", railTableName)
+            results.put("hydrographicTableName", hydrographicTableName)
+            results.put("vegetationTableName", vegetationTableName)
+            results.put("imperviousTableName", imperviousTableName)
+            if(outputFolder && geoIndicatorsComputed && outputFiles) {
+                saveOutputFiles(h2gis_datasource, id_zone, results, outputFiles, outputFolder, "bdtopo_v2_")
+            }
+            if(output_datasource && geoIndicatorsComputed){
+                saveTablesInDatabase(output_datasource,h2gis_datasource, outputTableNames, results, id_zone, srid, true)
 
-                }
+            }
                 info "${id_zone} has been processed"
         }
         info "Number of areas processed ${index+1} on $nbAreas"
@@ -939,8 +960,8 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
  */
 def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFiles, def ouputFolder, def subFolderName){
     //Create a subfolder to store each results
-
-    def subFolder = new File(ouputFolder.getAbsolutePath()+File.separator+subFolderName+$id_zone in Map?id_zone.join("_"):id_zone)
+    def folderName = id_zone in Map?id_zone.join("_"):id_zone
+    def subFolder = new File(ouputFolder.getAbsolutePath()+File.separator+subFolderName+folderName)
     if(!subFolder.exists()){
         subFolder.mkdir()
     }
@@ -1009,6 +1030,14 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
     def output_block_indicators = outputTableNames.block_indicators
     def output_rsu_indicators = outputTableNames.rsu_indicators
     def output_rsu_lcz = outputTableNames.rsu_lcz
+    def output_building = outputTableNames.building
+    def output_road = outputTableNames.road
+    def output_rail = outputTableNames.rail
+    def output_water = outputTableNames.water
+    def output_vegetation = outputTableNames.vegetation
+    def output_impervious = outputTableNames.impervious
+
+
     if (!output_datasource.hasTable(output_block_indicators)){
         output_datasource.execute """CREATE TABLE $output_block_indicators (
         ID_ZONE VARCHAR,
@@ -1021,8 +1050,7 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
         AVG_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION,
         STD_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION
         );
-        CREATE INDEX IF NOT EXISTS idx_${output_block_indicators}_id_zone ON $output_block_indicators (ID_ZONE);
-        CREATE INDEX IF NOT EXISTS idx_${output_block_indicators}_the_geom ON $output_block_indicators USING RTREE (THE_GEOM);"""
+        CREATE INDEX IF NOT EXISTS idx_${output_block_indicators}_id_zone ON $output_block_indicators (ID_ZONE);"""
     }
     else{
         def outputTableSRID = output_datasource.getSpatialTable(output_block_indicators).srid
@@ -1226,6 +1254,24 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
         output_datasource.execute """INSERT INTO $output_zones (ID_ZONE) VALUES('geoclimate');
         DELETE from $output_zones WHERE ID_ZONE= 'geoclimate';"""
     }
+
+    if (!output_datasource.hasTable(output_building)){
+        output_datasource.execute """CREATE TABLE $output_building  (THE_GEOM GEOMETRY(POLYGON, $srid), 
+        id_build serial, ID_SOURCE VARCHAR, HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT,
+        NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER);
+        CREATE INDEX IF NOT EXISTS idx_${output_building}_id_source ON $output_building (ID_SOURCE);"""
+    }
+    else{
+        def outputTableSRID = output_datasource.getSpatialTable(output_building).srid
+        if(outputTableSRID!=srid){
+            error "The SRID of the output table ($outputTableSRID) $output_building is different than the srid of the result table ($srid)"
+            return null
+        }
+        //Test if we can write in the database
+        output_datasource.execute """INSERT INTO $output_building (ID_SOURCE) VALUES('geoclimate');
+        DELETE from $output_building WHERE ID_SOURCE= 'geoclimate';"""
+    }
+
     return true
 }
 
@@ -1242,32 +1288,121 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
 def saveTablesInDatabase(def output_datasource, def h2gis_datasource, def outputTableNames, def h2gis_tables, def id_zone, def srid, def isBDTopo){
     //Export building indicators
     if(isBDTopo){
-        genericBatchExportTable(output_datasource, outputTableNames.building_indicators,id_zone, srid,h2gis_datasource, h2gis_tables.outputTableBuildingIndicators
+        indicatorTableBatchExportTable(output_datasource, outputTableNames.building_indicators,id_zone, srid,h2gis_datasource, h2gis_tables.outputTableBuildingIndicators
                 , 1000, "where id_zone!='outside'")
     }
     else{
-        genericBatchExportTable(output_datasource, outputTableNames.building_indicators,id_zone, srid,h2gis_datasource, h2gis_tables.outputTableBuildingIndicators
+        indicatorTableBatchExportTable(output_datasource, outputTableNames.building_indicators,id_zone, srid,h2gis_datasource, h2gis_tables.outputTableBuildingIndicators
                 , 1000, "")
     }
     //Export block indicators
-    genericBatchExportTable(output_datasource, outputTableNames.block_indicators,id_zone,srid, h2gis_datasource, h2gis_tables.outputTableBlockIndicators
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.block_indicators,id_zone,srid, h2gis_datasource, h2gis_tables.outputTableBlockIndicators
             , 1000, "where ID_RSU IS NOT NULL")
 
     //Export rsu indicators
-    genericBatchExportTable(output_datasource, outputTableNames.rsu_indicators,id_zone,srid, h2gis_datasource, h2gis_tables.outputTableRsuIndicators
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_indicators,id_zone,srid, h2gis_datasource, h2gis_tables.outputTableRsuIndicators
             , 1000, "")
 
     //Export rsu lcz
-    genericBatchExportTable(output_datasource, outputTableNames.rsu_lcz,id_zone, srid,h2gis_datasource, h2gis_tables.outputTableRsuLcz
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_lcz,id_zone, srid,h2gis_datasource, h2gis_tables.outputTableRsuLcz
             , 1000, "")
 
     //Export zone
-    genericBatchExportTable(output_datasource, outputTableNames.zones,id_zone,srid, h2gis_datasource, h2gis_tables.outputTableZone
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.zones,id_zone,srid, h2gis_datasource, h2gis_tables.outputTableZone
             , 1, "")
+
+    //Export building
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.building,srid, h2gis_datasource, h2gis_tables.buildingTableName
+            , 1000, "")
+
+    //Export road
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.road,srid, h2gis_datasource, h2gis_tables.roadTableName
+            , 1000, "")
+    //Export rail
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.rail,srid, h2gis_datasource, h2gis_tables.railTableName
+            , 1000, "")
+    //Export vegetation
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.vegetation,srid, h2gis_datasource, h2gis_tables.vegetationTableName
+            , 1000, "")
+    //Export water
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.water,srid, h2gis_datasource, h2gis_tables.hydrographicTableName
+            , 1000, "")
+    //Export impervious
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.impervious,srid, h2gis_datasource, h2gis_tables.imperviousTableName
+            , 1000, "")
+}
+
+
+/**
+ * Generic method to save the abstract model tables prepared in H2GIS to another database
+ * @param output_datasource connexion to a database
+ * @param output_table name of the output table
+ * @param srid srid to reproject
+ * @param h2gis_datasource local H2GIS database
+ * @param h2gis_table_to_save name of the H2GIS table to save
+ * @param batchSize size of the batch
+ * @param filter to limit the data from H2GIS
+ * @return
+ */
+def abstractModelTableBatchExportTable(def output_datasource, def output_table, def srid, def h2gis_datasource, h2gis_table_to_save, def batchSize, def filter){
+    if(output_table) {
+        if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
+            def sridTable = h2gis_datasource.getSpatialTable(h2gis_table_to_save).srid
+            info "Start to export the table $h2gis_table_to_save into the table $output_table"
+            def columnTypes = h2gis_datasource.getTable(h2gis_table_to_save).getColumnsTypes()
+            columnTypes.put("ID_SOURCE", "VARCHAR")
+            def insertValues = columnTypes.collect { it ->
+                if (it.value == "GEOMETRY") {
+                    if (sridTable != srid) {
+                        "${!it.key ? null : "ST_TRANSFORM('SRID=$sridTable;" + '$' + "${it.key}'::GEOMETRY,  $srid)"}"
+                    } else {
+                        "${!it.key ? null : "'SRID=$sridTable;" + '$' + "${it.key}'::GEOMETRY"}"
+                    }
+                } else if (it.value == "VARCHAR") {
+                    "${!it.key ? null : "'" + '$' + "${it.key}'"}"
+                } else {
+                    "" + '$' + "${it.key}"
+                }
+            }
+
+            def id_source = '$'+ "ID_SOURCE";
+            def deleteTemplate = "DELETE from $output_table WHERE ID_SOURCE= '${id_source}';"
+            def engine = new groovy.text.SimpleTemplateEngine()
+            def deleteTemplateEG = engine.createTemplate(deleteTemplate)
+            h2gis_datasource.withTransaction {
+                output_datasource.withBatch(batchSize) { stmt ->
+                    h2gis_datasource.eachRow("SELECT ID_SOURCE FROM ${h2gis_table_to_save} ${filter}") { row ->
+                        def keyValues = row.toRowResult()
+                        try {
+                            stmt.addBatch(deleteTemplateEG.make(keyValues).toString())
+                        }catch (SQLException e){
+                            error e.getNextException()
+                        }
+                    }
+                }
+            }
+
+            def insertTemplate = " INSERT INTO $output_table (${columnTypes.keySet().join(',')}) VALUES (${insertValues.join(',')})"
+            def template = engine.createTemplate(insertTemplate)
+            h2gis_datasource.withTransaction {
+                output_datasource.withBatch(batchSize) { stmt ->
+                    h2gis_datasource.eachRow("SELECT * FROM ${h2gis_table_to_save} ${filter}") { row ->
+                        def keyValues = row.toRowResult()
+                        try {
+                            stmt.addBatch(template.make(keyValues).toString())
+                        }catch (SQLException e){
+                            error e.getNextException()
+                        }
+                    }
+                }
+            }
+            info "The table $h2gis_table_to_save has been exported into the table $output_table"
+        }
+    }
 }
 
 /**
- * Generic method to save the H2GIS tables in a database
+ * Generic method to save the indicator tables prepared in H2GIS to another database
  * @param output_datasource connexion to a database
  * @param output_table name of the output table
  * @param id_zone id of the zone
@@ -1278,7 +1413,7 @@ def saveTablesInDatabase(def output_datasource, def h2gis_datasource, def output
  * @param filter to limit the data from H2GIS
  * @return
  */
-def genericBatchExportTable(def output_datasource, def output_table,def id_zone,def srid, def h2gis_datasource, h2gis_table_to_save, def batchSize, def filter){
+def indicatorTableBatchExportTable(def output_datasource, def output_table, def id_zone, def srid, def h2gis_datasource, h2gis_table_to_save, def batchSize, def filter){
     if(h2gis_datasource.hasTable(h2gis_table_to_save)) {
         def sridTable = h2gis_datasource.getSpatialTable(h2gis_table_to_save).srid
         info "Start to export the table $h2gis_table_to_save into the table $output_table"
@@ -1300,9 +1435,9 @@ def genericBatchExportTable(def output_datasource, def output_table,def id_zone,
         def insertTemplate = "INSERT INTO $output_table (${columnTypes.keySet().join(',')}) VALUES (${insertValues.join(',')})"
         def engine = new groovy.text.SimpleTemplateEngine()
         def template = engine.createTemplate(insertTemplate)
-        // Delete former rsu indicators if the zone has already been processed
+        // Delete former indicators if the zone has already been processed
         output_datasource.execute "DELETE from $output_table WHERE ID_ZONE= '$id_zone';"
-        //Dump the rsu indicators in the database
+        //Dump the indicators in the database
         h2gis_datasource.withTransaction {
             output_datasource.withBatch(batchSize) { stmt ->
                 h2gis_datasource.eachRow("SELECT * FROM ${h2gis_table_to_save} ${filter}") { row ->
@@ -1448,6 +1583,17 @@ def OSM() {
                     }
 
                     if(output) {
+                        def geoclimatetTableNames = ["building_indicators",
+                                                     "block_indicators",
+                                                     "rsu_indicators",
+                                                     "rsu_lcz",
+                                                     "zones",
+                                                     "building",
+                                                     "road",
+                                                     "rail" ,
+                                                     "water",
+                                                     "vegetation",
+                                                     "impervious"]
                         //Get processing parameters
                         def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
                         def outputDataBase = output.get("database")
@@ -1461,20 +1607,20 @@ def OSM() {
                             }
                             //Check not the conditions for the output database
                             def outputTableNames = outputDataBase.get("tables")
-                            def asValues = outputTableNames.every { it.key in ["building_indicators","block_indicators",
-                                                                               "rsu_indicators", "rsu_lcz", "zones"] && it.value }
-                            def notSameTableNames = outputTableNames.groupBy { it.value }.size()!=outputTableNames.size()
-                            if(!asValues && notSameTableNames){
+                            def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
+                            def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size()!=allowedOutputTableNames.size()
+                            if(!allowedOutputTableNames && notSameTableNames){
                                 outputDataBase=null
                                 outputTableNames=null
                             }
+                            def finalOutputTables = outputTableNames.subMap(allowedTableNames)
                             def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
                             if(!output_datasource){
                                 return null
                             }
                             def h2gis_datasource = H2GIS.open(h2gis_properties)
                             if(osmFilters && osmFilters in Collection) {
-                                osm_processing(h2gis_datasource, processing_parameters, osmFilters, file_outputFolder, outputFolderProperties.tables,output_datasource, outputTableNames)
+                                osm_processing(h2gis_datasource, processing_parameters, osmFilters, file_outputFolder, outputFolderProperties.tables,output_datasource, finalOutputTables)
                                 if(delete_h2gis){
                                     h2gis_datasource.execute("DROP ALL OBJECTS DELETE FILES")
                                     info "The local H2GIS database has been deleted"
@@ -1510,17 +1656,17 @@ def OSM() {
 
                         } else if (outputDataBase) {
                             def outputTableNames = outputDataBase.get("tables")
-                            def asValues = outputTableNames.every { it.key in ["building_indicators","block_indicators",
-                                                                               "rsu_indicators", "rsu_lcz", "zones"] && it.value }
-                            def notSameTableNames = outputTableNames.groupBy { it.value }.size()!=outputTableNames.size()
-                            if(asValues && !notSameTableNames){
+                            def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
+                            def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size()!=allowedOutputTableNames.size()
+                            if(allowedOutputTableNames && !notSameTableNames){
+                            def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
                                 def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
                                 if(!output_datasource){
                                     return null
                                 }
                                 def h2gis_datasource = H2GIS.open(h2gis_properties)
                                 if(osmFilters && osmFilters in Collection) {
-                                    osm_processing(h2gis_datasource, processing_parameters, osmFilters, null,null, output_datasource, outputTableNames)
+                                    osm_processing(h2gis_datasource, processing_parameters, osmFilters, null,null, output_datasource, finalOutputTables)
                                     if(delete_h2gis){
                                         h2gis_datasource.execute("DROP ALL OBJECTS DELETE FILES")
                                         info "The local H2GIS database has been deleted"
@@ -1580,6 +1726,7 @@ def osm_processing(def  h2gis_datasource, def processing_parameters,def id_zones
             //Extract the zone table and read its SRID
           def zoneTableNames = extractOSMZone(h2gis_datasource, id_zone,processing_parameters)
           if(zoneTableNames){
+              id_zone = id_zone in Map?"bbox_"+id_zone.join('_'):id_zone
               def zoneTableName = zoneTableNames.outputZoneTable
               def zoneEnvelopeTableName = zoneTableNames.outputZoneEnvelopeTable
               def srid = h2gis_datasource.getSpatialTable(zoneTableName).srid
@@ -1664,18 +1811,18 @@ def osm_processing(def  h2gis_datasource, def processing_parameters,def id_zones
                               geoIndicatorsComputed = true
                               info "${id_zone} has been processed"
                           }
+                          def results = geoIndicators.getResults()
+                          results.put("buildingTableName", buildingTableName)
+                          results.put("roadTableName", roadTableName)
+                          results.put("railTableName", railTableName)
+                          results.put("hydrographicTableName", hydrographicTableName)
+                          results.put("vegetationTableName", vegetationTableName)
+                          results.put("imperviousTableName", imperviousTableName)
                           if(outputFolder && geoIndicatorsComputed && ouputTableFiles) {
-                              def results = geoIndicators.getResults()
-                              results.put("buildingTableName", buildingTableName)
-                              results.put("roadTableName", roadTableName)
-                              results.put("railTableName", railTableName)
-                              results.put("hydrographicTableName", hydrographicTableName)
-                              results.put("vegetationTableName", vegetationTableName)
-                              results.put("imperviousTableName", imperviousTableName)
                               saveOutputFiles(h2gis_datasource,id_zone, results, ouputTableFiles, outputFolder, "osm_")
                           }
                           if(output_datasource && geoIndicatorsComputed){
-                              saveTablesInDatabase(output_datasource,h2gis_datasource, outputTableNames, geoIndicators.getResults(), id_zone, 4326, false)
+                              saveTablesInDatabase(output_datasource,h2gis_datasource, outputTableNames, results, id_zone, 4326, false)
                           }
                       }
                   } else {
