@@ -1404,3 +1404,48 @@ IProcess extendedFreeFacadeFraction() {
         }
     })
 }
+
+
+IProcess surfaceFeatures() {
+    def final GEOMETRIC_FIELD_RSU = "the_geom"
+    def final ID_FIELD_RSU = "id_rsu"
+    def final BASE_NAME = "SURFACE_FEATURES"
+
+    return create({
+        title "RSU surface features"
+        inputs rsuTable: String, buildingTable: "",roadTable: "",railTable: "", waterTable:"", vegetationTable: "",
+                imperviousTable: "", zindex :[0] , prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { rsuTable, buildingTable,roadTable, railTable,waterTable, vegetationTable,
+            imperviousTable,zindex, prefixName, datasource ->
+
+            info "Executing RSU surface features computation"
+
+            // The name of the outputTableName is constructed
+            def outputTableName = getOutputTableName(prefixName, "rsu_" + BASE_NAME)
+
+            datasource.getSpatialTable(rsuTable).id_rsu.createIndex()
+            datasource.getSpatialTable(rsuTable).the_geom.createIndex()
+
+            if(roadTable  && datasource.hasTable(roadTable)){
+                datasource.getSpatialTable(roadTable).the_geom.createIndex()
+                //Separate road features according the zindex
+                def roadTable_zindex0_buffer = "roadTable_zindex0_buffer_$uuid"
+                def roadTable_zindex0 = "roadTable_zindex0_$uuid"
+                datasource.execute """DROP TABLE IF EXISTS $roadTable_zindex0_buffer, $roadTable_zindex0;
+                CREATE TABLE $roadTable_zindex0_buffer as SELECT st_buffer(the_geom, WIDTH)
+                as the_geom
+                FROM $roadTable  where ZINDEX=0 ;
+                CREATE INDEX IF NOT EXISTS ids_$roadTable_zindex0_buffer ON $roadTable_zindex0_buffer USING RTREE(the_geom);
+                CREATE TABLE $roadTable_zindex0 AS SELECT st_union(st_accum(st_intersection(a.the_geom, b.the_geom))) AS the_geom, b.id_rsu FROM
+                $roadTable_zindex0_buffer AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom) GROUP BY b.id_rsu;"""
+
+            }
+
+
+
+            [outputTableName: outputTableName]
+        }
+    })
+}
+

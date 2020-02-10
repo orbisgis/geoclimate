@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 
 import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 class RsuIndicatorsTests {
@@ -398,5 +399,38 @@ class RsuIndicatorsTests {
             row -> concat+= row.extended_free_facade_fraction.round(3)
         }
         assertEquals(0.177, concat)
+    }
+
+
+    @Test
+    void surfaceFeaturesTest() {
+
+        H2GIS h2GIS = H2GIS.open('./target/rsuindicatorsdb;AUTO_SERVER=TRUE')
+        h2GIS.load(SpatialUnitsTests.class.getResource("road_test.shp"), true)
+        //h2GIS.load(SpatialUnitsTests.class.getResource("rail_test.shp"), true)
+        //h2GIS.load(SpatialUnitsTests.class.getResource("veget_test.shp"), true)
+        //h2GIS.load(SpatialUnitsTests.class.getResource("hydro_test.shp"), true)
+        h2GIS.load(SpatialUnitsTests.class.getResource("zone_test.shp"),true)
+
+        def  prepareData = Geoindicators.SpatialUnits.prepareRSUData()
+        assertTrue prepareData.execute([zoneTable: 'zone_test', roadTable: 'road_test',  railTable: '',
+                                        vegetationTable : '',
+                                        hydrographicTable :'',surface_vegetation : '', surface_hydro : '',
+                                        prefixName: "prepare_rsu", datasource: h2GIS])
+
+        def outputTableGeoms = prepareData.results.outputTableName
+
+        assertNotNull h2GIS.getTable(outputTableGeoms)
+
+        def rsu = Geoindicators.SpatialUnits.createRSU()
+        assertTrue rsu.execute([inputTableName: outputTableGeoms, prefixName: "rsu", datasource: h2GIS])
+        def outputTable = rsu.results.outputTableName
+        assertTrue h2GIS.save(outputTable,'./target/rsu.shp')
+
+        def  p =  Geoindicators.RsuIndicators.surfaceFeatures()
+        assertTrue p.execute([
+                              rsuTable: outputTable,roadTable:"road_test",
+                              prefixName: "test", datasource: h2GIS])
+
     }
 }
