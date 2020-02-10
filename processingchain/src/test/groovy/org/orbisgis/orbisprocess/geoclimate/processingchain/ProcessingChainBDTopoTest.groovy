@@ -281,10 +281,9 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     @Disabled
     void testBDTopoConfigurationFile() {
         def configFile = getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput.json").toURI()
-        configFile =getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()
-        configFile =getClass().getResource("config/bdtopo_workflow_folderinput_dboutput.json").toURI()
-        configFile =getClass().getResource("config/bdtopo_workflow_dbinput_dboutput.json").toURI()
-        configFile = "/home/ebocher/applications/paendora/bdtopo_workflow_folderinput_id_zones_folderoutput_tablenames.json"
+        //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()
+        //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_dboutput.json").toURI()
+        //configFile =getClass().getResource("config/bdtopo_workflow_dbinput_dboutput.json").toURI()
         IProcess process = ProcessingChain.Workflow.BDTOPO_V2()
         assertTrue(process.execute(configurationFile: configFile))
     }
