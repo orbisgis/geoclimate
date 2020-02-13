@@ -264,4 +264,67 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                                  , directory: directory, datasource: datasource])
         }
     }
+
+    @Disabled //Enable this test to test some specific indicators
+    @Test
+    void testIndicators() {
+        boolean saveResults = true
+        def prefixName = ""
+        def svfSimplified = false
+
+        H2GIS datasource = H2GIS.open("/home/ebocher/Autres/codes/geoclimate/geoindicators/target/rsuindicatorsdb;AUTO_SERVER=TRUE")
+
+        //Extract and transform OSM data
+        def zoneToExtract = "Rennes"
+
+        IProcess prepareOSMData = ProcessingChain.PrepareOSM.buildGeoclimateLayers()
+
+        prepareOSMData.execute([datasource: datasource, zoneToExtract: zoneToExtract, distance: 0])
+
+        String buildingTableName = prepareOSMData.getResults().outputBuilding
+
+        String roadTableName = prepareOSMData.getResults().outputRoad
+
+        String railTableName = prepareOSMData.getResults().outputRail
+
+        String hydrographicTableName = prepareOSMData.getResults().outputHydro
+
+        String vegetationTableName = prepareOSMData.getResults().outputVeget
+
+        String zoneTableName = prepareOSMData.getResults().outputZone
+
+        def  prepareData = Geoindicators.SpatialUnits.prepareRSUData()
+        assertTrue prepareData.execute([zoneTable: zoneTableName, roadTable: roadTableName,  railTable: '',
+                                        vegetationTable : vegetationTableName,
+                                        hydrographicTable :hydrographicTableName,
+                                        prefixName: "prepare_rsu", datasource: datasource])
+
+        def outputTableGeoms = prepareData.results.outputTableName
+
+        assertNotNull datasource.getTable(outputTableGeoms)
+
+        def rsu = Geoindicators.SpatialUnits.createRSU()
+        assertTrue rsu.execute([inputTableName: outputTableGeoms, prefixName: "rsu", datasource: datasource])
+        def outputTable = rsu.results.outputTableName
+        assertTrue datasource.save(outputTable,'./target/rsu.shp')
+
+        def  p =  Geoindicators.RsuIndicators.smallestCommunGeometry()
+        assertTrue p.execute([
+                rsuTable: outputTable,buildingTable: buildingTableName, roadTable:roadTableName,vegetationTable: vegetationTableName,waterTable: hydrographicTableName,
+                prefixName: "test", datasource: datasource])
+        def outputTableStats = p.results.outputTableName
+
+        datasource.execute """DROP TABLE IF EXISTS stats_rsu;
+                    CREATE INDEX ON $outputTableStats (ID_RSU);
+                   CREATE TABLE stats_rsu AS SELECT b.the_geom,
+                round(sum(CASE WHEN a.low_vegetation=1 THEN a.area ELSE 0 END),1) AS low_VEGETATION_sum,
+                round(sum(CASE WHEN a.high_vegetation=1 THEN a.area ELSE 0 END),1) AS high_VEGETATION_sum,
+                round(sum(CASE WHEN a.water=1 THEN a.area ELSE 0 END),1) AS water_sum,
+                round(sum(CASE WHEN a.road=1 THEN a.area ELSE 0 END),1) AS road_sum,
+                round(sum(CASE WHEN a.building=1 THEN a.area ELSE 0 END),1) AS building_sum,
+                FROM $outputTableStats AS a, $outputTable b WHERE a.id_rsu=b.id_rsu GROUP BY b.id_rsu"""
+
+        datasource.save("stats_rsu", './target/stats_rsu.shp')
+
+    }
 }
