@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
+import groovy.json.*
 
 import static org.junit.jupiter.api.Assertions.*
 
@@ -256,13 +257,43 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
-        IProcess process = ProcessingChain.Workflow.OSM()
-        if(process.execute(datasource: datasource, zoneToExtract: "romainville", indicatorUse: ["LCZ"])){
-            IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
-            saveTables.execute( [inputTableNames: process.getResults().values()
-                                 , directory: directory, datasource: datasource])
+        def osm_parmeters = [
+            "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
+            "geoclimatedb" : [
+                "path" : "${dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE"}",
+                "delete" :true
+            ],
+            "input" : [
+                "osm" : ["romainville"]],
+            "output" :[
+                "folder" : "$directory"],
+            "parameters":
+            ["distance" : 1000,
+                "indicatorUse": ["LCZ"],
+                "svfSimplified": false,
+                "prefixName": "",
+                "mapOfWeights":
+                ["sky_view_factor": 1,
+                    "aspect_ratio": 1,
+                    "building_surface_fraction": 1,
+                    "impervious_surface_fraction" : 1,
+                    "pervious_surface_fraction": 1,
+                    "height_of_roughness_elements": 1,
+                    "terrain_roughness_class": 1  ],
+                "hLevMin": 3,
+                "hLevMax": 15,
+                "hThresholdLev2": 10
+            ]
+        ]
+        def json = JsonOutput.toJson(osm_parmeters)
+        def configFilePath =  directory+File.separator+"osmConfigFile.json"
+        File configFile = new File(configFilePath)
+        if(configFile.exists()){
+            configFile.delete()
         }
+        configFile.write(json)
+        IProcess process = ProcessingChain.Workflow.OSM()
+        assertTrue(process.execute(configurationFile: configFilePath))
     }
 
     @Test //Integration tests
