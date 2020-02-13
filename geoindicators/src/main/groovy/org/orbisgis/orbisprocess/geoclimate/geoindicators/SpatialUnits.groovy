@@ -90,14 +90,15 @@ IProcess prepareRSUData() {
             def outputTableName = getOutputTableName(prefixName, BASE_NAME)
 
             // Create temporary table names (for tables that will be removed at the end of the IProcess)
-            def vegetation_indice = vegetationTable + "_" + uuid
-            def vegetation_unified = "vegetation_unified" + uuid
-            def vegetation_tmp = "vegetation_tmp" + uuid
-            def hydrographic_indice = hydrographicTable + uuid
-            def hydrographic_unified = "hydrographic_unified" + uuid
-            def hydrographic_tmp = "hydrographic_tmp" + uuid
+            def vegetation_indice
+            def vegetation_unified
+            def vegetation_tmp
+            def hydrographic_indice
+            def hydrographic_unified
+            def hydrographic_tmp
 
             def queryCreateOutputTable =[:]
+            def dropTableList = []
 
             def numberZone = datasource.firstRow("select count(*) as nb from $zoneTable").nb
 
@@ -106,6 +107,9 @@ IProcess prepareRSUData() {
                 if(vegetationTable && datasource.hasTable(vegetationTable)) {
                     if (datasource.getSpatialTable(vegetationTable) != null) {
                         info "Preparing vegetation..."
+                        vegetation_indice = vegetationTable  + uuid
+                        vegetation_unified = "vegetation_unified" + uuid
+                        vegetation_tmp = "vegetation_tmp" + uuid
 
                         datasource.execute "DROP TABLE IF EXISTS $vegetation_indice"
                         datasource.execute "CREATE TABLE $vegetation_indice(THE_GEOM geometry, ID serial," +
@@ -134,6 +138,9 @@ IProcess prepareRSUData() {
                                 "AND ST_INTERSECTS(a.the_geom, b.the_geom)"
 
                         queryCreateOutputTable += [vegetation_tmp: "(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $vegetation_tmp)"]
+                        dropTableList.addAll([vegetation_indice,
+                                              vegetation_unified ,
+                                              vegetation_tmp ])
                     }
                 }
 
@@ -141,6 +148,9 @@ IProcess prepareRSUData() {
                     if (datasource.getSpatialTable(hydrographicTable)!=null) {
                         //Extract water
                         info "Preparing hydrographic..."
+                        hydrographic_indice = hydrographicTable + uuid
+                        hydrographic_unified = "hydrographic_unified" + uuid
+                        hydrographic_tmp = "hydrographic_tmp" + uuid
 
                         datasource.execute "DROP TABLE IF EXISTS $hydrographic_indice"
                         datasource.execute "CREATE TABLE $hydrographic_indice(THE_GEOM geometry, ID serial," +
@@ -175,6 +185,9 @@ IProcess prepareRSUData() {
                                 "WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)"
 
                         queryCreateOutputTable += [hydrographic_tmp: "(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $hydrographic_tmp)"]
+                        dropTableList.addAll([hydrographic_indice,
+                                              hydrographic_unified ,
+                                              hydrographic_tmp ])
                     }
                 }
 
@@ -206,9 +219,9 @@ IProcess prepareRSUData() {
                 FROM $zoneTable);"""
 
                 }
-
-                datasource.execute "DROP TABLE IF EXISTS $vegetation_indice, $vegetation_unified, $vegetation_tmp, " +
-                        "$hydrographic_indice, $hydrographic_unified, $hydrographic_tmp;"
+                if(dropTableList){
+                datasource.execute "DROP TABLE IF EXISTS ${dropTableList.join(',')};"
+                }
                 info "RSU created..."
 
             } else {
