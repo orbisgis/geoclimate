@@ -404,7 +404,7 @@ class RsuIndicatorsTests {
 
     @Test
     void surfaceFractionsTest() {
-        H2GIS h2GIS = H2GIS.open('./target/rsuindicatorsdb;AUTO_SERVER=TRUE')
+        H2GIS h2GIS = H2GIS.open('./target/surface_fractions_db;AUTO_SERVER=TRUE')
         h2GIS.load(SpatialUnitsTests.class.getResource("road_test.shp"), true)
         h2GIS.load(SpatialUnitsTests.class.getResource("building_test.shp"), true)
         h2GIS.load(SpatialUnitsTests.class.getResource("veget_test.shp"), true)
