@@ -159,7 +159,7 @@ IProcess formatBuildingLayer() {
                                         type = 'unclassified'
                                     }
                                     def widthFromType = typeAndWidth[type]
-                                    if (width < 0 && widthFromType != null) {
+                                    if (width <= 0 && widthFromType != null) {
                                         width = widthFromType
                                     }
                                     def crossing = row.'bridge'
