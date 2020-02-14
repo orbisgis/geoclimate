@@ -1620,7 +1620,13 @@ def OSM() {
                             }
                             def h2gis_datasource = H2GIS.open(h2gis_properties)
                             if(osmFilters && osmFilters in Collection) {
-                                osm_processing(h2gis_datasource, processing_parameters, osmFilters, file_outputFolder, outputFolderProperties.tables,output_datasource, finalOutputTables)
+                                def osmprocessing =  osm_processing()
+                                if(!osmprocessing.execute(h2gis_datasource:h2gis_datasource,
+                                        processing_parameters:processing_parameters,
+                                        id_zones :osmFilters, outputFolder:file_outputFolder,ouputTableFiles :outputFolderProperties.tables,
+                                        output_datasource:output_datasource, outputTableNames :finalOutputTables)){
+                                    return null
+                                }
                                 if(delete_h2gis){
                                     h2gis_datasource.execute("DROP ALL OBJECTS DELETE FILES")
                                     info "The local H2GIS database has been deleted"
@@ -1637,7 +1643,13 @@ def OSM() {
                             if(file_outputFolder.canWrite()){
                                 def h2gis_datasource = H2GIS.open(h2gis_properties)
                                 if(osmFilters && osmFilters in Collection) {
-                                    osm_processing(h2gis_datasource, processing_parameters, osmFilters, file_outputFolder, outputFolderProperties.tables,null, null)
+                                    def osmprocessing =  osm_processing()
+                                    if(!osmprocessing.execute(h2gis_datasource:h2gis_datasource,
+                                            processing_parameters:processing_parameters,
+                                            id_zones :osmFilters, outputFolder:file_outputFolder,ouputTableFiles :outputFolderProperties.tables,
+                                            output_datasource:null, outputTableNames :null)){
+                                        return null
+                                    }
                                     //Delete database
                                     if(delete_h2gis){
                                         h2gis_datasource.execute("DROP ALL OBJECTS DELETE FILES")
@@ -1666,7 +1678,11 @@ def OSM() {
                                 }
                                 def h2gis_datasource = H2GIS.open(h2gis_properties)
                                 if(osmFilters && osmFilters in Collection) {
-                                    osm_processing(h2gis_datasource, processing_parameters, osmFilters, null,null, output_datasource, finalOutputTables)
+                                    if(!osmprocessing.execute(h2gis_datasource:h2gis_datasource,
+                                            processing_parameters:processing_parameters,
+                                            id_zones :osmFilters, outputFolder:null,ouputTableFiles :null, output_datasource:output_datasource, outputTableNames :finalOutputTables)){
+                                        return null
+                                    }
                                     if(delete_h2gis){
                                         h2gis_datasource.execute("DROP ALL OBJECTS DELETE FILES")
                                         info "The local H2GIS database has been deleted"
@@ -1707,7 +1723,7 @@ def OSM() {
     })}
 
 /**
- * Utility to extract the OSM data, build the GIS layers and run the Geoclimate algorithms
+ * Process to extract the OSM data, build the GIS layers and run the Geoclimate algorithms
  *
  * @param h2gis_datasource the local H2GIS database
  * @param processing_parameters the geoclimate chain parameters
@@ -1718,128 +1734,136 @@ def OSM() {
  * @param outputTableNames the name of the tables in the output_datasource to save the results
  * @return
  */
-def osm_processing(def  h2gis_datasource, def processing_parameters,def id_zones, def outputFolder, def ouputTableFiles, def output_datasource, def outputTableNames) {
+def osm_processing(){
+    create({
+        title "Build OSM data and compute the geoindicators"
+        inputs h2gis_datasource: JdbcDataSource,  processing_parameters: Map, id_zones: Map,
+         outputFolder:"", ouputTableFiles:"", output_datasource:"", outputTableNames:""
+        outputs outputMessage: String
+        run { h2gis_datasource,  processing_parameters, id_zones,  outputFolder,  ouputTableFiles,  output_datasource,  outputTableNames ->
+
     int nbAreas = id_zones.size();
     info "$nbAreas osm areas will be processed"
     def geoIndicatorsComputed =false
     id_zones.eachWithIndex { id_zone, index ->
-            //Extract the zone table and read its SRID
-          def zoneTableNames = extractOSMZone(h2gis_datasource, id_zone,processing_parameters)
-          if(zoneTableNames){
-              id_zone = id_zone in Map?"bbox_"+id_zone.join('_'):id_zone
-              def zoneTableName = zoneTableNames.outputZoneTable
-              def zoneEnvelopeTableName = zoneTableNames.outputZoneEnvelopeTable
-              def srid = h2gis_datasource.getSpatialTable(zoneTableName).srid
-              if(output_datasource){
-                  if(!createOutputTables(output_datasource,  outputTableNames, 4326)){
-                      error "Cannot prepare the output tables to save the result"
-                      return null
-                  }
-              }
-              //Prepare OSM extraction
-              def query =  "[maxsize:1073741824]" + OSMTools.Utilities.buildOSMQuery(zoneTableNames.envelope,null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
-              def extract = OSMTools.Loader.extract()
-              if (extract.execute(overpassQuery: query)) {
-                  IProcess createGISLayerProcess = PrepareData.OSMGISLayers.createGISLayers()
-                  if (createGISLayerProcess.execute(datasource: h2gis_datasource, osmFilePath: extract.results.outputFilePath, epsg: srid)) {
-                      def gisLayersResults = createGISLayerProcess.getResults()
-                      if(zoneTableName!=null) {
-                          info "Formating OSM GIS layers"
-                          IProcess format = PrepareData.FormattingForAbstractModel.formatBuildingLayer()
-                          format.execute([
-                                  datasource    : h2gis_datasource,
-                                  inputTableName: gisLayersResults.buildingTableName,
-                                  inputZoneEnvelopeTableName : zoneEnvelopeTableName,
-                                  epsg:srid])
-                          def buildingTableName = format.results.outputTableName
+        //Extract the zone table and read its SRID
+        def zoneTableNames = extractOSMZone(h2gis_datasource, id_zone, processing_parameters)
+        if (zoneTableNames) {
+            id_zone = id_zone in Map ? "bbox_" + id_zone.join('_') : id_zone
+            def zoneTableName = zoneTableNames.outputZoneTable
+            def zoneEnvelopeTableName = zoneTableNames.outputZoneEnvelopeTable
+            def srid = h2gis_datasource.getSpatialTable(zoneTableName).srid
+            if (output_datasource) {
+                if (!createOutputTables(output_datasource, outputTableNames, 4326)) {
+                    error "Cannot prepare the output tables to save the result"
+                    return null
+                }
+            }
+            //Prepare OSM extraction
+            def query = "[maxsize:1073741824]" + OSMTools.Utilities.buildOSMQuery(zoneTableNames.envelope, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+            def extract = OSMTools.Loader.extract()
+            if (extract.execute(overpassQuery: query)) {
+                IProcess createGISLayerProcess = PrepareData.OSMGISLayers.createGISLayers()
+                if (createGISLayerProcess.execute(datasource: h2gis_datasource, osmFilePath: extract.results.outputFilePath, epsg: srid)) {
+                    def gisLayersResults = createGISLayerProcess.getResults()
+                    if (zoneTableName != null) {
+                        info "Formating OSM GIS layers"
+                        IProcess format = PrepareData.FormattingForAbstractModel.formatBuildingLayer()
+                        format.execute([
+                                datasource                : h2gis_datasource,
+                                inputTableName            : gisLayersResults.buildingTableName,
+                                inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                epsg                      : srid])
+                        def buildingTableName = format.results.outputTableName
 
-                          format = PrepareData.FormattingForAbstractModel.formatRoadLayer()
-                          format.execute([
-                                  datasource    : h2gis_datasource,
-                                  inputTableName: gisLayersResults.roadTableName,
-                                  inputZoneEnvelopeTableName : zoneEnvelopeTableName,
-                                  epsg:srid])
-                          def roadTableName = format.results.outputTableName
+                        format = PrepareData.FormattingForAbstractModel.formatRoadLayer()
+                        format.execute([
+                                datasource                : h2gis_datasource,
+                                inputTableName            : gisLayersResults.roadTableName,
+                                inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                epsg                      : srid])
+                        def roadTableName = format.results.outputTableName
 
 
-                          format = PrepareData.FormattingForAbstractModel.formatRailsLayer()
-                          format.execute([
-                                  datasource    : h2gis_datasource,
-                                  inputTableName: gisLayersResults.railTableName,
-                                  inputZoneEnvelopeTableName : zoneEnvelopeTableName,
-                                  epsg:srid])
-                          def railTableName = format.results.outputTableName
+                        format = PrepareData.FormattingForAbstractModel.formatRailsLayer()
+                        format.execute([
+                                datasource                : h2gis_datasource,
+                                inputTableName            : gisLayersResults.railTableName,
+                                inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                epsg                      : srid])
+                        def railTableName = format.results.outputTableName
 
-                          format = PrepareData.FormattingForAbstractModel.formatVegetationLayer()
-                          format.execute([
-                                  datasource    : h2gis_datasource,
-                                  inputTableName: gisLayersResults.vegetationTableName,
-                                  inputZoneEnvelopeTableName : zoneEnvelopeTableName,
-                                  epsg:srid])
-                          def vegetationTableName = format.results.outputTableName
+                        format = PrepareData.FormattingForAbstractModel.formatVegetationLayer()
+                        format.execute([
+                                datasource                : h2gis_datasource,
+                                inputTableName            : gisLayersResults.vegetationTableName,
+                                inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                epsg                      : srid])
+                        def vegetationTableName = format.results.outputTableName
 
-                          format = PrepareData.FormattingForAbstractModel.formatHydroLayer()
-                          format.execute([
-                                  datasource    : h2gis_datasource,
-                                  inputTableName: gisLayersResults.hydroTableName,
-                                  inputZoneEnvelopeTableName : zoneEnvelopeTableName,
-                                  epsg:srid])
-                          def hydrographicTableName = format.results.outputTableName
+                        format = PrepareData.FormattingForAbstractModel.formatHydroLayer()
+                        format.execute([
+                                datasource                : h2gis_datasource,
+                                inputTableName            : gisLayersResults.hydroTableName,
+                                inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                epsg                      : srid])
+                        def hydrographicTableName = format.results.outputTableName
 
-                          //TODO : to be used in the geoindicators chains
-                          format = PrepareData.FormattingForAbstractModel.formatImperviousLayer()
-                          format.execute([
-                                  datasource    : h2gis_datasource,
-                                  inputTableName: gisLayersResults.imperviousTableName,
-                                  inputZoneEnvelopeTableName : zoneEnvelopeTableName,
-                                  epsg:srid])
-                          def imperviousTableName = format.results.outputTableName
+                        //TODO : to be used in the geoindicators chains
+                        format = PrepareData.FormattingForAbstractModel.formatImperviousLayer()
+                        format.execute([
+                                datasource                : h2gis_datasource,
+                                inputTableName            : gisLayersResults.imperviousTableName,
+                                inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                epsg                      : srid])
+                        def imperviousTableName = format.results.outputTableName
 
-                          info "OSM GIS layers formated"
+                        info "OSM GIS layers formated"
 
-                          //Build the indicators
-                          IProcess geoIndicators = GeoIndicators()
-                          if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
-                                  buildingTable: buildingTableName, roadTable: roadTableName,
-                                  railTable: railTableName, vegetationTable: vegetationTableName,
-                                  hydrographicTable: hydrographicTableName, indicatorUse: processing_parameters.indicatorUse,
-                                  svfSimplified: processing_parameters.svfSimplified, prefixName: processing_parameters.prefixName,
-                                  mapOfWeights: processing_parameters.mapOfWeights)) {
-                              error "Cannot build the geoindicators for the zone $id_zone"
-                              geoIndicatorsComputed = false
-                          }else{
-                              geoIndicatorsComputed = true
-                              info "${id_zone} has been processed"
-                          }
-                          def results = geoIndicators.getResults()
-                          results.put("buildingTableName", buildingTableName)
-                          results.put("roadTableName", roadTableName)
-                          results.put("railTableName", railTableName)
-                          results.put("hydrographicTableName", hydrographicTableName)
-                          results.put("vegetationTableName", vegetationTableName)
-                          results.put("imperviousTableName", imperviousTableName)
-                          if(outputFolder && geoIndicatorsComputed && ouputTableFiles) {
-                              saveOutputFiles(h2gis_datasource,id_zone, results, ouputTableFiles, outputFolder, "osm_")
-                          }
-                          if(output_datasource && geoIndicatorsComputed){
-                              saveTablesInDatabase(output_datasource,h2gis_datasource, outputTableNames, results, id_zone, 4326, false)
-                          }
-                      }
-                  } else {
-                      logger.error "Cannot load the OSM file ${extract.results.outputFilePath}"
-                  }
-              } else {
-                  logger.error "Cannot execute the overpass query $query"
-              }
-          }
-        else{
-              logger.error "Cannot calculate a bounding box to extract OSM data"
-          }
+                        //Build the indicators
+                        IProcess geoIndicators = GeoIndicators()
+                        if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
+                                buildingTable: buildingTableName, roadTable: roadTableName,
+                                railTable: railTableName, vegetationTable: vegetationTableName,
+                                hydrographicTable: hydrographicTableName, indicatorUse: processing_parameters.indicatorUse,
+                                svfSimplified: processing_parameters.svfSimplified, prefixName: processing_parameters.prefixName,
+                                mapOfWeights: processing_parameters.mapOfWeights)) {
+                            error "Cannot build the geoindicators for the zone $id_zone"
+                            geoIndicatorsComputed = false
+                        } else {
+                            geoIndicatorsComputed = true
+                            info "${id_zone} has been processed"
+                        }
+                        def results = geoIndicators.getResults()
+                        results.put("buildingTableName", buildingTableName)
+                        results.put("roadTableName", roadTableName)
+                        results.put("railTableName", railTableName)
+                        results.put("hydrographicTableName", hydrographicTableName)
+                        results.put("vegetationTableName", vegetationTableName)
+                        results.put("imperviousTableName", imperviousTableName)
+                        if (outputFolder && geoIndicatorsComputed && ouputTableFiles) {
+                            saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_")
+                        }
+                        if (output_datasource && geoIndicatorsComputed) {
+                            saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone, 4326, false)
+                        }
+                    }
+                } else {
+                    logger.error "Cannot load the OSM file ${extract.results.outputFilePath}"
+                }
+            } else {
+                logger.error "Cannot execute the overpass query $query"
+            }
+        } else {
+            logger.error "Cannot calculate a bounding box to extract OSM data"
+        }
 
-        info "Number of areas processed ${index+1} on $nbAreas"
+        info "Number of areas processed ${index + 1} on $nbAreas"
     }
+            return  [outputMessage:"The OSM processing tasks have been done"]
+        }
+    })}
 
-}
 
 /**
  * Extract the OSM zone and its envelope area from Nominatim API

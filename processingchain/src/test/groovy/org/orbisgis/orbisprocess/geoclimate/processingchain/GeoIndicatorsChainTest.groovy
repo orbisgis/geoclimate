@@ -1,6 +1,7 @@
 package org.orbisgis.orbisprocess.geoclimate.processingchain
 
 import org.junit.jupiter.api.Test
+import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.slf4j.Logger
@@ -83,48 +84,6 @@ class GeoIndicatorsChainTest extends ChainProcessAbstractTest{
         datasource.load(ProcessingChain.class.getResource("ZONE.geojson"), "ZONE", true)
         return [zoneTable: "ZONE", buildingTable: "BUILDING", roadTable: "ROAD",
                 railTable: "RAIL", vegetationTable: "VEGET", hydrographicTable: "HYDRO"]
-    }
-
-    @Test
-    void OSMGeoIndicatorsTest() {
-        File directory = new File("./target/geoindicators_workflow")
-        H2GIS datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
-        String zoneToExtract = "Cliscouet, vannes"
-        def distance = 0
-        boolean svfSimplified = false
-        def prefixName = ""
-        def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
-                            "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                            "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
-
-        def ind_i = ["LCZ", "URBAN_TYPOLOGY", "TEB"]
-
-        IProcess OSMGeoIndicatorsCompute_i = ProcessingChain.Workflow.OSM()
-        assertTrue OSMGeoIndicatorsCompute_i.execute([datasource   : datasource, zoneToExtract: zoneToExtract,
-                                                      distance     : distance, indicatorUse: ind_i,
-                                                      svfSimplified: svfSimplified, prefixName: prefixName,
-                                                      mapOfWeights : mapOfWeights])
-
-        if (ind_i.contains("URBAN_TYPOLOGY")) {
-            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(OSMGeoIndicatorsCompute_i.getResults().buildingIndicators).columns.sort())
-            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(OSMGeoIndicatorsCompute_i.results.blockIndicators).columns.sort())
-        }
-        def expectListRsuTempo = listColBasic
-        expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
-        def expectListRsu = expectListRsuTempo.toUnique()
-        def realListRsu = datasource.getTable(OSMGeoIndicatorsCompute_i.results.rsuIndicators).columns
-        // We test that there is no missing indicators in the RSU table
-        for (i in expectListRsu) {
-            assertTrue realListRsu.contains(i)
-        }
-        if (ind_i.contains("LCZ")) {
-            def expectListLczTempo = listColLcz
-            expectListLczTempo = expectListLczTempo + listColBasic
-            def expectListLcz = expectListLczTempo.sort()
-            assertEquals(expectListLcz, datasource.getTable(OSMGeoIndicatorsCompute_i.results.rsuLcz).columns.sort())
-        } else {
-            assertEquals(null, OSMGeoIndicatorsCompute_i.results.rsuLcz)
-        }
     }
 
 
