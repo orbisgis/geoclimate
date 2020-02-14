@@ -1,0 +1,41 @@
+{
+    "description" :"Example of configuration file with an input folder and a list of id_zones",
+    "geoclimatedb" : {
+        "path" : "/tmp/.../geoclimate_db;AUTO_SERVER=TRUE",
+        "delete" :true
+    },
+    "input" : {
+        "folder": {"path" :"/tmp/...",
+            "id_zones":["id zone here"]}
+    },
+    "output" :{
+     "folder" : {"path": "/tmp/...",
+         "tables": ["building_indicators",
+             "block_indicators",
+             "rsu_indicators",
+             "rsu_lcz",
+             "zones",
+             "building",
+             "road",
+             "rail" ,
+             "water",
+             "vegetation",
+             "impervious"],
+    "parameters":
+    {"distance" : 1000,
+        "indicatorUse": ["TEB"],
+        "svfSimplified": false,
+        "prefixName": "",
+        "mapOfWeights":
+        {"sky_view_factor": 1,
+            "aspect_ratio": 1,
+            "building_surface_fraction": 1,
+            "impervious_surface_fraction" : 1,
+            "pervious_surface_fraction": 1,
+            "height_of_roughness_elements": 1,
+            "terrain_roughness_class": 1},
+        "hLevMin": 3,
+        "hLevMax": 15,
+        "hThresholdLev2": 10
+    }
+}

@@ -55,7 +55,7 @@ class FormattingForAbstractModelTests {
         h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_formated.shp")
         assertEquals 197, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH is null").count==0
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH<0").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH<=0").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where CROSSING IS NOT NULL").count==7
 
 
@@ -120,7 +120,7 @@ class FormattingForAbstractModelTests {
         zoneToExtract = "Paimpol"
         //zoneToExtract = "Londres, Grand Londres, Angleterre, Royaume-Uni"
         //zoneToExtract="Cliscouet, Vannes"
-        zoneToExtract="Boston"
+        zoneToExtract="rezé"
 
         IProcess extractData = PrepareData.OSMGISLayers.extractAndCreateGISLayers()
         extractData.execute([
@@ -163,7 +163,7 @@ class FormattingForAbstractModelTests {
                     inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
                     epsg: epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_${formatedPlaceName}.geojson")
-
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where width is null or width <= 0").count==0
 
             //Rails
             format = PrepareData.FormattingForAbstractModel.formatRailsLayer()
@@ -202,6 +202,9 @@ class FormattingForAbstractModelTests {
                     inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
                     epsg: epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_${formatedPlaceName}.geojson")
+
+
+
 
         }else {
             assertTrue(false)

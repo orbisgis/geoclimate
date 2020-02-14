@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 
 import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 class RsuIndicatorsTests {
@@ -398,5 +399,98 @@ class RsuIndicatorsTests {
             row -> concat+= row.extended_free_facade_fraction.round(3)
         }
         assertEquals(0.177, concat)
+    }
+
+
+    @Test
+    void surfaceFractionsTest() {
+        H2GIS h2GIS = H2GIS.open('./target/surface_fractions_db;AUTO_SERVER=TRUE')
+        h2GIS.load(SpatialUnitsTests.class.getResource("road_test.shp"), true)
+        h2GIS.load(SpatialUnitsTests.class.getResource("building_test.shp"), true)
+        h2GIS.load(SpatialUnitsTests.class.getResource("veget_test.shp"), true)
+        h2GIS.load(SpatialUnitsTests.class.getResource("hydro_test.shp"), true)
+        h2GIS.load(SpatialUnitsTests.class.getResource("zone_test.shp"),true)
+
+        def  prepareData = Geoindicators.SpatialUnits.prepareRSUData()
+        assertTrue prepareData.execute([zoneTable: 'zone_test', roadTable: 'road_test',  railTable: '',
+                                        vegetationTable : 'veget_test',
+                                        hydrographicTable :'hydro_test',
+                                        prefixName: "prepare_rsu", datasource: h2GIS])
+
+        def outputTableGeoms = prepareData.results.outputTableName
+
+        assertNotNull h2GIS.getTable(outputTableGeoms)
+
+        def rsu = Geoindicators.SpatialUnits.createRSU()
+        assertTrue rsu.execute([inputTableName: outputTableGeoms, prefixName: "rsu", datasource: h2GIS])
+        def outputTable = rsu.results.outputTableName
+
+        def  p =  Geoindicators.RsuIndicators.smallestCommunGeometry()
+        assertTrue p.execute([
+                              rsuTable: outputTable,buildingTable: "building_test", roadTable:"road_test",vegetationTable: "veget_test",waterTable: "hydro_test",
+                              prefixName: "test", datasource: h2GIS])
+        def outputTableStats = p.results.outputTableName
+
+        h2GIS.execute """DROP TABLE IF EXISTS stats_rsu;
+                    CREATE INDEX ON $outputTableStats (ID_RSU);
+                   CREATE TABLE stats_rsu AS SELECT b.the_geom,
+                round(sum(CASE WHEN a.low_vegetation=1 THEN a.area ELSE 0 END),1) AS low_VEGETATION_sum,
+                round(sum(CASE WHEN a.high_vegetation=1 THEN a.area ELSE 0 END),1) AS high_VEGETATION_sum,
+                round(sum(CASE WHEN a.water=1 THEN a.area ELSE 0 END),1) AS water_sum,
+                round(sum(CASE WHEN a.road=1 THEN a.area ELSE 0 END),1) AS road_sum,
+                round(sum(CASE WHEN a.building=1 THEN a.area ELSE 0 END),1) AS building_sum, a.id_rsu
+                FROM $outputTableStats AS a, $outputTable b WHERE a.id_rsu=b.id_rsu GROUP BY b.id_rsu;
+            CREATE INDEX ON stats_rsu(id_rsu);"""
+
+        //Check the sum of building areas by USR
+        h2GIS.execute """DROP TABLE IF EXISTS stats_building;
+                          CREATE TABLE stats_building as select sum(st_area(the_geom)) as building_areas, id_rsu from 
+                            (select st_intersection(ST_force2d(a.the_geom), b.the_geom) as the_geom, b.id_rsu from building_test as a,
+                            $outputTable as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) and a.zindex=0 ) group by id_rsu;
+                           CREATE INDEX ON stats_building(id_rsu);                           
+                           DROP TABLE IF EXISTS building_compare_stats;
+                           CREATE TABLE building_compare_stats as select (a.building_sum- b.building_areas) as diff, a.id_rsu from stats_rsu as a,
+                           stats_building as b where a.id_rsu=b.id_rsu;"""
+
+        assertTrue h2GIS.firstRow("select count(*) as count from building_compare_stats where diff > 1").count==0
+
+
+        //Check the sum of low vegetation areas by USR
+        h2GIS.execute """DROP TABLE IF EXISTS stats_vegetation_low;
+                          CREATE TABLE stats_vegetation_low as select sum(st_area(the_geom)) as vegetation_areas, id_rsu from 
+                            (select st_intersection(ST_force2d(a.the_geom), b.the_geom) as the_geom, b.id_rsu from veget_test as a,
+                            $outputTable as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) and a.type='low' ) group by id_rsu;
+                           CREATE INDEX ON stats_vegetation_low(id_rsu);                           
+                           DROP TABLE IF EXISTS vegetation_low_compare_stats;
+                           CREATE TABLE vegetation_low_compare_stats as select (a.low_VEGETATION_sum- b.vegetation_areas) as diff, a.id_rsu from stats_rsu as a,
+                           stats_vegetation_low as b where a.id_rsu=b.id_rsu;"""
+
+        assertTrue h2GIS.firstRow("select count(*) as count from vegetation_low_compare_stats where diff > 1").count==0
+
+        //Check the sum of high vegetation areas by USR
+        h2GIS.execute """DROP TABLE IF EXISTS stats_vegetation_high;
+                          CREATE TABLE stats_vegetation_high as select sum(st_area(the_geom)) as vegetation_areas, id_rsu from 
+                            (select st_intersection(ST_force2d(a.the_geom), b.the_geom) as the_geom, b.id_rsu from veget_test as a,
+                            $outputTable as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) and a.type='high' ) group by id_rsu;
+                           CREATE INDEX ON stats_vegetation_high(id_rsu);                           
+                           DROP TABLE IF EXISTS vegetation_high_compare_stats;
+                           CREATE TABLE vegetation_high_compare_stats as select (a.high_VEGETATION_sum- b.vegetation_areas) as diff, a.id_rsu from stats_rsu as a,
+                           stats_vegetation_high as b where a.id_rsu=b.id_rsu;"""
+
+        assertTrue h2GIS.firstRow("select count(*) as count from vegetation_high_compare_stats where diff > 1").count==0
+
+        //Check the sum of water areas by USR
+        h2GIS.execute """DROP TABLE IF EXISTS stats_water;
+                          CREATE TABLE stats_water as select sum(st_area(the_geom)) as water_areas, id_rsu from 
+                            (select st_intersection(ST_force2d(a.the_geom), b.the_geom) as the_geom, b.id_rsu from hydro_test as a,
+                            $outputTable as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) and a.zindex=0 ) group by id_rsu;
+                           CREATE INDEX ON stats_water(id_rsu);                           
+                           DROP TABLE IF EXISTS water_compare_stats;
+                           CREATE TABLE water_compare_stats as select (a.water_sum- b.water_areas) as diff, a.id_rsu from stats_rsu as a,
+                           stats_water as b where a.id_rsu=b.id_rsu;"""
+
+        assertTrue h2GIS.firstRow("select count(*) as count from water_compare_stats where diff > 1").count==0
+
+
     }
 }
