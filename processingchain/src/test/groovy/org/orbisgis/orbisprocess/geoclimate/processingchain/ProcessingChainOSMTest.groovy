@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
+import groovy.json.*
 
 import static org.junit.jupiter.api.Assertions.*
 
@@ -201,68 +202,127 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
+        def osm_parmeters = [
+                "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
+                "geoclimatedb" : [
+                        "path" : "${dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE"}",
+                        "delete" :true
+                ],
+                "input" : [
+                        "osm" : ["Paris"]],
+                "output" :[
+                        "folder" : "$directory"]
+        ]
         IProcess process = ProcessingChain.Workflow.OSM()
-        def placeName = "Paris"
-        if(process.execute(datasource: datasource, zoneToExtract: placeName)){
-            process.getResults().values().each { it ->
-                if(datasource.hasTable(it)){
-                    datasource.save(it, "/tmp/${placeName}_${it}.shp")
-                }
-            }
-        }
+        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
+    //@Disabled
     @Test
     void testOSMWorkflowFromBbox() {
         String directory ="./target/geoclimate_chain"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
+        def osm_parmeters = [
+                "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
+                "geoclimatedb" : [
+                        "path" : "${dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE"}",
+                        "delete" :true
+                ],
+                "input" : [
+                        "osm" : [[38.89557963573336,-77.03930318355559,38.89944983078282,-77.03364372253417]]],
+                "output" :[
+                        "folder" : "$directory"]
+        ]
         IProcess process = ProcessingChain.Workflow.OSM()
-        if(process.execute(datasource: datasource, zoneToExtract: [38.89557963573336,-77.03930318355559,38.89944983078282,-77.03364372253417])) {
-            process.getResults().values().each { it ->
-                assertTrue datasource.hasTable(it)
-            }
-        }
+        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
     @Test
-    void testOSMWorkflowFromBadBbox1() {
+    void testOSMWorkflowBadOSMFilters() {
         String directory ="./target/geoclimate_chain"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
+        def osm_parmeters = [
+                "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
+                "geoclimatedb" : [
+                        "path" : "${dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE"}",
+                        "delete" :true
+                ],
+                "input" : [
+                        "osm" : ["", [-3.0961382389068604, -3.1055688858032227,48.77155634881654,]]],
+                "output" :[
+                        "folder" : "$directory"]
+        ]
         IProcess process = ProcessingChain.Workflow.OSM()
-        assertFalse(process.execute(datasource: datasource, zoneToExtract: [-3.0961382389068604, -3.1055688858032227,48.77155634881654,]))
+        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
-    @Test
-    void testOSMWorkflowFromBadBbox2() {
-        String directory ="./target/geoclimate_chain"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
-        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
-        IProcess process = ProcessingChain.Workflow.OSM()
-        assertFalse(process.execute(datasource: datasource, zoneToExtract: []))
-    }
-
+    @Disabled
     @Test
     void testOSMLCZ() {
         String directory ="./target/geoclimate_chain"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE")
+        def osm_parmeters = [
+            "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
+            "geoclimatedb" : [
+                "path" : "${dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE"}",
+                "delete" :true
+            ],
+            "input" : [
+                "osm" : ["romainville"]],
+            "output" :[
+                "folder" : "$directory"],
+            "parameters":
+            ["distance" : 1000,
+                "indicatorUse": ["LCZ"],
+                "svfSimplified": false,
+                "prefixName": "",
+                "mapOfWeights":
+                ["sky_view_factor": 1,
+                    "aspect_ratio": 1,
+                    "building_surface_fraction": 1,
+                    "impervious_surface_fraction" : 1,
+                    "pervious_surface_fraction": 1,
+                    "height_of_roughness_elements": 1,
+                    "terrain_roughness_class": 1  ],
+                "hLevMin": 3,
+                "hLevMax": 15,
+                "hThresholdLev2": 10
+            ]
+        ]
         IProcess process = ProcessingChain.Workflow.OSM()
-        if(process.execute(datasource: datasource, zoneToExtract: "romainville", indicatorUse: ["LCZ"])){
-            IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
-            saveTables.execute( [inputTableNames: process.getResults().values()
-                                 , directory: directory, datasource: datasource])
+        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+    }
+
+    /**
+     * Create a configuration file
+     * @param osmParameters
+     * @param directory
+     * @return
+     */
+    def createOSMConfigFile(def osmParameters, def directory){
+        def json = JsonOutput.toJson(osmParameters)
+        def configFilePath =  directory+File.separator+"osmConfigFile.json"
+        File configFile = new File(configFilePath)
+        if(configFile.exists()){
+            configFile.delete()
         }
+        configFile.write(json)
+        return configFile.absolutePath
+    }
+
+    @Test //Integration tests
+    @Disabled
+    void testOSMConfigurationFile() {
+        def configFile = getClass().getResource("config/osm_workflow_placename_folderoutput.json").toURI()
+        configFile =getClass().getResource("config/osm_workflow_envelope_folderoutput.json").toURI()
+        IProcess process = ProcessingChain.Workflow.OSM()
+        assertTrue(process.execute(configurationFile: configFile))
     }
 
     @Disabled //Enable this test to test some specific indicators
