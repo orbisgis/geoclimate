@@ -1585,7 +1585,7 @@ IProcess smallestCommunGeometry() {
                         datasource.getSpatialTable(entry.key).the_geom.createIndex()
                         datasource.execute """DROP TABLE IF EXISTS $tmptableName;
                         CREATE TABLE $tmptableName AS SELECT b.area, 0 as low_vegetation, 0 as high_vegetation, 0 as water, 0 as impervious, 1 as road, 0 as building, b.id, b.id_rsu from ${entry.key} as a,
-                    $final_polygonize as b where a.the_geom && b.the_geom and st_contains(a.the_geom, b.the_geom) AND a.ID_RSU =b.ID_RSU"""
+                    $final_polygonize as b where a.the_geom && b.the_geom and ST_intersects(a.the_geom, b.the_geom) AND a.ID_RSU =b.ID_RSU"""
                         finalMerge.add("SELECT * FROM $tmptableName")
                     }
                     else if(entry.key.startsWith("impervious")){
@@ -1600,7 +1600,7 @@ IProcess smallestCommunGeometry() {
                         datasource.getSpatialTable(entry.key).the_geom.createIndex()
                         datasource.getSpatialTable(entry.key).id_rsu.createIndex()
                         datasource.execute """DROP TABLE IF EXISTS $tmptableName;
-                    CREATE TABLE $tmptableName AS SELECT b.area, 0 as low_vegetation, 0 as high_vegetation, 0 as water, 1 as impervious, 0 as road, 1 as building, b.id, b.id_rsu from ${entry.key}  as a,
+                    CREATE TABLE $tmptableName AS SELECT b.area, 0 as low_vegetation, 0 as high_vegetation, 0 as water, 0 as impervious, 0 as road, 1 as building, b.id, b.id_rsu from ${entry.key}  as a,
                     $final_polygonize as b where a.the_geom && b.the_geom and ST_intersects(a.the_geom, b.the_geom) AND a.ID_RSU =b.ID_RSU"""
                         finalMerge.add("SELECT * FROM $tmptableName")
                     }
