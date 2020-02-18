@@ -2,7 +2,124 @@
 
 ## Overview
 
-Présenter le workflow de manière générique, avec la liste des combinaisons d’indicateurs 
+A workflow is a dedicated script that makes possible to process a dataset from A to Z, while taking into account a series of parameters that the user is free to adjust. 
+
+According to these choices, the user will obtain resulting tables whose contents may vary.
+
+We present all these aspects below
+
+
+
+### Input dataset
+
+Currently, the Geoclimate workflow is made to process two kind of input datasets:
+
+- [OpenStreetMap (OSM)](./workflow/osm.md)
+- [BD Topo v2](./workflow/bd_topo_v2.md) from the french [IGN](http://www.ign.fr/)
+
+
+
+### Applications
+
+The Geoclimate workflow can be executed for 3 types of application:
+
+- `TEB` : all the indicators needed to feed the [TEB](https://opensource.umr-cnrm.fr/projects/teb) model from Météo France
+- `LCZ` : all the indicators needed to compute the LCZ classification
+- `URBAN_TYPOLOGY` : all the indicators needed to compute the urban typology developed by The [LRA](http://lra.toulouse.archi.fr/lra) (Toulouse, France)
+
+These options can be inclusive (2 or 3 in the same time) or exclusive (just 1).
+
+
+
+### Parameters
+
+When executing the workflow, the user is able to ajust some parameters, that will have a direct impact on the results. Below are listed these parameters, with a description and when necessary a default value.
+
+|           Parameter            | Description                                                  |          Default value           |
+| :----------------------------: | ------------------------------------------------------------ | :------------------------------: |
+|            `expand`            | Distance (expressed in meters) used to select the objects that will feed the chain |              `1000`              |
+|         `dist_buffer`          | Distance (expressed in meters) used to filter builings and roads around the zone |              `500`               |
+|           `hLevMin`            | Indicates the theoretical minimum height (in meters) of a building level |               `3`                |
+|           `hLevMax`            | Indicates the theoretical maximum height (in meters) of a building level |               `15`               |
+|        `hThresholdLev2`        | Indicates the theoretical maximum height (in meters) of a building level, where the parameter `Nb_lev_rule`  = 2 (Type = commercial) |               `10`               |
+|       `sky_view_factor`        | Value used to weight the SVF parameter in the LCZ classification (between 0 and 1) |               `1`                |
+|         `aspect_ratio`         | ... Aspect ratio parameter ...                               |               `1`                |
+|  `building_surface_fraction`   | ... Building surface fraction parameter ...                  |               `1`                |
+| `impervious_surface_fraction`  | ... Impervious surface fraction parameter ...                |               `1`                |
+|  `pervious_surface_fraction`   | ... Pervious surface fraction parameter ...                  |               `1`                |
+| `height_of_roughness_elements` | ... Height fo roughness elements parameter ...               |               `1`                |
+|   `terrain_roughness_class`    | ... Terrain roughness class parameter ...                    |               `1`                |
+|        `svfSimplified`         |                                                              |             `false`              |
+|          `prefixName`          | Prefixe used to name the output tables                       |                                  |
+|         `indicatorUse`         | Specify whether the user want to execute the chain for the LCZ and/or TEB and/or Urban typology | ["LCZ", "URBAN_TYPOLOGY", "TEB"] |
+
+
+
+### Outputs
+
+As a result, 5 potential output tables are produced. Their structure may vary according to the application parameters chosen when executing the workflow.
+
+To know more about these output tables, read [this page](./outputs.md).
+
+
+
+## And technically
+
+### The process
+
+The Geoclimate workflow is a groovy file stored [here](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/main/groovy/org/orbisgis/orbisprocess/geoclimate/processingchain/Workflow.groovy).
+
+In this file, the two dataset use cases are translated into two processes :
+
+- [OSM](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/main/groovy/org/orbisgis/orbisprocess/geoclimate/processingchain/Workflow.groovy#L1540)
+- [BDTOPO_V2](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/main/groovy/org/orbisgis/orbisprocess/geoclimate/processingchain/Workflow.groovy#L131)
+
+### Configuration file
+
+The parameters, needed by the process, are stored in an independant configuration file. This way, the user has just to adapt this file instead of changing some things in the workflow groovy file, which may be a bit too complex.
+
+Currently, there is 9 configuration files, that can be used to run Geoclimate with the two input datasets (OSM and BD Topo). There are all accessible [here](https://github.com/orbisgis/geoclimate/tree/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config)
+
+For OSM
+
+
+- [osm_workflow_envelope_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_envelope_folderoutput.json) 
+- [osm_workflow_mixedfilter_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_mixedfilter_folderoutput.json) 
+- [osm_workflow_placename_dboutput.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_placename_dboutput.json) 
+- [osm_workflow_placename_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_placename_folderoutput.json)
+
+For BD Topo v2
+
+
+- [bdtopo_workflow_dbinput_dboutput.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/bdtopo_workflow_dbinput_dboutput.json)
+- [bdtopo_workflow_folderinput_dboutput.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/bdtopo_workflow_folderinput_dboutput.json) 
+- [bdtopo_workflow_folderinput_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/bdtopo_workflow_folderinput_folderoutput.json) 
+- [bdtopo_workflow_folderinput_folderoutput_id_zones.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/bdtopo_workflow_folderinput_folderoutput_id_zones.json)
+- [bdtopo_workflow_folderinput_id_zones_folderoutput_tablenames.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/bdtopo_workflow_folderinput_id_zones_folderoutput_tablenames.json) 
+
+
+
+Inside these configuration files, we have the following entries:
+
+- `description` : a text that described the configuration file
+
+- `geoclimatedb` :  the part where we configure the "working" H2GIS database (db), used to execute the chain
+  - `path` : the adress of the working db
+  - `delete` : if `true` (default value), the db will be removed at the end of the workflow. Write `false` if you want to keep this db.
+- `input` : the part where the input informations are filled
+  - the input data are in
+    - a `folder` : specify the address of the folder where the input files are stored
+    - a `database` : fill the connexion informations and for each of the needed tables, point out the tables with their respectives schema (e.g `ign_bdtopo.bati_indifferencie`)
+  - for OSM, it can be:
+    - a (list of) placename
+    - a bounding box (envelop), defined thanks to its coordinates (in Lat/Long - WGS84)
+  - for BD Topo v2, it can be:
+    - 
+
+- `parameters` : all the parameter values described [here](#Parameters).
+
+
+
 
 Les types d'entrées (bdd ou dossier)
 
@@ -10,20 +127,43 @@ Les types de sorties (bdd ou dossier)
 
 
 
-#### Applications
-
-You can choose to run Geoclimate for 3 application cases
-
-- `TEB` : all the indicators needed to feed the TEB model from Météo France
-- `LCZ` : all the indicators needed to compute the LCZ classification
-- `URBAN_TYPOLOGY` : all the indicators needed to compute the urban typology developed by The LRA (Toulouse, France)
-
-These options can be inclusive or exclusive
 
 
-## Outputs
 
-As a result, [5 potential output tables](./outputs.md) are produced. Their structure may vary according to the application parameters chosen when executing the workflow.
+
+### Execute the workflow
+
+To run the Geoclimate workflow, the user as to adapt and execute the following groovy script (see how [here](../../for_users/execution_tools.md))
+
+```groovy
+// Declaration of the maven repository
+@GrabResolver(name='orbisgis', root='https://nexus.orbisgis.org/repository/orbisgis/')
+
+// Declaration of our Nexus repository, where the geoclimate project is stored
+@Grab(group='org.orbisgis.orbisprocess', module='geoclimate', version='1.0.0-SNAPSHOT')
+
+// Importing needed classes
+// In the Geoclimate object, we already have all the classes that allow access to the processes
+import org.orbisgis.orbisprocess.geoclimate.Geoclimate
+
+// We declare the tool that register and display the logs
+Geoclimate.logger = logger
+
+// The OSM or BD Topo v2 process is stored in a variable called "process" (and it instantiates the process at the same time).
+// Choose one of these two following instructions, depending on your input dataset
+def process = Geoclimate.Workflow.OSM()
+// or
+def process = Geoclimate.Workflow.BDTOPO_V2()
+
+// We execute the process (OSM or BD Topo v2) using the only input parameter : the configuration file
+process.execute(configurationFile:['your local configuration file adress'])
+// example : process.execute(configurationFile:'/tmp/osm_workflow_placename_folderoutput.json')
+                   
+// Ask to display the logs (can be useful to see the progress of the process.)
+logger.info process.results.outputMessage
+```
+
+
 
 
 

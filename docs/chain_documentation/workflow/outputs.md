@@ -1,6 +1,6 @@
 # Workflow outputs
 
-Below are presented the 5 potential output tables, whose structure may vary according to the application parameters chosen when executing the workflow.
+Below are presented the 5 potential output tables, whose structure may vary according to the application parameters chosen when executing the workflow ([See](./description.md)).
 
 #### Remark
 
