@@ -325,6 +325,14 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue(process.execute(configurationFile: configFile))
     }
 
+    @Test //Integration tests
+    @Disabled
+    void testOSMConfFileDelDbFalse() {
+        def configFile = getClass().getResource("config/osm_workflow_placename_dboutput.json").toURI()
+        IProcess process = ProcessingChain.Workflow.OSM()
+        assertTrue(process.execute(configurationFile: configFile))
+    }
+
     @Disabled //Enable this test to test some specific indicators
     @Test
     void testIndicators() {
