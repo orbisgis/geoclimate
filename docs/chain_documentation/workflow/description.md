@@ -74,11 +74,23 @@ In this file, the two dataset use cases are translated into two processes :
 - [OSM](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/main/groovy/org/orbisgis/orbisprocess/geoclimate/processingchain/Workflow.groovy#L1540)
 - [BDTOPO_V2](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/main/groovy/org/orbisgis/orbisprocess/geoclimate/processingchain/Workflow.groovy#L131)
 
+When we wil run the geoclimate workflow, we will use one of these two processes.
+
 ### Configuration file
 
-The parameters, needed by the process, are stored in an independant configuration file. This way, the user has just to adapt this file instead of changing some things in the workflow groovy file, which may be a bit too complex.
+The parameters, needed by the process, are stored in an independant configuration file. This way, the user has just to adapt this file instead of changing some things in the workflow groovy file, which may be a bit too complex for non-experts.
 
-Currently, there is 9 configuration files, that can be used to run Geoclimate with the two input datasets (OSM and BD Topo). There are all accessible [here](https://github.com/orbisgis/geoclimate/tree/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config)
+Currently, there is 9 (`.json`) configuration files, that can be used to run Geoclimate with the two input datasets (OSM and BD Topo). There are all accessible [here](https://github.com/orbisgis/geoclimate/tree/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config).
+
+Depending on the input dataset, these configuration files allows the user to "play" various scenarios which can be summarized with the illustration below.
+
+
+
+![workflow_config](../../resources/images/chain_documentation/workflow_config/workflow_config.png)
+
+
+
+In details, below are listed the different possibilities offered by this files:
 
 For OSM
 
@@ -101,39 +113,63 @@ For BD Topo v2
 
 Inside these configuration files, we have the following entries:
 
-- `description` : a text that described the configuration file
-
-- `geoclimatedb` :  the part where we configure the "working" H2GIS database (db), used to execute the chain
-  - `path` : the adress of the working db
+- **`description`** : a free text that described the configuration file
+- **`geoclimatedb`** :  the part where we configure the "working" H2GIS database (db), used to execute the chain
+  - `path` : the address where the the working db will be created (no need to create it before)
   - `delete` : if `true` (default value), the db will be removed at the end of the workflow. Write `false` if you want to keep this db.
-- `input` : the part where the input informations are filled
-  - the input data are in
-    - a `folder` : specify the address of the folder where the input files are stored
-    - a `database` : fill the connexion informations and for each of the needed tables, point out the tables with their respectives schema (e.g `ign_bdtopo.bati_indifferencie`)
-  - for OSM, it can be:
-    - a (list of) placename
-    - a bounding box (envelop), defined thanks to its coordinates (in Lat/Long - WGS84)
-  - for BD Topo v2, it can be:
-    - 
+- **`input`** : the part where the input informations are filled
+  - for BD Topo v2:
+    - Case with a `folder` : specify the address of the folder where the input files are stored. There will be as many cities processed as there are zone id (`id_zone` = CODE INSEE in France)  found in the `IRIS_GE` table.
+    - Case with a `database` : you will have to fill the following informations
+      - connexion informations: JDBC url, user, password
+      - `tables` : for each of the needed tables, point out the tables with their respectives schema (e.g `ign_bdtopo.bati_indifferencie`)
+      - `id_zones` : the list of the zone id (`id_zone` = CODE INSEE in France) (between 1 and *n* id_zone)
+  - for OSM,
+    - a (list of) placename(s),
+  - *or* a bounding box *(aslo called envelop or bbox)*, defined thanks to its coordinates (in Lat/Long - WGS84),
+    - *or* a mix between placename(s) and bbox.
+- **`output`** : the part where the output informations are filled. Choose to export in a:
+  - `folder`: specify the address of the folder where the output files will be stored
+  - or a `database`: fill the connexion informations: JDBC url, user, password
+- **`parameters`** : all the parameter values described [here](#Parameters).
 
-- `parameters` : all the parameter values described [here](#Parameters).
+#### Example
 
+Below is an example with the configuration file [bdtopo_workflow_folderinput_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/bdtopo_workflow_folderinput_folderoutput.json) 
 
-
-
-Les types d'entrées (bdd ou dossier)
-
-Les types de sorties (bdd ou dossier)
-
-
-
-
+```json
+{
+    "description" :"Example of configuration file with an input and output folder",
+    "input" : {
+        "folder": "/tmp/..."
+    },
+    "output" :{
+     "folder" : "/tmp/..."},
+    "parameters":
+    {"distance" : 1000,
+        "indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+        "svfSimplified": false,
+        "prefixName": "",
+        "mapOfWeights":
+        {"sky_view_factor": 1,
+            "aspect_ratio": 1,
+            "building_surface_fraction": 1,
+            "impervious_surface_fraction" : 1,
+            "pervious_surface_fraction": 1,
+            "height_of_roughness_elements": 1,
+            "terrain_roughness_class": 1},
+        "hLevMin": 3,
+        "hLevMax": 15,
+        "hThresholdLev2": 10
+    }
+}
+```
 
 
 
 ### Execute the workflow
 
-To run the Geoclimate workflow, the user as to adapt and execute the following groovy script (see how [here](../../for_users/execution_tools.md))
+Once you edited and adapted your configuration file to your need, you are ready to run the Geoclimate workflow. To do so, the user as to adapt (by choosing the process `Geoclimate.Workflow.OSM()` or `Geoclimate.Workflow.BDTOPO_V2()` ) and execute the following groovy script (see how [here](../../for_users/execution_tools.md)).
 
 ```groovy
 // Declaration of the maven repository
@@ -162,10 +198,6 @@ process.execute(configurationFile:['your local configuration file adress'])
 // Ask to display the logs (can be useful to see the progress of the process.)
 logger.info process.results.outputMessage
 ```
-
-
-
-
 
 
 

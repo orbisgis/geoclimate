@@ -1,4 +1,4 @@
-# Geoclimate implemtenation
+# Geoclimate implementation
 
 Description “technique” de l’outil geoclimate
 
