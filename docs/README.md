@@ -55,6 +55,10 @@ You can navigate in the documentation through the following entries.
 
 
 
+## Authors
+
+The Geoclimate chain has been developed by researchers and engineers from the french [Lab-STICC](https://www.labsticc.fr/en/index/) laboratory (CNRS UMR 6285 - DECIDE team - GIS group). They are also authors of the [OrbisGIS](http://orbisgis.org/) and [H2GIS](http://h2gis.org/) applications.
+
 ## Funding
 
 The Geoclimate chain has been developed within the two following research projects:
