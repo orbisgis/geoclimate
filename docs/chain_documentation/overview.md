@@ -21,7 +21,7 @@ Le modèle de données d'entrée -> [Input data model](./input_data_model.md)
 
 As described in [Bocher et al, 2018](http://dx.doi.org/10.1016/j.uclim.2018.01.008), three scales of analysis are used in Geoclimate:
 
-- the **building** ([see more](./spatial_units/building.md))
+- the **building**
 - the **block** : a set of buildings that touches (at least one point in common) ([see how it's made](./spatial_units/block.md))
 - the ***Reference Spatial Unit***, also called  RSU, which is a continuous and homogeneous way to divide the space,  using topographic constraint such as roads, rail ways, big vegetation  and hydrographic areas in addition to administrative boundaries ([see how it's made](./spatial_units/rsu.md))
 
