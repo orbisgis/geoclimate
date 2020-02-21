@@ -1568,7 +1568,7 @@ def OSM() {
                 if(geoclimatedb){
                     def h2gis_path = geoclimatedb.get("path")
                     def delete_h2gis_db = geoclimatedb.get("delete")
-                    if(delete_h2gis_db && delete_h2gis_db in Boolean){
+                    if((delete_h2gis_db && delete_h2gis_db) in Boolean){
                         delete_h2gis = delete_h2gis_db
                     }
                     if(h2gis_path) {
