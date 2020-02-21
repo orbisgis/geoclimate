@@ -21,7 +21,7 @@ To achieve these objectives, it is necessary to calculate a large number of morp
 
 Geoclimate has been developed with this in mind and offers a turnkey solution for users to compute:
 
-- a series of more than 60 urban indicators at three spatial scales : RSU, block and building ([see](#Scales-of-analysis)),
+- a series of more than 60 urban indicators at three spatial scales : RSU, block and building,
 - Two segmentations of the territory at the RSU scale: LCZ classification and Urban typology
 
 
