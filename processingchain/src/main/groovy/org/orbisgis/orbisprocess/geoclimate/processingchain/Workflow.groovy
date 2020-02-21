@@ -822,7 +822,7 @@ def extractProcessingParameters(def processing_parameters){
             defaultParameters.distance = distanceP
         }
         def indicatorUseP = processing_parameters.indicatorUse
-        if(indicatorUseP && indicatorUseP in Map){
+        if(indicatorUseP && indicatorUseP in List){
             defaultParameters.indicatorUse = indicatorUseP
         }
         def svfSimplifiedP = processing_parameters.svfSimplified
