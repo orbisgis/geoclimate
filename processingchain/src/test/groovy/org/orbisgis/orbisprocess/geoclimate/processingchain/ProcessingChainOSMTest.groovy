@@ -409,4 +409,19 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         datasource.save("stats_rsu", './target/stats_rsu.shp')
 
     }
+
+    @Test //Integration tests
+    void testOSMConfigurationFileDefaultIndicUse() {
+        def configurationFile = getClass().getResource("config/osm_workflow_placename_folderoutputIndicUse.json").toURI()
+        def configFile= new File(configurationFile)
+        Map parameters = ProcessingChain.Workflow.readJSONParameters(configFile)
+        def processing_parameters = ProcessingChain.Workflow.extractProcessingParameters(parameters.get("parameters"))
+
+        // Test that the config file value for indicatorUse is not replaced by the default value
+        assertEquals(processing_parameters.indicatorUse[0], "rien")
+
+        // Test that no indicator are calculated since none of "TEB", "URBAN_TYPOLOGY" and "LCZ" are given in indicatorUse
+        IProcess process = ProcessingChain.Workflow.OSM()
+        process.execute(configurationFile: configurationFile)
+    }
 }
