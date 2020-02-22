@@ -217,7 +217,29 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
-    //@Disabled
+    @Disabled
+    @Test
+    void testOSMWorkflowFromBboxDeleteDBFalse() {
+        String directory ="./target/geoclimate_chain"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
+                "geoclimatedb" : [
+                        "path" : "${dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE"}",
+                        "delete" :"false"
+                ],
+                "input" : [
+                        "osm" : [[38.89557963573336,-77.03930318355559,38.89944983078282,-77.03364372253417]]],
+                "output" :[
+                        "folder" : "$directory"]
+        ]
+        IProcess process = ProcessingChain.Workflow.OSM()
+        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+    }
+
+    @Disabled
     @Test
     void testOSMWorkflowFromBbox() {
         String directory ="./target/geoclimate_chain"
