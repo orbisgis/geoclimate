@@ -74,7 +74,23 @@ Now you are ready to play with the Geoclimate chain by executing the dedicated s
 
 ## With the Groovy Console
 
-Step by step tutorial with screenshots and command lines
+### Install the Groovy console
+
+**XXXXXX**
+
+### Launch the console
+
+In a terminal, just enter `groovyConsole` and press Enter.
+
+```bash
+$ groovyConsole
+```
+
+The following interface should appear
+
+![groovy_console](../resources/images/for_users/groovy_console.png)
+
+Once you loaded (or copy/pasted) your script, you can execute it by clicking on ![](../resources/images/for_users/groovy_console_execute.png) (or by using the shortcut `Ctrl + R`).
 
 
 
