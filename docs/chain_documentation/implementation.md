@@ -1,6 +1,6 @@
 # Geoclimate implementation
 
-Description “technique” de l’outil geoclimate
+And from a technical/informatic point of view, how does Geoclimate work?
 
 
 

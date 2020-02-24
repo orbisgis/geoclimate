@@ -49,30 +49,30 @@ Below are presented the different LCZ types.
 
 For each of them, we give the definition and the hexadecimal color code used to display those informations.
 
-| Type |       Type definition       |                       Hexa Color code                        |
-| :--: | :-------------------------: | :----------------------------------------------------------: |
-|  1   |  LCZ 1: Compact high-rise   | ![#f03c15](https://placehold.it/15/8B0101/000000?text=+) `#8b0101` |
-|  2   |   LCZ 2: Compact mid-rise   | ![#cc0200](https://placehold.it/15/cc0200/000000?text=+) `#cc0200` |
-|  3   |   LCZ 3: Compact low-rise   | ![#fc0001](https://placehold.it/15/fc0001/000000?text=+) `#fc0001` |
-|  4   |    LCZ 4: Open high-rise    | ![#be4c03](https://placehold.it/15/be4c03/000000?text=+) `#be4c03` |
-|  5   |    LCZ 5: Open mid-rise     | ![#ff6602](https://placehold.it/15/ff6602/000000?text=+) `#ff6602` |
-|  6   |    LCZ 6: Open low-rise     | ![#ff9856](https://placehold.it/15/ff9856/000000?text=+) `#ff9856` |
-|  7   | LCZ 7: Lightweight low-rise | ![#fbed08](https://placehold.it/15/fbed08/000000?text=+) `#fbed08` |
-|  8   |    LCZ 8: Large low-rise    | ![#bcbcba](https://placehold.it/15/bcbcba/000000?text=+) `#bcbcba` |
-|  9   |    LCZ 9: Sparsely built    | ![#ffcca7](https://placehold.it/15/ffcca7/000000?text=+) `#ffcca7` |
-|  10  |   LCZ 10: Heavy industry    | ![#57555a](https://placehold.it/15/57555a/000000?text=+) `#57555a` |
-| 101  |     LCZ A: Dense trees      | ![#006700](https://placehold.it/15/006700/000000?text=+) `#006700` |
-| 102  |   LCZ B: Scattered trees    | ![#05aa05](https://placehold.it/15/05aa05/000000?text=+) `#05aa05` |
-| 103  |      LCZ C: Bush,scrub      | ![#648423](https://placehold.it/15/648423/000000?text=+) `#648423` |
-| 104  |      LCZ D: Low plants      | ![#bbdb7a](https://placehold.it/15/bbdb7a/000000?text=+) `#bbdb7a` |
-| 105  |  LCZ E: Bare rock or paved  | ![#010101](https://placehold.it/15/010101/000000?text=+) `#010101` |
-| 106  |  LCZ F: Bare soil or sand   | ![#fdf6ae](https://placehold.it/15/fdf6ae/000000?text=+) `#fdf6ae` |
-| 107  |        LCZ G: Water         | ![#6d67fd](https://placehold.it/15/6d67fd/000000?text=+) `#6d67fd` |
+| Type  |       Type definition       |                       Hexa Color code                        |
+| :---: | :-------------------------: | :----------------------------------------------------------: |
+|  `1`  |  LCZ 1: Compact high-rise   | ![#f03c15](https://placehold.it/15/8B0101/000000?text=+) `#8b0101` |
+|  `2`  |   LCZ 2: Compact mid-rise   | ![#cc0200](https://placehold.it/15/cc0200/000000?text=+) `#cc0200` |
+|  `3`  |   LCZ 3: Compact low-rise   | ![#fc0001](https://placehold.it/15/fc0001/000000?text=+) `#fc0001` |
+|  `4`  |    LCZ 4: Open high-rise    | ![#be4c03](https://placehold.it/15/be4c03/000000?text=+) `#be4c03` |
+|  `5`  |    LCZ 5: Open mid-rise     | ![#ff6602](https://placehold.it/15/ff6602/000000?text=+) `#ff6602` |
+|  `6`  |    LCZ 6: Open low-rise     | ![#ff9856](https://placehold.it/15/ff9856/000000?text=+) `#ff9856` |
+|  `7`  | LCZ 7: Lightweight low-rise | ![#fbed08](https://placehold.it/15/fbed08/000000?text=+) `#fbed08` |
+|  `8`  |    LCZ 8: Large low-rise    | ![#bcbcba](https://placehold.it/15/bcbcba/000000?text=+) `#bcbcba` |
+|  `9`  |    LCZ 9: Sparsely built    | ![#ffcca7](https://placehold.it/15/ffcca7/000000?text=+) `#ffcca7` |
+| `10`  |   LCZ 10: Heavy industry    | ![#57555a](https://placehold.it/15/57555a/000000?text=+) `#57555a` |
+| `101` |     LCZ A: Dense trees      | ![#006700](https://placehold.it/15/006700/000000?text=+) `#006700` |
+| `102` |   LCZ B: Scattered trees    | ![#05aa05](https://placehold.it/15/05aa05/000000?text=+) `#05aa05` |
+| `103` |      LCZ C: Bush,scrub      | ![#648423](https://placehold.it/15/648423/000000?text=+) `#648423` |
+| `104` |      LCZ D: Low plants      | ![#bbdb7a](https://placehold.it/15/bbdb7a/000000?text=+) `#bbdb7a` |
+| `105` |  LCZ E: Bare rock or paved  | ![#010101](https://placehold.it/15/010101/000000?text=+) `#010101` |
+| `106` |  LCZ F: Bare soil or sand   | ![#fdf6ae](https://placehold.it/15/fdf6ae/000000?text=+) `#fdf6ae` |
+| `107` |        LCZ G: Water         | ![#6d67fd](https://placehold.it/15/6d67fd/000000?text=+) `#6d67fd` |
 
 #### Representation
 
 
-Two `.sld` style files, based on this classification, are provided in the `/processing_chain/src/main/resources/styles/` folder :
+Two `.sld` style files, based on this classification, are provided in the `/processing_chain/src/main/resources/styles/` folder ([here](https://github.com/orbisgis/geoclimate/tree/master/processingchain/src/main/resources/styles)):
 
 - `lcz1.sld` : the style ready to be applied to the field `LCZ1`
 - `lcz2.sld` : the style ready to be applied to the field `LCZ2`
@@ -95,25 +95,26 @@ Below are presented the different Urban types.
 
 For each of them, we give the definition and the hexadecimal color code used to display those informations.
 
-| Type  |            Type definition            |                       Hexa Color code                        |
-| :---: | :-----------------------------------: | :----------------------------------------------------------: |
-|  ba   |          Industrial building          | ![#f03c15](https://placehold.it/15/8f8f8f/000000?text=+) `#8f8f8f` |
-|  bgh  |          High-rise building           | ![#cc0200](https://placehold.it/15/000d00/000000?text=+) `#000d00` |
-| icif  | Linear building on closed urban islet | ![#fc0001](https://placehold.it/15/d52623/000000?text=+) `#d52623` |
-| icio  |  Linear building on open urban islet  | ![#be4c03](https://placehold.it/15/f07923/000000?text=+) `#f07923` |
-|  id   |           Detached building           | ![#ff6602](https://placehold.it/15/eccb27/000000?text=+) `#eccb27` |
-| local |           Informal building           | ![#ff9856](https://placehold.it/15/d728ac/000000?text=+) `#d728ac` |
-| pcif  |       Row house on closed islet       | ![#fbed08](https://placehold.it/15/2b6724/000000?text=+) `#2b6724` |
-| pcio  |        Row house on open islet        | ![#bcbcba](https://placehold.it/15/36884a/000000?text=+) `#36884a` |
-|  pd   |            Detached house             | ![#ffcca7](https://placehold.it/15/22be2f/000000?text=+) `#22be2f` |
-|  psc  |          Semi-detached house          | ![#57555a](https://placehold.it/15/05ff58/000000?text=+) `#05ff58` |
-|       |               Undefined               | ![#006700](https://placehold.it/15/ffffff/000000?text=+) `#ffffff` |
+|  Type   |            Type definition            |                       Hexa Color code                        |
+| :-----: | :-----------------------------------: | :----------------------------------------------------------: |
+|  `ba`   |          Industrial building          | ![#f03c15](https://placehold.it/15/8f8f8f/000000?text=+) `#8f8f8f` |
+|  `bgh`  |          High-rise building           | ![#cc0200](https://placehold.it/15/000d00/000000?text=+) `#000d00` |
+| `icif`  | Linear building on closed urban islet | ![#fc0001](https://placehold.it/15/d52623/000000?text=+) `#d52623` |
+| `icio`  |  Linear building on open urban islet  | ![#be4c03](https://placehold.it/15/f07923/000000?text=+) `#f07923` |
+|  `id`   |           Detached building           | ![#ff6602](https://placehold.it/15/eccb27/000000?text=+) `#eccb27` |
+| `local` |           Informal building           | ![#ff9856](https://placehold.it/15/d728ac/000000?text=+) `#d728ac` |
+| `pcif`  |       Row house on closed islet       | ![#fbed08](https://placehold.it/15/2b6724/000000?text=+) `#2b6724` |
+| `pcio`  |        Row house on open islet        | ![#bcbcba](https://placehold.it/15/36884a/000000?text=+) `#36884a` |
+|  `pd`   |            Detached house             | ![#ffcca7](https://placehold.it/15/22be2f/000000?text=+) `#22be2f` |
+|  `psc`  |          Semi-detached house          | ![#57555a](https://placehold.it/15/05ff58/000000?text=+) `#05ff58` |
+|         |               Undefined               | ![#006700](https://placehold.it/15/ffffff/000000?text=+) `#ffffff` |
 
 #### Representation
 
 
-One `urban_typo.sld` style file, based on this classification, is provided in the `/processing_chain/src/main/resources/styles/` folder.
+One `urban_typo.sld` style file, based on this classification, is provided in the `/processing_chain/src/main/resources/styles/` folder ([here](https://github.com/orbisgis/geoclimate/tree/master/processingchain/src/main/resources/styles)).
+
+![](../../resources/images/chain_documentation/urban_typo_legend.png)
 
 
 
-<img src="/home/gpetit/Documents/Codes/geoclimate/docs/resources/images/chain_documentation/urban_typo_legend.png" alt="urban_typo" style="zoom:50%;" />
