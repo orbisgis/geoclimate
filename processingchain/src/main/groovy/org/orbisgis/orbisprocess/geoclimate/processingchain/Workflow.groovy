@@ -159,8 +159,17 @@ def BDTOPO_V2() {
                 if(geoclimatedb){
                     def h2gis_path = geoclimatedb.get("path")
                     def delete_h2gis_db = geoclimatedb.get("delete")
-                    if(delete_h2gis_db && delete_h2gis_db in Boolean){
-                        delete_h2gis = delete_h2gis_db
+                    if(delete_h2gis_db==null){
+                        delete_h2gis = true
+                    }
+                    else if (delete_h2gis_db instanceof String){
+                        delete_h2gis = true
+                        if(delete_h2gis_db.equalsIgnoreCase("false")){
+                            delete_h2gis=false
+                        }
+                    }
+                    else if(delete_h2gis_db instanceof Boolean){
+                        delete_h2gis=delete_h2gis_db
                     }
                     if(h2gis_path) {
                         h2gis_properties = ["databaseName":h2gis_path, "user": "sa", "password": ""]
@@ -822,7 +831,7 @@ def extractProcessingParameters(def processing_parameters){
             defaultParameters.distance = distanceP
         }
         def indicatorUseP = processing_parameters.indicatorUse
-        if(indicatorUseP && indicatorUseP in Map){
+        if(indicatorUseP && indicatorUseP in List){
             defaultParameters.indicatorUse = indicatorUseP
         }
         def svfSimplifiedP = processing_parameters.svfSimplified
@@ -1568,8 +1577,17 @@ def OSM() {
                 if(geoclimatedb){
                     def h2gis_path = geoclimatedb.get("path")
                     def delete_h2gis_db = geoclimatedb.get("delete")
-                    if(delete_h2gis_db && delete_h2gis_db in Boolean){
-                        delete_h2gis = delete_h2gis_db
+                    if(delete_h2gis_db==null){
+                        delete_h2gis = true
+                    }
+                    else if (delete_h2gis_db instanceof String){
+                        delete_h2gis = true
+                        if(delete_h2gis_db.equalsIgnoreCase("false")){
+                            delete_h2gis=false
+                        }
+                    }
+                    else if(delete_h2gis_db instanceof Boolean){
+                        delete_h2gis=delete_h2gis_db
                     }
                     if(h2gis_path) {
                         h2gis_properties = ["databaseName":h2gis_path, "user": "sa", "password": ""]
