@@ -1,9 +1,7 @@
 # Geoclimate
 
 
-
 <span style="color:red">**Warning: this documentation is under construction**</span>
-
 
 
 ## Introduction
@@ -13,7 +11,7 @@ At the urban scale, the type of land surface (pervious, impervious), the shape a
 and the streets as well as the building use are the determinant parameters affecting the urban climate. 
 Thus it is necessary to described accurately the urban fabric in order to apply the right energy balance. 
 
-Geoclimate is a [Groovy](http://groovy-lang.org/) library that implements algorithms to compute geospatial indicators based on GIS layers.
+Geoclimate is a [Groovy](http://groovy-lang.org/) library that implements algorithms to compute geospatial indicators based on vector GIS layers.
 e.g. density of building, sky view factor, building compacity, road distance...
 
 The geospatial indicators are computed at three spatial units :
@@ -21,7 +19,7 @@ The geospatial indicators are computed at three spatial units :
 - the block defined as an aggregation of buildings that are in contact,
 - the Reference Spatial Unit (RSU).
 
-More than 60 urban indicators are yet available. At a first stage, those indicators have been selected to 
+More than 60 urban indicators are yet available. At a first stage, those indicators have been selected to :
 1. to feed the [TEB](http://www.umr-cnrm.fr/spip.php?article199) climate model developed by [Météo France](http://www.meteofrance.com),
 2. to classify the urban tissues and build the *Local Climate Zones* ([LCZ](http://www.wudapt.org/lcz/)).
 
@@ -36,12 +34,13 @@ You can navigate in the documentation through the following entries.
 
 ### Geoclimate
 
-- [Overview](./chain_documentation/overview.md)
+- [Approach](./chain_documentation/approach.md)
   - [Input data model](./chain_documentation/input_data_model.md)
-  - Spatial units: [Building](./chain_documentation/spatial_units/building.md), [Block](./chain_documentation/spatial_units/block.md) and [RSU](./chain_documentation/spatial_units/rsu.md)
-  - Indicators for [buildings](./chain_documentation/indicators/building.md), [blocks](./chain_documentation/indicators/block.md), [RSUs](./chain_documentation/indicators/rsu.md) and [RSU classifications](./chain_documentation/indicators/rsu_classifications.md)
+  - [Spatial units](./chain_documentation/spatial_units/spatial_units.md)
+  - [Indicators](./chain_documentation/indicators/indicators.md)
+  - [Classifications](./chain_documentation/classsifications/classifications.md)  
 - [Implementation](./chain_documentation/implementation.md)
-- [Workflow](./chain_documentation/workflow/description.md)
+- [Applications](./chain_documentation/workflow/description.md)
   - [With OSM](./chain_documentation/workflow/osm/intro.md)
   - [With BD Topo v2](./chain_documentation/workflow/bd_topo_v2/intro.md)
 
