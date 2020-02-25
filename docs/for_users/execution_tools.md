@@ -76,7 +76,7 @@ Now you are ready to play with the Geoclimate chain by executing the dedicated s
 
 ### Install the Groovy console
 
-**XXXXXX**
+The console is included in Groovy. So if you haven't already done so, please install Groovy, reading the documentation [here](./execution_environment.md#Requirements).
 
 ### Launch the console
 

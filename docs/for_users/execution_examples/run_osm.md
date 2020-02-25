@@ -16,7 +16,7 @@ Below are illustrated the cases n°4 and n°1, in the DBeaver environment.
 
 In this use case, we want to process OSM input data, extracted from the french city (placename) of [Vannes](https://www.openstreetmap.org/relation/192306). 
 
-![osm_vannes](../../resources/images/for_users/osm_vannes.png)
+![osm_vannes](../../resources/images/for_users/osm_vannes/osm_vannes.png)
 
 The resulting layers will be exported as flat files in a dedicated output folder at the following address : `/home/geoclimate/osm/`
 
@@ -88,6 +88,31 @@ logger.info process.results.outputMessage
 Where `'/home/geoclimate/osm/osm_workflow_placename_folderoutput.json'` is the place where the configuration file is stored.
 
 Then, click on ![dbeaver_groovy_console_execute_all](../../resources/images/for_users/dbeaver_groovy_console_execute_all.png) to execute the workflow.
+
+#### Log messages
+
+If you added the `Geoclimate.logger = logger` and `logger.info process.results.outputMessage` instructions in DBeaver, you are able to read the logs. These logs show you where the Geoclimate chain is by listing all the tasks in progress and completed.
+
+If not already done, open the `Error Log` console, thanks to the `Windows` / `Display the view` menus. Then start processing and follow the progress in the logs (see an example below, at the end of the process).
+
+![osm_vannes_logs](../../resources/images/for_users/osm_vannes/osm_vannes_logs.png)
+
+### 3. Results
+
+In your output folder `/home/geoclimate/osm/` you now have a new sub-folder called `osm_vannes` in which are stored the resulting layers, saved as `.geojson` files. In particular, you have:
+
+- the 7 input layers (`INPUT_BUILDING`, `INPUT_ROAD`, `INPUT_RAILS`, `INPUT_VEGET`, `INPUT_HYDRO`, `INPUT_IMPERVIOUS` and `ZONE`)
+- the 4 resulting layers (`BUILDING_INDICATORS`, `BLOCK_INDICATORS`, `RSU_INDICATORS`, `RSU_LCZ`)
+
+![osm_vannes_output_files](../../resources/images/for_users/osm_vannes/osm_vannes_output_files.png)
+
+These files can be opened in most of the GIS applications (e.g QGIS, OrbisGIS, Openjump, ...).
+
+
+
+![osm_vannes_results](../../resources/images/for_users/osm_vannes/osm_vannes_results.png)
+
+
 
 ## Using a bbox
 

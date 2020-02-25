@@ -1,4 +1,4 @@
-# Spatial unit 
+# Spatial units
 
 Geoclimate performs indicator computation at three spatial units.
 A spatial unit corresponds to a geometry area (POLYGON or MULTIPOLYGON). 

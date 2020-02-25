@@ -7,13 +7,13 @@ It consists in a set of data staged in a tabular way (rows, columns, also called
 A GIS layer is an abstraction of reality specified by a geographic data model (geometry + attributes).
 A layer represents a single geographic subject. 7 layers are used by the Geoclimate algorithms.
 
-- [(1) Buildings](#Buildings)
-- [(2) Roads](#Roads)
-- [(3) Railways](#Railways)
-- [(4) Vegetation areas](#Vegetation-areas)
-- [(5) Hydrographic areas](#Hydrographic-areas)
-- [(6) Impervious areas](#Impervious-areas)
-- [(7) Zones](#Zones)
+- [1- Buildings](#1--Buildings)
+- [2- Roads](#2--Roads)
+- [3- Railways](#3--Railways)
+- [4- Vegetation areas](#4--Vegetation-areas)
+- [5- Hydrographic areas](#5--Hydrographic-areas)
+- [6- Impervious areas](#6--Impervious-areas)
+- [7- Zones](#7--Zones)
 
 For each of them, we provide a dictionary of values (with the name and type of the columns) and the associated metadata tables, in which description and parameters are stored.
 
@@ -36,7 +36,7 @@ When necessary, a list of values that a column must take, with :
 - a **Source**: most of the values are based on concepts from existing thesauri. In this case, we indicate their source.
 
 
-## (1) Buildings
+## 1- Buildings
 
 ### ![](../resources/images/common/icons/table.png) BUILDING table structure
 
@@ -105,7 +105,7 @@ List of all possible values for the `type` and the `main_use` attributes, in the
 
 [back to top](#Input-data-model)
 
-## (2) Roads
+## 2- Roads
 
 ### ![](../resources/images/common/icons/table.png) ROAD table structure
 
@@ -191,7 +191,7 @@ Lists of all possible values for the `crossing` attribute in the `ROAD` table.
 
 
 
-## (3) Railways
+## 3- Railways
 
 ### ![](../resources/images/common/icons/table.png) RAIL table structure
 
@@ -242,7 +242,7 @@ List of all possible values for the `crossing` attribute in the `RAIL` table.
 
 
 
-## (4) Vegetation areas
+## 4- Vegetation areas
 
 ### ![](../resources/images/common/icons/table.png) VEGET table structure
 
@@ -283,7 +283,7 @@ List of all possible values for `type` attribute in the `VEGET` table.
 
 [back to top](#Input-data-model)
 
-## (5) Hydrographic areas
+## 5- Hydrographic areas
 
 ### ![](../resources/images/common/icons/table.png) HYDRO table structure
 
@@ -301,7 +301,7 @@ This table represents any kind of hydrographic area (river, sea, ...).
 
 [back to top](#Input-data-model)
 
-## (6) Impervious areas
+## 6- Impervious areas
 
 ### ![](../resources/images/common/icons/table.png) IMPERVIOUS table structure
 
@@ -322,7 +322,7 @@ This table represents any impervious surface, in addition to buildings and roads
 
 [back to top](#Input-data-model)
 
-## (7) Zones
+## 7- Zones
 
 ### ![](../resources/images/common/icons/table.png) ZONE table structure
 

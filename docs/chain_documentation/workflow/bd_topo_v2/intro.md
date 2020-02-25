@@ -42,7 +42,7 @@ The user chooses the data set of his choice and ensures that the information pre
 
 [![img](https://github.com/gpetit/geoclimate/raw/add_documentation/docs/images/icons/arrow.png)](https://github.com/gpetit/geoclimate/blob/add_documentation/docs/images/icons/arrow.png) [Read more](./data_preparation.md) about this module.
 
-### 
+
 
 ### M2 - Formating and quality control
 
@@ -56,7 +56,7 @@ The prepared data provided by the user, according to the input model, are contro
 
 The data are processed automatically, without user intervention, and the resulting layers are provided ([See](https://github.com/gpetit/geoclimate/tree/add_documentation/docs#Resulting-layers)).
 
-### 
+
 
 ### Remark
 
