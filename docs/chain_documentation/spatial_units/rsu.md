@@ -81,8 +81,3 @@ Below are examples of RSU's, produced in the region of Paris (France), using dat
 
 ![USR_Paris_with_limits_cities](../../resources/images/chain_documentation/USR_Paris_with_limits_cities.png)
 
-
-
-## Source code
-
-You can consult the source code [here](https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/orbisprocess/geoclimate/geoindicators/SpatialUnits.groovy).

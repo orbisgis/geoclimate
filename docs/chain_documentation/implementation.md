@@ -1,19 +1,23 @@
-# Geoclimate implementation
 
-And from a technical/informatic point of view, how does Geoclimate work?
+## Architecture
 
+The Geoclimate algorithms are implemented on top of the [OrbisData]((https://github.com/orbisgis/orbisdata)) library. 
+Orbisdata provides a unique access point to query, manage, retrieve data. 
+Orbisdata is based on lambda expressions and sugar programming methods introduced since JAVA 8. 
+Orbisdata is closed to Groovy syntax and aims to provide an elegant and fluent framework to play with geospatial data.
 
+Smile machine learning
 
-## Processeses
-
-Ensemble de process basés sur OrbisDATA, organisé par thématique
-
-
-## Execution
-
-La mise en œuvre nécessite d’exécuter du code groovy, qui peut se faire dans différents environnements
+Database
 
 
-## Input parameters
+## Algorithms
 
-Description des paramètres utilisés pendant la chaîne (expand, distBuffer, ththresold, ...)
+
+## Object data model
+
+
+
+## Running environment
+
+

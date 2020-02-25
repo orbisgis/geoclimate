@@ -174,7 +174,7 @@ This table stores all the indicators computed at the RSU's scale (and described 
 
 ## The `RSU_LCZ` table
 
-This table stores the result of the LCZ classification (described [here](../indicators/rsu_classifications.md)) computed at the RSU's scale.
+This table stores the result of the LCZ classification (described [here](../classsifications/rsu_classifications.md)) computed at the RSU's scale.
 
 ![](../../resources/images/common/icons/github.png) The indicators source code is available [here](https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/RsuIndicators.groovy).
 
@@ -192,7 +192,7 @@ This table stores the result of the LCZ classification (described [here](../indi
 
 ## The `RSU_URBAN_TYPO` table
 
-This table stores the result of the Urban typology (described [here](../indicators/rsu_classifications.md)) computed at the RSU's scale.
+This table stores the result of the Urban typology (described [here](../classsifications/rsu_classifications.md)) computed at the RSU's scale.
 
 ![](../../resources/images/common/icons/github.png) The indicators source code is available [here](https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/RsuIndicators.groovy).
 

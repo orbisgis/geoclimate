@@ -5,8 +5,6 @@
 Below are presented all the indicators computed at the block's scale.
 
 
-
-
 ### `AREA`
 
 **Description**: Area of the block footprint.

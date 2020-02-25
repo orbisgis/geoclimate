@@ -1,4 +1,4 @@
-# Spatial unit - Block 
+# Spatial unit - block 
 
 ## Definition
 
@@ -17,7 +17,3 @@ Below is an illustration, in the city center of [Toulouse](https://www.openstree
 ![bloc](../../resources/images/chain_documentation/bloc.png)
 
 
-
-## Source code
-
-You can consult the source code [here](https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/orbisprocess/geoclimate/geoindicators/SpatialUnits.groovy).
