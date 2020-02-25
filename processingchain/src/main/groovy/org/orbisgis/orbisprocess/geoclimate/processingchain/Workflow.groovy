@@ -834,6 +834,7 @@ def extractProcessingParameters(def processing_parameters){
         if(indicatorUseP && indicatorUseP in List){
             defaultParameters.indicatorUse = indicatorUseP
         }
+
         def svfSimplifiedP = processing_parameters.svfSimplified
         if(svfSimplifiedP && svfSimplifiedP in Boolean){
             defaultParameters.svfSimplified = svfSimplifiedP
@@ -977,51 +978,50 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
     outputFiles.each{
         //Save indicators
         if(it.equals("building_indicators")){
-            h2gis_datasource.save(results.outputTableBuildingIndicators, "${subFolder.getAbsolutePath()+File.separator+results.outputTableBuildingIndicators}.geojson")
-            info "${results.outputTableBuildingIndicators} has been saved."
+            saveTableAsGeojson(results.outputTableBuildingIndicators, "${subFolder.getAbsolutePath()+File.separator+"building_indicators"}.geojson",h2gis_datasource)
         }
         else if(it.equals("block_indicators")){
-            h2gis_datasource.save(results.outputTableBlockIndicators, "${subFolder.getAbsolutePath()+File.separator+results.outputTableBlockIndicators}.geojson")
-            info "${results.outputTableBlockIndicators} has been saved."
-        }
+            saveTableAsGeojson(results.outputTableBlockIndicators, "${subFolder.getAbsolutePath()+File.separator+"block_indicators"}.geojson",h2gis_datasource)
+        }subFolder
         else  if(it.equals("rsu_indicators")){
-            h2gis_datasource.save(results.outputTableRsuIndicators, "${subFolder.getAbsolutePath()+File.separator+results.outputTableRsuIndicators}.geojson")
-            info "${results.outputTableRsuIndicators} has been saved."
+            saveTableAsGeojson(results.outputTableRsuIndicators, "${subFolder.getAbsolutePath()+File.separator+"rsu_indicators"}.geojson",h2gis_datasource)
         }
         else  if(it.equals("rsu_lcz")){
-            h2gis_datasource.save(results.outputTableRsuLcz, "${subFolder.getAbsolutePath()+File.separator+results.outputTableRsuLcz}.geojson")
-            info "${results.outputTableRsuLcz} has been saved."
+            saveTableAsGeojson(results.outputTableRsuLcz,  "${subFolder.getAbsolutePath()+File.separator+"rsu_lcz"}.geojson",h2gis_datasource)
         }
         else  if(it.equals("zones")){
-            h2gis_datasource.save(results.outputTableZone, "${subFolder.getAbsolutePath()+File.separator+results.outputTableZone}.geojson")
-            info "${results.outputTableZone} has been saved."
+            saveTableAsGeojson(results.outputTableZone,  "${subFolder.getAbsolutePath()+File.separator+"zones"}.geojson",h2gis_datasource)
         }
 
         //Save input GIS tables
         else  if(it.equals("building")){
-            h2gis_datasource.save(results.buildingTableName, "${subFolder.getAbsolutePath()+File.separator+results.buildingTableName}.geojson")
-            info "${results.buildingTableName} has been saved."
+            saveTableAsGeojson(results.buildingTableName, "${subFolder.getAbsolutePath()+File.separator+"building"}.geojson", h2gis_datasource)
         }
         else if(it.equals("road")){
-            h2gis_datasource.save(results.roadTableName, "${subFolder.getAbsolutePath()+File.separator+results.roadTableName}.geojson")
-            info "${results.roadTableName} has been saved."
+            saveTableAsGeojson(results.roadTableName,  "${subFolder.getAbsolutePath()+File.separator+"road"}.geojson",h2gis_datasource)
         }
         else if(it.equals("rail")){
-            h2gis_datasource.save(results.railTableName, "${subFolder.getAbsolutePath()+File.separator+results.railTableName}.geojson")
-            info "${results.railTableName} has been saved."
+            saveTableAsGeojson(results.railTableName,  "${subFolder.getAbsolutePath()+File.separator+"rail"}.geojson",h2gis_datasource)
         }
         if(it.equals("water")){
-            h2gis_datasource.save(results.hydrographicTableName, "${subFolder.getAbsolutePath()+File.separator+results.hydrographicTableName}.geojson")
-            info "${results.hydrographicTableName} has been saved."
+            saveTableAsGeojson(results.hydrographicTableName, "${subFolder.getAbsolutePath()+File.separator+"water"}.geojson", h2gis_datasource)
         }
         else if(it.equals("vegetation")){
-            h2gis_datasource.save(results.vegetationTableName, "${subFolder.getAbsolutePath()+File.separator+results.vegetationTableName}.geojson")
-            info "${results.vegetationTableName} has been saved."
+            saveTableAsGeojson(results.vegetationTableName,  "${subFolder.getAbsolutePath()+File.separator+"vegetation"}.geojson",h2gis_datasource)
         }
         else if(it.equals("impervious")){
-            h2gis_datasource.save(results.imperviousTableName, "${subFolder.getAbsolutePath()+File.separator+results.imperviousTableName}.geojson")
-            info "${results.imperviousTableName} has been saved."
+            saveTableAsGeojson(results.imperviousTableName, "${subFolder.getAbsolutePath()+File.separator+"impervious"}.geojson", h2gis_datasource)
         }
+    }
+}
+
+/**
+ * Method to save a table into a geojson file
+ */
+def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource){
+    if(outputTable && h2gis_datasource.hasTable(outputTable)){
+        h2gis_datasource.save(outputTable, filePath)
+        info "${outputTable} has been saved in ${filePath}."
     }
 }
 
@@ -1423,7 +1423,7 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
  * @return
  */
 def indicatorTableBatchExportTable(def output_datasource, def output_table, def id_zone, def srid, def h2gis_datasource, h2gis_table_to_save, def batchSize, def filter){
-    if(h2gis_datasource.hasTable(h2gis_table_to_save)) {
+    if(h2gis_table_to_save && h2gis_datasource.hasTable(h2gis_table_to_save)) {
         def sridTable = h2gis_datasource.getSpatialTable(h2gis_table_to_save).srid
         info "Start to export the table $h2gis_table_to_save into the table $output_table"
         def columnTypes = h2gis_datasource.getTable(h2gis_table_to_save).getColumnsTypes()
