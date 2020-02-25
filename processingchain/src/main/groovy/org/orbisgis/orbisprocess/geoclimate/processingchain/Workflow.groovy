@@ -968,7 +968,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
  * @param ouputFolder the ouput folder
  * @return
  */
-def saveOutputFiles(JdbcDataSource h2gis_datasource, def id_zone, def results, def outputFiles, def ouputFolder, def subFolderName){
+def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFiles, def ouputFolder, def subFolderName){
     //Create a subfolder to store each results
     def folderName = id_zone in Map?id_zone.join("_"):id_zone
     def subFolder = new File(ouputFolder.getAbsolutePath()+File.separator+subFolderName+folderName)
