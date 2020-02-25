@@ -978,39 +978,39 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
     outputFiles.each{
         //Save indicators
         if(it.equals("building_indicators")){
-            saveTableAsGeojson(results.outputTableBuildingIndicators, subFolder,h2gis_datasource)
+            saveTableAsGeojson(results.outputTableBuildingIndicators, "${subFolder.getAbsolutePath()+File.separator+"building_indicators"}.geojson",h2gis_datasource)
         }
         else if(it.equals("block_indicators")){
-            saveTableAsGeojson(results.outputTableBlockIndicators, subFolder,h2gis_datasource)
+            saveTableAsGeojson(results.outputTableBlockIndicators, "${subFolder.getAbsolutePath()+File.separator+"block_indicators"}.geojson",h2gis_datasource)
         }subFolder
         else  if(it.equals("rsu_indicators")){
-            saveTableAsGeojson(results.outputTableRsuIndicators, subFolder,h2gis_datasource)
+            saveTableAsGeojson(results.outputTableRsuIndicators, "${subFolder.getAbsolutePath()+File.separator+"rsu_indicators"}.geojson",h2gis_datasource)
         }
         else  if(it.equals("rsu_lcz")){
-            saveTableAsGeojson(results.outputTableRsuLcz, subFolder,h2gis_datasource)
+            saveTableAsGeojson(results.outputTableRsuLcz,  "${subFolder.getAbsolutePath()+File.separator+"rsu_lcz"}.geojson",h2gis_datasource)
         }
         else  if(it.equals("zones")){
-            saveTableAsGeojson(results.outputTableZone, subFolder,h2gis_datasource)
+            saveTableAsGeojson(results.outputTableZone,  "${subFolder.getAbsolutePath()+File.separator+"zones"}.geojson",h2gis_datasource)
         }
 
         //Save input GIS tables
         else  if(it.equals("building")){
-            saveTableAsGeojson(results.buildingTableName,subFolder, h2gis_datasource)
+            saveTableAsGeojson(results.buildingTableName, "${subFolder.getAbsolutePath()+File.separator+"building"}.geojson", h2gis_datasource)
         }
         else if(it.equals("road")){
-            saveTableAsGeojson(results.roadTableName, subFolder,h2gis_datasource)
+            saveTableAsGeojson(results.roadTableName,  "${subFolder.getAbsolutePath()+File.separator+"road"}.geojson",h2gis_datasource)
         }
         else if(it.equals("rail")){
-            saveTableAsGeojson(results.railTableName, subFolder,h2gis_datasource)
+            saveTableAsGeojson(results.railTableName,  "${subFolder.getAbsolutePath()+File.separator+"rail"}.geojson",h2gis_datasource)
         }
         if(it.equals("water")){
-            saveTableAsGeojson(results.hydrographicTableName,subFolder, h2gis_datasource)
+            saveTableAsGeojson(results.hydrographicTableName, "${subFolder.getAbsolutePath()+File.separator+"water"}.geojson", h2gis_datasource)
         }
         else if(it.equals("vegetation")){
-            saveTableAsGeojson(results.vegetationTableName, subFolder,h2gis_datasource)
+            saveTableAsGeojson(results.vegetationTableName,  "${subFolder.getAbsolutePath()+File.separator+"vegetation"}.geojson",h2gis_datasource)
         }
         else if(it.equals("impervious")){
-            saveTableAsGeojson(results.imperviousTableName,subFolder, h2gis_datasource)
+            saveTableAsGeojson(results.imperviousTableName, "${subFolder.getAbsolutePath()+File.separator+"impervious"}.geojson", h2gis_datasource)
         }
     }
 }
@@ -1018,10 +1018,10 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
 /**
  * Method to save a table into a geojson file
  */
-def saveTableAsGeojson(def outputTable , def subFolder,def h2gis_datasource){
+def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource){
     if(outputTable && h2gis_datasource.hasTable(outputTable)){
-        h2gis_datasource.save(outputTable, "${subFolder.getAbsolutePath()+File.separator+outputTable}.geojson")
-        info "${outputTable} has been saved in ${subFolder.getAbsolutePath()}."
+        h2gis_datasource.save(outputTable, filePath)
+        info "${outputTable} has been saved in ${filePath}."
     }
 }
 

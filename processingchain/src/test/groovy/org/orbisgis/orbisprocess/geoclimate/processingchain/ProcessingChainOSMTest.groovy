@@ -360,7 +360,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
-    @Disabled
+    //@Disabled
     @Test
     void testOSMTEB() {
         String directory ="./target/geoclimate_chain"
@@ -374,7 +374,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["romainville"]],
+                        "osm" : ["vannes"]],
                 "output" :[
                         "folder" : "$directory"],
                 "parameters":
