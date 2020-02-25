@@ -1,12 +1,21 @@
 # Input data model
 
+This page describes the requirements specification of the GIS layers.
+It determines which data should be available and how they should be organized.  
+It consists in a set of data staged in a tabular way (rows, columns, also called “table”). 
 
+A GIS layer is an abstraction of reality specified by a geographic data model (geometry + attributes).
+A layer represents a single geographic subject. 7 layers are used by the Geoclimate algorithms.
 
-This page presents the input data model used to describe the geographic data that feed the GeoClimate chain. 
+- [(1) Buildings](#Buildings)
+- [(2) Roads](#Roads)
+- [(3) Railways](#Railways)
+- [(4) Vegetation areas](#Vegetation-areas)
+- [(5) Hydrographic areas](#Hydrographic-areas)
+- [(6) Impervious areas](#Impervious-areas)
+- [(7) Zones](#Zones)
 
-## Preamble
-
-The data are organized by topics. For each of them, we provide the following informations:
+For each of them, we provide a dictionary of values (with the name and type of the columns) and the associated metadata tables, in which description and parameters are stored.
 
 ### The input table structure ![](../resources/images/common/icons/table.png)
 
@@ -26,24 +35,12 @@ When necessary, a list of values that a column must take, with :
 - a **Definition**,
 - a **Source**: most of the values are based on concepts from existing thesauri. In this case, we indicate their source.
 
-## Topics
 
-- [Buildings](#Buildings):  `BUILDING`, BUILDING use and type
-- [Roads](#Roads): `ROAD`, ROAD type, ROAD surface, ROAD crossing
-- [Railways](#Railways): `RAIL`, RAIL type, RAIL crossing
-- [Vegetation areas](#Vegetation-areas): `VEGET`, VEGET type
-- [Hydrographic areas](#Hydrographic-areas): `HYDRO`
-- [Impervious areas](#Impervious-areas): `IMPERVIOUS`
-- [Zones](#Zones): `ZONE`
-
-
-## Buildings
-
-
+## (1) Buildings
 
 ### ![](../resources/images/common/icons/table.png) BUILDING table structure
 
-This table content any kind of building.
+This table represents any kind of building.
 
 ![](../resources/images/common/icons/arrow.png) Table name : `BUILDING` 
 
@@ -68,7 +65,7 @@ This table content any kind of building.
 List of all possible values for the `type` and the `main_use` attributes, in the `BUILDING` table. We consider that a same value can be used to qualify a `type` or a `main_use`.
 
 | Term | Definition | Source |
-| :--: | ---------- | :----: |
+| :----------: | ------------------------------------------------------------ | :----------------------------------------------------------: |
 | building                        | Used to qualify any kind of feature that is a building       |    [1](https://wiki.openstreetmap.org/wiki/Key:building)     |
 | house                           | A single dwelling unit usually inhabited by one family       | [2](https://wiki.openstreetmap.org/wiki/Tag:building=house)  |
 | detached                        | A free-standing residential building usually housing a single-family. | [3](https://wiki.openstreetmap.org/wiki/Tag:building=detached) |
@@ -108,11 +105,11 @@ List of all possible values for the `type` and the `main_use` attributes, in the
 
 [back to top](#Input-data-model)
 
-## Roads
+## (2) Roads
 
 ### ![](../resources/images/common/icons/table.png) ROAD table structure
 
-This table content any kind of road network.
+This table represents any kind of road network.
 
 ![](../resources/images/common/icons/arrow.png) Table name:  `ROAD`
 
@@ -194,11 +191,11 @@ Lists of all possible values for the `crossing` attribute in the `ROAD` table.
 
 
 
-## Railways
+## (3) Railways
 
 ### ![](../resources/images/common/icons/table.png) RAIL table structure
 
-This table content any kind of railways network.
+This table represents any kind of railways network.
 
 ![](../resources/images/common/icons/arrow.png) Table name : `RAIL`
 
@@ -245,11 +242,11 @@ List of all possible values for the `crossing` attribute in the `RAIL` table.
 
 
 
-## Vegetation areas
+## (4) Vegetation areas
 
 ### ![](../resources/images/common/icons/table.png) VEGET table structure
 
-This table content any kind of vegetation area.
+This table represents any kind of vegetation area.
 
 ![](../resources/images/common/icons/arrow.png) Table name: `VEGET`
 
@@ -286,11 +283,11 @@ List of all possible values for `type` attribute in the `VEGET` table.
 
 [back to top](#Input-data-model)
 
-## Hydrographic areas
+## (5) Hydrographic areas
 
 ### ![](../resources/images/common/icons/table.png) HYDRO table structure
 
-This table content any kind of hydrographic area (river, sea, ...).
+This table represents any kind of hydrographic area (river, sea, ...).
 
 ![](../resources/images/common/icons/arrow.png) Table name: `HYDRO`
 
@@ -304,11 +301,11 @@ This table content any kind of hydrographic area (river, sea, ...).
 
 [back to top](#Input-data-model)
 
-## Impervious areas
+## (6) Impervious areas
 
 ### ![](../resources/images/common/icons/table.png) IMPERVIOUS table structure
 
-This table content any impervious surface, in addition to buildings and roads already present in the layers `BUILDING` and `ROAD`.
+This table represents any impervious surface, in addition to buildings and roads already present in the layers `BUILDING` and `ROAD`.
 
 ![](../resources/images/common/icons/arrow.png) Table name: `IMPERVIOUS`
 
@@ -325,11 +322,11 @@ This table content any impervious surface, in addition to buildings and roads al
 
 [back to top](#Input-data-model)
 
-## Zones
+## (7) Zones
 
 ### ![](../resources/images/common/icons/table.png) ZONE table structure
 
-This table content the studied zone *(so, only one geometry expected)*.
+This table represents the studied zone *(so, only one geometry expected)*.
 
 ![](../resources/images/common/icons/arrow.png) Table name: `ZONE`
 
@@ -337,7 +334,3 @@ This table content the studied zone *(so, only one geometry expected)*.
 | :------: | :-----: | :---------------: | --------------------------- |
 | the_geom | POLYGON | ST_DIMENSION() =2 | Geometry                    |
 | id_zone  | VARCHAR |    *not null*     | Identifier of the zone area |
-
-### Source code
-
-![](../resources/images/common/icons/github.png) The input model source code is available [here](https://github.com/gpetit/geoclimate/blob/add_docs/prepare_data/src/main/groovy/org/orbisgis/common/AbstractTablesInitialization.groovy).
