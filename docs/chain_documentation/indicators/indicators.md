@@ -1,3 +1,7 @@
+#Indicators
+
+Definition
+Aggregate
 
 More than 60 geospatial indicators are computed within Geoclimate. They are grouped by spatial units: 
 
