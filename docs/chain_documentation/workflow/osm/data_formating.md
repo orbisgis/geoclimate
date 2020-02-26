@@ -1,4 +1,4 @@
-# OSM - Data formating
+# OSM - Formating to input data model
 
 
 
