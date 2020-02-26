@@ -17,7 +17,7 @@ User is able to create a H2GIS database, query and display spatial objects from 
 
 
 
-To use Geoclimate scripts in DBeaver, user must install the **Groovy Editor** and the **H2GIS driver**, developed by the Geoclimate team.
+To use Geoclimate scripts in DBeaver, user must install the **Groovy Editor** and the **H2GIS 2.0 driver**, developed by the Geoclimate team.
 
 In DBeaver:
 
