@@ -57,7 +57,7 @@ line or polygon. The library is available at https://github.com/orbisgis/orbisan
 
 The OSM worflow is organized in two tasks : 
 
-- Extract and transform to GIS layers --> [Data preparation](./data_preparation.md)
+- Extract and transform to GIS layers --> [Data extraction](./data_preparation.md)
 - Formating to input data model --> [Data formating](./data_formating.md)
 
 
