@@ -43,7 +43,7 @@ IProcess unweightedOperationFromLowerScale() {
     return create({
         title "Unweighted statistical operations from lower scale"
         inputs inputLowerScaleTableName: String, inputUpperScaleTableName: String, inputIdUp: String,
-                inputIdLow: "id_build", inputVarAndOperations: Map, prefixName: String, datasource: JdbcDataSource
+                inputIdLow: String, inputVarAndOperations: Map, prefixName: String, datasource: JdbcDataSource
         outputs outputTableName: String
         run { inputLowerScaleTableName, inputUpperScaleTableName, inputIdUp, inputIdLow, inputVarAndOperations, prefixName,
               datasource ->

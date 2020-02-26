@@ -32,19 +32,19 @@ class GenericIndicatorsTests {
 
         def  psum =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
         assertTrue psum.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "block_test",
-                   inputIdUp: "id_block", inputVarAndOperations: ["area":["SUM"]],
+                   inputIdUp: "id_block", inputIdLow: "id_build", inputVarAndOperations: ["area":["SUM"]],
                    prefixName: "first", datasource: h2GIS])
         def  pavg =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
         assertTrue pavg.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "tempo_rsu",
-                      inputIdUp: "id_rsu", inputVarAndOperations: ["number_building_neighbor":["AVG"]],
+                      inputIdUp: "id_rsu", inputIdLow: "id_build", inputVarAndOperations: ["number_building_neighbor":["AVG"]],
                       prefixName: "second", datasource: h2GIS])
         def  pgeom_avg =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
         assertTrue pgeom_avg.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "tempo_rsu",
-                      inputIdUp: "id_rsu", inputVarAndOperations: ["height_roof": ["GEOM_AVG"]],
+                      inputIdUp: "id_rsu", inputIdLow: "id_build", inputVarAndOperations: ["height_roof": ["GEOM_AVG"]],
                       prefixName: "third", datasource: h2GIS])
         def  pdens =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
         assertTrue pdens.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "tempo_rsu",
-                      inputIdUp: "id_rsu", inputVarAndOperations: ["number_building_neighbor":["AVG"],
+                      inputIdUp: "id_rsu", inputIdLow: "id_build", inputVarAndOperations: ["number_building_neighbor":["AVG"],
                                                                    "area":["SUM", "DENS", "NB_DENS"]],
                       prefixName: "fourth", datasource: h2GIS])
         def concat = ["", "", 0, ""]
