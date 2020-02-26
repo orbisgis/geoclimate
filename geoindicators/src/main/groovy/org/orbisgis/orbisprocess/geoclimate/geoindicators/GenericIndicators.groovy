@@ -43,9 +43,9 @@ IProcess unweightedOperationFromLowerScale() {
     return create({
         title "Unweighted statistical operations from lower scale"
         inputs inputLowerScaleTableName: String, inputUpperScaleTableName: String, inputIdUp: String,
-                inputVarAndOperations: Map, prefixName: String, datasource: JdbcDataSource
+                inputIdLow: String, inputVarAndOperations: Map, prefixName: String, datasource: JdbcDataSource
         outputs outputTableName: String
-        run { inputLowerScaleTableName, inputUpperScaleTableName, inputIdUp, inputVarAndOperations, prefixName,
+        run { inputLowerScaleTableName, inputUpperScaleTableName, inputIdUp, inputIdLow, inputVarAndOperations, prefixName,
               datasource ->
 
             info "Executing Unweighted statistical operations from lower scale"
@@ -63,13 +63,13 @@ IProcess unweightedOperationFromLowerScale() {
                     op = op.toUpperCase()
                     switch (op) {
                         case GEOM_AVG:
-                            query += "COALESCE(EXP(1.0/COUNT(*)*SUM(LOG(a.$var))),0) AS ${op + "_" + var},"
+                            query += "COALESCE(EXP(1.0/COUNT(a.*)*SUM(LOG(a.$var))),0) AS ${op + "_" + var},"
                             break
                         case DENS:
                             query += "COALESCE(SUM(a.$var::float)/ST_AREA(b.$GEOMETRIC_FIELD_UP),0) AS ${var + "_DENSITY"},"
                             break
                         case NB_DENS:
-                            query += "COALESCE(COUNT(a.*)/ST_AREA(b.$GEOMETRIC_FIELD_UP),0) AS ${var + "_NUMBER_DENSITY"},"
+                            query += "COALESCE(COUNT(a.$inputIdLow)/ST_AREA(b.$GEOMETRIC_FIELD_UP),0) AS ${var + "_NUMBER_DENSITY"},"
                             break
                         case SUM:
                             query += "COALESCE(SUM(a.$var::float),0) AS ${op + "_" + var},"
