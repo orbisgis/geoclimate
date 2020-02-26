@@ -10,7 +10,7 @@ As seen in [this section](../../chain_documentation/workflow/osm/coupling_with_g
 
 
 
-Below are illustrated the cases n°4 and n°1, in the DBeaver environment.
+Below are illustrated the cases [n°4](#Using-a-placename) and [n°1](#Using-a-bounding-box), in the [DBeaver](../execution_tools.md#With-DBeaver) environment.
 
 ## Using a placename
 
@@ -106,7 +106,7 @@ In your output folder `/home/geoclimate/osm/` you now have a new sub-folder call
 
 ![osm_vannes_output_files](../../resources/images/for_users/osm_vannes/osm_vannes_output_files.png)
 
-These files can be opened in most of the GIS applications (e.g QGIS, OrbisGIS, Openjump, ...).
+These files can be opened in most of the GIS applications (e.g [QGIS](https://www.qgis.org/), [OrbisGIS](http://orbisgis.org/), [OpenJUMP](http://www.openjump.org/), ...).
 
 
 
@@ -114,25 +114,53 @@ These files can be opened in most of the GIS applications (e.g QGIS, OrbisGIS, O
 
 
 
-## Using a bbox
+[Back to top](#Run-Geoclimate-with-OSM)
 
-### 1. Configuration file
+## Using a bounding box
 
-Download this file : [osm_workflow_envelope_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_envelope_folderoutput.json) and open it in a text editor.
+In this example, we want to process an area (a bounding box - bbox) on top of the city center of [Paris](https://www.openstreetmap.org/relation/7444) (France). 
+
+The resulting layers will be exported as flat files in a dedicated output folder at the following address : `/home/geoclimate/osm/`
+
+### 1. Define the bbox
+
+First we have to define the desired zone and then deduce its coordinates. To do so, you can follow these steps:
+
+1. Go on the [bboxfinder.com](http://bboxfinder.com/) website,
+2. Zoom on Paris,
+3. With the ![osm_paris_bbox_rectangle](../../resources/images/for_users/osm_paris/bbox_finder_rectangle.png)icon, draw a rectangle to define the desired zone,
+4. In the menu `Coordinate Format`, check `Lat / Lng` ,
+5. Copy the coordinates noted in the `Box` line (![osm_paris_bbox_4](../../resources/images/for_users/osm_paris/bbox_finder_4.png)).
+
+![bbox_finder](../../resources/images/for_users/osm_paris/bbox_finder.png)
+
+
+
+### 2. Configuration file
+
+Download this file : [osm_workflow_envelope_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_envelope_folderoutput.json) , open it in a text editor, update the following informations and save it:
+
+1. In the `geoclimatedb` part, adapt the output database address (*e.g* `"path" : "/home/geoclimate/osm/db/geoclimate_db;AUTO_SERVER=TRUE",`)
+
+2. In the `input`  / `osm` part, adapt the coordinates of your bounding box with your own (in our example `48.831052,2.303352,48.880070,2.388840`)
+
+3. In the `output` part, replace `"folder" : "/tmp/..."},` by `"folder" : "/home/geoclimate/osm/"`}
+
+   
 
 ```json
 {
   "description" :"Configuration file to run the OSM workflow with an output folder",
   "geoclimatedb" : {
-        "path" : "/tmp/.../geoclimate_db;AUTO_SERVER=TRUE",
+        "path" : "/home/geoclimate/osm/db/geoclimate_db;AUTO_SERVER=TRUE",
         "delete" :true
     },
   "input" : {
-     "osm":[[38.89557963573336,-77.03930318355559,38.89944983078282,-77.03364372253417]]},
+     "osm":[[`48.831052,2.303352,48.880070,2.388840`]]},
   "output" :{
-     "folder" : "/tmp/..."},
+     "folder" : "/home/geoclimate/osm/"},
   "parameters":
-    {"distance" : 1000,
+    {"distance" : 0,
         "indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"],
         "svfSimplified": false,
         "prefixName": "",
@@ -151,16 +179,9 @@ Download this file : [osm_workflow_envelope_folderoutput.json](https://github.co
 }
 ```
 
-Then:
-
-1. In the `geoclimatedb` part, adapt the output database address (*e.g* `"path" : "/home/geoclimate/osm/db/geoclimate_db;AUTO_SERVER=TRUE",`)
-2. In the `input`  / `osm` part, adapt the coordinates of your bounding box
-3. In the `output` part, replace `"folder" : "/tmp/..."},` by `"folder" : "/home/geoclimate/osm/"},`
-4. Save these modifications.
 
 
-
-### 2. DBeaver
+### 3. DBeaver
 
 Launch DBeaver and open a new Groovy console (if not already installed, please follow these [instructions](../execution_tools.md)).
 
@@ -176,44 +197,30 @@ import org.orbisgis.orbisprocess.geoclimate.Geoclimate
 Geoclimate.logger = logger
 
 def process = Geoclimate.Workflow.OSM()
-process.execute(configurationFile:'/home/geoclimate/osm/osm_workflow_envelope_folderoutput.json.json')
+process.execute(configurationFile:'/home/geoclimate/osm/osm_workflow_envelope_folderoutput.json')
                    
 logger.info process.results.outputMessage
 ```
 
-Where `'/home/geoclimate/osm/osm_workflow_envelope_folderoutput.json.json'` is the place where the configuration file is stored.
+Where `'/home/geoclimate/osm/osm_workflow_envelope_folderoutput.json'` is the place where the configuration file is stored.
 
 Then, click on ![dbeaver_groovy_console_execute_all](../../resources/images/for_users/dbeaver_groovy_console_execute_all.png) to execute the workflow.
 
 
 
+### 4. Results
+
+In your output folder `/home/geoclimate/osm/` you now have a new sub-folder called `osm_[48.831052, 2.303352, 48.880070, 2.388840]` in which are stored the resulting layers, saved as `.geojson` files. In particular, you have:
+
+- the 6 input layers (`INPUT_BUILDING`, `INPUT_ROAD`, `INPUT_RAILS`, `INPUT_VEGET`, `INPUT_HYDRO`, and `ZONE`) (Note that the `INPUT_IMPERVIOUS` table is not present since there is no input data in this area)
+- the 4 resulting layers (`BUILDING_INDICATORS`, `BLOCK_INDICATORS`, `RSU_INDICATORS`, `RSU_LCZ`)
+
+![osm_vannes_output_files](../../resources/images/for_users/osm_paris/osm_paris_output_files.png)
+
+These files can be opened in most of the GIS applications (e.g [QGIS](https://www.qgis.org/), [OrbisGIS](http://orbisgis.org/), [OpenJUMP](http://www.openjump.org/), ...).
+
+![osm_paris](../../resources/images/for_users/osm_paris/osm_paris.png)
 
 
-## Script to be executed in DBeaver
 
-```groovy
-// Declaration of the maven repository
-@GrabResolver(name='orbisgis', root='https://nexus.orbisgis.org/repository/orbisgis/')
-
-// Declaration of our Nexus repository, where the geoclimate project is stored
-@Grab(group='org.orbisgis.orbisprocess', module='geoclimate', version='1.0.0-SNAPSHOT')
-
-// Importing needed classes
-// In the Geoclimate object, we already have all the classes that allow access to the processes
-import org.orbisgis.orbisprocess.geoclimate.Geoclimate
-
-// We declare the tool that register and display the logs
-Geoclimate.logger = logger
-
-// The OSM process is stored in a variable called "process" (and it instantiates the process at the same time)
-def process = Geoclimate.Workflow.OSM()
-
-// We execute the process (OSM) using the only input parameter : the configuration file
-process.execute(configurationFile:['your local configuration file adress'])
-// example : process.execute(configurationFile:'/tmp/osm_workflow_placename_folderoutput.json')
-                   
-// Ask to display the logs (can be useful to see the progress of the process.)
-logger.info process.results.outputMessage
-```
-
-
+[Back to top](#Run-Geoclimate-with-OSM)
