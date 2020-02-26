@@ -186,6 +186,7 @@ class RsuIndicatorsTests {
         assertTrue pGeomAvg.execute([inputLowerScaleTableName: "tempo_build",
                                      inputUpperScaleTableName: "rsu_build_corr",
                                      inputIdUp: "id_rsu",
+                                     inputIdLow: "id_build",
                                      inputVarAndOperations: ["height_roof": ["GEOM_AVG"]],
                                      prefixName: "test",
                                      datasource: h2GIS])
