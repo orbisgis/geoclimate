@@ -32,7 +32,7 @@ The BD Topo v2 workflow can be divided in three modules:
 
 
 
-![](/home/gpetit/Documents/Codes/geoclimate/docs/resources/images/chain_documentation/bdtopov2_modules_outputs.png)
+![](../../../resources/images/chain_documentation/bdtopov2_modules_outputs.png)
 
 
 

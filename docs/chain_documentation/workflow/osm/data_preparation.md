@@ -1,4 +1,4 @@
-# OSM  - Data preparation
+# OSM  - Extraction and transformation to GIS layers
 
 
 
