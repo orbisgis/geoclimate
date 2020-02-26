@@ -196,6 +196,7 @@ def computeBlockIndicators(){
             def outputTableName = getOutputTableName(prefixName, BASE_NAME)
             def blockPrefixName = "block_indicator_"
             def id_block = "id_block"
+            def id_build = "id_build"
 
             // Maps for intermediate or final joins
             def finalTablesToJoin = [:]
@@ -209,6 +210,7 @@ def computeBlockIndicators(){
             if(!computeSimpleStats([inputLowerScaleTableName: inputBuildingTableName,
                                     inputUpperScaleTableName: inputBlockTableName,
                                     inputIdUp               : id_block,
+                                    inputIdLow              : id_build,
                                     inputVarAndOperations   : ["area"               :["SUM"],
                                                                "floor_area":["SUM"],
                                                                "volume" :["SUM"]],
@@ -382,6 +384,7 @@ def computeRSUIndicators() {
             def to_start = System.currentTimeMillis()
 
             def columnIdRsu = "id_rsu"
+            def columnIdBuild = "id_build"
 
             // Maps for intermediate or final joins
             def finalTablesToJoin = [:]
@@ -449,6 +452,7 @@ def computeRSUIndicators() {
             if (!computeRSUStatisticsUnweighted([inputLowerScaleTableName: buildingTable,
                                                  inputUpperScaleTableName: rsuTable,
                                                  inputIdUp               : columnIdRsu,
+                                                 inputIdLow              : columnIdBuild,
                                                  inputVarAndOperations   : inputVarAndOperations,
                                                  prefixName              : temporaryPrefName,
                                                  datasource              : datasource])) {

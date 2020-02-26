@@ -169,7 +169,7 @@ Below is an example with the configuration file [bdtopo_workflow_folderinput_fol
 
 ### Execute the workflow
 
-Once you edited and adapted your configuration file to your need, you are ready to run the Geoclimate workflow. To do so, the user as to adapt (by choosing the process `Geoclimate.Workflow.OSM()` or `Geoclimate.Workflow.BDTOPO_V2()` ) and execute the following groovy script (see how [here](../../for_users/execution_tools.md)).
+Once you edited and adapted your configuration file to your needs, you are ready to run the Geoclimate workflow. To do so, the user as to adapt (by choosing the process `Geoclimate.Workflow.OSM()` or `Geoclimate.Workflow.BDTOPO_V2()` ) and execute the following groovy script (see how [here](../../for_users/execution_tools.md)).
 
 ```groovy
 // Declaration of the maven repository
