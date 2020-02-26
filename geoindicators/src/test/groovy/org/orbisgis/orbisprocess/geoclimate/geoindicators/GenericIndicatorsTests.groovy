@@ -74,6 +74,9 @@ class GenericIndicatorsTests {
         assertEquals("0.4\n606.0\n0.303\n0.0025\n", concat[3])
         assertEquals(16, nb_rsu.nb)
         assertEquals(0, val_zero.val)
+        // Test the fix concerning nb_dens_building (initially >0 while no building in RSU...)
+        def nb_dens = h2GIS.firstRow("SELECT area_number_density FROM fourth_unweighted_operation_from_lower_scale WHERE id_rsu = 14")
+        assertEquals(0, nb_dens["AREA_NUMBER_DENSITY"])
     }
 
     @Test
