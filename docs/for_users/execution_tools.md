@@ -17,13 +17,13 @@ User is able to create a H2GIS database, query and display spatial objects from 
 
 
 
-To use Geoclimate scripts in DBeaver, user must install the **Groovy Editor** and the **H2GIS drivers**, developed by the Geoclimate team.
+To use Geoclimate scripts in DBeaver, user must install the **Groovy Editor** and the **H2GIS driver**, developed by the Geoclimate team.
 
 In DBeaver:
 
 1. Go to the Main menu `Help` -> `Install New Software...`
 2. In the `Work with` field, paste the following URL http://devs.orbisgis.org/eclipse-repo (which is an extension P2 repository URL) and press `Enter`
-3. Check the `OrbisGIS` item (in the sub-list, the `Groovy Editor` and the `h2gis_driver` should be selected too)
+3. Check the `OrbisGIS` item (in the sub-list, the `Groovy Editor` and the `H2GIS driver` should be selected too)
 4. Click `Next` -> `Finish` and Restart DBeaver.
 
 ![](../resources/images/for_users/dbeaver_install_plugins.png)
