@@ -63,7 +63,7 @@ IProcess unweightedOperationFromLowerScale() {
                     op = op.toUpperCase()
                     switch (op) {
                         case GEOM_AVG:
-                            query += "COALESCE(EXP(1.0/COUNT(*)*SUM(LOG(a.$var))),0) AS ${op + "_" + var},"
+                            query += "COALESCE(EXP(1.0/COUNT(a.*)*SUM(LOG(a.$var))),0) AS ${op + "_" + var},"
                             break
                         case DENS:
                             query += "COALESCE(SUM(a.$var::float)/ST_AREA(b.$GEOMETRIC_FIELD_UP),0) AS ${var + "_DENSITY"},"

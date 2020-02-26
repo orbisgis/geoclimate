@@ -77,6 +77,8 @@ class GenericIndicatorsTests {
         // Test the fix concerning nb_dens_building (initially >0 while no building in RSU...)
         def nb_dens = h2GIS.firstRow("SELECT area_number_density FROM fourth_unweighted_operation_from_lower_scale WHERE id_rsu = 14")
         assertEquals(0, nb_dens["AREA_NUMBER_DENSITY"])
+        def geom_ave = h2GIS.firstRow("SELECT geom_avg_height_roof FROM third_unweighted_operation_from_lower_scale WHERE id_rsu = 14")
+        assertEquals(0, geom_ave["geom_avg_height_roof"])
     }
 
     @Test
