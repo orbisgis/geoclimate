@@ -6,7 +6,7 @@ A workflow is a dedicated script that makes possible to process a dataset from A
 
 According to these choices, the user will obtain resulting tables whose contents may vary.
 
-We present all these aspects below
+We present all these aspects below.
 
 
 

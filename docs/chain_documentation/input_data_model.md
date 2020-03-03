@@ -1,11 +1,12 @@
 # Input data model
 
-This page describes the requirements specification of the GIS layers.
-It determines which data should be available and how they should be organized.  
+This page describes the requirements specification of the GIS layers. It determines which data should be available and how they should be organized.  
+
 It consists in a set of data staged in a tabular way (rows, columns, also called “table”). 
 
-A GIS layer is an abstraction of reality specified by a geographic data model (geometry + attributes).
-A layer represents a single geographic subject. 7 layers are used by the Geoclimate algorithms.
+A GIS layer is an abstraction of reality specified by a geographic data model (geometry + attributes). A layer represents a single geographic subject. Here, 7 layers are used by the Geoclimate algorithms.
+
+![input_data_tables](../resources/images/chain_documentation/input_data_tables.png)
 
 - [1- Buildings](#1--Buildings)
 - [2- Roads](#2--Roads)

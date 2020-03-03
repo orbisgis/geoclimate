@@ -37,10 +37,10 @@ These scripts are grouped to offer 3 kind of transformations :
 - line geometries,
 - polygon geometries
 
-For each transformation, it is possible to specify : 
-- the epsg code of the output geometries
-- a list of OSM keys to filter the OSM objects. e.g ["building", "water", "landuse"]
-- a list of columns that we want to keep in the GIS layer
+For each transformation, it is possible to specify: 
+- the EPSG code of the output geometries,
+- a list of OSM keys to filter the OSM objects. e.g `["building", "water", "landuse"]`
+- a list of columns that we want to keep in the GIS layer.
 
 The result of the transformation is stored in a spatial table in the database. Thanks to OrbisData functions
 that permits to save it in a file.
@@ -52,8 +52,7 @@ The figure 2 shows the Nominatim area for the place name Bucarest.
 Figure 2. Bucarest place name area
 
 
-The figure 3 and 4 shows 4 GIS layers extracted for the place name Buracest. Vegetation in green, road in orange,
-building in grey, water in blue.
+The figure 3 and 4 shows 4 GIS layers extracted for the place name Buracest. Vegetation in green, road in orange, building in grey, water in blue.
 
 ![osm_bucarest_gis_layers](../../../resources/images/chain_documentation/bucarest_osm_gislayers.png)
 Figure 3. Bucarest GIS layers

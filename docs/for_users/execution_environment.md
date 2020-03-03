@@ -19,12 +19,30 @@ To run the Geoclimate chain, you must have previously installed on your machine 
 - Java (from [Oracle](https://www.java.com/fr/download/) or [OpenJDK](https://openjdk.java.net/)) (at the least Version 8).
 - [Groovy](https://groovy-lang.org/) version 3.0.1
 
+
+
+### SDKMan
+
 **Tips**: You can install these two apps by your own, or choose to install them directly thanks to the [SDKMan](https://sdkman.io/) app, following these instructions:
 
-1. Install SDKMan, using the instruction [here](https://sdkman.io/install)
-2. Install Java (OpenJDK - see https://sdkman.io/jdks#jdk.java.net) : in a terminal, execute `sdk install java x.y.z-open`
-3. Install Groovy 3.0.1 (see https://sdkman.io/sdks#groovy) : in a terminal, execute `sdk install groovy`                       
+#### 1. Install SDKMan
 
+Follow the instruction [here](https://sdkman.io/install)
+
+#### 2. Install Java 
+
+We advise you to install the open version of Java called OpenJDK (see https://sdkman.io/jdks#jdk.java.net). In a terminal, execute this instruction:
+
+```bash
+sdk install java x.y.z-open
+```
+
+#### 3. Install Groovy 3.0.1 
+
+In a terminal, execute this instruction (see https://sdkman.io/sdks#groovy):
+```bash
+sdk install groovy  
+```
 
 
 ## Execution tools

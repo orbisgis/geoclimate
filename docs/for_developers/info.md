@@ -4,8 +4,6 @@
 
 ## Maven architecture
 
-Explication et schéma pour illustrer l’architecture avec Maven et tout le bazar
-
 
 
 Geoclimate is avalaible as a Maven artifact from the repository http://nexus.orbisgis.org
