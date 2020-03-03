@@ -1,6 +1,16 @@
 # Workflow outputs
 
-Below are presented the 5 potential output tables, whose structure may vary according to the application parameters chosen when executing the workflow ([See](./description.md)).
+Below are presented the 5 potential output tables, whose structure may vary according to the application parameters chosen when executing the [workflow](./description.md).
+
+- [Building's indicators](#The-`BUILDING_INDICATORS`-table)
+- [Block's indicators](#The-`BLOCK_INDICATORS`-table)
+- [RSU's indicators](#The-`RSU_INDICATORS`-table)
+- [LCZ classification](#The-`RSU_LCZ`-table)
+- [Urban Typology](#The-`RSU_URBAN_TYPO`-table)
+
+
+
+![output_data_tables](../../resources/images/chain_documentation/output_data_tables.png)
 
 #### Remark
 
@@ -45,7 +55,7 @@ This table stores all the indicators computed at the building's scale (and descr
 | ROAD_DISTANCE                                                | double precision | [See](../indicators/building.md#ROAD_DISTANCE)                   |      |
 | LIKELIHOOD_LARGE_BUILDING                                    | double precision | [See](../indicators/building.md#LIKELIHOOD_LARGE_BUILDING)       |  U   |
 
-
+[Back to top](#Workflow-outputs)
 
 ## The `BLOCK_INDICATORS` table
 
@@ -71,7 +81,7 @@ This table stores all the indicators computed at the block's scale (and describe
 | AVG_HEIGHT_ROOF_AREA_WEIGHTED                                | double precision | [See](../indicators/block.md#AVG_HEIGHT_ROOF_AREA_WEIGHTED)                 |  U   |
 | STD_HEIGHT_ROOF_AREA_WEIGHTED                                | double precision | [See](../indicators/block.md#STD_HEIGHT_ROOF_AREA_WEIGHTED)                 |  U   |
 
-
+[Back to top](#Workflow-outputs)
 
 ## The `RSU_INDICATORS` table
 
@@ -170,7 +180,7 @@ This table stores all the indicators computed at the RSU's scale (and described 
 | PERVIOUS_FRACTION                                          | double precision |              [See](../indicators/rsu.md#PERVIOUS_FRACTION)               |    L    |
 | IMPERVIOUS_FRACTION                                        | double precision |             [See](../indicators/rsu.md#IMPERVIOUS_FRACTION)              |    L    |
 
-
+[Back to top](#Workflow-outputs)
 
 ## The `RSU_LCZ` table
 
@@ -188,7 +198,7 @@ This table stores the result of the LCZ classification (described [here](../clas
 | MIN_DISTANCE                                               | double precision | Minimum distance to each LCZ |
 | PSS                                                        | double precision | *Perkin Skill Score*         |
 
-
+[Back to top](#Workflow-outputs)
 
 ## The `RSU_URBAN_TYPO` table
 
@@ -204,3 +214,4 @@ This table stores the result of the Urban typology (described [here](../classsif
 | xxx                                                        | integer          | xxx             |
 | xxx                                                        | double precision | xxx             |
 
+[Back to top](#Workflow-outputs)

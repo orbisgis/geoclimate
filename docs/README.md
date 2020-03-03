@@ -11,19 +11,19 @@ The climate modelling is based on the type, the use and the shape of the studied
 At the urban scale, the type of land surface (pervious, impervious), the shape and the distribution of the buildings and the streets as well as the building use are the determinant parameters affecting the urban climate. 
 Thus it is necessary to described accurately the urban fabric in order to apply the right energy balance. 
 
-Geoclimate is a [Groovy](http://groovy-lang.org/) library that implements algorithms to compute geospatial indicators (e.g. density of building, sky view factor, building compacity, road distance, ...) based on vector [GIS](https://en.wikipedia.org/wiki/Geographic_information_system) layers.
+Geoclimate is a [Groovy](http://groovy-lang.org/) library that implements algorithms to compute geospatial indicators (*e.g.* density of building, sky view factor, building compactness, road distance, ...) based on vector [GIS](https://en.wikipedia.org/wiki/Geographic_information_system) layers.
 
 
 The geospatial indicators are computed at three [spatial units](./chain_documentation/spatial_units/spatial_units.md):
 - the building,
-- the block defined as an aggregation of buildings that are in contact,
-- the Reference Spatial Unit (RSU).
+- the block, defined as an aggregation of buildings that are in contact,
+- the *Reference Spatial Unit* (RSU).
 
-More than 60 urban indicators are yet available. At a first stage, those indicators have been selected to:
+More than 60 urban indicators are yet available. At a first stage, those indicators have been selected:
 1. to feed the [TEB](http://www.umr-cnrm.fr/spip.php?article199) climate model developed by [Météo France](http://www.meteofrance.com),
 2. to classify the urban tissues and build the *Local Climate Zones* ([LCZ](http://www.wudapt.org/lcz/)).
 
-Even if Geoclimate have been developed for climate studies, the indicators can be used for other topics such as landscape ecology, land use, habitat conservation planning or any environmental or territory applications.
+Even if Geoclimate has been developed for climate studies, the indicators can be used for other topics such as landscape ecology, land use, habitat conservation planning or any environmental or territory applications.
 
 
 ## Table of contents
