@@ -14,7 +14,7 @@ Thus it is necessary to described accurately the urban fabric in order to apply 
 Geoclimate is a [Groovy](http://groovy-lang.org/) library that implements algorithms to compute geospatial indicators (*e.g.* density of building, sky view factor, building compactness, road distance, ...) based on vector [GIS](https://en.wikipedia.org/wiki/Geographic_information_system) layers.
 
 
-The Geospatial indicators are computed at three [spatial units](./chain_documentation/spatial_units/spatial_units.md):
+The geospatial indicators are computed at three [spatial units](./chain_documentation/spatial_units/spatial_units.md):
 - the building,
 - the block, defined as an aggregation of buildings that are in contact,
 - the *Reference Spatial Unit* (RSU).

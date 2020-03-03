@@ -6,10 +6,9 @@
 
 
 
-On the basis of the previously calculated [indicators](../indicators/indicators.md), the Geoclimate chain allows the territory to be segmented using the following two classifications:
+On the basis of the previously calculated [indicators](../indicators/indicators.md), we propose two classifications to segment the territory:
 
 - [Local Climate Zones](./lcz.md)
 - [Territorial typologogies](./territorial_typologies.md)
-
 
 
