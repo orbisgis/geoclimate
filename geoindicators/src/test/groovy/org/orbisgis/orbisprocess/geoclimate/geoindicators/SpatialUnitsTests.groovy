@@ -35,11 +35,11 @@ class SpatialUnitsTests {
     @Test
     void prepareGeometriesForRSUTest() {
         H2GIS h2GIS = H2GIS.open('./target/spatialunitsdb2;AUTO_SERVER=TRUE')
-        h2GIS.load(SpatialUnitsTests.class.getResource("road_test.shp"), true)
-        h2GIS.load(SpatialUnitsTests.class.getResource("rail_test.shp"), true)
-        h2GIS.load(SpatialUnitsTests.class.getResource("veget_test.shp"), true)
-        h2GIS.load(SpatialUnitsTests.class.getResource("hydro_test.shp"), true)
-        h2GIS.load(SpatialUnitsTests.class.getResource("zone_test.shp"),true)
+        h2GIS.load(SpatialUnitsTests.class.getResource("road_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.class.getResource("rail_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.class.getResource("veget_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.class.getResource("hydro_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.class.getResource("zone_test.geojson"),true)
 
         def  prepareData = Geoindicators.SpatialUnits.prepareRSUData()
         assertTrue prepareData.execute([zoneTable: 'zone_test', roadTable: 'road_test',  railTable: 'rail_test',
@@ -100,11 +100,11 @@ class SpatialUnitsTests {
     @Test
     void prepareGeometriesForRSUWithFilterTest() {
         H2GIS h2GIS = H2GIS.open('./target/spatialunitsdb2;AUTO_SERVER=TRUE')
-        h2GIS.load(SpatialUnitsTests.class.class.getResource("road_test.shp"), true)
-        h2GIS.load(SpatialUnitsTests.class.class.getResource("rail_test.shp"), true)
-        h2GIS.load(SpatialUnitsTests.class.class.getResource("veget_test.shp"), true)
-        h2GIS.load(SpatialUnitsTests.class.class.getResource("hydro_test.shp"), true)
-        h2GIS.load(SpatialUnitsTests.class.class.getResource("zone_test.shp"),true)
+        h2GIS.load(SpatialUnitsTests.class.class.getResource("road_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.class.class.getResource("rail_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.class.class.getResource("veget_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.class.class.getResource("hydro_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.class.class.getResource("zone_test.geojson"),true)
 
         def  prepareData = Geoindicators.SpatialUnits.prepareRSUData()
 

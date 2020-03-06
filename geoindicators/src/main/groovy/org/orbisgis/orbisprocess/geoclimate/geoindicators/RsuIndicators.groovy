@@ -1473,16 +1473,25 @@ IProcess smallestCommunGeometry() {
                 if(vegetationTable && datasource.hasTable(vegetationTable)){
                     info "Preparing table :  $vegetationTable"
                     datasource.getSpatialTable(vegetationTable).the_geom.createIndex()
+                    def low_vegetation_rsu_tmp = "low_vegetation_rsu_zindex0_$uuid"
                     def low_vegetation_tmp = "low_vegetation_zindex0_$uuid"
                     def high_vegetation_tmp = "high_vegetation_zindex0_$uuid"
-                    datasource.execute """DROP TABLE IF EXISTS $low_vegetation_tmp;
-                    CREATE TABLE $low_vegetation_tmp AS SELECT st_intersection(ST_FORCE2d(a.the_geom), b.the_geom) AS the_geom, b.id_rsu FROM 
-                            $vegetationTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
-                            AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.type='low';
-                            DROP TABLE IF EXISTS $high_vegetation_tmp;
-                    CREATE TABLE $high_vegetation_tmp AS SELECT st_intersection(ST_FORCE2d(a.the_geom), b.the_geom) AS the_geom, b.id_rsu FROM 
-                            $vegetationTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
-                            AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.type='high'"""
+                    def high_vegetation_rsu_tmp = "high_vegetation_zindex0_$uuid"
+                    datasource.execute """DROP TABLE IF EXISTS $low_vegetation_tmp, $low_vegetation_rsu_tmp;
+                    CREATE TABLE $low_vegetation_rsu_tmp as select st_union(st_accum(ST_FORCE2d(a.the_geom))) as the_geom,  b.id_rsu FROM 
+                        $vegetationTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
+                            AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='low' group by b.id_rsu;
+                    CREATE INDEX ON $low_vegetation_rsu_tmp(id_rsu);
+                    CREATE TABLE $low_vegetation_tmp AS SELECT st_intersection(a.the_geom, b.the_geom) AS the_geom, b.id_rsu FROM 
+                            $low_vegetation_rsu_tmp AS a, $rsuTable AS b WHERE a.id_rsu=b.id_rsu group by b.id_rsu;
+                            DROP TABLE IF EXISTS $high_vegetation_tmp,$high_vegetation_rsu_tmp;
+                    CREATE TABLE $high_vegetation_rsu_tmp as select st_union(st_accum(ST_FORCE2d(a.the_geom))) as the_geom,  b.id_rsu FROM 
+                        $vegetationTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
+                            AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='high' group by b.id_rsu;
+                    CREATE INDEX ON $high_vegetation_rsu_tmp(id_rsu);
+                    CREATE TABLE $high_vegetation_tmp AS SELECT st_intersection(a.the_geom, b.the_geom) AS the_geom, b.id_rsu FROM 
+                            $high_vegetation_rsu_tmp AS a, $rsuTable AS b WHERE a.id_rsu=b.id_rsu group by b.id_rsu;
+                    DROP TABLE $low_vegetation_rsu_tmp, $high_vegetation_rsu_tmp;"""
                     tablesToMerge+= ["$low_vegetation_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $low_vegetation_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
                     tablesToMerge+= ["$high_vegetation_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $high_vegetation_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
                 }
