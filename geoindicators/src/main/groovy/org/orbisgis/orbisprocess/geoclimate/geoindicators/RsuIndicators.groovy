@@ -1464,7 +1464,7 @@ IProcess smallestCommunGeometry() {
                 as the_geom
                 FROM $roadTable  where ZINDEX=0 ;
                 CREATE INDEX IF NOT EXISTS ids_$roadTable_zindex0_buffer ON $roadTable_zindex0_buffer USING RTREE(the_geom);
-                CREATE TABLE $road_tmp AS SELECT st_intersection(st_union(st_accum(a.the_geom)),b.the_geom) AS the_geom, b.id_rsu FROM
+                CREATE TABLE $road_tmp AS SELECT ST_CollectionExtract(st_intersection(st_union(st_accum(a.the_geom)),b.the_geom),3) AS the_geom, b.id_rsu FROM
                 $roadTable_zindex0_buffer AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom) GROUP BY b.id_rsu;
                 DROP TABLE IF EXISTS $roadTable_zindex0_buffer;"""
                     tablesToMerge+= ["$road_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $road_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
@@ -1482,14 +1482,14 @@ IProcess smallestCommunGeometry() {
                         $vegetationTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                             AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='low' group by b.id_rsu;
                     CREATE INDEX ON $low_vegetation_rsu_tmp(id_rsu);
-                    CREATE TABLE $low_vegetation_tmp AS SELECT st_intersection(a.the_geom, b.the_geom) AS the_geom, b.id_rsu FROM 
+                    CREATE TABLE $low_vegetation_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.id_rsu FROM 
                             $low_vegetation_rsu_tmp AS a, $rsuTable AS b WHERE a.id_rsu=b.id_rsu group by b.id_rsu;
                             DROP TABLE IF EXISTS $high_vegetation_tmp,$high_vegetation_rsu_tmp;
                     CREATE TABLE $high_vegetation_rsu_tmp as select st_union(st_accum(ST_FORCE2d(a.the_geom))) as the_geom,  b.id_rsu FROM 
                         $vegetationTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                             AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='high' group by b.id_rsu;
                     CREATE INDEX ON $high_vegetation_rsu_tmp(id_rsu);
-                    CREATE TABLE $high_vegetation_tmp AS SELECT st_intersection(a.the_geom, b.the_geom) AS the_geom, b.id_rsu FROM 
+                    CREATE TABLE $high_vegetation_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.id_rsu FROM 
                             $high_vegetation_rsu_tmp AS a, $rsuTable AS b WHERE a.id_rsu=b.id_rsu group by b.id_rsu;
                     DROP TABLE $low_vegetation_rsu_tmp, $high_vegetation_rsu_tmp;"""
                     tablesToMerge+= ["$low_vegetation_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $low_vegetation_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
@@ -1501,7 +1501,7 @@ IProcess smallestCommunGeometry() {
                     datasource.getSpatialTable(waterTable).the_geom.createIndex()
                     def water_tmp = "water_zindex0_$uuid"
                     datasource.execute """DROP TABLE IF EXISTS $water_tmp;
-                    CREATE TABLE $water_tmp AS SELECT st_intersection(ST_FORCE2d(a.the_geom), b.the_geom) AS the_geom, b.id_rsu FROM 
+                    CREATE TABLE $water_tmp AS SELECT ST_CollectionExtract(st_intersection(ST_FORCE2d(a.the_geom), b.the_geom),3) AS the_geom, b.id_rsu FROM 
                             $waterTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                             AND ST_INTERSECTS(a.the_geom, b.the_geom)"""
                     tablesToMerge+= ["$water_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $water_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
@@ -1512,7 +1512,7 @@ IProcess smallestCommunGeometry() {
                     datasource.getSpatialTable(imperviousTable).the_geom.createIndex()
                     def impervious_tmp = "impervious_zindex0_$uuid"
                     datasource.execute """DROP TABLE IF EXISTS $impervious_tmp;
-                    CREATE TABLE $impervious_tmp AS SELECT st_intersection(st_force2d(a.the_geom), b.the_geom) AS the_geom, b.id_rsu FROM 
+                    CREATE TABLE $impervious_tmp AS SELECT ST_CollectionExtract(st_intersection(st_force2d(a.the_geom), b.the_geom),3) AS the_geom, b.id_rsu FROM 
                             $impervious_tmp AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                             AND ST_INTERSECTS(a.the_geom, b.the_geom)"""
                     tablesToMerge+= ["$impervious_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $impervious_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
@@ -1523,7 +1523,7 @@ IProcess smallestCommunGeometry() {
                     datasource.getSpatialTable(buildingTable).the_geom.createIndex()
                     def building_tmp = "building_zindex0_$uuid"
                     datasource.execute """DROP TABLE IF EXISTS $building_tmp;
-                    CREATE TABLE $building_tmp AS SELECT st_intersection(st_force2d(a.the_geom), b.the_geom) AS the_geom, b.id_rsu FROM 
+                    CREATE TABLE $building_tmp AS SELECT ST_CollectionExtract(st_intersection(st_force2d(a.the_geom), b.the_geom),3) AS the_geom, b.id_rsu FROM 
                             $buildingTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                             AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.zindex=0"""
                     tablesToMerge+= ["$building_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $building_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
