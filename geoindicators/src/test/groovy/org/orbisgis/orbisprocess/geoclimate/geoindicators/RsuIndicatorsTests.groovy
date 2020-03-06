@@ -406,11 +406,11 @@ class RsuIndicatorsTests {
     @Test
     void surfaceFractionsTest() {
         H2GIS h2GIS = H2GIS.open('./target/surface_fractions_db;AUTO_SERVER=TRUE')
-        h2GIS.load(SpatialUnitsTests.class.getResource("road_test.shp"), true)
-        h2GIS.load(SpatialUnitsTests.class.getResource("building_test.shp"), true)
-        h2GIS.load(SpatialUnitsTests.class.getResource("veget_test.shp"), true)
-        h2GIS.load(SpatialUnitsTests.class.getResource("hydro_test.shp"), true)
-        h2GIS.load(SpatialUnitsTests.class.getResource("zone_test.shp"),true)
+        h2GIS.load(SpatialUnitsTests.class.getResource("road_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.class.getResource("building_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.class.getResource("veget_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.class.getResource("hydro_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.class.getResource("zone_test.geojson"),true)
 
         def  prepareData = Geoindicators.SpatialUnits.prepareRSUData()
         assertTrue prepareData.execute([zoneTable: 'zone_test', roadTable: 'road_test',  railTable: '',

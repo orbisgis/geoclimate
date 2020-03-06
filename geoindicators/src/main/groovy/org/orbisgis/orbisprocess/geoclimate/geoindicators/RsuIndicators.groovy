@@ -1478,11 +1478,11 @@ IProcess smallestCommunGeometry() {
                     datasource.execute """DROP TABLE IF EXISTS $low_vegetation_tmp;
                     CREATE TABLE $low_vegetation_tmp AS SELECT st_intersection(ST_FORCE2d(a.the_geom), b.the_geom) AS the_geom, b.id_rsu FROM 
                             $vegetationTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
-                            AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.type='low';
+                            AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='low';
                             DROP TABLE IF EXISTS $high_vegetation_tmp;
                     CREATE TABLE $high_vegetation_tmp AS SELECT st_intersection(ST_FORCE2d(a.the_geom), b.the_geom) AS the_geom, b.id_rsu FROM 
                             $vegetationTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
-                            AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.type='high'"""
+                            AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='high'"""
                     tablesToMerge+= ["$low_vegetation_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $low_vegetation_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
                     tablesToMerge+= ["$high_vegetation_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $high_vegetation_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
                 }
