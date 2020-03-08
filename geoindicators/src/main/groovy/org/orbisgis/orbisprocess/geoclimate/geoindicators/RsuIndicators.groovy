@@ -1626,7 +1626,7 @@ IProcess smallestCommunGeometry() {
                                           CREATE TABLE $outputTableName AS SELECT AREA, SUM(LOW_VEGETATION) AS LOW_VEGETATION,
                                                             SUM(HIGH_VEGETATION) AS HIGH_VEGETATION, SUM(WATER) AS WATER,
                                                             SUM(IMPERVIOUS) AS IMPERVIOUS, SUM(ROAD) AS ROAD, 
-                                                            SUM(BUILDING) AS BUILDING, ID_RSU FROM $allInfoTableName GROUP BY ID, AREA;
+                                                            SUM(BUILDING) AS BUILDING, ID_RSU FROM $allInfoTableName GROUP BY ID, AREA, ID_RSU;
                                           DROP TABLE IF EXISTS ${tablesToMerge.keySet().join(' , ')}, allInfoTableName"""
                 }
 
