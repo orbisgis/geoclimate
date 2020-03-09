@@ -285,13 +285,25 @@ IProcess createBlocks(){
             //Unify buildings that share a boundary
             info "Merging spatial clusters..."
 
-            datasource.execute """
+            if(distance>0){
+                datasource.execute """
+            CREATE INDEX ON $subGraphTableNodes USING BTREE(NODE_ID);
+            DROP TABLE IF EXISTS $subGraphBlocks;
+            CREATE TABLE $subGraphBlocks
+            AS SELECT ST_UNION(ST_ACCUM(ST_buffer(A.THE_GEOM, $distance))) AS THE_GEOM
+            FROM $inputTableName A, $subGraphTableNodes B
+            WHERE A.id_build=B.NODE_ID GROUP BY B.CONNECTED_COMPONENT;"""
+            }
+            else{
+                datasource.execute """
             CREATE INDEX ON $subGraphTableNodes USING BTREE(NODE_ID);
             DROP TABLE IF EXISTS $subGraphBlocks;
             CREATE TABLE $subGraphBlocks
             AS SELECT ST_UNION(ST_ACCUM(ST_MAKEVALID(A.THE_GEOM))) AS THE_GEOM
             FROM $inputTableName A, $subGraphTableNodes B
             WHERE A.id_build=B.NODE_ID GROUP BY B.CONNECTED_COMPONENT;"""
+            }
+
 
             //Create the blocks
             info "Creating the block table..."
