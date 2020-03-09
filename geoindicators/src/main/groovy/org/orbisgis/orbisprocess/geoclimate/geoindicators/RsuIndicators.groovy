@@ -1618,9 +1618,16 @@ IProcess smallestCommunGeometry() {
                 if(finalMerge){
                     //Do not drop RSU table
                     tablesToMerge.remove("$rsuTable")
-                    datasource.execute """DROP TABLE IF EXISTS $outputTableName, $tmp_point_polygonize, $final_polygonize, $tmp_tables;
-                                          CREATE TABLE $outputTableName as ${finalMerge.join(' union all ')};
-                                          DROP TABLE IF EXISTS ${tablesToMerge.keySet().join(' , ')}"""
+                    def allInfoTableName = "allInfoTableName_$uuid"
+                    datasource.execute """DROP TABLE IF EXISTS $allInfoTableName, $tmp_point_polygonize, $final_polygonize, $tmp_tables, $outputTableName;
+                                          CREATE TABLE $allInfoTableName as ${finalMerge.join(' union all ')};
+                                          CREATE INDEX ON $allInfoTableName USING BTREE(ID);
+                                          CREATE INDEX ON $allInfoTableName USING BTREE(ID_RSU);
+                                          CREATE TABLE $outputTableName AS SELECT MAX(AREA) AS AREA, MAX(LOW_VEGETATION) AS LOW_VEGETATION,
+                                                            MAX(HIGH_VEGETATION) AS HIGH_VEGETATION, MAX(WATER) AS WATER,
+                                                            MAX(IMPERVIOUS) AS IMPERVIOUS, MAX(ROAD) AS ROAD, 
+                                                            MAX(BUILDING) AS BUILDING, ID_RSU FROM $allInfoTableName GROUP BY ID, ID_RSU;
+                                          DROP TABLE IF EXISTS ${tablesToMerge.keySet().join(' , ')}, ${allInfoTableName}"""
                 }
 
             }
