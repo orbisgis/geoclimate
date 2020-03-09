@@ -212,6 +212,10 @@ def BDTOPO_V2() {
                                     def outputFolderProperties = outputFolderProperties(outputFolder)
                                     //Check if we can write in the output folder
                                     def file_outputFolder  = new File(outputFolderProperties.path)
+                                    if( !file_outputFolder.isDirectory()){
+                                        error "The directory $file_outputFolder doesn't exist."
+                                        return null
+                                    }
                                     if(!file_outputFolder.canWrite()){
                                         file_outputFolder = null
                                     }
@@ -245,6 +249,10 @@ def BDTOPO_V2() {
                                     def outputFolderProperties = outputFolderProperties(outputFolder)
                                     //Check if we can write in the output folder
                                     def file_outputFolder  = new File(outputFolderProperties.path)
+                                    if( !file_outputFolder.isDirectory()){
+                                        error "The directory $file_outputFolder doesn't exist."
+                                        return null
+                                    }
                                     if(file_outputFolder.canWrite()){
                                         def h2gis_datasource = H2GIS.open(h2gis_properties)
                                         id_zones = loadDataFromFolder(inputFolderPath, h2gis_datasource, id_zones)
@@ -325,6 +333,10 @@ def BDTOPO_V2() {
                                     def outputFolderProperties = outputFolderProperties(outputFolder)
                                     //Check if we can write in the output folder
                                     def file_outputFolder  = new File(outputFolderProperties.path)
+                                    if( !file_outputFolder.isDirectory()){
+                                        error "The directory $file_outputFolder doesn't exist."
+                                        return null
+                                    }
                                     if(!file_outputFolder.canWrite()){
                                         file_outputFolder = null
                                     }
@@ -395,6 +407,10 @@ def BDTOPO_V2() {
                                     def outputFolderProperties = outputFolderProperties(outputFolder)
                                     //Check if we can write in the output folder
                                     def file_outputFolder  = new File(outputFolderProperties.path)
+                                    if( !file_outputFolder.isDirectory()){
+                                        error "The directory $file_outputFolder doesn't exist."
+                                        return null
+                                    }
                                     if(file_outputFolder.canWrite()) {
                                         def codes = inputDataBase.id_zones
                                         if (codes && codes in Collection) {
@@ -537,29 +553,6 @@ def outputFolderProperties(def outputFolder){
     else{
         return ["path":outputFolder, "tables" : tablesToSave]
     }
-}
-
-/**
- * Read the geoclimatedb parameters and return the properties to build a local H2GIS database
- * @param geoclimatedb parameters from the json file
- * @return connection properties
- */
-def readH2GISProperties(def geoclimatedb){
-    //Default H2GIS database properties
-    def databaseName =System.getProperty("java.io.tmpdir")+File.separator +"bdtopo_v2"+uuid
-    Map h2gis_properties = ["databaseName":databaseName, "user": "sa", "password": ""]
-    def db_delete = true
-    if(geoclimatedb){
-        def h2gis_path = geoclimatedb.get("path")
-        def delete_h2gis_db = geoclimatedb.get("delete")
-        if(delete_h2gis_db && delete_h2gis_db in Boolean){
-            db_delete = delete_h2gis_db
-        }
-        if(h2gis_path) {
-            h2gis_properties = ["databaseName":h2gis_path, "user": "sa", "password": ""]
-        }
-    }
-    return ["db_properties" : h2gis_properties,"delete":db_delete]
 }
 
 /**
@@ -784,7 +777,7 @@ def findIDZones(def h2gis_datasource, def id_zones){
     if(h2gis_datasource.hasTable("IRIS_GE")) {
         if (id_zones) {
             if(id_zones in Collection){
-                if (h2gis_datasource.firstRow("select count(*) as COUNT_ZONES FROM IRIS_GE where insee_com in ('${id_zones.join(",")}')").COUNT_ZONES > 0) {
+                if (h2gis_datasource.firstRow("select count(*) as COUNT_ZONES FROM IRIS_GE where insee_com in ('${id_zones.join("','")}')").COUNT_ZONES > 0) {
                     inseeCodes = id_zones
                 } else {
                     error "Cannot find any commune from the list of zones  : ${id_zones.join(",")}"
@@ -1570,7 +1563,7 @@ def OSM() {
                 def input = parameters.get("input")
                 def output = parameters.get("output")
                 //Default H2GIS database properties
-                def databaseName =System.getProperty("java.io.tmpdir")+File.separator +"bdtopo_v2"+uuid
+                def databaseName =System.getProperty("java.io.tmpdir")+File.separator +"osm"+uuid
                 def h2gis_properties = ["databaseName":databaseName, "user": "sa", "password": ""]
                 def delete_h2gis = true
                 def geoclimatedb = parameters.get("geoclimatedb")
@@ -1620,6 +1613,10 @@ def OSM() {
                             def outputFolderProperties = outputFolderProperties(outputFolder)
                             //Check if we can write in the output folder
                             def file_outputFolder  = new File(outputFolderProperties.path)
+                            if( !file_outputFolder.isDirectory()){
+                                error "The directory $file_outputFolder doesn't exist."
+                                return null
+                            }
                             if(!file_outputFolder.canWrite()){
                                 file_outputFolder = null
                             }
@@ -1658,6 +1655,10 @@ def OSM() {
                             //Check if we can write in the output folder
                             def outputFolderProperties = outputFolderProperties(outputFolder)
                             def file_outputFolder  = new File(outputFolderProperties.path)
+                            if( !file_outputFolder.isDirectory()){
+                                error "The directory $file_outputFolder doesn't exist."
+                                return null
+                            }
                             if(file_outputFolder.canWrite()){
                                 def h2gis_datasource = H2GIS.open(h2gis_properties)
                                 if(osmFilters && osmFilters in Collection) {
