@@ -1131,7 +1131,7 @@ IProcess roadFraction() {
             datasource.getSpatialTable(roadTable).the_geom.createSpatialIndex()
 
             def surfQuery = "DROP TABLE IF EXISTS $surfTable; CREATE TABLE $surfTable AS SELECT " +
-                    "ST_BUFFER($GEOMETRIC_COLUMN_ROAD,$WIDTH_ROAD/2,'endcap=flat') AS the_geom," +
+                    "ST_BUFFER($GEOMETRIC_COLUMN_ROAD,$WIDTH_ROAD::double precision/2,'endcap=flat') AS the_geom," +
                     "$Z_INDEX_ROAD FROM $roadTable;"
 
             // Intersections between road surfaces and RSU are calculated
