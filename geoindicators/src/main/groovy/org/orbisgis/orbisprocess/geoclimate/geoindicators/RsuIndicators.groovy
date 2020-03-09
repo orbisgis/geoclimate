@@ -1622,11 +1622,11 @@ IProcess smallestCommunGeometry() {
                     datasource.execute """DROP TABLE IF EXISTS $allInfoTableName, $tmp_point_polygonize, $final_polygonize, $tmp_tables, $outputTableName;
                                           CREATE TABLE $allInfoTableName as ${finalMerge.join(' union all ')};
                                           CREATE INDEX ON $allInfoTableName USING BTREE(ID);
-                                          CREATE INDEX ON $allInfoTableName USING BTREE(AREA);
-                                          CREATE TABLE $outputTableName AS SELECT AREA, SUM(LOW_VEGETATION) AS LOW_VEGETATION,
-                                                            SUM(HIGH_VEGETATION) AS HIGH_VEGETATION, SUM(WATER) AS WATER,
-                                                            SUM(IMPERVIOUS) AS IMPERVIOUS, SUM(ROAD) AS ROAD, 
-                                                            SUM(BUILDING) AS BUILDING, ID_RSU FROM $allInfoTableName GROUP BY ID, AREA, ID_RSU;
+                                          CREATE INDEX ON $allInfoTableName USING BTREE(ID_RSU);
+                                          CREATE TABLE $outputTableName AS SELECT MAX(AREA) AS AREA, MAX(LOW_VEGETATION) AS LOW_VEGETATION,
+                                                            MAX(HIGH_VEGETATION) AS HIGH_VEGETATION, MAX(WATER) AS WATER,
+                                                            MAX(IMPERVIOUS) AS IMPERVIOUS, MAX(ROAD) AS ROAD, 
+                                                            MAX(BUILDING) AS BUILDING, ID_RSU FROM $allInfoTableName GROUP BY ID, ID_RSU;
                                           DROP TABLE IF EXISTS ${tablesToMerge.keySet().join(' , ')}, allInfoTableName"""
                 }
 
