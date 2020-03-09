@@ -1627,7 +1627,7 @@ IProcess smallestCommunGeometry() {
                                                             MAX(HIGH_VEGETATION) AS HIGH_VEGETATION, MAX(WATER) AS WATER,
                                                             MAX(IMPERVIOUS) AS IMPERVIOUS, MAX(ROAD) AS ROAD, 
                                                             MAX(BUILDING) AS BUILDING, ID_RSU FROM $allInfoTableName GROUP BY ID, ID_RSU;
-                                          DROP TABLE IF EXISTS ${tablesToMerge.keySet().join(' , ')}, $allInfoTableName"""
+                                          DROP TABLE IF EXISTS ${tablesToMerge.keySet().join(' , ')}, ${allInfoTableName}"""
                 }
 
             }
