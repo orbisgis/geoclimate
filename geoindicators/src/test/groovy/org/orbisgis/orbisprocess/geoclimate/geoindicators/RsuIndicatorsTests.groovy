@@ -498,7 +498,7 @@ class RsuIndicatorsTests {
         // Only the RSU 5 is conserved for the test
         h2GIS.execute "DROP TABLE IF EXISTS rsu_tempo;" +
                 "CREATE TABLE rsu_tempo AS SELECT * " +
-                "FROM rsu_test WHERE id_rsu = 5"
+                "FROM rsu_test WHERE id_rsu = 4"
 
         // Need to create the smallest geometries used as input of the surface fraction process
         def  p =  Geoindicators.RsuIndicators.smallestCommunGeometry()
@@ -519,7 +519,7 @@ class RsuIndicatorsTests {
                 prefixName: "test", datasource: h2GIS])
         def result0 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName}")
         assertEquals(1.0/5, result0["high_vegetation_building_fraction"])
-        assertEquals(3.0/20, result0["high_vegetation_high_vegetation_fraction"])
+        assertEquals(3.0/20, result0["high_vegetation_low_vegetation_fraction"])
         assertEquals(3.0/20, result0["high_vegetation_fraction"])
         assertEquals(3.0/20, result0["low_vegetation_fraction"])
         assertEquals(1.0/4, result0["water_fraction"])
@@ -536,7 +536,7 @@ class RsuIndicatorsTests {
                 prefixName: "test", datasource: h2GIS])
         def result1 = h2GIS.firstRow("SELECT * FROM ${p1.results.outputTableName}")
         assertEquals(1.0/5, result1["high_vegetation_building_fraction"])
-        assertEquals(3.0/20, result1["high_vegetation_high_vegetation_fraction"])
+        assertEquals(3.0/20, result1["high_vegetation_low_vegetation_fraction"])
         assertEquals(3.0/20, result1["high_vegetation_fraction"])
         assertEquals(3.0/20, result1["low_vegetation_fraction"])
         assertEquals(3.0/20, result1["water_fraction"])
@@ -553,7 +553,7 @@ class RsuIndicatorsTests {
                 prefixName: "test", datasource: h2GIS])
         def result2 = h2GIS.firstRow("SELECT * FROM ${p2.results.outputTableName}")
         assertEquals(1.0/5, result2["high_vegetation_building_fraction"])
-        assertEquals(3.0/20, result2["high_vegetation_high_vegetation_fraction"])
+        assertEquals(3.0/20, result2["high_vegetation_low_vegetation_fraction"])
         assertEquals(3.0/20, result2["high_vegetation_fraction"])
         assertEquals(1.0/10, result2["building_low_vegetation_fraction"])
         assertEquals(3.0/20, result2["low_vegetation_fraction"])
