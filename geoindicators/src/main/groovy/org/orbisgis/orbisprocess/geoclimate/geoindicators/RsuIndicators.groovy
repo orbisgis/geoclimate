@@ -1236,7 +1236,8 @@ IProcess waterFraction() {
 }
 
 /**
- * Script to compute the pervious and impervious fraction within each RSU of an area from other land fractions.
+ * Script to compute the pervious and impervious fraction within each RSU of an area from other land fractions. Default
+ * definition is based on Stewart and Oke (2012)
  *
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
@@ -1244,12 +1245,18 @@ IProcess waterFraction() {
  * fractions"
  * @param operationsAndComposition a map containing as key the name of the operations to perform (pervious fraction
  * or impervious fraction) and as value the list of land fractions which constitutes them (and which are stored
- * in the rsuTable).
- *          -> "pervious_fraction": default composed of "low_vegetation_fraction" and "water_fraction"
- *          -> "impervious_fraction": default composed of "road_fraction" only
+ * in the rsuTable). Default ["pervious_fraction": ["high_vegetation_fraction", "low_vegetation_fraction",
+ *                                                "water_fraction", "high_vegetation_low_vegetation_fraction",
+ *                                                "high_vegetation_water_fraction"],
+ *                            "impervious_fraction": ["road_fraction", "impervious_fraction", "high_vegetation_road_fraction",
+ *                                                    "high_vegetation_impervious_fraction"]]
  * @param prefixName String used as prefix to name the output table
  *
  * @return outputTableName Table name in which the rsu id and their corresponding indicator value are stored
+ *
+ * References:
+ * --> Stewart, Ian D., and Tim R. Oke. "Local climate zones for urban temperature studies." Bulletin of
+ * the American Meteorological Society 93, no. 12 (2012): 1879-1900.
  *
  * @author Jérémy Bernard
  */
@@ -1260,9 +1267,12 @@ IProcess perviousnessFraction() {
 
     return create({
         title "Perviousness fraction"
-        inputs rsuTable: String, operationsAndComposition: ["pervious_fraction"  :
-                                                                    ["low_vegetation_fraction", "water_fraction"],
-                                                            "impervious_fraction": ["road_fraction"]],
+        inputs rsuTable: String,
+                operationsAndComposition:   ["pervious_fraction": ["high_vegetation_fraction", "low_vegetation_fraction",
+                                                                    "water_fraction", "high_vegetation_low_vegetation_fraction",
+                                                                    "high_vegetation_water_fraction"],
+                                             "impervious_fraction": ["road_fraction", "impervious_fraction", "high_vegetation_road_fraction",
+                                                             "high_vegetation_impervious_fraction"]],
                 prefixName: String, datasource: JdbcDataSource
         outputs outputTableName: String
         run { rsuTable, operationsAndComposition, prefixName, datasource ->
