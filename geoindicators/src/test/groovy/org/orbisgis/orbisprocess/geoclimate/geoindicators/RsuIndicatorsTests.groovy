@@ -404,8 +404,7 @@ class RsuIndicatorsTests {
 
 
     @Test
-    void surfaceFractionsTest() {
-        H2GIS h2GIS = H2GIS.open('./target/surface_fractions_db;AUTO_SERVER=TRUE')
+    void smallestCommunGeometryTest() {
         h2GIS.load(SpatialUnitsTests.class.getResource("road_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.class.getResource("building_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.class.getResource("veget_test.geojson"), true)
@@ -492,6 +491,73 @@ class RsuIndicatorsTests {
 
         assertTrue h2GIS.firstRow("select count(*) as count from water_compare_stats where diff > 1").count==0
 
+    }
 
+    @Test
+    void surfaceFractionTest() {
+        // Only the RSU 5 is conserved for the test
+        h2GIS.execute "DROP TABLE IF EXISTS rsu_tempo;" +
+                "CREATE TABLE rsu_tempo AS SELECT * " +
+                "FROM rsu_test WHERE id_rsu = 5"
+
+        // Need to create the smallest geometries used as input of the surface fraction process
+        def  p =  Geoindicators.RsuIndicators.smallestCommunGeometry()
+        assertTrue p.execute([
+                rsuTable: "rsu_tempo",buildingTable: "building_test",vegetationTable: "veget_test",waterTable: "hydro_test",
+                prefixName: "test", datasource: h2GIS])
+        def tempoTable = p.results.outputTableName
+
+        // Apply the surface fractions for different combinations
+        // combination 1
+        def  p0 =  Geoindicators.RsuIndicators.surfaceFractions()
+        def superpositionsWithPriorities0 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]]
+        def priorities0 = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
+        assertTrue p0.execute([
+                rsuTable: "rsu_tempo", spatialRelationsTable: tempoTable,
+                superpositionsWithPriorities: superpositionsWithPriorities0,
+                priorities: priorities0,
+                prefixName: "test", datasource: h2GIS])
+        def result0 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName}")
+        assertEquals(1.0/5, result0["high_vegetation_building_fraction"])
+        assertEquals(3.0/20, result0["high_vegetation_high_vegetation_fraction"])
+        assertEquals(3.0/20, result0["high_vegetation_fraction"])
+        assertEquals(3.0/20, result0["low_vegetation_fraction"])
+        assertEquals(1.0/4, result0["water_fraction"])
+        assertEquals(1.0/10, result0["building_fraction"])
+
+        // combination 2
+        def  p1 =  Geoindicators.RsuIndicators.surfaceFractions()
+        def superpositionsWithPriorities1 = ["high_vegetation": ["building", "water", "low_vegetation", "road", "impervious"]]
+        def priorities1 = ["building", "water", "high_vegetation", "low_vegetation", "road", "impervious"]
+        assertTrue p1.execute([
+                rsuTable: "rsu_tempo", spatialRelationsTable: tempoTable,
+                superpositionsWithPriorities: superpositionsWithPriorities1,
+                priorities: priorities1,
+                prefixName: "test", datasource: h2GIS])
+        def result1 = h2GIS.firstRow("SELECT * FROM ${p1.results.outputTableName}")
+        assertEquals(1.0/5, result1["high_vegetation_building_fraction"])
+        assertEquals(3.0/20, result1["high_vegetation_high_vegetation_fraction"])
+        assertEquals(3.0/20, result1["high_vegetation_fraction"])
+        assertEquals(3.0/20, result1["low_vegetation_fraction"])
+        assertEquals(3.0/20, result1["water_fraction"])
+        assertEquals(1.0/5, result1["building_fraction"])
+
+        // combination 3
+        def  p2 =  Geoindicators.RsuIndicators.surfaceFractions()
+        def superpositionsWithPriorities2 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"],
+                "building": ["low_vegetation"]]
+        assertTrue p2.execute([
+                rsuTable: "rsu_tempo", spatialRelationsTable: tempoTable,
+                superpositionsWithPriorities: superpositionsWithPriorities2,
+                priorities: priorities0,
+                prefixName: "test", datasource: h2GIS])
+        def result2 = h2GIS.firstRow("SELECT * FROM ${p2.results.outputTableName}")
+        assertEquals(1.0/5, result2["high_vegetation_building_fraction"])
+        assertEquals(3.0/20, result2["high_vegetation_high_vegetation_fraction"])
+        assertEquals(3.0/20, result2["high_vegetation_fraction"])
+        assertEquals(1.0/10, result2["building_low_vegetation_fraction"])
+        assertEquals(3.0/20, result2["low_vegetation_fraction"])
+        assertEquals(1.0/4, result2["water_fraction"])
+        assertEquals(0, result2["building_fraction"])
     }
 }
