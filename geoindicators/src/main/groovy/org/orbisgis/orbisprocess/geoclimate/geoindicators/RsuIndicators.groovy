@@ -1655,7 +1655,7 @@ IProcess smallestCommunGeometry() {
  * @param spatialRelationsTable The name of the table that stores all spatial relations (output of smallestCommunGeometry)
  * @param superpositions Map where are stored the overlaying layers as keys and the overlapped
  * layers as values. Note that the priority order for the overlapped layers is taken according to the priority variable
- * (default ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]])
+ * name and (default ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]])
  * @param priorities List indicating the priority order to set between layers in order to remove potential double count
  * of overlapped layers (for example a geometry containing water and low_vegetation must be either water
  * or either low_vegetation, not both (default ["water", "building", "high_vegetation", "low_vegetation",

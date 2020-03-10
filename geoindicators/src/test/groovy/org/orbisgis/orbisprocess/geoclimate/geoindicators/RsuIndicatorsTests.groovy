@@ -510,11 +510,11 @@ class RsuIndicatorsTests {
         // Apply the surface fractions for different combinations
         // combination 1
         def  p0 =  Geoindicators.RsuIndicators.surfaceFractions()
-        def superpositionsWithPriorities0 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]]
+        def superpositions0 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]]
         def priorities0 = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
         assertTrue p0.execute([
                 rsuTable: "rsu_tempo", spatialRelationsTable: tempoTable,
-                superpositionsWithPriorities: superpositionsWithPriorities0,
+                superpositions: superpositions0,
                 priorities: priorities0,
                 prefixName: "test", datasource: h2GIS])
         def result0 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName}")
@@ -527,11 +527,11 @@ class RsuIndicatorsTests {
 
         // combination 2
         def  p1 =  Geoindicators.RsuIndicators.surfaceFractions()
-        def superpositionsWithPriorities1 = ["high_vegetation": ["building", "water", "low_vegetation", "road", "impervious"]]
+        def superpositions1 = ["high_vegetation": ["building", "water", "low_vegetation", "road", "impervious"]]
         def priorities1 = ["building", "water", "high_vegetation", "low_vegetation", "road", "impervious"]
         assertTrue p1.execute([
                 rsuTable: "rsu_tempo", spatialRelationsTable: tempoTable,
-                superpositionsWithPriorities: superpositionsWithPriorities1,
+                superpositions: superpositions1,
                 priorities: priorities1,
                 prefixName: "test", datasource: h2GIS])
         def result1 = h2GIS.firstRow("SELECT * FROM ${p1.results.outputTableName}")
@@ -544,11 +544,11 @@ class RsuIndicatorsTests {
 
         // combination 3
         def  p2 =  Geoindicators.RsuIndicators.surfaceFractions()
-        def superpositionsWithPriorities2 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"],
+        def superpositions2 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"],
                 "building": ["low_vegetation"]]
         assertTrue p2.execute([
                 rsuTable: "rsu_tempo", spatialRelationsTable: tempoTable,
-                superpositionsWithPriorities: superpositionsWithPriorities2,
+                superpositions: superpositions2,
                 priorities: priorities0,
                 prefixName: "test", datasource: h2GIS])
         def result2 = h2GIS.firstRow("SELECT * FROM ${p2.results.outputTableName}")
