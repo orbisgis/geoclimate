@@ -1653,9 +1653,9 @@ IProcess smallestCommunGeometry() {
  * the resulting database will be stored
  * @param rsuTable The name of the input ITable where are stored the rsu geometries and the id_rsu
  * @param spatialRelationsTable The name of the table that stores all spatial relations (output of smallestCommunGeometry)
- * @param superpositionsWithPriorities Map where are stored the overlaying layers as keys and the overlapped
- * layers as values. Note that you should define a priority order for the values since if two overlapped
- * values are found in a same geometry, only one should be counted (default ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]])
+ * @param superpositions Map where are stored the overlaying layers as keys and the overlapped
+ * layers as values. Note that the priority order for the overlapped layers is taken according to the priority variable
+ * (default ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]])
  * @param priorities List indicating the priority order to set between layers in order to remove potential double count
  * of overlapped layers (for example a geometry containing water and low_vegetation must be either water
  * or either low_vegetation, not both (default ["water", "building", "high_vegetation", "low_vegetation",
@@ -1674,11 +1674,11 @@ IProcess surfaceFractions() {
     return create({
         title "RSU surface fractions"
         inputs rsuTable: String, spatialRelationsTable: String,
-                superpositionsWithPriorities: ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]],
+                superpositions: ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]],
                 priorities: ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"],
                 prefixName: String, datasource: JdbcDataSource
         outputs outputTableName: String
-        run { rsuTable, spatialRelationsTable,superpositionsWithPriorities,priorities,
+        run { rsuTable, spatialRelationsTable,superpositions,priorities,
               prefixName, datasource ->
 
             info "Executing RSU surface fractions computation"
@@ -1714,7 +1714,7 @@ IProcess surfaceFractions() {
             def end_query = """ FROM $spatialRelationsTable AS a RIGHT JOIN $rsuTableArea b 
                                 ON a.ID_RSU=b.ID_RSU GROUP BY b.ID_RSU;"""
             // Calculates the fraction of overlapped layers according to "superpositionsWithPriorities"
-            superpositionsWithPriorities.each{key, values ->
+            superpositions.each{key, values ->
                 // Calculating the overlaying layer when it has no overlapped layer
                 def tempoLayers = LAYERS.minus([key])
                 query += ", SUM(CASE WHEN a.$key =1 AND a.${tempoLayers.join(" =0 AND a.")} =0 THEN a.area ELSE 0 END)/b.area AS ${key}_fraction "
@@ -1748,7 +1748,7 @@ IProcess surfaceFractions() {
             // already calculated superpositions
             def varAlreadyUsedQuery = ""
             def var2Zero = []
-            def overlappingLayers = superpositionsWithPriorities.keySet()
+            def overlappingLayers = superpositions.keySet()
             priorities.each{val ->
                 def var2ZeroQuery = ""
                 if (!var2Zero.isEmpty()) {
@@ -1759,7 +1759,7 @@ IProcess surfaceFractions() {
                     // Overlapping layers should be set to zero when they arrive after the current layer
                     // in order of priority
                     def nonOverlappedQuery = ""
-                    superpositionsWithPriorities.each{key,values->
+                    superpositions.each{key,values->
                         def positionOverlapping = prioritiesMap.get(key)
                         if(values.contains(val) & (positionOverlapping > prioritiesMap.get(val))){
                             nonOverlappedQuery += " AND a.$key =0 "
