@@ -77,6 +77,16 @@ class RsuIndicatorsTests {
     }
 
     @Test
+    void aspectRatioTest2() {
+        def  p =  Geoindicators.RsuIndicators.aspectRatio()
+        assertTrue p.execute([rsuTable: "rsu_test", rsuFreeExternalFacadeDensityColumn:
+                "rsu_free_external_facade_density", rsuBuildingDensityColumn: "rsu_building_density",
+                              prefixName: "test", datasource: h2GIS])
+        def result = h2GIS.firstRow("SELECT aspect_ratio FROM test_rsu_aspect_ratio WHERE id_rsu = 17")
+        assertEquals(null, result["aspect_ratio"])
+    }
+
+    @Test
     void projectedFacadeAreaDistributionTest() {
         // Only the first 5 first created buildings are selected for the tests
         h2GIS.execute "DROP TABLE IF EXISTS tempo_build, test_rsu_projected_facade_area_distribution;" +

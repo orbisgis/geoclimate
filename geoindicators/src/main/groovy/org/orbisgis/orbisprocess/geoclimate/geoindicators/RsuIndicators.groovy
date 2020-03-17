@@ -238,7 +238,8 @@ IProcess aspectRatio() {
             def outputTableName = getOutputTableName(prefixName, "rsu_" + BASE_NAME)
 
             datasource.execute """DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS 
-                    SELECT $rsuFreeExternalFacadeDensityColumn/(1-$rsuBuildingDensityColumn) AS 
+                    SELECT CASE WHEN $rsuBuildingDensityColumn = 1 THEN null ELSE 
+                    $rsuFreeExternalFacadeDensityColumn/(1-$rsuBuildingDensityColumn) END AS 
                     $BASE_NAME, $COLUMN_ID_RSU FROM $rsuTable"""
 
             [outputTableName: outputTableName]
