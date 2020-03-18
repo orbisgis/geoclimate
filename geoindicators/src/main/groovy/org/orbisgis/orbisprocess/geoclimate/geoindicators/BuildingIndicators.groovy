@@ -369,7 +369,7 @@ def roadDistance() {
             // The road surfaces are created
             datasource.execute "DROP TABLE IF EXISTS $road_surf;" +
                     "CREATE TABLE $road_surf AS " +
-                    "SELECT ST_BUFFER($GEOMETRIC_FIELD, $ROAD_WIDTH/2,'endcap=flat') " +
+                    "SELECT ST_BUFFER($GEOMETRIC_FIELD, $ROAD_WIDTH::double precision/2,'endcap=flat') " +
                     "AS $GEOMETRIC_FIELD FROM $inputRoadTableName; " +
                     "CREATE INDEX IF NOT EXISTS buff_ids ON $road_surf USING RTREE($GEOMETRIC_FIELD)"
             // The roads located within the buffer are identified
