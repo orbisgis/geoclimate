@@ -1237,7 +1237,8 @@ IProcess waterFraction() {
 }
 
 /**
- * Script to compute the pervious and impervious fraction within each RSU of an area from other land fractions.
+ * Script to compute the pervious and impervious fraction within each RSU of an area from other land fractions. Default
+ * definition is based on Stewart and Oke (2012)
  *
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
@@ -1245,12 +1246,18 @@ IProcess waterFraction() {
  * fractions"
  * @param operationsAndComposition a map containing as key the name of the operations to perform (pervious fraction
  * or impervious fraction) and as value the list of land fractions which constitutes them (and which are stored
- * in the rsuTable).
- *          -> "pervious_fraction": default composed of "low_vegetation_fraction" and "water_fraction"
- *          -> "impervious_fraction": default composed of "road_fraction" only
+ * in the rsuTable). Default ["pervious_fraction": ["high_vegetation_fraction", "low_vegetation_fraction",
+ *                                                "water_fraction", "high_vegetation_low_vegetation_fraction",
+ *                                                "high_vegetation_water_fraction"],
+ *                            "impervious_fraction": ["road_fraction", "impervious_fraction", "high_vegetation_road_fraction",
+ *                                                    "high_vegetation_impervious_fraction"]]
  * @param prefixName String used as prefix to name the output table
  *
  * @return outputTableName Table name in which the rsu id and their corresponding indicator value are stored
+ *
+ * References:
+ * --> Stewart, Ian D., and Tim R. Oke. "Local climate zones for urban temperature studies." Bulletin of
+ * the American Meteorological Society 93, no. 12 (2012): 1879-1900.
  *
  * @author Jérémy Bernard
  */
@@ -1261,9 +1268,12 @@ IProcess perviousnessFraction() {
 
     return create({
         title "Perviousness fraction"
-        inputs rsuTable: String, operationsAndComposition: ["pervious_fraction"  :
-                                                                    ["low_vegetation_fraction", "water_fraction"],
-                                                            "impervious_fraction": ["road_fraction"]],
+        inputs rsuTable: String,
+                operationsAndComposition:   ["pervious_fraction": ["high_vegetation_fraction", "low_vegetation_fraction",
+                                                                    "water_fraction", "high_vegetation_low_vegetation_fraction",
+                                                                    "high_vegetation_water_fraction"],
+                                             "impervious_fraction": ["road_fraction", "impervious_fraction", "high_vegetation_road_fraction",
+                                                             "high_vegetation_impervious_fraction"]],
                 prefixName: String, datasource: JdbcDataSource
         outputs outputTableName: String
         run { rsuTable, operationsAndComposition, prefixName, datasource ->
@@ -1643,3 +1653,136 @@ IProcess smallestCommunGeometry() {
     })
 }
 
+/**
+ * This process computes all surface fractions from building, road, water,
+ * vegetation and impervious layers. It also computes the fractions of layers that
+ * overlay each other.
+ *
+ * It is necessary to calculate the smallestCommunGeometry since its output is needed as input of this process.
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param rsuTable The name of the input ITable where are stored the rsu geometries and the id_rsu
+ * @param spatialRelationsTable The name of the table that stores all spatial relations (output of smallestCommunGeometry)
+ * @param superpositions Map where are stored the overlaying layers as keys and the overlapped
+ * layers as values. Note that the priority order for the overlapped layers is taken according to the priority variable
+ * name and (default ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]])
+ * @param priorities List indicating the priority order to set between layers in order to remove potential double count
+ * of overlapped layers (for example a geometry containing water and low_vegetation must be either water
+ * or either low_vegetation, not both (default ["water", "building", "high_vegetation", "low_vegetation",
+ * "road", "impervious"]
+ * @param prefixName String use as prefix to name the output table
+ *
+ * Note that the relations are only computed for the zindex = 0
+ *
+ * @author Jérémy Bernard (CNRS)
+ *
+ * @return a table where are stored all surface fraction informations
+ */
+IProcess surfaceFractions() {
+    def final BASE_NAME = "SURFACE_FRACTIONS"
+    def final LAYERS = ["road", "water", "high_vegetation", "low_vegetation", "impervious", "building"]
+    return create({
+        title "RSU surface fractions"
+        inputs rsuTable: String, spatialRelationsTable: String,
+                superpositions: ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]],
+                priorities: ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"],
+                prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { rsuTable, spatialRelationsTable,superpositions,priorities,
+              prefixName, datasource ->
+
+            info "Executing RSU surface fractions computation"
+
+            // The name of the outputTableName is constructed
+            def outputTableName = getOutputTableName(prefixName, "rsu_" + BASE_NAME)
+
+            // Calculates the area for each RSU
+            def rsuTableArea = rsuTable+uuid
+            datasource.execute """DROP TABLE IF EXISTS $rsuTableArea; CREATE TABLE $rsuTableArea AS 
+                                            SELECT id_rsu, the_geom, ST_AREA(the_geom) AS area
+                                            FROM $rsuTable"""
+
+            // Create the indexes on each of the input tables
+            datasource.getTable(rsuTableArea).id_rsu.createIndex()
+            datasource.getTable(spatialRelationsTable).id_rsu.createIndex()
+            datasource.getTable(spatialRelationsTable).water.createIndex()
+            datasource.getTable(spatialRelationsTable).road.createIndex()
+            datasource.getTable(spatialRelationsTable).impervious.createIndex()
+            datasource.getTable(spatialRelationsTable).building.createIndex()
+            datasource.getTable(spatialRelationsTable).low_vegetation.createIndex()
+            datasource.getTable(spatialRelationsTable).high_vegetation.createIndex()
+
+            // Need to set priority number for future sorting
+            def prioritiesMap = [:]
+            def i = 0
+            priorities.each{val ->
+                prioritiesMap[val] = i
+                        i += 1
+            }
+
+            def query = """DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT a.ID_RSU """
+            def end_query = """ FROM $spatialRelationsTable AS a RIGHT JOIN $rsuTableArea b 
+                                ON a.ID_RSU=b.ID_RSU GROUP BY b.ID_RSU;"""
+            // Calculates the fraction of overlapped layers according to "superpositionsWithPriorities"
+            superpositions.each{key, values ->
+                // Calculating the overlaying layer when it has no overlapped layer
+                def tempoLayers = LAYERS.minus([key])
+                query += ", SUM(CASE WHEN a.$key =1 AND a.${tempoLayers.join(" =0 AND a.")} =0 THEN a.area ELSE 0 END)/b.area AS ${key}_fraction "
+                // Calculate each combination of overlapped layer for the current overlaying layer
+                def notOverlappedLayers = priorities.minus(values).minus([key])
+                // If an non overlapped layer is prioritized, its number should be 0 for the overlapping to happen
+                def nonOverlappedQuery = ""
+                def positionOverlapping = prioritiesMap.get(key)
+                if(!notOverlappedLayers.isEmpty()){
+                    notOverlappedLayers.each{val ->
+                        if(positionOverlapping>prioritiesMap.get(val)){
+                            nonOverlappedQuery += " AND a.$val =0 "
+                        }
+                    }
+                }
+                def var2Zero = []
+                def prioritiesWithoutOverlapping = priorities.minus(key)
+                prioritiesWithoutOverlapping.each{val ->
+                    if(values.contains(val)){
+                        def var2ZeroQuery = ""
+                        if(!var2Zero.isEmpty()){
+                            var2ZeroQuery = " AND a." + var2Zero.join("=0 AND a.") + " =0 "
+                        }
+                        query += ", SUM(CASE WHEN a.$key =1 AND a.$val =1 $var2ZeroQuery $nonOverlappedQuery THEN a.area ELSE 0 END)/b.area AS ${key}_${val}_fraction "
+                    }
+                    var2Zero.add(val)
+                }
+            }
+
+            // Calculates the fraction for each individual layer using the "priorities" table and considering
+            // already calculated superpositions
+            def varAlreadyUsedQuery = ""
+            def var2Zero = []
+            def overlappingLayers = superpositions.keySet()
+            priorities.each{val ->
+                def var2ZeroQuery = ""
+                if (!var2Zero.isEmpty()) {
+                    var2ZeroQuery = " AND a." + var2Zero.join("=0 AND a.") + " =0 "
+                }
+                var2Zero.add(val)
+                if(!overlappingLayers.contains(val)){
+                    // Overlapping layers should be set to zero when they arrive after the current layer
+                    // in order of priority
+                    def nonOverlappedQuery = ""
+                    superpositions.each{key,values->
+                        def positionOverlapping = prioritiesMap.get(key)
+                        if(values.contains(val) & (positionOverlapping > prioritiesMap.get(val))){
+                            nonOverlappedQuery += " AND a.$key =0 "
+                        }
+                    }
+                    query += ", SUM(CASE WHEN a.$val =1 $var2ZeroQuery $varAlreadyUsedQuery $nonOverlappedQuery THEN a.area ELSE 0 END)/b.area AS ${val}_fraction "
+                }
+            }
+
+            datasource.execute query + end_query + "DROP TABLE IF EXISTS $rsuTableArea"
+
+            [outputTableName: outputTableName]
+        }
+    })
+}

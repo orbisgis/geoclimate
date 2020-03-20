@@ -351,43 +351,41 @@ class RsuIndicatorsTests {
 
     @Test
     void perviousnessFractionTest() {
-        // Only the first created vegetation, road and water areas are selected for the tests
-        h2GIS.execute "DROP TABLE IF EXISTS tempo_hydro, tempo_veget, tempo_road; CREATE TABLE tempo_hydro AS SELECT * " +
-                "FROM hydro_test WHERE id_hydro < 2; CREATE TABLE tempo_veget AS SELECT * " +
-                "FROM veget_test WHERE id_veget < 4; CREATE TABLE tempo_road AS SELECT * " +
-                "FROM road_test WHERE id_road < 7"
+        // Only the RSU 4 is conserved for the test
+        h2GIS.execute "DROP TABLE IF EXISTS rsu_tempo;" +
+                "CREATE TABLE rsu_tempo AS SELECT * " +
+                "FROM rsu_test WHERE id_rsu = 4"
 
-        // The corresponding fractions are calculated
-        def  pveg =  Geoindicators.RsuIndicators.vegetationFraction()
-        assertTrue pveg.execute([rsuTable: "rsu_test", vegetTable: "tempo_veget", fractionType: ["low"],
-                                 prefixName: "test", datasource: h2GIS])
-        def  pwat =  Geoindicators.RsuIndicators.waterFraction()
-        assertTrue pwat.execute([rsuTable: "rsu_test", waterTable: "tempo_hydro", prefixName: "test",
-                                 datasource: h2GIS])
-        def  proad =  Geoindicators.RsuIndicators.roadFraction()
-        assertTrue proad.execute([rsuTable: "rsu_test", roadTable: "tempo_road",
-                                  levelToConsiders: ["underground":[-4, -3, -2, -1], "ground":[0]],
-                                  prefixName: "test", datasource: h2GIS])
+        // Need to create the smallest geometries used as input of the surface fraction process
+        def  p =  Geoindicators.RsuIndicators.smallestCommunGeometry()
+        assertTrue p.execute([
+                rsuTable: "rsu_tempo",buildingTable: "building_test",vegetationTable: "veget_test",waterTable: "hydro_test",
+                prefixName: "test", datasource: h2GIS])
+        def tempoTable = p.results.outputTableName
 
-        // The data useful for pervious fraction calculation are gathered in a same Table
-        h2GIS.execute("DROP TABLE IF EXISTS needed_data; CREATE TABLE needed_data AS SELECT a.*, " +
-                "b.water_fraction, c.ground_road_fraction FROM test_rsu_vegetation_fraction a, test_rsu_water_fraction b," +
-                "test_rsu_road_fraction c WHERE a.id_rsu = b.id_rsu AND a.id_rsu = c.id_rsu;")
+        // Apply the surface fractions for different combinations
+        def  p0 =  Geoindicators.RsuIndicators.surfaceFractions()
+        def superpositions0 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]]
+        def priorities0 = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
+        assertTrue p0.execute([
+                rsuTable: "rsu_tempo", spatialRelationsTable: tempoTable,
+                superpositions: superpositions0,
+                priorities: priorities0,
+                prefixName: "test", datasource: h2GIS])
+        def surfaceFractions = p0.results.outputTableName
 
-        def pfin = Geoindicators.RsuIndicators.perviousnessFraction()
-        assertTrue pfin.execute([rsuTable: "needed_data",
-                                 operationsAndComposition: [
-                                         "pervious_fraction" : ["low_vegetation_fraction", "water_fraction"],
-                                         "impervious_fraction" : ["ground_road_fraction"]],
-                                 prefixName: "test", datasource: h2GIS])
-        def concat = ["", ""]
-        h2GIS.eachRow("SELECT * FROM test_rsu_perviousness_fraction WHERE id_rsu = 14 OR id_rsu = 15"){
-            row ->
-                concat[0]+= "${row.pervious_fraction}\n"
-                concat[1]+= "${row.impervious_fraction.round(5)}\n"
-        }
-        assertEquals("0.0056\n0.06\n", concat[0])
-        assertEquals("0.06161\n0.15866\n", concat[1])
+        // Apply the perviousness fraction calculation
+        def p1 =  Geoindicators.RsuIndicators.perviousnessFraction()
+        assertTrue p1.execute([rsuTable: surfaceFractions,
+                                operationsAndComposition:["pervious_fraction": ["high_vegetation_fraction", "low_vegetation_fraction",
+                                                                                "water_fraction", "high_vegetation_low_vegetation_fraction",
+                                                                                "high_vegetation_water_fraction"],
+                                                          "impervious_fraction": ["road_fraction", "impervious_fraction", "high_vegetation_road_fraction",
+                                                                                  "high_vegetation_impervious_fraction"]],
+                                prefixName: "test", datasource: h2GIS])
+        def result = h2GIS.firstRow("SELECT * FROM ${p1.results.outputTableName}")
+        assertEquals(0.7,result["pervious_fraction"], 0.00001)
+        assertEquals(0,result["impervious_fraction"])
     }
 
     @Test
@@ -414,8 +412,7 @@ class RsuIndicatorsTests {
 
 
     @Test
-    void surfaceFractionsTest() {
-        H2GIS h2GIS = H2GIS.open('./target/surface_fractions_db;AUTO_SERVER=TRUE')
+    void smallestCommunGeometryTest() {
         h2GIS.load(SpatialUnitsTests.class.getResource("road_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.class.getResource("building_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.class.getResource("veget_test.geojson"), true)
@@ -502,6 +499,73 @@ class RsuIndicatorsTests {
 
         assertTrue h2GIS.firstRow("select count(*) as count from water_compare_stats where diff > 1").count==0
 
+    }
 
+    @Test
+    void surfaceFractionTest() {
+        // Only the RSU 5 is conserved for the test
+        h2GIS.execute "DROP TABLE IF EXISTS rsu_tempo;" +
+                "CREATE TABLE rsu_tempo AS SELECT * " +
+                "FROM rsu_test WHERE id_rsu = 4"
+
+        // Need to create the smallest geometries used as input of the surface fraction process
+        def  p =  Geoindicators.RsuIndicators.smallestCommunGeometry()
+        assertTrue p.execute([
+                rsuTable: "rsu_tempo",buildingTable: "building_test",vegetationTable: "veget_test",waterTable: "hydro_test",
+                prefixName: "test", datasource: h2GIS])
+        def tempoTable = p.results.outputTableName
+
+        // Apply the surface fractions for different combinations
+        // combination 1
+        def  p0 =  Geoindicators.RsuIndicators.surfaceFractions()
+        def superpositions0 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]]
+        def priorities0 = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
+        assertTrue p0.execute([
+                rsuTable: "rsu_tempo", spatialRelationsTable: tempoTable,
+                superpositions: superpositions0,
+                priorities: priorities0,
+                prefixName: "test", datasource: h2GIS])
+        def result0 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName}")
+        assertEquals(1.0/5, result0["high_vegetation_building_fraction"])
+        assertEquals(3.0/20, result0["high_vegetation_low_vegetation_fraction"])
+        assertEquals(3.0/20, result0["high_vegetation_fraction"])
+        assertEquals(3.0/20, result0["low_vegetation_fraction"])
+        assertEquals(1.0/4, result0["water_fraction"])
+        assertEquals(1.0/10, result0["building_fraction"])
+
+        // combination 2
+        def  p1 =  Geoindicators.RsuIndicators.surfaceFractions()
+        def superpositions1 = ["high_vegetation": ["building", "water", "low_vegetation", "road", "impervious"]]
+        def priorities1 = ["building", "water", "high_vegetation", "low_vegetation", "road", "impervious"]
+        assertTrue p1.execute([
+                rsuTable: "rsu_tempo", spatialRelationsTable: tempoTable,
+                superpositions: superpositions1,
+                priorities: priorities1,
+                prefixName: "test", datasource: h2GIS])
+        def result1 = h2GIS.firstRow("SELECT * FROM ${p1.results.outputTableName}")
+        assertEquals(1.0/5, result1["high_vegetation_building_fraction"])
+        assertEquals(3.0/20, result1["high_vegetation_low_vegetation_fraction"])
+        assertEquals(3.0/20, result1["high_vegetation_fraction"])
+        assertEquals(3.0/20, result1["low_vegetation_fraction"])
+        assertEquals(3.0/20, result1["water_fraction"])
+        assertEquals(1.0/5, result1["building_fraction"])
+
+        // combination 3
+        def  p2 =  Geoindicators.RsuIndicators.surfaceFractions()
+        def superpositions2 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"],
+                "building": ["low_vegetation"]]
+        assertTrue p2.execute([
+                rsuTable: "rsu_tempo", spatialRelationsTable: tempoTable,
+                superpositions: superpositions2,
+                priorities: priorities0,
+                prefixName: "test", datasource: h2GIS])
+        def result2 = h2GIS.firstRow("SELECT * FROM ${p2.results.outputTableName}")
+        assertEquals(1.0/5, result2["high_vegetation_building_fraction"])
+        assertEquals(3.0/20, result2["high_vegetation_low_vegetation_fraction"])
+        assertEquals(3.0/20, result2["high_vegetation_fraction"])
+        assertEquals(1.0/10, result2["building_low_vegetation_fraction"])
+        assertEquals(3.0/20, result2["low_vegetation_fraction"])
+        assertEquals(1.0/4, result2["water_fraction"])
+        assertEquals(0, result2["building_fraction"])
     }
 }
