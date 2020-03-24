@@ -14,8 +14,8 @@ We present all these aspects below.
 
 Currently, the Geoclimate workflow is made to process two kind of input datasets:
 
-- [OpenStreetMap (OSM)](./workflow/osm.md)
-- [BD Topo v2](./workflow/bd_topo_v2.md) from the french [IGN](http://www.ign.fr/)
+- [OpenStreetMap (OSM)](./workflow/osm/intro.md)
+- [BD Topo v2](./workflow/bd_topo_v2/intro.md) from the french [IGN](http://www.ign.fr/)
 
 
 
@@ -204,8 +204,8 @@ logger.info process.results.outputMessage
 ## Use cases
 
 Want to see Geoclimate in action?! Two use cases are presented below with data coming from: 
-- [OpenStreetMap (OSM)](./workflow/osm.md)
-- [BD Topo v2](./workflow/bd_topo_v2.md) from the french IGN
+- [OpenStreetMap (OSM)](./workflow/osm/intro.md)
+- [BD Topo v2](./workflow/bd_topo_v2/intro.md) from the french IGN
 
 
 
