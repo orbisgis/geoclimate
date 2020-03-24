@@ -57,7 +57,7 @@ Download this file : [osm_workflow_placename_folderoutput.json](https://github.c
 
 Then:
 
-1. In the `geoclimatedb` part, adapt the output database address (*e.g* `"path" : "/home/geoclimate/osm/db/geoclimate_db;AUTO_SERVER=TRUE",`)
+1. In the `geoclimatedb` part, adapt the working database address (*e.g* `"path" : "/home/geoclimate/osm/db/geoclimate_db;AUTO_SERVER=TRUE",`)
 2. In the `input` part, replace `"kerfot", "plouezec"` by `"vannes"`
 3. In the `output` part, replace `"folder" : "/tmp/..."},` by `"folder" : "/home/geoclimate/osm/"},`
 4. Save these modifications.
@@ -68,13 +68,13 @@ Then:
 
 Launch DBeaver and open a new Groovy console (if not already installed, please follow these [instructions](../execution_tools.md)).
 
-As explained before we will execute the OSM process, which is in the workflow groovy file : `geoclimate.workflow.OSM()`
+As explained [before](../../chain_documentation/workflow/description.md#And-technically) we will execute the `OSM` process, which is in the workflow groovy file : `geoclimate.workflow.OSM()`
 
 So, in the Groovy console, copy and paste the following script
 
 ```groovy
 @GrabResolver(name='orbisgis', root='https://nexus.orbisgis.org/repository/orbisgis/')
-@Grab(group='org.orbisgis.orbisprocess', module='geoclimate', version='1.0.0-SNAPSHOT')
+@Grab(group='org.orbisgis.orbisprocess', module='geoclimate', version='1.0.0-RC1')
 
 import org.orbisgis.orbisprocess.geoclimate.Geoclimate
 Geoclimate.logger = logger
@@ -140,7 +140,7 @@ First we have to define the desired zone and then deduce its coordinates. To do 
 
 Download this file : [osm_workflow_envelope_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_envelope_folderoutput.json) , open it in a text editor, update the following informations and save it:
 
-1. In the `geoclimatedb` part, adapt the output database address (*e.g* `"path" : "/home/geoclimate/osm/db/geoclimate_db;AUTO_SERVER=TRUE",`)
+1. In the `geoclimatedb` part, adapt the working database address (*e.g* `"path" : "/home/geoclimate/osm/db/geoclimate_db;AUTO_SERVER=TRUE",`)
 
 2. In the `input`  / `osm` part, adapt the coordinates of your bounding box with your own (in our example `48.831052,2.303352,48.880070,2.388840`)
 

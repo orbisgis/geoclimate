@@ -12,9 +12,27 @@ Below are presented the 5 potential output tables, whose structure may vary acco
 
 ![output_data_tables](../../resources/images/chain_documentation/output_data_tables.png)
 
-#### Remark
+### Remarks
+
+#### Application
 
 For each indicator we indicate in column `App` whether it is used (and so returned) for the TEB (noted `T`), LCZ (noted `L`) and/or Urban Typology (noted `U`) application.
+
+#### Output tables
+
+In addition to the five potential tables presented below, the user will get 7 tables corresponding to the [input data](../input_data_model.md) of the model (`INPUT_BUILDING`, `INPUT_ROAD`, `INPUT_RAILS`, `INPUT_VEGET`, `INPUT_HYDRO`, `INPUT_IMPERVIOUS` and `ZONE`). These tables can be very interesting if you want to compare the results with the input data and see what corrections and additions have been made.
+
+#### Buildings inside or outside the study area
+
+For the purposes of some indicators (*e.g.* "minimum distance to another buildings"), we need to take into account buildings within a certain radius (*e.g*., 500 metres). 
+Consequently, in the `INPUT_BUILDING` table (but also in the two resulting tables `BUILDING_INDICATORS`, `BLOCK_INDICATORS`), we have buildings that are outside the study area (the city).
+
+![building_inside_or_outside](/home/gpetit/Documents/Codes/geoclimate/docs/resources/images/chain_documentation/workflow_output_building_inside_or_outside.png)
+
+The buildings are outside the studied zone:
+
+- in the `INPUT_BUIDLING` table, when the column `id_zone` = `outside`
+- in the `BUILDING_INDICATORS` or `BLOCK_INDICATORS` table, when the column `id_rsu` is null
 
 
 
