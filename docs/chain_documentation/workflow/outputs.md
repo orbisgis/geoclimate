@@ -27,7 +27,7 @@ In addition to the five potential tables presented below, the user will get 7 ta
 For the purposes of some indicators (*e.g.* "minimum distance to another buildings"), we need to take into account buildings within a certain radius (*e.g*., 500 metres). 
 Consequently, in the `INPUT_BUILDING` table (but also in the two resulting tables `BUILDING_INDICATORS`, `BLOCK_INDICATORS`), we have buildings that are outside the study area (the city).
 
-![building_inside_or_outside](/home/gpetit/Documents/Codes/geoclimate/docs/resources/images/chain_documentation/workflow_output_building_inside_or_outside.png)
+![building_inside_or_outside](../../resources/images/chain_documentation/workflow_output_building_inside_or_outside.png)
 
 The buildings are outside the studied zone:
 
