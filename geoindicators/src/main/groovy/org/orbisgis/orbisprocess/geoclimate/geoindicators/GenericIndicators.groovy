@@ -9,7 +9,9 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
 
 /**
  * This process is used to compute basic statistical operations on a specific variable from a lower scale (for
- * example the sum of each building volume constituting a block to calculate the block volume)
+ * example the sum of each building volume constituting a block to calculate the block volume). Note that for
+ * surface fractions it is highly recommended to use the surfaceFractions IProcess (since it considers the potential
+ * layer superpositions (building, high vegetation, low vegetation, etc.).
  *
  * @param inputLowerScaleTableName the table name where are stored low scale objects and the id of the upper scale
  * zone they are belonging to (e.g. buildings)

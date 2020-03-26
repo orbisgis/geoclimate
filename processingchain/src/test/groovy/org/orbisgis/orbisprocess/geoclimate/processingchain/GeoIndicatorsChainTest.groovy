@@ -150,16 +150,19 @@ class GeoIndicatorsChainTest extends ChainProcessAbstractTest{
                 hydrographicTable: inputTableNames.hydrographicTable, indicatorUse: ind_i,
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
-
+        println "build and block"
         if (ind_i.contains("URBAN_TYPOLOGY")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
             assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
         }
+        println "rsu"
         def expectListRsuTempo = listColBasic
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
         def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).columns
         // We test that there is no missing indicators in the RSU table
+        println expectListRsuTempo
+        println realListRsu
         for (i in expectListRsu) {
             assertTrue realListRsu.contains(i)
         }
