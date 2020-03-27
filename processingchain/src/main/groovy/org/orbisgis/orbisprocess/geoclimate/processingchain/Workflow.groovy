@@ -2052,29 +2052,29 @@ def GeoIndicators() {
             // If the LCZ indicators should be calculated, we only affect a LCZ class to each RSU
             if(indicatorUse.contains("LCZ")){
                 def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"             : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
-                                     "BUILDING_AREA_FRACTION"           : "BUILDING_SURFACE_FRACTION",
+                                     "BUILDING_FRACTION_LCZ"            : "BUILDING_SURFACE_FRACTION",
                                      "ASPECT_RATIO"                     : "ASPECT_RATIO",
                                      "GROUND_SKY_VIEW_FACTOR"           : "SKY_VIEW_FACTOR",
-                                     "PERVIOUS_FRACTION"                : "PERVIOUS_SURFACE_FRACTION",
-                                     "IMPERVIOUS_FRACTION"              : "IMPERVIOUS_SURFACE_FRACTION",
+                                     "PERVIOUS_FRACTION_LCZ"            : "PERVIOUS_SURFACE_FRACTION",
+                                     "IMPERVIOUS_FRACTION_LCZ"          : "IMPERVIOUS_SURFACE_FRACTION",
                                      "EFFECTIVE_TERRAIN_ROUGHNESS_CLASS": "TERRAIN_ROUGHNESS_CLASS"]
 
-                // Get into an other table the ID, geometry column and the 7 indicators useful for LCZ classification
-                datasource.execute "DROP TABLE IF EXISTS $lczIndicTable;" +
-                        "CREATE TABLE $lczIndicTable AS SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, " +
-                        "${lczIndicNames.keySet().join(",")} FROM ${computeRSUIndicators.results.outputTableName}"
-
-                // Rename the indicators in order to be consistent with the LCZ ones
+                // Get into a new table the ID, geometry column and the 7 indicators defined by Stewart and Oke (2012)
+                // for LCZ classification (rename the indicators with the real names)
                 def queryReplaceNames = ""
-
                 lczIndicNames.each { oldIndic, newIndic ->
                     queryReplaceNames += "ALTER TABLE $lczIndicTable ALTER COLUMN $oldIndic RENAME TO $newIndic;"
                 }
-                datasource.execute "$queryReplaceNames"
+                datasource.execute """DROP TABLE IF EXISTS $lczIndicTable;
+                                    CREATE TABLE $lczIndicTable 
+                                            AS SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, ${lczIndicNames.keySet().join(",")} 
+                                            FROM ${computeRSUIndicators.results.outputTableName};
+                                    $queryReplaceNames"""
 
                 // The classification algorithm is called
                 def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
                 if(!classifyLCZ([rsuLczIndicators   : lczIndicTable,
+                                 rsuOtherIndicators : computeRSUIndicators.results.outputTableName,
                                  normalisationType  : "AVG",
                                  mapOfWeights       : mapOfWeights,
                                  prefixName         : prefixName,
