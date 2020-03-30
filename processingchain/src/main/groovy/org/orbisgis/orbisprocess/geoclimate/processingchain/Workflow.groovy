@@ -2074,7 +2074,7 @@ def GeoIndicators() {
                 // The classification algorithm is called
                 def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
                 if(!classifyLCZ([rsuLczIndicators   : lczIndicTable,
-                                 rsuOtherIndicators : computeRSUIndicators.results.outputTableName,
+                                 rsuAllIndicators : computeRSUIndicators.results.outputTableName,
                                  normalisationType  : "AVG",
                                  mapOfWeights       : mapOfWeights,
                                  prefixName         : prefixName,

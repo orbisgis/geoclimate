@@ -37,7 +37,7 @@ class TypologyClassificationTests {
                 ON a.id_rsu = b.id_rsu;
         """
         def  pavg =  Geoindicators.TypologyClassification.identifyLczType()
-        assertTrue pavg.execute([rsuLczIndicators: "tempo_rsu_for_lcz", rsuOtherIndicators: "", normalisationType: "AVG",
+        assertTrue pavg.execute([rsuLczIndicators: "tempo_rsu_for_lcz", rsuAllIndicators: "", normalisationType: "AVG",
                    mapOfWeights: ["sky_view_factor": 1,
                                   "aspect_ratio": 1, "building_surface_fraction": 1, "impervious_surface_fraction": 1,
                                   "pervious_surface_fraction": 1, "height_of_roughness_elements": 1,
@@ -56,7 +56,7 @@ class TypologyClassificationTests {
                 }
         }
         def  pmed =  Geoindicators.TypologyClassification.identifyLczType()
-        assertTrue pmed.execute([rsuLczIndicators: "tempo_rsu_for_lcz", rsuOtherIndicators: ""ad, normalisationType: "MEDIAN",
+        assertTrue pmed.execute([rsuLczIndicators: "tempo_rsu_for_lcz", rsuAllIndicators: "", normalisationType: "MEDIAN",
                    mapOfWeights: ["sky_view_factor": 1,
                                   "aspect_ratio": 1, "building_surface_fraction": 1, "impervious_surface_fraction": 1,
                                   "pervious_surface_fraction": 1, "height_of_roughness_elements": 1,

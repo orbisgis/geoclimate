@@ -28,7 +28,7 @@ import java.util.zip.GZIPOutputStream
  *
  * @param rsuLczIndicators The table name where are stored ONLY the LCZ indicator such as defined by Stewart et Oke (2012),
  * the RSU id and the RSU geometries
- * @param rsuOtherIndicators The table name where are stored all the RSU indicators (useful to improve the classification algorithm)
+ * @param rsuAllIndicators The table name where are stored all the RSU indicators (useful to improve the classification algorithm)
  * @param normalisationType The indicators used for normalisation of the indicators
  *          --> "AVG": the mean and the standard deviation are used
  *          --> "MEDIAN": the median and the mediane absolute deviation are used
@@ -55,13 +55,13 @@ IProcess identifyLczType() {
     
     return create({
         title "Set the LCZ type of each RSU"
-        inputs rsuLczIndicators: String     , rsuOtherIndicators: String        ,prefixName: String,
+        inputs rsuLczIndicators: String     , rsuAllIndicators: String        ,prefixName: String,
                 datasource: JdbcDataSource  , normalisationType: "AVG"          ,
                 mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
         outputs outputTableName: String
-        run { rsuLczIndicators, rsuOtherIndicators, prefixName, datasource, normalisationType, mapOfWeights ->
+        run { rsuLczIndicators, rsuAllIndicators, prefixName, datasource, normalisationType, mapOfWeights ->
 
             info "Set the LCZ type of each RSU"
 
