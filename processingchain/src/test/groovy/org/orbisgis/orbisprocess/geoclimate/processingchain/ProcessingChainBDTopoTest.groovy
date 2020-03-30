@@ -214,7 +214,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 
     // Test the workflow on the commune INSEE 01306 only for TEB in order to verify that only RSU_INDICATORS and BUILDING_INDICATORS are saved
     @Test
-    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
+    @Disabled
     void testBDTOPO_V2Workflow() {
         String directory ="./target/geoclimate_chain/bdtopo_config/"
         def inseeCode = "01306"
@@ -222,7 +222,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         dirFile.delete()
         dirFile.mkdir()
         IProcess processBDTopo = ProcessingChain.Workflow.BDTOPO_V2()
-        assertTrue(processBDTopo.execute(configurationFile: getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()))
+        assertTrue(processBDTopo.execute(configurationFile: getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()))mm
         assertNotNull(processBDTopo.getResults().outputFolder)
         def baseNamePathAndFileOut = processBDTopo.getResults().outputFolder + File.separator + "zone_" + inseeCode + "_"
         assertTrue(new File(baseNamePathAndFileOut + "rsu_indicators.geojson").exists())
