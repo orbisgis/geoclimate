@@ -240,7 +240,8 @@ IProcess geometryProperties() {
  * This process is used to compute (within a block or a RSU) the main building direction and
  * indicators that qualify the repartition of the direction distribution. This second indicator may be:
  * - an indicator of general inequality: the Perkins Skill Score is calculated (Perkins et al., 2007)
- * - an indicator of uniqueness: t
+ * - an indicator of uniqueness: the weight of the first main direction is divided by
+ * "the weight of the second main direction + the weight of the first main direction"
  * The building direction distribution is calculated according to the length of the building SMBR sides (width and length).
  * Note that the distribution has an "angle_range_size" interval that has to be defined by the user (default 15).
  *
@@ -334,16 +335,18 @@ IProcess buildingDirectionDistribution() {
 
                 // Gather all columns for recovering the main direction
                 for (int i = angleRangeSize; i <= 180; i += angleRangeSize) {
-                    sqlQueryGreatest += "ANG$i,"
+                    def nameAngle = Math.round(i-med_angle)
+                    sqlQueryGreatest += "ANG$nameAngle,"
                     sqlQueryParenthesis += ")"
                 }
                 sqlQueryGreatest = sqlQueryGreatest[0..-2] + ")"
                 for (int i = angleRangeSize; i <= 180; i += angleRangeSize) {
+                    def nameAngle = Math.round(i-med_angle)
                     sqlQueryDist += "SUM(CASEWHEN(ANG_L>=${i - angleRangeSize} AND ANG_L<$i, LEN_L, " +
-                            "CASEWHEN(ANG_H>=${i - angleRangeSize} AND ANG_H<$i, LEN_H, 0))) AS ANG$i, "
-                    sqlQueryTot += "ANG$i + "
-                    sqlQueryPerkins += "LEAST(1./(${180 / angleRangeSize}), ANG$i::float/ANG_TOT) + "
-                    sqlQueryMain += "CASEWHEN($sqlQueryGreatest = ANG$i, ${i-med_angle}, "
+                            "CASEWHEN(ANG_H>=${i - angleRangeSize} AND ANG_H<$i, LEN_H, 0))) AS ANG$nameAngle, "
+                    sqlQueryTot += "ANG$nameAngle + "
+                    sqlQueryPerkins += "LEAST(1./(${180 / angleRangeSize}), ANG$nameAngle::float/ANG_TOT) + "
+                    sqlQueryMain += "CASEWHEN($sqlQueryGreatest = ANG$nameAngle, $nameAngle, "
                 }
                 sqlQueryMain += "null" + sqlQueryParenthesis
                 sqlQueryDist += "$inputIdUp FROM $build_dir180 GROUP BY $inputIdUp;"

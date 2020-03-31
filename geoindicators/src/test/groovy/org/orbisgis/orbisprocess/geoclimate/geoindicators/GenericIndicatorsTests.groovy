@@ -157,7 +157,7 @@ class GenericIndicatorsTests {
 
         assertEquals(4.0/12, h2GIS.firstRow("SELECT * FROM test_MAIN_BUILDING_DIRECTION " +
                 "WHERE id_block = 4")["BUILDING_DIRECTION_INEQUALITY"], 0.0001)
-        assertEquals(97.5, h2GIS.firstRow("SELECT * FROM test_MAIN_BUILDING_DIRECTION " +
+        assertEquals(98, h2GIS.firstRow("SELECT * FROM test_MAIN_BUILDING_DIRECTION " +
                 "WHERE id_block = 4")["main_building_direction"])
         assertEquals(28.0/(22+28.0), h2GIS.firstRow("SELECT * FROM test_MAIN_BUILDING_DIRECTION " +
                 "WHERE id_block = 4")["BUILDING_DIRECTION_UNIQUENESS"], 0.0001)
