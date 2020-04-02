@@ -267,7 +267,7 @@ IProcess geometryProperties() {
  * @author Jérémy Bernard
  */
 IProcess buildingDirectionDistribution() {
-    def final GEOMETIC_FIELD = "the_geom"
+    def final GEOMETRIC_FIELD = "the_geom"
     def final ID_FIELD_BU = "id_build"
     def final INEQUALITY = "BUILDING_DIRECTION_INEQUALITY"
     def final UNIQUENESS = "BUILDING_DIRECTION_UNIQUENESS"
@@ -294,13 +294,10 @@ IProcess buildingDirectionDistribution() {
                 def build_dir360 = "build_dir360$uuid"
                 def build_dir180 = "build_dir180$uuid"
                 def build_dir_dist = "build_dir_dist$uuid"
-                def build_dir_tot = "build_dir_tot$uuid"
-                def build_perk_fin = "build_perk_fin$uuid"
-                def build_dir_bdd = "build_dir_bdd$uuid"
 
                 // The minimum diameter of the minimum rectangle is created for each building
                 datasource.execute "DROP TABLE IF EXISTS $build_min_rec; CREATE TABLE $build_min_rec AS " +
-                        "SELECT $ID_FIELD_BU, $inputIdUp, ST_MINIMUMDIAMETER(ST_MINIMUMRECTANGLE($GEOMETIC_FIELD)) " +
+                        "SELECT $ID_FIELD_BU, $inputIdUp, ST_MINIMUMDIAMETER(ST_MINIMUMRECTANGLE($GEOMETRIC_FIELD)) " +
                         "AS the_geom FROM $buildingTableName"
 
                 datasource.getSpatialTable(buildingTableName).id_build.createIndex()
@@ -323,49 +320,35 @@ IProcess buildingDirectionDistribution() {
                 datasource.execute "CREATE INDEX ON $build_dir180 ($inputIdUp)"
 
                 // The query aiming to create the building direction distribution is created
-                // The total of building linear of direction is calculated for each block/RSU
-                // The Perkings Skill score is finally calculated using a last query
-
                 String sqlQueryDist = "DROP TABLE IF EXISTS $build_dir_dist; CREATE TABLE $build_dir_dist AS SELECT "
-                String sqlQueryTot = "DROP TABLE IF EXISTS $build_dir_tot; CREATE TABLE $build_dir_tot AS SELECT *, "
-                String sqlQueryMain = "DROP TABLE IF EXISTS $build_perk_fin; CREATE TABLE $build_perk_fin AS SELECT $inputIdUp, "
-                String sqlQueryGreatest = "GREATEST("
-                String sqlQueryPerkins = ""
-                String sqlQueryParenthesis = ""
-
-                // Gather all columns for recovering the main direction
                 for (int i = angleRangeSize; i <= 180; i += angleRangeSize) {
-                    def nameAngle = Math.round(i-med_angle)
-                    sqlQueryGreatest += "ANG$nameAngle,"
-                    sqlQueryParenthesis += ")"
-                }
-                sqlQueryGreatest = sqlQueryGreatest[0..-2] + ")"
-                for (int i = angleRangeSize; i <= 180; i += angleRangeSize) {
-                    def nameAngle = Math.round(i-med_angle)
+                    def nameAngle = (i-med_angle).toString().replace(".", "_")
                     sqlQueryDist += "SUM(CASEWHEN(ANG_L>=${i - angleRangeSize} AND ANG_L<$i, LEN_L, " +
                             "CASEWHEN(ANG_H>=${i - angleRangeSize} AND ANG_H<$i, LEN_H, 0))) AS ANG$nameAngle, "
-                    sqlQueryTot += "ANG$nameAngle + "
-                    sqlQueryPerkins += "LEAST(1./(${180 / angleRangeSize}), ANG$nameAngle::float/ANG_TOT) + "
-                    sqlQueryMain += "CASEWHEN($sqlQueryGreatest = ANG$nameAngle, $nameAngle, "
                 }
-                sqlQueryMain += "null" + sqlQueryParenthesis
                 sqlQueryDist += "$inputIdUp FROM $build_dir180 GROUP BY $inputIdUp;"
-                sqlQueryTot = sqlQueryTot[0..-3] + "AS ANG_TOT FROM $build_dir_dist;"
 
-                if(distribIndicator.contains("inequality")){
-                    sqlQueryMain = """$sqlQueryMain AS main_building_direction, $sqlQueryGreatest AS max_surf,
-                                    ${sqlQueryPerkins[0..-3]} AS $INEQUALITY
-                                    FROM $build_dir_tot;"""
-                }
-                else{
-                    sqlQueryMain = """$sqlQueryMain AS main_building_direction, $sqlQueryGreatest AS max_surf
-                                    FROM $build_dir_tot;"""
-                }
-
+                // The query is executed
                 datasource.execute sqlQueryDist
-                datasource.execute sqlQueryTot
-                datasource.execute sqlQueryMain
 
+                // The main building direction and indicators characterizing the distribution are calculated
+                IProcess computeDistribChar = distributionCharacterization()
+                computeDistribChar.execute([distribTableName:   build_dir_dist,
+                                            inputId:            inputIdUp,
+                                            distribIndicator:   distribIndicator,
+                                            extremum:           "GREATEST",
+                                            prefixName:         prefixName,
+                                            datasource:         datasource])
+                def resultsDistrib = computeDistribChar.getResults().outputTableName
+
+                // Rename the standard indicators into names consistent with the current IProcess (building direction...)
+                datasource.execute """DROP TABLE IF EXISTS $outputTableName;
+                                        ALTER TABLE $resultsDistrib RENAME TO $outputTableName;
+                                        ALTER TABLE $outputTableName RENAME COLUMN EXTREMUM_COL TO $BASENAME;
+                                        ALTER TABLE $outputTableName RENAME COLUMN UNIQUENESS_VALUE TO $UNIQUENESS;
+                                        ALTER TABLE $outputTableName RENAME COLUMN INEQUALITY_VALUE TO $INEQUALITY;"""
+
+                /*
                 if (distribIndicator.contains("uniqueness")){
                     // Reorganise the distribution Table (having the same number of column than the number
                     // of direction of analysis) into a simple two column table (ID and SURF)
@@ -399,13 +382,164 @@ IProcess buildingDirectionDistribution() {
                 else{
                     datasource.execute "ALTER TABLE $build_perk_fin RENAME TO $outputTableName;"
                 }
-
+                */
                 // The temporary tables are deleted
                 datasource.execute "DROP TABLE IF EXISTS $build_min_rec, $build_dir360, $build_dir180, " +
-                        "$build_dir_dist, $build_dir_tot, $build_perk_fin, $build_dir_bdd;"
+                        "$build_dir_dist;"
 
                 [outputTableName: outputTableName]
             }
+        }
+    })
+}
+
+
+/**
+ * This process is used to compute indicators that qualify the repartition of a distribution. First, it calculates
+ * the lowest or the greatest class of the distribution. Then it calculates the shape of the distribution through
+ * two possible indicators:
+ * - an indicator of general inequality: the Perkins Skill Score is calculated (Perkins et al., 2007)
+ * - an indicator of uniqueness: the weight of the greatest (or the lowest) class is divided by
+ * "the weight of the second greatest (or lowest) class + the weight of the greatest (or the lowest) class"
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param distribTableName the name of the input ITable where are stored an ID of the geometry to consider and each column
+ * of the distribution to characterize
+ * @param inputId The ID of the input data
+ * @param distribIndicator List containing the type of indicator to calculate to define the repartition of the distribution
+ * (default ["inequality", "uniqueness"])
+ *      --> "inequality": the Perkins Skill Score is calculated
+ *      --> "uniqueness": the weight of the greatest (or the lowest) class is divided by
+ *                      "the weight of the second greatest (or lowest) class + the weight of the greatest (or the lowest) class"
+ * @param extremum String indicating the kind of extremum to calculate (default "GREATEST")
+ *      --> "LOWEST"
+ *      --> "GREATEST"
+ * @param prefixName String use as prefix to name the output table
+ *
+ * Reference:
+ * -> Perkins, S. E., Pitman, A. J., Holbrook, N. J., & McAneney, J. (2007). Evaluation of the AR4 climate models’
+ * simulated daily maximum temperature, minimum temperature, and precipitation over Australia using probability
+ * density functions. Journal of climate, 20(17), 4356-4376.
+ *
+ * @return A database table name.
+ * @author Jérémy Bernard
+ */
+IProcess distributionCharacterization() {
+    def final INEQUALITY = "INEQUALITY_VALUE"
+    def final UNIQUENESS = "UNIQUENESS_VALUE"
+    def final EXTREMUM_COL = "EXTREMUM_COL"
+    def final EXTREMUM_VAL = "EXTREMUM_VAL"
+    def final COLUMN_VAL = "COLUMN_VAL"
+    def final BASENAME = "DISTRIBUTION_REPARTITION"
+
+    return create({
+        title "Distribution characterization"
+        inputs distribTableName: String, inputId: String, prefixName: String,
+                datasource: JdbcDataSource, distribIndicator: ["inequality", "uniqueness"], extremum:"GREATEST"
+        outputs outputTableName: String
+        run { distribTableName, inputId, prefixName, datasource, distribIndicator, extremum ->
+
+            info "Executing inequality and uniqueness indicators"
+
+            // The name of the outputTableName is constructed
+            def outputTableName = getOutputTableName(prefixName, BASENAME)
+
+            // To avoid overwriting the output files of this step, a unique identifier is created
+            // Temporary table names
+            def build_dir_tot = "build_dir_tot$uuid"
+            def build_perk_fin = "build_perk_fin$uuid"
+            def build_dir_bdd = "build_dir_bdd$uuid"
+
+
+            // Get the distribution columns and the number of columns
+            def distribColumns = datasource.getTable(distribTableName).getColumns()
+            distribColumns.remove(inputId.toUpperCase())
+            def nbDistCol = distribColumns.size()
+
+            // Create the query to calculate the sum of all columns
+            String sqlQueryTot = """DROP TABLE IF EXISTS $build_dir_tot; 
+                                    CREATE TABLE $build_dir_tot 
+                                        AS SELECT *, ${distribColumns.join("+")} AS TOT 
+                                        FROM $distribTableName;"""
+
+            // Create the query to calculate the greatest or lowest value
+            String sqlQueryMain = """DROP TABLE IF EXISTS $build_perk_fin; 
+                                    CREATE TABLE $build_perk_fin AS SELECT $inputId, """
+            String sqlQueryExtremum = "$extremum(${distribColumns.join(",")})"
+            distribColumns.each{col ->
+                sqlQueryMain += "CASEWHEN($sqlQueryExtremum = $col, '$col', "
+            }
+            String sqlQueryParenthesis = new String(new char[nbDistCol]).replace("\0", ")")
+            sqlQueryMain += "null" + sqlQueryParenthesis
+
+            // Create the piece of query to calculate the inequality indicator (if 'distribIndicator' contains 'inequality')
+            String sqlQueryPerkins = "LEAST(1./$nbDistCol,${distribColumns.join("::float/TOT)+LEAST(1./$nbDistCol,")}::float/TOT)"
+
+            // The queries are completed and combined differently depending whether 'distribIndicator' contains 'inequality'
+            if(distribIndicator.contains("inequality")){
+                sqlQueryMain = """$sqlQueryMain AS $EXTREMUM_COL, $sqlQueryExtremum AS $EXTREMUM_VAL,
+                                    $sqlQueryPerkins AS $INEQUALITY
+                                    FROM $build_dir_tot;"""
+            }
+            else{
+                sqlQueryMain = """$sqlQueryMain AS $EXTREMUM_COL, $sqlQueryExtremum AS $EXTREMUM_VAL
+                                    FROM $build_dir_tot;"""
+            }
+
+            // The queries are executed
+            datasource.execute sqlQueryTot + sqlQueryMain
+
+
+            // Create the piece of query to calculate the inequality indicator (if 'distribIndicator' contains 'inequality')
+            if (distribIndicator.contains("uniqueness")){
+                // Reorganise the distribution Table into a simple two column table (ID and SURF)
+                def sqlQueryUnique = "DROP TABLE IF EXISTS $build_dir_bdd; CREATE TABLE $build_dir_bdd AS SELECT "
+                for (col in distribColumns.take(nbDistCol - 1)){
+                    sqlQueryUnique += "$inputId, $col AS $COLUMN_VAL FROM $distribTableName UNION ALL SELECT "
+                }
+                sqlQueryUnique += """$inputId, ${distribColumns[-1]} AS $COLUMN_VAL FROM $distribTableName; 
+                                        CREATE INDEX ON $build_dir_bdd USING BTREE($inputId);
+                                        CREATE INDEX ON $build_dir_bdd USING BTREE($COLUMN_VAL);"""
+                datasource.execute sqlQueryUnique
+
+                def sqlQueryLast = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
+                        "SELECT b.$inputId, a.$EXTREMUM_COL,"
+
+                if (distribIndicator.contains("inequality")) {
+                    sqlQueryLast += " a.$INEQUALITY, "
+                }
+                // The uniqueness indicator is calculated differently depending of the extremum value (greatest or lowest)
+                if(extremum.toUpperCase()=="GREATEST"){
+                    sqlQueryLast += """a.$EXTREMUM_VAL/(MAX(b.$COLUMN_VAL)+a.$EXTREMUM_VAL) AS $UNIQUENESS  
+                                       FROM         $build_perk_fin a 
+                                       RIGHT JOIN   $build_dir_bdd b
+                                       ON           a.$inputId = b.$inputId
+                                       WHERE        b.$COLUMN_VAL < a.$EXTREMUM_VAL
+                                       GROUP BY     b.$inputId;"""
+                }
+                else if(extremum.toUpperCase()=="LOWEST"){
+                    sqlQueryLast += """MIN(b.$COLUMN_VAL)/(MIN(b.$COLUMN_VAL)+a.$EXTREMUM_VAL) AS $UNIQUENESS  
+                                       FROM         $build_perk_fin a 
+                                       RIGHT JOIN   $build_dir_bdd b
+                                       ON           a.$inputId = b.$inputId
+                                       WHERE        b.$COLUMN_VAL > a.$EXTREMUM_VAL
+                                       GROUP BY     b.$inputId;"""
+                }
+
+                // Execute the query
+                datasource.getTable(build_perk_fin)[inputId].createIndex()
+                datasource.execute sqlQueryLast
+            }
+            // Else just rename the table containing the inequality indicator into the output table
+            else{
+                datasource.execute "ALTER TABLE $build_perk_fin RENAME TO $outputTableName;"
+            }
+
+            // The temporary tables are deleted
+            datasource.execute "DROP TABLE IF EXISTS $build_dir_tot, $build_perk_fin, $build_dir_bdd;"
+
+            [outputTableName: outputTableName]
         }
     })
 }
