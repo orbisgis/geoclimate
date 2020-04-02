@@ -413,7 +413,7 @@ IProcess buildingDirectionDistribution() {
  *      --> "uniqueness": the weight of the greatest (or the lowest) class is divided by
  *                      "the weight of the second greatest (or lowest) class + the weight of the greatest (or the lowest) class"
  * @param extremum String indicating the kind of extremum to calculate (default "GREATEST")
- *      --> "LOWEST"
+ *      --> "LEAST"
  *      --> "GREATEST"
  * @param prefixName String use as prefix to name the output table
  *
@@ -431,6 +431,7 @@ IProcess distributionCharacterization() {
     def final EXTREMUM_COL = "EXTREMUM_COL"
     def final EXTREMUM_VAL = "EXTREMUM_VAL"
     def final COLUMN_VAL = "COLUMN_VAL"
+    def final COLUMN_NAME = "COLUMN_NAME"
     def final BASENAME = "DISTRIBUTION_REPARTITION"
 
     return create({
@@ -447,9 +448,9 @@ IProcess distributionCharacterization() {
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
-            def build_dir_tot = "build_dir_tot$uuid"
-            def build_perk_fin = "build_perk_fin$uuid"
-            def build_dir_bdd = "build_dir_bdd$uuid"
+            def dist_tot = "dist_tot$uuid"
+            def perk_fin = "perk_fin$uuid"
+            def dist_bdd = "dist_bdd$uuid"
 
 
             // Get the distribution columns and the number of columns
@@ -458,14 +459,14 @@ IProcess distributionCharacterization() {
             def nbDistCol = distribColumns.size()
 
             // Create the query to calculate the sum of all columns
-            String sqlQueryTot = """DROP TABLE IF EXISTS $build_dir_tot; 
-                                    CREATE TABLE $build_dir_tot 
+            String sqlQueryTot = """DROP TABLE IF EXISTS $dist_tot; 
+                                    CREATE TABLE $dist_tot 
                                         AS SELECT *, ${distribColumns.join("+")} AS TOT 
                                         FROM $distribTableName;"""
 
             // Create the query to calculate the greatest or lowest value
-            String sqlQueryMain = """DROP TABLE IF EXISTS $build_perk_fin; 
-                                    CREATE TABLE $build_perk_fin AS SELECT $inputId, """
+            String sqlQueryMain = """DROP TABLE IF EXISTS $perk_fin; 
+                                    CREATE TABLE $perk_fin AS SELECT $inputId, """
             String sqlQueryExtremum = "$extremum(${distribColumns.join(",")})"
             distribColumns.each{col ->
                 sqlQueryMain += "CASEWHEN($sqlQueryExtremum = $col, '$col', "
@@ -480,27 +481,31 @@ IProcess distributionCharacterization() {
             if(distribIndicator.contains("inequality")){
                 sqlQueryMain = """$sqlQueryMain AS $EXTREMUM_COL, $sqlQueryExtremum AS $EXTREMUM_VAL,
                                     $sqlQueryPerkins AS $INEQUALITY
-                                    FROM $build_dir_tot;"""
+                                    FROM $dist_tot;"""
             }
             else{
                 sqlQueryMain = """$sqlQueryMain AS $EXTREMUM_COL, $sqlQueryExtremum AS $EXTREMUM_VAL
-                                    FROM $build_dir_tot;"""
+                                    FROM $dist_tot;"""
             }
 
             // The queries are executed
             datasource.execute sqlQueryTot + sqlQueryMain
 
+            datasource.getTable(perk_fin)[EXTREMUM_COL].createIndex()
 
             // Create the piece of query to calculate the inequality indicator (if 'distribIndicator' contains 'inequality')
             if (distribIndicator.contains("uniqueness")){
-                // Reorganise the distribution Table into a simple two column table (ID and SURF)
-                def sqlQueryUnique = "DROP TABLE IF EXISTS $build_dir_bdd; CREATE TABLE $build_dir_bdd AS SELECT "
+                // Reorganise the distribution Table into a simple three columns table (ID, COLUMN_VAL, COLUMN_NAME)
+                def sqlQueryUnique = """DROP TABLE IF EXISTS $dist_bdd;
+                                        CREATE TABLE $dist_bdd($inputId INTEGER, $COLUMN_VAL DOUBLE, $COLUMN_NAME VARCHAR)
+                                                 AS (SELECT """
                 for (col in distribColumns.take(nbDistCol - 1)){
-                    sqlQueryUnique += "$inputId, $col AS $COLUMN_VAL FROM $distribTableName UNION ALL SELECT "
+                    sqlQueryUnique += "$inputId, $col, '$col' FROM $distribTableName UNION ALL SELECT "
                 }
-                sqlQueryUnique += """$inputId, ${distribColumns[-1]} AS $COLUMN_VAL FROM $distribTableName; 
-                                        CREATE INDEX ON $build_dir_bdd USING BTREE($inputId);
-                                        CREATE INDEX ON $build_dir_bdd USING BTREE($COLUMN_VAL);"""
+                sqlQueryUnique += """$inputId, ${distribColumns[-1]}, '${distribColumns[-1]}' FROM $distribTableName); 
+                                        CREATE INDEX ON $dist_bdd USING BTREE($COLUMN_NAME);
+                                        CREATE INDEX ON $dist_bdd USING BTREE($inputId);
+                                        CREATE INDEX ON $dist_bdd USING BTREE($COLUMN_VAL);"""
                 datasource.execute sqlQueryUnique
 
                 def sqlQueryLast = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
@@ -511,33 +516,34 @@ IProcess distributionCharacterization() {
                 }
                 // The uniqueness indicator is calculated differently depending of the extremum value (greatest or lowest)
                 if(extremum.toUpperCase()=="GREATEST"){
-                    sqlQueryLast += """a.$EXTREMUM_VAL/(MAX(b.$COLUMN_VAL)+a.$EXTREMUM_VAL) AS $UNIQUENESS  
-                                       FROM         $build_perk_fin a 
-                                       RIGHT JOIN   $build_dir_bdd b
+                    sqlQueryLast += """(a.$EXTREMUM_VAL-MAX(b.$COLUMN_VAL))/(MAX(b.$COLUMN_VAL)+a.$EXTREMUM_VAL) AS $UNIQUENESS  
+                                       FROM         $perk_fin a 
+                                       RIGHT JOIN   $dist_bdd b
                                        ON           a.$inputId = b.$inputId
-                                       WHERE        b.$COLUMN_VAL < a.$EXTREMUM_VAL
+                                       WHERE        b.$COLUMN_NAME <> a.$EXTREMUM_COL
                                        GROUP BY     b.$inputId;"""
                 }
-                else if(extremum.toUpperCase()=="LOWEST"){
-                    sqlQueryLast += """MIN(b.$COLUMN_VAL)/(MIN(b.$COLUMN_VAL)+a.$EXTREMUM_VAL) AS $UNIQUENESS  
-                                       FROM         $build_perk_fin a 
-                                       RIGHT JOIN   $build_dir_bdd b
+                else if(extremum.toUpperCase()=="LEAST"){
+                    sqlQueryLast += """CASEWHEN(MIN(b.$COLUMN_VAL)+a.$EXTREMUM_VAL=0,
+                                                0,
+                                                (MIN(b.$COLUMN_VAL)-a.$EXTREMUM_VAL)/(MIN(b.$COLUMN_VAL)+a.$EXTREMUM_VAL)) AS $UNIQUENESS  
+                                       FROM         $perk_fin a 
+                                       RIGHT JOIN   $dist_bdd b
                                        ON           a.$inputId = b.$inputId
-                                       WHERE        b.$COLUMN_VAL > a.$EXTREMUM_VAL
+                                       WHERE        b.$COLUMN_NAME <> a.$EXTREMUM_COL
                                        GROUP BY     b.$inputId;"""
                 }
 
                 // Execute the query
-                datasource.getTable(build_perk_fin)[inputId].createIndex()
                 datasource.execute sqlQueryLast
             }
             // Else just rename the table containing the inequality indicator into the output table
             else{
-                datasource.execute "ALTER TABLE $build_perk_fin RENAME TO $outputTableName;"
+                datasource.execute "ALTER TABLE $perk_fin RENAME TO $outputTableName;"
             }
 
             // The temporary tables are deleted
-            datasource.execute "DROP TABLE IF EXISTS $build_dir_tot, $build_perk_fin, $build_dir_bdd;"
+            datasource.execute "DROP TABLE IF EXISTS $dist_tot, $perk_fin, $dist_bdd;"
 
             [outputTableName: outputTableName]
         }
