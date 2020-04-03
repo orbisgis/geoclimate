@@ -14,7 +14,8 @@ DROP TABLE IF EXISTS rsu_build_corr;
 DROP TABLE IF EXISTS road_test;
 DROP TABLE IF EXISTS veget_test;
 DROP TABLE IF EXISTS hydro_test;
-DROP TABLE IF EXISTS rsu_test_for_lcz;
+DROP TABLE IF EXISTS rsu_test_lcz_indics;
+DROP TABLE IF EXISTS rsu_test_all_indics_for_lcz;
 
 CREATE TABLE building_test (id_build int, id_block int, id_rsu int, zindex int, the_geom geometry, height_wall float, height_roof float, area float, perimeter float, nb_lev int, total_facade_length float, number_building_neighbor int, contiguity float);
 CREATE TABLE block_test (id_block int, the_geom geometry);
@@ -24,9 +25,10 @@ CREATE TABLE rsu_build_corr (id_rsu int, id_build int, rsu_mean_building_height 
 CREATE TABLE road_test (id_road int, the_geom geometry, width float, zindex int, crossing varchar(30));
 CREATE TABLE veget_test (id_veget int, the_geom geometry, height_class varchar);
 CREATE TABLE hydro_test (id_hydro int, the_geom geometry);
-CREATE TABLE rsu_test_for_lcz(id_rsu int, sky_view_factor float, aspect_ratio float, building_surface_fraction float,
-impervious_surface_fraction float, pervious_surface_fraction float, height_of_roughness_elements float,
-terrain_roughness_length float);
+CREATE TABLE rsu_test_all_indics_for_lcz(id_rsu int, sky_view_factor float, aspect_ratio float, BUILDING_FRACTION_LCZ float,
+                                        IMPERVIOUS_FRACTION_LCZ float, PERVIOUS_FRACTION_LCZ float, GEOM_AVG_HEIGHT_ROOF float,
+                                        EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH float, HIGH_VEGETATION_FRACTION_LCZ float,
+                                        LOW_VEGETATION_FRACTION_LCZ float, WATER_FRACTION_LCZ float);
 
 INSERT INTO building_test VALUES (1, 1, 1, 0, 'POLYGON((4 4, 10 4, 10 30, 4 30, 4 4))'::GEOMETRY, 8, 8, 156, 64, 2, 64, 0, 0),
  (2, 2, 1, 0, 'POLYGON((12 4, 20 4, 20 9, 12 9, 12 4))'::GEOMETRY, 10, 13, 40, 26, 3, 26, 0, 0),
@@ -109,5 +111,15 @@ INSERT INTO veget_test VALUES (1, 'POLYGON((35 98, 36 98, 36 104, 35 104, 35 98)
 (5, 'POLYGON((1000 1000, 1050 1000, 1050 1100, 1000 1100, 1000 1000))'::GEOMETRY, 'low');
 INSERT INTO hydro_test VALUES (1, 'POLYGON((-2 95, 2 95, 2 105, -2 105, -2 95))'::GEOMETRY),
 (2, 'POLYGON((1050 1000, 1100 1000, 1100 1050, 1050 1050, 1050 1000))'::GEOMETRY);
-INSERT INTO rsu_test_for_lcz VALUES (1, 0.3, 4, 0.5, 0.5, 0.05, 30, 3),
-(2, 0.9, 0.4, 0.4, 0.45, 0.1, 5.5, 0.250);
+INSERT INTO rsu_test_all_indics_for_lcz VALUES  (1, 0.3, 4, 0.5, 0.5, 0.05, 30, 3, 0, 0, 0),
+                                                (2, 0.9, 0.4, 0.4, 0.45, 0.1, 5.5, 0.250, 0, 0, 0),
+                                                (3, 0.9, 0.08, 0.09, 0.1, 0.9, 30, 3, 0.2, 0.2, 0.5),
+                                                (4, 1.0, 0.0, 0.0, 0.1, 0.9, 5.5, 0.250, 0.2, 0.6, 0.2),
+                                                (5, 0.95, 0.08, 0.09, 0.1, 0.9, 30, 3, 0.9, 0.0, 0.0),
+                                                (6, 1.0, 0.0, 0.0, 0.0, 1.0, 5.5, 0.250, 0.05, 0.6, 0.2),
+                                                (7, 1.0, 0.0, 0.0, 0.45, 0.1, 5.5, 0.250, 0.05, 0.6, 0.2);
+CREATE TABLE rsu_test_lcz_indics
+    AS SELECT id_rsu, sky_view_factor, aspect_ratio, BUILDING_FRACTION_LCZ AS building_surface_fraction,
+                IMPERVIOUS_FRACTION_LCZ AS impervious_surface_fraction, PERVIOUS_FRACTION_LCZ AS pervious_surface_fraction,
+                GEOM_AVG_HEIGHT_ROOF AS height_of_roughness_elements, EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH AS terrain_roughness_length
+    FROM rsu_test_all_indics_for_lcz;

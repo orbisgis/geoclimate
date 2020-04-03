@@ -31,37 +31,55 @@ class TypologyClassificationTests {
     }
     @Test
     void identifyLczTypeTest() {
-        h2GIS.execute """
-                DROP TABLE IF EXISTS tempo_rsu_for_lcz;
-                CREATE TABLE tempo_rsu_for_lcz AS SELECT a.*, b.the_geom FROM rsu_test_for_lcz a LEFT JOIN rsu_test b
-                ON a.id_rsu = b.id_rsu;
-        """
         def  pavg =  Geoindicators.TypologyClassification.identifyLczType()
-        assertTrue pavg.execute([rsuLczIndicators: "tempo_rsu_for_lcz", rsuAllIndicators: "", normalisationType: "AVG",
+        assertTrue pavg.execute([rsuLczIndicators: "rsu_test_lcz_indics", rsuAllIndicators: "rsu_test_all_indics_for_lcz", normalisationType: "AVG",
+                   mapOfWeights: ["sky_view_factor": 1,
+                                  "aspect_ratio": 1, "building_surface_fraction": 1, "impervious_surface_fraction": 1,
+                                  "pervious_surface_fraction": 1, "height_of_roughness_elements": 1,
+                                  "terrain_roughness_length": 1],
+                   prefixName: "test", datasource: h2GIS])
+        def results = [:]
+        h2GIS.getTable(pavg.results.outputTableName).eachRow { row ->
+            def id = row.id_rsu
+            results[id] = [:]
+            results[id]["LCZ1"] = row.LCZ1
+            results[id]["min_distance"] = row.min_distance
+            results[id]["PSS"] = row.PSS
+        }
+        assertEquals(1, results[1]["LCZ1"])
+        assertEquals(0, results[1]["min_distance"])
+        assertEquals(8, results[2]["LCZ1"])
+        assertTrue(results[2]["min_distance"] > 0)
+        assertTrue(results[2]["PSS"] < 1)
+        assertEquals(107, results[3]["LCZ1"])
+        assertEquals(null, results[3]["LCZ2"])
+        assertEquals(null, results[3]["min_distance"])
+        assertEquals(null, results[3]["PSS"])
+        assertEquals(102, results[4]["LCZ1"])
+        assertEquals(101, results[5]["LCZ1"])
+        assertEquals(104, results[6]["LCZ1"])
+        assertEquals(105, results[7]["LCZ1"])
+
+        h2GIS.execute """DROP TABLE IF EXISTS buff_rsu_test_lcz_indics, buff_rsu_test_all_indics_for_lcz;
+                            CREATE TABLE buff_rsu_test_lcz_indics 
+                                    AS SELECT a.*, b.the_geom
+                                    FROM rsu_test_lcz_indics a, rsu_test b
+                                    WHERE a.id_rsu = b.id_rsu;
+                            CREATE TABLE buff_rsu_test_all_indics_for_lcz 
+                                    AS SELECT a.*, b.the_geom
+                                    FROM rsu_test_all_indics_for_lcz a, rsu_test b
+                                    WHERE a.id_rsu = b.id_rsu;  
+                            """
+
+        def  pmed =  Geoindicators.TypologyClassification.identifyLczType()
+        assertTrue pmed.execute([rsuLczIndicators: "buff_rsu_test_lcz_indics", rsuAllIndicators: "buff_rsu_test_all_indics_for_lcz", normalisationType: "MEDIAN",
                    mapOfWeights: ["sky_view_factor": 1,
                                   "aspect_ratio": 1, "building_surface_fraction": 1, "impervious_surface_fraction": 1,
                                   "pervious_surface_fraction": 1, "height_of_roughness_elements": 1,
                                   "terrain_roughness_length": 1],
                    prefixName: "test", datasource: h2GIS])
 
-        h2GIS.getTable(pavg.results.outputTableName).eachRow {
-            row ->
-                if (row.id_rsu == 1) {
-                    assertEquals(1, row.LCZ1,)
-                    assertEquals(0, row.min_distance)
-                } else {
-                    assertEquals(8, row.LCZ1)
-                    assertTrue(row.min_distance > 0)
-                    assertTrue(row.PSS < 1)
-                }
-        }
-        def  pmed =  Geoindicators.TypologyClassification.identifyLczType()
-        assertTrue pmed.execute([rsuLczIndicators: "tempo_rsu_for_lcz", rsuAllIndicators: "", normalisationType: "MEDIAN",
-                   mapOfWeights: ["sky_view_factor": 1,
-                                  "aspect_ratio": 1, "building_surface_fraction": 1, "impervious_surface_fraction": 1,
-                                  "pervious_surface_fraction": 1, "height_of_roughness_elements": 1,
-                                  "terrain_roughness_length": 1],
-                   prefixName: "test", datasource: h2GIS])
+        assertTrue h2GIS.getTable(pmed.results.outputTableName).getColumns().contains("THE_GEOM")
 
         h2GIS.getTable(pmed.results.outputTableName).eachRow {
             row ->
@@ -69,7 +87,7 @@ class TypologyClassificationTests {
                     assertEquals(1, row.LCZ1,)
                     assertEquals(0, row.min_distance)
                 }
-                else{
+                else if(row.id_rsu==2){
                     assertEquals(8, row.LCZ1)
                     assertTrue(row.min_distance>0)
                     assertTrue(row.PSS<1)
