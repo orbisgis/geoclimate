@@ -41,7 +41,7 @@ class TypologyClassificationTests {
                    mapOfWeights: ["sky_view_factor": 1,
                                   "aspect_ratio": 1, "building_surface_fraction": 1, "impervious_surface_fraction": 1,
                                   "pervious_surface_fraction": 1, "height_of_roughness_elements": 1,
-                                  "terrain_roughness_class": 1],
+                                  "terrain_roughness_length": 1],
                    prefixName: "test", datasource: h2GIS])
 
         h2GIS.getTable(pavg.results.outputTableName).eachRow {
@@ -60,7 +60,7 @@ class TypologyClassificationTests {
                    mapOfWeights: ["sky_view_factor": 1,
                                   "aspect_ratio": 1, "building_surface_fraction": 1, "impervious_surface_fraction": 1,
                                   "pervious_surface_fraction": 1, "height_of_roughness_elements": 1,
-                                  "terrain_roughness_class": 1],
+                                  "terrain_roughness_length": 1],
                    prefixName: "test", datasource: h2GIS])
 
         h2GIS.getTable(pmed.results.outputTableName).eachRow {
