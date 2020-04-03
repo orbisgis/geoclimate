@@ -100,7 +100,7 @@ class TypologyClassificationTests {
         h2GIS.execute """
                 DROP TABLE IF EXISTS tempo_rsu_for_lcz;
                 CREATE TABLE tempo_rsu_for_lcz AS SELECT a.*, b.the_geom 
-                        FROM rsu_test_for_lcz a 
+                        FROM rsu_test_lcz_indics a 
                                 LEFT JOIN rsu_test b
                                 ON a.id_rsu = b.id_rsu;
         """
