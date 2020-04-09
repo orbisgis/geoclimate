@@ -348,10 +348,24 @@ def computeBlockIndicators(){
  * you should give the list of road zindex to consider (default [0])
  * @param angleRangeSizeBuDirection The range size (in °) of each interval angle used to calculate the distribution
  * of building direction (used in the Perkins Skill Score direction - should be a divisor of 180 - default 15°)
- * @param indicatorUse The use defined for the indicator. Depending on this use, only a part of the indicators could
- * be calculated (default is all indicators : ["LCZ", "URBAN_TYPOLOGY", "TEB"])
  * @param prefixName A prefix used to name the output table
  * @param svfSimplified A boolean to use a simplified version of the SVF calculation (default false)
+ * @param indicatorUse The use defined for the indicator. Depending on this use, only a part of the indicators could
+ * be calculated (default is all indicators : ["LCZ", "URBAN_TYPOLOGY", "TEB"])
+ * @param surfSuperpositions Map where are stored the overlaying layers as keys and the overlapped
+ * layers as values. Note that the priority order for the overlapped layers is taken according to the priority variable
+ * name and (default ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]])
+ * @param surfPriorities List indicating the priority order to set between layers in order to remove potential double count
+ * of overlapped layers (for example a geometry containing water and low_vegetation must be either water
+ * or either low_vegetation, not both (default ["water", "building", "high_vegetation", "low_vegetation",
+ * "road", "impervious"]
+ * @param urbanTypoSurfFraction Map containing as key the name of the fraction indicators useful for the urban typology classification
+ * and as value a list of the fractions that have to be summed up to calculate the indicator. No need to modify
+ * these values if not interested by the urban typology
+ * @param lczSurfFraction Map containing as key the name of the fraction indicators useful for the LCZ classification
+ * and as value a list of the fractions that have to be summed up to calculate the indicator. No need to modify
+ * these values if not interested by the lcz classification.
+ * @param buildingFractions List of fractions to sum to calculate the total building fraction which is useful as input of the aspect ratio
  * @param datasource A connection to a database
  *
  * @return
@@ -367,18 +381,62 @@ def computeRSUIndicators() {
                 hydrographicTable          : String,           facadeDensListLayersBottom  : [0, 10, 20, 30, 40, 50],
                 facadeDensNumberOfDirection: 12,               svfPointDensity             : 0.008,
                 svfRayLength               : 100,              svfNumberOfDirection        : 60,
-                heightColumnName           : "height_roof",    fractionTypePervious        : ["low_vegetation", "water"],
-                fractionTypeImpervious     : ["road"],         inputFields                 : ["id_build", "the_geom"],
+                heightColumnName           : "height_roof",
+                inputFields                : ["id_build", "the_geom"],
                 levelForRoads              : [0],              angleRangeSizeBuDirection   : 30,
-                svfSimplified              : false,            indicatorUse                : ["LCZ", "URBAN_TYPOLOGY", "TEB"]
+                svfSimplified              : false,
+                indicatorUse               : ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+                surfSuperpositions         : ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]],
+                surfPriorities             : ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"],
+                urbanTypoSurfFraction      : ["vegetation_fraction_urb"                 : ["high_vegetation_fraction",
+                                                                                           "low_vegetation_fraction",
+                                                                                           "high_vegetation_low_vegetation_fraction",
+                                                                                           "high_vegetation_road_fraction",
+                                                                                           "high_vegetation_impervious_fraction",
+                                                                                           "high_vegetation_water_fraction",
+                                                                                           "high_vegetation_building_fraction"],
+                                             "low_vegetation_fraction_urb"                  : ["low_vegetation_fraction"],
+                                             "high_vegetation_impervious_fraction_urb"  : ["high_vegetation_road_fraction",
+                                                                                           "high_vegetation_impervious_fraction"],
+                                             "high_vegetation_pervious_fraction_urb"    : ["high_vegetation_fraction",
+                                                                                           "high_vegetation_low_vegetation_fraction",
+                                                                                           "high_vegetation_water_fraction"],
+                                             "road_fraction_urb"                        : ["road_fraction",
+                                                                                           "high_vegetation_road_fraction"],
+                                             "impervious_fraction_urb"                  : ["road_fraction",
+                                                                                           "high_vegetation_road_fraction",
+                                                                                           "impervious_fraction",
+                                                                                           "high_vegetation_impervious_fraction"]],
+                lczSurfFraction             : ["building_fraction_lcz"                  : ["building_fraction",
+                                                                                           "high_vegetation_building_fraction"],
+                                              "pervious_fraction_lcz"                   : ["high_vegetation_fraction",
+                                                                                           "low_vegetation_fraction",
+                                                                                           "water_fraction",
+                                                                                           "high_vegetation_low_vegetation_fraction",
+                                                                                           "high_vegetation_water_fraction"],
+                                              "high_vegetation_fraction_lcz"            : ["high_vegetation_fraction",
+                                                                                           "high_vegetation_low_vegetation_fraction",
+                                                                                           "high_vegetation_road_fraction",
+                                                                                           "high_vegetation_impervious_fraction",
+                                                                                           "high_vegetation_water_fraction",
+                                                                                           "high_vegetation_building_fraction"],
+                                              "low_vegetation_fraction_lcz"             : ["low_vegetation_fraction"],
+                                              "impervious_fraction_lcz"                 : ["impervious_fraction",
+                                                                                            "road_fraction",
+                                                                                            "high_vegetation_impervious_fraction",
+                                                                                            "high_vegetation_road_fraction"],
+                                              "water_fraction_lcz"                      : ["water_fraction",
+                                                                                            "high_vegetation_water_fraction"]],
+                buildingFractions          : ["high_vegetation_building_fraction","building_fraction"]
         outputs outputTableName: String
-        run { datasource            , buildingTable                     , rsuTable,
-              prefixName            , vegetationTable                   , roadTable,
-              hydrographicTable     , facadeDensListLayersBottom        , facadeDensNumberOfDirection,
-              svfPointDensity       , svfRayLength                      , svfNumberOfDirection,
-              heightColumnName      , fractionTypePervious              , fractionTypeImpervious,
-              inputFields           , levelForRoads                     , angleRangeSizeBuDirection,
-              svfSimplified         , indicatorUse ->
+        run { datasource                , buildingTable                     , rsuTable,
+              prefixName                , vegetationTable                   , roadTable,
+              hydrographicTable         , facadeDensListLayersBottom        , facadeDensNumberOfDirection,
+              svfPointDensity           , svfRayLength                      , svfNumberOfDirection,
+              heightColumnName          , inputFields                       , levelForRoads,
+              angleRangeSizeBuDirection , svfSimplified                     , indicatorUse,
+              surfSuperpositions        , surfPriorities                    , urbanTypoSurfFraction,
+              lczSurfFraction           , buildingFractions ->
 
             info "Start computing RSU indicators..."
             def to_start = System.currentTimeMillis()
@@ -398,9 +456,83 @@ def computeRSUIndicators() {
             // PrefixName for intermediate table (start with a letter to avoid table name issue if start with a number)
             def temporaryPrefName = "rsu_indicator_"
 
+            // Other temporary tables that have to be deleted at the end of the process
+            def urbanTypoFractionIndic = "urban_typo_fraction_indic"
+            def lczFractionIndic = "lcz_fraction_indic"
+            def preAspectRatioTable = "pre_HW_table"
+
             // Intermediate table that needs to be delete at the end
             def SVF = "SVF"
             def computeExtFF
+
+            // Calculate all surface fractions indicators
+            // Need to create the smallest geometries used as input of the surface fraction process
+            def  computeSmallestGeom =  Geoindicators.RsuIndicators.smallestCommunGeometry()
+            if (!computeSmallestGeom.execute([
+                    rsuTable: rsuTable,buildingTable: buildingTable,vegetationTable: vegetationTable,waterTable: hydrographicTable,
+                    prefixName: temporaryPrefName, datasource: datasource])){
+                info "Cannot compute the smallest commun geometries"
+                return
+            }
+            def superpositionsTable = computeSmallestGeom.results.outputTableName
+            // Calculate the surface fractions from the commun geom
+            def  computeSurfaceFractions =  Geoindicators.RsuIndicators.surfaceFractions()
+            if (!computeSurfaceFractions.execute([
+                    rsuTable: rsuTable, spatialRelationsTable: superpositionsTable,
+                    superpositions: surfSuperpositions,
+                    priorities: surfPriorities,
+                    prefixName: temporaryPrefName, datasource: datasource])){
+                info "Cannot compute the surface fractions"
+                return
+            }
+            def surfaceFractions = computeSurfaceFractions.results.outputTableName
+            finalTablesToJoin.put(surfaceFractions, columnIdRsu)
+
+            // Get all column names from the surfaceFraction IProcess to make verifications
+            def surfFracList = datasource.getTable(surfaceFractions).getColumns()
+
+            // Calculate the surface fractions needed for the urban typology classification
+            if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
+                logger.info """Processing urban typology surface fraction calculation"""
+                // Get all columns needed for the calculations and verify that they exist
+                def neededSurfUrb = urbanTypoSurfFraction.findResults { k, v -> true ? v : null }.flatten()
+                def missingElementsUrb = neededSurfUrb - neededSurfUrb.findAll { indUrb -> surfFracList.contains(indUrb.toUpperCase()) }
+                if (missingElementsUrb.size() == 0) {
+                    def queryUrbSurfFrac = """DROP TABLE IF EXISTS $urbanTypoFractionIndic;
+                                            CREATE TABLE $urbanTypoFractionIndic AS SELECT $columnIdRsu, """
+                    urbanTypoSurfFraction.each { urbIndicator, indicatorList ->
+                        queryUrbSurfFrac += "${indicatorList.join("+")} AS $urbIndicator, "
+                    }
+                    queryUrbSurfFrac += " FROM $surfaceFractions"
+                    datasource.execute queryUrbSurfFrac
+                    finalTablesToJoin.put(urbanTypoFractionIndic, columnIdRsu)
+                } else {
+                    logger.error """'urbanTypoSurfFraction' and 'surfSuperpositions' parameters given by the user are not consistent.
+                                    Impossible to find the following indicators in the surface fractions table: ${missingElementsUrb.join(", ")}"""
+                }
+            }
+
+
+            // Calculate the surface fractions needed for the LCZ classification
+            if (indicatorUse*.toUpperCase().contains("LCZ")) {
+                logger.info """Processing LCZ surface fraction indicators calculation"""
+                // Get all columns needed for the calculations and verify that they exist
+                def neededSurfLcz = urbanTypoSurfFraction.findResults { k, v -> true ? v : null }.flatten()
+                def missingElementsLcz = neededSurfLcz - neededSurfLcz.findAll { indLcz -> surfFracList.contains(indLcz.toUpperCase()) }
+                if (missingElementsLcz.size() == 0) {
+                    def querylczSurfFrac = """DROP TABLE IF EXISTS $lczFractionIndic;
+                                                CREATE TABLE $lczFractionIndic AS SELECT $columnIdRsu, """
+                    lczSurfFraction.each { urbIndicator, indicatorList ->
+                        querylczSurfFrac += "${indicatorList.join("+")} AS $urbIndicator, "
+                    }
+                    querylczSurfFrac += " FROM $surfaceFractions"
+                    datasource.execute querylczSurfFrac
+                    finalTablesToJoin.put(lczFractionIndic, columnIdRsu)
+                } else {
+                    logger.error """'lczSurfFraction' and 'surfSuperpositions' parameters given by the user are not consistent.
+                                    Impossible to find the following indicators in the surface fractions table: ${missingElementsLcz.join(", ")}"""
+                }
+            }
 
             // rsu_area (note that the uuid is used as prefix for intermediate tables - indicator alone in a table)
             if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
@@ -436,17 +568,15 @@ def computeRSUIndicators() {
             // + rsu_building_number_density (RSU number of buildings divided RSU area)
             def inputVarAndOperations = [:]
             if (indicatorUse*.toUpperCase().contains("LCZ") || indicatorUse*.toUpperCase().contains("TEB")) {
-                inputVarAndOperations = inputVarAndOperations << [(heightColumnName): ["GEOM_AVG"], "area": ["DENS"]]
+                inputVarAndOperations = inputVarAndOperations << [(heightColumnName): ["GEOM_AVG"]]
             }
             if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
                 inputVarAndOperations = inputVarAndOperations << ["volume"                  : ["DENS", "AVG"],
-                                                                  (heightColumnName)                 : ["GEOM_AVG"],
-                                                                  "area"                             : ["DENS"],
+                                                                  (heightColumnName)        : ["GEOM_AVG"],
                                                                   "number_building_neighbor": ["AVG"],
                                                                   "floor_area"              : ["DENS"],
                                                                   "minimum_building_spacing": ["AVG"],
                                                                   "building": ["NB_DENS"]]
-                def renameQuery = ""
             }
             def computeRSUStatisticsUnweighted = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
             if (!computeRSUStatisticsUnweighted([inputLowerScaleTableName: buildingTable,
@@ -463,55 +593,6 @@ def computeRSUIndicators() {
             def rsuStatisticsUnweighted = computeRSUStatisticsUnweighted.results.outputTableName
             // Join in an intermediate table (for perviousness fraction)
             intermediateJoin.put(rsuStatisticsUnweighted, columnIdRsu)
-
-
-            // rsu_road_fraction
-            if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY") || indicatorUse*.toUpperCase().contains("LCZ")) {
-                def computeRoadFraction = Geoindicators.RsuIndicators.roadFraction()
-                if (!computeRoadFraction([rsuTable        : rsuTable,
-                                          roadTable       : roadTable,
-                                          levelToConsiders: ["ground": [0], "overground":  [1, 2, 3, 4]],
-                                          prefixName      : temporaryPrefName,
-                                          datasource      : datasource])) {
-                    info "Cannot compute the fraction of road for the RSU"
-                    return
-                }
-                def roadFraction = computeRoadFraction.results.outputTableName
-                intermediateJoin.put(roadFraction, columnIdRsu)
-            }
-
-            // rsu_water_fraction
-            if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY") || indicatorUse*.toUpperCase().contains("LCZ")) {
-                def computeWaterFraction = Geoindicators.RsuIndicators.waterFraction()
-                if (!computeWaterFraction([rsuTable  : rsuTable,
-                                           waterTable: hydrographicTable,
-                                           prefixName: temporaryPrefName,
-                                           datasource: datasource])) {
-                    info "Cannot compute the fraction of water for the RSU"
-                    return
-                }
-                def waterFraction = computeWaterFraction.results.outputTableName
-                // Join in an intermediate table (for perviousness fraction)
-                intermediateJoin.put(waterFraction, columnIdRsu)
-            }
-
-            // rsu_vegetation_fraction + rsu_high_vegetation_fraction + rsu_low_vegetation_fraction
-            def fractionTypeVeg = ["low", "high", "all"]
-            if (!indicatorUse*.toUpperCase().contains("LCZ") && !indicatorUse*.toUpperCase().contains("TEB")) {
-                fractionTypeVeg = ["all"]
-            }
-            def computeVegetationFraction = Geoindicators.RsuIndicators.vegetationFraction()
-            if (!computeVegetationFraction([rsuTable    : rsuTable,
-                                            vegetTable  : vegetationTable,
-                                            fractionType: fractionTypeVeg,
-                                            prefixName  : temporaryPrefName,
-                                            datasource  : datasource])) {
-                info "Cannot compute the fraction of all vegetation for the RSU"
-                return
-            }
-            def vegetationFraction = computeVegetationFraction.results.outputTableName
-            // Join in an intermediate table
-            intermediateJoin.put(vegetationFraction, columnIdRsu)
 
 
             // rsu_mean_building_height weighted by their area + rsu_std_building_height weighted by their area.
@@ -587,6 +668,15 @@ def computeRSUIndicators() {
                 intermediateJoin.put(projFacadeDist, columnIdRsu)
             }
 
+            // // Need to have the total building fraction in one indicator (by default building alone fraction and building high vegetation fractions are separated)
+            if (indicatorUse*.toUpperCase().contains("LCZ") || indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
+                datasource.execute """DROP TABLE IF EXISTS $preAspectRatioTable;
+                                   CREATE TABLE $preAspectRatioTable 
+                                        AS SELECT $columnIdRsu, ${buildingFractions.join("+")} AS BUILDING_TOTAL_FRACTION 
+                                        FROM $surfaceFractions"""
+                intermediateJoin.put(preAspectRatioTable, columnIdRsu)
+            }
+
             // Create an intermediate join tables to have all needed input fields for future indicator calculation
             def computeIntermediateJoin = Geoindicators.DataUtils.joinTables()
             if (!computeIntermediateJoin([inputTableNamesWithId: intermediateJoin,
@@ -600,11 +690,11 @@ def computeRSUIndicators() {
 
 
             // rsu_aspect_ratio
-            if (indicatorUse*.toUpperCase().contains("LCZ")) {
+            if (indicatorUse*.toUpperCase().contains("LCZ") || indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
                 def computeAspectRatio = Geoindicators.RsuIndicators.aspectRatio()
                 if (!computeAspectRatio([rsuTable                          : intermediateJoinTable,
                                          rsuFreeExternalFacadeDensityColumn: "free_external_facade_density",
-                                         rsuBuildingDensityColumn          : "area_density",
+                                         rsuBuildingDensityColumn          : "BUILDING_TOTAL_FRACTION",
                                          prefixName                        : temporaryPrefName,
                                          datasource                        : datasource])) {
                     info "Cannot compute the aspect ratio calculation "
@@ -646,31 +736,6 @@ def computeRSUIndicators() {
                     SVF = computeSVF.results.outputTableName
                     }
                 finalTablesToJoin.put(SVF, columnIdRsu)
-            }
-
-            // rsu_pervious_fraction + rsu_impervious_fraction
-            if (indicatorUse*.toUpperCase().contains("LCZ")) {
-                def perv_type = fractionTypePervious.collect { "${it}_fraction" }
-                def imp_type = fractionTypeImpervious.collect {
-                    if (it == "building") {
-                        "area_dens"
-                    } else if (it == "road") {
-                        "ground_${it}_fraction"
-                    } else {
-                        "${it}_fraction"
-                    }
-                }
-                def computePerviousnessFraction = Geoindicators.RsuIndicators.perviousnessFraction()
-                if (!computePerviousnessFraction([rsuTable                : intermediateJoinTable,
-                                                  operationsAndComposition: ["pervious_fraction"  : perv_type,
-                                                                             "impervious_fraction": imp_type],
-                                                  prefixName              : temporaryPrefName,
-                                                  datasource              : datasource])) {
-                    info "Cannot compute the perviousness fraction for the RSU"
-                    return
-                }
-                def perviousnessFraction = computePerviousnessFraction.results.outputTableName
-                finalTablesToJoin.put(perviousnessFraction, columnIdRsu)
             }
 
             // rsu_effective_terrain_roughness
@@ -731,8 +796,7 @@ def computeRSUIndicators() {
 
             // Modify all indicators which do not have the expected name
             def listColumnNames = datasource.getTable(outputTableName).columns
-            def mapIndic2Change = ["AREA_DENSITY"           : "BUILDING_AREA_FRACTION",
-                                   "FLOOR_AREA_DENSITY"     : "BUILDING_FLOOR_AREA_DENSITY",
+            def mapIndic2Change = ["FLOOR_AREA_DENSITY"     : "BUILDING_FLOOR_AREA_DENSITY",
                                    "VOLUME_DENSITY"         : "BUILDING_VOLUME_DENSITY",
                                    "LINEAR_ROAD_DENSITY_H0" : "GROUND_LINEAR_ROAD_DENSITY"]
             def query2ModifyNames = ""

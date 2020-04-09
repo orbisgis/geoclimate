@@ -16,9 +16,8 @@ class GeoIndicatorsChainTest extends ChainProcessAbstractTest{
 
     // Indicator list (at RSU scale) for each type of use
     public static listNames = [
-            "TEB"           : ["VERT_ROOF_DENSITY", "NON_VERT_ROOF_DENSITY", "BUILDING_AREA_FRACTION",
-                               "LOW_VEGETATION_FRACTION", "HIGH_VEGETATION_FRACTION",
-                               "ALL_VEGETATION_FRACTION", "ROAD_DIRECTION_DISTRIBUTION_H0_D0_30", "ROAD_DIRECTION_DISTRIBUTION_H0_D60_90",
+            "TEB"           : ["VERT_ROOF_DENSITY", "NON_VERT_ROOF_DENSITY",
+                               "ROAD_DIRECTION_DISTRIBUTION_H0_D0_30", "ROAD_DIRECTION_DISTRIBUTION_H0_D60_90",
                                "ROAD_DIRECTION_DISTRIBUTION_H0_D90_120", "ROAD_DIRECTION_DISTRIBUTION_H0_D120_150",
                                "ROAD_DIRECTION_DISTRIBUTION_H0_D150_180", "ROAD_DIRECTION_DISTRIBUTION_H0_D30_60",
                                "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D0_30", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D0_30",
@@ -43,19 +42,28 @@ class GeoIndicatorsChainTest extends ChainProcessAbstractTest{
                                "NON_VERT_ROOF_AREA_H30_40", "NON_VERT_ROOF_AREA_H40_50", "NON_VERT_ROOF_AREA_H50",
                                "VERT_ROOF_AREA_H0_10", "VERT_ROOF_AREA_H10_20", "VERT_ROOF_AREA_H20_30", "VERT_ROOF_AREA_H30_40",
                                "VERT_ROOF_AREA_H40_50", "VERT_ROOF_AREA_H50", "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH"],
-            "URBAN_TYPOLOGY": ["AREA", "BUILDING_AREA_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
+            "URBAN_TYPOLOGY": ["AREA", "ASPECT_RATIO", "BUILDING_TOTAL_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
+                               "VEGETATION_FRACTION_URB", "LOW_VEGETATION_FRACTION_URB", "HIGH_VEGETATION_IMPERVIOUS_FRACTION_URB",
+                               "HIGH_VEGETATION_PERVIOUS_FRACTION_URB", "ROAD_FRACTION_URB", "IMPERVIOUS_FRACTION_URB",
                                "AVG_NUMBER_BUILDING_NEIGHBOR", "AVG_HEIGHT_ROOF_AREA_WEIGHTED",
                                "STD_HEIGHT_ROOF_AREA_WEIGHTED", "BUILDING_NUMBER_DENSITY", "BUILDING_VOLUME_DENSITY",
-                               "BUILDING_VOLUME_DENSITY", "AVG_VOLUME", "GROUND_ROAD_FRACTION",
-                               "OVERGROUND_ROAD_FRACTION", "GROUND_LINEAR_ROAD_DENSITY", "WATER_FRACTION",
-                               "ALL_VEGETATION_FRACTION", "GEOM_AVG_HEIGHT_ROOF", "BUILDING_FLOOR_AREA_DENSITY",
+                               "BUILDING_VOLUME_DENSITY", "AVG_VOLUME", "GROUND_LINEAR_ROAD_DENSITY",
+                               "GEOM_AVG_HEIGHT_ROOF", "BUILDING_FLOOR_AREA_DENSITY",
                                "AVG_MINIMUM_BUILDING_SPACING", "MAIN_BUILDING_DIRECTION", "BUILDING_DIRECTION_UNIQUENESS",
                                "BUILDING_DIRECTION_INEQUALITY"],
-            "LCZ"           : ["BUILDING_AREA_FRACTION", "ASPECT_RATIO", "GROUND_SKY_VIEW_FACTOR", "PERVIOUS_FRACTION",
-                               "IMPERVIOUS_FRACTION", "GEOM_AVG_HEIGHT_ROOF", "EFFECTIVE_TERRAIN_ROUGHNESS_CLASS"]]
+            "LCZ"           : ["BUILDING_FRACTION_LCZ", "ASPECT_RATIO", "GROUND_SKY_VIEW_FACTOR", "PERVIOUS_FRACTION_LCZ",
+                               "IMPERVIOUS_FRACTION_LCZ", "GEOM_AVG_HEIGHT_ROOF", "EFFECTIVE_TERRAIN_ROUGHNESS_CLASS",
+                               "HIGH_VEGETATION_FRACTION_LCZ", "LOW_VEGETATION_FRACTION_LCZ", "WATER_FRACTION_LCZ"]]
 
-    // Extra columns at RSU scale
+    // Basic columns at RSU scale
     public static listColBasic = ["ID_RSU", "THE_GEOM"]
+
+    // Indicators common to each indicator use
+    public static listColCommon = ["LOW_VEGETATION_FRACTION", "HIGH_VEGETATION_FRACTION",
+                                   "BUILDING_FRACTION", "WATER_FRACTION", "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
+                                   "HIGH_VEGETATION_LOW_VEGETATION_FRACTION", "HIGH_VEGETATION_WATER_FRACTION",
+                                   "HIGH_VEGETATION_ROAD_FRACTION", "HIGH_VEGETATION_IMPERVIOUS_FRACTION",
+                                   "HIGH_VEGETATION_BUILDING_FRACTION"]
 
     // Column names in the LCZ Table
     public static listColLcz = ["LCZ1", "LCZ2", "MIN_DISTANCE", "PSS"]
@@ -112,7 +120,7 @@ class GeoIndicatorsChainTest extends ChainProcessAbstractTest{
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
             assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
         }
-        def expectListRsuTempo = listColBasic
+        def expectListRsuTempo = listColBasic + listColCommon
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
         def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).columns
@@ -150,12 +158,11 @@ class GeoIndicatorsChainTest extends ChainProcessAbstractTest{
                 hydrographicTable: inputTableNames.hydrographicTable, indicatorUse: ind_i,
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
-
         if (ind_i.contains("URBAN_TYPOLOGY")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
             assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
         }
-        def expectListRsuTempo = listColBasic
+        def expectListRsuTempo = listColBasic + listColCommon
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
         def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).columns
@@ -198,7 +205,7 @@ class GeoIndicatorsChainTest extends ChainProcessAbstractTest{
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
             assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
         }
-        def expectListRsuTempo = listColBasic
+        def expectListRsuTempo = listColBasic + listColCommon
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
         def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).columns
@@ -241,7 +248,7 @@ class GeoIndicatorsChainTest extends ChainProcessAbstractTest{
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
             assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
         }
-        def expectListRsuTempo = listColBasic
+        def expectListRsuTempo = listColBasic + listColCommon
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
         def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).columns
@@ -284,7 +291,7 @@ class GeoIndicatorsChainTest extends ChainProcessAbstractTest{
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
             assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
         }
-        def expectListRsuTempo = listColBasic
+        def expectListRsuTempo = listColBasic + listColCommon
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
         def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).columns
@@ -327,7 +334,7 @@ class GeoIndicatorsChainTest extends ChainProcessAbstractTest{
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
             assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
         }
-        def expectListRsuTempo = listColBasic
+        def expectListRsuTempo = listColBasic + listColCommon
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
         def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).columns

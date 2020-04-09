@@ -157,9 +157,104 @@ class GenericIndicatorsTests {
 
         assertEquals(4.0/12, h2GIS.firstRow("SELECT * FROM test_MAIN_BUILDING_DIRECTION " +
                 "WHERE id_block = 4")["BUILDING_DIRECTION_INEQUALITY"], 0.0001)
-        assertEquals(97.5, h2GIS.firstRow("SELECT * FROM test_MAIN_BUILDING_DIRECTION " +
+        assertEquals("ANG97_5", h2GIS.firstRow("SELECT * FROM test_MAIN_BUILDING_DIRECTION " +
                 "WHERE id_block = 4")["main_building_direction"])
-        assertEquals(28.0/(22+28.0), h2GIS.firstRow("SELECT * FROM test_MAIN_BUILDING_DIRECTION " +
+        assertEquals((28.0-22.0)/(22+28.0), h2GIS.firstRow("SELECT * FROM test_MAIN_BUILDING_DIRECTION " +
                 "WHERE id_block = 4")["BUILDING_DIRECTION_UNIQUENESS"], 0.0001)
+    }
+
+    @Test
+    void distributionCharacterizationTest1() {
+        // Tests with extremum = "GREATEST" and all distribIndicators
+
+        // Create a table containing a distribution between columns
+        h2GIS.execute """DROP TABLE IF EXISTS distrib_test,test_DISTRIBUTION_REPARTITION;
+                            CREATE TABLE distrib_test(id integer, col1 double, col2 double, col3 double, col4 double);
+                            INSERT INTO distrib_test 
+                                    VALUES (1, 25, 25, 25, 25), (2, 10, 20, 40, 20),
+                                               (3, 0, 0, 60, 40), (4, 0, 0, 0, 100);"""
+
+
+        def  p1 =  Geoindicators.GenericIndicators.distributionCharacterization()
+        assertTrue p1.execute([distribTableName:   "distrib_test",
+                    inputId:            "id",
+                    distribIndicator:   ["inequality", "uniqueness"],
+                    extremum:           "GREATEST",
+                    prefixName:         "test",
+                    datasource:         h2GIS])
+        def resultTab = p1.results.outputTableName
+
+        assertEquals(1, h2GIS.firstRow("SELECT * FROM $resultTab " +
+                "WHERE id = 1")["INEQUALITY_VALUE"])
+        assertEquals(0.25, h2GIS.firstRow("SELECT * FROM $resultTab " +
+                "WHERE id = 4")["INEQUALITY_VALUE"])
+        assertEquals(0, h2GIS.firstRow("SELECT * FROM $resultTab " +
+                "WHERE id = 1")["UNIQUENESS_VALUE"])
+        assertEquals(1, h2GIS.firstRow("SELECT * FROM $resultTab " +
+                "WHERE id = 4")["UNIQUENESS_VALUE"])
+        assertEquals("COL3", h2GIS.firstRow("SELECT * FROM $resultTab " +
+                "WHERE id = 2")["EXTREMUM_COL"])
+        assertEquals("COL4", h2GIS.firstRow("SELECT * FROM $resultTab " +
+                "WHERE id = 4")["EXTREMUM_COL"])
+    }
+
+    @Test
+    void distributionCharacterizationTest2() {
+        // Tests with extremum = "LOWEST" and only "uniqueness" indicator
+
+        // Create a table containing a distribution between columns
+        h2GIS.execute """DROP TABLE IF EXISTS distrib_test,test_DISTRIBUTION_REPARTITION;
+                            CREATE TABLE distrib_test(id integer, col1 double, col2 double, col3 double, col4 double);
+                            INSERT INTO distrib_test 
+                                    VALUES (1, 25, 25, 25, 25), (2, 10, 20, 40, 20),
+                                               (3, 0, 0, 60, 40), (4, 0, 0, 0, 100);"""
+
+
+        def  p1 =  Geoindicators.GenericIndicators.distributionCharacterization()
+        assertTrue p1.execute([distribTableName:   "distrib_test",
+                               inputId:            "id",
+                               distribIndicator:   ["uniqueness"],
+                               extremum:           "LEAST",
+                               prefixName:         "test",
+                               datasource:         h2GIS])
+
+        assertEquals(0, h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION " +
+                "WHERE id = 1")["UNIQUENESS_VALUE"])
+        assertEquals(1.0/3, h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION " +
+                "WHERE id = 2")["UNIQUENESS_VALUE"],0.0001)
+        assertEquals(0, h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION " +
+                "WHERE id = 4")["UNIQUENESS_VALUE"])
+        assertEquals("COL1", h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION " +
+                "WHERE id = 2")["EXTREMUM_COL"])
+    }
+
+    @Test
+    void distributionCharacterizationTest3() {
+        // Tests with only "inequality" indicator
+
+        // Create a table containing a distribution between columns
+        h2GIS.execute """DROP TABLE IF EXISTS distrib_test,test_DISTRIBUTION_REPARTITION;
+                            CREATE TABLE distrib_test(id integer, col1 double, col2 double, col3 double, col4 double);
+                            INSERT INTO distrib_test 
+                                    VALUES (1, 25, 25, 25, 25), (2, 10, 20, 40, 20),
+                                               (3, 0, 0, 60, 40), (4, 0, 0, 0, 100);"""
+
+
+        def  p1 =  Geoindicators.GenericIndicators.distributionCharacterization()
+        assertTrue p1.execute([distribTableName:   "distrib_test",
+                               inputId:            "id",
+                               distribIndicator:   ["inequality"],
+                               extremum:           "LEAST",
+                               prefixName:         "test",
+                               datasource:         h2GIS])
+
+        assertEquals(1, h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION " +
+                "WHERE id = 1")["INEQUALITY_VALUE"])
+        assertEquals(0.25, h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION " +
+                "WHERE id = 4")["INEQUALITY_VALUE"])
+        assertEquals("COL1", h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION " +
+                "WHERE id = 2")["EXTREMUM_COL"])
+        assertEquals("COL1", h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION " +
+                "WHERE id = 4")["EXTREMUM_COL"])
     }
 }

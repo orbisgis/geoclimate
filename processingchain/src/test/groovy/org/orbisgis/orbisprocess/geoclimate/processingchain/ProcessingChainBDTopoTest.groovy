@@ -131,53 +131,6 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 //        assertTrue(row_bu4.id_block ==row_bu8.id_block)
     }
 
-    @Test
-    void createLCZTest(){
-        H2GIS h2GIS = H2GIS.open("./target/processinglcz;AUTO_SERVER=TRUE")
-        String sqlString = new File(getClass().getResource("data_for_tests.sql").toURI()).text
-        h2GIS.execute(sqlString)
-
-        // Only the first 6 first created buildings are selected since any new created building may alter the results
-        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, tempo_road, tempo_zone, tempo_veget, tempo_hydro; " +
-                "CREATE TABLE tempo_build AS SELECT id_build, the_geom, height_wall, height_roof," +
-                "nb_lev FROM building_test WHERE id_build < 9; CREATE TABLE " +
-                "tempo_road AS SELECT * FROM road_test WHERE id_road < 5 OR id_road > 6;" +
-                "CREATE TABLE tempo_zone AS SELECT * FROM zone_test;" +
-                "CREATE TABLE tempo_veget AS SELECT * FROM veget_test WHERE id_veget < 5;" +
-                "CREATE TABLE tempo_hydro AS SELECT * FROM hydro_test WHERE id_hydro < 2;")
-
-
-        // First create the scales
-        IProcess pm_units = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
-        pm_units.execute([datasource: h2GIS, zoneTable : "tempo_zone", buildingTable:"tempo_build", roadTable : "tempo_road", railTable : "tempo_road",
-                          vegetationTable: "tempo_veget", hydrographicTable: "tempo_hydro", surface_vegetation: null,
-                          surface_hydro: null, distance: 0.0, prefixName: "test", indicatorUse :["LCZ"]])
-
-        IProcess pm_lcz =  ProcessingChain.BuildLCZ.createLCZ()
-        pm_lcz.execute([datasource: h2GIS, prefixName: "test", buildingTable: pm_units.results.outputTableBuildingName,
-                        rsuTable: pm_units.results.outputTableRsuName, roadTable: "tempo_road", vegetationTable: "tempo_veget",
-                        hydrographicTable: "tempo_hydro", facadeDensListLayersBottom: [0, 50, 200], facadeDensNumberOfDirection: 8,
-                        svfPointDensity: 0.008, svfRayLength: 100, svfNumberOfDirection: 60,
-                        heightColumnName: "height_roof",
-                        mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
-                                       "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                                       "height_of_roughness_elements": 1, "terrain_roughness_class": 1],
-
-                        fractionTypePervious: ["low_vegetation", "water"],
-                        fractionTypeImpervious: ["road"], inputFields: ["id_build"], levelForRoads: [0]])
-
-        h2GIS.eachRow("SELECT * FROM ${pm_lcz.results.outputTableName}".toString()){row ->
-            assertTrue(row.id_rsu != null)
-
-            assertTrue((row.lcz1>0) && (row.lcz1<11) || (row.lcz1>100) && (row.lcz1<108))
-            assertTrue((row.lcz2>0) && (row.lcz2<11) || (row.lcz2>100) && (row.lcz2<108))
-//            assertTrue(row.min_distance != null)
-//            assertTrue(row.pss <= 1)
-        }
-//        def nb_rsu = h2GIS.firstRow("SELECT COUNT(*) AS nb FROM ${pm_lcz.results.outputTableName}".toString())
-//        assertEquals(14, nb_rsu.nb)
-    }
-
 
 
     @Test
@@ -238,7 +191,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, expand: 1000, idZone: '56260',
+                                    distBuffer: 500, expand: 1000, idZone: inseeCode,
                                     hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
         ])
         def abstractTables = process.getResults()
@@ -261,14 +214,15 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 
     // Test the workflow on the commune INSEE 01306 only for TEB in order to verify that only RSU_INDICATORS and BUILDING_INDICATORS are saved
     @Test
-    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
+    @Disabled
     void testBDTOPO_V2Workflow() {
         String directory ="./target/geoclimate_chain/bdtopo_config/"
+        def inseeCode = "01306"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        IProcess processBDTopo = ProcessingChain.Workflow.BDTOPO_V2_CONFIG()
-        assertTrue(processBDTopo.execute(fileParameters: getClass().getResource("bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()))
+        IProcess processBDTopo = ProcessingChain.Workflow.BDTOPO_V2()
+        assertTrue(processBDTopo.execute(configurationFile: getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()))mm
         assertNotNull(processBDTopo.getResults().outputFolder)
         def baseNamePathAndFileOut = processBDTopo.getResults().outputFolder + File.separator + "zone_" + inseeCode + "_"
         assertTrue(new File(baseNamePathAndFileOut + "rsu_indicators.geojson").exists())
