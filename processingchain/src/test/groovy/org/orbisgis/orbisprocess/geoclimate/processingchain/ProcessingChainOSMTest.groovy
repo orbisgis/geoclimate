@@ -194,6 +194,51 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
 
     }
 
+    @Test
+    void osmWorkflowToDatabase() {
+        String directory ="./target/geoclimate_chain"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
+                "geoclimatedb" : [
+                        "path" : "${dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE"}",
+                        "delete" :true
+                ],
+                "input" : [
+                        "osm" : ["romainville"]],
+                "output" :[
+                        "database" :
+                                ["user" : "sa",
+                                "password":"sa",
+                                 "url": "jdbc:h2://${dirFile.absolutePath+File.separator+"geoclimate_chain_db_output;AUTO_SERVER=TRUE"}",
+                                 "tables": ["building_indicators":"building_indicators",
+                                          "block_indicators":"block_indicators",
+                                          "rsu_indicators":"rsu_indicators",
+                                          "rsu_lcz":"rsu_lcz",
+                                          "zones":"zones" ]]],
+                "parameters":
+                        ["distance" : 0,
+                         "indicatorUse": ["LCZ", "TEB", "URBAN_TYPOLOGY"],
+                         "svfSimplified": false,
+                         "prefixName": "",
+                         "mapOfWeights":
+                                 ["sky_view_factor": 1,
+                                  "aspect_ratio": 1,
+                                  "building_surface_fraction": 1,
+                                  "impervious_surface_fraction" : 1,
+                                  "pervious_surface_fraction": 1,
+                                  "height_of_roughness_elements": 1,
+                                  "terrain_roughness_class": 1  ],
+                         "hLevMin": 3,
+                         "hLevMax": 15,
+                         "hThresholdLev2": 10
+                        ]
+        ]
+        IProcess process = ProcessingChain.Workflow.OSM()
+        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+    }
 
     @Disabled
     @Test
@@ -209,7 +254,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["Paris"]],
+                        "osm" : ["romainville"]],
                 "output" :[
                         "folder" : "$directory"]
         ]
