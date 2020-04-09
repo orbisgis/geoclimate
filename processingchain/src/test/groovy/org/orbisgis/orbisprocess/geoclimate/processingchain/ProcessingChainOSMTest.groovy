@@ -221,7 +221,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 "parameters":
                         ["distance" : 0,
                          "indicatorUse": ["LCZ", "TEB", "URBAN_TYPOLOGY"],
-                         "svfSimplified": false,
+                         "svfSimplified": true,
                          "prefixName": "",
                          "mapOfWeights":
                                  ["sky_view_factor": 1,
