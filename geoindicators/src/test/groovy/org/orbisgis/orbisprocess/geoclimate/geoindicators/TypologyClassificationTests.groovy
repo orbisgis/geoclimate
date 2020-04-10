@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 import smile.classification.DataFrameClassifier
 import smile.validation.Accuracy
 import smile.validation.Validation
@@ -185,4 +186,43 @@ class TypologyClassificationTests {
         assertEquals columnsStr, namesStr
     }
 
+    @Test //Integration tests
+    void lczTestValues() {
+        // List of territories where we do have some test cases (saved in folder lczTests
+        def citiesToTest = ["01306"]
+
+        // Load for a given set of RSU (defined by a "ST_PointOnSurface") the LCZ classes that are possible
+        // and those which are not possible
+        def lczToTestPath = getClass().getResource("lczTests/expectedLcz.geojson").toURI()
+        def lczToTestName = "lczToTest"
+        def lczToTestCity = "lczToTestCity"
+
+        H2GIS datasource = H2GIS.open("/tmp/lczDatabase;AUTO_SERVER=TRUE", "sa", "")
+        datasource.load(lczToTestPath, lczToTestName)
+        citiesToTest.each{city ->
+            def lczCityPath = getClass().getResource("lczTests/zone_${city}_rsu_lcz.geojson").toURI()
+            def lczCityName = "zone$city"
+            datasource.load(lczCityPath, lczCityName)
+            datasource.getTable("zone$city").the_geom.createIndex()
+            datasource.getTable(lczToTestName).the_geom.createIndex()
+            datasource.getTable(lczToTestName).id_zone.createIndex()
+
+            datasource.execute """DROP TABLE IF EXISTS $lczToTestCity;
+                                        CREATE TABLE $lczToTestCity 
+                                                AS SELECT a.id, a.lcz_type, a.expected, b.lcz1, b.lcz2 
+                                                FROM $lczToTestName a, $lczCityName b 
+                                                WHERE a.id_zone = $city AND a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom)"""
+
+            datasource.eachRow("SELECT * FROM $lczToTestCity"){row ->
+                if (row.expected == 0){
+                    def lczUnexpected = row.lcz_type.split(",")
+                    assertTrue !lczUnexpected.contains(row.lcz1.toString()) & !lczUnexpected.contains(row.lcz2.toString())
+                }
+                if (row.expected == 1) {
+                    def lczExpected = row.lcz_type.split(",")
+                    assertTrue lczExpected.contains(row.lcz1.toString()) || lczExpected.contains(row.lcz2.toString())
+                }
+            }
+        }
+    }
 }
