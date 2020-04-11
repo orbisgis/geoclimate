@@ -243,6 +243,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     }
 
     @Test //Integration tests
+    @Disabled
     void lczProduceTestData() {
         def configFile = getClass().getResource("bdtopofolder/lczTests/lczDebug.json").toURI()
 
