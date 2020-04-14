@@ -1,15 +1,14 @@
 package org.orbisgis.orbisprocess.geoclimate.osm
 
-import JsonSlurper
-import BaseScript
-import Geometry
-import Polygon
-import ISpatialTable
-import JdbcDataSource
-import IProcess
-import PrepareData
+import groovy.json.JsonSlurper
+import groovy.transform.BaseScript
+import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.Polygon
+import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
+import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 
-@BaseScript PrepareData prepareData
+@BaseScript OSM osm
 
 /**
  * This process is used to format the OSM buildings table into a table that matches the constraints
@@ -30,7 +29,7 @@ IProcess formatBuildingLayer() {
         outputs outputTableName: String
         run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, epsg, h_lev_min, h_lev_max, hThresholdLev2, jsonFilename ->
             def outputTableName = "INPUT_BUILDING_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-            org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info('Formating building layer')
+            info('Formating building layer')
                 outputTableName = "INPUT_BUILDING_${UUID.randomUUID().toString().replaceAll("-", "_")}"
                 datasource.execute """ DROP TABLE if exists ${outputTableName};
                         CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id_build serial, ID_SOURCE VARCHAR, HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT,
@@ -101,7 +100,7 @@ IProcess formatBuildingLayer() {
                     }
                 }
             }
-            org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info('Buildings transformation finishes')
+            info('Buildings transformation finishes')
             [outputTableName: outputTableName]
         }
     }
@@ -124,7 +123,7 @@ IProcess formatBuildingLayer() {
             inputs datasource  : JdbcDataSource, inputTableName : String, inputZoneEnvelopeTableName : "", epsg: int, jsonFilename : ""
             outputs outputTableName: String
             run { datasource, inputTableName,inputZoneEnvelopeTableName,epsg, jsonFilename ->
-                org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info('Formating road layer')
+                info('Formating road layer')
                     def outputTableName = "INPUT_ROAD_${UUID.randomUUID().toString().replaceAll("-", "_")}"
                     datasource.execute """drop table if exists $outputTableName;
                             CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_road serial, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR, CROSSING VARCHAR(30),
@@ -186,7 +185,7 @@ IProcess formatBuildingLayer() {
                             }
                         }
                     }
-                org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info('Roads transformation finishes')
+                info('Roads transformation finishes')
                     [outputTableName: outputTableName]
                 }
     }
@@ -208,7 +207,7 @@ IProcess formatBuildingLayer() {
         inputs datasource : JdbcDataSource , inputTableName: String, inputZoneEnvelopeTableName:"", epsg: int, jsonFilename : ""
         outputs outputTableName: String
         run { datasource, inputTableName,inputZoneEnvelopeTableName,epsg, jsonFilename ->
-            org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info('Rails transformation starts')
+            info('Rails transformation starts')
             def outputTableName = "INPUT_RAILS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
                 datasource.execute """ drop table if exists $outputTableName;
                     CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_rail serial,ID_SOURCE VARCHAR, TYPE VARCHAR,CROSSING VARCHAR(30), ZINDEX INTEGER);"""
@@ -262,7 +261,7 @@ IProcess formatBuildingLayer() {
                     }
                 }
             }
-            org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info('Rails transformation finishes')
+            info('Rails transformation finishes')
             [outputTableName: outputTableName]
         }
     }
@@ -284,7 +283,7 @@ IProcess formatVegetationLayer() {
         inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName:"",epsg: int, jsonFilename: ""
         outputs outputTableName: String
         run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, epsg, jsonFilename ->
-            org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info('Vegetation transformation starts')
+            info('Vegetation transformation starts')
             outputTableName = "INPUT_VEGET_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             datasource.execute """ drop table if exists $outputTableName;
                         CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_veget serial, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4));"""
@@ -325,7 +324,7 @@ IProcess formatVegetationLayer() {
                     }
                 }
             }
-            org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info('Vegetation transformation finishes')
+            info('Vegetation transformation finishes')
             [outputTableName: outputTableName]
         }
     })
@@ -344,7 +343,7 @@ IProcess formatHydroLayer() {
         inputs datasource    : JdbcDataSource, inputTableName: String,inputZoneEnvelopeTableName : "",epsg: int
         outputs outputTableName: String
         run { datasource, inputTableName,inputZoneEnvelopeTableName,epsg ->
-            org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info('Hydro transformation starts')
+            info('Hydro transformation starts')
             outputTableName = "INPUT_HYDRO_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             datasource.execute """Drop table if exists $outputTableName;
                         CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_hydro serial, ID_SOURCE VARCHAR);"""
@@ -373,7 +372,7 @@ IProcess formatHydroLayer() {
                     }
                 }
             }
-            org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info('Hydro transformation finishes')
+            info('Hydro transformation finishes')
             [outputTableName: outputTableName]
         }
     }
@@ -393,11 +392,11 @@ IProcess formatImperviousLayer() {
         inputs datasource    : JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName:"", epsg: int,jsonFilename: ""
         outputs outputTableName: String
         run { datasource, inputTableName,inputZoneEnvelopeTableName,epsg,jsonFilename ->
-            org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info('Impervious transformation starts')
+            info('Impervious transformation starts')
             outputTableName = "INPUT_IMPERVIOUS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             datasource.execute """Drop table if exists $outputTableName;
                         CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_impervious serial, ID_SOURCE VARCHAR);"""
-            org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info(inputTableName)
+            info(inputTableName)
             if(inputTableName!=null){
                 def paramsDefaultFile = this.class.getResourceAsStream("imperviousParams.json")
                 def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
@@ -437,7 +436,7 @@ IProcess formatImperviousLayer() {
                     }
                 }
             }
-            org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info('Impervious transformation finishes')
+            info('Impervious transformation finishes')
             [outputTableName: outputTableName]
         }
     }
@@ -760,7 +759,7 @@ static Map parametersMapping(def file, def altResourceStream) {
         if (new File(file).isFile()) {
             paramStream = new FileInputStream(file)
         } else {
-            org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.warn("No file named ${file} found. Taking default instead")
+            logger.warn("No file named ${file} found. Taking default instead")
             paramStream = altResourceStream
         }
     } else {

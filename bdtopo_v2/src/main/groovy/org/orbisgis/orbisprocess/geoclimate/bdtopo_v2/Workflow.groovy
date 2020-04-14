@@ -2,20 +2,14 @@ package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
-import org.h2gis.functions.spatial.crs.ST_Transform
-import org.h2gis.utilities.SFSUtilities
-import org.h2gis.utilities.jts_utils.GeographyUtils
-import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.geom.MultiPolygon
-import org.locationtech.jts.geom.Polygon
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
-import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
 import java.sql.SQLException
 
+@BaseScript BDTopo_v2 bdTopo_v2
 
 /**
  * Load the BDTopo layers from a configuration file and compute the geoclimate indicators.

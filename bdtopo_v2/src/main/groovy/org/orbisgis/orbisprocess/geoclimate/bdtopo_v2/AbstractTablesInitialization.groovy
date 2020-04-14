@@ -4,9 +4,8 @@ package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisprocess.geoclimate.preparedata.BDTopo_v2
 
-@BaseScript BDTopo_v2 prepareData
+@BaseScript BDTopo_v2 bdTopo_v2
 
 /**
  * This process initialize the abstract tables in which the objects type and parameters (for buildings, roads, rails

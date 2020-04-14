@@ -4,9 +4,8 @@ import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
-import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
 
-@BaseScript ProcessingChain processingChain
+@BaseScript OSM osm
 
 
 /**

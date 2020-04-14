@@ -1,22 +1,15 @@
 package org.orbisgis.orbisprocess.geoclimate.osm
 
-import JsonSlurper
-import BaseScript
-import ST_Transform
-import SFSUtilities
-import GeographyUtils
-import Envelope
-import Geometry
-import MultiPolygon
-import Polygon
-import OSMElement
-import JdbcDataSource
-import IProcess
-import PrepareData
-import OSMTools
+import groovy.json.JsonSlurper
+import groovy.transform.BaseScript
+import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.MultiPolygon
+import org.locationtech.jts.geom.Polygon
+import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 
-@BaseScript PrepareData prepareData
 
+@BaseScript OSM osm
 
 /**
   * This process is used to create the GIS layers using the Overpass API
@@ -40,7 +33,7 @@ IProcess extractAndCreateGISLayers(){
             def outputZoneTable = "ZONE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             def outputZoneEnvelopeTable = "ZONE_ENVELOPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             if (datasource == null) {
-                org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.error('The datasource cannot be null')
+                error('The datasource cannot be null')
                 return null
             }
             if(zoneToExtract){
@@ -50,7 +43,7 @@ IProcess extractAndCreateGISLayers(){
                      GEOMETRY_TYPE = "POLYGON"
                      geom = OSMTools.Utilities.geometryFromOverpass(zoneToExtract)
                     if (!geom) {
-                        org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.error("The bounding box cannot be null")
+                        error("The bounding box cannot be null")
                         return null
 
                     }
@@ -58,7 +51,7 @@ IProcess extractAndCreateGISLayers(){
                 else if(zoneToExtract instanceof  String){
                     geom = OSMTools.Utilities.getAreaFromPlace(zoneToExtract);
                     if (!geom) {
-                        org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.error("Cannot find an area from the place name ${zoneToExtract}")
+                        error("Cannot find an area from the place name ${zoneToExtract}")
                         return null
                     } else {
                          GEOMETRY_TYPE = "GEOMETRY"
@@ -70,7 +63,7 @@ IProcess extractAndCreateGISLayers(){
                     }
                 }
                 else{
-                    org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.error("The zone to extract must be a place name or a JTS envelope")
+                    error("The zone to extract must be a place name or a JTS envelope")
                     return null;
                 }
 
@@ -110,14 +103,14 @@ IProcess extractAndCreateGISLayers(){
                          zoneTableName      : outputZoneTable,
                          zoneEnvelopeTableName: outputZoneEnvelopeTable]
                     } else {
-                        org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.error "Cannot load the OSM file ${extract.results.outputFilePath}"
+                        error "Cannot load the OSM file ${extract.results.outputFilePath}"
                     }
                 } else {
-                    org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.error "Cannot execute the overpass query $query"
+                    error "Cannot execute the overpass query $query"
                 }
 
             }else{
-                org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.error "The zone to extract cannot be null or empty"
+                error "The zone to extract cannot be null or empty"
                 return null
             }
         }
@@ -142,12 +135,12 @@ IProcess createGISLayers() {
                 vegetationTableName: String, hydroTableName: String, imperviousTableName: String
         run { datasource, osmFilePath, epsg ->
             if(epsg<=-1){
-                org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.error "Invalid epsg code $epsg"
+                error "Invalid epsg code $epsg"
                 return null
             }
             def prefix = "OSM_DATA_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             def load = OSMTools.Loader.load()
-            org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info "Loading"
+            info "Loading"
             if (load(datasource: datasource, osmTablesPrefix: prefix, osmFilePath: osmFilePath)) {
                 def outputBuildingTableName =null
                 def outputRoadTableName =null
@@ -157,38 +150,38 @@ IProcess createGISLayers() {
                 def outputImperviousTableName =null
                 //Create building layer
                 def transform = OSMTools.Transform.toPolygons()
-                org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info "Create the building layer"
+                info "Create the building layer"
                 def paramsDefaultFile = this.class.getResourceAsStream("buildingParams.json")
                 def parametersMap = readJSONParameters(paramsDefaultFile)
                 def tags = parametersMap.get("tags")
                 def columnsToKeep = parametersMap.get("columns")
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep:columnsToKeep)){
                     outputBuildingTableName = transform.results.outputTableName
-                    org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info "Building layer created"
+                    info "Building layer created"
                 }
 
                 //Create road layer
                 transform = OSMTools.Transform.extractWaysAsLines()
-                org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info "Create the road layer"
+                info "Create the road layer"
                 paramsDefaultFile = this.class.getResourceAsStream("roadParams.json")
                 parametersMap = readJSONParameters(paramsDefaultFile)
                 tags  = parametersMap.get("tags")
                 columnsToKeep = parametersMap.get("columns")
                 if(transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)){
                  outputRoadTableName = transform.results.outputTableName
-                    org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info "Road layer created"
+                    info "Road layer created"
                     }
 
                 //Create rail layer
                 transform = OSMTools.Transform.extractWaysAsLines()
-                org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info "Create the rail layer"
+                info "Create the rail layer"
                 paramsDefaultFile = this.class.getResourceAsStream("railParams.json")
                 parametersMap = readJSONParameters(paramsDefaultFile)
                 tags  = parametersMap.get("tags")
                 columnsToKeep = parametersMap.get("columns")
                 if(transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)){
                     outputRailTableName = transform.results.outputTableName
-                    org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info "Rail layer created"
+                    info "Rail layer created"
                 }
                 //Create vegetation layer
                 paramsDefaultFile = this.class.getResourceAsStream("vegetParams.json")
@@ -196,10 +189,10 @@ IProcess createGISLayers() {
                 tags  = parametersMap.get("tags")
                 columnsToKeep = parametersMap.get("columns")
                 transform = OSMTools.Transform.toPolygons()
-                org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info "Create the vegetation layer"
+                info "Create the vegetation layer"
                 if(transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags,columnsToKeep: columnsToKeep)){
                     outputVegetationTableName = transform.results.outputTableName
-                    org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info "Vegetation layer created"
+                    info "Vegetation layer created"
                 }
 
                 //Create water layer
@@ -207,10 +200,10 @@ IProcess createGISLayers() {
                 parametersMap = readJSONParameters(paramsDefaultFile)
                 tags  = parametersMap.get("tags")
                 transform = OSMTools.Transform.toPolygons()
-                org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info "Create the water layer"
+                info "Create the water layer"
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags)){
                     outputHydroTableName = transform.results.outputTableName
-                    org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info "Water layer created"
+                    info "Water layer created"
                 }
 
                 //Create impervious layer
@@ -219,10 +212,10 @@ IProcess createGISLayers() {
                 tags  = parametersMap.get("tags")
                 columnsToKeep = parametersMap.get("columns")
                 transform = OSMTools.Transform.toPolygons()
-                org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info "Create the impervious layer"
+                info "Create the impervious layer"
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags,columnsToKeep: columnsToKeep)){
                     outputImperviousTableName = transform.results.outputTableName
-                    org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData.logger.info "impervious layer created"
+                    info "impervious layer created"
                 }
                 //Drop the OSM tables
                 OSMTools.Utilities.dropOSMTables(prefix, datasource)

@@ -7,9 +7,8 @@ import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
 import org.orbisgis.orbisprocess.geoclimate.preparedata.bdtopo.BDTopoGISLayers
 import org.orbisgis.orbisprocess.geoclimate.preparedata.common.AbstractTablesInitialization
 import org.orbisgis.orbisprocess.geoclimate.preparedata.common.InputDataFormatting
-import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
 
-@BaseScript ProcessingChain processingChain
+@BaseScript BDTopo_v2 bdTopo_v2
 
 /** The processing chain creates the Table from the Abstract model and feed them with the BDTopo data according to some
  * defined rules (i.e. certain types of buildings or vegetation are transformed into a generic type in the abstract

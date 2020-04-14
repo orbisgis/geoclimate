@@ -15,9 +15,10 @@ import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
-import org.orbisgis.orbisprocess.geoclimate.osm.OSM
 
 import java.sql.SQLException
+
+@BaseScript OSM osm
 
 /**
  * Extract OSM data and compute geoindicators. The parameters of the processing chain is defined

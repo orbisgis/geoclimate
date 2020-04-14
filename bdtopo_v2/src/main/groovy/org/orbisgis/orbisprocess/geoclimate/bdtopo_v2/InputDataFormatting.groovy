@@ -3,9 +3,8 @@ package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisprocess.geoclimate.preparedata.BDTopo_v2
 
-@BaseScript BDTopo_v2 prepareData
+@BaseScript BDTopo_v2 bdTopo_v2
 
 /**
  * This process allows to control the quality of input tables and then to format and enrich them
@@ -74,7 +73,7 @@ IProcess inputDataFormatting(){
               roadAbstractType, roadAbstractParameters, roadAbstractCrossing,
               railAbstractType, railAbstractCrossing,
               vegetAbstractType, vegetAbstractParameters ->
-            logger.info('Executing the inputDataFormatting.sql script')
+            info('Executing the inputDataFormatting.sql script')
             def uuid = UUID.randomUUID().toString().replaceAll('-', '_')
             def zoneNeighbors = 'ZONE_NEIGHBORS_' + uuid
             def buZone = 'BU_ZONE_' + uuid
@@ -196,10 +195,10 @@ IProcess inputDataFormatting(){
                      IMPERVIOUS: impervious
                     ])
             if(!success){
-                logger.error("Error occurred on the execution of the inputDataFormatting.sql script")
+                error("Error occurred on the execution of the inputDataFormatting.sql script")
             }
             else{
-                logger.info('The inputDataFormatting.sql script has been executed')
+                info('The inputDataFormatting.sql script has been executed')
                 [outputBuilding : building, outputBuildingStatZone: buildingStatsZone, outputBuildingStatZoneBuff: buildingStatsExtZone,
                  outputRoad: road, outputRoadStatZone: roadStatsZone, outputRoadStatZoneBuff: roadStatsExtZone,
                  outputRail: rail, outputRailStatZone: railStatsZone,

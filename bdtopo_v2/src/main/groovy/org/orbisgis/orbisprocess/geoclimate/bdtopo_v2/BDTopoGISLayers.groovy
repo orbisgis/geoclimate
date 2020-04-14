@@ -4,9 +4,8 @@ package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisprocess.geoclimate.preparedata.BDTopo_v2
 
-@BaseScript BDTopo_v2 prepareData
+@BaseScript BDTopo_v2 bdTopo_v2
 
 /**
  * This script allows to import, filter and preprocess needed data from BD Topo for a specific ZONE
@@ -90,7 +89,7 @@ IProcess importPreprocess(){
               rail_bd_topo_type, rail_abstract_type, rail_bd_topo_crossing, rail_abstract_crossing,
               veget_bd_topo_type, veget_abstract_type ->
 
-            logger.info('Executing the importPreprocess.sql script')
+            info('Executing the importPreprocess.sql script')
             def uuid = UUID.randomUUID().toString().replaceAll('-', '_')
             def tmpIris = 'TMP_IRIS_' + uuid
             def zone = 'ZONE'
@@ -131,7 +130,7 @@ IProcess importPreprocess(){
                     }
                     else{
                         if(srid != table.srid){
-                            logger.error "The process has been stopped since the table $name has a different SRID from the others"
+                            error "The process has been stopped since the table $name has a different SRID from the others"
                             return null
                         }
                     }
@@ -145,7 +144,7 @@ IProcess importPreprocess(){
 
             // If the IRIS_GE table does not exist or is empty, then the process is stopped
             if(!datasource.hasTable(tableIrisName) || datasource.getTable(tableIrisName).isEmpty()){
-                logger.error 'The process has been stopped since the table IRIS_GE does not exist or is empty'
+                error 'The process has been stopped since the table IRIS_GE does not exist or is empty'
                 return null}
 
             // If the following tables does not exists, we create corresponding empty tables
@@ -211,10 +210,10 @@ IProcess importPreprocess(){
                      VEGET_BD_TOPO_TYPE: veget_bd_topo_type, VEGET_ABSTRACT_TYPE: veget_abstract_type
                     ])
             if(!success){
-                logger.error("Error occurred on the execution of the importPreprocess.sql script")
+                error("Error occurred on the execution of the importPreprocess.sql script")
             }
             else{
-                logger.info('The importPreprocess.sql script has been executed')
+                info('The importPreprocess.sql script has been executed')
                 [outputBuildingName: input_building, outputRoadName: input_road, outputRailName: input_rail,
                  outputHydroName: input_hydro, outputVegetName: input_veget, outputImperviousName : input_impervious,
                  outputZoneName: zone
@@ -253,7 +252,7 @@ IProcess initTypes(){
                 outputrailBDTopoType: String, outputrailBDTopoCrossing: String, outputvegetBDTopoType: String
         run { JdbcDataSource datasource, buildingAbstractUseType, roadAbstractType, roadAbstractCrossing,
               railAbstractType, railAbstractCrossing, vegetAbstractType ->
-            logger.info('Executing the typesMatching.sql script')
+            info('Executing the typesMatching.sql script')
             def buildingBDTopoUseType = 'BUILDING_BD_TOPO_USE_TYPE'
             def roadBDTopoType = 'ROAD_BD_TOPO_TYPE'
             def roadBDTopoCrossing = 'ROAD_BD_TOPO_CROSSING'
@@ -276,10 +275,10 @@ IProcess initTypes(){
                      VEGET_BD_TOPO_TYPE        : vegetBDTopoType,
                     ])
             if(!success){
-                logger.error("Error occurred on the execution of the typesMatching.sql script")
+                error("Error occurred on the execution of the typesMatching.sql script")
             }
             else{
-                logger.info('The typesMatching.sql script has been executed')
+                info('The typesMatching.sql script has been executed')
                 [outputBuildingBDTopoUseType: buildingBDTopoUseType, outputroadBDTopoType: roadBDTopoType,
                  outputroadBDTopoCrossing: roadBDTopoCrossing, outputrailBDTopoType: railBDTopoType,
                  outputrailBDTopoCrossing: railBDTopoCrossing, outputvegetBDTopoType: vegetBDTopoType

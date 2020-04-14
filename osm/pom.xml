@@ -11,7 +11,7 @@
 
     <artifactId>osm</artifactId>
 
-    <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
+    <groupId>org.orbisgis.geoclimate</groupId>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
