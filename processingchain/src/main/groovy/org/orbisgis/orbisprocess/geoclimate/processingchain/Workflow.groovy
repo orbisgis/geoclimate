@@ -89,7 +89,7 @@ import java.sql.SQLException
  *             "impervious_surface_fraction" : 1,
  *             "pervious_surface_fraction": 1,
  *             "height_of_roughness_elements": 1,
- *             "terrain_roughness_class": 1},
+ *             "terrain_roughness_length": 1},
  *         "hLevMin": 3,
  *         "hLevMax": 15,
  *         "hThresho2": 10
@@ -816,7 +816,7 @@ def extractProcessingParameters(def processing_parameters){
     svfSimplified:false, prefixName: "",
     mapOfWeights : ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                     "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                    "height_of_roughness_elements": 1, "terrain_roughness_class": 1],
+                    "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
     hLevMin : 3, hLevMax: 15, hThresholdLev2: 10]
     if(processing_parameters){
         def distanceP =  processing_parameters.distance
@@ -1113,7 +1113,7 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
     if (output_rsu_indicators && !output_datasource.hasTable(output_rsu_indicators)){
         output_datasource.execute """
     CREATE TABLE $output_rsu_indicators (
-           	ID_ZONE VARCHAR,
+    ID_ZONE VARCHAR,
 	THE_GEOM GEOMETRY(GEOMETRY,$srid),
 	ID_RSU INTEGER,
 	HIGH_VEGETATION_FRACTION DOUBLE PRECISION,
@@ -1597,7 +1597,7 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
  *  *             "impervious_surface_fraction" : 1,
  *  *             "pervious_surface_fraction": 1,
  *  *             "height_of_roughness_elements": 1,
- *  *             "terrain_roughness_class": 1},
+ *  *             "terrain_roughness_length": 1},
  *  *         "hLevMin": 3,
  *  *         "hLevMax": 15,
  *  *         "hThresho2": 10
@@ -2075,7 +2075,7 @@ def GeoIndicators() {
                 distance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified:false, prefixName: "",
                 mapOfWeights: ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                               "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+                               "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
         outputs outputTableBuildingIndicators: String, outputTableBlockIndicators: String,
                 outputTableRsuIndicators: String, outputTableRsuLcz:String, outputTableZone:String
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
@@ -2154,7 +2154,7 @@ def GeoIndicators() {
                                      "GROUND_SKY_VIEW_FACTOR"           : "SKY_VIEW_FACTOR",
                                      "PERVIOUS_FRACTION_LCZ"            : "PERVIOUS_SURFACE_FRACTION",
                                      "IMPERVIOUS_FRACTION_LCZ"          : "IMPERVIOUS_SURFACE_FRACTION",
-                                     "EFFECTIVE_TERRAIN_ROUGHNESS_CLASS": "TERRAIN_ROUGHNESS_CLASS"]
+                                     "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH": "TERRAIN_ROUGHNESS_LENGTH"]
 
                 // Get into a new table the ID, geometry column and the 7 indicators defined by Stewart and Oke (2012)
                 // for LCZ classification (rename the indicators with the real names)
@@ -2171,7 +2171,7 @@ def GeoIndicators() {
                 // The classification algorithm is called
                 def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
                 if(!classifyLCZ([rsuLczIndicators   : lczIndicTable,
-                                 rsuAllIndicators : computeRSUIndicators.results.outputTableName,
+                                 rsuAllIndicators   : computeRSUIndicators.results.outputTableName,
                                  normalisationType  : "AVG",
                                  mapOfWeights       : mapOfWeights,
                                  prefixName         : prefixName,

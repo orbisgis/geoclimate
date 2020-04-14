@@ -768,7 +768,7 @@ def computeRSUIndicators() {
                     def roughClass = computeRoughClass.results.outputTableName
                     finalTablesToJoin.put(roughClass, columnIdRsu)
                 }
-                }
+            }
 
             // rsu_perkins_skill_score_building_direction_variability
             if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
