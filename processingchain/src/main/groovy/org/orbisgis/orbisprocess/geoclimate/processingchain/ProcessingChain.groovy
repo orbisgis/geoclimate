@@ -10,8 +10,6 @@ import org.slf4j.LoggerFactory
 abstract class ProcessingChain extends GroovyProcessFactory {
     public static def logger = LoggerFactory.getLogger(ProcessingChain.class)
 
-    public static PrepareBDTopo = new PrepareBDTopo()
-    public static PrepareOSM  = new PrepareOSM()
     public static BuildGeoIndicators  = new BuildGeoIndicators()
     public static BuildSpatialUnits  = new BuildSpatialUnits()
     public static DataUtils  = new DataUtils()

@@ -5,8 +5,8 @@ import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
 import org.orbisgis.orbisprocess.geoclimate.preparedata.bdtopo.BDTopoGISLayers
 import org.orbisgis.orbisprocess.geoclimate.preparedata.common.AbstractTablesInitialization
 import org.orbisgis.orbisprocess.geoclimate.preparedata.common.InputDataFormatting
-import org.orbisgis.orbisprocess.geoclimate.preparedata.osm.FormattingForAbstractModel
-import org.orbisgis.orbisprocess.geoclimate.preparedata.osm.OSMGISLayers
+import FormattingForAbstractModel
+import OSMGISLayers
 import org.orbisgis.orbisprocess.geoclimate.processingchain.*
 
 /**
