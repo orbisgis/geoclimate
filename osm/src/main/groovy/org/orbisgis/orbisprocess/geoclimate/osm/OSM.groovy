@@ -20,7 +20,7 @@ abstract class OSM extends GroovyProcessFactory {
     public static  formatHydroLayer= FormattingForAbstractModel.formatHydroLayer()
     public static  formatImperviousLayer= FormattingForAbstractModel.formatImperviousLayer()
 
-    public static createGISLayers  = OSMGISLayers.createGISLayers()
+    public static def createGISLayers  = OSMGISLayers.createGISLayers()
     public static extractAndCreateGISLayers  = OSMGISLayers.extractAndCreateGISLayers()
     public static buildGeoclimateLayers  = PrepareOSM.buildGeoclimateLayers()
 
