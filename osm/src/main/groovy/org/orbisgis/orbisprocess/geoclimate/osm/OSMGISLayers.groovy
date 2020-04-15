@@ -5,8 +5,10 @@ import groovy.transform.BaseScript
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
+import org.orbisgis.orbisanalysis.osm.OSMTools
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 
 
 @BaseScript OSM_UTILS osm_utils
@@ -22,7 +24,7 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
   * railTableName, vegetationTableName, hydroTableName, zoneTableName, zoneEnvelopeTableName.
   * Note that the GIS tables are projected in a local utm projection
  */
-static IProcess extractAndCreateGISLayers(){
+IProcess extractAndCreateGISLayers(){
     return create({
         title "Create GIS layer from the OSM data model"
         inputs datasource: JdbcDataSource, zoneToExtract: Object, distance:0
@@ -127,7 +129,7 @@ static IProcess extractAndCreateGISLayers(){
  * @return The name of the resulting GIS tables : buildingTableName, roadTableName,
  * railTableName, vegetationTableName, hydroTableName, imperviousTableName
  */
-static IProcess createGISLayers() {
+IProcess createGISLayers() {
     return create({
         title "Create GIS layer from an OSM XML file"
         inputs datasource: JdbcDataSource, osmFilePath: String, epsg: -1
