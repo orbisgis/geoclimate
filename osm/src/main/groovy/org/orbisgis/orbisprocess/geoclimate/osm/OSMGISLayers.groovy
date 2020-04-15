@@ -9,7 +9,7 @@ import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 
 
-@BaseScript OSM osm
+@BaseScript OSM_UTILS osm_utils
 
 /**
   * This process is used to create the GIS layers using the Overpass API

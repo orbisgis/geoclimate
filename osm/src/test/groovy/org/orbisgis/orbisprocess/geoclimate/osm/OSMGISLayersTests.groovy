@@ -4,9 +4,9 @@ package org.orbisgis.orbisprocess.geoclimate.osm
 import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisprocess.geoclimate.osm.OSM
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.orbisgis.orbisprocess.geoclimate.osm.OSM
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 
