@@ -22,7 +22,7 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
   * railTableName, vegetationTableName, hydroTableName, zoneTableName, zoneEnvelopeTableName.
   * Note that the GIS tables are projected in a local utm projection
  */
-IProcess extractAndCreateGISLayers(){
+static IProcess extractAndCreateGISLayers(){
     return create({
         title "Create GIS layer from the OSM data model"
         inputs datasource: JdbcDataSource, zoneToExtract: Object, distance:0
@@ -127,7 +127,7 @@ IProcess extractAndCreateGISLayers(){
  * @return The name of the resulting GIS tables : buildingTableName, roadTableName,
  * railTableName, vegetationTableName, hydroTableName, imperviousTableName
  */
-IProcess createGISLayers() {
+static IProcess createGISLayers() {
     return create({
         title "Create GIS layer from an OSM XML file"
         inputs datasource: JdbcDataSource, osmFilePath: String, epsg: -1

@@ -18,7 +18,7 @@ class OSMGISLayersTests {
     @Test //enable it to test data extraction from the overpass api
     void extractAndCreateGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
-        IProcess process = OSM.OSMGISLayers.extractAndCreateGISLayers()
+        IProcess process = OSM.extractAndCreateGISLayers()
         process.execute([
                 datasource : h2GIS,
                 zoneToExtract: "Cliscouet, Vannes"])
@@ -32,7 +32,7 @@ class OSMGISLayersTests {
     @Test
     void createGISLayersTest() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
-        IProcess process = OSM.OSMGISLayers.createGISLayers()
+        IProcess process = OSM.createGISLayers()
         def osmfile = new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath()
         process.execute([
                 datasource : h2GIS,

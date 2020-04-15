@@ -107,7 +107,7 @@ import java.sql.SQLException
  * Meteorological Society 93, no. 12 (2012): 1879-1900.
  *
  */
-def OSM() {
+static IProcess OSM() {
     create({
         title "Create all Geoindicators from OSM data"
         inputs configurationFile: ""
@@ -322,7 +322,7 @@ def OSM() {
  * @param outputTableNames the name of the tables in the output_datasource to save the results
  * @return
  */
-def osm_processing(){
+static IProcess osm_processing(){
     create({
         title "Build OSM data and compute the geoindicators"
         inputs h2gis_datasource: JdbcDataSource,  processing_parameters: Map, id_zones: Map,
@@ -536,7 +536,7 @@ def extractOSMZone(def datasource, def zoneToExtract, def processing_parameters)
  * This table can be empty if the user decides not to calculate it.
  *
  */
-def GeoIndicators() {
+static  IProcess GeoIndicators() {
     def final COLUMN_ID_RSU = "id_rsu"
     def final GEOMETRIC_COLUMN = "the_geom"
     return create({

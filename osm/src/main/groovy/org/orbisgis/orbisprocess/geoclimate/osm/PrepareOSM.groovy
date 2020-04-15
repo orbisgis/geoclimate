@@ -19,7 +19,7 @@ import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
  * @param distance The integer value to expand the envelope of zone
  * @return
  */
-IProcess buildGeoclimateLayers() {
+static IProcess buildGeoclimateLayers() {
     return create({
         title "Extract and transform OSM data to the Geoclimate model"
         inputs datasource: JdbcDataSource,

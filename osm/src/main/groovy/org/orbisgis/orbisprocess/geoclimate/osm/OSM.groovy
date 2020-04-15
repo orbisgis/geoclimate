@@ -11,10 +11,18 @@ import org.slf4j.LoggerFactory
 abstract class OSM extends GroovyProcessFactory {
 
     public static def logger = LoggerFactory.getLogger(OSM.class)
-    public static OSMGISLayers = new OSMGISLayers()
-    public static FormattingForAbstractModel = new FormattingForAbstractModel()
-    public static PrepareOSM  = new PrepareOSM()
-    public static Workflow  = new Workflow()
+    public static Workflow  = WorkflowOSM.OSM();
+
+    public static  formatBuildingLayer= FormattingForAbstractModel.formatBuildingLayer()
+    public static  formatVegetationLayer= FormattingForAbstractModel.formatVegetationLayer()
+    public static  formatRoadLayer= FormattingForAbstractModel.formatRoadLayer()
+    public static  formatRailsLayer= FormattingForAbstractModel.formatRailsLayer()
+    public static  formatHydroLayer= FormattingForAbstractModel.formatHydroLayer()
+    public static  formatImperviousLayer= FormattingForAbstractModel.formatImperviousLayer()
+
+    public static createGISLayers  = OSMGISLayers.createGISLayers()
+    public static extractAndCreateGISLayers  = OSMGISLayers.extractAndCreateGISLayers()
+    public static buildGeoclimateLayers  = PrepareOSM.buildGeoclimateLayers()
 
     static def uuid = { UUID.randomUUID().toString().replaceAll("-", "_") }
     static def getUuid() { UUID.randomUUID().toString().replaceAll("-", "_") }
