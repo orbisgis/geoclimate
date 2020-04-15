@@ -22,7 +22,7 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
  * @param jsonFilename name of the json formatted file containing the filtering parameters
  * @return outputTableName The name of the final buildings table
  */
-static IProcess formatBuildingLayer() {
+IProcess formatBuildingLayer() {
     return create({
         title "Transform OSM buildings table into a table that matches the constraints of the GeoClimate input model"
         inputs datasource : JdbcDataSource , inputTableName:String, inputZoneEnvelopeTableName:"", epsg: int, h_lev_min:3, h_lev_max: 15, hThresholdLev2:10, jsonFilename : ""
@@ -117,7 +117,7 @@ static IProcess formatBuildingLayer() {
  * @param jsonFilename name of the json formatted file containing the filtering parameters
  * @return outputTableName The name of the final roads table
  */
-static IProcess formatRoadLayer() {
+IProcess formatRoadLayer() {
     return create({
             title "Format the raw roads table into a table that matches the constraints of the GeoClimate Input Model"
             inputs datasource  : JdbcDataSource, inputTableName : String, inputZoneEnvelopeTableName : "", epsg: int, jsonFilename : ""
@@ -201,7 +201,7 @@ static IProcess formatRoadLayer() {
  * @param jsonFilename name of the json formatted file containing the filtering parameters
  * @return outputTableName The name of the final rails table
  */
-static IProcess formatRailsLayer() {
+IProcess formatRailsLayer() {
     return create({
         title "Format the raw rails table into a table that matches the constraints of the GeoClimate Input Model"
         inputs datasource : JdbcDataSource , inputTableName: String, inputZoneEnvelopeTableName:"", epsg: int, jsonFilename : ""
@@ -277,7 +277,7 @@ static IProcess formatRailsLayer() {
  * @param jsonFilename name of the json formatted file containing the filtering parameters
  * @return outputTableName The name of the final vegetation table
  */
-static IProcess formatVegetationLayer() {
+IProcess formatVegetationLayer() {
     return create({
         title "Format the raw vegetation table into a table that matches the constraints of the GeoClimate Input Model"
         inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName:"",epsg: int, jsonFilename: ""
@@ -337,7 +337,7 @@ static IProcess formatVegetationLayer() {
  * @param inputTableName The name of the raw hydro table in the DB
  * @return outputTableName The name of the final hydro table
  */
-static IProcess formatHydroLayer() {
+IProcess formatHydroLayer() {
     return create({
         title "Format the raw hydro table into a table that matches the constraints of the GeoClimate Input Model"
         inputs datasource    : JdbcDataSource, inputTableName: String,inputZoneEnvelopeTableName : "",epsg: int
@@ -386,7 +386,7 @@ static IProcess formatHydroLayer() {
  * @param inputTableName The name of the raw impervious table in the DB
  * @return outputTableName The name of the final impervious table
  */
-static IProcess formatImperviousLayer() {
+IProcess formatImperviousLayer() {
     return create({
         title "Format the raw impervious table into a table that matches the constraints of the GeoClimate Input Model"
         inputs datasource    : JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName:"", epsg: int,jsonFilename: ""

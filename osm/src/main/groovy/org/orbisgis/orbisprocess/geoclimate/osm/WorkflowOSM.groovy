@@ -107,7 +107,7 @@ import java.sql.SQLException
  * Meteorological Society 93, no. 12 (2012): 1879-1900.
  *
  */
-static IProcess OSM() {
+IProcess OSM() {
     create({
         title "Create all Geoindicators from OSM data"
         inputs configurationFile: ""
