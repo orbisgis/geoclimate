@@ -11,18 +11,16 @@ import org.slf4j.LoggerFactory
 abstract class OSM extends GroovyProcessFactory {
 
     public static def logger = LoggerFactory.getLogger(OSM.class)
-    public static Workflow  = WorkflowOSM.OSM();
-
-    public static  formatBuildingLayer= FormattingForAbstractModel.formatBuildingLayer()
-    public static  formatVegetationLayer= FormattingForAbstractModel.formatVegetationLayer()
-    public static  formatRoadLayer= FormattingForAbstractModel.formatRoadLayer()
-    public static  formatRailsLayer= FormattingForAbstractModel.formatRailsLayer()
-    public static  formatHydroLayer= FormattingForAbstractModel.formatHydroLayer()
-    public static  formatImperviousLayer= FormattingForAbstractModel.formatImperviousLayer()
-
+    public static def Workflow  = WorkflowOSM.OSM();
+    public static  def formatBuildingLayer= FormattingForAbstractModel.formatBuildingLayer()
+    public static  def formatVegetationLayer= FormattingForAbstractModel.formatVegetationLayer()
+    public static  def formatRoadLayer= FormattingForAbstractModel.formatRoadLayer()
+    public static  def formatRailsLayer= FormattingForAbstractModel.formatRailsLayer()
+    public static  def formatHydroLayer= FormattingForAbstractModel.formatHydroLayer()
+    public static  def formatImperviousLayer= FormattingForAbstractModel.formatImperviousLayer()
     public static def createGISLayers  = OSMGISLayers.createGISLayers()
-    public static extractAndCreateGISLayers  = OSMGISLayers.extractAndCreateGISLayers()
-    public static buildGeoclimateLayers  = PrepareOSM.buildGeoclimateLayers()
+    public static def extractAndCreateGISLayers  = OSMGISLayers.extractAndCreateGISLayers()
+    public static def buildGeoclimateLayers  = PrepareOSM.buildGeoclimateLayers()
 
     static def uuid = { UUID.randomUUID().toString().replaceAll("-", "_") }
     static def getUuid() { UUID.randomUUID().toString().replaceAll("-", "_") }
