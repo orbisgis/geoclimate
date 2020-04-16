@@ -254,6 +254,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         assertTrue(process.execute(configurationFile: configFile))
     }
 
+    @Disabled
     @Test
     void workflowFolderToDatabase() {
         String directory ="./target/bdtopo_workflow"
@@ -267,8 +268,8 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                         "delete" :true
                 ],
                 "input" : [
-                        "folder": ["path" :"/home/ebocher/Documents/NextCloud/Groupe_SIG_Vannes/Temp/vannes_small/bdtopofolder",
-                            "id_zones":["56243", "56003"]]],
+                        "folder": ["path" :".../bdtopofolder",
+                            "id_zones":["-", "-"]]],
                 "output" :[
                         "database" :
                                 ["user" : "sa",
