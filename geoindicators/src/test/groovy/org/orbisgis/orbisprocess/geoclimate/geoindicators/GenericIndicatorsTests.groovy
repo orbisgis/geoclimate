@@ -148,15 +148,15 @@ class GenericIndicatorsTests {
     @Test
     void buildingDirectionDistributionTest() {
         // Only the first 6 first created buildings are selected since any new created building may alter the results
-        h2GIS.execute "DROP TABLE IF EXISTS tempo_build, test_MAIN_BUILDING_DIRECTION; " +
+        h2GIS.execute "DROP TABLE IF EXISTS tempo_build, test_MAIN_BUILDING_DIRECTION, test_DISTRIBUTION_REPARTITION; " +
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 9"
 
         def  p =  Geoindicators.GenericIndicators.buildingDirectionDistribution()
         assertTrue p.execute([buildingTableName: "tempo_build", inputIdUp: "id_block", angleRangeSize: 15,
-                              prefixName: "test", datasource: h2GIS, distribIndicator: ["inequality", "uniqueness"]])
+                              prefixName: "test", datasource: h2GIS, distribIndicator: ["equality", "uniqueness"]])
 
         assertEquals(4.0/12, h2GIS.firstRow("SELECT * FROM test_MAIN_BUILDING_DIRECTION " +
-                "WHERE id_block = 4")["BUILDING_DIRECTION_INEQUALITY"], 0.0001)
+                "WHERE id_block = 4")["BUILDING_DIRECTION_EQUALITY"], 0.0001)
         assertEquals("ANG97_5", h2GIS.firstRow("SELECT * FROM test_MAIN_BUILDING_DIRECTION " +
                 "WHERE id_block = 4")["main_building_direction"])
         assertEquals((28.0-22.0)/(22+28.0), h2GIS.firstRow("SELECT * FROM test_MAIN_BUILDING_DIRECTION " +
@@ -178,16 +178,16 @@ class GenericIndicatorsTests {
         def  p1 =  Geoindicators.GenericIndicators.distributionCharacterization()
         assertTrue p1.execute([distribTableName:   "distrib_test",
                     inputId:            "id",
-                    distribIndicator:   ["inequality", "uniqueness"],
+                    distribIndicator:   ["equality", "uniqueness"],
                     extremum:           "GREATEST",
                     prefixName:         "test",
                     datasource:         h2GIS])
         def resultTab = p1.results.outputTableName
 
         assertEquals(1, h2GIS.firstRow("SELECT * FROM $resultTab " +
-                "WHERE id = 1")["INEQUALITY_VALUE"])
+                "WHERE id = 1")["EQUALITY_VALUE"])
         assertEquals(0.25, h2GIS.firstRow("SELECT * FROM $resultTab " +
-                "WHERE id = 4")["INEQUALITY_VALUE"])
+                "WHERE id = 4")["EQUALITY_VALUE"])
         assertEquals(0, h2GIS.firstRow("SELECT * FROM $resultTab " +
                 "WHERE id = 1")["UNIQUENESS_VALUE"])
         assertEquals(1, h2GIS.firstRow("SELECT * FROM $resultTab " +
@@ -243,15 +243,15 @@ class GenericIndicatorsTests {
         def  p1 =  Geoindicators.GenericIndicators.distributionCharacterization()
         assertTrue p1.execute([distribTableName:   "distrib_test",
                                inputId:            "id",
-                               distribIndicator:   ["inequality"],
+                               distribIndicator:   ["equality"],
                                extremum:           "LEAST",
                                prefixName:         "test",
                                datasource:         h2GIS])
 
         assertEquals(1, h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION " +
-                "WHERE id = 1")["INEQUALITY_VALUE"])
+                "WHERE id = 1")["EQUALITY_VALUE"])
         assertEquals(0.25, h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION " +
-                "WHERE id = 4")["INEQUALITY_VALUE"])
+                "WHERE id = 4")["EQUALITY_VALUE"])
         assertEquals("COL1", h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION " +
                 "WHERE id = 2")["EXTREMUM_COL"])
         assertEquals("COL1", h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION " +
