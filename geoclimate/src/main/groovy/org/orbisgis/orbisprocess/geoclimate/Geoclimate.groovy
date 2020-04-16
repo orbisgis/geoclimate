@@ -3,6 +3,8 @@ package org.orbisgis.orbisprocess.geoclimate
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.*
 import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
 import org.orbisgis.orbisprocess.geoclimate.processingchain.*
+import org.orbisgis.orbisprocess.geoclimate.osm.*
+import org.orbisgis.orbisprocess.geoclimate.bdtopo_v2.*
 
 /**
  * Root access point to the Geoindicators processes.
