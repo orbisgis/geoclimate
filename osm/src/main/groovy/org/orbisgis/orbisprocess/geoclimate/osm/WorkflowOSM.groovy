@@ -107,8 +107,8 @@ import java.sql.SQLException
  * Meteorological Society 93, no. 12 (2012): 1879-1900.
  *
  */
-IProcess OSM() {
-    create({
+IProcess workflow() {
+    return create({
         title "Create all Geoindicators from OSM data"
         inputs configurationFile: ""
         outputs outputMessage: String
@@ -322,8 +322,8 @@ IProcess OSM() {
  * @param outputTableNames the name of the tables in the output_datasource to save the results
  * @return
  */
-static IProcess osm_processing(){
-    create({
+ IProcess osm_processing(){
+    return create({
         title "Build OSM data and compute the geoindicators"
         inputs h2gis_datasource: JdbcDataSource,  processing_parameters: Map, id_zones: Map,
                 outputFolder:"", ouputTableFiles:"", output_datasource:"", outputTableNames:""
@@ -351,12 +351,12 @@ static IProcess osm_processing(){
                     def query = "[maxsize:1073741824]" + OSMTools.Utilities.buildOSMQuery(zoneTableNames.envelope, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
                     def extract = OSMTools.Loader.extract()
                     if (extract.execute(overpassQuery: query)) {
-                        IProcess createGISLayerProcess = PrepareData.OSMGISLayers.createGISLayers()
+                        IProcess createGISLayerProcess = OSM.createGISLayers
                         if (createGISLayerProcess.execute(datasource: h2gis_datasource, osmFilePath: extract.results.outputFilePath, epsg: srid)) {
                             def gisLayersResults = createGISLayerProcess.getResults()
                             if (zoneTableName != null) {
                                 info "Formating OSM GIS layers"
-                                IProcess format = PrepareData.FormattingForAbstractModel.formatBuildingLayer()
+                                IProcess format = OSM.formatBuildingLayer
                                 format.execute([
                                         datasource                : h2gis_datasource,
                                         inputTableName            : gisLayersResults.buildingTableName,
@@ -364,7 +364,7 @@ static IProcess osm_processing(){
                                         epsg                      : srid])
                                 def buildingTableName = format.results.outputTableName
 
-                                format = PrepareData.FormattingForAbstractModel.formatRoadLayer()
+                                format = OSM.formatRoadLayer
                                 format.execute([
                                         datasource                : h2gis_datasource,
                                         inputTableName            : gisLayersResults.roadTableName,
@@ -373,7 +373,7 @@ static IProcess osm_processing(){
                                 def roadTableName = format.results.outputTableName
 
 
-                                format = PrepareData.FormattingForAbstractModel.formatRailsLayer()
+                                format = OSM.formatRailsLayer
                                 format.execute([
                                         datasource                : h2gis_datasource,
                                         inputTableName            : gisLayersResults.railTableName,
@@ -381,7 +381,7 @@ static IProcess osm_processing(){
                                         epsg                      : srid])
                                 def railTableName = format.results.outputTableName
 
-                                format = PrepareData.FormattingForAbstractModel.formatVegetationLayer()
+                                format = OSM.formatVegetationLayer
                                 format.execute([
                                         datasource                : h2gis_datasource,
                                         inputTableName            : gisLayersResults.vegetationTableName,
@@ -389,7 +389,7 @@ static IProcess osm_processing(){
                                         epsg                      : srid])
                                 def vegetationTableName = format.results.outputTableName
 
-                                format = PrepareData.FormattingForAbstractModel.formatHydroLayer()
+                                format = OSM.formatHydroLayer
                                 format.execute([
                                         datasource                : h2gis_datasource,
                                         inputTableName            : gisLayersResults.hydroTableName,
@@ -398,7 +398,7 @@ static IProcess osm_processing(){
                                 def hydrographicTableName = format.results.outputTableName
 
                                 //TODO : to be used in the geoindicators chains
-                                format = PrepareData.FormattingForAbstractModel.formatImperviousLayer()
+                                format = OSM.formatImperviousLayer
                                 format.execute([
                                         datasource                : h2gis_datasource,
                                         inputTableName            : gisLayersResults.imperviousTableName,
@@ -536,7 +536,7 @@ def extractOSMZone(def datasource, def zoneToExtract, def processing_parameters)
  * This table can be empty if the user decides not to calculate it.
  *
  */
-static  IProcess GeoIndicators() {
+  IProcess GeoIndicators() {
     def final COLUMN_ID_RSU = "id_rsu"
     def final GEOMETRIC_COLUMN = "the_geom"
     return create({
