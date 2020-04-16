@@ -15,6 +15,7 @@ import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
+import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
 
 import java.sql.SQLException
 
