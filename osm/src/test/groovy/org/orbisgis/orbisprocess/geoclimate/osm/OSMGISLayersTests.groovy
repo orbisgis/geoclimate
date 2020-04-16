@@ -18,7 +18,7 @@ class OSMGISLayersTests {
     @Test //enable it to test data extraction from the overpass api
     void extractAndCreateGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
-        IProcess process = OSM.extractAndCreateGISLayers()
+        IProcess process = OSM.extractAndCreateGISLayers
         process.execute([
                 datasource : h2GIS,
                 zoneToExtract: "Cliscouet, Vannes"])

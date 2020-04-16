@@ -15,7 +15,7 @@ class FormattingForAbstractModelTests {
    void formattingGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
         def epsg =2154
-        IProcess extractData = OSM.createGISLayers()
+        IProcess extractData = OSM.createGISLayers
         extractData.execute([
                 datasource : h2GIS,
                 osmFilePath: new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath(),
@@ -30,7 +30,7 @@ class FormattingForAbstractModelTests {
 
 
         //Buildings
-        IProcess format = OSM.formatBuildingLayer()
+        IProcess format = OSM.formatBuildingLayer
         format.execute([
                 datasource : h2GIS,
                 inputTableName: extractData.results.buildingTableName,
@@ -46,7 +46,7 @@ class FormattingForAbstractModelTests {
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0").count==0
 
         //Roads
-        format = OSM.formatRoadLayer()
+        format = OSM.formatRoadLayer
         format.execute([
                 datasource : h2GIS,
                 inputTableName: extractData.results.roadTableName,
@@ -61,7 +61,7 @@ class FormattingForAbstractModelTests {
 
 
         //Rails
-        format = OSM.formatRailsLayer()
+        format = OSM.formatRailsLayer
         format.execute([
                 datasource : h2GIS,
                 inputTableName: extractData.results.railTableName,
@@ -74,7 +74,7 @@ class FormattingForAbstractModelTests {
 
 
         //Vegetation
-        format = OSM.formatVegetationLayer()
+        format = OSM.formatVegetationLayer
         format.execute([
                 datasource : h2GIS,
                 inputTableName: extractData.results.vegetationTableName,
@@ -88,7 +88,7 @@ class FormattingForAbstractModelTests {
 
 
         //Hydrography
-        format = OSM.formatHydroLayer()
+        format = OSM.formatHydroLayer
         format.execute([
                 datasource : h2GIS,
                 inputTableName: extractData.results.hydroTableName,
@@ -97,7 +97,7 @@ class FormattingForAbstractModelTests {
         assertEquals 10, h2GIS.getTable(format.results.outputTableName).rowCount
 
         //Impervious surfaces
-        format = OSM.formatImperviousLayer()
+        format = OSM.formatImperviousLayer
         format.execute([
                 datasource : h2GIS,
                 inputTableName: extractData.results.imperviousTableName,
@@ -235,7 +235,7 @@ class FormattingForAbstractModelTests {
     void createGISLayersCheckHeight(def zoneToExtract) {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
 
-        IProcess extractData = PrepareData.OSMGISLayers.extractAndCreateGISLayers()
+        IProcess extractData = OSM.extractAndCreateGISLayers
         extractData.execute([
                 datasource : h2GIS,
                 zoneToExtract:zoneToExtract ])

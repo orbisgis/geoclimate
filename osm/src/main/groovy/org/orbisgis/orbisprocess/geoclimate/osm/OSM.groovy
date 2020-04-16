@@ -7,14 +7,31 @@ package org.orbisgis.orbisprocess.geoclimate.osm
  */
 class OSM  {
 
-    public static def Workflow  = new WorkflowOSM().OSM();
-    public static def formatBuildingLayer= new FormattingForAbstractModel().formatBuildingLayer()
-    public static def formatVegetationLayer= new FormattingForAbstractModel().formatVegetationLayer()
-    public static def formatRoadLayer= new FormattingForAbstractModel().formatRoadLayer()
-    public static def formatRailsLayer= new FormattingForAbstractModel().formatRailsLayer()
-    public static def formatHydroLayer= new FormattingForAbstractModel().formatHydroLayer()
-    public static def formatImperviousLayer= new FormattingForAbstractModel().formatImperviousLayer()
-    public static def createGISLayers  = new OSMGISLayers().createGISLayers()
-    public static def extractAndCreateGISLayers  = new OSMGISLayers().extractAndCreateGISLayers()
-    public static def buildGeoclimateLayers  = new PrepareOSM().buildGeoclimateLayers()
+    public static def workflow
+    public  static def formatBuildingLayer;
+    public static def formatVegetationLayer
+    public static def formatRoadLayer
+    public static def formatRailsLayer
+    public static def formatHydroLayer
+    public static def formatImperviousLayer
+    public static def createGISLayers
+    public static def extractAndCreateGISLayers
+    public static def buildGeoclimateLayers
+    static {
+        def formattingForAbstractModel = new FormattingForAbstractModel()
+        def osmGISLayers = new OSMGISLayers()
+        def prepareOSM = new PrepareOSM()
+        def workflowOSM  = new WorkflowOSM()
+        formatBuildingLayer= formattingForAbstractModel.formatBuildingLayer()
+        formatVegetationLayer= formattingForAbstractModel.formatVegetationLayer()
+        formatRoadLayer= formattingForAbstractModel.formatRoadLayer()
+        formatRailsLayer= formattingForAbstractModel.formatRailsLayer()
+        formatHydroLayer= formattingForAbstractModel.formatHydroLayer()
+        formatImperviousLayer= formattingForAbstractModel.formatImperviousLayer()
+        createGISLayers  = osmGISLayers.createGISLayers()
+        extractAndCreateGISLayers  = osmGISLayers.extractAndCreateGISLayers()
+        buildGeoclimateLayers  = prepareOSM.buildGeoclimateLayers()
+        workflow  = workflowOSM.OSM();
+    }
+
 }

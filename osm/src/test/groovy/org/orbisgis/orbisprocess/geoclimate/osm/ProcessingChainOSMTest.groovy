@@ -22,7 +22,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         dirFile.mkdir()
         def h2GIS = H2GIS.open(dirFile.absolutePath+File.separator+'osm_chain_db;AUTO_SERVER=TRUE')
         def zoneToExtract = "Pont de veyle"
-        IProcess process = OSM.buildGeoclimateLayers()
+        IProcess process = OSM.buildGeoclimateLayers
 
         process.execute([datasource: h2GIS, zoneToExtract :zoneToExtract, distance: 0])
 
@@ -112,7 +112,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         //Extract and transform OSM data
         def zoneToExtract = "Rezé"
 
-        IProcess prepareOSMData = OSM.buildGeoclimateLayers()
+        IProcess prepareOSMData = OSM.buildGeoclimateLayers
 
         prepareOSMData.execute([datasource: datasource, zoneToExtract :zoneToExtract, distance: 0])
 
@@ -237,7 +237,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                          "hThresholdLev2": 10
                         ]
         ]
-        IProcess process = OSM.Workflow()
+        IProcess process = OSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
@@ -259,7 +259,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 "output" :[
                         "folder" : "$directory"]
         ]
-        IProcess process = OSM.Workflow()
+        IProcess process = OSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
@@ -281,7 +281,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 "output" :[
                         "folder" : "$directory"]
         ]
-        IProcess process = OSM.Workflow()
+        IProcess process = OSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
@@ -303,7 +303,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 "output" :[
                         "folder" : "$directory"]
         ]
-        IProcess process = OSM.Workflow()
+        IProcess process = OSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
@@ -324,7 +324,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 "output" :[
                         "folder" : "$directory"]
         ]
-        IProcess process = OSM.Workflow()
+        IProcess process = OSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
@@ -363,7 +363,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 "hThresholdLev2": 10
             ]
         ]
-        IProcess process = OSM.Workflow()
+        IProcess process = OSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
@@ -402,7 +402,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                          "hThresholdLev2": 10
                         ]
         ]
-        IProcess process = OSM.Workflow()
+        IProcess process = OSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
@@ -441,7 +441,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                          "hThresholdLev2": 10
                         ]
         ]
-        IProcess process = OSM.Workflow()
+        IProcess process = OSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
@@ -467,7 +467,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
     void testOSMConfigurationFile() {
         def configFile = getClass().getResource("config/osm_workflow_placename_folderoutput.json").toURI()
         configFile =getClass().getResource("config/osm_workflow_envelope_folderoutput.json").toURI()
-        IProcess process = OSM.Workflow()
+        IProcess process = OSM.workflow
         assertTrue(process.execute(configurationFile: configFile))
     }
 
@@ -483,7 +483,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         //Extract and transform OSM data
         def zoneToExtract = "Rennes"
 
-        IProcess prepareOSMData = OSM.buildGeoclimateLayers()
+        IProcess prepareOSMData = OSM.buildGeoclimateLayers
 
         prepareOSMData.execute([datasource: datasource, zoneToExtract: zoneToExtract, distance: 0])
 
