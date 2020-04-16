@@ -64,7 +64,7 @@ class BDTopoGISLayersTest {
     @Test
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessTest() {
-        def process = BDTopo_v2.BDTopoGISLayers.importPreprocess()
+        def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -272,7 +272,7 @@ class BDTopoGISLayersTest {
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessBuildIndifTest() {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS BATI_INDIFFERENCIE;")
-        def process = BDTopo_v2.BDTopoGISLayers.importPreprocess()
+        def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -325,7 +325,7 @@ class BDTopoGISLayersTest {
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessBuildIndusTest() {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS BATI_INDUSTRIEL;")
-        def process = BDTopo_v2.BDTopoGISLayers.importPreprocess()
+        def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -379,7 +379,7 @@ class BDTopoGISLayersTest {
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessBuildRemarqTest() {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS BATI_REMARQUABLE;")
-        def process = BDTopo_v2.BDTopoGISLayers.importPreprocess()
+        def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -433,7 +433,7 @@ class BDTopoGISLayersTest {
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessRoadTest() {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS ROUTE;")
-        def process = BDTopo_v2.BDTopoGISLayers.importPreprocess()
+        def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -489,7 +489,7 @@ class BDTopoGISLayersTest {
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessRailTest() {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS TRONCON_VOIE_FERREE;")
-        def process = BDTopo_v2.BDTopoGISLayers.importPreprocess()
+        def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -541,7 +541,7 @@ class BDTopoGISLayersTest {
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessHydroTest() {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS SURFACE_EAU;")
-        def process = BDTopo_v2.BDTopoGISLayers.importPreprocess()
+        def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -587,7 +587,7 @@ class BDTopoGISLayersTest {
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessVegetTest() {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS ZONE_VEGETATION;")
-        def process = BDTopo_v2.BDTopoGISLayers.importPreprocess()
+        def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -635,7 +635,7 @@ class BDTopoGISLayersTest {
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessImperviousSurfActTest() {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS SURFACE_ACTIVITE;")
-        def process = BDTopo_v2.BDTopoGISLayers.importPreprocess()
+        def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -689,7 +689,7 @@ class BDTopoGISLayersTest {
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessImperviousSportTest() {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS TERRAIN_SPORT;")
-        def process = BDTopo_v2.BDTopoGISLayers.importPreprocess()
+        def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -743,7 +743,7 @@ class BDTopoGISLayersTest {
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessImperviousConstrSurfTest() {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS CONSTRUCTION_SURFACIQUE;")
-        def process = BDTopo_v2.BDTopoGISLayers.importPreprocess()
+        def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -797,7 +797,7 @@ class BDTopoGISLayersTest {
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessImperviousSurfRoadTest() {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS SURFACE_ROUTE;")
-        def process = BDTopo_v2.BDTopoGISLayers.importPreprocess()
+        def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -850,7 +850,7 @@ class BDTopoGISLayersTest {
     @Test
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void checkMakeValidBuildingIndif() {
-        def process = BDTopo_v2.BDTopoGISLayers.importPreprocess()
+        def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -876,7 +876,7 @@ class BDTopoGISLayersTest {
     @Test
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void initTypes() {
-        def process = BDTopo_v2.BDTopoGISLayers.initTypes()
+        def process = BDTopo_V2.initTypes
         assertTrue process.execute([datasource       : h2GISDatabase, buildingAbstractUseType: 'BUILDING_ABSTRACT_USE_TYPE',
                                     roadAbstractType: 'ROAD_ABSTRACT_TYPE', roadAbstractCrossing: 'ROAD_ABSTRACT_CROSSING',
                                     railAbstractType: 'RAIL_ABSTRACT_TYPE', railAbstractCrossing: 'RAIL_ABSTRACT_CROSSING',

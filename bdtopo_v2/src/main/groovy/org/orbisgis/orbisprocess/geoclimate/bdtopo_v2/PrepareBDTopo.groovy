@@ -3,12 +3,9 @@ package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.process.ProcessMapper
-import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
-import org.orbisgis.orbisprocess.geoclimate.preparedata.bdtopo.BDTopoGISLayers
-import org.orbisgis.orbisprocess.geoclimate.preparedata.common.AbstractTablesInitialization
-import org.orbisgis.orbisprocess.geoclimate.preparedata.common.InputDataFormatting
 
-@BaseScript BDTopo_v2 bdTopo_v2
+@BaseScript BDTopo_V2_Utils bdtopo_v2_utils
+
 
 /** The processing chain creates the Table from the Abstract model and feed them with the BDTopo data according to some
  * defined rules (i.e. certain types of buildings or vegetation are transformed into a generic type in the abstract
@@ -46,7 +43,7 @@ import org.orbisgis.orbisprocess.geoclimate.preparedata.common.InputDataFormatti
  * @return outputStats List that stores the name of the statistic tables for each layer at different scales
  *
  */
-def prepareBDTopo() {
+def prepareData() {
     return create({
         title "Extract and transform BD Topo data to Geoclimate model"
         inputs datasource : JdbcDataSource,
@@ -79,7 +76,7 @@ def prepareBDTopo() {
             }
 
             //Init model
-            def initParametersAbstract = PrepareData.AbstractTablesInitialization.initParametersAbstract()
+            def initParametersAbstract = BDTopo_V2.initParametersAbstract
             if (!initParametersAbstract(datasource: datasource)) {
                 info "Cannot initialize the geoclimate data model."
                 return
@@ -87,7 +84,7 @@ def prepareBDTopo() {
             def abstractTables = initParametersAbstract.getResults()
 
             //Init BD Topo parameters
-            def initTypes = PrepareData.BDTopoGISLayers.initTypes()
+            def initTypes = BDTopo_V2.initTypes
             if (!initTypes([datasource: datasource,
                             buildingAbstractUseType: abstractTables.outputBuildingAbstractUseType,
                             roadAbstractType: abstractTables.outputRoadAbstractType, roadAbstractCrossing: abstractTables.outputRoadAbstractCrossing,
@@ -99,7 +96,7 @@ def prepareBDTopo() {
             def initTables = initTypes.getResults()
 
             //Import preprocess
-            def importPreprocess = PrepareData.BDTopoGISLayers.importPreprocess()
+            def importPreprocess = BDTopo_V2.importPreprocess
             if (!importPreprocess([datasource: datasource,
                                    tableIrisName: tableIrisName,
                                    tableBuildIndifName: tableBuildIndifName,
@@ -132,7 +129,7 @@ def prepareBDTopo() {
             def preprocessTables = importPreprocess.getResults()
 
             // Input data formatting and statistics
-            def inputDataFormatting = PrepareData.InputDataFormatting.inputDataFormatting()
+            def inputDataFormatting = BDTopo_V2.formatInputData
             if (!inputDataFormatting([datasource: datasource,
                                       inputBuilding: preprocessTables.outputBuildingName,
                                       inputRoad: preprocessTables.outputRoadName,

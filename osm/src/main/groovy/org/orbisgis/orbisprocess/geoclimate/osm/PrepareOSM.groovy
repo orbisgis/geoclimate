@@ -5,7 +5,7 @@ import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
 
-@BaseScript OSM_UTILS osm_utils
+@BaseScript OSM_Utils osm_utils
 
 
 /**

@@ -19,7 +19,7 @@ import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
 
 import java.sql.SQLException
 
-@BaseScript OSM_UTILS osm_utils
+@BaseScript OSM_Utils osm_utils
 
 /**
  * Extract OSM data and compute geoindicators. The parameters of the processing chain is defined

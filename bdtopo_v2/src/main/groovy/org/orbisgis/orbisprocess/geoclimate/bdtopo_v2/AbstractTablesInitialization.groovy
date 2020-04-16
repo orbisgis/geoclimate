@@ -5,7 +5,7 @@ import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 
-@BaseScript BDTopo_v2 bdTopo_v2
+@BaseScript BDTopo_V2_Utils bdtopo_v2_utils
 
 /**
  * This process initialize the abstract tables in which the objects type and parameters (for buildings, roads, rails

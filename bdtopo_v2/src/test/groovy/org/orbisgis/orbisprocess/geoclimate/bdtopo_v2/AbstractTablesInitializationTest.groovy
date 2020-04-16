@@ -3,7 +3,6 @@ package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
-import org.orbisgis.orbisprocess.geoclimate.preparedata.BDTopo_v2
 
 import static org.junit.jupiter.api.Assertions.*
 
@@ -13,7 +12,7 @@ class AbstractTablesInitializationTest {
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void initParametersAbstract(){
         H2GIS h2GISDatabase = H2GIS.open("./target/h2gis_abstract_tables_${UUID.randomUUID()};AUTO_SERVER=TRUE", "sa", "")
-        def process = BDTopo_v2.AbstractTablesInitialization.initParametersAbstract()
+        def process = BDTopo_V2.initParametersAbstract
         assertTrue process.execute([datasource: h2GISDatabase])
         process.getResults().each {entry ->
             assertNotNull h2GISDatabase.getTable(entry.getValue())

@@ -4,7 +4,8 @@ import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 
-@BaseScript BDTopo_v2 bdTopo_v2
+@BaseScript BDTopo_V2_Utils bdtopo_v2_utils
+
 
 /**
  * This process allows to control the quality of input tables and then to format and enrich them
@@ -50,7 +51,7 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
  * @return outputZone Table name in which the (ready to be used in the GeoIndicators part) zone is stored
  */
 
-IProcess inputDataFormatting(){
+IProcess formatData(){
     return create({
         title 'Allows to control, format and enrich the input data in order to feed the GeoClimate model'
         inputs datasource: JdbcDataSource, inputBuilding: String, inputRoad: String, inputRail: String,

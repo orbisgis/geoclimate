@@ -1,5 +1,6 @@
 package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 
+import groovy.json.JsonOutput
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
@@ -80,7 +81,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         def dbSuffixName = "_prepare"
         def inseeCode = "01306"
         H2GIS h2GISDatabase = loadFiles(inseeCode, dbSuffixName)
-        def process = ProcessingChain.PrepareBDTopo.prepareBDTopo()
+        def process = BDTopo_V2.prepareData
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -184,7 +185,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         def dbSuffixName = "_geoIndicators"
         String inseeCode = "01306"
         H2GIS h2GISDatabase = loadFiles(inseeCode, dbSuffixName)
-        def process = ProcessingChain.PrepareBDTopo.prepareBDTopo()
+        def process = BDTopo_V2.prepareData
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -222,7 +223,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        IProcess processBDTopo = ProcessingChain.Workflow.BDTOPO_V2()
+        IProcess processBDTopo = BDTopo_V2.workflow
         assertTrue(processBDTopo.execute(configurationFile: getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()))mm
         assertNotNull(processBDTopo.getResults().outputFolder)
         def baseNamePathAndFileOut = processBDTopo.getResults().outputFolder + File.separator + "zone_" + inseeCode + "_"
@@ -239,7 +240,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()
         //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_dboutput.json").toURI()
         //configFile =getClass().getResource("config/bdtopo_workflow_dbinput_dboutput.json").toURI()
-        IProcess process = ProcessingChain.Workflow.BDTOPO_V2()
+        IProcess process = BDTopo_V2.workflow
         assertTrue(process.execute(configurationFile: configFile))
     }
 
@@ -249,7 +250,70 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         def configFile = getClass().getResource("bdtopofolder/lczTests/lczDebug.json").toURI()
 
         // Execute several cities where we have tests
-        IProcess process = ProcessingChain.Workflow.BDTOPO_V2()
+        IProcess process = BDTopo_V2.workflow
         assertTrue(process.execute(configurationFile: configFile))
+    }
+
+    @Test
+    void workflowFolderToDatabase() {
+        String directory ="./target/bdtopo_workflow"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def bdTopoParameters = [
+                "description" :"Example of configuration file to run the BDTopo workflow and store the results in a folder",
+                "geoclimatedb" : [
+                        "path" : "${dirFile.absolutePath+File.separator+"bdtopo_workflow_db;AUTO_SERVER=TRUE"}",
+                        "delete" :true
+                ],
+                "input" : [
+                        "folder": ["path" :"/home/ebocher/Documents/NextCloud/Groupe_SIG_Vannes/Temp/vannes_small/bdtopofolder",
+                            "id_zones":["56243", "56003"]]],
+                "output" :[
+                        "database" :
+                                ["user" : "sa",
+                                 "password":"sa",
+                                 "url": "jdbc:h2://${dirFile.absolutePath+File.separator+"geoclimate_chain_db_output;AUTO_SERVER=TRUE"}",
+                                 "tables": ["building_indicators":"building_indicators",
+                                            "block_indicators":"block_indicators",
+                                            "rsu_indicators":"rsu_indicators",
+                                            "rsu_lcz":"rsu_lcz",
+                                            "zones":"zones" ]]],
+                "parameters":
+                        ["distance" : 0,
+                         "indicatorUse": ["LCZ", "TEB", "URBAN_TYPOLOGY"],
+                         "svfSimplified": true,
+                         "prefixName": "",
+                         "mapOfWeights":
+                                 ["sky_view_factor": 1,
+                                  "aspect_ratio": 1,
+                                  "building_surface_fraction": 1,
+                                  "impervious_surface_fraction" : 1,
+                                  "pervious_surface_fraction": 1,
+                                  "height_of_roughness_elements": 1,
+                                  "terrain_roughness_class": 1  ],
+                         "hLevMin": 3,
+                         "hLevMax": 15,
+                         "hThresholdLev2": 10
+                        ]
+        ]
+        IProcess process = BDTopo_V2.workflow
+        assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
+    }
+    /**
+     * Create a configuration file
+     * @param bdTopoParameters
+     * @param directory
+     * @return
+     */
+    def createConfigFile(def bdTopoParameters, def directory){
+        def json = JsonOutput.toJson(bdTopoParameters)
+        def configFilePath =  directory+File.separator+"bdTopoConfigFile.json"
+        File configFile = new File(configFilePath)
+        if(configFile.exists()){
+            configFile.delete()
+        }
+        configFile.write(json)
+        return configFile.absolutePath
     }
 }

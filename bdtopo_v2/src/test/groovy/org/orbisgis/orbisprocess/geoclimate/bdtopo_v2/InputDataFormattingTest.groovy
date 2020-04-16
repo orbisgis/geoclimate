@@ -64,7 +64,7 @@ class InputDataFormattingTest {
     @Test
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void inputDataFormatting(){
-        def processImport = BDTopo_v2.BDTopoGISLayers.importPreprocess()
+        def processImport = BDTopo_V2.importPreprocess
         assertTrue processImport.execute([datasource: h2GISDatabase,
                                           tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                           tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -82,7 +82,7 @@ class InputDataFormattingTest {
         ])
         def resultsImport=processImport.getResults()
 
-        def processFormatting = BDTopo_v2.InputDataFormatting.inputDataFormatting()
+        def processFormatting = BDTopo_V2.InputDataFormatting.inputDataFormatting()
         assertTrue processFormatting.execute([datasource: h2GISDatabase,
                          inputBuilding: resultsImport.outputBuildingName, inputRoad: resultsImport.outputRoadName,
                          inputRail: resultsImport.outputRailName, inputHydro: resultsImport.outputHydroName,

@@ -1,22 +1,16 @@
 package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 
+
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import org.slf4j.LoggerFactory
 
 /**
- * Class to manage and access to the BDTOPO processes
+ * BDTOPO V2 utils
  *
  */
-abstract class BDTopo_v2 extends GroovyProcessFactory {
+abstract class BDTopo_V2_Utils extends GroovyProcessFactory {
 
-    public static def logger = LoggerFactory.getLogger(BDTopo_v2.class)
-
-
-    public static AbstractTablesInitialization = new AbstractTablesInitialization()
-    public static BDTopoGISLayers = new BDTopoGISLayers()
-    public static InputDataFormatting = new InputDataFormatting()
-    public static PrepareBDTopo = new PrepareBDTopo()
-    public static Workflow  = new Workflow()
+    public static def logger = LoggerFactory.getLogger(BDTopo_V2_Utils.class)
 
     static def uuid = { UUID.randomUUID().toString().replaceAll("-", "_") }
     static def getUuid() { UUID.randomUUID().toString().replaceAll("-", "_") }

@@ -8,7 +8,7 @@ import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 
-@BaseScript OSM_UTILS osm_utils
+@BaseScript OSM_Utils osm_utils
 
 /**
  * This process is used to format the OSM buildings table into a table that matches the constraints

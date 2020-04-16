@@ -8,10 +8,8 @@ import org.locationtech.jts.geom.Polygon
 import org.orbisgis.orbisanalysis.osm.OSMTools
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 
-
-@BaseScript OSM_UTILS osm_utils
+@BaseScript OSM_Utils osm_utils
 
 /**
   * This process is used to create the GIS layers using the Overpass API

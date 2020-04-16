@@ -6,10 +6,12 @@ import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 import java.sql.SQLException
 
-@BaseScript BDTopo_v2 bdTopo_v2
+@BaseScript BDTopo_V2_Utils bdtopo_v2_utils
+
 
 /**
  * Load the BDTopo layers from a configuration file and compute the geoclimate indicators.
@@ -117,8 +119,8 @@ import java.sql.SQLException
  * Meteorological Society 93, no. 12 (2012): 1879-1900.
  *
  */
-def BDTOPO_V2() {
-    create({
+def Workflow() {
+    return create({
         title "Create all geoindicators from BDTopo data"
         inputs configurationFile: String
         outputs outputMessage: String
@@ -878,7 +880,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
     int nbAreas = id_zones.size();
 
     //Let's run the BDTopo process for each insee code
-    def prepareBDTopoData = ProcessingChain.PrepareBDTopo.prepareBDTopo()
+    def prepareBDTopoData = BDTopo_V2.prepareData
     def geoIndicatorsComputed = false
     info "$nbAreas communes will be processed"
     id_zones.eachWithIndex { id_zone, index->

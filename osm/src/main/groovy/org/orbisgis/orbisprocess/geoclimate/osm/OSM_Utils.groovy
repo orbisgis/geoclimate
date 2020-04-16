@@ -8,9 +8,9 @@ import org.slf4j.LoggerFactory
  * OSM utils
  *
  */
-abstract class OSM_UTILS extends GroovyProcessFactory {
+abstract class OSM_Utils extends GroovyProcessFactory {
 
-    public static def logger = LoggerFactory.getLogger(OSM.class)
+    public static def logger = LoggerFactory.getLogger(OSM_Utils.class)
 
     static def uuid = { UUID.randomUUID().toString().replaceAll("-", "_") }
     static def getUuid() { UUID.randomUUID().toString().replaceAll("-", "_") }
