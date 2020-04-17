@@ -54,9 +54,10 @@ def GeoIndicators() {
                 error "Cannot create the spatial units"
                 return null
             }
-            String relationBuildings = spatialUnits.getResults().outputTableBuildingName
-            String relationBlocks = spatialUnits.getResults().outputTableBlockName
-            String relationRSU = spatialUnits.getResults().outputTableRsuName
+            def relationBuildings = spatialUnits.getResults().outputTableBuildingName
+            def relationBlocks = spatialUnits.getResults().outputTableBlockName
+            def relationRSU = spatialUnits.getResults().outputTableRsuName
+
 
             //Compute building indicators
             def computeBuildingsIndicators = ProcessingChain.BuildGeoIndicators.computeBuildingsIndicators()
