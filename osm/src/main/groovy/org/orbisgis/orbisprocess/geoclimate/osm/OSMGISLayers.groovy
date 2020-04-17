@@ -8,6 +8,8 @@ import org.locationtech.jts.geom.Polygon
 import org.orbisgis.orbisanalysis.osm.OSMTools
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.h2gis.utilities.jts_utils.GeographyUtils
+
 
 @BaseScript OSM_Utils osm_utils
 
