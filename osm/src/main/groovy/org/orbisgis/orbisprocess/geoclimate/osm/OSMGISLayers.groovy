@@ -9,6 +9,8 @@ import org.orbisgis.orbisanalysis.osm.OSMTools
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.h2gis.utilities.jts_utils.GeographyUtils
+import org.h2gis.functions.spatial.crs.ST_Transform
+import org.h2gis.utilities.SFSUtilities
 
 
 @BaseScript OSM_Utils osm_utils

@@ -122,7 +122,7 @@ class FormattingForAbstractModelTests {
         //zoneToExtract="Cliscouet, Vannes"
         zoneToExtract="rezé"
 
-        IProcess extractData = OSM.extractAndCreateGISLayers()
+        IProcess extractData = OSM.extractAndCreateGISLayers
         extractData.execute([
                 datasource : h2GIS,
                 zoneToExtract:zoneToExtract ])
@@ -140,7 +140,7 @@ class FormattingForAbstractModelTests {
 
 
             //Buildings
-            IProcess format = OSM.formatBuildingLayer()
+            IProcess format = OSM.formatBuildingLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.buildingTableName,
@@ -156,7 +156,7 @@ class FormattingForAbstractModelTests {
 
 
             //Roads
-            format = OSM.formatRoadLayer()
+            format = OSM.formatRoadLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.roadTableName,
@@ -166,7 +166,7 @@ class FormattingForAbstractModelTests {
             assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where width is null or width <= 0").count==0
 
             //Rails
-            format = OSM.formatRailsLayer()
+            format = OSM.formatRailsLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.railTableName,
@@ -176,7 +176,7 @@ class FormattingForAbstractModelTests {
 
 
             //Vegetation
-            format = OSM.formatVegetationLayer()
+            format = OSM.formatVegetationLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.vegetationTableName,
@@ -186,7 +186,7 @@ class FormattingForAbstractModelTests {
 
 
             //Hydrography
-            format = OSM.formatHydroLayer()
+            format = OSM.formatHydroLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.hydroTableName,
@@ -195,7 +195,7 @@ class FormattingForAbstractModelTests {
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_hydro_${formatedPlaceName}.geojson")
 
             //Impervious
-            format = OSM.formatImperviousLayer()
+            format = OSM.formatImperviousLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.imperviousTableName,
@@ -245,7 +245,7 @@ class FormattingForAbstractModelTests {
 
 
             //Buildings
-            IProcess format = OSM.formatBuildingLayer()
+            IProcess format = OSM.formatBuildingLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.buildingTableName,
