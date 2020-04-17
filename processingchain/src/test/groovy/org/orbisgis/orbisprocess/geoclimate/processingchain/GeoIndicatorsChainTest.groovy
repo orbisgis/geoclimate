@@ -105,9 +105,7 @@ class GeoIndicatorsChainTest extends ChainProcessAbstractTest{
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                             "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
-
         def ind_i = ["LCZ"]
-
         IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,

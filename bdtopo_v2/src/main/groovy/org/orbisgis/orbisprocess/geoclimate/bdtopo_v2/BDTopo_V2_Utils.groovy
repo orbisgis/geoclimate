@@ -1,26 +1,29 @@
-package org.orbisgis.orbisprocess.geoclimate.processingchain
+package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
+
 
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
-import org.orbisgis.orbisprocess.geoclimate.geoindicators.DataUtils
 import org.slf4j.LoggerFactory
 
 /**
- * This class contains all references to the group of chains used by GeoClimate
+ * BDTOPO V2 utils
+ *
  */
-abstract class ProcessingChain extends GroovyProcessFactory {
-    public static def logger = LoggerFactory.getLogger(ProcessingChain.class)
+abstract class BDTopo_V2_Utils extends GroovyProcessFactory {
 
-    public static BuildGeoIndicators  = new BuildGeoIndicators()
-    public static BuildSpatialUnits  = new BuildSpatialUnits()
-    public static DataUtils  = new DataUtils()
-    public static Workflow  = new Workflow()
+    public static def logger = LoggerFactory.getLogger(BDTopo_V2_Utils.class)
 
-    //Utility methods
     static def uuid = { UUID.randomUUID().toString().replaceAll("-", "_") }
     static def getUuid() { UUID.randomUUID().toString().replaceAll("-", "_") }
     static def info = { obj -> logger.info(obj.toString()) }
     static def warn = { obj -> logger.warn(obj.toString()) }
     static def error = { obj -> logger.error(obj.toString()) }
+
+    /**
+     * Utility method to generate a name
+     * @param prefixName
+     * @param baseName
+     * @return
+     */
     static def getOutputTableName(prefixName, baseName){
         if (!prefixName){
             return baseName
@@ -29,4 +32,5 @@ abstract class ProcessingChain extends GroovyProcessFactory {
             return prefixName + "_" + baseName
         }
     }
+
 }

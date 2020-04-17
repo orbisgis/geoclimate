@@ -3,11 +3,14 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <groupId>org.orbisgis.orbisprocess</groupId>
         <artifactId>geoclimate-parent</artifactId>
+        <groupId>org.orbisgis.orbisprocess</groupId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
+    <artifactId>osm</artifactId>
+    <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
+    <version>1.0.0-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -16,15 +19,26 @@
         <site.basedir>${project.parent.basedir}</site.basedir>
     </properties>
 
-    <artifactId>geoclimate</artifactId>
     <dependencies>
+        <dependency>
+            <groupId>org.orbisgis.orbisanalysis</groupId>
+            <artifactId>osm</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.codehaus.groovy</groupId>
             <artifactId>groovy</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
-            <artifactId>preparedata</artifactId>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy-json</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.orbisgis.orbisdata.datamanager</groupId>
+            <artifactId>jdbc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.orbisgis.orbisdata.processmanager</groupId>
+            <artifactId>process</artifactId>
         </dependency>
         <dependency>
             <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
@@ -35,14 +49,21 @@
             <artifactId>processingchain</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
-            <artifactId>bdtopo_v2</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
-            <artifactId>osm</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
         </dependency>
     </dependencies>
 
@@ -90,4 +111,6 @@
             <url>file:/var/www/html/${project.parent.artifactId}/${project.artifactId}</url>
         </site>
     </distributionManagement>
+
+
 </project>
