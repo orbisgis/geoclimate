@@ -195,6 +195,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
 
     }
 
+    @Disabled
     @Test
     void osmWorkflowToDatabase() {
         String directory ="./target/geoclimate_chain"
