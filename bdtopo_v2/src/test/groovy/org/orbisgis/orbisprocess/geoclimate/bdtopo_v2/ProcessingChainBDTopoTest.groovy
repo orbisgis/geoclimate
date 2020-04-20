@@ -17,7 +17,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 
     public static Logger logger = LoggerFactory.getLogger(ProcessingChainBDTopoTest.class)
     public static def h2db = "./target/myh2gisbdtopodb"
-    public static def bdtopoFoldName = "bdtopofolder"
+    public static def bdtopoFoldName = "processingChain"
     public static def listTables = ["IRIS_GE", "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL", "BATI_REMARQUABLE",
     "ROUTE", "SURFACE_EAU", "ZONE_VEGETATION", "TRONCON_VOIE_FERREE", "TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE",
     "SURFACE_ROUTE", "SURFACE_ACTIVITE"]
@@ -247,7 +247,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     @Test //Integration tests
     @Disabled
     void lczProduceTestData() {
-        def configFile = getClass().getResource("bdtopofolder/lczTests/lczDebug.json").toURI()
+        def configFile = getClass().getResource("processingChain/lczTests/lczDebug.json").toURI()
 
         // Execute several cities where we have testsIProcess process = ProcessingChain.Workflow.BDTOPO_V2()
         IProcess process = BDTopo_V2.workflow
@@ -268,7 +268,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                         "delete" :true
                 ],
                 "input" : [
-                        "folder": ["path" :".../bdtopofolder",
+                        "folder": ["path" :".../processingChain",
                             "id_zones":["-", "-"]]],
                 "output" :[
                         "database" :

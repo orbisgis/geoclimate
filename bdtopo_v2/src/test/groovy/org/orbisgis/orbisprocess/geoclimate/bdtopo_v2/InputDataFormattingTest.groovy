@@ -13,8 +13,8 @@ class InputDataFormattingTest {
 
     @BeforeAll
     static void beforeAll(){
-        if(InputDataFormattingTest.class.getResource("bdtopofolder") != null &&
-                new File(InputDataFormattingTest.class.getResource("bdtopofolder").toURI()).exists()) {
+        if(InputDataFormattingTest.class.getResource("processingChain") != null &&
+                new File(InputDataFormattingTest.class.getResource("processingChain").toURI()).exists()) {
             System.properties.setProperty("data.bd.topo", "true")
         }
         else {
@@ -26,18 +26,18 @@ class InputDataFormattingTest {
     void beforeEach(){
         if(System.properties.containsKey("data.bd.topo") && System.properties.getProperty("data.bd.topo") == "true") {
             h2GISDatabase = H2GIS.open("./target/h2gis_input_data_formating_${UUID.randomUUID()};AUTO_SERVER=TRUE", "sa", "")
-            h2GISDatabase.load(InputDataFormattingTest.class.getResource("bdtopofolder/IRIS_GE.shp"), "IRIS_GE", true)
-            h2GISDatabase.load(InputDataFormattingTest.class.getResource("bdtopofolder/BATI_INDIFFERENCIE.shp"), "BATI_INDIFFERENCIE", true)
-            h2GISDatabase.load(InputDataFormattingTest.class.getResource("bdtopofolder/BATI_INDUSTRIEL.shp"), "BATI_INDUSTRIEL", true)
-            h2GISDatabase.load(InputDataFormattingTest.class.getResource("bdtopofolder/BATI_REMARQUABLE.shp"), "BATI_REMARQUABLE", true)
-            h2GISDatabase.load(InputDataFormattingTest.class.getResource("bdtopofolder/ROUTE.shp"), "ROUTE", true)
-            h2GISDatabase.load(InputDataFormattingTest.class.getResource("bdtopofolder/SURFACE_EAU.shp"), "SURFACE_EAU", true)
-            h2GISDatabase.load(InputDataFormattingTest.class.getResource("bdtopofolder/ZONE_VEGETATION.shp"), "ZONE_VEGETATION", true)
-            h2GISDatabase.load(InputDataFormattingTest.class.getResource("bdtopofolder/TRONCON_VOIE_FERREE.shp"), "TRONCON_VOIE_FERREE", true)
-            h2GISDatabase.load(InputDataFormattingTest.class.getResource("bdtopofolder/TERRAIN_SPORT.shp"), "TERRAIN_SPORT", true)
-            h2GISDatabase.load(InputDataFormattingTest.class.getResource("bdtopofolder/CONSTRUCTION_SURFACIQUE.shp"), "CONSTRUCTION_SURFACIQUE", true)
-            h2GISDatabase.load(InputDataFormattingTest.class.getResource("bdtopofolder/SURFACE_ROUTE.shp"), "SURFACE_ROUTE", true)
-            h2GISDatabase.load(InputDataFormattingTest.class.getResource("bdtopofolder/SURFACE_ACTIVITE.shp"), "SURFACE_ACTIVITE", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("processingChain/IRIS_GE.shp"), "IRIS_GE", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("processingChain/BATI_INDIFFERENCIE.shp"), "BATI_INDIFFERENCIE", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("processingChain/BATI_INDUSTRIEL.shp"), "BATI_INDUSTRIEL", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("processingChain/BATI_REMARQUABLE.shp"), "BATI_REMARQUABLE", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("processingChain/ROUTE.shp"), "ROUTE", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("processingChain/SURFACE_EAU.shp"), "SURFACE_EAU", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("processingChain/ZONE_VEGETATION.shp"), "ZONE_VEGETATION", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("processingChain/TRONCON_VOIE_FERREE.shp"), "TRONCON_VOIE_FERREE", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("processingChain/TERRAIN_SPORT.shp"), "TERRAIN_SPORT", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("processingChain/CONSTRUCTION_SURFACIQUE.shp"), "CONSTRUCTION_SURFACIQUE", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("processingChain/SURFACE_ROUTE.shp"), "SURFACE_ROUTE", true)
+            h2GISDatabase.load(InputDataFormattingTest.class.getResource("processingChain/SURFACE_ACTIVITE.shp"), "SURFACE_ACTIVITE", true)
 
             h2GISDatabase.load(InputDataFormattingTest.class.getResource("BUILDING_ABSTRACT_PARAMETERS.csv"), "BUILDING_ABSTRACT_PARAMETERS", true)
             h2GISDatabase.load(InputDataFormattingTest.class.getResource("BUILDING_ABSTRACT_USE_TYPE.csv"), "BUILDING_ABSTRACT_USE_TYPE", true)
