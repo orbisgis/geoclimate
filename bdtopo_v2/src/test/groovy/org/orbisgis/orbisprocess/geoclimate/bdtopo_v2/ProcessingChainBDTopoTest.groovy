@@ -245,19 +245,11 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     }
 
     @Test //Integration tests
-<<<<<<< HEAD:processingchain/src/test/groovy/org/orbisgis/orbisprocess/geoclimate/processingchain/ProcessingChainBDTopoTest.groovy
-=======
     @Disabled
->>>>>>> 8b51ab472a8600ed9e363b2d5b7d035ae75b5107:bdtopo_v2/src/test/groovy/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/ProcessingChainBDTopoTest.groovy
     void lczProduceTestData() {
         def configFile = getClass().getResource("bdtopofolder/lczTests/lczDebug.json").toURI()
 
-        // Execute several cities where we have tests
-<<<<<<< HEAD:processingchain/src/test/groovy/org/orbisgis/orbisprocess/geoclimate/processingchain/ProcessingChainBDTopoTest.groovy
-        IProcess process = ProcessingChain.Workflow.BDTOPO_V2()
-        assertTrue(process.execute(configurationFile: configFile))
-    }
-=======
+        // Execute several cities where we have testsIProcess process = ProcessingChain.Workflow.BDTOPO_V2()
         IProcess process = BDTopo_V2.workflow
         assertTrue(process.execute(configurationFile: configFile))
     }
@@ -325,5 +317,4 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         configFile.write(json)
         return configFile.absolutePath
     }
->>>>>>> 8b51ab472a8600ed9e363b2d5b7d035ae75b5107:bdtopo_v2/src/test/groovy/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/ProcessingChainBDTopoTest.groovy
 }
