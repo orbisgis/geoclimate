@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 import smile.classification.DataFrameClassifier
 import smile.validation.Accuracy
 import smile.validation.Validation
@@ -31,37 +32,55 @@ class TypologyClassificationTests {
     }
     @Test
     void identifyLczTypeTest() {
-        h2GIS.execute """
-                DROP TABLE IF EXISTS tempo_rsu_for_lcz;
-                CREATE TABLE tempo_rsu_for_lcz AS SELECT a.*, b.the_geom FROM rsu_test_for_lcz a LEFT JOIN rsu_test b
-                ON a.id_rsu = b.id_rsu;
-        """
         def  pavg =  Geoindicators.TypologyClassification.identifyLczType()
-        assertTrue pavg.execute([rsuLczIndicators: "tempo_rsu_for_lcz", rsuAllIndicators: "", normalisationType: "AVG",
+        assertTrue pavg.execute([rsuLczIndicators: "rsu_test_lcz_indics", rsuAllIndicators: "rsu_test_all_indics_for_lcz", normalisationType: "AVG",
                    mapOfWeights: ["sky_view_factor": 1,
                                   "aspect_ratio": 1, "building_surface_fraction": 1, "impervious_surface_fraction": 1,
                                   "pervious_surface_fraction": 1, "height_of_roughness_elements": 1,
-                                  "terrain_roughness_class": 1],
+                                  "terrain_roughness_length": 1],
+                   prefixName: "test", datasource: h2GIS])
+        def results = [:]
+        h2GIS.getTable(pavg.results.outputTableName).eachRow { row ->
+            def id = row.id_rsu
+            results[id] = [:]
+            results[id]["LCZ1"] = row.LCZ1
+            results[id]["min_distance"] = row.min_distance
+            results[id]["PSS"] = row.PSS
+        }
+        assertEquals(1, results[1]["LCZ1"])
+        assertEquals(0, results[1]["min_distance"])
+        assertEquals(8, results[2]["LCZ1"])
+        assertTrue(results[2]["min_distance"] > 0)
+        assertTrue(results[2]["PSS"] < 1)
+        assertEquals(107, results[3]["LCZ1"])
+        assertEquals(null, results[3]["LCZ2"])
+        assertEquals(null, results[3]["min_distance"])
+        assertEquals(null, results[3]["PSS"])
+        assertEquals(102, results[4]["LCZ1"])
+        assertEquals(101, results[5]["LCZ1"])
+        assertEquals(104, results[6]["LCZ1"])
+        assertEquals(105, results[7]["LCZ1"])
+
+        h2GIS.execute """DROP TABLE IF EXISTS buff_rsu_test_lcz_indics, buff_rsu_test_all_indics_for_lcz;
+                            CREATE TABLE buff_rsu_test_lcz_indics 
+                                    AS SELECT a.*, b.the_geom
+                                    FROM rsu_test_lcz_indics a, rsu_test b
+                                    WHERE a.id_rsu = b.id_rsu;
+                            CREATE TABLE buff_rsu_test_all_indics_for_lcz 
+                                    AS SELECT a.*, b.the_geom
+                                    FROM rsu_test_all_indics_for_lcz a, rsu_test b
+                                    WHERE a.id_rsu = b.id_rsu;  
+                            """
+
+        def  pmed =  Geoindicators.TypologyClassification.identifyLczType()
+        assertTrue pmed.execute([rsuLczIndicators: "buff_rsu_test_lcz_indics", rsuAllIndicators: "buff_rsu_test_all_indics_for_lcz", normalisationType: "MEDIAN",
+                   mapOfWeights: ["sky_view_factor": 1,
+                                  "aspect_ratio": 1, "building_surface_fraction": 1, "impervious_surface_fraction": 1,
+                                  "pervious_surface_fraction": 1, "height_of_roughness_elements": 1,
+                                  "terrain_roughness_length": 1],
                    prefixName: "test", datasource: h2GIS])
 
-        h2GIS.getTable(pavg.results.outputTableName).eachRow {
-            row ->
-                if (row.id_rsu == 1) {
-                    assertEquals(1, row.LCZ1,)
-                    assertEquals(0, row.min_distance)
-                } else {
-                    assertEquals(8, row.LCZ1)
-                    assertTrue(row.min_distance > 0)
-                    assertTrue(row.PSS < 1)
-                }
-        }
-        def  pmed =  Geoindicators.TypologyClassification.identifyLczType()
-        assertTrue pmed.execute([rsuLczIndicators: "tempo_rsu_for_lcz", rsuAllIndicators: "", normalisationType: "MEDIAN",
-                   mapOfWeights: ["sky_view_factor": 1,
-                                  "aspect_ratio": 1, "building_surface_fraction": 1, "impervious_surface_fraction": 1,
-                                  "pervious_surface_fraction": 1, "height_of_roughness_elements": 1,
-                                  "terrain_roughness_class": 1],
-                   prefixName: "test", datasource: h2GIS])
+        assertTrue h2GIS.getTable(pmed.results.outputTableName).getColumns().contains("THE_GEOM")
 
         h2GIS.getTable(pmed.results.outputTableName).eachRow {
             row ->
@@ -69,7 +88,7 @@ class TypologyClassificationTests {
                     assertEquals(1, row.LCZ1,)
                     assertEquals(0, row.min_distance)
                 }
-                else{
+                else if(row.id_rsu==2){
                     assertEquals(8, row.LCZ1)
                     assertTrue(row.min_distance>0)
                     assertTrue(row.PSS<1)
@@ -82,7 +101,7 @@ class TypologyClassificationTests {
         h2GIS.execute """
                 DROP TABLE IF EXISTS tempo_rsu_for_lcz;
                 CREATE TABLE tempo_rsu_for_lcz AS SELECT a.*, b.the_geom 
-                        FROM rsu_test_for_lcz a 
+                        FROM rsu_test_lcz_indics a 
                                 LEFT JOIN rsu_test b
                                 ON a.id_rsu = b.id_rsu;
         """
@@ -167,4 +186,43 @@ class TypologyClassificationTests {
         assertEquals columnsStr, namesStr
     }
 
+    @Test //Integration tests
+    void lczTestValues() {
+        // List of territories where we do have some test cases (saved in folder lczTests
+        def citiesToTest = ["01306"]
+
+        // Load for a given set of RSU (defined by a "ST_PointOnSurface") the LCZ classes that are possible
+        // and those which are not possible
+        def lczToTestPath = getClass().getResource("lczTests/expectedLcz.geojson").toURI()
+        def lczToTestName = "lczToTest"
+        def lczToTestCity = "lczToTestCity"
+
+        H2GIS datasource = H2GIS.open("/tmp/lczDatabase;AUTO_SERVER=TRUE", "sa", "")
+        datasource.load(lczToTestPath, lczToTestName)
+        citiesToTest.each{city ->
+            def lczCityPath = getClass().getResource("lczTests/zone_${city}_rsu_lcz.geojson").toURI()
+            def lczCityName = "zone$city"
+            datasource.load(lczCityPath, lczCityName)
+            datasource.getTable("zone$city").the_geom.createIndex()
+            datasource.getTable(lczToTestName).the_geom.createIndex()
+            datasource.getTable(lczToTestName).id_zone.createIndex()
+
+            datasource.execute """DROP TABLE IF EXISTS $lczToTestCity;
+                                        CREATE TABLE $lczToTestCity 
+                                                AS SELECT a.id, a.lcz_type, a.expected, b.lcz1, b.lcz2 
+                                                FROM $lczToTestName a, $lczCityName b 
+                                                WHERE a.id_zone = $city AND a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom)"""
+
+            datasource.eachRow("SELECT * FROM $lczToTestCity"){row ->
+                if (row.expected == 0){
+                    def lczUnexpected = row.lcz_type.split(",")
+                    assertTrue !lczUnexpected.contains(row.lcz1.toString()) & !lczUnexpected.contains(row.lcz2.toString())
+                }
+                if (row.expected == 1) {
+                    def lczExpected = row.lcz_type.split(",")
+                    assertTrue lczExpected.contains(row.lcz1.toString()) || lczExpected.contains(row.lcz2.toString())
+                }
+            }
+        }
+    }
 }

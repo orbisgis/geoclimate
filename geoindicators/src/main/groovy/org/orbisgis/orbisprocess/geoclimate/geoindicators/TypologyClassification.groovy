@@ -51,7 +51,7 @@ IProcess identifyLczType() {
     def final CENTER_NAME = "center"
     def final VARIABILITY_NAME = "variability"
     def final BASE_NAME = "RSU_LCZ"
-    def final GEOMETRIC_FIELD = "the_geom"
+    def final GEOMETRIC_FIELD = "THE_GEOM"
     
     return create({
         title "Set the LCZ type of each RSU"
@@ -59,7 +59,7 @@ IProcess identifyLczType() {
                 datasource: JdbcDataSource  , normalisationType: "AVG"          ,
                 mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                               "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+                               "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
         outputs outputTableName: String
         run { rsuLczIndicators, rsuAllIndicators, prefixName, datasource, normalisationType, mapOfWeights ->
 
@@ -84,14 +84,17 @@ IProcess identifyLczType() {
                 def normalizedValues = "normalizedValues$uuid"
                 def normalizedRange = "normalizedRange$uuid"
                 def buffLczTable = "buffLczTable$uuid"
+                def ruralLCZ = "ruralLCZ$uuid"
+                def classifiedRuralLCZ = "classifiedRuralLCZ$uuid"
+                def urbanLCZ = "urbanLCZ$uuid"
                 def allLczTable = "allLczTable$uuid"
                 def pivotedTable = "pivotedTable$uuid"
                 def mainLczTable = "mainLczTable$uuid"
+                def classifiedUrbanLcz = "classifiedUrbanLcz$uuid"
+                def classifiedLcz = "classifiedLcz$uuid"
 
-                // I. Each dimension (each of the 7 indicators) is normalized according to average and standard deviation
-                // (or median and median of the variability)
-
-                // The LCZ definitions are created in a Table of the DataBase
+                // The LCZ definitions are created in a Table of the DataBase (note that the "terrain_roughness_class"
+                // is replaced by the "terrain_roughness_length" in order to have a continuous interval of values)
                 datasource.execute "DROP TABLE IF EXISTS $LCZ_classes; " +
                         "CREATE TABLE $LCZ_classes(name VARCHAR," +
                         "sky_view_factor_low FLOAT, sky_view_factor_upp FLOAT," +
@@ -100,28 +103,79 @@ IProcess identifyLczType() {
                         "impervious_surface_fraction_low FLOAT, impervious_surface_fraction_upp FLOAT, " +
                         "pervious_surface_fraction_low FLOAT, pervious_surface_fraction_upp FLOAT," +
                         " height_of_roughness_elements_low FLOAT, height_of_roughness_elements_upp FLOAT," +
-                        "terrain_roughness_class_low FLOAT, terrain_roughness_class_upp FLOAT);" +
+                        "terrain_roughness_length_low FLOAT, terrain_roughness_length_upp FLOAT);" +
                         "INSERT INTO $LCZ_classes VALUES " +
-                        "('1',0.2,0.4,2.0,null,0.4,0.6,0.4,0.6,0.0,0.1,25.0,null,7.5,8.5)," +
-                        "('2',0.3,0.6,0.8,2.0,0.4,0.7,0.3,0.5,0.0,0.2,10.0,25.0,5.5,7.5)," +
-                        "('3',0.2,0.6,0.8,1.5,0.4,0.7,0.2,0.5,0.0,0.3,3.0,10.0,5.5,6.5)," +
-                        "('4',0.5,0.7,0.8,1.3,0.2,0.4,0.3,0.4,0.3,0.4,25.0,null,6.5,8.5)," +
-                        "('5',0.5,0.8,0.3,0.8,0.2,0.4,0.3,0.5,0.2,0.4,10.0,25.0,4.5,6.5)," +
-                        "('6',0.6,0.9,0.3,0.8,0.2,0.4,0.2,0.5,0.3,0.6,3.0,10.0,4.5,6.5)," +
-                        "('7',0.2,0.5,1.0,2.0,0.6,0.9,0.0,0.2,0.0,0.3,2.0,4.0,3.5,5.5)," +
-                        "('8',0.7,1.0,0.1,0.3,0.3,0.5,0.4,0.5,0.0,0.2,3.0,10.0,4.5,5.5)," +
-                        "('9',0.8,1.0,0.1,0.3,0.1,0.2,0.0,0.2,0.6,0.8,3.0,10.0,4.5,6.5)," +
-                        "('10',0.6,0.9,0.2,0.5,0.2,0.3,0.2,0.4,0.4,0.5,5.0,15.0,4.5,6.5)," +
-                        "('101',0.0,0.4,1.0,null,0.0,0.1,0.0,0.1,0.9,1.0,3.0,30.0,7.5,8.5)," +
-                        "('102',0.5,0.8,0.3,0.8,0.0,0.1,0.0,0.1,0.9,1.0,3.0,15.0,4.5,6.5)," +
-                        "('103',0.7,0.9,0.3,1.0,0.0,0.1,0.0,0.1,0.9,1.0,0.0,2.0,3.5,5.5)," +
-                        "('104',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,1.0,2.5,4.5)," +
-                        "('105',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.3,0.5,2.5)," +
-                        "('106',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.3,0.5,2.5)," +
-                        "('107',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.0,0.5,1.5);"
+                        "('1',0.2,0.4,2.0,null,0.4,0.6,0.4,0.6,0.0,0.1,25.0,null,1.5,null)," +
+                        "('2',0.3,0.6,0.8,2.0,0.4,0.7,0.3,0.5,0.0,0.2,10.0,25.0,0.375,1.5)," +
+                        "('3',0.2,0.6,0.8,1.5,0.4,0.7,0.2,0.5,0.0,0.3,3.0,10.0,0.375,0.75)," +
+                        "('4',0.5,0.7,0.8,1.3,0.2,0.4,0.3,0.4,0.3,0.4,25.0,null,0.75,null)," +
+                        "('5',0.5,0.8,0.3,0.8,0.2,0.4,0.3,0.5,0.2,0.4,10.0,25.0,0.175,0.75)," +
+                        "('6',0.6,0.9,0.3,0.8,0.2,0.4,0.2,0.5,0.3,0.6,3.0,10.0,0.065,0.375)," +
+                        "('7',0.2,0.5,1.0,2.0,0.6,0.9,0.0,0.2,0.0,0.3,2.0,4.0,0.175,0.375)," +
+                        "('8',0.7,1.0,0.1,0.3,0.3,0.5,0.4,0.5,0.0,0.2,3.0,10.0,0.175,0.375)," +
+                        "('9',0.8,1.0,0.1,0.3,0.1,0.2,0.0,0.2,0.6,0.8,3.0,10.0,0.175,0.75)," +
+                        "('10',0.6,0.9,0.2,0.5,0.2,0.3,0.2,0.4,0.4,0.5,5.0,15.0,0.175,0.75);"
+                /* The rural LCZ types are excluded from the algorithm, they have their own one
+                        "('101',0.0,0.4,1.0,null,0.0,0.1,0.0,0.1,0.9,1.0,3.0,30.0,1.5,null)," +
+                        "('102',0.5,0.8,0.3,0.8,0.0,0.1,0.0,0.1,0.9,1.0,3.0,15.0,0.175,0.75)," +
+                        "('103',0.7,0.9,0.3,1.0,0.0,0.1,0.0,0.1,0.9,1.0,0.0,2.0,0.065,0.375)," +
+                        "('104',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,1.0,0.01525,0.175)," +
+                        "('105',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.3,0,0.01525)," +
+                        "('106',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.3,0,0.01525)," +
+                        "('107',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.0,0,0.00035);"
+                */
+
+                // I. Rural LCZ types are classified according to a "manual" decision tree
+                datasource.getTable(rsuAllIndicators).BUILDING_FRACTION_LCZ.createIndex()
+                datasource.getTable(rsuAllIndicators).ASPECT_RATIO.createIndex()
+                datasource.execute """DROP TABLE IF EXISTS $ruralLCZ; 
+                                    CREATE TABLE $ruralLCZ 
+                                            AS SELECT   $ID_FIELD_RSU, IMPERVIOUS_FRACTION_LCZ, 
+                                                        PERVIOUS_FRACTION_LCZ, WATER_FRACTION_LCZ, 
+                                                        CASE WHEN LOW_VEGETATION_FRACTION_LCZ+HIGH_VEGETATION_FRACTION_LCZ=0
+                                                                THEN null
+                                                                ELSE HIGH_VEGETATION_FRACTION_LCZ/(LOW_VEGETATION_FRACTION_LCZ+HIGH_VEGETATION_FRACTION_LCZ)
+                                                                END
+                                                         AS HIGH_ALL_VEGETATION,
+                                                        LOW_VEGETATION_FRACTION_LCZ+HIGH_VEGETATION_FRACTION_LCZ AS ALL_VEGETATION
+                                            FROM        $rsuAllIndicators
+                                            WHERE       BUILDING_FRACTION_LCZ < 0.1 AND ASPECT_RATIO < 0.1;"""
+
+                datasource.getTable(ruralLCZ).IMPERVIOUS_FRACTION_LCZ.createIndex()
+                datasource.getTable(ruralLCZ).PERVIOUS_FRACTION_LCZ.createIndex()
+                datasource.getTable(ruralLCZ).HIGH_ALL_VEGETATION.createIndex()
+                datasource.getTable(ruralLCZ).ALL_VEGETATION.createIndex()
+                datasource.execute """DROP TABLE IF EXISTS $classifiedRuralLCZ;
+                                    CREATE TABLE $classifiedRuralLCZ
+                                            AS SELECT   $ID_FIELD_RSU,
+                                                        CASE WHEN IMPERVIOUS_FRACTION_LCZ>PERVIOUS_FRACTION_LCZ
+                                                                THEN 105
+                                                                ELSE CASE WHEN ALL_VEGETATION<WATER_FRACTION_LCZ
+                                                                        THEN 107
+                                                                        ELSE CASE WHEN HIGH_ALL_VEGETATION<0.1
+                                                                                THEN 104
+                                                                                ELSE CASE WHEN HIGH_ALL_VEGETATION<0.75
+                                                                                        THEN 102
+                                                                                        ELSE 101 END END END END AS LCZ1,
+                                                        null AS LCZ2, null AS min_distance, null AS PSS 
+                                            FROM $ruralLCZ"""
+
+                // II. Urban LCZ types are classified
+
+                // Keep only the RSU that have not been classified as rural
+                datasource.execute """DROP TABLE IF EXISTS $urbanLCZ;
+                                    CREATE TABLE $urbanLCZ
+                                            AS SELECT a.*
+                                            FROM $rsuLczIndicators a
+                                            LEFT JOIN $ruralLCZ b
+                                            ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU
+                                            WHERE b.$ID_FIELD_RSU IS NULL;"""
+
+                // 1. Each dimension (each of the 7 indicators) is normalized according to average and standard deviation
+                // (or median and median of the variability)
 
                 // For each LCZ indicator...
-                datasource.getTable(rsuLczIndicators).columns.collect { indicCol ->
+                datasource.getTable(urbanLCZ).columns.collect { indicCol ->
                     if (!indicCol.equalsIgnoreCase(ID_FIELD_RSU) && !indicCol.equalsIgnoreCase(GEOMETRIC_FIELD)) {
                         // The values used for normalization ("mean" and "standard deviation") are calculated
                         // (for each column) and stored into maps
@@ -158,23 +212,23 @@ IProcess identifyLczType() {
 
                 // The input indicator values are normalized according to "center" and "variability" values
                 datasource.execute "DROP TABLE IF EXISTS $normalizedValues; CREATE TABLE $normalizedValues " +
-                        "AS SELECT $ID_FIELD_RSU, $GEOMETRIC_FIELD, ${queryValuesNorm[0..-3]} FROM $rsuLczIndicators"
+                        "AS SELECT $ID_FIELD_RSU, ${queryValuesNorm[0..-3]} FROM $urbanLCZ"
 
 
-                // II. The distance of each RSU to each of the LCZ types is calculated in the normalized interval.
+                // 2. The distance of each RSU to each of the LCZ types is calculated in the normalized interval.
                 // The two LCZ types being the closest to the RSU indicators are associated to this RSU. An indicator
                 // of uncertainty based on the Perkin Skill Score method is also associated to this "assignment".
 
                 // Create the table where will be stored the distance to each LCZ for each RSU
                 datasource.execute "DROP TABLE IF EXISTS $allLczTable; CREATE TABLE $allLczTable(" +
-                        "pk serial, $GEOMETRIC_FIELD GEOMETRY, $ID_FIELD_RSU integer, lcz varchar, distance float);"
+                        "pk serial, $ID_FIELD_RSU integer, lcz varchar, distance float);"
 
 
                 // For each LCZ type...
                 datasource.eachRow("SELECT * FROM $normalizedRange") { LCZ ->
                     def queryLczDistance = ""
                     // For each indicator...
-                    datasource.getTable(rsuLczIndicators).columns.collect { indic ->
+                    datasource.getTable(urbanLCZ).columns.collect { indic ->
                         if (!indic.equalsIgnoreCase(ID_FIELD_RSU) && !indic.equalsIgnoreCase(GEOMETRIC_FIELD)) {
                             // Define columns names where are stored lower and upper range values of the current LCZ
                             // and current indicator
@@ -195,18 +249,16 @@ IProcess identifyLczType() {
                     // Fill the table where are stored the distance of each RSU to each LCZ type
                     datasource.execute "DROP TABLE IF EXISTS $buffLczTable; ALTER TABLE $allLczTable RENAME TO $buffLczTable;" +
                             "DROP TABLE IF EXISTS $allLczTable; " +
-                            "CREATE TABLE $allLczTable(pk serial, $GEOMETRIC_FIELD GEOMETRY, $ID_FIELD_RSU integer, lcz varchar, distance float) " +
-                            "AS (SELECT pk, $GEOMETRIC_FIELD, $ID_FIELD_RSU, lcz, distance FROM $buffLczTable UNION ALL " +
-                            "SELECT null, $GEOMETRIC_FIELD, $ID_FIELD_RSU, '${LCZ.name}', SQRT(${queryLczDistance[0..-2]}) FROM $normalizedValues)"
+                            "CREATE TABLE $allLczTable(pk serial, $ID_FIELD_RSU integer, lcz varchar, distance float) " +
+                            "AS (SELECT pk, $ID_FIELD_RSU, lcz, distance FROM $buffLczTable UNION ALL " +
+                            "SELECT null, $ID_FIELD_RSU, '${LCZ.name}', SQRT(${queryLczDistance[0..-2]}) FROM $normalizedValues)"
 
                 }
-
-                //
 
                 // The name of the two closest LCZ types are conserved
                 datasource.execute "DROP TABLE IF EXISTS $mainLczTable;" +
                         "CREATE INDEX IF NOT EXISTS all_id ON $allLczTable USING BTREE($ID_FIELD_RSU); " +
-                        "CREATE TABLE $mainLczTable AS SELECT a.$ID_FIELD_RSU, a.$GEOMETRIC_FIELD, " +
+                        "CREATE TABLE $mainLczTable AS SELECT a.$ID_FIELD_RSU, " +
                         "CAST(SELECT b.lcz FROM $allLczTable b " +
                         "WHERE a.$ID_FIELD_RSU = b.$ID_FIELD_RSU " +
                         "ORDER BY b.distance ASC LIMIT 1 AS INTEGER) AS LCZ1," +
@@ -238,13 +290,42 @@ IProcess identifyLczType() {
                         "DROP TABLE IF EXISTS $outputTableName;" +
                         "CREATE INDEX IF NOT EXISTS main_id ON $mainLczTable USING BTREE($ID_FIELD_RSU);" +
                         "CREATE INDEX IF NOT EXISTS piv_id ON $pivotedTable USING BTREE($ID_FIELD_RSU);" +
-                        "CREATE TABLE $outputTableName AS SELECT a.*, LEAST(b.\"${lczType.join("\",b.\"")}\") AS min_distance, " +
+                        "CREATE TABLE $classifiedUrbanLcz AS SELECT a.*, LEAST(b.\"${lczType.join("\",b.\"")}\") AS min_distance, " +
                         "${queryPerkinsSkill[0..-2]} AS PSS FROM $mainLczTable a LEFT JOIN " +
                         "$pivotedTable b ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU;"
 
+                // Then urban and rural LCZ types are merged into a single table
+                datasource.execute """DROP TABLE IF EXISTS $classifiedLcz;
+                                    CREATE TABLE $classifiedLcz 
+                                            AS SELECT   * 
+                                            FROM        $classifiedUrbanLcz
+                                            UNION ALL   SELECT * FROM $classifiedRuralLCZ b;"""
+
+                // If the input tables contain a geometric field, we add it to the output table
+                if (datasource.getTable(rsuAllIndicators).getColumns().contains(GEOMETRIC_FIELD)) {
+                    datasource.execute """DROP TABLE IF EXISTS $outputTableName;
+                                        CREATE TABLE $outputTableName
+                                                AS SELECT   a.*, b.$GEOMETRIC_FIELD
+                                                FROM        $classifiedLcz a
+                                                LEFT JOIN   $rsuAllIndicators b
+                                                ON          a.$ID_FIELD_RSU=b.$ID_FIELD_RSU"""
+                }
+                else if (datasource.getTable(rsuLczIndicators).getColumns().contains(GEOMETRIC_FIELD)) {
+                    datasource.execute """DROP TABLE IF EXISTS $outputTableName;
+                                        CREATE TABLE $outputTableName
+                                                AS SELECT   a.*, b.$GEOMETRIC_FIELD
+                                                FROM        $classifiedLcz a
+                                                LEFT JOIN   $rsuLczIndicators b
+                                                ON          a.$ID_FIELD_RSU=b.$ID_FIELD_RSU"""
+                }
+                else{
+                    datasource.execute """ALTER TABLE $classifiedLcz RENAME TO $outputTableName;"""
+                }
+
                 // Temporary tables are deleted
-                datasource.execute "DROP TABLE IF EXISTS $LCZ_classes, $normalizedValues, $normalizedRange," +
-                        "$buffLczTable, $allLczTable, $pivotedTable, $mainLczTable;"
+                datasource.execute """DROP TABLE IF EXISTS $LCZ_classes, $normalizedValues, $normalizedRange,
+                        $buffLczTable, $allLczTable, $pivotedTable, $mainLczTable, $classifiedLcz, $classifiedUrbanLcz,
+                        $classifiedRuralLCZ;"""
 
                 info "The LCZ classification has been performed."
 

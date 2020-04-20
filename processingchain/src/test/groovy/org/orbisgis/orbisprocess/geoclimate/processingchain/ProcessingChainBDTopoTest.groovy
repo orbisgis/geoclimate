@@ -241,4 +241,13 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         IProcess process = ProcessingChain.Workflow.BDTOPO_V2()
         assertTrue(process.execute(configurationFile: configFile))
     }
+
+    @Test //Integration tests
+    void lczProduceTestData() {
+        def configFile = getClass().getResource("bdtopofolder/lczTests/lczDebug.json").toURI()
+
+        // Execute several cities where we have tests
+        IProcess process = ProcessingChain.Workflow.BDTOPO_V2()
+        assertTrue(process.execute(configurationFile: configFile))
+    }
 }
