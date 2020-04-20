@@ -192,7 +192,7 @@ class TypologyClassificationTests {
     @Test //Integration tests
     void lczTestValues() {
         // List of territories where we do have some test cases (saved in folder lczTests
-        def citiesToTest = ["01306"]
+        def citiesToTest = ["01306", "56167"]
 
         // Load for a given set of RSU (defined by a "ST_PointOnSurface") the LCZ classes that are possible
         // and those which are not possible
