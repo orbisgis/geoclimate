@@ -1,11 +1,11 @@
 # Run Geoclimate with OSM
 
-As seen in [this section](../../chain_documentation/workflow/osm/coupling_with_geoclimate.md), four OSM workflow configuration files are available on the Geoclimate Github repository [here](https://github.com/orbisgis/geoclimate/tree/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config):
+As seen in [this section](../../chain_documentation/workflow/description.md#Configuration-file), four OSM workflow configuration files are available on the Geoclimate Github repository [here](https://github.com/orbisgis/geoclimate/tree/master/osm/src/test/resources/org/orbisgis/orbisprocess/geoclimate/osm/config):
 
-1. [Using an envelop and exporting in a folder](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_envelope_folderoutput.json) 
-2. [Using mixed filters and exporting in a folder](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_mixedfilter_folderoutput.json)
-3. [Using a placename and exporting in a database](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_placename_dboutput.json)
-4. [Using a placename and exporting in a folder](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_placename_folderoutput.json)
+1. [Using an envelop and exporting in a folder](https://github.com/orbisgis/geoclimate/blob/master/osm/src/test/resources/org/orbisgis/orbisprocess/geoclimate/osm/config/osm_workflow_envelope_folderoutput.json) 
+2. [Using mixed filters and exporting in a folder](https://github.com/orbisgis/geoclimate/blob/master/osm/src/test/resources/org/orbisgis/orbisprocess/geoclimate/osm/config/osm_workflow_mixedfilter_folderoutput.json)
+3. [Using a placename and exporting in a database](https://github.com/orbisgis/geoclimate/blob/master/osm/src/test/resources/org/orbisgis/orbisprocess/geoclimate/osm/config/osm_workflow_placename_dboutput.json)
+4. [Using a placename and exporting in a folder](https://github.com/orbisgis/geoclimate/blob/master/osm/src/test/resources/org/orbisgis/orbisprocess/geoclimate/osm/config/osm_workflow_placename_folderoutput.json)
 
 
 
@@ -22,7 +22,7 @@ The resulting layers will be exported as flat files in a dedicated output folder
 
 ### 1. Configuration file
 
-Download this file : [osm_workflow_placename_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_placename_folderoutput.json) and open it in a text editor.
+Download this file : [osm_workflow_placename_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/osm/src/test/resources/org/orbisgis/orbisprocess/geoclimate/osm/config/osm_workflow_placename_folderoutput.json) and open it in a text editor.
 
 ```json
 {
@@ -68,7 +68,7 @@ Then:
 
 Launch DBeaver and open a new Groovy console (if not already installed, please follow these [instructions](../execution_tools.md)).
 
-As explained [before](../../chain_documentation/workflow/description.md#And-technically) we will execute the `OSM` process, which is in the workflow groovy file : `geoclimate.workflow.OSM()`
+As explained [before](../../chain_documentation/workflow/description.md#And-technically) we will execute the `OSM` process, which is in the workflow groovy file : `Geoclimate.OSM.workflow`
 
 So, in the Groovy console, copy and paste the following script
 
@@ -79,7 +79,7 @@ So, in the Groovy console, copy and paste the following script
 import org.orbisgis.orbisprocess.geoclimate.Geoclimate
 Geoclimate.logger = logger
 
-def process = Geoclimate.Workflow.OSM()
+def process = Geoclimate.OSM.workflow
 process.execute(configurationFile:'/home/geoclimate/osm/osm_workflow_placename_folderoutput.json')
                    
 logger.info process.results.outputMessage
@@ -138,7 +138,7 @@ First we have to define the desired zone and then deduce its coordinates. To do 
 
 ### 2. Configuration file
 
-Download this file : [osm_workflow_envelope_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_envelope_folderoutput.json) , open it in a text editor, update the following informations and save it:
+Download this file : [osm_workflow_envelope_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/osm/src/test/resources/org/orbisgis/orbisprocess/geoclimate/osm/config/osm_workflow_envelope_folderoutput.json) , open it in a text editor, update the following informations and save it:
 
 1. In the `geoclimatedb` part, adapt the working database address (*e.g* `"path" : "/home/geoclimate/osm/db/geoclimate_db;AUTO_SERVER=TRUE",`)
 
@@ -185,7 +185,7 @@ Download this file : [osm_workflow_envelope_folderoutput.json](https://github.co
 
 Launch DBeaver and open a new Groovy console (if not already installed, please follow these [instructions](../execution_tools.md)).
 
-As explained before we will execute the OSM process, which is in the workflow groovy file : `geoclimate.workflow.OSM()`
+As explained before we will execute the OSM process, which is in the workflow groovy file : `Geoclimate.OSM.workflow`
 
 So, in the Groovy console, copy and paste the following script
 
@@ -196,7 +196,7 @@ So, in the Groovy console, copy and paste the following script
 import org.orbisgis.orbisprocess.geoclimate.Geoclimate
 Geoclimate.logger = logger
 
-def process = Geoclimate.Workflow.OSM()
+def process = Geoclimate.OSM.workflow
 process.execute(configurationFile:'/home/geoclimate/osm/osm_workflow_envelope_folderoutput.json')
                    
 logger.info process.results.outputMessage

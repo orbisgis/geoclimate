@@ -33,12 +33,12 @@ These options can be inclusive (2 or 3 in the same time) or exclusive (just 1).
 
 ### Parameters
 
-When executing the workflow, the user is able to ajust some parameters, that will have a direct impact on the results. Below are listed these parameters, with a description and when necessary a default value.
+When executing the workflow, the user is able to adjust some parameters, that will have a direct impact on the results. Below are listed these parameters, with a description and when necessary a default value.
 
 |           Parameter            | Description                                                  |          Default value           |
 | :----------------------------: | ------------------------------------------------------------ | :------------------------------: |
 |            `expand`            | Distance (expressed in meters) used to select the objects that will feed the chain |              `1000`              |
-|         `dist_buffer`          | Distance (expressed in meters) used to filter builings and roads around the zone |              `500`               |
+|         `dist_buffer`          | Distance (expressed in meters) used to filter buildings and roads around the zone |              `500`               |
 |           `hLevMin`            | Indicates the theoretical minimum height (in meters) of a building level |               `3`                |
 |           `hLevMax`            | Indicates the theoretical maximum height (in meters) of a building level |               `15`               |
 |        `hThresholdLev2`        | Indicates the theoretical maximum height (in meters) of a building level, where the parameter `Nb_lev_rule`  = 2 (Type = commercial) |               `10`               |
@@ -47,10 +47,10 @@ When executing the workflow, the user is able to ajust some parameters, that wil
 |  `building_surface_fraction`   | ... Building surface fraction parameter ...                  |               `1`                |
 | `impervious_surface_fraction`  | ... Impervious surface fraction parameter ...                |               `1`                |
 |  `pervious_surface_fraction`   | ... Pervious surface fraction parameter ...                  |               `1`                |
-| `height_of_roughness_elements` | ... Height fo roughness elements parameter ...               |               `1`                |
+| `height_of_roughness_elements` | ... Height of roughness elements parameter ...               |               `1`                |
 |   `terrain_roughness_class`    | ... Terrain roughness class parameter ...                    |               `1`                |
 |        `svfSimplified`         |                                                              |             `false`              |
-|          `prefixName`          | Prefixe used to name the output tables                       |                                  |
+|          `prefixName`          | Prefix used to name the output tables                        |                                  |
 |         `indicatorUse`         | Specify whether the user want to execute the chain for the LCZ and/or TEB and/or Urban typology | ["LCZ", "URBAN_TYPOLOGY", "TEB"] |
 
 
@@ -74,13 +74,13 @@ In this file, the two dataset use cases are translated into two processes :
 - [OSM](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/main/groovy/org/orbisgis/orbisprocess/geoclimate/processingchain/Workflow.groovy#L1540)
 - [BDTOPO_V2](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/main/groovy/org/orbisgis/orbisprocess/geoclimate/processingchain/Workflow.groovy#L131)
 
-When we wil run the geoclimate workflow, we will use one of these two processes.
+When we will run the geoclimate workflow, we will use one of these two processes.
 
 ### Configuration file
 
-The parameters, needed by the process, are stored in an independant configuration file. This way, the user has just to adapt this file instead of changing some things in the workflow groovy file, which may be a bit too complex for non-experts.
+The parameters, needed by the process, are stored in an independent configuration file. This way, the user has just to adapt this file instead of changing some things in the workflow groovy file, which may be a bit too complex for non-experts.
 
-Currently, there is 9 (`.json`) configuration files, that can be used to run Geoclimate with the two input datasets (OSM and BD Topo). There are all accessible [here](https://github.com/orbisgis/geoclimate/tree/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config).
+Currently, there is 9 (`.json`) configuration files, that can be used to run Geoclimate with the two input datasets (see [OSM](https://github.com/orbisgis/geoclimate/tree/master/osm/src/test/resources/org/orbisgis/orbisprocess/geoclimate/osm/config) and [BD Topo V2](https://github.com/orbisgis/geoclimate/tree/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config)).
 
 Depending on the input dataset, these configuration files allows the user to "play" various scenarios which can be summarized with the illustration below.
 
@@ -92,22 +92,22 @@ Depending on the input dataset, these configuration files allows the user to "pl
 
 In details, below are listed the different possibilities offered by this files:
 
-For OSM
+For [OSM](https://github.com/orbisgis/geoclimate/tree/master/osm/src/test/resources/org/orbisgis/orbisprocess/geoclimate/osm/config)
 
 
-- [osm_workflow_envelope_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_envelope_folderoutput.json) 
-- [osm_workflow_mixedfilter_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_mixedfilter_folderoutput.json) 
-- [osm_workflow_placename_dboutput.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_placename_dboutput.json) 
-- [osm_workflow_placename_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_placename_folderoutput.json)
+- [osm_workflow_envelope_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/osm/src/test/resources/org/orbisgis/orbisprocess/geoclimate/osm/config/osm_workflow_envelope_folderoutput.json) 
+- [osm_workflow_mixedfilter_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/osm/src/test/resources/org/orbisgis/orbisprocess/geoclimate/osm/config/osm_workflow_mixedfilter_folderoutput.json) 
+- [osm_workflow_placename_dboutput.json](https://github.com/orbisgis/geoclimate/blob/master/osm/src/test/resources/org/orbisgis/orbisprocess/geoclimate/osm/config/osm_workflow_placename_dboutput.json) 
+- [osm_workflow_placename_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/osm/src/test/resources/org/orbisgis/orbisprocess/geoclimate/osm/config/osm_workflow_placename_folderoutput.json)
 
-For BD Topo v2
+For [BD Topo V2](https://github.com/orbisgis/geoclimate/tree/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config)
 
 
-- [bdtopo_workflow_dbinput_dboutput.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/bdtopo_workflow_dbinput_dboutput.json)
-- [bdtopo_workflow_folderinput_dboutput.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/bdtopo_workflow_folderinput_dboutput.json) 
-- [bdtopo_workflow_folderinput_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/bdtopo_workflow_folderinput_folderoutput.json) 
-- [bdtopo_workflow_folderinput_folderoutput_id_zones.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/bdtopo_workflow_folderinput_folderoutput_id_zones.json)
-- [bdtopo_workflow_folderinput_id_zones_folderoutput_tablenames.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/bdtopo_workflow_folderinput_id_zones_folderoutput_tablenames.json) 
+- [bdtopo_workflow_dbinput_dboutput.json](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_dbinput_dboutput.json)
+- [bdtopo_workflow_folderinput_dboutput.json](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_dboutput.json) 
+- [bdtopo_workflow_folderinput_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_folderoutput.json) 
+- [bdtopo_workflow_folderinput_folderoutput_id_zones.json](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_folderoutput_id_zones.json)
+- [bdtopo_workflow_folderinput_id_zones_folderoutput_tablenames.json](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_id_zones_folderoutput_tablenames.json) 
 
 
 
@@ -122,11 +122,11 @@ Inside these configuration files, we have the following entries:
     - Case with a `folder` : specify the address of the folder where the input files are stored. There will be as many cities processed as there are zone id (`id_zone` = CODE INSEE in France)  found in the `IRIS_GE` table.
     - Case with a `database` : you will have to fill the following informations
       - connexion informations: JDBC url, user, password
-      - `tables` : for each of the needed tables, point out the tables with their respectives schema (e.g `ign_bdtopo.bati_indifferencie`)
+      - `tables` : for each of the needed tables, point out the tables with their respective schema (e.g `ign_bdtopo.bati_indifferencie`)
       - `id_zones` : the list of the zone id (`id_zone` = CODE INSEE in France) (between 1 and *n* id_zone)
   - for OSM,
     - a (list of) placename(s),
-  - *or* a bounding box *(aslo called envelop or bbox)*, defined thanks to its coordinates (in Lat/Long - WGS84),
+  - *or* a bounding box *(also called envelop or bbox)*, defined thanks to its coordinates (in Lat/Long - WGS84),
     - *or* a mix between placename(s) and bbox.
 - **`output`** : the part where the output informations are filled. Choose to export in a:
   - `folder`: specify the address of the folder where the output files will be stored
@@ -135,7 +135,7 @@ Inside these configuration files, we have the following entries:
 
 #### Example
 
-Below is an example with the configuration file [bdtopo_workflow_folderinput_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/bdtopo_workflow_folderinput_folderoutput.json) 
+Below is an example with the configuration file [bdtopo_workflow_folderinput_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_folderoutput.json) 
 
 ```json
 {
@@ -169,7 +169,7 @@ Below is an example with the configuration file [bdtopo_workflow_folderinput_fol
 
 ### Execute the workflow
 
-Once you edited and adapted your configuration file to your needs, you are ready to run the Geoclimate workflow. To do so, the user as to adapt (by choosing the process `Geoclimate.Workflow.OSM()` or `Geoclimate.Workflow.BDTOPO_V2()` ) and execute the following groovy script (see how [here](../../for_users/execution_tools.md)).
+Once you edited and adapted your configuration file to your needs, you are ready to run the Geoclimate workflow. To do so, the user as to adapt (by choosing the process `Geoclimate.OSM.workflow` or `Geoclimate.BDTOPO_V2.workflow` ) and execute the following groovy script (see how [here](../../for_users/execution_tools.md)).
 
 ```groovy
 // Declaration of the maven repository
@@ -187,9 +187,9 @@ Geoclimate.logger = logger
 
 // The OSM or BD Topo v2 process is stored in a variable called "process" (and it instantiates the process at the same time).
 // Choose one of these two following instructions, depending on your input dataset
-def process = Geoclimate.Workflow.OSM()
+def process = Geoclimate.OSM.workflow
 // or
-def process = Geoclimate.Workflow.BDTOPO_V2()
+def process = Geoclimate.BDTOPO_V2.workflow
 
 // We execute the process (OSM or BD Topo v2) using the only input parameter : the configuration file
 process.execute(configurationFile:['your local configuration file adress'])
