@@ -257,7 +257,9 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 
         // Copy the resulting file to the corresponding folder for test
         cityCodesToProcess.each{cityCode ->
-            new File("/home/decide/Code/Intel/geoclimate-1/geoindicators/src/test/resources/org/orbisgis/orbisprocess/geoclimate/geoindicators/lczTests/zone_${cityCode}_rsu_lcz.geojson") << new File("/tmp/bdtopo_v2_${cityCode}/rsu_lcz.geojson").asWritable()
+            def target = new File("/home/decide/Code/Intel/geoclimate-1/geoindicators/src/test/resources/org/orbisgis/orbisprocess/geoclimate/geoindicators/lczTests/zone_${cityCode}_rsu_lcz.geojson")
+            target.delete()
+            target << new File("/tmp/bdtopo_v2_${cityCode}/rsu_lcz.geojson").asWritable()
         }
     }
 

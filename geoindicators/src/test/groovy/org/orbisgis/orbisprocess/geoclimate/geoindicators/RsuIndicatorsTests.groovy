@@ -396,7 +396,7 @@ class RsuIndicatorsTests {
 
     @Test
     void surfaceFractionTest() {
-        // Only the RSU 5 is conserved for the test
+        // Only the RSU 4 is conserved for the test
         h2GIS.execute "DROP TABLE IF EXISTS rsu_tempo;" +
                 "CREATE TABLE rsu_tempo AS SELECT * " +
                 "FROM rsu_test WHERE id_rsu = 4"
@@ -460,5 +460,33 @@ class RsuIndicatorsTests {
         assertEquals(3.0/20, result2["low_vegetation_fraction"])
         assertEquals(1.0/4, result2["water_fraction"])
         assertEquals(0, result2["building_fraction"])
+    }
+
+    @Test
+    void surfaceFractionTest2() {
+        // Test that surface fraction is set to zero rather than null when there is no such surface in a RSU
+        h2GIS.execute """DROP TABLE IF EXISTS rsu_tempo, smallest_com;
+                CREATE TABLE rsu_tempo(id_rsu INTEGER, the_geom GEOMETRY); 
+                INSERT INTO rsu_tempo VALUES (1, 'POLYGON((0 0, 0 20, 10 20, 10 0, 0 0))'::GEOMETRY),
+                                             (2, 'POLYGON((10 0, 10 20, 20 20, 20 0, 10 0))'::GEOMETRY);
+                CREATE TABLE smallest_com(id_rsu INTEGER, water INTEGER, building INTEGER, high_vegetation INTEGER,
+                                       low_vegetation INTEGER, road INTEGER, impervious INTEGER, area DOUBLE);
+                INSERT INTO smallest_com VALUES (1, 1, 0, 1, 0, 0, 0, 100.0), (1, 1, 0, 0, 0, 0, 0, 100.0);"""
+
+        // Apply the surface fractions
+        def  p0 =  Geoindicators.RsuIndicators.surfaceFractions()
+        def superpositions0 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]]
+        def priorities0 = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
+        assertTrue p0.execute([
+                rsuTable: "rsu_tempo", spatialRelationsTable: "smallest_com",
+                superpositions: superpositions0,
+                priorities: priorities0,
+                prefixName: "test", datasource: h2GIS])
+        def result1 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName} WHERE id_rsu = 1")
+        def result2 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName} WHERE id_rsu = 2")
+        assertEquals(0.5, result1["high_vegetation_water_fraction"])
+        assertEquals(0.5, result1["water_fraction"])
+        assertEquals(0.0, result2["high_vegetation_low_vegetation_fraction"])
+        assertEquals(0.0, result2["low_vegetation_fraction"])
     }
 }

@@ -93,6 +93,9 @@ class TypologyClassificationTests {
                     assertTrue(row.min_distance>0)
                     assertTrue(row.PSS<1)
                 }
+                else if(row.id_rsu==8){
+                    assertEquals(999, row.LCZ1)
+                }
         }
     }
 
@@ -219,10 +222,12 @@ class TypologyClassificationTests {
             datasource.eachRow("SELECT * FROM $lczToTestCity"){row ->
                 if (row.expected == 0){
                     def lczUnexpected = row.lcz_type.split(",")
+                    println "Unexpected : $lczUnexpected VERSUS actual : ${row.lcz1} (LCZ1) and ${row.lcz2} (LCZ2)"
                     assertTrue !lczUnexpected.contains(row.lcz1.toString()) & !lczUnexpected.contains(row.lcz2.toString())
                 }
                 if (row.expected == 1) {
                     def lczExpected = row.lcz_type.split(",")
+                    println "Expected : $lczExpected VERSUS actual : ${row.lcz1} (LCZ1) and ${row.lcz2} (LCZ2)"
                     assertTrue lczExpected.contains(row.lcz1.toString()) || lczExpected.contains(row.lcz2.toString())
                 }
             }

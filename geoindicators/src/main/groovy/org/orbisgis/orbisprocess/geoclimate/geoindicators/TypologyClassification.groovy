@@ -139,7 +139,7 @@ IProcess identifyLczType() {
                                                          AS HIGH_ALL_VEGETATION,
                                                         LOW_VEGETATION_FRACTION_LCZ+HIGH_VEGETATION_FRACTION_LCZ AS ALL_VEGETATION
                                             FROM        $rsuAllIndicators
-                                            WHERE       BUILDING_FRACTION_LCZ < 0.1 AND ASPECT_RATIO < 0.1;"""
+                                            WHERE       (BUILDING_FRACTION_LCZ < 0.1 OR BUILDING_FRACTION_LCZ IS NULL) AND (ASPECT_RATIO < 0.1 OR ASPECT_RATIO IS NULL);"""
 
                 datasource.getTable(ruralLCZ).IMPERVIOUS_FRACTION_LCZ.createIndex()
                 datasource.getTable(ruralLCZ).PERVIOUS_FRACTION_LCZ.createIndex()
@@ -152,11 +152,13 @@ IProcess identifyLczType() {
                                                                 THEN 105
                                                                 ELSE CASE WHEN ALL_VEGETATION<WATER_FRACTION_LCZ
                                                                         THEN 107
-                                                                        ELSE CASE WHEN HIGH_ALL_VEGETATION<0.1
-                                                                                THEN 104
-                                                                                ELSE CASE WHEN HIGH_ALL_VEGETATION<0.75
-                                                                                        THEN 102
-                                                                                        ELSE 101 END END END END AS LCZ1,
+                                                                        ELSE CASE WHEN HIGH_ALL_VEGETATION IS NULL
+                                                                                THEN 999
+                                                                                ELSE CASE WHEN HIGH_ALL_VEGETATION<0.1
+                                                                                        THEN 104
+                                                                                        ELSE CASE WHEN HIGH_ALL_VEGETATION<0.75
+                                                                                                THEN 102
+                                                                                                ELSE 101 END END END END END AS LCZ1,
                                                         null AS LCZ2, null AS min_distance, null AS PSS 
                                             FROM $ruralLCZ"""
 
