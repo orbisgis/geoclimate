@@ -1,4 +1,0 @@
-ID_CROSSING,TERM,DEFINITION,SOURCE
-1,bridge,"Artificial construction that spans features such as roads, railways, waterways or valleys and carries a road, railway or other feature",https://wiki.openstreetmap.org/wiki/Key:bridge
-2,tunnel,"Underground passage for roads, railways or similar",https://wiki.openstreetmap.org/wiki/Key:tunnel
-3,null,Everything but a bridge or a tunnel,

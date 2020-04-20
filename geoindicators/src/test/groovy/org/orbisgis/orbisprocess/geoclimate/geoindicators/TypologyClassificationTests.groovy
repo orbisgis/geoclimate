@@ -124,7 +124,10 @@ class TypologyClassificationTests {
 
         // Remove unnecessary column
         h2GIS.execute "ALTER TABLE $trainingTableName DROP COLUMN ${colsToRemove.join(",")};"
-        
+
+        //Reload the table due to the schema modification
+        trainingTable.reload()
+
         def  pmed =  Geoindicators.TypologyClassification.createRandomForestClassif()
         assertTrue pmed.execute([trainingTableName: trainingTableName, varToModel: var2model,
                                  save: true, pathAndFileName: savePath,

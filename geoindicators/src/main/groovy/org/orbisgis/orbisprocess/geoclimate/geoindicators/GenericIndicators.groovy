@@ -269,14 +269,14 @@ IProcess geometryProperties() {
 IProcess buildingDirectionDistribution() {
     def final GEOMETRIC_FIELD = "the_geom"
     def final ID_FIELD_BU = "id_build"
-    def final INEQUALITY = "BUILDING_DIRECTION_INEQUALITY"
+    def final INEQUALITY = "BUILDING_DIRECTION_EQUALITY"
     def final UNIQUENESS = "BUILDING_DIRECTION_UNIQUENESS"
     def final BASENAME = "MAIN_BUILDING_DIRECTION"
 
     return create({
         title "Perkins skill score building direction"
         inputs buildingTableName: String, inputIdUp: String, angleRangeSize: 15, prefixName: String,
-                datasource: JdbcDataSource, distribIndicator: ["inequality", "uniqueness"]
+                datasource: JdbcDataSource, distribIndicator: ["equality", "uniqueness"]
         outputs outputTableName: String
         run { buildingTableName, inputIdUp, angleRangeSize, prefixName, datasource, distribIndicator ->
 
@@ -346,7 +346,7 @@ IProcess buildingDirectionDistribution() {
                                         ALTER TABLE $resultsDistrib RENAME TO $outputTableName;
                                         ALTER TABLE $outputTableName RENAME COLUMN EXTREMUM_COL TO $BASENAME;
                                         ALTER TABLE $outputTableName RENAME COLUMN UNIQUENESS_VALUE TO $UNIQUENESS;
-                                        ALTER TABLE $outputTableName RENAME COLUMN INEQUALITY_VALUE TO $INEQUALITY;"""
+                                        ALTER TABLE $outputTableName RENAME COLUMN EQUALITY_VALUE TO $INEQUALITY;"""
 
                 /*
                 if (distribIndicator.contains("uniqueness")){
@@ -398,7 +398,7 @@ IProcess buildingDirectionDistribution() {
  * This process is used to compute indicators that qualify the repartition of a distribution. First, it calculates
  * the lowest or the greatest class of the distribution. Then it calculates the shape of the distribution through
  * two possible indicators:
- * - an indicator of general inequality: the Perkins Skill Score is calculated (Perkins et al., 2007)
+ * - an indicator of general equality: the Perkins Skill Score is calculated (Perkins et al., 2007)
  * - an indicator of uniqueness: the weight of the greatest (or the lowest) class is divided by
  * "the weight of the second greatest (or lowest) class + the weight of the greatest (or the lowest) class"
  *
@@ -408,8 +408,8 @@ IProcess buildingDirectionDistribution() {
  * of the distribution to characterize
  * @param inputId The ID of the input data
  * @param distribIndicator List containing the type of indicator to calculate to define the repartition of the distribution
- * (default ["inequality", "uniqueness"])
- *      --> "inequality": the Perkins Skill Score is calculated
+ * (default ["equality", "uniqueness"])
+ *      --> "equality": the Perkins Skill Score is calculated
  *      --> "uniqueness": the weight of the greatest (or the lowest) class is divided by
  *                      "the weight of the second greatest (or lowest) class + the weight of the greatest (or the lowest) class"
  * @param extremum String indicating the kind of extremum to calculate (default "GREATEST")
@@ -426,126 +426,131 @@ IProcess buildingDirectionDistribution() {
  * @author Jérémy Bernard
  */
 IProcess distributionCharacterization() {
-    def final INEQUALITY = "INEQUALITY_VALUE"
+    def final EQUALITY = "EQUALITY_VALUE"
     def final UNIQUENESS = "UNIQUENESS_VALUE"
     def final EXTREMUM_COL = "EXTREMUM_COL"
-    def final EXTREMUM_VAL = "EXTREMUM_VAL"
-    def final COLUMN_VAL = "COLUMN_VAL"
-    def final COLUMN_NAME = "COLUMN_NAME"
     def final BASENAME = "DISTRIBUTION_REPARTITION"
 
     return create({
         title "Distribution characterization"
         inputs distribTableName: String, inputId: String, prefixName: String,
-                datasource: JdbcDataSource, distribIndicator: ["inequality", "uniqueness"], extremum:"GREATEST"
+                datasource: JdbcDataSource, distribIndicator: ["equality", "uniqueness"], extremum:"GREATEST"
         outputs outputTableName: String
         run { distribTableName, inputId, prefixName, datasource, distribIndicator, extremum ->
 
-            info "Executing inequality and uniqueness indicators"
+            info "Executing equality and uniqueness indicators"
 
-            // The name of the outputTableName is constructed
-            def outputTableName = getOutputTableName(prefixName, BASENAME)
+            if(extremum.toUpperCase() == "GREATEST" || extremum.toUpperCase() == "LEAST") {
+                // The name of the outputTableName is constructed
+                def outputTableName = getOutputTableName(prefixName, BASENAME)
 
-            // To avoid overwriting the output files of this step, a unique identifier is created
-            // Temporary table names
-            def dist_tot = "dist_tot$uuid"
-            def perk_fin = "perk_fin$uuid"
-            def dist_bdd = "dist_bdd$uuid"
+                // Get the distribution columns and the number of columns
+                def distribColumns = datasource.getTable(distribTableName).getColumns()
+                distribColumns.remove(inputId.toUpperCase())
+                def nbDistCol = distribColumns.size()
+
+                def idxExtrem = nbDistCol - 1
+                def idxExtrem_1 = nbDistCol - 2
+                if (extremum.toUpperCase() == "LEAST") {
+                    idxExtrem = 0
+                    idxExtrem_1 = 1
+                }
 
 
-            // Get the distribution columns and the number of columns
-            def distribColumns = datasource.getTable(distribTableName).getColumns()
-            distribColumns.remove(inputId.toUpperCase())
-            def nbDistCol = distribColumns.size()
+                if (distribIndicator.contains("equality") && !distribIndicator.contains("uniqueness")) {
+                    datasource.execute """CREATE TABLE $outputTableName($inputId integer, 
+                                                                        $EQUALITY DOUBLE,
+                                                                        $EXTREMUM_COL VARCHAR)"""
+                    // Will insert values by batch of 1000 in the table
+                    datasource.withBatch(1000) { stmt ->
+                        datasource.eachRow("SELECT * FROM $distribTableName") { row ->
+                            def rowMap = row.toRowResult()
+                            def id_rsu = rowMap[inputId]
+                            rowMap.remove(inputId.toUpperCase())
+                            def sortedMap = rowMap.sort { it.value }
+                            stmt.addBatch """INSERT INTO $outputTableName 
+                                                    VALUES ($id_rsu, ${getEquality(sortedMap, nbDistCol)},
+                                                            '${sortedMap.keySet()[idxExtrem]}')"""
+                        }
+                    }
 
-            // Create the query to calculate the sum of all columns
-            String sqlQueryTot = """DROP TABLE IF EXISTS $dist_tot; 
-                                    CREATE TABLE $dist_tot 
-                                        AS SELECT *, ${distribColumns.join("+")} AS TOT 
-                                        FROM $distribTableName;"""
+                } else if (!distribIndicator.contains("equality") && distribIndicator.contains("uniqueness")) {
+                    datasource.execute """CREATE TABLE $outputTableName($inputId integer, 
+                                                                        $UNIQUENESS DOUBLE,
+                                                                        $EXTREMUM_COL VARCHAR)"""
+                    // Will insert values by batch of 1000 in the table
+                    datasource.withBatch(1000) { stmt ->
+                        datasource.eachRow("SELECT * FROM $distribTableName") { row ->
+                            def rowMap = row.toRowResult()
+                            def id_rsu = rowMap[inputId]
+                            rowMap.remove(inputId.toUpperCase())
+                            def sortedMap = rowMap.sort { it.value }
+                            stmt.addBatch """INSERT INTO $outputTableName 
+                                                    VALUES ($id_rsu, ${getUniqueness(sortedMap, idxExtrem, idxExtrem_1)},
+                                                            '${sortedMap.keySet()[idxExtrem]}')"""
+                        }
+                    }
+                } else if (distribIndicator.contains("equality") && distribIndicator.contains("uniqueness")) {
+                    datasource.execute """CREATE TABLE $outputTableName($inputId integer, 
+                                                                        $EQUALITY DOUBLE,
+                                                                        $UNIQUENESS DOUBLE,
+                                                                        $EXTREMUM_COL VARCHAR)"""
 
-            // Create the query to calculate the greatest or lowest value
-            String sqlQueryMain = """DROP TABLE IF EXISTS $perk_fin; 
-                                    CREATE TABLE $perk_fin AS SELECT $inputId, """
-            String sqlQueryExtremum = "$extremum(${distribColumns.join(",")})"
-            distribColumns.each{col ->
-                sqlQueryMain += "CASEWHEN($sqlQueryExtremum = $col, '$col', "
-            }
-            String sqlQueryParenthesis = new String(new char[nbDistCol]).replace("\0", ")")
-            sqlQueryMain += "null" + sqlQueryParenthesis
+                    // Will insert values by batch of 1000 in the table
+                    datasource.withBatch(1000) { stmt ->
 
-            // Create the piece of query to calculate the inequality indicator (if 'distribIndicator' contains 'inequality')
-            String sqlQueryPerkins = "LEAST(1./$nbDistCol,${distribColumns.join("::float/TOT)+LEAST(1./$nbDistCol,")}::float/TOT)"
-
-            // The queries are completed and combined differently depending whether 'distribIndicator' contains 'inequality'
-            if(distribIndicator.contains("inequality")){
-                sqlQueryMain = """$sqlQueryMain AS $EXTREMUM_COL, $sqlQueryExtremum AS $EXTREMUM_VAL,
-                                    $sqlQueryPerkins AS $INEQUALITY
-                                    FROM $dist_tot;"""
+                        datasource.eachRow("SELECT * FROM $distribTableName") { row ->
+                            def rowMap = row.toRowResult()
+                            def id_rsu = rowMap[inputId]
+                            rowMap.remove(inputId)
+                            def sortedMap = rowMap.sort { it.value }
+                            stmt.addBatch """INSERT INTO $outputTableName 
+                                                    VALUES ($id_rsu, ${getEquality(sortedMap, nbDistCol)},
+                                                            ${getUniqueness(sortedMap, idxExtrem, idxExtrem_1)},
+                                                            '${sortedMap.keySet()[idxExtrem]}')"""
+                        }
+                    }
+                }
+                [outputTableName: outputTableName]
             }
             else{
-                sqlQueryMain = """$sqlQueryMain AS $EXTREMUM_COL, $sqlQueryExtremum AS $EXTREMUM_VAL
-                                    FROM $dist_tot;"""
+                error """The 'extremum' input parameter should be equal to "GREATEST" or "LEAST"""
             }
-
-            // The queries are executed
-            datasource.execute sqlQueryTot + sqlQueryMain
-
-            datasource.getTable(perk_fin)[EXTREMUM_COL].createIndex()
-
-            // Create the piece of query to calculate the inequality indicator (if 'distribIndicator' contains 'inequality')
-            if (distribIndicator.contains("uniqueness")){
-                // Reorganise the distribution Table into a simple three columns table (ID, COLUMN_VAL, COLUMN_NAME)
-                def sqlQueryUnique = """DROP TABLE IF EXISTS $dist_bdd;
-                                        CREATE TABLE $dist_bdd($inputId INTEGER, $COLUMN_VAL DOUBLE, $COLUMN_NAME VARCHAR)
-                                                 AS (SELECT """
-                for (col in distribColumns.take(nbDistCol - 1)){
-                    sqlQueryUnique += "$inputId, $col, '$col' FROM $distribTableName UNION ALL SELECT "
-                }
-                sqlQueryUnique += """$inputId, ${distribColumns[-1]}, '${distribColumns[-1]}' FROM $distribTableName); 
-                                        CREATE INDEX ON $dist_bdd USING BTREE($COLUMN_NAME);
-                                        CREATE INDEX ON $dist_bdd USING BTREE($inputId);
-                                        CREATE INDEX ON $dist_bdd USING BTREE($COLUMN_VAL);"""
-                datasource.execute sqlQueryUnique
-
-                def sqlQueryLast = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
-                        "SELECT b.$inputId, a.$EXTREMUM_COL,"
-
-                if (distribIndicator.contains("inequality")) {
-                    sqlQueryLast += " a.$INEQUALITY, "
-                }
-                // The uniqueness indicator is calculated differently depending of the extremum value (greatest or lowest)
-                if(extremum.toUpperCase()=="GREATEST"){
-                    sqlQueryLast += """(a.$EXTREMUM_VAL-MAX(b.$COLUMN_VAL))/(MAX(b.$COLUMN_VAL)+a.$EXTREMUM_VAL) AS $UNIQUENESS  
-                                       FROM         $perk_fin a 
-                                       RIGHT JOIN   $dist_bdd b
-                                       ON           a.$inputId = b.$inputId
-                                       WHERE        b.$COLUMN_NAME <> a.$EXTREMUM_COL
-                                       GROUP BY     b.$inputId;"""
-                }
-                else if(extremum.toUpperCase()=="LEAST"){
-                    sqlQueryLast += """CASEWHEN(MIN(b.$COLUMN_VAL)+a.$EXTREMUM_VAL=0,
-                                                0,
-                                                (MIN(b.$COLUMN_VAL)-a.$EXTREMUM_VAL)/(MIN(b.$COLUMN_VAL)+a.$EXTREMUM_VAL)) AS $UNIQUENESS  
-                                       FROM         $perk_fin a 
-                                       RIGHT JOIN   $dist_bdd b
-                                       ON           a.$inputId = b.$inputId
-                                       WHERE        b.$COLUMN_NAME <> a.$EXTREMUM_COL
-                                       GROUP BY     b.$inputId;"""
-                }
-
-                // Execute the query
-                datasource.execute sqlQueryLast
-            }
-            // Else just rename the table containing the inequality indicator into the output table
-            else{
-                datasource.execute "ALTER TABLE $perk_fin RENAME TO $outputTableName;"
-            }
-
-            // The temporary tables are deleted
-            datasource.execute "DROP TABLE IF EXISTS $dist_tot, $perk_fin, $dist_bdd;"
-
-            [outputTableName: outputTableName]
         }
     })
+}
+
+/**
+ * This function calculates the UNIQUENESS indicator of a distribution for a given RSU
+ * @param myMap The row of the table to examine
+ * @param idxExtrem when the row is sorted by ascending values, id of the extremum value to get
+ * @param idxExtrem_1 when the row is sorted by ascending values, id of the second extremum value to get
+ * @return A double : the value of the UNIQUENESS indicator for this RSU
+ */
+static double getUniqueness(def myMap, def idxExtrem, def idxExtrem_1) {
+    def Extrem = myMap.values()[idxExtrem]
+    def Extrem_1 = myMap.values()[idxExtrem_1]
+
+    def uniqueness = 0
+    if(Extrem+Extrem_1 > 0){
+        uniqueness = Math.abs(Extrem-Extrem_1)/(Extrem+Extrem_1)
+    }
+
+    return uniqueness
+}
+
+/**
+ * This function calculates the EQUALITY indicator of a distribution for a given RSU
+ * @param myMap The row of the table to examine
+ * @param nbDistCol the number of columns of the distribution
+ * @return A double : the value of the EQUALITY indicator for this RSU
+ */
+static double getEquality(def myMap, def nbDistCol) {
+    def sum = myMap.values().sum()
+    def equality = 0
+    myMap.values().each{it ->
+        equality += Math.min(it, sum/nbDistCol)
+    }
+
+    return equality/sum
 }
