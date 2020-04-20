@@ -78,7 +78,7 @@ Download [this configuration file](https://github.com/orbisgis/geoclimate/blob/m
 
 Launch DBeaver and open a new Groovy console (if not already installed, please follow these [instructions](../execution_tools.md)).
 
-As explained [before](../../chain_documentation/workflow/description.md#And-technically) we will execute the `BDTOPO_V2` process, which is in the workflow groovy file : `Geoclimate.BDTOPO_V2.workflow`
+As explained [before](../../chain_documentation/workflow/description.md#And-technically) we will execute the `BDTOPO_V2` process, which is in the workflow groovy file : `Geoclimate.Workflow.BDTOPO_V2()`
 
 So, in the Groovy console, copy and paste the following script
 
@@ -89,7 +89,7 @@ So, in the Groovy console, copy and paste the following script
 import org.orbisgis.orbisprocess.geoclimate.Geoclimate
 Geoclimate.logger = logger
 
-def process = Geoclimate.BDTOPO_V2.workflow
+def process = Geoclimate.Workflow.BDTOPO_V2()
 process.execute(configurationFile:'/home/geoclimate/bdtopo/config_all_zones.json')
                    
 logger.info process.results.outputMessage
@@ -206,7 +206,7 @@ As seen before, launch DBeaver, open a new Groovy console and execute the follow
 import org.orbisgis.orbisprocess.geoclimate.Geoclimate
 Geoclimate.logger = logger
 
-def process = Geoclimate.BDTOPO_V2.workflow
+def process = Geoclimate.Workflow.BDTOPO_V2()
 process.execute(configurationFile:'/home/geoclimate/bdtopo/config_id_zone.json')
                    
 logger.info process.results.outputMessage
@@ -275,7 +275,7 @@ As seen before, launch DBeaver, open a new Groovy console and execute the follow
 import org.orbisgis.orbisprocess.geoclimate.Geoclimate
 Geoclimate.logger = logger
 
-def process = Geoclimate.BDTOPO_V2.workflow
+def process = Geoclimate.Workflow.BDTOPO_V2()
 process.execute(configurationFile:'/home/geoclimate/bdtopo/config_id_zone.json')
                    
 logger.info process.results.outputMessage

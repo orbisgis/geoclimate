@@ -169,7 +169,7 @@ Below is an example with the configuration file [bdtopo_workflow_folderinput_fol
 
 ### Execute the workflow
 
-Once you edited and adapted your configuration file to your needs, you are ready to run the Geoclimate workflow. To do so, the user as to adapt (by choosing the process `Geoclimate.OSM.workflow` or `Geoclimate.BDTOPO_V2.workflow` ) and execute the following groovy script (see how [here](../../for_users/execution_tools.md)).
+Once you edited and adapted your configuration file to your needs, you are ready to run the Geoclimate workflow. To do so, the user as to adapt (by choosing the process `Geoclimate.Workflow.OSM()` or `Geoclimate.Workflow.BDTOPO_V2()` ) and execute the following groovy script (see how [here](../../for_users/execution_tools.md)).
 
 ```groovy
 // Declaration of the maven repository
@@ -187,9 +187,9 @@ Geoclimate.logger = logger
 
 // The OSM or BD Topo v2 process is stored in a variable called "process" (and it instantiates the process at the same time).
 // Choose one of these two following instructions, depending on your input dataset
-def process = Geoclimate.OSM.workflow
+def process = Geoclimate.Workflow.OSM()
 // or
-def process = Geoclimate.BDTOPO_V2.workflow
+def process = Geoclimate.Workflow.BDTOPO_V2()
 
 // We execute the process (OSM or BD Topo v2) using the only input parameter : the configuration file
 process.execute(configurationFile:['your local configuration file adress'])

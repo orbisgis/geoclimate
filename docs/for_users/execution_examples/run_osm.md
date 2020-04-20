@@ -68,7 +68,7 @@ Then:
 
 Launch DBeaver and open a new Groovy console (if not already installed, please follow these [instructions](../execution_tools.md)).
 
-As explained [before](../../chain_documentation/workflow/description.md#And-technically) we will execute the `OSM` process, which is in the workflow groovy file : `Geoclimate.OSM.workflow`
+As explained [before](../../chain_documentation/workflow/description.md#And-technically) we will execute the `OSM` process, which is in the workflow groovy file : `Geoclimate.Workflow.OSM()`
 
 So, in the Groovy console, copy and paste the following script
 
@@ -79,7 +79,7 @@ So, in the Groovy console, copy and paste the following script
 import org.orbisgis.orbisprocess.geoclimate.Geoclimate
 Geoclimate.logger = logger
 
-def process = Geoclimate.OSM.workflow
+def process = Geoclimate.Workflow.OSM()
 process.execute(configurationFile:'/home/geoclimate/osm/osm_workflow_placename_folderoutput.json')
                    
 logger.info process.results.outputMessage
@@ -185,7 +185,7 @@ Download this file : [osm_workflow_envelope_folderoutput.json](https://github.co
 
 Launch DBeaver and open a new Groovy console (if not already installed, please follow these [instructions](../execution_tools.md)).
 
-As explained before we will execute the OSM process, which is in the workflow groovy file : `Geoclimate.OSM.workflow`
+As explained before we will execute the OSM process, which is in the workflow groovy file : `Geoclimate.Workflow.OSM()`
 
 So, in the Groovy console, copy and paste the following script
 
@@ -196,7 +196,7 @@ So, in the Groovy console, copy and paste the following script
 import org.orbisgis.orbisprocess.geoclimate.Geoclimate
 Geoclimate.logger = logger
 
-def process = Geoclimate.OSM.workflow
+def process = Geoclimate.Workflow.OSM()
 process.execute(configurationFile:'/home/geoclimate/osm/osm_workflow_envelope_folderoutput.json')
                    
 logger.info process.results.outputMessage
