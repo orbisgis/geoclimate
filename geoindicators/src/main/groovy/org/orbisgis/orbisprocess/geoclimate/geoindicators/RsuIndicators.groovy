@@ -1165,7 +1165,8 @@ IProcess smallestCommunGeometry() {
                 CREATE INDEX IF NOT EXISTS ids_$roadTable_zindex0_buffer ON $roadTable_zindex0_buffer USING RTREE(the_geom);
                 CREATE TABLE $road_tmp AS SELECT ST_CollectionExtract(st_intersection(st_union(st_accum(a.the_geom)),b.the_geom),3) AS the_geom, b.id_rsu FROM
                 $roadTable_zindex0_buffer AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom) GROUP BY b.id_rsu;
-                DROP TABLE IF EXISTS $roadTable_zindex0_buffer;"""
+                """
+                    println datasource.firstRow("SELECT * FROM $roadTable_zindex0_buffer")
                     tablesToMerge+= ["$road_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $road_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
                 }
 

@@ -247,7 +247,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     @Test //Integration tests
     //@Disabled
     void lczProduceTestData() {
-        def cityCodesToProcess = ["56167"]
+        def cityCodesToProcess = ["44109"]
 
         def configFile = getClass().getResource("processingChain/lczTests/lczDebug.json").toURI()
 
