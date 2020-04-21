@@ -6,9 +6,9 @@
     },
     "input" : {
         "database": {
-            "user": "jeremy",
-            "password": "bernardo",
-            "url": "jdbc:postgresql://149.202.221.161:5432/paendora",
+            "user": "bobo",
+            "password": "bubu",
+            "url": "BLABLA",
             "id_zones":["01306", "56167", "56164"],
             "tables": {"iris_ge":"ign_iris.iris_ge_2016",
 "bati_indifferencie":"ign_bdtopo_2017.bati_indifferencie",
