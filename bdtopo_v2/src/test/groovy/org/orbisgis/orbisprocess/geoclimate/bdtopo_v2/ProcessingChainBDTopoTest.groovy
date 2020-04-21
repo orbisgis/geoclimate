@@ -247,7 +247,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     @Test //Integration tests
     //@Disabled
     void lczProduceTestData() {
-        def cityCodesToProcess = ["44109"]
+        def cityCodesToProcess = ["01306", "56167", "56164"]
 
         def configFile = getClass().getResource("processingChain/lczTests/lczDebug.json").toURI()
 
@@ -259,7 +259,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         cityCodesToProcess.each{cityCode ->
             def target = new File("/home/decide/Code/Intel/geoclimate-1/geoindicators/src/test/resources/org/orbisgis/orbisprocess/geoclimate/geoindicators/lczTests/zone_${cityCode}_rsu_lcz.geojson")
             target.delete()
-            target << new File("/tmp/bdtopo_v2_${cityCode}/rsu_lcz.geojson").asWritable()
+            target << new File("/home/decide/Bureau/LCZ/bdtopo_v2_${cityCode}/rsu_lcz.geojson").asWritable()
         }
     }
 
