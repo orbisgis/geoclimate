@@ -331,6 +331,7 @@ def computeBlockIndicators(){
  * @param roadTable The table where are stored informations concerning roads
  * @param vegetationTable The table where are stored informations concerning vegetation
  * @param hydrographicTable The table where are stored informations concerning water
+ * @param imperviousTable The table where are stored the impervious areas
  * @param facadeDensListLayersBottom the list of height corresponding to the bottom of each vertical layers used for calculation
  * of the rsu_projected_facade_area_density which is then used to calculate the height of roughness (default [0, 10, 20, 30, 40, 50])
  * @param facadeDensNumberOfDirection The number of directions used for the calculation - according to the method used it should
@@ -378,7 +379,8 @@ def computeRSUIndicators() {
         inputs  datasource                 : JdbcDataSource,   buildingTable               : String,
                 rsuTable                   : String,           prefixName                  : "",
                 vegetationTable            : String,           roadTable                   : String,
-                hydrographicTable          : String,           facadeDensListLayersBottom  : [0, 10, 20, 30, 40, 50],
+                hydrographicTable          : String,           imperviousTable             : String,
+                facadeDensListLayersBottom  : [0, 10, 20, 30, 40, 50],
                 facadeDensNumberOfDirection: 12,               svfPointDensity             : 0.008,
                 svfRayLength               : 100,              svfNumberOfDirection        : 60,
                 heightColumnName           : "height_roof",
@@ -431,7 +433,8 @@ def computeRSUIndicators() {
         outputs outputTableName: String
         run { datasource                , buildingTable                     , rsuTable,
               prefixName                , vegetationTable                   , roadTable,
-              hydrographicTable         , facadeDensListLayersBottom        , facadeDensNumberOfDirection,
+              hydrographicTable         , imperviousTable,
+              facadeDensListLayersBottom        , facadeDensNumberOfDirection,
               svfPointDensity           , svfRayLength                      , svfNumberOfDirection,
               heightColumnName          , inputFields                       , levelForRoads,
               angleRangeSizeBuDirection , svfSimplified                     , indicatorUse,
@@ -469,7 +472,8 @@ def computeRSUIndicators() {
             // Need to create the smallest geometries used as input of the surface fraction process
             def  computeSmallestGeom =  Geoindicators.RsuIndicators.smallestCommunGeometry()
             if (!computeSmallestGeom.execute([
-                    rsuTable: rsuTable,buildingTable: buildingTable,vegetationTable: vegetationTable,waterTable: hydrographicTable,
+                    rsuTable: rsuTable,buildingTable: buildingTable,roadTable : roadTable, vegetationTable: vegetationTable,waterTable: hydrographicTable,
+                    imperviousTable:imperviousTable,
                     prefixName: temporaryPrefName, datasource: datasource])){
                 info "Cannot compute the smallest commun geometries"
                 return

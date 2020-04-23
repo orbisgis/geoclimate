@@ -1,5 +1,6 @@
 package org.orbisgis.orbisprocess.geoclimate.processingchain
 
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
@@ -10,7 +11,7 @@ import org.slf4j.LoggerFactory
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertTrue
 
-class GeoIndicatorsChainTest extends ChainProcessAbstractTest{
+class GeoIndicatorsChainTest {
 
     public static Logger logger = LoggerFactory.getLogger(GeoIndicatorsChainTest.class)
 
@@ -114,6 +115,8 @@ class GeoIndicatorsChainTest extends ChainProcessAbstractTest{
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
 
+        checkRSUIndicators(datasource,GeoIndicatorsCompute_i.results.outputTableRsuIndicators, false)
+
         if (ind_i.contains("URBAN_TYPOLOGY")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
             assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
@@ -156,6 +159,9 @@ class GeoIndicatorsChainTest extends ChainProcessAbstractTest{
                 hydrographicTable: inputTableNames.hydrographicTable, indicatorUse: ind_i,
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
+
+        checkRSUIndicators(datasource,GeoIndicatorsCompute_i.results.outputTableRsuIndicators, false)
+
         if (ind_i.contains("URBAN_TYPOLOGY")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
             assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
@@ -164,6 +170,7 @@ class GeoIndicatorsChainTest extends ChainProcessAbstractTest{
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
         def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).columns
+
         // We test that there is no missing indicators in the RSU table
         for (i in expectListRsu) {
             assertTrue realListRsu.contains(i)
@@ -198,6 +205,8 @@ class GeoIndicatorsChainTest extends ChainProcessAbstractTest{
                 hydrographicTable: inputTableNames.hydrographicTable, indicatorUse: ind_i,
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
+
+        checkRSUIndicators(datasource,GeoIndicatorsCompute_i.results.outputTableRsuIndicators, false)
 
         if (ind_i.contains("URBAN_TYPOLOGY")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
@@ -242,6 +251,8 @@ class GeoIndicatorsChainTest extends ChainProcessAbstractTest{
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
 
+        checkRSUIndicators(datasource,GeoIndicatorsCompute_i.results.outputTableRsuIndicators, false)
+
         if (ind_i.contains("URBAN_TYPOLOGY")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
             assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
@@ -284,6 +295,8 @@ class GeoIndicatorsChainTest extends ChainProcessAbstractTest{
                 hydrographicTable: inputTableNames.hydrographicTable, indicatorUse: ind_i,
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
+
+        checkRSUIndicators(datasource,GeoIndicatorsCompute_i.results.outputTableRsuIndicators, false)
 
         if (ind_i.contains("URBAN_TYPOLOGY")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
@@ -328,6 +341,8 @@ class GeoIndicatorsChainTest extends ChainProcessAbstractTest{
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
 
+        checkRSUIndicators(datasource,GeoIndicatorsCompute_i.results.outputTableRsuIndicators, false)
+
         if (ind_i.contains("URBAN_TYPOLOGY")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
             assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
@@ -349,4 +364,59 @@ class GeoIndicatorsChainTest extends ChainProcessAbstractTest{
             assertEquals(null, GeoIndicatorsCompute_i.results.outputTableRsuLcz)
         }
     }
+
+    /**
+     * Method to check the result for the RSU indicators table
+     * Please add new checks here
+     */
+    def checkRSUIndicators(def datasource, def rsuIndicatorsTableName, def save){
+        //Check road_fraction > 0
+        def countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE ROAD_FRACTION>0".toString())
+        assertEquals(216, countResult.count)
+
+        //Check building_fraction > 0
+        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE BUILDING_FRACTION>0".toString())
+        assertEquals(83, countResult.count)
+
+        //Check high_vegetation_fraction > 0
+        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_fraction>0".toString())
+        assertEquals(12, countResult.count)
+
+        //Check high_vegetation_water_fraction > 0
+         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_water_fraction>0".toString())
+        assertEquals(0, countResult.count)
+
+        //Check high_vegetation_building_fraction > 0
+         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_building_fraction>0".toString())
+        assertEquals(1, countResult.count)
+
+        //Check high_vegetation_low_vegetation_fraction > 0
+        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_low_vegetation_fraction>0".toString())
+        assertEquals(0, countResult.count)
+
+        //Check high_vegetation_road_fraction > 0
+        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_road_fraction>0".toString())
+        assertEquals(12, countResult.count)
+
+        //Check high_vegetation_impervious_fraction > 0
+        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_impervious_fraction>0".toString())
+        assertEquals(0, countResult.count)
+
+        //Check water_fraction > 0
+        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE water_fraction>0".toString())
+        assertEquals(2, countResult.count)
+
+        //Check low_vegetation_fraction > 0
+        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE low_vegetation_fraction>0".toString())
+        assertEquals(47, countResult.count)
+
+        //Check low_vegetation_fraction > 0
+        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE impervious_fraction>0".toString())
+        assertEquals(0, countResult.count)
+
+        if(save){
+            datasource.getTable(tableName).save("${directory.absolutePath}${File.separator}${rsuIndicatorsTableName}.geojson")
+        }
+    }
+
 }
