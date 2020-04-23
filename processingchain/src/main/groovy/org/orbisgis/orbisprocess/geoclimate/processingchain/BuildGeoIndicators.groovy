@@ -376,10 +376,10 @@ def computeRSUIndicators() {
 
     return create({
         title "Compute the geoindicators at RSU scale"
-        inputs  datasource                 : JdbcDataSource,   buildingTable               : String,
-                rsuTable                   : String,           prefixName                  : "",
-                vegetationTable            : String,           roadTable                   : String,
-                hydrographicTable          : String,           imperviousTable             : String,
+        inputs  datasource                 : JdbcDataSource,   buildingTable               : "",
+                rsuTable                   : "",           prefixName                  : "",
+                vegetationTable            : "",           roadTable                   : "",
+                hydrographicTable          : "",           imperviousTable             : "",
                 facadeDensListLayersBottom  : [0, 10, 20, 30, 40, 50],
                 facadeDensNumberOfDirection: 12,               svfPointDensity             : 0.008,
                 svfRayLength               : 100,              svfNumberOfDirection        : 60,
