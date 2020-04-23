@@ -343,6 +343,7 @@ class RsuIndicatorsTests {
                 FROM $outputTableStats AS a, $outputTable b WHERE a.id_rsu=b.id_rsu GROUP BY b.id_rsu;
             CREATE INDEX ON stats_rsu(id_rsu);"""
 
+
         //Check the sum of building areas by USR
         h2GIS.execute """DROP TABLE IF EXISTS stats_building;
                           CREATE TABLE stats_building as select sum(st_area(the_geom)) as building_areas, id_rsu from 
@@ -460,5 +461,38 @@ class RsuIndicatorsTests {
         assertEquals(3.0/20, result2["low_vegetation_fraction"])
         assertEquals(1.0/4, result2["water_fraction"])
         assertEquals(0, result2["building_fraction"])
+    }
+
+
+    @Test
+    void surfaceFractionTest3() {
+        // Test whether the road fraction is taken into account...
+        h2GIS.execute "DROP TABLE IF EXISTS rsu_tempo, road_tempo;" +
+                "CREATE TABLE rsu_tempo(id_rsu int, the_geom geometry, rsu_area float, rsu_building_density float, rsu_free_external_facade_density float);" +
+                "INSERT INTO rsu_tempo VALUES  (1, 'POLYGON((1000 1000, 1100 1000, 1100 1100, 1000 1100, 1000 1000))'::GEOMETRY, 10000, 0.4, null);" +
+                "CREATE TABLE road_tempo(id_road int, the_geom geometry, width float, zindex int, crossing varchar(30));" +
+                "INSERT INTO road_tempo VALUES (1, 'LINESTRING (1000 1000, 1000 1100)'::GEOMETRY, 10, 0, null);"
+
+        // Need to create the smallest geometries used as input of the surface fraction process
+        def  p =  Geoindicators.RsuIndicators.smallestCommunGeometry()
+        assertTrue p.execute([
+                rsuTable: "rsu_tempo", roadTable: "road_tempo",
+                prefixName: "test", datasource: h2GIS])
+        def tempoTable = p.results.outputTableName
+
+        println h2GIS.firstRow("SELECT * FROM $tempoTable")
+
+        // Apply the surface fractions for different combinations
+        // combination 1
+        def  p0 =  Geoindicators.RsuIndicators.surfaceFractions()
+        def superpositions0 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]]
+        def priorities0 = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
+        assertTrue p0.execute([
+                rsuTable: "rsu_tempo", spatialRelationsTable: tempoTable,
+                superpositions: superpositions0,
+                priorities: priorities0,
+                prefixName: "test", datasource: h2GIS])
+        def result0 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName}")
+        assertEquals(5.0/100, result0["road_fraction"])
     }
 }

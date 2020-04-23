@@ -24,20 +24,27 @@ def GeoIndicators() {
     def final GEOMETRIC_COLUMN = "the_geom"
     return create({
         title "Compute all geoindicators"
-        inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
-                roadTable: String, railTable: String, vegetationTable: String,
-                hydrographicTable: String, surface_vegetation: 100000, surface_hydro: 2500,
+        inputs datasource: JdbcDataSource, zoneTable: "", buildingTable: "",
+                roadTable: "", railTable: "", vegetationTable: "",
+                hydrographicTable: "", imperviousTable :"", surface_vegetation: 100000, surface_hydro: 2500,
                 distance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified:false, prefixName: "",
                 mapOfWeights: ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
         outputs outputTableBuildingIndicators: String, outputTableBlockIndicators: String,
                 outputTableRsuIndicators: String, outputTableRsuLcz:String, outputTableZone:String
-        run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
+        run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,imperviousTable,
               surface_vegetation, surface_hydro, distance,indicatorUse,svfSimplified, prefixName, mapOfWeights ->
             info "Start computing the geoindicators..."
             // Temporary tables are created
             def lczIndicTable = "LCZ_INDIC_TABLE$uuid"
+
+            //Check data before computing indicators
+
+            if(!zoneTable && !buildingTable && !roadTable){
+                error "To compute the geoindicators the zone, building and road tables must not be null or empty"
+                return null
+            }
 
             // Output Lcz table name is set to null in case LCZ indicators are not calculated
             def rsuLcz = null
@@ -94,6 +101,7 @@ def GeoIndicators() {
                                                vegetationTable  : vegetationTable,
                                                roadTable        : roadTable,
                                                hydrographicTable: hydrographicTable,
+                                               imperviousTable:   imperviousTable,
                                                indicatorUse     : indicatorUse,
                                                svfSimplified    : svfSimplified,
                                                prefixName       : prefixName])) {
