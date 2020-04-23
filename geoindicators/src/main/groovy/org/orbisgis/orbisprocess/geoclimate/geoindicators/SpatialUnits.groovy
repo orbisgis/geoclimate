@@ -351,7 +351,7 @@ IProcess createScalesRelations(){
         outputs outputTableName: String, outputIdColumnUp: String
         run { inputLowerScaleTableName, inputUpperScaleTableName, idColumnUp, prefixName, nbRelations, datasource ->
 
-            info "Creating the Tables of relations between two scales"
+            info "Creating the Tables of relations between the twos scales :  $inputLowerScaleTableName and $inputUpperScaleTableName"
 
             // The name of the outputTableName is constructed (the prefix name is not added since it is already contained
             // in the inputLowerScaleTableName object
@@ -366,7 +366,7 @@ IProcess createScalesRelations(){
                      ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$GEOMETRIC_COLUMN_LOW)), st_force2d(st_makevalid(b.$GEOMETRIC_COLUMN_UP)))) 
                      DESC LIMIT 1) AS $idColumnUp FROM $inputLowerScaleTableName a """
 
-            info "The relations between scales have been created"
+            info "The relations between scales have been created between :  $inputLowerScaleTableName and $inputUpperScaleTableName"
 
             [outputTableName: outputTableName, outputIdColumnUp: idColumnUp]
         }

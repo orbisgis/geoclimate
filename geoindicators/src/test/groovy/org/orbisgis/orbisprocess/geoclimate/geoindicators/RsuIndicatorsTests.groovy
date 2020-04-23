@@ -343,6 +343,7 @@ class RsuIndicatorsTests {
                 FROM $outputTableStats AS a, $outputTable b WHERE a.id_rsu=b.id_rsu GROUP BY b.id_rsu;
             CREATE INDEX ON stats_rsu(id_rsu);"""
 
+
         //Check the sum of building areas by USR
         h2GIS.execute """DROP TABLE IF EXISTS stats_building;
                           CREATE TABLE stats_building as select sum(st_area(the_geom)) as building_areas, id_rsu from 
@@ -463,42 +464,13 @@ class RsuIndicatorsTests {
     }
 
     @Test
-    void surfaceFractionTest2() {
-        // Test that a surface fraction is set to zero rather than null when there is no surface of its kind in a RSU
-        h2GIS.execute """DROP TABLE IF EXISTS rsu_tempo, smallest_com;
-                CREATE TABLE rsu_tempo(id_rsu INTEGER, the_geom GEOMETRY); 
-                INSERT INTO rsu_tempo VALUES (1, 'POLYGON((0 0, 0 20, 10 20, 10 0, 0 0))'::GEOMETRY),
-                                             (2, 'POLYGON((10 0, 10 20, 20 20, 20 0, 10 0))'::GEOMETRY);
-                CREATE TABLE smallest_com(id_rsu INTEGER, water INTEGER, building INTEGER, high_vegetation INTEGER,
-                                       low_vegetation INTEGER, road INTEGER, impervious INTEGER, area DOUBLE);
-                INSERT INTO smallest_com VALUES (1, 1, 0, 1, 0, 0, 0, 100.0), (1, 1, 0, 0, 0, 0, 0, 100.0);"""
-
-        // Apply the surface fractions
-        def  p0 =  Geoindicators.RsuIndicators.surfaceFractions()
-        def superpositions0 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]]
-        def priorities0 = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
-        assertTrue p0.execute([
-                rsuTable: "rsu_tempo", spatialRelationsTable: "smallest_com",
-                superpositions: superpositions0,
-                priorities: priorities0,
-                prefixName: "test", datasource: h2GIS])
-        def result1 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName} WHERE id_rsu = 1")
-        def result2 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName} WHERE id_rsu = 2")
-        assertEquals(0.5, result1["high_vegetation_water_fraction"])
-        assertEquals(0.5, result1["water_fraction"])
-        assertEquals(0.0, result2["high_vegetation_low_vegetation_fraction"])
-        assertEquals(0.0, result2["low_vegetation_fraction"])
-    }
-
-
-    @Test
     void surfaceFractionTest3() {
         // Test whether the road fraction is taken into account...
         h2GIS.execute "DROP TABLE IF EXISTS rsu_tempo, road_tempo;" +
                 "CREATE TABLE rsu_tempo(id_rsu int, the_geom geometry, rsu_area float, rsu_building_density float, rsu_free_external_facade_density float);" +
                 "INSERT INTO rsu_tempo VALUES  (1, 'POLYGON((1000 1000, 1100 1000, 1100 1100, 1000 1100, 1000 1000))'::GEOMETRY, 10000, 0.4, null);" +
                 "CREATE TABLE road_tempo(id_road int, the_geom geometry, width float, zindex int, crossing varchar(30));" +
-                "INSERT INTO road_tempo VALUES (1, 'LINESTRING (1000 1000, 1000 1100)'::GEOMETRY, 100, 0, null);"
+                "INSERT INTO road_tempo VALUES (1, 'LINESTRING (1000 1000, 1000 1100)'::GEOMETRY, 10, 0, null);"
 
         // Need to create the smallest geometries used as input of the surface fraction process
         def  p =  Geoindicators.RsuIndicators.smallestCommunGeometry()

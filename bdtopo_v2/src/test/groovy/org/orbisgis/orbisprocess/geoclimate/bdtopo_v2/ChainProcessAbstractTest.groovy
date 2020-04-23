@@ -29,7 +29,7 @@ class ChainProcessAbstractTest {
      */
     void geoIndicatorsCalc(String directory, def datasource, String zoneTableName, String buildingTableName,
                            String roadTableName, String railTableName, String vegetationTableName,
-                           String hydrographicTableName, boolean saveResults, boolean svfSimplified = false, indicatorUse,
+                           String hydrographicTableName, boolean saveResults, boolean svfSimplified = false, def indicatorUse,
                            String prefixName = "") {
         //Create spatial units and relations : building, block, rsu
         IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()

@@ -33,6 +33,8 @@ IProcess joinTables() {
             def columns = []
 
             inputTableNamesWithId.each { key, value ->
+                //Reload cache to be sure that the table is up to date
+                datasource.getTable(key).reload()
                 if (alias == "a") {
                     columnKey = "$alias.${value}"
                     // Whether or not the table name is add as prefix of the indicator in the new table
