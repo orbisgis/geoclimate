@@ -194,42 +194,79 @@ class TypologyClassificationTests {
 
     @Test //Integration tests
     void lczTestValues() {
-        // List of territories where we do have some test cases (saved in folder lczTests
-        def citiesToTest = ["01306", "56167", "44109", "56164"]
+        // Maps of weights for bd topo
+        def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 2,
+                            "impervious_surface_fraction" : 0, "pervious_surface_fraction": 0,
+                            "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
 
-        // Load for a given set of RSU (defined by a "ST_PointOnSurface") the LCZ classes that are possible
-        // and those which are not possible
-        def lczToTestPath = getClass().getResource("lczTests/expectedLcz.geojson").toURI()
-        def lczToTestName = "lczToTest"
-        def lczToTestCity = "lczToTestCity"
+        // Define table names
+        def lczIndicTable = "lcz_Indic_Table"
+        def indicatorsRightId = "indicator_right_id"
 
-        H2GIS datasource = H2GIS.open("/tmp/lczDatabase;AUTO_SERVER=TRUE", "sa", "")
-        datasource.load(lczToTestPath, lczToTestName)
-        citiesToTest.each{city ->
-            def lczCityPath = getClass().getResource("lczTests/zone_${city}_rsu_lcz.geojson").toURI()
-            def lczCityName = "zone$city"
-            datasource.load(lczCityPath, lczCityName)
-            datasource.getTable("zone$city").the_geom.createIndex()
-            datasource.getTable(lczToTestName).the_geom.createIndex()
-            datasource.getTable(lczToTestName).id_zone.createIndex()
+        // Load the training data (LCZ classes that are possible and those which are not possible)
+        def trainingDataPath = getClass().getResource("lczTests/expectedLcz.geojson").toURI()
+        def trainingDataTable = "expectedLcz"
+        h2GIS.load(trainingDataPath, trainingDataTable)
 
-            datasource.execute """DROP TABLE IF EXISTS $lczToTestCity;
-                                        CREATE TABLE $lczToTestCity 
-                                                AS SELECT a.id, a.lcz_type, a.expected, b.lcz1, b.lcz2 
-                                                FROM $lczToTestName a, $lczCityName b 
-                                                WHERE a.id_zone = $city AND a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom)"""
+        // Load the indicators table (indicators characterizing each RSU that are in the training data)
+        def indicatorsPath = getClass().getResource("lczTests/trainingData.geojson").toURI()
+        def indicatorsTable = "trainingData"
+        h2GIS.load(indicatorsPath, indicatorsTable)
 
-            datasource.eachRow("SELECT * FROM $lczToTestCity"){row ->
-                if (row.expected == 0){
-                    def lczUnexpected = row.lcz_type.split(",")
-                    println "Unexpected : $lczUnexpected VERSUS actual : ${row.lcz1} (LCZ1) and ${row.lcz2} (LCZ2)"
-                    assertTrue !lczUnexpected.contains(row.lcz1.toString()) & !lczUnexpected.contains(row.lcz2.toString())
-                }
-                if (row.expected == 1) {
-                    def lczExpected = row.lcz_type.split(",")
-                    println "Expected : $lczExpected VERSUS actual : ${row.lcz1} (LCZ1) and ${row.lcz2} (LCZ2)"
-                    assertTrue lczExpected.contains(row.lcz1.toString()) || lczExpected.contains(row.lcz2.toString())
-                }
+        // Replace the id_rsu (coming from a specific city) by the id (coming from the true values of LCZ)
+        def allColumns = h2GIS.getTable(indicatorsTable).getColumns()
+        allColumns.remove("ID_RSU")
+        allColumns.remove("ID")
+
+        h2GIS.execute """DROP TABLE IF EXISTS $indicatorsRightId;
+                                    CREATE TABLE $indicatorsRightId 
+                                            AS SELECT id AS id_rsu, ${allColumns.join(",")}
+                                            FROM $indicatorsTable;"""
+
+        def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"             : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
+                             "BUILDING_FRACTION_LCZ"            : "BUILDING_SURFACE_FRACTION",
+                             "ASPECT_RATIO"                     : "ASPECT_RATIO",
+                             "GROUND_SKY_VIEW_FACTOR"           : "SKY_VIEW_FACTOR",
+                             "PERVIOUS_FRACTION_LCZ"            : "PERVIOUS_SURFACE_FRACTION",
+                             "IMPERVIOUS_FRACTION_LCZ"          : "IMPERVIOUS_SURFACE_FRACTION",
+                             "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH": "TERRAIN_ROUGHNESS_LENGTH"]
+
+        // Get into a new table the ID, geometry column and the 7 indicators defined by Stewart and Oke (2012)
+        // for LCZ classification (rename the indicators with the real names)
+        def queryReplaceNames = ""
+        lczIndicNames.each { oldIndic, newIndic ->
+            queryReplaceNames += "ALTER TABLE $lczIndicTable ALTER COLUMN $oldIndic RENAME TO $newIndic;"
+        }
+        h2GIS.execute """DROP TABLE IF EXISTS $lczIndicTable;
+                                CREATE TABLE $lczIndicTable 
+                                        AS SELECT id_rsu, the_geom, ${lczIndicNames.keySet().join(",")} 
+                                        FROM $indicatorsRightId;
+                                $queryReplaceNames"""
+
+
+        // The classification algorithm is called
+        def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
+        if(!classifyLCZ([rsuLczIndicators   : lczIndicTable,
+                         rsuAllIndicators   : indicatorsRightId,
+                         normalisationType  : "AVG",
+                         mapOfWeights       : mapOfWeights,
+                         prefixName         : "test",
+                         datasource         : h2GIS])){
+            println "Cannot compute the LCZ classification."
+            return
+        }
+        def rsuLcz = classifyLCZ.results.outputTableName
+
+        h2GIS.eachRow("SELECT a.expected, a.lcz_type, b.* FROM $trainingDataTable a LEFT JOIN $rsuLcz b ON a.id = b.id_rsu"){row ->
+            if (row.expected == 0){
+                def lczUnexpected = row.lcz_type.split(",")
+                println "(ID : ${row.id_rsu}) // Unexpected : $lczUnexpected VERSUS actual : ${row.lcz1} (LCZ1) and ${row.lcz2} (LCZ2)"
+                assertTrue !lczUnexpected.contains(row.lcz1.toString()) & !lczUnexpected.contains(row.lcz2.toString())
+            }
+            if (row.expected == 1) {
+                def lczExpected = row.lcz_type.split(",")
+                println "(ID : ${row.id_rsu}) // Expected : $lczExpected VERSUS actual : ${row.lcz1} (LCZ1) and ${row.lcz2} (LCZ2)"
+                assertTrue lczExpected.contains(row.lcz1.toString()) || lczExpected.contains(row.lcz2.toString())
             }
         }
     }

@@ -57,9 +57,9 @@ IProcess identifyLczType() {
         title "Set the LCZ type of each RSU"
         inputs rsuLczIndicators: String     , rsuAllIndicators: String        ,prefixName: String,
                 datasource: JdbcDataSource  , normalisationType: "AVG"          ,
-                mapOfWeights: ["sky_view_factor"             : 2, "aspect_ratio": 2, "building_surface_fraction": 4,
+                mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                               "height_of_roughness_elements": 2, "terrain_roughness_length": 2]
+                               "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
         outputs outputTableName: String
         run { rsuLczIndicators, rsuAllIndicators, prefixName, datasource, normalisationType, mapOfWeights ->
 
@@ -92,6 +92,7 @@ IProcess identifyLczType() {
                 def mainLczTable = "mainLczTable$uuid"
                 def classifiedUrbanLcz = "classifiedUrbanLcz$uuid"
                 def classifiedLcz = "classifiedLcz$uuid"
+
 
                 // The LCZ definitions are created in a Table of the DataBase (note that the "terrain_roughness_class"
                 // is replaced by the "terrain_roughness_length" in order to have a continuous interval of values)
@@ -128,6 +129,7 @@ IProcess identifyLczType() {
                 // I. Rural LCZ types are classified according to a "manual" decision tree
                 datasource.getTable(rsuAllIndicators).BUILDING_FRACTION_LCZ.createIndex()
                 datasource.getTable(rsuAllIndicators).ASPECT_RATIO.createIndex()
+
                 datasource.execute """DROP TABLE IF EXISTS $ruralLCZ; 
                                     CREATE TABLE $ruralLCZ 
                                             AS SELECT   $ID_FIELD_RSU, IMPERVIOUS_FRACTION_LCZ, 
@@ -139,8 +141,8 @@ IProcess identifyLczType() {
                                                          AS HIGH_ALL_VEGETATION,
                                                         LOW_VEGETATION_FRACTION_LCZ+HIGH_VEGETATION_FRACTION_LCZ AS ALL_VEGETATION
                                             FROM        $rsuAllIndicators
-                                            WHERE       (BUILDING_FRACTION_LCZ < 0.1 OR BUILDING_FRACTION_LCZ IS NULL) AND (ASPECT_RATIO < 0.1 OR ASPECT_RATIO IS NULL);"""
-
+                                            WHERE       BUILDING_FRACTION_LCZ < 0.1 AND ASPECT_RATIO < 0.1;"""
+                println "prout2"
                 datasource.getTable(ruralLCZ).IMPERVIOUS_FRACTION_LCZ.createIndex()
                 datasource.getTable(ruralLCZ).PERVIOUS_FRACTION_LCZ.createIndex()
                 datasource.getTable(ruralLCZ).HIGH_ALL_VEGETATION.createIndex()

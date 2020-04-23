@@ -3,7 +3,7 @@
 "name": "expectedLcz",
 "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::2154" } },
 "features": [
-{ "type": "Feature", "properties": { "id": 19, "expected": 1, "lcz_type": "5,6", "id_zone": "56164", "comment": "Pavillons" }, "geometry": { "type": "Point", "coordinates": [ 259753.924375, 6744494.032262933440506 ] } },
+{ "type": "Feature", "properties": { "id": 26, "expected": 1, "lcz_type": "8", "id_zone": "56003", "comment": "Super U avec parking" }, "geometry": { "type": "Point", "coordinates": [ 263230.592978910601232, 6742115.825156413018703 ] } },
 { "type": "Feature", "properties": { "id": 1, "expected": 1, "lcz_type": "101,102", "id_zone": "01306", "comment": "foret" }, "geometry": { "type": "Point", "coordinates": [ 844969.523741610697471, 6575687.419035234488547 ] } },
 { "type": "Feature", "properties": { "id": 2, "expected": 1, "lcz_type": "107", "id_zone": "56167", "comment": "eau" }, "geometry": { "type": "Point", "coordinates": [ 255456.491, 6744656.44 ] } },
 { "type": "Feature", "properties": { "id": 3, "expected": 1, "lcz_type": "999", "id_zone": "56167", "comment": "parking bitume (105) inclassable" }, "geometry": { "type": "Point", "coordinates": [ 256010.867, 6744471.495 ] } },
@@ -22,11 +22,14 @@
 { "type": "Feature", "properties": { "id": 16, "expected": 1, "lcz_type": "999", "id_zone": "44109", "comment": "zone indus inclassable" }, "geometry": { "type": "Point", "coordinates": [ 352333.269915713230148, 6687455.176447655074298 ] } },
 { "type": "Feature", "properties": { "id": 17, "expected": 1, "lcz_type": "999", "id_zone": "44109", "comment": "cimetiere inclassable" }, "geometry": { "type": "Point", "coordinates": [ 354529.4675321628456, 6690289.222384108230472 ] } },
 { "type": "Feature", "properties": { "id": 18, "expected": 1, "lcz_type": "2,3,5,6", "id_zone": "44109", "comment": "quartier pavillonnaire" }, "geometry": { "type": "Point", "coordinates": [ 354545.877588836592622, 6691524.512049714103341 ] } },
+{ "type": "Feature", "properties": { "id": 19, "expected": 1, "lcz_type": "5,6", "id_zone": "56164", "comment": "Pavillons" }, "geometry": { "type": "Point", "coordinates": [ 259753.924375, 6744494.032262933440506 ] } },
 { "type": "Feature", "properties": { "id": 20, "expected": 1, "lcz_type": "2,3,5,6", "id_zone": "56164", "comment": "Pavillon" }, "geometry": { "type": "Point", "coordinates": [ 260130.144159482646501, 6744928.502607759088278 ] } },
 { "type": "Feature", "properties": { "id": 21, "expected": 1, "lcz_type": "8,10", "id_zone": "56164", "comment": "Zone commerciale et artisanale" }, "geometry": { "type": "Point", "coordinates": [ 259772.100301723810844, 6745178.914321123622358 ] } },
 { "type": "Feature", "properties": { "id": 22, "expected": 1, "lcz_type": "999", "id_zone": "56164", "comment": "Bretelle access voie express en vegetation" }, "geometry": { "type": "Point", "coordinates": [ 260605.346099137968849, 6745182.199127158150077 ] } },
 { "type": "Feature", "properties": { "id": 23, "expected": 1, "lcz_type": "2,3,5,6,8,10", "id_zone": "56164", "comment": "Zone commerciale avec habitats et foret" }, "geometry": { "type": "Point", "coordinates": [ 265219.622629312390927, 6745167.41750000603497 ] } },
 { "type": "Feature", "properties": { "id": 24, "expected": 1, "lcz_type": "999", "id_zone": "56164", "comment": "Zone de végétation inclassable" }, "geometry": { "type": "Point", "coordinates": [ 262359.485473343695048, 6746904.490242639556527 ] } },
-{ "type": "Feature", "properties": { "id": 25, "expected": 1, "lcz_type": "105", "id_zone": "56164", "comment": "Dechetterie" }, "geometry": { "type": "Point", "coordinates": [ 259935.902180565870367, 6745583.612296948209405 ] } }
+{ "type": "Feature", "properties": { "id": 25, "expected": 1, "lcz_type": "105", "id_zone": "56164", "comment": "Dechetterie" }, "geometry": { "type": "Point", "coordinates": [ 259935.902180565870367, 6745583.612296948209405 ] } },
+{ "type": "Feature", "properties": { "id": 27, "expected": 1, "lcz_type": "5,6", "id_zone": "56003", "comment": "Pavillons" }, "geometry": { "type": "Point", "coordinates": [ 263085.621100043004844, 6741080.252788299694657 ] } },
+{ "type": "Feature", "properties": { "id": 28, "expected": 1, "lcz_type": "104,106", "id_zone": "56003", "comment": "Terrain de sport pelouse" }, "geometry": { "type": "Point", "coordinates": [ 262490.878781045321375, 6741394.129285051487386 ] } }
 ]
 }

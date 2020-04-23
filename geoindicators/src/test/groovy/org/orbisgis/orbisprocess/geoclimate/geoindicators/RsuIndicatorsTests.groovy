@@ -498,16 +498,14 @@ class RsuIndicatorsTests {
                 "CREATE TABLE rsu_tempo(id_rsu int, the_geom geometry, rsu_area float, rsu_building_density float, rsu_free_external_facade_density float);" +
                 "INSERT INTO rsu_tempo VALUES  (1, 'POLYGON((1000 1000, 1100 1000, 1100 1100, 1000 1100, 1000 1000))'::GEOMETRY, 10000, 0.4, null);" +
                 "CREATE TABLE road_tempo(id_road int, the_geom geometry, width float, zindex int, crossing varchar(30));" +
-                "INSERT INTO road_tempo VALUES (1, 'LINESTRING (1000 1000, 1000 1100)'::GEOMETRY, 10, 0, null);"
+                "INSERT INTO road_tempo VALUES (1, 'LINESTRING (1000 1000, 1000 1100)'::GEOMETRY, 100, 0, null);"
 
         // Need to create the smallest geometries used as input of the surface fraction process
         def  p =  Geoindicators.RsuIndicators.smallestCommunGeometry()
         assertTrue p.execute([
-                rsuTable: "rsu_tempo", roadTable: "road_test",
+                rsuTable: "rsu_tempo", roadTable: "road_tempo",
                 prefixName: "test", datasource: h2GIS])
         def tempoTable = p.results.outputTableName
-
-        println h2GIS.firstRow("SELECT * FROM $tempoTable")
 
         // Apply the surface fractions for different combinations
         // combination 1
@@ -520,6 +518,6 @@ class RsuIndicatorsTests {
                 priorities: priorities0,
                 prefixName: "test", datasource: h2GIS])
         def result0 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName}")
-        assertEquals(5.0/1000, result0["road_fraction"])
+        assertEquals(5.0/100, result0["road_fraction"])
     }
 }
