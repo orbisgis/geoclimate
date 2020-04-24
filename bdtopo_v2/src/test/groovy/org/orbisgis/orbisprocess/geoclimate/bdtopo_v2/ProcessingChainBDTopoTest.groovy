@@ -17,7 +17,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 
     public static Logger logger = LoggerFactory.getLogger(ProcessingChainBDTopoTest.class)
     public static def h2db = "./target/myh2gisbdtopodb"
-    public static def bdtopoFoldName = "processingChain"
+    public static def bdtopoFoldName = "processingChain/dataForTests"
     public static def listTables = ["IRIS_GE", "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL", "BATI_REMARQUABLE",
     "ROUTE", "SURFACE_EAU", "ZONE_VEGETATION", "TRONCON_VOIE_FERREE", "TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE",
     "SURFACE_ROUTE", "SURFACE_ACTIVITE"]
@@ -44,17 +44,17 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 
         // Load parameter files
         paramTables.each{
-            h2GISDatabase.load(ProcessingChain.class.getResource(it+".csv"), it, true)
+            h2GISDatabase.load(getClass().getResource(it+".csv"), it, true)
         }
 
         def relativePath = bdtopoFoldName + File.separator + inseeCode
 
         // Test whether there is a folder containing .shp files for the corresponding INSEE code
-        if(ProcessingChain.class.getResource(relativePath)){
+        if(getClass().getResource(relativePath)){
             // Test is the URL is a folder
-            if(new File(ProcessingChain.class.getResource(relativePath).toURI()).isDirectory()){
+            if(new File(getClass().getResource(relativePath).toURI()).isDirectory()){
                 listTables.each {
-                    def filePath = ProcessingChain.class.getResource(relativePath + File.separator + it + ".shp")
+                    def filePath = getClass().getResource(relativePath + File.separator + it + ".shp")
                     // If some layers are missing, do not try to load them...
                     if (filePath) {
                         h2GISDatabase.load(filePath, it, true)
@@ -141,7 +141,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         def dbSuffixName = "_lcz"
         String inseeCode = "01306"
         H2GIS datasource = loadFiles(inseeCode, dbSuffixName)
-        def process = ProcessingChain.PrepareBDTopo.prepareBDTopo()
+        def process = BDTopo_V2.prepareData
         assertTrue process.execute([datasource: datasource,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',

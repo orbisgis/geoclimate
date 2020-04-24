@@ -192,7 +192,7 @@ class TypologyClassificationTests {
         assertEquals columnsStr, namesStr
     }
 
-    @Test //Integration tests
+    @Test
     void lczTestValues() {
         // Maps of weights for bd topo
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 2,
