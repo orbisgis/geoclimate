@@ -11,6 +11,8 @@ import static org.junit.jupiter.api.Assertions.*
 class InputDataFormattingTest {
     def h2GISDatabase
 
+    public static communeToTest = "56164"
+
     @BeforeAll
     static void beforeAll(){
         if(InputDataFormattingTest.class.getResource("processingChain") != null &&
@@ -25,7 +27,7 @@ class InputDataFormattingTest {
     @BeforeEach
     void beforeEach(){
         if(System.properties.containsKey("data.bd.topo") && System.properties.getProperty("data.bd.topo") == "true") {
-            def dataFolder56260 = "processingChain/dataForTests/56260"
+            def dataFolderInseeCode = "processingChain/dataForTests/$communeToTest"
             def listFilesBDTopo = ["IRIS_GE", "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL", "BATI_REMARQUABLE",
                                     "ROUTE", "SURFACE_EAU", "ZONE_VEGETATION", "ZONE_VEGETATION",
                                     "TRONCON_VOIE_FERREE", "TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE",
@@ -38,7 +40,7 @@ class InputDataFormattingTest {
                                              "ROAD_BD_TOPO_TYPE", "VEGET_ABSTRACT_PARAMETERS", "VEGET_ABSTRACT_TYPE",
                                              "VEGET_BD_TOPO_TYPE"]
 
-            h2GISDatabase = H2GIS.open("./target/h2gis_input_data_formating_${UUID.randomUUID()};AUTO_SERVER=TRUE", "sa", "")
+            h2GISDatabase = H2GIS.open("./target/h2gis_input_data_formating;AUTO_SERVER=TRUE", "sa", "")
 
             // Load parameter files
             paramTables.each{
@@ -46,8 +48,7 @@ class InputDataFormattingTest {
             }
             // Load data files
             listFilesBDTopo.each{
-                println getClass().getResource("$dataFolder56260/${it}.shp")
-                h2GISDatabase.load(getClass().getResource("$dataFolder56260/${it}.shp"), it, true)
+                h2GISDatabase.load(getClass().getResource("$dataFolderInseeCode/${it}.shp"), it, true)
             }
         }
     }
@@ -63,7 +64,7 @@ class InputDataFormattingTest {
                                           tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                           tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                           tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                          distBuffer: 500, expand: 1000, idZone: '56260',
+                                          distBuffer: 500, expand: 1000, idZone: communeToTest,
                                           building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
                                           road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
                                           road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
@@ -73,14 +74,14 @@ class InputDataFormattingTest {
         ])
         def resultsImport=processImport.getResults()
 
-        def processFormatting = BDTopo_V2.InputDataFormatting.inputDataFormatting()
+        def processFormatting = BDTopo_V2.formatInputData
         assertTrue processFormatting.execute([datasource: h2GISDatabase,
                          inputBuilding: resultsImport.outputBuildingName, inputRoad: resultsImport.outputRoadName,
                          inputRail: resultsImport.outputRailName, inputHydro: resultsImport.outputHydroName,
                          inputVeget: resultsImport.outputVegetName, inputImpervious: resultsImport.outputImperviousName,
                          inputZone: resultsImport.outputZoneName, //inputZoneNeighbors: resultsImport.outputZoneNeighborsName,
 
-                         hLevMin: 3, hLevMax: 15, hThresholdLev2: 10, idZone: '56260', expand: 1000,
+                         hLevMin: 3, hLevMax: 15, hThresholdLev2: 10, idZone: communeToTest, expand: 1000,
 
                          buildingAbstractUseType: 'BUILDING_ABSTRACT_USE_TYPE', buildingAbstractParameters: 'BUILDING_ABSTRACT_PARAMETERS',
                          roadAbstractType: 'ROAD_ABSTRACT_TYPE', roadAbstractParameters: 'ROAD_ABSTRACT_PARAMETERS', roadAbstractCrossing: 'ROAD_ABSTRACT_CROSSING',
@@ -100,7 +101,7 @@ class InputDataFormattingTest {
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(10, table.columnCount)
-        assertEquals(20568, table.rowCount)
+        assertEquals(2231, table.rowCount)
         // Check if the column types are correct
         assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
         assertEquals('INTEGER', table.columnType('ID_BUILD'))
@@ -113,13 +114,15 @@ class InputDataFormattingTest {
         assertEquals('INTEGER', table.columnType('ZINDEX'))
         assertEquals('VARCHAR', table.columnType('ID_ZONE'))
         // For each rows, check if the fields contains the expected values
-        table.eachRow { row ->
+        println tableName
+        h2GISDatabase.eachRow("SELECT * FROM $tableName") { row ->
             assertNotNull(row.THE_GEOM)
             assertNotEquals('', row.THE_GEOM)
             assertNotNull(row.ID_BUILD)
             assertNotEquals('', row.ID_BUILD)
             assertNotNull(row.ID_SOURCE)
             assertNotEquals('', row.ID_SOURCE)
+            println row.ID_BUILD
             // Check that the HEIGHT_WALL is smaller than 1000m high
             assertNotNull(row.HEIGHT_WALL)
             assertNotEquals('', row.HEIGHT_WALL)
