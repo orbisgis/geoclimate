@@ -141,7 +141,7 @@ IProcess identifyLczType() {
                                                          AS HIGH_ALL_VEGETATION,
                                                         LOW_VEGETATION_FRACTION_LCZ+HIGH_VEGETATION_FRACTION_LCZ AS ALL_VEGETATION
                                             FROM        $rsuAllIndicators
-                                            WHERE       BUILDING_FRACTION_LCZ < 0.1 AND ASPECT_RATIO < 0.1;"""
+                                            WHERE       (BUILDING_FRACTION_LCZ < 0.1 OR BUILDING_FRACTION_LCZ IS NULL) AND (ASPECT_RATIO < 0.1 OR ASPECT_RATIO IS NULL);"""
 
                 datasource.getTable(ruralLCZ).IMPERVIOUS_FRACTION_LCZ.createIndex()
                 datasource.getTable(ruralLCZ).PERVIOUS_FRACTION_LCZ.createIndex()
