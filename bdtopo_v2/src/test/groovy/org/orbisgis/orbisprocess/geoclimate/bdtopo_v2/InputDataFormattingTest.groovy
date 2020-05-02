@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*
 class InputDataFormattingTest {
     def h2GISDatabase
 
-    public static communeToTest = "56164"
+    public static communeToTest = "12174"
 
     @BeforeAll
     static void beforeAll(){
@@ -101,7 +101,7 @@ class InputDataFormattingTest {
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(10, table.columnCount)
-        assertEquals(2231, table.rowCount)
+        assertEquals(3219, table.rowCount)
         // Check if the column types are correct
         assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
         assertEquals('INTEGER', table.columnType('ID_BUILD'))
@@ -115,7 +115,7 @@ class InputDataFormattingTest {
         assertEquals('VARCHAR', table.columnType('ID_ZONE'))
         // For each rows, check if the fields contains the expected values
         println tableName
-        h2GISDatabase.eachRow("SELECT * FROM $tableName") { row ->
+        table.eachRow(){ row ->
             assertNotNull(row.THE_GEOM)
             assertNotEquals('', row.THE_GEOM)
             assertNotNull(row.ID_BUILD)

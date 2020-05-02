@@ -15,6 +15,8 @@ import static org.junit.jupiter.api.Assertions.*
 
 class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 
+    public static communeToTest = "12174"
+
     public static Logger logger = LoggerFactory.getLogger(ProcessingChainBDTopoTest.class)
     public static def h2db = "./target/myh2gisbdtopodb"
     public static def bdtopoFoldName = "processingChain/dataForTests"
@@ -79,7 +81,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void prepareBDTopoTest(){
         def dbSuffixName = "_prepare"
-        def inseeCode = "01306"
+        def inseeCode = communeToTest
         H2GIS h2GISDatabase = loadFiles(inseeCode, dbSuffixName)
         def process = BDTopo_V2.prepareData
         assertTrue process.execute([datasource: h2GISDatabase,
@@ -89,7 +91,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, expand: 1000, idZone: '56260',
+                                    distBuffer: 500, expand: 1000, idZone: communeToTest,
                                     hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
         ])
         process.getResults().each {entry ->
@@ -139,8 +141,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void bdtopoLczFromTestFiles() {
         def dbSuffixName = "_lcz"
-        String inseeCode = "01306"
-        H2GIS datasource = loadFiles(inseeCode, dbSuffixName)
+        H2GIS datasource = loadFiles(communeToTest, dbSuffixName)
         def process = BDTopo_V2.prepareData
         assertTrue process.execute([datasource: datasource,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
@@ -149,7 +150,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, expand: 1000, idZone: inseeCode,
+                                    distBuffer: 500, expand: 1000, idZone: communeToTest,
                                     hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
         ])
         def abstractTables = process.getResults()
@@ -183,8 +184,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void bdtopoGeoIndicatorsFromTestFiles() {
         def dbSuffixName = "_geoIndicators"
-        String inseeCode = "01306"
-        H2GIS h2GISDatabase = loadFiles(inseeCode, dbSuffixName)
+        H2GIS h2GISDatabase = loadFiles(communeToTest, dbSuffixName)
         def process = BDTopo_V2.prepareData
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
@@ -193,7 +193,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, expand: 1000, idZone: inseeCode,
+                                    distBuffer: 500, expand: 1000, idZone: communeToTest,
                                     hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
         ])
         def abstractTables = process.getResults()
@@ -219,14 +219,13 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     @Disabled
     void testBDTOPO_V2Workflow() {
         String directory ="./target/geoclimate_chain/bdtopo_config/"
-        def inseeCode = "01306"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
         IProcess processBDTopo = BDTopo_V2.workflow
         assertTrue(processBDTopo.execute(configurationFile: getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()))mm
         assertNotNull(processBDTopo.getResults().outputFolder)
-        def baseNamePathAndFileOut = processBDTopo.getResults().outputFolder + File.separator + "zone_" + inseeCode + "_"
+        def baseNamePathAndFileOut = processBDTopo.getResults().outputFolder + File.separator + "zone_" + communeToTest + "_"
         assertTrue(new File(baseNamePathAndFileOut + "rsu_indicators.geojson").exists())
         assertFalse(new File(baseNamePathAndFileOut + "rsu_lcz.geojson").exists())
         assertFalse(new File(baseNamePathAndFileOut + "block_indicators.geojson").exists())
