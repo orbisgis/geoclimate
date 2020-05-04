@@ -156,7 +156,7 @@ Download this file : [osm_workflow_envelope_folderoutput.json](https://github.co
         "delete" :true
     },
   "input" : {
-     "osm":[[`48.831052,2.303352,48.880070,2.388840`]]},
+     "osm":[[48.831052,2.303352,48.880070,2.388840]]},
   "output" :{
      "folder" : "/home/geoclimate/osm/"},
   "parameters":
