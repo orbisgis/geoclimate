@@ -6,7 +6,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
-import org.orbisgis.orbisdata.processmanager.api.IProcess
 import smile.classification.DataFrameClassifier
 import smile.validation.Accuracy
 import smile.validation.Validation
@@ -193,7 +192,7 @@ class TypologyClassificationTests {
     }
 
     @Test
-    void lczTestValues() {
+    void lczTestValuesBdTopov2() {
         // Maps of weights for bd topo
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 2,
                             "impervious_surface_fraction" : 0, "pervious_surface_fraction": 0,
@@ -209,8 +208,8 @@ class TypologyClassificationTests {
         h2GIS.load(trainingDataPath, trainingDataTable)
 
         // Load the indicators table (indicators characterizing each RSU that are in the training data)
-        def indicatorsPath = getClass().getResource("lczTests/trainingData.geojson").toURI()
-        def indicatorsTable = "trainingData"
+        def indicatorsPath = getClass().getResource("lczTests/trainingDatabdtopov2.geojson").toURI()
+        def indicatorsTable = "trainingDatabdtopov2"
         h2GIS.load(indicatorsPath, indicatorsTable)
 
         // Replace the id_rsu (coming from a specific city) by the id (coming from the true values of LCZ)
@@ -257,17 +256,12 @@ class TypologyClassificationTests {
         }
         def rsuLcz = classifyLCZ.results.outputTableName
 
-        h2GIS.eachRow("SELECT a.expected, a.lcz_type, b.* FROM $trainingDataTable a LEFT JOIN $rsuLcz b ON a.id = b.id_rsu"){row ->
-            if (row.expected == 0){
-                def lczUnexpected = row.lcz_type.split(",")
-                println "(ID : ${row.id_rsu}) // Unexpected : $lczUnexpected VERSUS actual : ${row.lcz1} (LCZ1) and ${row.lcz2} (LCZ2)"
-                assertTrue !lczUnexpected.contains(row.lcz1.toString()) & !lczUnexpected.contains(row.lcz2.toString())
-            }
-            if (row.expected == 1) {
-                def lczExpected = row.lcz_type.split(",")
-                println "(ID : ${row.id_rsu}) // Expected : $lczExpected VERSUS actual : ${row.lcz1} (LCZ1) and ${row.lcz2} (LCZ2)"
-                assertTrue lczExpected.contains(row.lcz1.toString()) || lczExpected.contains(row.lcz2.toString())
-            }
+        h2GIS.eachRow("SELECT a.expected, a.lcz, b.* FROM $trainingDataTable a LEFT JOIN $rsuLcz b ON a.id = b.id_rsu"){row ->
+            def lczExpected = row.lcz.split(",")
+            lczExpected.add(row.bdtopov2)
+            println "(ID : ${row.id_rsu}) // Expected : $lczExpected VERSUS actual : ${row.lcz1} (LCZ1) and ${row.lcz2} (LCZ2)"
+            assertTrue lczExpected.contains(row.lcz1.toString()) || lczExpected.contains(row.lcz2.toString())
+
         }
     }
 }
