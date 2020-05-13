@@ -257,8 +257,8 @@ class TypologyClassificationTests {
         def rsuLcz = classifyLCZ.results.outputTableName
 
         h2GIS.eachRow("SELECT a.expected, a.lcz, b.* FROM $trainingDataTable a LEFT JOIN $rsuLcz b ON a.id = b.id_rsu"){row ->
-            def lczExpected = row.lcz.split(",")
-            lczExpected.add(row.bdtopov2)
+            def lczExpected = row.lcz_type.split(",")
+            lczExpected += row.bdtopov2
             println "(ID : ${row.id_rsu}) // Expected : $lczExpected VERSUS actual : ${row.lcz1} (LCZ1) and ${row.lcz2} (LCZ2)"
             assertTrue lczExpected.contains(row.lcz1.toString()) || lczExpected.contains(row.lcz2.toString())
 
