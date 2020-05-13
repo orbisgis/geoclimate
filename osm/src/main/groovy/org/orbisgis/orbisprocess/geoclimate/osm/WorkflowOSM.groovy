@@ -3,8 +3,7 @@ package org.orbisgis.orbisprocess.geoclimate.osm
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.h2gis.functions.spatial.crs.ST_Transform
-import org.h2gis.utilities.SFSUtilities
-import org.h2gis.utilities.jts_utils.GeographyUtils
+import org.h2gis.utilities.GeographyUtilities
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
@@ -496,13 +495,13 @@ def extractOSMZone(def datasource, def zoneToExtract, def processing_parameters)
         /**
          * Extract the OSM file from the envelope of the geometry
          */
-        def envelope = GeographyUtils.expandEnvelopeByMeters(geom.getEnvelopeInternal(), processing_parameters.distance)
+        def envelope = GeographyUtilities.expandEnvelopeByMeters(geom.getEnvelopeInternal(), processing_parameters.distance)
 
         //Find the best utm zone
         //Reproject the geometry and its envelope to the UTM zone
         def con = datasource.getConnection();
         def interiorPoint = envelope.centre()
-        def epsg = SFSUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
+        def epsg = GeographyUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
         def geomUTM = ST_Transform.ST_Transform(con, geom, epsg)
         def tmpGeomEnv = geom.getFactory().toGeometry(envelope)
         tmpGeomEnv.setSRID(4326)
