@@ -14,7 +14,7 @@ class GenericIndicatorsTests {
 
     @BeforeAll
     static void init(){
-        h2GIS = H2GIS.open('./target/buildingdb;AUTO_SERVER=TRUE')
+        h2GIS = H2GIS.open("./target/${GenericIndicatorsTests.getName()};AUTO_SERVER=TRUE")
     }
 
     @BeforeEach
