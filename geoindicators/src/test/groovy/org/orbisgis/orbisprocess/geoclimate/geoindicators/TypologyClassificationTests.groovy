@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
+import static org.junit.jupiter.api.Assertions.fail
 
 class TypologyClassificationTests {
 
@@ -22,7 +23,7 @@ class TypologyClassificationTests {
 
     @BeforeAll
     static void init(){
-        h2GIS = H2GIS.open( './target/buildingdb;AUTO_SERVER=TRUE')
+        h2GIS = H2GIS.open( "./target/${TypologyClassificationTests.getName()};AUTO_SERVER=TRUE")
     }
 
     @BeforeEach
@@ -252,7 +253,7 @@ class TypologyClassificationTests {
                          prefixName         : "test",
                          datasource         : h2GIS])){
             println "Cannot compute the LCZ classification."
-            return
+            fail()
         }
         def rsuLcz = classifyLCZ.results.outputTableName
 
