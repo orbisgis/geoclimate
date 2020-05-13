@@ -8,9 +8,8 @@ import org.locationtech.jts.geom.Polygon
 import org.orbisgis.orbisanalysis.osm.OSMTools
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.h2gis.utilities.jts_utils.GeographyUtils
+import org.h2gis.utilities.GeographyUtilities
 import org.h2gis.functions.spatial.crs.ST_Transform
-import org.h2gis.utilities.SFSUtilities
 import org.orbisgis.orbisanalysis.osm.utils.OSMElement
 
 
@@ -76,13 +75,13 @@ IProcess extractAndCreateGISLayers(){
                 /**
                  * Extract the OSM file from the envelope of the geometry
                  */
-                def envelope = GeographyUtils.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance)
+                def envelope = GeographyUtilities.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance)
 
                 //Find the best utm zone
                 //Reproject the geometry and its envelope to the UTM zone
                 def con = datasource.getConnection();
                 def interiorPoint = envelope.centre()
-                def epsg = SFSUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
+                def epsg = GeographyUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
                 def geomUTM = ST_Transform.ST_Transform(con, geom, epsg)
                 def tmpGeomEnv = geom.getFactory().toGeometry(envelope)
                 tmpGeomEnv.setSRID(4326)
