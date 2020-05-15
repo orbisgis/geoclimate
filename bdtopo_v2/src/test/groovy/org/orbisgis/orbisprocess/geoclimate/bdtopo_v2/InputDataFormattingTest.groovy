@@ -103,7 +103,7 @@ class InputDataFormattingTest {
         assertEquals(10, table.columnCount)
         assertEquals(3219, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.the_geom.spatial)
         assertEquals('INTEGER', table.columnType('ID_BUILD'))
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         assertEquals('INTEGER', table.columnType('HEIGHT_WALL'))
@@ -411,9 +411,9 @@ class InputDataFormattingTest {
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(9, table.columnCount)
-        assertEquals(9762, table.rowCount)
+        assertEquals(1779, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.the_geom.spatial)
         assertEquals('INTEGER', table.columnType('ID_ROAD'))
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         assertEquals('DOUBLE', table.columnType('WIDTH'))
@@ -619,7 +619,7 @@ class InputDataFormattingTest {
         assertEquals(6, table.columnCount)
         assertEquals(20, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.the_geom.spatial)
         assertEquals('INTEGER', table.columnType('ID_RAIL'))
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         assertEquals('VARCHAR', table.columnType('TYPE'))
@@ -713,7 +713,7 @@ class InputDataFormattingTest {
         assertEquals(3, table.columnCount)
         assertEquals(385, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.the_geom.spatial)
         assertEquals('INTEGER', table.columnType('ID_HYDRO'))
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         // For each rows, check if the fields contains the expected values
@@ -882,7 +882,7 @@ class InputDataFormattingTest {
         assertEquals(5, table.columnCount)
         assertEquals(7756, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.the_geom.spatial)
         assertEquals('INTEGER', table.columnType('ID_VEGET'))
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         assertEquals('VARCHAR', table.columnType('TYPE'))
@@ -1030,7 +1030,7 @@ class InputDataFormattingTest {
         assertEquals(3, table.columnCount)
         assertEquals(71, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.the_geom.spatial)
         assertEquals('INTEGER', table.columnType('ID_IMPERVIOUS'))
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         // For each rows, check if the fields contains the expected values
@@ -1056,7 +1056,7 @@ class InputDataFormattingTest {
         assertEquals(1, table.rowCount)
         // Check if the column types are correct
         assertEquals('VARCHAR', table.columnType('ID_ZONE'))
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.the_geom.spatial)
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
             assertNotNull(row.ID_ZONE)
