@@ -84,7 +84,7 @@ class BDTopoGISLayersTest {
         assertEquals(8, table.columnCount)
         assertEquals(3219, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         assertEquals('INTEGER', table.columnType('HEIGHT_WALL'))
         assertEquals('INTEGER', table.columnType('HEIGHT_ROOF'))
@@ -123,7 +123,7 @@ class BDTopoGISLayersTest {
         assertEquals(8, table.columnCount)
         assertEquals(1779, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         assertEquals('DOUBLE', table.columnType('WIDTH'))
         assertEquals('VARCHAR', table.columnType('TYPE'))
@@ -160,9 +160,9 @@ class BDTopoGISLayersTest {
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(5, table.columnCount)
-        assertEquals(20, table.rowCount)
+        assertEquals(5, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         assertEquals('VARCHAR', table.columnType('TYPE'))
         assertEquals('INTEGER', table.columnType('ZINDEX'))
@@ -187,9 +187,9 @@ class BDTopoGISLayersTest {
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(2, table.columnCount)
-        assertEquals(385, table.rowCount)
+        assertEquals(92, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
@@ -205,9 +205,9 @@ class BDTopoGISLayersTest {
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(3, table.columnCount)
-        assertEquals(7756, table.rowCount)
+        assertEquals(2325, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         assertEquals('VARCHAR', table.columnType('TYPE'))
         // For each rows, check if the fields contains the expected values
@@ -226,9 +226,9 @@ class BDTopoGISLayersTest {
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(2, table.columnCount)
-        assertEquals(71, table.rowCount)
+        assertEquals(7, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
@@ -247,14 +247,14 @@ class BDTopoGISLayersTest {
         assertEquals(1, table.rowCount)
         // Check if the column types are correct
         assertEquals('VARCHAR', table.columnType('ID_ZONE'))
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
             assertNotNull(row.THE_GEOM)
             assertNotEquals('', row.THE_GEOM)
             assertNotNull(row.ID_ZONE)
             assertNotEquals('', row.ID_ZONE)
-            assertEquals('56260', row.ID_ZONE)
+            assertEquals(communeToTest, row.ID_ZONE)
         }
 
     }
@@ -292,7 +292,7 @@ class BDTopoGISLayersTest {
         assertEquals(8, table.columnCount)
         assertEquals(274, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.getColumnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.getColumnType('ID_SOURCE'))
         assertEquals('INTEGER', table.getColumnType('HEIGHT_WALL'))
         assertEquals('INTEGER', table.getColumnType('HEIGHT_ROOF'))
@@ -302,14 +302,14 @@ class BDTopoGISLayersTest {
         assertEquals('INTEGER', table.getColumnType('ZINDEX'))
 
         // Check if the BATI_INDIFFERENCIE table has the correct number of columns and rows
-        tableName = h2GISDatabase.getTable("BATI_INDIFFERENCIE")
-        assertNotNull(tableName)
-        assertEquals(3, tableName.columnCount)
-        assertEquals(0, tableName.rowCount)
+        table = h2GISDatabase.getTable("BATI_INDIFFERENCIE")
+        assertNotNull(table)
+        assertEquals(3, table.columnCount)
+        assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', tableName.getColumnType('THE_GEOM'))
-        assertEquals('VARCHAR', tableName.getColumnType('ID'))
-        assertEquals('INTEGER', tableName.getColumnType('HAUTEUR'))
+        assertTrue(table.THE_GEOM.spatial)
+        assertEquals('VARCHAR', table.getColumnType('ID'))
+        assertEquals('INTEGER', table.getColumnType('HAUTEUR'))
     }
 
     // Check whether the INPUT_BUILDING table is well produced, despite the absence of the BATI_INDUSTRIEL table
@@ -345,7 +345,7 @@ class BDTopoGISLayersTest {
         assertEquals(8, table.columnCount)
         assertEquals(2963, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.getColumnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.getColumnType('ID_SOURCE'))
         assertEquals('INTEGER', table.getColumnType('HEIGHT_WALL'))
         assertEquals('INTEGER', table.getColumnType('HEIGHT_ROOF'))
@@ -355,15 +355,15 @@ class BDTopoGISLayersTest {
         assertEquals('INTEGER', table.getColumnType('ZINDEX'))
 
         // Check if the BATI_INDUSTRIEL table has the correct number of columns and rows
-        tableName = h2GISDatabase.getTable("BATI_INDUSTRIEL")
-        assertNotNull(tableName)
-        assertEquals(4, tableName.columnCount)
-        assertEquals(0, tableName.rowCount)
+        table = h2GISDatabase.getTable("BATI_INDUSTRIEL")
+        assertNotNull(table)
+        assertEquals(4, table.columnCount)
+        assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', tableName.getColumnType('THE_GEOM'))
-        assertEquals('VARCHAR', tableName.getColumnType('ID'))
-        assertEquals('INTEGER', tableName.getColumnType('HAUTEUR'))
-        assertEquals('VARCHAR', tableName.getColumnType('NATURE'))
+        assertTrue(table.THE_GEOM.spatial)
+        assertEquals('VARCHAR', table.getColumnType('ID'))
+        assertEquals('INTEGER', table.getColumnType('HAUTEUR'))
+        assertEquals('VARCHAR', table.getColumnType('NATURE'))
     }
 
     // Check whether the INPUT_BUILDING table is well produced, despite the absence of the BATI_REMARQUABLE table
@@ -399,7 +399,7 @@ class BDTopoGISLayersTest {
         assertEquals(8, table.columnCount)
         assertEquals(3201, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.getColumnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.getColumnType('ID_SOURCE'))
         assertEquals('INTEGER', table.getColumnType('HEIGHT_WALL'))
         assertEquals('INTEGER', table.getColumnType('HEIGHT_ROOF'))
@@ -409,15 +409,15 @@ class BDTopoGISLayersTest {
         assertEquals('INTEGER', table.getColumnType('ZINDEX'))
 
         // Check if the BATI_REMARQUABLE table has the correct number of columns and rows
-        tableName = h2GISDatabase.getTable("BATI_REMARQUABLE")
-        assertNotNull(tableName)
-        assertEquals(4, tableName.columnCount)
-        assertEquals(0, tableName.rowCount)
+        table = h2GISDatabase.getTable("BATI_REMARQUABLE")
+        assertNotNull(table)
+        assertEquals(4, table.columnCount)
+        assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', tableName.getColumnType('THE_GEOM'))
-        assertEquals('VARCHAR', tableName.getColumnType('ID'))
-        assertEquals('INTEGER', tableName.getColumnType('HAUTEUR'))
-        assertEquals('VARCHAR', tableName.getColumnType('NATURE'))
+        assertTrue(table.THE_GEOM.spatial)
+        assertEquals('VARCHAR', table.getColumnType('ID'))
+        assertEquals('INTEGER', table.getColumnType('HAUTEUR'))
+        assertEquals('VARCHAR', table.getColumnType('NATURE'))
     }
 
     // Check whether the INPUT_ROAD table is well produced, despite the absence of the ROUTE table
@@ -453,7 +453,7 @@ class BDTopoGISLayersTest {
         assertEquals(8, table.columnCount)
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.getColumnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.getColumnType('ID_SOURCE'))
         assertEquals('DOUBLE', table.getColumnType('WIDTH'))
         assertEquals('VARCHAR', table.getColumnType('TYPE'))
@@ -463,17 +463,17 @@ class BDTopoGISLayersTest {
         assertEquals('VARCHAR', table.getColumnType('CROSSING'))
 
         // Check if the ROUTE table has the correct number of columns and rows
-        tableName = h2GISDatabase.getTable("ROUTE")
-        assertNotNull(tableName)
-        assertEquals(6, tableName.columnCount)
-        assertEquals(0, tableName.rowCount)
+        table = h2GISDatabase.getTable("ROUTE")
+        assertNotNull(table)
+        assertEquals(6, table.columnCount)
+        assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', tableName.getColumnType('THE_GEOM'))
-        assertEquals('VARCHAR', tableName.getColumnType('ID'))
-        assertEquals('DOUBLE', tableName.getColumnType('LARGEUR'))
-        assertEquals('VARCHAR', tableName.getColumnType('NATURE'))
-        assertEquals('INTEGER', tableName.getColumnType('POS_SOL'))
-        assertEquals('VARCHAR', tableName.getColumnType('FRANCHISST'))
+        assertTrue(table.THE_GEOM.spatial)
+        assertEquals('VARCHAR', table.getColumnType('ID'))
+        assertEquals('DOUBLE', table.getColumnType('LARGEUR'))
+        assertEquals('VARCHAR', table.getColumnType('NATURE'))
+        assertEquals('INTEGER', table.getColumnType('POS_SOL'))
+        assertEquals('VARCHAR', table.getColumnType('FRANCHISST'))
     }
 
     // Check whether the INPUT_RAIL table is well produced, despite the absence of the TRONCON_VOIE_FERREE table
@@ -509,23 +509,23 @@ class BDTopoGISLayersTest {
         assertEquals(5, table.columnCount)
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.getColumnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.getColumnType('ID_SOURCE'))
         assertEquals('VARCHAR', table.getColumnType('TYPE'))
         assertEquals('INTEGER', table.getColumnType('ZINDEX'))
         assertEquals('VARCHAR', table.getColumnType('CROSSING'))
 
         // Check if the TRONCON_VOIE_FERREE table has the correct number of columns and rows
-        tableName = h2GISDatabase.getTable("TRONCON_VOIE_FERREE")
-        assertNotNull(tableName)
-        assertEquals(5, tableName.columnCount)
-        assertEquals(0, tableName.rowCount)
+        table = h2GISDatabase.getTable("TRONCON_VOIE_FERREE")
+        assertNotNull(table)
+        assertEquals(5, table.columnCount)
+        assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', tableName.getColumnType('THE_GEOM'))
-        assertEquals('VARCHAR', tableName.getColumnType('ID'))
-        assertEquals('VARCHAR', tableName.getColumnType('NATURE'))
-        assertEquals('INTEGER', tableName.getColumnType('POS_SOL'))
-        assertEquals('VARCHAR', tableName.getColumnType('FRANCHISST'))
+        assertTrue(table.THE_GEOM.spatial)
+        assertEquals('VARCHAR', table.getColumnType('ID'))
+        assertEquals('VARCHAR', table.getColumnType('NATURE'))
+        assertEquals('INTEGER', table.getColumnType('POS_SOL'))
+        assertEquals('VARCHAR', table.getColumnType('FRANCHISST'))
     }
 
     // Check whether the INPUT_HYDRO table is well produced, despite the absence of the SURFACE_EAU table
@@ -561,17 +561,17 @@ class BDTopoGISLayersTest {
         assertEquals(2, table.columnCount)
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.getColumnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.getColumnType('ID_SOURCE'))
 
         // Check if the SURFACE_EAU table has the correct number of columns and rows
-        tableName = h2GISDatabase.getTable("SURFACE_EAU")
-        assertNotNull(tableName)
-        assertEquals(2, tableName.columnCount)
-        assertEquals(0, tableName.rowCount)
+        table = h2GISDatabase.getTable("SURFACE_EAU")
+        assertNotNull(table)
+        assertEquals(2, table.columnCount)
+        assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', tableName.getColumnType('THE_GEOM'))
-        assertEquals('VARCHAR', tableName.getColumnType('ID'))
+        assertTrue(table.THE_GEOM.spatial)
+        assertEquals('VARCHAR', table.getColumnType('ID'))
     }
 
     // Check whether the INPUT_VEGET table is well produced, despite the absence of the ZONE_VEGETATION table
@@ -607,19 +607,19 @@ class BDTopoGISLayersTest {
         assertEquals(3, table.columnCount)
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.getColumnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.getColumnType('ID_SOURCE'))
         assertEquals('VARCHAR', table.getColumnType('TYPE'))
 
         // Check if the ZONE_VEGETATION table has the correct number of columns and rows
-        tableName = h2GISDatabase.getTable("ZONE_VEGETATION")
-        assertNotNull(tableName)
-        assertEquals(3, tableName.columnCount)
-        assertEquals(0, tableName.rowCount)
+        table = h2GISDatabase.getTable("ZONE_VEGETATION")
+        assertNotNull(table)
+        assertEquals(3, table.columnCount)
+        assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', tableName.getColumnType('THE_GEOM'))
-        assertEquals('VARCHAR', tableName.getColumnType('ID'))
-        assertEquals('VARCHAR', tableName.getColumnType('NATURE'))
+        assertTrue(table.THE_GEOM.spatial)
+        assertEquals('VARCHAR', table.getColumnType('ID'))
+        assertEquals('VARCHAR', table.getColumnType('NATURE'))
     }
 
     // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the SURFACE_ACTIVITE table
@@ -655,7 +655,7 @@ class BDTopoGISLayersTest {
         assertEquals(2, table.columnCount)
         assertEquals(2, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
@@ -666,14 +666,14 @@ class BDTopoGISLayersTest {
         }
 
         // Check if the SURFACE_ACTIVITE table has the correct number of columns and rows
-        tableName = h2GISDatabase.getTable("SURFACE_ACTIVITE")
-        assertNotNull(tableName)
-        assertEquals(3, tableName.columnCount)
-        assertEquals(0, tableName.rowCount)
+        table = h2GISDatabase.getTable("SURFACE_ACTIVITE")
+        assertNotNull(table)
+        assertEquals(3, table.columnCount)
+        assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', tableName.columnType('THE_GEOM'))
-        assertEquals('VARCHAR', tableName.columnType('ID'))
-        assertEquals('VARCHAR', tableName.columnType('CATEGORIE'))
+        assertTrue(table.THE_GEOM.spatial)
+        assertEquals('VARCHAR', table.columnType('ID'))
+        assertEquals('VARCHAR', table.columnType('CATEGORIE'))
     }
 
     // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the TERRAIN_SPORT table
@@ -709,7 +709,7 @@ class BDTopoGISLayersTest {
         assertEquals(2, table.columnCount)
         assertEquals(7, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
@@ -720,14 +720,14 @@ class BDTopoGISLayersTest {
         }
 
         // Check if the TERRAIN_SPORT table has the correct number of columns and rows
-        tableName = h2GISDatabase.getTable("TERRAIN_SPORT")
-        assertNotNull(tableName)
-        assertEquals(3, tableName.columnCount)
-        assertEquals(0, tableName.rowCount)
+        table = h2GISDatabase.getTable("TERRAIN_SPORT")
+        assertNotNull(table)
+        assertEquals(3, table.columnCount)
+        assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', tableName.columnType('THE_GEOM'))
-        assertEquals('VARCHAR', tableName.columnType('ID'))
-        assertEquals('VARCHAR', tableName.columnType('NATURE'))
+        assertTrue(table.THE_GEOM.spatial)
+        assertEquals('VARCHAR', table.columnType('ID'))
+        assertEquals('VARCHAR', table.columnType('NATURE'))
     }
 
     // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the CONSTRUCTION_SURFACIQUE table
@@ -763,7 +763,7 @@ class BDTopoGISLayersTest {
         assertEquals(2, table.columnCount)
         assertEquals(7, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
@@ -774,14 +774,14 @@ class BDTopoGISLayersTest {
         }
 
         // Check if the CONSTRUCTION_SURFACIQUE table has the correct number of columns and rows
-        tableName = h2GISDatabase.getTable("CONSTRUCTION_SURFACIQUE")
-        assertNotNull(tableName)
-        assertEquals(3, tableName.columnCount)
-        assertEquals(0, tableName.rowCount)
+        table = h2GISDatabase.getTable("CONSTRUCTION_SURFACIQUE")
+        assertNotNull(table)
+        assertEquals(3, table.columnCount)
+        assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', tableName.columnType('THE_GEOM'))
-        assertEquals('VARCHAR', tableName.columnType('ID'))
-        assertEquals('VARCHAR', tableName.columnType('NATURE'))
+        assertTrue(table.THE_GEOM.spatial)
+        assertEquals('VARCHAR', table.columnType('ID'))
+        assertEquals('VARCHAR', table.columnType('NATURE'))
     }
 
     // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the SURFACE_ROUTE table
@@ -817,7 +817,7 @@ class BDTopoGISLayersTest {
         assertEquals(2, table.columnCount)
         assertEquals(5, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.the_geom.isSpatial())
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
@@ -828,13 +828,13 @@ class BDTopoGISLayersTest {
         }
 
         // Check if the SURFACE_ROUTE table has the correct number of columns and rows
-        tableName = h2GISDatabase.getTable("SURFACE_ROUTE")
-        assertNotNull(tableName)
-        assertEquals(2, tableName.columnCount)
-        assertEquals(0, tableName.rowCount)
+        table = h2GISDatabase.getTable("SURFACE_ROUTE")
+        assertNotNull(table)
+        assertEquals(2, table.columnCount)
+        assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', tableName.columnType('THE_GEOM'))
-        assertEquals('VARCHAR', tableName.columnType('ID'))
+        assertTrue(table.the_geom.isSpatial())
+        assertEquals('VARCHAR', table.columnType('ID'))
     }
 
 
@@ -862,7 +862,7 @@ class BDTopoGISLayersTest {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
         }
 
-        assertEquals('true', h2GISDatabase.firstRow("SELECT ST_IsValid(THE_GEOM) as valid FROM INPUT_BUILDING WHERE ID_SOURCE='BATIMENT0000000290122667';")["valid"].toString())
+        //assertEquals('true', h2GISDatabase.firstRow("SELECT ST_IsValid(THE_GEOM) as valid FROM INPUT_BUILDING WHERE ID_SOURCE='BATIMENT0000000290122667';")["valid"].toString())
     }
 
     @Test
