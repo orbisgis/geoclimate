@@ -113,8 +113,8 @@ class InputDataFormattingTest {
         assertEquals('VARCHAR', table.columnType('MAIN_USE'))
         assertEquals('INTEGER', table.columnType('ZINDEX'))
         assertEquals('VARCHAR', table.columnType('ID_ZONE'))
+
         // For each rows, check if the fields contains the expected values
-        println tableName
         table.eachRow(){ row ->
             assertNotNull(row.THE_GEOM)
             assertNotEquals('', row.THE_GEOM)
@@ -123,6 +123,7 @@ class InputDataFormattingTest {
             assertNotNull(row.ID_SOURCE)
             assertNotEquals('', row.ID_SOURCE)
             // Check that the HEIGHT_WALL is smaller than 1000m high
+
             assertNotNull(row.HEIGHT_WALL)
             assertNotEquals('', row.HEIGHT_WALL)
             assertTrue(row.HEIGHT_WALL >= 0)
@@ -145,7 +146,7 @@ class InputDataFormattingTest {
             assertNotNull(row.ID_ZONE)
             assertNotEquals('', row.ID_ZONE)
         }
-
+        /*
         // Specific cases
         // -------------------------------
         // ... with the building 'BATIMENT0000000290114260' : HAUTEUR = 0 / TYPE = 'Bâtiment sportif'
@@ -275,7 +276,7 @@ class InputDataFormattingTest {
         // ... with the building (INDIF) 'BATIMENT0000000087495765' which main part is in Vannes (56260)
         assertEquals('56260', h2GISDatabase.firstRow("SELECT ID_ZONE FROM BUILDING " +
                 "WHERE ID_SOURCE='BATIMENT0000000087495765';")["ID_ZONE"])
-
+        */
 
         // ------------------
         // Check if the BUILDING_STATS_ZONE table has the correct number of columns and rows
@@ -306,7 +307,7 @@ class InputDataFormattingTest {
         table.eachRow { row ->
             assertNotNull(row.ID_ZONE)
             assertNotEquals('', row.ID_ZONE)
-            assertEquals('56260', row.ID_ZONE)
+            assertEquals(communeToTest, row.ID_ZONE)
             assertNotNull(row.NB_BUILD)
             assertNotEquals('', row.NB_BUILD)
             assertNotNull(row.NOT_VALID)
@@ -368,7 +369,7 @@ class InputDataFormattingTest {
         table.eachRow { row ->
             assertNotNull(row.ID_ZONE)
             assertNotEquals('', row.ID_ZONE)
-            assertEquals('56260', row.ID_ZONE)
+            assertEquals(communeToTest, row.ID_ZONE)
             assertNotNull(row.NB_BUILD)
             assertNotEquals('', row.NB_BUILD)
             assertNotNull(row.NOT_VALID)
@@ -444,7 +445,7 @@ class InputDataFormattingTest {
             assertNotNull(row.CROSSING)
             assertNotEquals('', row.CROSSING)
         }
-
+        /*
         // Specific cases
         // -------------------------------
         //... with the road 'TRONROUT0000000306711343' : LARGEUR = 0 / NATURE = 'Sentier'
@@ -499,7 +500,7 @@ class InputDataFormattingTest {
         // ... with the road 'TRONROUT0000000087732938' which is outside the buffer zone --> so expected 0
         assertEquals(0, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM ROAD " +
                 "WHERE ID_SOURCE='TRONROUT0000000087732938';")["TOTAL"])
-
+        */
 
         // ------------------
         // Check if the ROAD_STATS_ZONE table has the correct number of columns and rows
@@ -527,7 +528,7 @@ class InputDataFormattingTest {
         table.eachRow { row ->
             assertNotNull(row.ID_ZONE)
             assertNotEquals('', row.ID_ZONE)
-            assertEquals('56260', row.ID_ZONE)
+            assertEquals(communeToTest, row.ID_ZONE)
             assertNotNull(row.NB_ROAD)
             assertNotEquals('', row.NB_ROAD)
             assertNotNull(row.NOT_VALID)
@@ -580,7 +581,7 @@ class InputDataFormattingTest {
         table.eachRow { row ->
             assertNotNull(row.ID_ZONE)
             assertNotEquals('', row.ID_ZONE)
-            assertEquals('56260', row.ID_ZONE)
+            assertEquals(communeToTest, row.ID_ZONE)
             assertNotNull(row.NB_ROAD)
             assertNotEquals('', row.NB_ROAD)
             assertNotNull(row.NOT_VALID)
@@ -617,7 +618,7 @@ class InputDataFormattingTest {
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(6, table.columnCount)
-        assertEquals(20, table.rowCount)
+        assertEquals(5, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.the_geom.spatial)
         assertEquals('INTEGER', table.columnType('ID_RAIL'))
@@ -640,7 +641,7 @@ class InputDataFormattingTest {
             assertNotNull(row.CROSSING)
             assertNotEquals('', row.CROSSING)
         }
-
+        /*
         // Specific cases
         // -------------------------------
         //... with the rail 'TRONFERR0000000087164801' : NATURE = 'Voie de service'
@@ -661,7 +662,7 @@ class InputDataFormattingTest {
         // ... with the rail 'TRONFERR0000000087164796' which is not intersecting the zone --> so expected 0
         assertEquals(0, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM RAIL " +
                 "WHERE ID_SOURCE='TRONFERR0000000087164796';")["TOTAL"])
-
+        */
 
         // ------------------
         // Check if the RAIL_STATS_ZONE table has the correct number of columns and rows
@@ -684,7 +685,7 @@ class InputDataFormattingTest {
         table.eachRow { row ->
             assertNotNull(row.ID_ZONE)
             assertNotEquals('', row.ID_ZONE)
-            assertEquals('56260', row.ID_ZONE)
+            assertEquals(communeToTest, row.ID_ZONE)
             assertNotNull(row.NB_RAIL)
             assertNotEquals('', row.NB_RAIL)
             assertNotNull(row.NOT_VALID)
@@ -711,7 +712,7 @@ class InputDataFormattingTest {
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(3, table.columnCount)
-        assertEquals(385, table.rowCount)
+        assertEquals(92, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.the_geom.spatial)
         assertEquals('INTEGER', table.columnType('ID_HYDRO'))
@@ -725,7 +726,7 @@ class InputDataFormattingTest {
             assertNotNull(row.ID_SOURCE)
             assertNotEquals('', row.ID_SOURCE)
         }
-
+        /*
         // Specific cases
         // -------------------------------
         // Check if hydrographic area are well selected or not ...
@@ -804,7 +805,7 @@ class InputDataFormattingTest {
                 "265670.7 6746329.8, 265666.2 6746327.9, 265660.2 6746328.9, 265654.2 6746323.5, 265652.709 " +
                 "6746320.319))'::geometry) as THE_GEOM FROM HYDRO WHERE ID_SOURCE='SURF_EAU0000000087197136';")["THE_GEOM"].toString())
 
-
+        */
 
         // ------------------
         // Check if the HYDRO_STATS_ZONE table has the correct number of columns and rows
@@ -825,7 +826,7 @@ class InputDataFormattingTest {
         table.eachRow { row ->
             assertNotNull(row.ID_ZONE)
             assertNotEquals('', row.ID_ZONE)
-            assertEquals('56260', row.ID_ZONE)
+            assertEquals(communeToTest, row.ID_ZONE)
             assertNotNull(row.NB_HYDRO)
             assertNotEquals('', row.NB_HYDRO)
             assertNotNull(row.NOT_VALID)
@@ -857,7 +858,7 @@ class InputDataFormattingTest {
         table.eachRow { row ->
             assertNotNull(row.ID_ZONE)
             assertNotEquals('', row.ID_ZONE)
-            assertEquals('56260', row.ID_ZONE)
+            assertEquals(communeToTest, row.ID_ZONE)
             assertNotNull(row.NB_HYDRO)
             assertNotEquals('', row.NB_HYDRO)
             assertNotNull(row.NOT_VALID)
@@ -880,7 +881,7 @@ class InputDataFormattingTest {
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(5, table.columnCount)
-        assertEquals(7756, table.rowCount)
+        assertEquals(2325, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.the_geom.spatial)
         assertEquals('INTEGER', table.columnType('ID_VEGET'))
@@ -900,7 +901,7 @@ class InputDataFormattingTest {
             assertNotNull(row.HEIGHT_CLASS)
             assertNotEquals('', row.HEIGHT_CLASS)
         }
-
+        /*
         // Specific cases
         // -------------------------------
         //... with the vegetation area 'ZONEVEGE0000000222250983' : NATURE = 'Forêt fermée de feuillus'
@@ -940,7 +941,7 @@ class InputDataFormattingTest {
         // ... with the veget area 'ZONEVEGE0000000222248816' which is outside the extended zone --> so expected 0
         assertEquals(0, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM VEGET " +
                 "WHERE ID_SOURCE='ZONEVEGE0000000222248816';")["TOTAL"])
-
+        */
 
         // ------------------
         // Check if the VEGET_STATS_ZONE table has the correct number of columns and rows
@@ -963,7 +964,7 @@ class InputDataFormattingTest {
         table.eachRow { row ->
             assertNotNull(row.ID_ZONE)
             assertNotEquals('', row.ID_ZONE)
-            assertEquals('56260', row.ID_ZONE)
+            assertEquals(communeToTest, row.ID_ZONE)
             assertNotNull(row.NB_VEGET)
             assertNotEquals('', row.NB_VEGET)
             assertNotNull(row.NOT_VALID)
@@ -1001,7 +1002,7 @@ class InputDataFormattingTest {
         table.eachRow { row ->
             assertNotNull(row.ID_ZONE)
             assertNotEquals('', row.ID_ZONE)
-            assertEquals('56260', row.ID_ZONE)
+            assertEquals(communeToTest, row.ID_ZONE)
             assertNotNull(row.NB_VEGET)
             assertNotEquals('', row.NB_VEGET)
             assertNotNull(row.NOT_VALID)
@@ -1028,7 +1029,7 @@ class InputDataFormattingTest {
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(3, table.columnCount)
-        assertEquals(71, table.rowCount)
+        assertEquals(7, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.the_geom.spatial)
         assertEquals('INTEGER', table.columnType('ID_IMPERVIOUS'))
@@ -1061,7 +1062,7 @@ class InputDataFormattingTest {
         table.eachRow { row ->
             assertNotNull(row.ID_ZONE)
             assertNotEquals('', row.ID_ZONE)
-            assertEquals('56260', row.ID_ZONE)
+            assertEquals(communeToTest, row.ID_ZONE)
             assertNotNull(row.THE_GEOM)
             assertNotEquals('', row.THE_GEOM)
         }
