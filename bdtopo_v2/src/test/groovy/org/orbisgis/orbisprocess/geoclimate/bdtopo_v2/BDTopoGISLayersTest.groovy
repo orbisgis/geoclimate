@@ -27,7 +27,7 @@ class BDTopoGISLayersTest {
     @BeforeEach
     void beforeEach(){
         if(System.properties.containsKey("data.bd.topo") && System.properties.getProperty("data.bd.topo") == "true") {
-            def dataFolderInseeCode = "processingChain/dataForTests/$communeToTest"
+            def dataFolderInseeCode = "sample_$communeToTest"
             def listFilesBDTopo = ["IRIS_GE", "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL", "BATI_REMARQUABLE",
                                    "ROUTE", "SURFACE_EAU", "ZONE_VEGETATION", "ZONE_VEGETATION",
                                    "TRONCON_VOIE_FERREE", "TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE",
