@@ -1165,7 +1165,8 @@ IProcess smallestCommunGeometry() {
                 CREATE INDEX IF NOT EXISTS ids_$roadTable_zindex0_buffer ON $roadTable_zindex0_buffer USING RTREE(the_geom);
                 CREATE TABLE $road_tmp AS SELECT ST_CollectionExtract(st_intersection(st_union(st_accum(a.the_geom)),b.the_geom),3) AS the_geom, b.id_rsu FROM
                 $roadTable_zindex0_buffer AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom) GROUP BY b.id_rsu;
-                DROP TABLE IF EXISTS $roadTable_zindex0_buffer;"""
+                DROP TABLE IF EXISTS $roadTable_zindex0_buffer;
+                """
                     tablesToMerge+= ["$road_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $road_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
                 }
 
@@ -1403,6 +1404,7 @@ IProcess surfaceFractions() {
                         i += 1
             }
 
+
             def query = """DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT a.ID_RSU """
             def end_query = """ FROM $spatialRelationsTable AS a RIGHT JOIN $rsuTable b 
                                 ON a.ID_RSU=b.ID_RSU GROUP BY b.ID_RSU;"""
@@ -1410,7 +1412,9 @@ IProcess surfaceFractions() {
             superpositions.each{key, values ->
                 // Calculating the overlaying layer when it has no overlapped layer
                 def tempoLayers = LAYERS.minus([key])
-                query += ", SUM(CASE WHEN a.$key =1 AND a.${tempoLayers.join(" =0 AND a.")} =0 THEN a.area ELSE 0 END)/st_area(b.the_geom) AS ${key}_fraction "
+
+                query += ", COALESCE(SUM(CASE WHEN a.$key =1 AND a.${tempoLayers.join(" =0 AND a.")} =0 THEN a.area ELSE 0 END),0)/st_area(b.the_geom) AS ${key}_fraction "
+
                 // Calculate each combination of overlapped layer for the current overlaying layer
                 def notOverlappedLayers = priorities.minus(values).minus([key])
                 // If an non overlapped layer is prioritized, its number should be 0 for the overlapping to happen
@@ -1431,7 +1435,8 @@ IProcess surfaceFractions() {
                         if(!var2Zero.isEmpty()){
                             var2ZeroQuery = " AND a." + var2Zero.join("=0 AND a.") + " =0 "
                         }
-                        query += ", SUM(CASE WHEN a.$key =1 AND a.$val =1 $var2ZeroQuery $nonOverlappedQuery THEN a.area ELSE 0 END)/st_area(b.the_geom) AS ${key}_${val}_fraction "
+                        query += ", COALESCE(SUM(CASE WHEN a.$key =1 AND a.$val =1 $var2ZeroQuery $nonOverlappedQuery THEN a.area ELSE 0 END),0)/st_area(b.the_geom) AS ${key}_${val}_fraction "
+
                     }
                     var2Zero.add(val)
                 }
@@ -1458,7 +1463,9 @@ IProcess surfaceFractions() {
                             nonOverlappedQuery += " AND a.$key =0 "
                         }
                     }
-                    query += ", SUM(CASE WHEN a.$val =1 $var2ZeroQuery $varAlreadyUsedQuery $nonOverlappedQuery THEN a.area ELSE 0 END)/st_area(b.the_geom) AS ${val}_fraction "
+
+                    query += ", COALESCE(SUM(CASE WHEN a.$val =1 $var2ZeroQuery $varAlreadyUsedQuery $nonOverlappedQuery THEN a.area ELSE 0 END),0)/st_area(b.the_geom) AS ${val}_fraction "
+
                 }
             }
             datasource.execute query + end_query

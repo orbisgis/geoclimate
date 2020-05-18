@@ -76,9 +76,9 @@ import java.sql.SQLException
  *         "mapOfWeights":
  *         {"sky_view_factor": 1,
  *             "aspect_ratio": 1,
- *             "building_surface_fraction": 1,
- *             "impervious_surface_fraction" : 1,
- *             "pervious_surface_fraction": 1,
+ *             "building_surface_fraction": 2,
+ *             "impervious_surface_fraction" : 0,
+ *             "pervious_surface_fraction": 0,
  *             "height_of_roughness_elements": 1,
  *             "terrain_roughness_length": 1},
  *         "hLevMin": 3,
@@ -805,8 +805,8 @@ def findIDZones(def h2gis_datasource, def id_zones){
 def extractProcessingParameters(def processing_parameters){
     def defaultParameters = [distance: 1000,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
                              svfSimplified:false, prefixName: "",
-                             mapOfWeights : ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
-                                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                             mapOfWeights : ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 2,
+                                             "impervious_surface_fraction" : 0, "pervious_surface_fraction": 0,
                                              "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
                              hLevMin : 3, hLevMax: 15, hThresholdLev2: 10]
     if(processing_parameters){
@@ -1554,8 +1554,8 @@ def GeoIndicators() {
                 roadTable: String, railTable: String, vegetationTable: String,
                 hydrographicTable: String, surface_vegetation: 100000, surface_hydro: 2500,
                 distance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified:false, prefixName: "",
-                mapOfWeights: ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
-                               "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                mapOfWeights: ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 2,
+                               "impervious_surface_fraction" : 0, "pervious_surface_fraction": 0,
                                "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
         outputs outputTableBuildingIndicators: String, outputTableBlockIndicators: String,
                 outputTableRsuIndicators: String, outputTableRsuLcz:String, outputTableZone:String

@@ -8,7 +8,6 @@ import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 
 @BaseScript ProcessingChain processingChain
 
-
 /**
  * Compute all geoindicators at the 3 scales :
  * building, block and RSU

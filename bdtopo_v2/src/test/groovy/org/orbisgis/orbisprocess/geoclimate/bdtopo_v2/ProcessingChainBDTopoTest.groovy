@@ -15,9 +15,11 @@ import static org.junit.jupiter.api.Assertions.*
 
 class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 
+    public static communeToTest = "12174"
+
     public static Logger logger = LoggerFactory.getLogger(ProcessingChainBDTopoTest.class)
     public static def h2db = "./target/myh2gisbdtopodb"
-    public static def bdtopoFoldName = "bdtopofolder"
+    public static def bdtopoFoldName = "processingChain/dataForTests"
     public static def listTables = ["IRIS_GE", "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL", "BATI_REMARQUABLE",
     "ROUTE", "SURFACE_EAU", "ZONE_VEGETATION", "TRONCON_VOIE_FERREE", "TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE",
     "SURFACE_ROUTE", "SURFACE_ACTIVITE"]
@@ -44,17 +46,17 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 
         // Load parameter files
         paramTables.each{
-            h2GISDatabase.load(ProcessingChain.class.getResource(it+".csv"), it, true)
+            h2GISDatabase.load(getClass().getResource(it+".csv"), it, true)
         }
 
         def relativePath = bdtopoFoldName + File.separator + inseeCode
 
         // Test whether there is a folder containing .shp files for the corresponding INSEE code
-        if(ProcessingChain.class.getResource(relativePath)){
+        if(getClass().getResource(relativePath)){
             // Test is the URL is a folder
-            if(new File(ProcessingChain.class.getResource(relativePath).toURI()).isDirectory()){
+            if(new File(getClass().getResource(relativePath).toURI()).isDirectory()){
                 listTables.each {
-                    def filePath = ProcessingChain.class.getResource(relativePath + File.separator + it + ".shp")
+                    def filePath = getClass().getResource(relativePath + File.separator + it + ".shp")
                     // If some layers are missing, do not try to load them...
                     if (filePath) {
                         h2GISDatabase.load(filePath, it, true)
@@ -79,7 +81,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void prepareBDTopoTest(){
         def dbSuffixName = "_prepare"
-        def inseeCode = "01306"
+        def inseeCode = communeToTest
         H2GIS h2GISDatabase = loadFiles(inseeCode, dbSuffixName)
         def process = BDTopo_V2.prepareData
         assertTrue process.execute([datasource: h2GISDatabase,
@@ -89,7 +91,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, expand: 1000, idZone: '56260',
+                                    distBuffer: 500, expand: 1000, idZone: communeToTest,
                                     hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
         ])
         process.getResults().each {entry ->
@@ -139,9 +141,8 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void bdtopoLczFromTestFiles() {
         def dbSuffixName = "_lcz"
-        String inseeCode = "01306"
-        H2GIS datasource = loadFiles(inseeCode, dbSuffixName)
-        def process = ProcessingChain.PrepareBDTopo.prepareBDTopo()
+        H2GIS datasource = loadFiles(communeToTest, dbSuffixName)
+        def process = BDTopo_V2.prepareData
         assertTrue process.execute([datasource: datasource,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -149,7 +150,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, expand: 1000, idZone: inseeCode,
+                                    distBuffer: 500, expand: 1000, idZone: communeToTest,
                                     hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
         ])
         def abstractTables = process.getResults()
@@ -183,8 +184,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void bdtopoGeoIndicatorsFromTestFiles() {
         def dbSuffixName = "_geoIndicators"
-        String inseeCode = "01306"
-        H2GIS h2GISDatabase = loadFiles(inseeCode, dbSuffixName)
+        H2GIS h2GISDatabase = loadFiles(communeToTest, dbSuffixName)
         def process = BDTopo_V2.prepareData
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
@@ -193,7 +193,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, expand: 1000, idZone: inseeCode,
+                                    distBuffer: 500, expand: 1000, idZone: communeToTest,
                                     hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
         ])
         def abstractTables = process.getResults()
@@ -219,14 +219,13 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     @Disabled
     void testBDTOPO_V2Workflow() {
         String directory ="./target/geoclimate_chain/bdtopo_config/"
-        def inseeCode = "01306"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
         IProcess processBDTopo = BDTopo_V2.workflow
         assertTrue(processBDTopo.execute(configurationFile: getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()))mm
         assertNotNull(processBDTopo.getResults().outputFolder)
-        def baseNamePathAndFileOut = processBDTopo.getResults().outputFolder + File.separator + "zone_" + inseeCode + "_"
+        def baseNamePathAndFileOut = processBDTopo.getResults().outputFolder + File.separator + "zone_" + communeToTest + "_"
         assertTrue(new File(baseNamePathAndFileOut + "rsu_indicators.geojson").exists())
         assertFalse(new File(baseNamePathAndFileOut + "rsu_lcz.geojson").exists())
         assertFalse(new File(baseNamePathAndFileOut + "block_indicators.geojson").exists())
@@ -240,16 +239,6 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()
         //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_dboutput.json").toURI()
         //configFile =getClass().getResource("config/bdtopo_workflow_dbinput_dboutput.json").toURI()
-        IProcess process = BDTopo_V2.workflow
-        assertTrue(process.execute(configurationFile: configFile))
-    }
-
-    @Test //Integration tests
-    @Disabled
-    void lczProduceTestData() {
-        def configFile = getClass().getResource("bdtopofolder/lczTests/lczDebug.json").toURI()
-
-        // Execute several cities where we have tests
         IProcess process = BDTopo_V2.workflow
         assertTrue(process.execute(configurationFile: configFile))
     }
@@ -268,7 +257,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                         "delete" :true
                 ],
                 "input" : [
-                        "folder": ["path" :".../bdtopofolder",
+                        "folder": ["path" :".../processingChain",
                             "id_zones":["-", "-"]]],
                 "output" :[
                         "database" :

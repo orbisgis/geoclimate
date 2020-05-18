@@ -397,7 +397,7 @@ class RsuIndicatorsTests {
 
     @Test
     void surfaceFractionTest() {
-        // Only the RSU 5 is conserved for the test
+        // Only the RSU 4 is conserved for the test
         h2GIS.execute "DROP TABLE IF EXISTS rsu_tempo;" +
                 "CREATE TABLE rsu_tempo AS SELECT * " +
                 "FROM rsu_test WHERE id_rsu = 4"
@@ -463,7 +463,6 @@ class RsuIndicatorsTests {
         assertEquals(0, result2["building_fraction"])
     }
 
-
     @Test
     void surfaceFractionTest3() {
         // Test whether the road fraction is taken into account...
@@ -479,8 +478,6 @@ class RsuIndicatorsTests {
                 rsuTable: "rsu_tempo", roadTable: "road_tempo",
                 prefixName: "test", datasource: h2GIS])
         def tempoTable = p.results.outputTableName
-
-        println h2GIS.firstRow("SELECT * FROM $tempoTable")
 
         // Apply the surface fractions for different combinations
         // combination 1

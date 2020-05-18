@@ -1,8 +1,0 @@
-{
-"type": "FeatureCollection",
-"name": "expectedLcz",
-"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::2154" } },
-"features": [
-{ "type": "Feature", "properties": { "id": 1, "expected": 1, "lcz_type": "101,102", "id_zone": "01306" }, "geometry": { "type": "Point", "coordinates": [ 844969.523741610697471, 6575687.419035234488547 ] } }
-]
-}

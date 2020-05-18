@@ -11,10 +11,12 @@ import static org.junit.jupiter.api.Assertions.*
 class BDTopoGISLayersTest {
     def h2GISDatabase
 
+    public static communeToTest = "12174"
+
     @BeforeAll
     static void beforeAll(){
-        if(BDTopoGISLayersTest.class.getResource("bdtopofolder") != null &&
-                new File(BDTopoGISLayersTest.class.getResource("bdtopofolder").toURI()).exists()) {
+        if(InputDataFormattingTest.class.getResource("processingChain") != null &&
+                new File(InputDataFormattingTest.class.getResource("processingChain").toURI()).exists()) {
             System.properties.setProperty("data.bd.topo", "true")
         }
         else {
@@ -23,41 +25,31 @@ class BDTopoGISLayersTest {
     }
 
     @BeforeEach
-    void beforeEach() {
+    void beforeEach(){
         if(System.properties.containsKey("data.bd.topo") && System.properties.getProperty("data.bd.topo") == "true") {
-            h2GISDatabase = H2GIS.open("./target/h2gis_bd_topo_gis_layer_${UUID.randomUUID()};AUTO_SERVER=TRUE", "sa", "")
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/IRIS_GE.shp"), "IRIS_GE", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/BATI_INDIFFERENCIE.shp"), "BATI_INDIFFERENCIE", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/BATI_INDUSTRIEL.shp"), "BATI_INDUSTRIEL", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/BATI_REMARQUABLE.shp"), "BATI_REMARQUABLE", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/ROUTE.shp"), "ROUTE", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/SURFACE_EAU.shp"), "SURFACE_EAU", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/ZONE_VEGETATION.shp"), "ZONE_VEGETATION", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/TRONCON_VOIE_FERREE.shp"), "TRONCON_VOIE_FERREE", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/TERRAIN_SPORT.shp"), "TERRAIN_SPORT", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/CONSTRUCTION_SURFACIQUE.shp"), "CONSTRUCTION_SURFACIQUE", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/SURFACE_ROUTE.shp"), "SURFACE_ROUTE", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("bdtopofolder/SURFACE_ACTIVITE.shp"), "SURFACE_ACTIVITE", true)
+            def dataFolderInseeCode = "sample_$communeToTest"
+            def listFilesBDTopo = ["IRIS_GE", "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL", "BATI_REMARQUABLE",
+                                   "ROUTE", "SURFACE_EAU", "ZONE_VEGETATION", "ZONE_VEGETATION",
+                                   "TRONCON_VOIE_FERREE", "TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE",
+                                   "SURFACE_ROUTE", "SURFACE_ACTIVITE"]
 
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("BUILDING_ABSTRACT_PARAMETERS.csv"), "BUILDING_ABSTRACT_PARAMETERS", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("BUILDING_ABSTRACT_USE_TYPE.csv"), "BUILDING_ABSTRACT_USE_TYPE", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("BUILDING_BD_TOPO_USE_TYPE.csv"), "BUILDING_BD_TOPO_USE_TYPE", true)
+            def paramTables = ["BUILDING_ABSTRACT_PARAMETERS", "BUILDING_ABSTRACT_USE_TYPE", "BUILDING_BD_TOPO_USE_TYPE",
+                               "RAIL_ABSTRACT_TYPE", "RAIL_BD_TOPO_TYPE", "RAIL_ABSTRACT_CROSSING",
+                               "RAIL_BD_TOPO_CROSSING", "ROAD_ABSTRACT_PARAMETERS", "ROAD_ABSTRACT_SURFACE",
+                               "ROAD_ABSTRACT_CROSSING", "ROAD_BD_TOPO_CROSSING", "ROAD_ABSTRACT_TYPE",
+                               "ROAD_BD_TOPO_TYPE", "VEGET_ABSTRACT_PARAMETERS", "VEGET_ABSTRACT_TYPE",
+                               "VEGET_BD_TOPO_TYPE"]
 
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("RAIL_ABSTRACT_TYPE.csv"), "RAIL_ABSTRACT_TYPE", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("RAIL_BD_TOPO_TYPE.csv"), "RAIL_BD_TOPO_TYPE", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("RAIL_ABSTRACT_CROSSING.csv"), "RAIL_ABSTRACT_CROSSING", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("RAIL_BD_TOPO_CROSSING.csv"), "RAIL_BD_TOPO_CROSSING", true)
+            h2GISDatabase = H2GIS.open("./target/h2gis_input_data_formating;AUTO_SERVER=TRUE", "sa", "")
 
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("ROAD_ABSTRACT_PARAMETERS.csv"), "ROAD_ABSTRACT_PARAMETERS", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("ROAD_ABSTRACT_SURFACE.csv"), "ROAD_ABSTRACT_SURFACE", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("ROAD_ABSTRACT_CROSSING.csv"), "ROAD_ABSTRACT_CROSSING", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("ROAD_BD_TOPO_CROSSING.csv"), "ROAD_BD_TOPO_CROSSING", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("ROAD_ABSTRACT_TYPE.csv"), "ROAD_ABSTRACT_TYPE", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("ROAD_BD_TOPO_TYPE.csv"), "ROAD_BD_TOPO_TYPE", true)
-
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("VEGET_ABSTRACT_PARAMETERS.csv"), "VEGET_ABSTRACT_PARAMETERS", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("VEGET_ABSTRACT_TYPE.csv"), "VEGET_ABSTRACT_TYPE", true)
-            h2GISDatabase.load(BDTopoGISLayersTest.class.getResource("VEGET_BD_TOPO_TYPE.csv"), "VEGET_BD_TOPO_TYPE", true)
+            // Load parameter files
+            paramTables.each{
+                h2GISDatabase.load(getClass().getResource(it+".csv"), it, true)
+            }
+            // Load data files
+            listFilesBDTopo.each{
+                h2GISDatabase.load(getClass().getResource("$dataFolderInseeCode/${it}.shp"), it, true)
+            }
         }
     }
 
@@ -72,7 +64,7 @@ class BDTopoGISLayersTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, expand: 1000, idZone: '56260',
+                                    distBuffer: 500, expand: 1000, idZone: communeToTest,
                                     building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
                                     road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
                                     road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
@@ -90,9 +82,9 @@ class BDTopoGISLayersTest {
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(8, table.columnCount)
-        assertEquals(20568, table.rowCount)
+        assertEquals(3219, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         assertEquals('INTEGER', table.columnType('HEIGHT_WALL'))
         assertEquals('INTEGER', table.columnType('HEIGHT_ROOF'))
@@ -129,9 +121,9 @@ class BDTopoGISLayersTest {
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(8, table.columnCount)
-        assertEquals(9762, table.rowCount)
+        assertEquals(1779, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         assertEquals('DOUBLE', table.columnType('WIDTH'))
         assertEquals('VARCHAR', table.columnType('TYPE'))
@@ -168,9 +160,9 @@ class BDTopoGISLayersTest {
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(5, table.columnCount)
-        assertEquals(20, table.rowCount)
+        assertEquals(5, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         assertEquals('VARCHAR', table.columnType('TYPE'))
         assertEquals('INTEGER', table.columnType('ZINDEX'))
@@ -195,9 +187,9 @@ class BDTopoGISLayersTest {
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(2, table.columnCount)
-        assertEquals(385, table.rowCount)
+        assertEquals(92, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
@@ -213,9 +205,9 @@ class BDTopoGISLayersTest {
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(3, table.columnCount)
-        assertEquals(7756, table.rowCount)
+        assertEquals(2325, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         assertEquals('VARCHAR', table.columnType('TYPE'))
         // For each rows, check if the fields contains the expected values
@@ -234,9 +226,9 @@ class BDTopoGISLayersTest {
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(2, table.columnCount)
-        assertEquals(71, table.rowCount)
+        assertEquals(7, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
@@ -255,14 +247,14 @@ class BDTopoGISLayersTest {
         assertEquals(1, table.rowCount)
         // Check if the column types are correct
         assertEquals('VARCHAR', table.columnType('ID_ZONE'))
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
             assertNotNull(row.THE_GEOM)
             assertNotEquals('', row.THE_GEOM)
             assertNotNull(row.ID_ZONE)
             assertNotEquals('', row.ID_ZONE)
-            assertEquals('56260', row.ID_ZONE)
+            assertEquals(communeToTest, row.ID_ZONE)
         }
 
     }
@@ -280,7 +272,7 @@ class BDTopoGISLayersTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, expand: 1000, idZone: '56260',
+                                    distBuffer: 500, expand: 1000, idZone: communeToTest,
                                     building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
                                     road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
                                     road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
@@ -298,9 +290,9 @@ class BDTopoGISLayersTest {
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(8, table.columnCount)
-        assertEquals(1371, table.rowCount)
+        assertEquals(274, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.getColumnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.getColumnType('ID_SOURCE'))
         assertEquals('INTEGER', table.getColumnType('HEIGHT_WALL'))
         assertEquals('INTEGER', table.getColumnType('HEIGHT_ROOF'))
@@ -310,14 +302,14 @@ class BDTopoGISLayersTest {
         assertEquals('INTEGER', table.getColumnType('ZINDEX'))
 
         // Check if the BATI_INDIFFERENCIE table has the correct number of columns and rows
-        tableName = h2GISDatabase.getTable("BATI_INDIFFERENCIE")
-        assertNotNull(tableName)
-        assertEquals(3, tableName.columnCount)
-        assertEquals(0, tableName.rowCount)
+        table = h2GISDatabase.getTable("BATI_INDIFFERENCIE")
+        assertNotNull(table)
+        assertEquals(3, table.columnCount)
+        assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', tableName.getColumnType('THE_GEOM'))
-        assertEquals('VARCHAR', tableName.getColumnType('ID'))
-        assertEquals('INTEGER', tableName.getColumnType('HAUTEUR'))
+        assertTrue(table.THE_GEOM.spatial)
+        assertEquals('VARCHAR', table.getColumnType('ID'))
+        assertEquals('INTEGER', table.getColumnType('HAUTEUR'))
     }
 
     // Check whether the INPUT_BUILDING table is well produced, despite the absence of the BATI_INDUSTRIEL table
@@ -333,7 +325,7 @@ class BDTopoGISLayersTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, expand: 1000, idZone: '56260',
+                                    distBuffer: 500, expand: 1000, idZone: communeToTest,
                                     building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
                                     road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
                                     road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
@@ -351,9 +343,9 @@ class BDTopoGISLayersTest {
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(8, table.columnCount)
-        assertEquals(19278, table.rowCount)
+        assertEquals(2963, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.getColumnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.getColumnType('ID_SOURCE'))
         assertEquals('INTEGER', table.getColumnType('HEIGHT_WALL'))
         assertEquals('INTEGER', table.getColumnType('HEIGHT_ROOF'))
@@ -363,15 +355,15 @@ class BDTopoGISLayersTest {
         assertEquals('INTEGER', table.getColumnType('ZINDEX'))
 
         // Check if the BATI_INDUSTRIEL table has the correct number of columns and rows
-        tableName = h2GISDatabase.getTable("BATI_INDUSTRIEL")
-        assertNotNull(tableName)
-        assertEquals(4, tableName.columnCount)
-        assertEquals(0, tableName.rowCount)
+        table = h2GISDatabase.getTable("BATI_INDUSTRIEL")
+        assertNotNull(table)
+        assertEquals(4, table.columnCount)
+        assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', tableName.getColumnType('THE_GEOM'))
-        assertEquals('VARCHAR', tableName.getColumnType('ID'))
-        assertEquals('INTEGER', tableName.getColumnType('HAUTEUR'))
-        assertEquals('VARCHAR', tableName.getColumnType('NATURE'))
+        assertTrue(table.THE_GEOM.spatial)
+        assertEquals('VARCHAR', table.getColumnType('ID'))
+        assertEquals('INTEGER', table.getColumnType('HAUTEUR'))
+        assertEquals('VARCHAR', table.getColumnType('NATURE'))
     }
 
     // Check whether the INPUT_BUILDING table is well produced, despite the absence of the BATI_REMARQUABLE table
@@ -387,7 +379,7 @@ class BDTopoGISLayersTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, expand: 1000, idZone: '56260',
+                                    distBuffer: 500, expand: 1000, idZone: communeToTest,
                                     building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
                                     road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
                                     road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
@@ -405,9 +397,9 @@ class BDTopoGISLayersTest {
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(8, table.columnCount)
-        assertEquals(20487, table.rowCount)
+        assertEquals(3201, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.getColumnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.getColumnType('ID_SOURCE'))
         assertEquals('INTEGER', table.getColumnType('HEIGHT_WALL'))
         assertEquals('INTEGER', table.getColumnType('HEIGHT_ROOF'))
@@ -417,15 +409,15 @@ class BDTopoGISLayersTest {
         assertEquals('INTEGER', table.getColumnType('ZINDEX'))
 
         // Check if the BATI_REMARQUABLE table has the correct number of columns and rows
-        tableName = h2GISDatabase.getTable("BATI_REMARQUABLE")
-        assertNotNull(tableName)
-        assertEquals(4, tableName.columnCount)
-        assertEquals(0, tableName.rowCount)
+        table = h2GISDatabase.getTable("BATI_REMARQUABLE")
+        assertNotNull(table)
+        assertEquals(4, table.columnCount)
+        assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', tableName.getColumnType('THE_GEOM'))
-        assertEquals('VARCHAR', tableName.getColumnType('ID'))
-        assertEquals('INTEGER', tableName.getColumnType('HAUTEUR'))
-        assertEquals('VARCHAR', tableName.getColumnType('NATURE'))
+        assertTrue(table.THE_GEOM.spatial)
+        assertEquals('VARCHAR', table.getColumnType('ID'))
+        assertEquals('INTEGER', table.getColumnType('HAUTEUR'))
+        assertEquals('VARCHAR', table.getColumnType('NATURE'))
     }
 
     // Check whether the INPUT_ROAD table is well produced, despite the absence of the ROUTE table
@@ -441,7 +433,7 @@ class BDTopoGISLayersTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, expand: 1000, idZone: '56260',
+                                    distBuffer: 500, expand: 1000, idZone: communeToTest,
                                     building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
                                     road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
                                     road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
@@ -461,7 +453,7 @@ class BDTopoGISLayersTest {
         assertEquals(8, table.columnCount)
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.getColumnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.getColumnType('ID_SOURCE'))
         assertEquals('DOUBLE', table.getColumnType('WIDTH'))
         assertEquals('VARCHAR', table.getColumnType('TYPE'))
@@ -471,17 +463,17 @@ class BDTopoGISLayersTest {
         assertEquals('VARCHAR', table.getColumnType('CROSSING'))
 
         // Check if the ROUTE table has the correct number of columns and rows
-        tableName = h2GISDatabase.getTable("ROUTE")
-        assertNotNull(tableName)
-        assertEquals(6, tableName.columnCount)
-        assertEquals(0, tableName.rowCount)
+        table = h2GISDatabase.getTable("ROUTE")
+        assertNotNull(table)
+        assertEquals(6, table.columnCount)
+        assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', tableName.getColumnType('THE_GEOM'))
-        assertEquals('VARCHAR', tableName.getColumnType('ID'))
-        assertEquals('DOUBLE', tableName.getColumnType('LARGEUR'))
-        assertEquals('VARCHAR', tableName.getColumnType('NATURE'))
-        assertEquals('INTEGER', tableName.getColumnType('POS_SOL'))
-        assertEquals('VARCHAR', tableName.getColumnType('FRANCHISST'))
+        assertTrue(table.THE_GEOM.spatial)
+        assertEquals('VARCHAR', table.getColumnType('ID'))
+        assertEquals('DOUBLE', table.getColumnType('LARGEUR'))
+        assertEquals('VARCHAR', table.getColumnType('NATURE'))
+        assertEquals('INTEGER', table.getColumnType('POS_SOL'))
+        assertEquals('VARCHAR', table.getColumnType('FRANCHISST'))
     }
 
     // Check whether the INPUT_RAIL table is well produced, despite the absence of the TRONCON_VOIE_FERREE table
@@ -497,7 +489,7 @@ class BDTopoGISLayersTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, expand: 1000, idZone: '56260',
+                                    distBuffer: 500, expand: 1000, idZone: communeToTest,
                                     building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
                                     road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
                                     road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
@@ -517,23 +509,23 @@ class BDTopoGISLayersTest {
         assertEquals(5, table.columnCount)
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.getColumnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.getColumnType('ID_SOURCE'))
         assertEquals('VARCHAR', table.getColumnType('TYPE'))
         assertEquals('INTEGER', table.getColumnType('ZINDEX'))
         assertEquals('VARCHAR', table.getColumnType('CROSSING'))
 
         // Check if the TRONCON_VOIE_FERREE table has the correct number of columns and rows
-        tableName = h2GISDatabase.getTable("TRONCON_VOIE_FERREE")
-        assertNotNull(tableName)
-        assertEquals(5, tableName.columnCount)
-        assertEquals(0, tableName.rowCount)
+        table = h2GISDatabase.getTable("TRONCON_VOIE_FERREE")
+        assertNotNull(table)
+        assertEquals(5, table.columnCount)
+        assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', tableName.getColumnType('THE_GEOM'))
-        assertEquals('VARCHAR', tableName.getColumnType('ID'))
-        assertEquals('VARCHAR', tableName.getColumnType('NATURE'))
-        assertEquals('INTEGER', tableName.getColumnType('POS_SOL'))
-        assertEquals('VARCHAR', tableName.getColumnType('FRANCHISST'))
+        assertTrue(table.THE_GEOM.spatial)
+        assertEquals('VARCHAR', table.getColumnType('ID'))
+        assertEquals('VARCHAR', table.getColumnType('NATURE'))
+        assertEquals('INTEGER', table.getColumnType('POS_SOL'))
+        assertEquals('VARCHAR', table.getColumnType('FRANCHISST'))
     }
 
     // Check whether the INPUT_HYDRO table is well produced, despite the absence of the SURFACE_EAU table
@@ -549,7 +541,7 @@ class BDTopoGISLayersTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, expand: 1000, idZone: '56260',
+                                    distBuffer: 500, expand: 1000, idZone: communeToTest,
                                     building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
                                     road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
                                     road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
@@ -569,17 +561,17 @@ class BDTopoGISLayersTest {
         assertEquals(2, table.columnCount)
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.getColumnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.getColumnType('ID_SOURCE'))
 
         // Check if the SURFACE_EAU table has the correct number of columns and rows
-        tableName = h2GISDatabase.getTable("SURFACE_EAU")
-        assertNotNull(tableName)
-        assertEquals(2, tableName.columnCount)
-        assertEquals(0, tableName.rowCount)
+        table = h2GISDatabase.getTable("SURFACE_EAU")
+        assertNotNull(table)
+        assertEquals(2, table.columnCount)
+        assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', tableName.getColumnType('THE_GEOM'))
-        assertEquals('VARCHAR', tableName.getColumnType('ID'))
+        assertTrue(table.THE_GEOM.spatial)
+        assertEquals('VARCHAR', table.getColumnType('ID'))
     }
 
     // Check whether the INPUT_VEGET table is well produced, despite the absence of the ZONE_VEGETATION table
@@ -595,7 +587,7 @@ class BDTopoGISLayersTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, expand: 1000, idZone: '56260',
+                                    distBuffer: 500, expand: 1000, idZone: communeToTest,
                                     building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
                                     road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
                                     road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
@@ -615,19 +607,19 @@ class BDTopoGISLayersTest {
         assertEquals(3, table.columnCount)
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.getColumnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.getColumnType('ID_SOURCE'))
         assertEquals('VARCHAR', table.getColumnType('TYPE'))
 
         // Check if the ZONE_VEGETATION table has the correct number of columns and rows
-        tableName = h2GISDatabase.getTable("ZONE_VEGETATION")
-        assertNotNull(tableName)
-        assertEquals(3, tableName.columnCount)
-        assertEquals(0, tableName.rowCount)
+        table = h2GISDatabase.getTable("ZONE_VEGETATION")
+        assertNotNull(table)
+        assertEquals(3, table.columnCount)
+        assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', tableName.getColumnType('THE_GEOM'))
-        assertEquals('VARCHAR', tableName.getColumnType('ID'))
-        assertEquals('VARCHAR', tableName.getColumnType('NATURE'))
+        assertTrue(table.THE_GEOM.spatial)
+        assertEquals('VARCHAR', table.getColumnType('ID'))
+        assertEquals('VARCHAR', table.getColumnType('NATURE'))
     }
 
     // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the SURFACE_ACTIVITE table
@@ -643,7 +635,7 @@ class BDTopoGISLayersTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, expand: 1000, idZone: '56260',
+                                    distBuffer: 500, expand: 1000, idZone: communeToTest,
                                     building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
                                     road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
                                     road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
@@ -661,9 +653,9 @@ class BDTopoGISLayersTest {
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(2, table.columnCount)
-        assertEquals(41, table.rowCount)
+        assertEquals(2, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
@@ -674,14 +666,14 @@ class BDTopoGISLayersTest {
         }
 
         // Check if the SURFACE_ACTIVITE table has the correct number of columns and rows
-        tableName = h2GISDatabase.getTable("SURFACE_ACTIVITE")
-        assertNotNull(tableName)
-        assertEquals(3, tableName.columnCount)
-        assertEquals(0, tableName.rowCount)
+        table = h2GISDatabase.getTable("SURFACE_ACTIVITE")
+        assertNotNull(table)
+        assertEquals(3, table.columnCount)
+        assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', tableName.columnType('THE_GEOM'))
-        assertEquals('VARCHAR', tableName.columnType('ID'))
-        assertEquals('VARCHAR', tableName.columnType('CATEGORIE'))
+        assertTrue(table.THE_GEOM.spatial)
+        assertEquals('VARCHAR', table.columnType('ID'))
+        assertEquals('VARCHAR', table.columnType('CATEGORIE'))
     }
 
     // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the TERRAIN_SPORT table
@@ -697,7 +689,7 @@ class BDTopoGISLayersTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, expand: 1000, idZone: '56260',
+                                    distBuffer: 500, expand: 1000, idZone: communeToTest,
                                     building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
                                     road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
                                     road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
@@ -715,9 +707,9 @@ class BDTopoGISLayersTest {
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(2, table.columnCount)
-        assertEquals(69, table.rowCount)
+        assertEquals(7, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
@@ -728,14 +720,14 @@ class BDTopoGISLayersTest {
         }
 
         // Check if the TERRAIN_SPORT table has the correct number of columns and rows
-        tableName = h2GISDatabase.getTable("TERRAIN_SPORT")
-        assertNotNull(tableName)
-        assertEquals(3, tableName.columnCount)
-        assertEquals(0, tableName.rowCount)
+        table = h2GISDatabase.getTable("TERRAIN_SPORT")
+        assertNotNull(table)
+        assertEquals(3, table.columnCount)
+        assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', tableName.columnType('THE_GEOM'))
-        assertEquals('VARCHAR', tableName.columnType('ID'))
-        assertEquals('VARCHAR', tableName.columnType('NATURE'))
+        assertTrue(table.THE_GEOM.spatial)
+        assertEquals('VARCHAR', table.columnType('ID'))
+        assertEquals('VARCHAR', table.columnType('NATURE'))
     }
 
     // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the CONSTRUCTION_SURFACIQUE table
@@ -751,7 +743,7 @@ class BDTopoGISLayersTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, expand: 1000, idZone: '56260',
+                                    distBuffer: 500, expand: 1000, idZone: communeToTest,
                                     building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
                                     road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
                                     road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
@@ -769,9 +761,9 @@ class BDTopoGISLayersTest {
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(2, table.columnCount)
-        assertEquals(71, table.rowCount)
+        assertEquals(7, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.THE_GEOM.spatial)
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
@@ -782,14 +774,14 @@ class BDTopoGISLayersTest {
         }
 
         // Check if the CONSTRUCTION_SURFACIQUE table has the correct number of columns and rows
-        tableName = h2GISDatabase.getTable("CONSTRUCTION_SURFACIQUE")
-        assertNotNull(tableName)
-        assertEquals(3, tableName.columnCount)
-        assertEquals(0, tableName.rowCount)
+        table = h2GISDatabase.getTable("CONSTRUCTION_SURFACIQUE")
+        assertNotNull(table)
+        assertEquals(3, table.columnCount)
+        assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', tableName.columnType('THE_GEOM'))
-        assertEquals('VARCHAR', tableName.columnType('ID'))
-        assertEquals('VARCHAR', tableName.columnType('NATURE'))
+        assertTrue(table.THE_GEOM.spatial)
+        assertEquals('VARCHAR', table.columnType('ID'))
+        assertEquals('VARCHAR', table.columnType('NATURE'))
     }
 
     // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the SURFACE_ROUTE table
@@ -805,7 +797,7 @@ class BDTopoGISLayersTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, expand: 1000, idZone: '56260',
+                                    distBuffer: 500, expand: 1000, idZone: communeToTest,
                                     building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
                                     road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
                                     road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
@@ -823,9 +815,9 @@ class BDTopoGISLayersTest {
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(2, table.columnCount)
-        assertEquals(32, table.rowCount)
+        assertEquals(5, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', table.columnType('THE_GEOM'))
+        assertTrue(table.the_geom.isSpatial())
         assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
@@ -836,13 +828,13 @@ class BDTopoGISLayersTest {
         }
 
         // Check if the SURFACE_ROUTE table has the correct number of columns and rows
-        tableName = h2GISDatabase.getTable("SURFACE_ROUTE")
-        assertNotNull(tableName)
-        assertEquals(2, tableName.columnCount)
-        assertEquals(0, tableName.rowCount)
+        table = h2GISDatabase.getTable("SURFACE_ROUTE")
+        assertNotNull(table)
+        assertEquals(2, table.columnCount)
+        assertEquals(0, table.rowCount)
         // Check if the column types are correct
-        assertEquals('GEOMETRY', tableName.columnType('THE_GEOM'))
-        assertEquals('VARCHAR', tableName.columnType('ID'))
+        assertTrue(table.the_geom.isSpatial())
+        assertEquals('VARCHAR', table.columnType('ID'))
     }
 
 
@@ -858,7 +850,7 @@ class BDTopoGISLayersTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, expand: 1000, idZone: '56260',
+                                    distBuffer: 500, expand: 1000, idZone: communeToTest,
                                     building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
                                     road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
                                     road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
@@ -870,7 +862,7 @@ class BDTopoGISLayersTest {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
         }
 
-        assertEquals('true', h2GISDatabase.firstRow("SELECT ST_IsValid(THE_GEOM) as valid FROM INPUT_BUILDING WHERE ID_SOURCE='BATIMENT0000000290122667';")["valid"].toString())
+        //assertEquals('true', h2GISDatabase.firstRow("SELECT ST_IsValid(THE_GEOM) as valid FROM INPUT_BUILDING WHERE ID_SOURCE='BATIMENT0000000290122667';")["valid"].toString())
     }
 
     @Test

@@ -16,4 +16,5 @@ myh2gisbdtopodb.mv.db
 
 site.xml
 
-bdtopofolder
+dataForTests
+lczDebug.json
