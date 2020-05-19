@@ -9,7 +9,6 @@ import static org.junit.jupiter.api.Assertions.*
 class AbstractTablesInitializationTest {
 
     @Test
-    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void initParametersAbstract(){
         H2GIS h2GISDatabase = H2GIS.open("./target/h2gis_abstract_tables_${UUID.randomUUID()};AUTO_SERVER=TRUE", "sa", "")
         def process = BDTopo_V2.initParametersAbstract

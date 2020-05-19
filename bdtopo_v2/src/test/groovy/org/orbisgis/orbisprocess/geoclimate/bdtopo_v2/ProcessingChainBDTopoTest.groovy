@@ -30,17 +30,6 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                      "ROAD_BD_TOPO_TYPE", "VEGET_ABSTRACT_PARAMETERS", "VEGET_ABSTRACT_TYPE",
                                      "VEGET_BD_TOPO_TYPE"]
 
-    @BeforeAll
-    static void init(){
-        if(ProcessingChainBDTopoTest.class.getResource(bdtopoFoldName) != null &&
-                new File(ProcessingChainBDTopoTest.class.getResource(bdtopoFoldName).toURI()).exists()) {
-            System.properties.setProperty("data.bd.topo", "true")
-        }
-        else{
-            System.properties.setProperty("data.bd.topo", "false")
-        }
-    }
-
     def loadFiles(String inseeCode, String dbSuffixName){
         H2GIS h2GISDatabase = H2GIS.open(h2db+dbSuffixName+";AUTO_SERVER=TRUE", "sa", "")
 
@@ -78,7 +67,6 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     }
 
     @Test
-    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void prepareBDTopoTest(){
         def dbSuffixName = "_prepare"
         def inseeCode = communeToTest
@@ -138,7 +126,6 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 
 
     @Test
-    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void bdtopoLczFromTestFiles() {
         def dbSuffixName = "_lcz"
         H2GIS datasource = loadFiles(communeToTest, dbSuffixName)
@@ -181,7 +168,6 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 
 
     @Test
-    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void bdtopoGeoIndicatorsFromTestFiles() {
         def dbSuffixName = "_geoIndicators"
         H2GIS h2GISDatabase = loadFiles(communeToTest, dbSuffixName)
