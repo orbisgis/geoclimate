@@ -13,48 +13,34 @@ class BDTopoGISLayersTest {
 
     public static communeToTest = "12174"
 
-    @BeforeAll
-    static void beforeAll(){
-        if(InputDataFormattingTest.class.getResource("processingChain") != null &&
-                new File(InputDataFormattingTest.class.getResource("processingChain").toURI()).exists()) {
-            System.properties.setProperty("data.bd.topo", "true")
-        }
-        else {
-            System.properties.setProperty("data.bd.topo", "false")
-        }
-    }
-
     @BeforeEach
     void beforeEach(){
-        if(System.properties.containsKey("data.bd.topo") && System.properties.getProperty("data.bd.topo") == "true") {
-            def dataFolderInseeCode = "sample_$communeToTest"
-            def listFilesBDTopo = ["IRIS_GE", "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL", "BATI_REMARQUABLE",
-                                   "ROUTE", "SURFACE_EAU", "ZONE_VEGETATION", "ZONE_VEGETATION",
-                                   "TRONCON_VOIE_FERREE", "TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE",
-                                   "SURFACE_ROUTE", "SURFACE_ACTIVITE"]
+        def dataFolderInseeCode = "sample_$communeToTest"
+        def listFilesBDTopo = ["IRIS_GE", "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL", "BATI_REMARQUABLE",
+                               "ROUTE", "SURFACE_EAU", "ZONE_VEGETATION", "ZONE_VEGETATION",
+                               "TRONCON_VOIE_FERREE", "TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE",
+                               "SURFACE_ROUTE", "SURFACE_ACTIVITE"]
 
-            def paramTables = ["BUILDING_ABSTRACT_PARAMETERS", "BUILDING_ABSTRACT_USE_TYPE", "BUILDING_BD_TOPO_USE_TYPE",
-                               "RAIL_ABSTRACT_TYPE", "RAIL_BD_TOPO_TYPE", "RAIL_ABSTRACT_CROSSING",
-                               "RAIL_BD_TOPO_CROSSING", "ROAD_ABSTRACT_PARAMETERS", "ROAD_ABSTRACT_SURFACE",
-                               "ROAD_ABSTRACT_CROSSING", "ROAD_BD_TOPO_CROSSING", "ROAD_ABSTRACT_TYPE",
-                               "ROAD_BD_TOPO_TYPE", "VEGET_ABSTRACT_PARAMETERS", "VEGET_ABSTRACT_TYPE",
-                               "VEGET_BD_TOPO_TYPE"]
+        def paramTables = ["BUILDING_ABSTRACT_PARAMETERS", "BUILDING_ABSTRACT_USE_TYPE", "BUILDING_BD_TOPO_USE_TYPE",
+                           "RAIL_ABSTRACT_TYPE", "RAIL_BD_TOPO_TYPE", "RAIL_ABSTRACT_CROSSING",
+                           "RAIL_BD_TOPO_CROSSING", "ROAD_ABSTRACT_PARAMETERS", "ROAD_ABSTRACT_SURFACE",
+                           "ROAD_ABSTRACT_CROSSING", "ROAD_BD_TOPO_CROSSING", "ROAD_ABSTRACT_TYPE",
+                           "ROAD_BD_TOPO_TYPE", "VEGET_ABSTRACT_PARAMETERS", "VEGET_ABSTRACT_TYPE",
+                           "VEGET_BD_TOPO_TYPE"]
 
-            h2GISDatabase = H2GIS.open("./target/h2gis_input_data_formating;AUTO_SERVER=TRUE", "sa", "")
+        h2GISDatabase = H2GIS.open("./target/h2gis_input_data_formating;AUTO_SERVER=TRUE", "sa", "")
 
-            // Load parameter files
-            paramTables.each{
-                h2GISDatabase.load(getClass().getResource(it+".csv"), it, true)
-            }
-            // Load data files
-            listFilesBDTopo.each{
-                h2GISDatabase.load(getClass().getResource("$dataFolderInseeCode/${it}.shp"), it, true)
-            }
+        // Load parameter files
+        paramTables.each{
+            h2GISDatabase.load(getClass().getResource(it+".csv"), it, true)
+        }
+        // Load data files
+        listFilesBDTopo.each{
+            h2GISDatabase.load(getClass().getResource("$dataFolderInseeCode/${it}.shp"), it, true)
         }
     }
 
     @Test
-    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessTest() {
         def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
@@ -261,7 +247,6 @@ class BDTopoGISLayersTest {
 
     // Check whether the INPUT_BUILDING table is well produced, despite the absence of the BATI_INDIFFERENCIE table
     @Test
-    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessBuildIndifTest() {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS BATI_INDIFFERENCIE;")
         def process = BDTopo_V2.importPreprocess
@@ -314,7 +299,6 @@ class BDTopoGISLayersTest {
 
     // Check whether the INPUT_BUILDING table is well produced, despite the absence of the BATI_INDUSTRIEL table
     @Test
-    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessBuildIndusTest() {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS BATI_INDUSTRIEL;")
         def process = BDTopo_V2.importPreprocess
@@ -368,7 +352,6 @@ class BDTopoGISLayersTest {
 
     // Check whether the INPUT_BUILDING table is well produced, despite the absence of the BATI_REMARQUABLE table
     @Test
-    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessBuildRemarqTest() {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS BATI_REMARQUABLE;")
         def process = BDTopo_V2.importPreprocess
@@ -422,7 +405,6 @@ class BDTopoGISLayersTest {
 
     // Check whether the INPUT_ROAD table is well produced, despite the absence of the ROUTE table
     @Test
-    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessRoadTest() {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS ROUTE;")
         def process = BDTopo_V2.importPreprocess
@@ -478,7 +460,6 @@ class BDTopoGISLayersTest {
 
     // Check whether the INPUT_RAIL table is well produced, despite the absence of the TRONCON_VOIE_FERREE table
     @Test
-    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessRailTest() {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS TRONCON_VOIE_FERREE;")
         def process = BDTopo_V2.importPreprocess
@@ -530,7 +511,6 @@ class BDTopoGISLayersTest {
 
     // Check whether the INPUT_HYDRO table is well produced, despite the absence of the SURFACE_EAU table
     @Test
-    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessHydroTest() {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS SURFACE_EAU;")
         def process = BDTopo_V2.importPreprocess
@@ -576,7 +556,6 @@ class BDTopoGISLayersTest {
 
     // Check whether the INPUT_VEGET table is well produced, despite the absence of the ZONE_VEGETATION table
     @Test
-    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessVegetTest() {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS ZONE_VEGETATION;")
         def process = BDTopo_V2.importPreprocess
@@ -624,7 +603,6 @@ class BDTopoGISLayersTest {
 
     // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the SURFACE_ACTIVITE table
     @Test
-    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessImperviousSurfActTest() {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS SURFACE_ACTIVITE;")
         def process = BDTopo_V2.importPreprocess
@@ -678,7 +656,6 @@ class BDTopoGISLayersTest {
 
     // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the TERRAIN_SPORT table
     @Test
-    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessImperviousSportTest() {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS TERRAIN_SPORT;")
         def process = BDTopo_V2.importPreprocess
@@ -732,7 +709,6 @@ class BDTopoGISLayersTest {
 
     // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the CONSTRUCTION_SURFACIQUE table
     @Test
-    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessImperviousConstrSurfTest() {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS CONSTRUCTION_SURFACIQUE;")
         def process = BDTopo_V2.importPreprocess
@@ -786,7 +762,6 @@ class BDTopoGISLayersTest {
 
     // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the SURFACE_ROUTE table
     @Test
-    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void importPreprocessImperviousSurfRoadTest() {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS SURFACE_ROUTE;")
         def process = BDTopo_V2.importPreprocess
@@ -840,7 +815,6 @@ class BDTopoGISLayersTest {
 
     // Check that the conversion (to valid) of an invalid building (ID = BATIMENT0000000290122667 from BATI_INDIFFERENCIE) is well done
     @Test
-    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void checkMakeValidBuildingIndif() {
         def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
@@ -866,7 +840,6 @@ class BDTopoGISLayersTest {
     }
 
     @Test
-    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void initTypes() {
         def process = BDTopo_V2.initTypes
         assertTrue process.execute([datasource       : h2GISDatabase, buildingAbstractUseType: 'BUILDING_ABSTRACT_USE_TYPE',
