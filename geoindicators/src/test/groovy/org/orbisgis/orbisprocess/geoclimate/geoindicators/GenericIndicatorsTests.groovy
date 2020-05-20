@@ -47,6 +47,10 @@ class GenericIndicatorsTests {
                       inputIdUp: "id_rsu", inputIdLow: "id_build", inputVarAndOperations: ["number_building_neighbor":["AVG"],
                                                                    "area":["SUM", "DENS", "NB_DENS"]],
                       prefixName: "fourth", datasource: h2GIS])
+        def  pstd =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
+        assertTrue pstd.execute([inputLowerScaleTableName: "tempo_build",inputUpperScaleTableName: "tempo_rsu",
+                                 inputIdUp: "id_rsu", inputIdLow: "id_build", inputVarAndOperations: ["number_building_neighbor":["STD"]],
+                                 prefixName: "fifth", datasource: h2GIS])
         def concat = ["", "", 0, ""]
 
         h2GIS.eachRow("SELECT * FROM first_unweighted_operation_from_lower_scale WHERE id_block = 1 OR id_block = 4 ORDER BY id_block ASC"){
@@ -65,6 +69,8 @@ class GenericIndicatorsTests {
                 concat[3]+= "${row.area_density}\n"
                 concat[3]+= "${row.area_number_density}\n"
         }
+        concat[4] = h2GIS.firstRow("SELECT std_number_building_neighbor FROM fifth_unweighted_operation_from_lower_scale WHERE id_rsu = 1")
+
         def nb_rsu = h2GIS.firstRow "SELECT COUNT(*) AS NB FROM ${pgeom_avg.results.outputTableName}"
         def val_zero = h2GIS.firstRow "SELECT area_density AS val FROM ${pdens.results.outputTableName} "+
                                       "WHERE id_rsu = 14"
@@ -72,6 +78,7 @@ class GenericIndicatorsTests {
         assertEquals("0.4\n0.0\n", concat[1])
         assertEquals(10.69, concat[2], 0.01)
         assertEquals("0.4\n606.0\n0.303\n0.0025\n", concat[3])
+        assertEquals(0.490, concat[4]["STD_NUMBER_BUILDING_NEIGHBOR"],0.001)
         assertEquals(16, nb_rsu.nb)
         assertEquals(0, val_zero.val)
         // Test the fix concerning nb_dens_building (initially >0 while no building in RSU...)

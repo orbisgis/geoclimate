@@ -22,6 +22,7 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
  * Operations should be in the following list:
  *          --> "SUM": sum the geospatial variables at the upper scale
  *          --> "AVG": average the geospatial variables at the upper scale
+ *          --> "STD": population standard deviation of the geospatial variables at the upper scale
  *          --> "GEOM_AVG": average the geospatial variables at the upper scale using a geometric average
  *          --> "DENS": sum the geospatial variables at the upper scale and divide by the area of the upper scale
  *          --> "NB_DENS" : count the number of lower scale objects within the upper scale object and divide by the upper
@@ -41,6 +42,7 @@ IProcess unweightedOperationFromLowerScale() {
     def final GEOM_AVG = "GEOM_AVG"
     def final DENS = "DENS"
     def final NB_DENS = "NB_DENS"
+    def final STD = "STD"
 
     return create({
         title "Unweighted statistical operations from lower scale"
@@ -77,8 +79,10 @@ IProcess unweightedOperationFromLowerScale() {
                             query += "COALESCE(SUM(a.$var::float),0) AS ${op + "_" + var},"
                             break
                         case AVG:
-                            query += "$op(a.$var::float) AS ${op + "_" + var},"
+                            query += "COALESCE($op(a.$var::float),0) AS ${op + "_" + var},"
                             break
+                        case STD:
+                            query += "COALESCE(STDDEV_POP(a.$var::float),0) AS  ${op + "_" + var},"
                         default:
                             break
                     }
