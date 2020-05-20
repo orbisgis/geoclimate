@@ -13,48 +13,34 @@ class InputDataFormattingTest {
 
     public static communeToTest = "12174"
 
-    @BeforeAll
-    static void beforeAll(){
-        if(InputDataFormattingTest.class.getResource("processingChain") != null &&
-                new File(InputDataFormattingTest.class.getResource("processingChain").toURI()).exists()) {
-            System.properties.setProperty("data.bd.topo", "true")
-        }
-        else {
-            System.properties.setProperty("data.bd.topo", "false")
-        }
-    }
-
     @BeforeEach
     void beforeEach(){
-        if(System.properties.containsKey("data.bd.topo") && System.properties.getProperty("data.bd.topo") == "true") {
-            def dataFolderInseeCode = "sample_$communeToTest"
-            def listFilesBDTopo = ["IRIS_GE", "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL", "BATI_REMARQUABLE",
-                                    "ROUTE", "SURFACE_EAU", "ZONE_VEGETATION", "ZONE_VEGETATION",
-                                    "TRONCON_VOIE_FERREE", "TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE",
-                                    "SURFACE_ROUTE", "SURFACE_ACTIVITE"]
+        def dataFolderInseeCode = "sample_$communeToTest"
+        def listFilesBDTopo = ["IRIS_GE", "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL", "BATI_REMARQUABLE",
+                                "ROUTE", "SURFACE_EAU", "ZONE_VEGETATION", "ZONE_VEGETATION",
+                                "TRONCON_VOIE_FERREE", "TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE",
+                                "SURFACE_ROUTE", "SURFACE_ACTIVITE"]
 
-            def paramTables = ["BUILDING_ABSTRACT_PARAMETERS", "BUILDING_ABSTRACT_USE_TYPE", "BUILDING_BD_TOPO_USE_TYPE",
-                                             "RAIL_ABSTRACT_TYPE", "RAIL_BD_TOPO_TYPE", "RAIL_ABSTRACT_CROSSING",
-                                             "RAIL_BD_TOPO_CROSSING", "ROAD_ABSTRACT_PARAMETERS", "ROAD_ABSTRACT_SURFACE",
-                                             "ROAD_ABSTRACT_CROSSING", "ROAD_BD_TOPO_CROSSING", "ROAD_ABSTRACT_TYPE",
-                                             "ROAD_BD_TOPO_TYPE", "VEGET_ABSTRACT_PARAMETERS", "VEGET_ABSTRACT_TYPE",
-                                             "VEGET_BD_TOPO_TYPE"]
+        def paramTables = ["BUILDING_ABSTRACT_PARAMETERS", "BUILDING_ABSTRACT_USE_TYPE", "BUILDING_BD_TOPO_USE_TYPE",
+                                         "RAIL_ABSTRACT_TYPE", "RAIL_BD_TOPO_TYPE", "RAIL_ABSTRACT_CROSSING",
+                                         "RAIL_BD_TOPO_CROSSING", "ROAD_ABSTRACT_PARAMETERS", "ROAD_ABSTRACT_SURFACE",
+                                         "ROAD_ABSTRACT_CROSSING", "ROAD_BD_TOPO_CROSSING", "ROAD_ABSTRACT_TYPE",
+                                         "ROAD_BD_TOPO_TYPE", "VEGET_ABSTRACT_PARAMETERS", "VEGET_ABSTRACT_TYPE",
+                                         "VEGET_BD_TOPO_TYPE"]
 
-            h2GISDatabase = H2GIS.open("./target/h2gis_input_data_formating;AUTO_SERVER=TRUE", "sa", "")
+        h2GISDatabase = H2GIS.open("./target/h2gis_input_data_formating;AUTO_SERVER=TRUE", "sa", "")
 
-            // Load parameter files
-            paramTables.each{
-                h2GISDatabase.load(getClass().getResource(it+".csv"), it, true)
-            }
-            // Load data files
-            listFilesBDTopo.each{
-                h2GISDatabase.load(getClass().getResource("$dataFolderInseeCode/${it}.shp"), it, true)
-            }
+        // Load parameter files
+        paramTables.each{
+            h2GISDatabase.load(getClass().getResource(it+".csv"), it, true)
+        }
+        // Load data files
+        listFilesBDTopo.each{
+            h2GISDatabase.load(getClass().getResource("$dataFolderInseeCode/${it}.shp"), it, true)
         }
     }
 
     @Test
-    @DisabledIfSystemProperty(named = "data.bd.topo", matches = "false")
     void inputDataFormatting(){
         def processImport = BDTopo_V2.importPreprocess
         assertTrue processImport.execute([datasource: h2GISDatabase,
