@@ -19,7 +19,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 
     public static Logger logger = LoggerFactory.getLogger(ProcessingChainBDTopoTest.class)
     public static def h2db = "./target/myh2gisbdtopodb"
-    public static def bdtopoFoldName = "processingChain/dataForTests"
+    public static def bdtopoFoldName = "sample_$communeToTest"
     public static def listTables = ["IRIS_GE", "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL", "BATI_REMARQUABLE",
     "ROUTE", "SURFACE_EAU", "ZONE_VEGETATION", "TRONCON_VOIE_FERREE", "TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE",
     "SURFACE_ROUTE", "SURFACE_ACTIVITE"]
@@ -38,7 +38,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
             h2GISDatabase.load(getClass().getResource(it+".csv"), it, true)
         }
 
-        def relativePath = bdtopoFoldName + File.separator + inseeCode
+        def relativePath = bdtopoFoldName
 
         // Test whether there is a folder containing .shp files for the corresponding INSEE code
         if(getClass().getResource(relativePath)){
