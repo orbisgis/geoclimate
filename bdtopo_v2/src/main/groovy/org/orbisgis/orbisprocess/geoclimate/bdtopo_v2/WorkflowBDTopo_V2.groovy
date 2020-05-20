@@ -332,6 +332,7 @@ def Workflow() {
                                     file_outputFolder = null
                                 }
                                 //Check not the conditions for the output database
+                                def outputTableNames = outputDataBase.get("tables")
                                 def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
                                 def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size()!=allowedOutputTableNames.size()
                                 if(!allowedOutputTableNames && notSameTableNames){
@@ -423,6 +424,7 @@ def Workflow() {
                                 }
                             }
                             else if (outputDataBase) {
+                                def outputTableNames = outputDataBase.get("tables")
                                 def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
                                 def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size()!=allowedOutputTableNames.size()
                                 if(allowedOutputTableNames && !notSameTableNames){
