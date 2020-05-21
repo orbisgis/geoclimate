@@ -1405,7 +1405,7 @@ IProcess surfaceFractions() {
             }
 
 
-            def query = """DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT a.ID_RSU """
+            def query = """DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT b.ID_RSU """
             def end_query = """ FROM $spatialRelationsTable AS a RIGHT JOIN $rsuTable b 
                                 ON a.ID_RSU=b.ID_RSU GROUP BY b.ID_RSU;"""
             // Calculates the fraction of overlapped layers according to "superpositionsWithPriorities"
