@@ -43,6 +43,7 @@ IProcess unweightedOperationFromLowerScale() {
     def final DENS = "DENS"
     def final NB_DENS = "NB_DENS"
     def final STD = "STD"
+    def final COLUMN_TYPE_TO_AVOID = ["GEOMETRY", "VARCHAR"]
 
     return create({
         title "Unweighted statistical operations from lower scale"
@@ -63,29 +64,34 @@ IProcess unweightedOperationFromLowerScale() {
             def query =  "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
 
             inputVarAndOperations.each { var, operations ->
-                operations.each { op ->
-                    op = op.toUpperCase()
-                    switch (op) {
-                        case GEOM_AVG:
-                            query += "COALESCE(EXP(1.0/COUNT(a.*)*SUM(LOG(a.$var))),0) AS ${op + "_" + var},"
-                            break
-                        case DENS:
-                            query += "COALESCE(SUM(a.$var::float)/ST_AREA(b.$GEOMETRIC_FIELD_UP),0) AS ${var + "_DENSITY"},"
-                            break
-                        case NB_DENS:
-                            query += "COALESCE(COUNT(a.$inputIdLow)/ST_AREA(b.$GEOMETRIC_FIELD_UP),0) AS ${var + "_NUMBER_DENSITY"},"
-                            break
-                        case SUM:
-                            query += "COALESCE(SUM(a.$var::float),0) AS ${op + "_" + var},"
-                            break
-                        case AVG:
-                            query += "COALESCE($op(a.$var::float),0) AS ${op + "_" + var},"
-                            break
-                        case STD:
-                            query += "COALESCE(STDDEV_POP(a.$var::float),0) AS  ${op + "_" + var},"
-                        default:
-                            break
+                if (!COLUMN_TYPE_TO_AVOID.contains(datasource.getTable(inputLowerScaleTableName)[var].getType())){
+                    operations.each { op ->
+                        op = op.toUpperCase()
+                        switch (op) {
+                            case GEOM_AVG:
+                                query += "COALESCE(EXP(1.0/COUNT(a.*)*SUM(LOG(a.$var))),0) AS ${op + "_" + var},"
+                                break
+                            case DENS:
+                                query += "COALESCE(SUM(a.$var::float)/ST_AREA(b.$GEOMETRIC_FIELD_UP),0) AS ${var + "_DENSITY"},"
+                                break
+                            case NB_DENS:
+                                query += "COALESCE(COUNT(a.$inputIdLow)/ST_AREA(b.$GEOMETRIC_FIELD_UP),0) AS ${var + "_NUMBER_DENSITY"},"
+                                break
+                            case SUM:
+                                query += "COALESCE(SUM(a.$var::float),0) AS ${op + "_" + var},"
+                                break
+                            case AVG:
+                                query += "COALESCE($op(a.$var::float),0) AS ${op + "_" + var},"
+                                break
+                            case STD:
+                                query += "COALESCE(STDDEV_POP(a.$var::float),0) AS  ${op + "_" + var},"
+                            default:
+                                break
+                        }
                     }
+                }
+                else{
+                    logger.error """ The column $var should be numeric"""
                 }
 
             }
