@@ -580,7 +580,7 @@ def computeRSUIndicators() {
                                                                   "number_building_neighbor": ["AVG"],
                                                                   "floor_area"              : ["DENS"],
                                                                   "minimum_building_spacing": ["AVG"],
-                                                                  "building": ["NB_DENS"]]
+                                                                  "building"                : ["NB_DENS"]]
             }
             def computeRSUStatisticsUnweighted = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
             if (!computeRSUStatisticsUnweighted([inputLowerScaleTableName: buildingTable,

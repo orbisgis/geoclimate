@@ -62,9 +62,14 @@ IProcess unweightedOperationFromLowerScale() {
             datasource.getTable(inputUpperScaleTableName)."$inputIdUp".createIndex()
 
             def query =  "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
-
+            def varOk = true
             inputVarAndOperations.each { var, operations ->
-                if (!COLUMN_TYPE_TO_AVOID.contains(datasource.getTable(inputLowerScaleTableName)[var].getType())){
+                if (datasource.getTable(inputLowerScaleTableName).getColumns().contains(var)) {
+                    if (COLUMN_TYPE_TO_AVOID.contains(datasource.getTable(inputLowerScaleTableName)[var].getType())) {
+                        varOk = false
+                    }
+                }
+                if (varOk){
                     operations.each { op ->
                         op = op.toUpperCase()
                         switch (op) {
@@ -84,7 +89,8 @@ IProcess unweightedOperationFromLowerScale() {
                                 query += "COALESCE($op(a.$var::float),0) AS ${op + "_" + var},"
                                 break
                             case STD:
-                                query += "COALESCE(STDDEV_POP(a.$var::float),0) AS  ${op + "_" + var},"
+                                query += "COALESCE(STDDEV_POP(a.$var::float),0) AS ${op + "_" + var},"
+                                break
                             default:
                                 break
                         }
