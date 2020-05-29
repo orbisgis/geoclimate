@@ -1,10 +1,10 @@
 package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
-import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
-import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.orbisdata.datamanager.jdbc.*
+import org.orbisgis.orbisdata.processmanager.process.*
 
-@BaseScript Geoindicators geoindicators
+@BaseScript GroovyProcessFactory pf
 
 /**
  * An utility process to join all tables in one table
@@ -15,66 +15,66 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
  *
  * @return
  */
-IProcess joinTables() {
-    create({
-        title "Utility process to join tables in one"
-        inputs inputTableNamesWithId: Map, outputTableName: String, datasource: JdbcDataSource,
-                prefixWithTabName : false
-        outputs outputTableName: String
-        run { inputTableNamesWithId, outputTableName, datasource, prefixWithTabName ->
 
-            info "Executing Utility process to join tables in one"
+create {
+    title "Utility process to join tables in one"
+    id "joinTables"
+    inputs inputTableNamesWithId: Map, outputTableName: String, datasource: JdbcDataSource,
+            prefixWithTabName : false
+    outputs outputTableName: String
+    run { inputTableNamesWithId, outputTableName, datasource, prefixWithTabName ->
 
-            def columnKey
-            def alias = "a"
-            def leftQuery = ""
-            def indexes = ""
+        info "Executing Utility process to join tables in one"
 
-            def columns = []
+        def columnKey
+        def alias = "a"
+        def leftQuery = ""
+        def indexes = ""
 
-            inputTableNamesWithId.each { key, value ->
-                //Reload cache to be sure that the table is up to date
-                datasource.getTable(key).reload()
-                if (alias == "a") {
-                    columnKey = "$alias.${value}"
-                    // Whether or not the table name is add as prefix of the indicator in the new table
-                    if (prefixWithTabName){
-                        columns = datasource.getTable(key).columns.collect {
-                            alias + "." + it + " AS ${key}_$it"
-                        }
+        def columns = []
+
+        inputTableNamesWithId.each { key, value ->
+            //Reload cache to be sure that the table is up to date
+            datasource."$key".reload()
+            if (alias == "a") {
+                columnKey = "$alias.$value"
+                // Whether or not the table name is add as prefix of the indicator in the new table
+                if (prefixWithTabName){
+                    columns = datasource."$key".columns.collect {
+                        alias + ".$it AS ${key}_$it"
                     }
-                    else{
-                        columns = datasource.getTable(key).columns.collect {
-                            alias + "." + it
-                        }
-                    }
-                    leftQuery += " FROM ${key} as $alias "
-                } else {
-                    datasource.getTable(key).columns.forEach() { item ->
-                        if (!item.equalsIgnoreCase(value)) {
-                            if (prefixWithTabName){
-                                columns.add(alias + "." + item + " AS ${key}_$item")
-                            }
-                            else {
-                                columns.add(alias + "." + item)
-                            }
-                        }
-                    }
-                    leftQuery += " LEFT JOIN ${key} as ${alias} ON ${alias}.${value} = ${columnKey} "
                 }
-                indexes += "CREATE INDEX IF NOT EXISTS ${key}_ids ON ${key} USING BTREE($value);"
-                alias++
+                else{
+                    columns = datasource."$key".columns.collect {
+                        alias + ".$it"
+                    }
+                }
+                leftQuery += " FROM $key as $alias "
+            } else {
+                datasource."$key".columns.forEach() { item ->
+                    if (!item.equalsIgnoreCase(value)) {
+                        if (prefixWithTabName){
+                            columns.add(alias + ".$item AS ${key}_$item")
+                        }
+                        else {
+                            columns.add(alias + ".$item")
+                        }
+                    }
+                }
+                leftQuery += " LEFT JOIN $key as $alias ON $alias.$value = $columnKey "
             }
-
-            def columnsAsString = (columns as Set).join(",")
-
-            datasource.execute "DROP TABLE IF EXISTS ${outputTableName}"
-            datasource.execute indexes
-            datasource.execute "CREATE TABLE ${outputTableName} AS SELECT ${columnsAsString} ${leftQuery}"
-
-            [outputTableName: outputTableName]
+            indexes += "CREATE INDEX IF NOT EXISTS ${key}_ids ON $key USING BTREE($value);"
+            alias++
         }
-    })
+
+        def columnsAsString = columns.join(",")
+
+        datasource "DROP TABLE IF EXISTS $outputTableName"
+        datasource indexes
+        datasource "CREATE TABLE $outputTableName AS SELECT $columnsAsString $leftQuery"
+
+        [outputTableName: outputTableName]
+    }
 }
 
 /**
@@ -87,34 +87,33 @@ IProcess joinTables() {
  *
  * @return
  */
-IProcess saveTablesAsFiles(){
-    create({
-        title "Utility process to save tables in geojson or csv files"
-        inputs inputTableNames: String[], directory: String, datasource: JdbcDataSource
-        outputs directory: String
-        run { inputTableNames, directory,  datasource ->
-            if (directory == null) {
-                info "The directory to save the data cannot be null"
-                return
-            }
-            File dirFile = new File(directory)
-
-            if (!dirFile.exists()) {
-                dirFile.mkdir()
-                info "The folder ${directory} has been created"
-            } else if (!dirFile.isDirectory()) {
-                info "Invalid directory path"
-                return
-            }
-            inputTableNames.each { tableName ->
-                if(tableName) {
-                    def fileToSave = dirFile.absolutePath + File.separator + tableName +
-                            (datasource.getTable(tableName).isSpatial() ? ".geojson" : ".csv")
-                    datasource.save(tableName, fileToSave)
-                    info "The table ${tableName} has been saved in file ${fileToSave}"
-                }
-            }
-            [directory: directory]
+create {
+    title "Utility process to save tables in geojson or csv files"
+    id "saveTablesAsFiles"
+    inputs inputTableNames: String[], directory: String, datasource: JdbcDataSource
+    outputs directory: String
+    run { inputTableNames, directory,  datasource ->
+        if (directory == null) {
+            error "The directory to save the data cannot be null"
+            return
         }
-    })
+        def dirFile = new File(directory)
+
+        if (!dirFile.exists()) {
+            dirFile.mkdir()
+            info "The folder $directory has been created"
+        } else if (!dirFile.isDirectory()) {
+            error "Invalid directory path"
+            return
+        }
+        inputTableNames.each { tableName ->
+            if(tableName) {
+                def fileToSave = dirFile.absolutePath + File.separator + tableName +
+                        (datasource."$tableName".spatial ? ".geojson" : ".csv")
+                datasource.save(tableName, fileToSave)
+                info "The table $tableName has been saved in file $fileToSave"
+            }
+        }
+        [directory: directory]
+    }
 }

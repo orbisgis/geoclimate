@@ -1,40 +1,13 @@
 package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
-import org.slf4j.LoggerFactory
+import groovy.transform.BaseScript
+import org.orbisgis.orbisdata.processmanager.process.*
 
-/**
- * Root access point to the Geoindicators processes.
- */
-abstract class Geoindicators extends GroovyProcessFactory {
-    public static def logger = LoggerFactory.getLogger(Geoindicators.class)
-
-    //Processes
-    public static BuildingIndicators = new BuildingIndicators()
-    public static RsuIndicators = new RsuIndicators()
-    public static BlockIndicators = new BlockIndicators()
-    public static GenericIndicators = new GenericIndicators()
-    public static SpatialUnits = new SpatialUnits()
-    public static DataUtils = new DataUtils()
-    public static TypologyClassification = new TypologyClassification()
-
-    //Utility methods
-    static def getUuid(){
-        UUID.randomUUID().toString().replaceAll("-", "_") }
-    static def getOutputTableName(prefixName, baseName){
-        if (!prefixName){
-            return baseName
-        }
-        else{
-            return prefixName + "_" + baseName
-        }
-    }
-
-
-    static def uuid = {getUuid()}
-
-    static def info = { obj -> logger.info(obj.toString()) }
-    static def warn = { obj -> logger.warn(obj.toString()) }
-    static def error = { obj -> logger.error(obj.toString()) }
-
-}
+@BaseScript GroovyProcessManager pm
+register([BlockIndicators,
+          BuildingIndicators,
+          DataUtils,
+          GenericIndicators,
+          RsuIndicators,
+          SpatialUnits,
+          TypologyClassification])
