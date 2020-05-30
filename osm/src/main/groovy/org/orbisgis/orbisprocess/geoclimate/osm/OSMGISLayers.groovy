@@ -87,11 +87,11 @@ IProcess extractAndCreateGISLayers(){
                 datasource.execute """create table ${outputZoneTable} (the_geom GEOMETRY(${GEOMETRY_TYPE}, $epsg), ID_ZONE VARCHAR);"""
                 datasource.execute(
                         "INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT(?, ?), ?);",
-                        geomUTM.toString(), epsg, zoneToExtract )
+                        geomUTM.toString(), epsg, zoneToExtract.toString() )
 
                 datasource.execute """create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);"""
                 datasource.execute("""INSERT INTO ${outputZoneEnvelopeTable} 
-                    VALUES (ST_GEOMFROMTEXT(?,?), ?);""",ST_Transform.ST_Transform(con,tmpGeomEnv,epsg).toString(), epsg,zoneToExtract)
+                    VALUES (ST_GEOMFROMTEXT(?,?), ?);""",ST_Transform.ST_Transform(con,tmpGeomEnv,epsg).toString(), epsg,zoneToExtract.toString())
 
 
                 def query =  "[maxsize:1073741824]" + OSMTools.Utilities.buildOSMQuery(envelope,null,OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
