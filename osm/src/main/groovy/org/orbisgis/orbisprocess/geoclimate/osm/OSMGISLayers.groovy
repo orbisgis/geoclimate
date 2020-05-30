@@ -13,7 +13,6 @@ import org.h2gis.functions.spatial.crs.ST_Transform
 import org.orbisgis.orbisanalysis.osm.utils.OSMElement
 
 
-
 @BaseScript OSM_Utils osm_utils
 
 /**
@@ -35,13 +34,13 @@ IProcess extractAndCreateGISLayers(){
                 vegetationTableName: String,hydroTableName: String, zoneTableName: String,
                 zoneEnvelopeTableName: String
         run { datasource, zoneToExtract, distance ->
-            def outputZoneTable = "ZONE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-            def outputZoneEnvelopeTable = "ZONE_ENVELOPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             if (datasource == null) {
                 error('The datasource cannot be null')
                 return null
             }
             if(zoneToExtract){
+                def outputZoneTable = "ZONE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+                def outputZoneEnvelopeTable = "ZONE_ENVELOPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
                 def GEOMETRY_TYPE
                 Geometry geom
                 if(zoneToExtract in Collection){
@@ -85,12 +84,15 @@ IProcess extractAndCreateGISLayers(){
                 def geomUTM = ST_Transform.ST_Transform(con, geom, epsg)
                 def tmpGeomEnv = geom.getFactory().toGeometry(envelope)
                 tmpGeomEnv.setSRID(4326)
+                datasource.execute """create table ${outputZoneTable} (the_geom GEOMETRY(${GEOMETRY_TYPE}, $epsg), ID_ZONE VARCHAR);"""
+                datasource.execute(
+                        "INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT(?, ?), ?);",
+                        geomUTM.toString(), epsg, zoneToExtract.toString() )
 
-                datasource.execute """create table ${outputZoneTable} (the_geom GEOMETRY(${GEOMETRY_TYPE}, $epsg), ID_ZONE VARCHAR);
-            INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT('${geomUTM.toString()}', $epsg), '$zoneToExtract');"""
+                datasource.execute """create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);"""
+                datasource.execute("""INSERT INTO ${outputZoneEnvelopeTable} 
+                    VALUES (ST_GEOMFROMTEXT(?,?), ?);""",ST_Transform.ST_Transform(con,tmpGeomEnv,epsg).toString(), epsg,zoneToExtract.toString())
 
-                datasource.execute """create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
-            INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${ST_Transform.ST_Transform(con,tmpGeomEnv,epsg).toString()}',$epsg), '$zoneToExtract');"""
 
                 def query =  "[maxsize:1073741824]" + OSMTools.Utilities.buildOSMQuery(envelope,null,OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
 
