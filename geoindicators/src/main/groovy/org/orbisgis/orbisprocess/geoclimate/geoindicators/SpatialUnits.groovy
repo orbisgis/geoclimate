@@ -210,7 +210,7 @@ create {
                 }
             }
 
-            if(railTable && datasource.hasTable(railTable)) {
+            if(railTable && datasource.hasTable(railTable) && !datasource."$railTable".isEmpty()) {
                 if(datasource."$railTable") {
                     info "Preparing rail..."
                     queryCreateOutputTable += [rail_tmp: "(SELECT ST_FORCE2D(THE_GEOM) AS THE_GEOM FROM $railTable where zindex=0 or crossing = 'bridge')"]
@@ -220,10 +220,15 @@ create {
             // The input table that contains the geometries to be transformed as RSU
             info "Grouping all tables..."
             if(queryCreateOutputTable){
-                datasource """DROP TABLE if exists $outputTableName;
-            CREATE TABLE $outputTableName(the_geom GEOMETRY) AS (SELECT st_setsrid(ST_ToMultiLine(THE_GEOM),$epsg) 
-             FROM $zoneTable) UNION ${queryCreateOutputTable.values().join(' union ')};
-               DROP TABLE IF EXISTS ${queryCreateOutputTable.keySet().join(' , ')}"""
+                datasource """
+                        DROP TABLE if exists $outputTableName;
+                        CREATE TABLE $outputTableName(the_geom GEOMETRY) AS 
+                            (
+                                SELECT st_setsrid(ST_ToMultiLine(THE_GEOM),$epsg) 
+                                FROM $zoneTable) 
+                            UNION ${queryCreateOutputTable.values().join(' union ')};
+                        DROP TABLE IF EXISTS ${queryCreateOutputTable.keySet().join(' , ')}
+                """
             }
             else {
                 datasource """DROP TABLE if exists $outputTableName;

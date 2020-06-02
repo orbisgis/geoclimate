@@ -1,10 +1,10 @@
 package org.orbisgis.orbisprocess.geoclimate.processingchain
 
-import org.junit.jupiter.api.Disabled
+
 import org.junit.jupiter.api.Test
-import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -12,6 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 class GeoIndicatorsChainTest {
+
+    def static PC = GroovyProcessManager.load(ProcessingChain)
 
     public static Logger logger = LoggerFactory.getLogger(GeoIndicatorsChainTest.class)
 
@@ -85,12 +87,12 @@ class GeoIndicatorsChainTest {
      * @return
      */
     def initTables(def datasource){
-        datasource.load(ProcessingChain.class.getResource("BUILDING.geojson"), "BUILDING", true)
-        datasource.load(ProcessingChain.class.getResource("ROAD.geojson"), "ROAD", true)
-        datasource.load(ProcessingChain.class.getResource("RAIL.geojson"), "RAIL", true)
-        datasource.load(ProcessingChain.class.getResource("VEGET.geojson"), "VEGET", true)
-        datasource.load(ProcessingChain.class.getResource("HYDRO.geojson"), "HYDRO", true)
-        datasource.load(ProcessingChain.class.getResource("ZONE.geojson"), "ZONE", true)
+        datasource.load(PC.class.getResource("BUILDING.geojson"), "BUILDING", true)
+        datasource.load(PC.class.getResource("ROAD.geojson"), "ROAD", true)
+        datasource.load(PC.class.getResource("RAIL.geojson"), "RAIL", true)
+        datasource.load(PC.class.getResource("VEGET.geojson"), "VEGET", true)
+        datasource.load(PC.class.getResource("HYDRO.geojson"), "HYDRO", true)
+        datasource.load(PC.class.getResource("ZONE.geojson"), "ZONE", true)
         return [zoneTable: "ZONE", buildingTable: "BUILDING", roadTable: "ROAD",
                 railTable: "RAIL", vegetationTable: "VEGET", hydrographicTable: "HYDRO"]
     }
@@ -107,7 +109,7 @@ class GeoIndicatorsChainTest {
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                             "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
         def ind_i = ["LCZ"]
-        IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
+        IProcess GeoIndicatorsCompute_i = PC.Workflow.GeoIndicators
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
@@ -152,7 +154,7 @@ class GeoIndicatorsChainTest {
 
         def ind_i = ["URBAN_TYPOLOGY"]
 
-        IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
+        IProcess GeoIndicatorsCompute_i = PC.Workflow.GeoIndicators
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
@@ -198,7 +200,7 @@ class GeoIndicatorsChainTest {
 
         def ind_i = ["URBAN_TYPOLOGY", "TEB"]
 
-        IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
+        IProcess GeoIndicatorsCompute_i = PC.Workflow.GeoIndicators
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
@@ -243,7 +245,7 @@ class GeoIndicatorsChainTest {
 
         def ind_i = ["TEB"]
 
-        IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
+        IProcess GeoIndicatorsCompute_i = PC.Workflow.GeoIndicators
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
@@ -288,7 +290,7 @@ class GeoIndicatorsChainTest {
 
         def ind_i = ["LCZ", "TEB"]
 
-        IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
+        IProcess GeoIndicatorsCompute_i = PC.Workflow.GeoIndicators
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
@@ -333,7 +335,7 @@ class GeoIndicatorsChainTest {
 
         def ind_i = ["URBAN_TYPOLOGY", "LCZ"]
 
-        IProcess GeoIndicatorsCompute_i = ProcessingChain.Workflow.GeoIndicators()
+        IProcess GeoIndicatorsCompute_i = PC.Workflow.GeoIndicators
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,

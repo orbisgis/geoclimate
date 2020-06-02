@@ -3,15 +3,19 @@ package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 
 import static org.junit.jupiter.api.Assertions.*
 
 class AbstractTablesInitializationTest {
+    
+    static def BDTopo = GroovyProcessManager.load(BDTopo_V2)
 
     @Test
     void initParametersAbstract(){
         H2GIS h2GISDatabase = H2GIS.open("./target/h2gis_abstract_tables_${UUID.randomUUID()};AUTO_SERVER=TRUE", "sa", "")
-        def process = BDTopo_V2.initParametersAbstract
+        def process = BDTopo.AbstractTablesInitialization.initParametersAbstract
         assertTrue process.execute([datasource: h2GISDatabase])
         process.getResults().each {entry ->
             assertNotNull h2GISDatabase.getTable(entry.getValue())

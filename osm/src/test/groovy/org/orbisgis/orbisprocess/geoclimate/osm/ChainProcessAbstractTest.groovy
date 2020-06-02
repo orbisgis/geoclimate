@@ -1,7 +1,10 @@
 package org.orbisgis.orbisprocess.geoclimate.osm
 
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
+import org.orbisgis.orbisdata.processmanager.process.ProcessManager
+import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators as GI
+import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain as PC
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -12,7 +15,8 @@ class ChainProcessAbstractTest {
 
     public static Logger logger = LoggerFactory.getLogger(ChainProcessAbstractTest.class)
 
-
+    def ProcessingChain = GroovyProcessManager.load(PC)
+    def Geoindicators = GroovyProcessManager.load(GI)
 
     /**
      * A method to compute geomorphological indicators
@@ -32,7 +36,7 @@ class ChainProcessAbstractTest {
                            String hydrographicTableName, boolean saveResults, boolean svfSimplified = false, def indicatorUse,
                            String prefixName = "") {
         //Create spatial units and relations : building, block, rsu
-        IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
+        IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis
         assertTrue spatialUnits.execute([datasource       : datasource, zoneTable: zoneTableName, buildingTable: buildingTableName,
                                          roadTable        : roadTableName, railTable: railTableName, vegetationTable: vegetationTableName,
                                          hydrographicTable: hydrographicTableName, surface_vegetation: 100000,
@@ -44,7 +48,7 @@ class ChainProcessAbstractTest {
 
         if (saveResults) {
             logger.info("Saving spatial units")
-            IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
+            IProcess saveTables = Geoindicators.DataUtils.saveTablesAsFiles
             saveTables.execute([inputTableNames: spatialUnits.getResults().values()
                                 , directory    : directory, datasource: datasource])
         }
@@ -59,7 +63,7 @@ class ChainProcessAbstractTest {
         assertEquals(countRSU.count, maxRSUBlocks.max)
 
         //Compute building indicators
-        def computeBuildingsIndicators = ProcessingChain.BuildGeoIndicators.computeBuildingsIndicators()
+        def computeBuildingsIndicators = ProcessingChain.BuildGeoIndicators.computeBuildingsIndicators
         assertTrue computeBuildingsIndicators.execute([datasource            : datasource,
                                                        inputBuildingTableName: relationBuildings,
                                                        inputRoadTableName    : roadTableName,
@@ -78,7 +82,7 @@ class ChainProcessAbstractTest {
 
         //Compute block indicators
         if (indicatorUse.contains("URBAN_TYPOLOGY")) {
-            def computeBlockIndicators = ProcessingChain.BuildGeoIndicators.computeBlockIndicators()
+            def computeBlockIndicators = ProcessingChain.BuildGeoIndicators.computeBlockIndicators
             assertTrue computeBlockIndicators.execute([datasource            : datasource,
                                                        inputBuildingTableName: buildingIndicators,
                                                        inputBlockTableName   : relationBlocks,
@@ -95,7 +99,7 @@ class ChainProcessAbstractTest {
         }
 
         //Compute RSU indicators
-        def computeRSUIndicators = ProcessingChain.BuildGeoIndicators.computeRSUIndicators()
+        def computeRSUIndicators = ProcessingChain.BuildGeoIndicators.computeRSUIndicators
         assertTrue computeRSUIndicators.execute([datasource       : datasource,
                                                  buildingTable    : buildingIndicators,
                                                  rsuTable         : relationRSU,

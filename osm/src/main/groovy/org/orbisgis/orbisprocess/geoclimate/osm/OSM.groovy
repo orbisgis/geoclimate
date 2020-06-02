@@ -1,37 +1,14 @@
 package org.orbisgis.orbisprocess.geoclimate.osm
 
+import groovy.transform.BaseScript
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 
 /**
  * Main class to access to the OSM processes
- *
  */
-class OSM  {
+@BaseScript GroovyProcessManager pm
 
-    public static def workflow
-    public  static def formatBuildingLayer;
-    public static def formatVegetationLayer
-    public static def formatRoadLayer
-    public static def formatRailsLayer
-    public static def formatHydroLayer
-    public static def formatImperviousLayer
-    public static def createGISLayers
-    public static def extractAndCreateGISLayers
-    public static def buildGeoclimateLayers
-    static {
-        def formattingForAbstractModel = new FormattingForAbstractModel()
-        def osmGISLayers = new OSMGISLayers()
-        def prepareOSM = new PrepareOSM()
-        def workflowOSM  = new WorkflowOSM()
-        formatBuildingLayer= formattingForAbstractModel.formatBuildingLayer()
-        formatVegetationLayer= formattingForAbstractModel.formatVegetationLayer()
-        formatRoadLayer= formattingForAbstractModel.formatRoadLayer()
-        formatRailsLayer= formattingForAbstractModel.formatRailsLayer()
-        formatHydroLayer= formattingForAbstractModel.formatHydroLayer()
-        formatImperviousLayer= formattingForAbstractModel.formatImperviousLayer()
-        createGISLayers  = osmGISLayers.createGISLayers()
-        extractAndCreateGISLayers  = osmGISLayers.extractAndCreateGISLayers()
-        buildGeoclimateLayers  = prepareOSM.buildGeoclimateLayers()
-        workflow  = workflowOSM.workflow();
-    }
-
-}
+register([FormattingForAbstractModel,
+          OSMGISLayers,
+          PrepareOSM,
+          WorkflowOSM])
