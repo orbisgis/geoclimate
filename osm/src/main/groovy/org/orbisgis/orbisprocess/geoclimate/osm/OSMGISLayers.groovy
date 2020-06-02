@@ -34,13 +34,13 @@ create {
             vegetationTableName: String,hydroTableName: String, zoneTableName: String,
             zoneEnvelopeTableName: String
     run { datasource, zoneToExtract, distance ->
-        def outputZoneTable = "ZONE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-        def outputZoneEnvelopeTable = "ZONE_ENVELOPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-        if (datasource == null) {
+         if (datasource == null) {
             error('The datasource cannot be null')
             return null
         }
         if(zoneToExtract){
+            def outputZoneTable = "ZONE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+            def outputZoneEnvelopeTable = "ZONE_ENVELOPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             def GEOMETRY_TYPE
             Geometry geom
             if(zoneToExtract in Collection){
@@ -49,7 +49,6 @@ create {
                 if (!geom) {
                     error("The bounding box cannot be null")
                     return null
-
                 }
             }
             else if(zoneToExtract instanceof  String){
@@ -85,11 +84,14 @@ create {
             def tmpGeomEnv = geom.getFactory().toGeometry(envelope)
             tmpGeomEnv.setSRID(4326)
 
-            datasource.execute """create table ${outputZoneTable} (the_geom GEOMETRY(${GEOMETRY_TYPE}, $epsg), ID_ZONE VARCHAR);
-        INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT('${geomUTM.toString()}', $epsg), '$zoneToExtract');"""
+            datasource.execute """create table ${outputZoneTable} (the_geom GEOMETRY(${GEOMETRY_TYPE}, $epsg), ID_ZONE VARCHAR);"""
+            datasource.execute(
+                    "INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT(?, ?), ?);",
+                    geomUTM.toString(), epsg, zoneToExtract.toString() )
 
-            datasource.execute """create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
-        INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${ST_Transform.ST_Transform(con,tmpGeomEnv,epsg).toString()}',$epsg), '$zoneToExtract');"""
+            datasource.execute """create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);"""
+            datasource.execute("""INSERT INTO ${outputZoneEnvelopeTable} 
+                    VALUES (ST_GEOMFROMTEXT(?,?), ?);""",ST_Transform.ST_Transform(con,tmpGeomEnv,epsg).toString(), epsg,zoneToExtract.toString())
 
             def query =  "[maxsize:1073741824]" + OSMTools.Utilities.buildOSMQuery(envelope,null,OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
 
@@ -97,7 +99,6 @@ create {
             if (extract.execute(overpassQuery: query)) {
                 IProcess createGISLayerProcess = createGISLayers
                 if (createGISLayerProcess.execute(datasource: datasource, osmFilePath: extract.results.outputFilePath, epsg: epsg)) {
-
                     [buildingTableName  : createGISLayerProcess.getResults().buildingTableName,
                      roadTableName      : createGISLayerProcess.getResults().roadTableName,
                      railTableName      : createGISLayerProcess.getResults().railTableName,
