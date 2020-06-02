@@ -1247,7 +1247,7 @@ IProcess smallestCommunGeometry() {
                     CREATE TABLE $tmp_point_polygonize as  select  EXPLOD_ID as id, st_pointonsurface(st_force2D(the_geom)) as the_geom ,
                     st_area(the_geom) as area , id_rsu
                      from st_explode ('(select st_polygonize(st_union(
-                    st_precisionreducer(st_node(st_accum(st_force2d(a.the_geom))), 3))) as the_geom, id_rsu from $tmp_tables as a group by id_rsu)')"""
+                    st_precisionreducer(ST_MakeValid(st_node(st_accum(st_force2d(a.the_geom)))), 3))) as the_geom, id_rsu from $tmp_tables as a group by id_rsu)')"""
 
                 //Create indexes
                 datasource.getSpatialTable(tmp_point_polygonize).the_geom.createIndex()
