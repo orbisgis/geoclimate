@@ -95,10 +95,10 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
 
     }
 
-    @Disabled
+    //@Disabled
     @Test
     void osmGeoIndicatorsFromApi() {
-        String directory ="./target/osm_processchain_full"
+        String directory ="./target/osm_processchain_indicators"
         boolean saveResults = true
         def prefixName = ""
         def svfSimplified = false
@@ -110,7 +110,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osm_chain_db;AUTO_SERVER=TRUE")
 
         //Extract and transform OSM data
-        def zoneToExtract = "Rezé"
+        def zoneToExtract = "Montceaux-lès-Provins - Île-De-France"
 
         IProcess prepareOSMData = OSM.buildGeoclimateLayers
 
