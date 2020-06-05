@@ -5,15 +5,19 @@ import groovy.transform.BaseScript
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
-import org.orbisgis.orbisanalysis.osm.OSMTools
+import org.orbisgis.orbisanalysis.osm.OSMTools as Tools
+import org.orbisgis.orbisanalysis.osm.utils.Utilities
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.h2gis.utilities.GeographyUtilities
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.orbisgis.orbisanalysis.osm.utils.OSMElement
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 
 @BaseScript GroovyProcessFactory pf
+
+def OSMTools = GroovyProcessManager.load(Tools)
 
 /**
   * This process is used to create the GIS layers using the Overpass API
@@ -45,14 +49,14 @@ create {
             Geometry geom
             if(zoneToExtract in Collection){
                  GEOMETRY_TYPE = "POLYGON"
-                 geom = OSMTools.Utilities.geometryFromOverpass(zoneToExtract)
+                 geom = Utilities.geometryFromOverpass(zoneToExtract)
                 if (!geom) {
                     error("The bounding box cannot be null")
                     return null
                 }
             }
             else if(zoneToExtract instanceof  String){
-                geom = OSMTools.Utilities.getAreaFromPlace(zoneToExtract);
+                geom = Utilities.getAreaFromPlace(zoneToExtract);
                 if (!geom) {
                     error("Cannot find an area from the place name ${zoneToExtract}")
                     return null
@@ -93,9 +97,9 @@ create {
             datasource.execute("""INSERT INTO ${outputZoneEnvelopeTable} 
                     VALUES (ST_GEOMFROMTEXT(?,?), ?);""",ST_Transform.ST_Transform(con,tmpGeomEnv,epsg).toString(), epsg,zoneToExtract.toString())
 
-            def query =  "[maxsize:1073741824]" + OSMTools.Utilities.buildOSMQuery(envelope,null,OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+            def query =  "[maxsize:1073741824]" + Utilities.buildOSMQuery(envelope,null,OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
 
-            def extract = OSMTools.Loader.extract()
+            def extract = OSMTools.Loader.extract
             if (extract.execute(overpassQuery: query)) {
                 IProcess createGISLayerProcess = createGISLayers
                 if (createGISLayerProcess.execute(datasource: datasource, osmFilePath: extract.results.outputFilePath, epsg: epsg)) {
@@ -142,7 +146,7 @@ create {
             return null
         }
         def prefix = "OSM_DATA_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-        def load = OSMTools.Loader.load()
+        def load = OSMTools.Loader.load
         info "Loading"
         if (load(datasource: datasource, osmTablesPrefix: prefix, osmFilePath: osmFilePath)) {
             def outputBuildingTableName =null
@@ -152,7 +156,7 @@ create {
             def outputHydroTableName =null
             def outputImperviousTableName =null
             //Create building layer
-            def transform = OSMTools.Transform.toPolygons()
+            def transform = OSMTools.Transform.toPolygons
             info "Create the building layer"
             def paramsDefaultFile = this.class.getResourceAsStream("buildingParams.json")
             def parametersMap = readJSONParameters(paramsDefaultFile)
@@ -164,7 +168,7 @@ create {
             }
 
             //Create road layer
-            transform = OSMTools.Transform.extractWaysAsLines()
+            transform = OSMTools.Transform.extractWaysAsLines
             info "Create the road layer"
             paramsDefaultFile = this.class.getResourceAsStream("roadParams.json")
             parametersMap = readJSONParameters(paramsDefaultFile)
@@ -176,7 +180,7 @@ create {
                 }
 
             //Create rail layer
-            transform = OSMTools.Transform.extractWaysAsLines()
+            transform = OSMTools.Transform.extractWaysAsLines
             info "Create the rail layer"
             paramsDefaultFile = this.class.getResourceAsStream("railParams.json")
             parametersMap = readJSONParameters(paramsDefaultFile)
@@ -191,7 +195,7 @@ create {
             parametersMap = readJSONParameters(paramsDefaultFile)
             tags  = parametersMap.get("tags")
             columnsToKeep = parametersMap.get("columns")
-            transform = OSMTools.Transform.toPolygons()
+            transform = OSMTools.Transform.toPolygons
             info "Create the vegetation layer"
             if(transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags,columnsToKeep: columnsToKeep)){
                 outputVegetationTableName = transform.results.outputTableName
@@ -202,7 +206,7 @@ create {
             paramsDefaultFile = this.class.getResourceAsStream("waterParams.json")
             parametersMap = readJSONParameters(paramsDefaultFile)
             tags  = parametersMap.get("tags")
-            transform = OSMTools.Transform.toPolygons()
+            transform = OSMTools.Transform.toPolygons
             info "Create the water layer"
             if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags)){
                 outputHydroTableName = transform.results.outputTableName
@@ -214,14 +218,14 @@ create {
             parametersMap = readJSONParameters(paramsDefaultFile)
             tags  = parametersMap.get("tags")
             columnsToKeep = parametersMap.get("columns")
-            transform = OSMTools.Transform.toPolygons()
+            transform = OSMTools.Transform.toPolygons
             info "Create the impervious layer"
             if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags,columnsToKeep: columnsToKeep)){
                 outputImperviousTableName = transform.results.outputTableName
                 info "impervious layer created"
             }
             //Drop the OSM tables
-            OSMTools.Utilities.dropOSMTables(prefix, datasource)
+            Utilities.dropOSMTables(prefix, datasource)
 
             [buildingTableName  : outputBuildingTableName, roadTableName: outputRoadTableName, railTableName: outputRailTableName,
              vegetationTableName: outputVegetationTableName, hydroTableName: outputHydroTableName,

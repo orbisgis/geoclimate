@@ -7,19 +7,23 @@ import org.h2gis.utilities.GeographyUtilities
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
-import org.orbisgis.orbisanalysis.osm.OSMTools
+import org.orbisgis.orbisanalysis.osm.OSMTools as Tools
+import org.orbisgis.orbisanalysis.osm.utils.Utilities
 import org.orbisgis.orbisanalysis.osm.utils.OSMElement
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
 
 import java.sql.SQLException
 
 @BaseScript GroovyProcessFactory pf
+
+def OSMTools = GroovyProcessManager.load(Tools)
 
 /**
  * Extract OSM data and compute geoindicators. The parameters of the processing chain is defined
@@ -470,13 +474,13 @@ def extractOSMZone(def datasource, def zoneToExtract, def processing_parameters)
         Geometry geom
         if (zoneToExtract in Collection) {
             GEOMETRY_TYPE = "POLYGON"
-            geom = OSMTools.Utilities.geometryFromOverpass(zoneToExtract)
+            geom = Utilities.geometryFromOverpass(zoneToExtract)
             if (!geom) {
                 error("The bounding box cannot be null")
                 return null
             }
         } else if (zoneToExtract instanceof String) {
-            geom = OSMTools.Utilities.getAreaFromPlace(zoneToExtract);
+            geom = Utilities.getAreaFromPlace(zoneToExtract);
             if (!geom) {
                 error("Cannot find an area from the place name ${zoneToExtract}")
                 return null

@@ -185,7 +185,7 @@ class TypologyClassificationTests {
         assert prediction
         def accuracy = Accuracy.of(truth, prediction)
         assert accuracy
-        assertEquals 0.844, accuracy.round(3), 0.002
+        assertEquals 0.844, accuracy.round(3), 0.003
 
 
         // Test that the model is well written in the file and can be used to recover the variable names for example
