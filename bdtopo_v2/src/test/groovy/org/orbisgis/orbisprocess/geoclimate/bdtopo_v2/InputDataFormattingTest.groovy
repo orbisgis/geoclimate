@@ -5,10 +5,14 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 
 import static org.junit.jupiter.api.Assertions.*
 
 class InputDataFormattingTest {
+
+    static def BDTopo = GroovyProcessManager.load(BDTopo_V2)
+
     def h2GISDatabase
 
     public static communeToTest = "12174"
@@ -42,7 +46,7 @@ class InputDataFormattingTest {
 
     @Test
     void inputDataFormatting(){
-        def processImport = BDTopo_V2.importPreprocess
+        def processImport = BDTopo.BDTopoGISLayers.importPreprocess
         assertTrue processImport.execute([datasource: h2GISDatabase,
                                           tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                           tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -58,9 +62,9 @@ class InputDataFormattingTest {
                                           rail_bd_topo_crossing: 'RAIL_BD_TOPO_CROSSING', rail_abstract_crossing: 'RAIL_ABSTRACT_CROSSING',
                                           veget_bd_topo_type: 'VEGET_BD_TOPO_TYPE', veget_abstract_type: 'VEGET_ABSTRACT_TYPE'
         ])
-        def resultsImport=processImport.getResults()
+        def resultsImport=processImport.results
 
-        def processFormatting = BDTopo_V2.formatInputData
+        def processFormatting = BDTopo.InputDataFormatting.formatData
         assertTrue processFormatting.execute([datasource: h2GISDatabase,
                          inputBuilding: resultsImport.outputBuildingName, inputRoad: resultsImport.outputRoadName,
                          inputRail: resultsImport.outputRailName, inputHydro: resultsImport.outputHydroName,
@@ -73,7 +77,7 @@ class InputDataFormattingTest {
                          roadAbstractType: 'ROAD_ABSTRACT_TYPE', roadAbstractParameters: 'ROAD_ABSTRACT_PARAMETERS', roadAbstractCrossing: 'ROAD_ABSTRACT_CROSSING',
                          railAbstractType: 'RAIL_ABSTRACT_TYPE', railAbstractCrossing: 'RAIL_ABSTRACT_CROSSING',
                          vegetAbstractType: 'VEGET_ABSTRACT_TYPE', vegetAbstractParameters: 'VEGET_ABSTRACT_PARAMETERS'])
-        processFormatting.getResults().each {
+        processFormatting.results.each {
             entry -> assertNotNull h2GISDatabase.getTable(entry.getValue())
         }
 
@@ -82,7 +86,7 @@ class InputDataFormattingTest {
         // -----------------------------------------------------------------------------------
 
         // Check if the BUILDING table has the correct number of columns and rows
-        def tableName = processFormatting.getResults().outputBuilding
+        def tableName = processFormatting.results.outputBuilding
         assertNotNull(tableName)
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
@@ -266,7 +270,7 @@ class InputDataFormattingTest {
 
         // ------------------
         // Check if the BUILDING_STATS_ZONE table has the correct number of columns and rows
-        tableName = processFormatting.getResults().outputBuildingStatZone
+        tableName = processFormatting.results.outputBuildingStatZone
         assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
@@ -328,7 +332,7 @@ class InputDataFormattingTest {
 
         // ------------------
         // Check if the BUILDING_STATS_EXT_ZONE table has the correct number of columns and rows
-        tableName = processFormatting.getResults().outputBuildingStatZoneBuff
+        tableName = processFormatting.results.outputBuildingStatZoneBuff
         assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
@@ -393,7 +397,7 @@ class InputDataFormattingTest {
         // -----------------------------------------------------------------------------------
 
         // Check if the ROAD table has the correct number of columns and rows
-        tableName = processFormatting.getResults().outputRoad
+        tableName = processFormatting.results.outputRoad
         assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
@@ -490,7 +494,7 @@ class InputDataFormattingTest {
 
         // ------------------
         // Check if the ROAD_STATS_ZONE table has the correct number of columns and rows
-        tableName = processFormatting.getResults().outputRoadStatZone
+        tableName = processFormatting.results.outputRoadStatZone
         assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
@@ -543,7 +547,7 @@ class InputDataFormattingTest {
 
         // ------------------
         // Check if the ROAD_STATS_EXT_ZONE table has the correct number of columns and rows
-        tableName = processFormatting.getResults().outputRoadStatZoneBuff
+        tableName = processFormatting.results.outputRoadStatZoneBuff
         assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
@@ -599,7 +603,7 @@ class InputDataFormattingTest {
         // -----------------------------------------------------------------------------------
 
         // Check if the RAIL table has the correct number of columns and rows
-        tableName = processFormatting.getResults().outputRail
+        tableName = processFormatting.results.outputRail
         assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
@@ -652,7 +656,7 @@ class InputDataFormattingTest {
 
         // ------------------
         // Check if the RAIL_STATS_ZONE table has the correct number of columns and rows
-        tableName = processFormatting.getResults().outputRailStatZone
+        tableName = processFormatting.results.outputRailStatZone
         assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
@@ -693,7 +697,7 @@ class InputDataFormattingTest {
         // -----------------------------------------------------------------------------------
 
         // Check if the HYDRO table has the correct number of columns and rows
-        tableName = processFormatting.getResults().outputHydro
+        tableName = processFormatting.results.outputHydro
         assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
@@ -795,7 +799,7 @@ class InputDataFormattingTest {
 
         // ------------------
         // Check if the HYDRO_STATS_ZONE table has the correct number of columns and rows
-        tableName = processFormatting.getResults().outputHydroStatZone
+        tableName = processFormatting.results.outputHydroStatZone
         assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
@@ -827,7 +831,7 @@ class InputDataFormattingTest {
 
         // ------------------
         // Check if the HYDRO_STATS_EXT_ZONE table has the correct number of columns and rows
-        tableName = processFormatting.getResults().outputHydroStatZoneExt
+        tableName = processFormatting.results.outputHydroStatZoneExt
         assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
@@ -862,7 +866,7 @@ class InputDataFormattingTest {
         // -----------------------------------------------------------------------------------
 
         // Check if the VEGET table has the correct number of columns and rows
-        tableName = processFormatting.getResults().outputVeget
+        tableName = processFormatting.results.outputVeget
         assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
@@ -931,7 +935,7 @@ class InputDataFormattingTest {
 
         // ------------------
         // Check if the VEGET_STATS_ZONE table has the correct number of columns and rows
-        tableName = processFormatting.getResults().outputVegetStatZone
+        tableName = processFormatting.results.outputVegetStatZone
         assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
@@ -969,7 +973,7 @@ class InputDataFormattingTest {
 
         // ------------------
         // Check if the VEGET_STATS_ZONE table has the correct number of columns and rows
-        tableName = processFormatting.getResults().outputVegetStatZoneExt
+        tableName = processFormatting.results.outputVegetStatZoneExt
         assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
@@ -1010,7 +1014,7 @@ class InputDataFormattingTest {
         // -----------------------------------------------------------------------------------
 
         // Check if the VEGET table has the correct number of columns and rows
-        tableName = processFormatting.getResults().outputImpervious
+        tableName = processFormatting.results.outputImpervious
         assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
@@ -1035,7 +1039,7 @@ class InputDataFormattingTest {
         // -----------------------------------------------------------------------------------
 
         // Check if the ZONE table has the correct number of columns and rows
-        tableName = processFormatting.getResults().outputZone
+        tableName = processFormatting.results.outputZone
         assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)

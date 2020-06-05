@@ -1,28 +1,19 @@
 package org.orbisgis.orbisprocess.geoclimate
 
-import org.orbisgis.orbisprocess.geoclimate.geoindicators.*
-import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData
-import org.orbisgis.orbisprocess.geoclimate.processingchain.*
-import org.orbisgis.orbisprocess.geoclimate.osm.*
-import org.orbisgis.orbisprocess.geoclimate.bdtopo_v2.*
+import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators as GI
+import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData as PD
+import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain as PC
+
+import static org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager.load
 
 /**
  * Root access point to the Geoindicators processes.
  */
 class Geoclimate {
 
-    public static def BuildGeoIndicators  = new BuildGeoIndicators()
-    public static def BuildSpatialUnits  = new BuildSpatialUnits()
-    public static def DataUtils  = new DataUtils()
-    public static def Workflow  = new Workflow()
-    public static def BuildingIndicators = new BuildingIndicators()
-    public static def RsuIndicators = new RsuIndicators()
-    public static def BlockIndicators = new BlockIndicators()
-    public static def GenericIndicators = new GenericIndicators()
-    public static def SpatialUnits = new SpatialUnits()
-    public static def TypologyClassification = new TypologyClassification()
-    public static def OSM = new OSM()
-    public static def BDTOPO_V2 = new BDTopo_V2()
+    public static def Geoindicators = load(GI)
+    public static def PrepareData = load(PD)
+    public static def ProcessingChain = load(PC)
 
     /**
      * Set the logger for all the processes.

@@ -4,18 +4,20 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisprocess.geoclimate.osm.OSM
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 class FormattingForAbstractModelTests {
 
+    def O = GroovyProcessManager.load(OSM)
+
     @Test
    void formattingGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
         def epsg =2154
-        IProcess extractData = OSM.createGISLayers
+        IProcess extractData = O.OSMGISLayers.createGISLayers
         extractData.execute([
                 datasource : h2GIS,
                 osmFilePath: new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath(),
@@ -30,7 +32,7 @@ class FormattingForAbstractModelTests {
 
 
         //Buildings
-        IProcess format = OSM.formatBuildingLayer
+        IProcess format = O.FormattingForAbstractModel.formatBuildingLayer
         format.execute([
                 datasource : h2GIS,
                 inputTableName: extractData.results.buildingTableName,
@@ -46,7 +48,7 @@ class FormattingForAbstractModelTests {
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0").count==0
 
         //Roads
-        format = OSM.formatRoadLayer
+        format = O.FormattingForAbstractModel.formatRoadLayer
         format.execute([
                 datasource : h2GIS,
                 inputTableName: extractData.results.roadTableName,
@@ -61,7 +63,7 @@ class FormattingForAbstractModelTests {
 
 
         //Rails
-        format = OSM.formatRailsLayer
+        format = O.FormattingForAbstractModel.formatRailsLayer
         format.execute([
                 datasource : h2GIS,
                 inputTableName: extractData.results.railTableName,
@@ -74,7 +76,7 @@ class FormattingForAbstractModelTests {
 
 
         //Vegetation
-        format = OSM.formatVegetationLayer
+        format = O.FormattingForAbstractModel.formatVegetationLayer
         format.execute([
                 datasource : h2GIS,
                 inputTableName: extractData.results.vegetationTableName,
@@ -88,7 +90,7 @@ class FormattingForAbstractModelTests {
 
 
         //Hydrography
-        format = OSM.formatHydroLayer
+        format = O.FormattingForAbstractModel.formatHydroLayer
         format.execute([
                 datasource : h2GIS,
                 inputTableName: extractData.results.hydroTableName,
@@ -97,7 +99,7 @@ class FormattingForAbstractModelTests {
         assertEquals 10, h2GIS.getTable(format.results.outputTableName).rowCount
 
         //Impervious surfaces
-        format = OSM.formatImperviousLayer
+        format = O.FormattingForAbstractModel.formatImperviousLayer
         format.execute([
                 datasource : h2GIS,
                 inputTableName: extractData.results.imperviousTableName,
@@ -122,7 +124,7 @@ class FormattingForAbstractModelTests {
         //zoneToExtract="Cliscouet, Vannes"
         zoneToExtract="rezé"
 
-        IProcess extractData = OSM.extractAndCreateGISLayers
+        IProcess extractData = O.extractAndCreateGISLayers
         extractData.execute([
                 datasource : h2GIS,
                 zoneToExtract:zoneToExtract ])
@@ -140,7 +142,7 @@ class FormattingForAbstractModelTests {
 
 
             //Buildings
-            IProcess format = OSM.formatBuildingLayer
+            IProcess format = O.formatBuildingLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.buildingTableName,
@@ -156,7 +158,7 @@ class FormattingForAbstractModelTests {
 
 
             //Roads
-            format = OSM.formatRoadLayer
+            format = O.formatRoadLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.roadTableName,
@@ -166,7 +168,7 @@ class FormattingForAbstractModelTests {
             assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where width is null or width <= 0").count==0
 
             //Rails
-            format = OSM.formatRailsLayer
+            format = O.formatRailsLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.railTableName,
@@ -176,7 +178,7 @@ class FormattingForAbstractModelTests {
 
 
             //Vegetation
-            format = OSM.formatVegetationLayer
+            format = O.formatVegetationLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.vegetationTableName,
@@ -186,7 +188,7 @@ class FormattingForAbstractModelTests {
 
 
             //Hydrography
-            format = OSM.formatHydroLayer
+            format = O.formatHydroLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.hydroTableName,
@@ -195,7 +197,7 @@ class FormattingForAbstractModelTests {
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_hydro_${formatedPlaceName}.geojson")
 
             //Impervious
-            format = OSM.formatImperviousLayer
+            format = O.formatImperviousLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.imperviousTableName,
@@ -235,7 +237,7 @@ class FormattingForAbstractModelTests {
     void createGISLayersCheckHeight(def zoneToExtract) {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
 
-        IProcess extractData = OSM.extractAndCreateGISLayers
+        IProcess extractData = O.OSMGISLayers.extractAndCreateGISLayers
         extractData.execute([
                 datasource : h2GIS,
                 zoneToExtract:zoneToExtract ])
@@ -245,7 +247,7 @@ class FormattingForAbstractModelTests {
 
 
             //Buildings
-            IProcess format = OSM.formatBuildingLayer
+            IProcess format = O.FormattingForAbstractModel.formatBuildingLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.buildingTableName,

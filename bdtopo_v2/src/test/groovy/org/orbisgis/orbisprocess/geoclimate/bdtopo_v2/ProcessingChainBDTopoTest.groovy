@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -14,6 +15,9 @@ import org.slf4j.LoggerFactory
 import static org.junit.jupiter.api.Assertions.*
 
 class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
+
+    static def PC = GroovyProcessManager.load(ProcessingChain)
+    static def BDTopo = GroovyProcessManager.load(BDTopo_V2)
 
     public static communeToTest = "12174"
 
@@ -71,7 +75,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         def dbSuffixName = "_prepare"
         def inseeCode = communeToTest
         H2GIS h2GISDatabase = loadFiles(inseeCode, dbSuffixName)
-        def process = BDTopo_V2.prepareData
+        def process = BDTopo.PrepareBDTopo.prepareData
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -103,7 +107,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                 "CREATE TABLE tempo_zone AS SELECT * FROM zone_test;" +
                 "CREATE TABLE tempo_veget AS SELECT id_veget, the_geom FROM veget_test WHERE id_veget < 4;" +
                 "CREATE TABLE tempo_hydro AS SELECT id_hydro, the_geom FROM hydro_test WHERE id_hydro < 2;")
-        IProcess pm =  ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
+        IProcess pm =  PC.BuildSpatialUnits.createUnitsOfAnalysis
         pm.execute([datasource          : h2GIS,        zoneTable               : "tempo_zone",     roadTable           : "tempo_road",
                     railTable           : "tempo_road", vegetationTable         : "tempo_veget",    hydrographicTable   : "tempo_hydro",
                     surface_vegetation  : null,         surface_hydro           : null,             buildingTable       : "tempo_build",
@@ -129,7 +133,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     void bdtopoLczFromTestFiles() {
         def dbSuffixName = "_lcz"
         H2GIS datasource = loadFiles(communeToTest, dbSuffixName)
-        def process = BDTopo_V2.prepareData
+        def process = BDTopo.PrepareBDTopo.prepareData
         assertTrue process.execute([datasource: datasource,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -153,7 +157,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                             "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
 
-        IProcess geodindicators = ProcessingChain.Workflow.GeoIndicators()
+        IProcess geodindicators = PC.Workflow.GeoIndicators
         assertTrue geodindicators.execute(datasource: datasource, zoneTable: abstractTables.outputZone,
                 buildingTable: abstractTables.outputBuilding, roadTable: abstractTables.outputRoad,
                 railTable: abstractTables.outputRail, vegetationTable: abstractTables.outputVeget,
@@ -171,7 +175,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     void bdtopoGeoIndicatorsFromTestFiles() {
         def dbSuffixName = "_geoIndicators"
         H2GIS h2GISDatabase = loadFiles(communeToTest, dbSuffixName)
-        def process = BDTopo_V2.prepareData
+        def process = BDTopo.PrepareBDTopo.prepareData
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -208,7 +212,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        IProcess processBDTopo = BDTopo_V2.workflow
+        IProcess processBDTopo = BDTopo.workflow
         assertTrue(processBDTopo.execute(configurationFile: getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()))mm
         assertNotNull(processBDTopo.getResults().outputFolder)
         def baseNamePathAndFileOut = processBDTopo.getResults().outputFolder + File.separator + "zone_" + communeToTest + "_"
@@ -225,7 +229,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()
         //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_dboutput.json").toURI()
         //configFile =getClass().getResource("config/bdtopo_workflow_dbinput_dboutput.json").toURI()
-        IProcess process = BDTopo_V2.workflow
+        IProcess process = BDTopo.workflow
         assertTrue(process.execute(configurationFile: configFile))
     }
 
@@ -273,7 +277,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                          "hThresholdLev2": 10
                         ]
         ]
-        IProcess process = BDTopo_V2.workflow
+        IProcess process = BDTopo.workflow
         assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
     }
     /**

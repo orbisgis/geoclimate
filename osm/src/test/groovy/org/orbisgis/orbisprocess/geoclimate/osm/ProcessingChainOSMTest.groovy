@@ -5,12 +5,16 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
 
 import static org.junit.jupiter.api.Assertions.*
 
 class ProcessingChainOSMTest extends ChainProcessAbstractTest {
+
+    def PC = GroovyProcessManager.load(ProcessingChain)
+    def O = GroovyProcessManager.load(OSM)
 
     @Disabled
     @Test
@@ -180,7 +184,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                             "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
 
-        IProcess geodindicators = ProcessingChain.Workflow.GeoIndicators()
+        IProcess geodindicators = PC.Workflow.GeoIndicators
         assertTrue geodindicators.execute(datasource: datasource, zoneTable: zoneTableName,
                 buildingTable: buildingTableName, roadTable: roadTableName,
                 railTable: railTableName, vegetationTable: vegetationTableName,
@@ -325,7 +329,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 "output" :[
                         "folder" : "$directory"]
         ]
-        IProcess process = OSM.workflow
+        IProcess process = O.WorkflowOSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 

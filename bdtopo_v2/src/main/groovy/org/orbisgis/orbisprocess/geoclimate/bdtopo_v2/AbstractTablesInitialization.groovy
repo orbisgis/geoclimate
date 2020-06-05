@@ -3,9 +3,9 @@ package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 
 import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
-import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 
-@BaseScript BDTopo_V2_Utils bdtopo_v2_utils
+@BaseScript GroovyProcessFactory pf
 
 /**
  * This process initialize the abstract tables in which the objects type and parameters (for buildings, roads, rails
@@ -25,53 +25,52 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
  * @return outputVegetAbstractParameters The name of the table in which the abstract vegetation's parameters are stored
  */
 
-IProcess initParametersAbstract(){
-    return create({
-        title 'Initialize the abstract and parameter tables'
-        inputs datasource: JdbcDataSource
-        outputs outputBuildingAbstractUseType: String, outputBuildingAbstractParameters: String,
-                outputRoadAbstractType: String, outputRoadAbstractSurface: String, outputRoadAbstractParameters: String,
-                outputRoadAbstractCrossing: String, outputRailAbstractType: String, outputRailAbstractCrossing: String,
-                outputVegetAbstractType: String, outputVegetAbstractParameters: String
-        run { JdbcDataSource datasource ->
-            logger.info('Executing the parametersAndAbstractTables.sql script')
-            def buildingAbstractUseType = 'BUILDING_ABSTRACT_USE_TYPE'
-            def buildingAbstractParam = 'BUILDING_ABSTRACT_PARAMETERS'
-            def roadAbstractType = 'ROAD_ABSTRACT_TYPE'
-            def roadAbstractSurface = 'ROAD_ABSTRACT_SURFACE'
-            def roadAbstractParam = 'ROAD_ABSTRACT_PARAMETERS'
-            def roadAbstractCrossing = 'ROAD_ABSTRACT_CROSSING'
-            def railAbstractType = 'RAIL_ABSTRACT_TYPE'
-            def railAbstractCrossing = 'RAIL_ABSTRACT_CROSSING'
-            def vegetAbstractType = 'VEGET_ABSTRACT_TYPE'
-            def vegetAbstractParam = 'VEGET_ABSTRACT_PARAMETERS'
+create {
+    title 'Initialize the abstract and parameter tables'
+    id "initParametersAbstract"
+    inputs datasource: JdbcDataSource
+    outputs outputBuildingAbstractUseType: String, outputBuildingAbstractParameters: String,
+            outputRoadAbstractType: String, outputRoadAbstractSurface: String, outputRoadAbstractParameters: String,
+            outputRoadAbstractCrossing: String, outputRailAbstractType: String, outputRailAbstractCrossing: String,
+            outputVegetAbstractType: String, outputVegetAbstractParameters: String
+    run { JdbcDataSource datasource ->
+        info 'Executing the parametersAndAbstractTables.sql script'
+        def buildingAbstractUseType = 'BUILDING_ABSTRACT_USE_TYPE'
+        def buildingAbstractParam = 'BUILDING_ABSTRACT_PARAMETERS'
+        def roadAbstractType = 'ROAD_ABSTRACT_TYPE'
+        def roadAbstractSurface = 'ROAD_ABSTRACT_SURFACE'
+        def roadAbstractParam = 'ROAD_ABSTRACT_PARAMETERS'
+        def roadAbstractCrossing = 'ROAD_ABSTRACT_CROSSING'
+        def railAbstractType = 'RAIL_ABSTRACT_TYPE'
+        def railAbstractCrossing = 'RAIL_ABSTRACT_CROSSING'
+        def vegetAbstractType = 'VEGET_ABSTRACT_TYPE'
+        def vegetAbstractParam = 'VEGET_ABSTRACT_PARAMETERS'
 
-            datasource.executeScript(getClass().getResourceAsStream('parametersAndAbstractTables.sql'),
-                    [BUILDING_ABSTRACT_USE_TYPE  : buildingAbstractUseType,
-                     BUILDING_ABSTRACT_PARAMETERS: buildingAbstractParam,
-                     ROAD_ABSTRACT_TYPE          : roadAbstractType,
-                     ROAD_ABSTRACT_SURFACE       : roadAbstractSurface,
-                     ROAD_ABSTRACT_PARAMETERS    : roadAbstractParam,
-                     ROAD_ABSTRACT_CROSSING      : roadAbstractCrossing,
-                     RAIL_ABSTRACT_TYPE          : railAbstractType,
-                     RAIL_ABSTRACT_CROSSING      : railAbstractCrossing,
-                     VEGET_ABSTRACT_TYPE         : vegetAbstractType,
-                     VEGET_ABSTRACT_PARAMETERS   : vegetAbstractParam
-                    ])
+        datasource.executeScript(getClass().getResourceAsStream('parametersAndAbstractTables.sql'),
+                [BUILDING_ABSTRACT_USE_TYPE  : buildingAbstractUseType,
+                 BUILDING_ABSTRACT_PARAMETERS: buildingAbstractParam,
+                 ROAD_ABSTRACT_TYPE          : roadAbstractType,
+                 ROAD_ABSTRACT_SURFACE       : roadAbstractSurface,
+                 ROAD_ABSTRACT_PARAMETERS    : roadAbstractParam,
+                 ROAD_ABSTRACT_CROSSING      : roadAbstractCrossing,
+                 RAIL_ABSTRACT_TYPE          : railAbstractType,
+                 RAIL_ABSTRACT_CROSSING      : railAbstractCrossing,
+                 VEGET_ABSTRACT_TYPE         : vegetAbstractType,
+                 VEGET_ABSTRACT_PARAMETERS   : vegetAbstractParam
+                ])
 
-            logger.info('The parametersAndAbstractTables.sql script has been executed')
+        info 'The parametersAndAbstractTables.sql script has been executed'
 
-            [outputBuildingAbstractUseType   : buildingAbstractUseType,
-             outputBuildingAbstractParameters: buildingAbstractParam,
-             outputRoadAbstractType          : roadAbstractType,
-             outputRoadAbstractSurface       : roadAbstractSurface,
-             outputRoadAbstractParameters    : roadAbstractParam,
-             outputRoadAbstractCrossing      : roadAbstractCrossing,
-             outputRailAbstractType          : railAbstractType,
-             outputRailAbstractCrossing      : railAbstractCrossing,
-             outputVegetAbstractType         : vegetAbstractType,
-             outputVegetAbstractParameters   : vegetAbstractParam
-            ]
-        }
-    })
+        [outputBuildingAbstractUseType   : buildingAbstractUseType,
+         outputBuildingAbstractParameters: buildingAbstractParam,
+         outputRoadAbstractType          : roadAbstractType,
+         outputRoadAbstractSurface       : roadAbstractSurface,
+         outputRoadAbstractParameters    : roadAbstractParam,
+         outputRoadAbstractCrossing      : roadAbstractCrossing,
+         outputRailAbstractType          : railAbstractType,
+         outputRailAbstractCrossing      : railAbstractCrossing,
+         outputVegetAbstractType         : vegetAbstractType,
+         outputVegetAbstractParameters   : vegetAbstractParam
+        ]
+    }
 }

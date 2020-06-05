@@ -3,69 +3,85 @@ package org.orbisgis.orbisprocess.geoclimate.geoindicators
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
+import static org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS.open
+import static org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager.load
 
 class RsuIndicatorsTests {
 
-    private static H2GIS h2GIS
+    private static def h2GIS
+    private static def GI
+    private static def randomDbName() {"${RsuIndicatorsTests.simpleName}_${UUID.randomUUID().toString().replaceAll"-", "_"}"}
 
     @BeforeAll
-    static void init(){
-        h2GIS = H2GIS.open('./target/rsuindicatorsdb;AUTO_SERVER=TRUE')
+    static void beforeAll(){
+        h2GIS = open"./target/${randomDbName()};AUTO_SERVER=TRUE"
+        GI = load Geoindicators
     }
 
     @BeforeEach
-    void initData(){
+    void beforeEach(){
         h2GIS.executeScript(getClass().getResourceAsStream("data_for_tests.sql"))
     }
 
     @Test
     void freeExternalFacadeDensityTest() {
         // Only the first 1 first created buildings are selected for the tests
-        h2GIS.execute "DROP TABLE IF EXISTS tempo_build, rsu_free_external_facade_density; CREATE TABLE tempo_build AS SELECT * " +
-                "FROM building_test WHERE id_build < 8"
+        h2GIS """
+                DROP TABLE IF EXISTS tempo_build, rsu_free_external_facade_density; 
+                CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 8
+        """
         // The geometry of the RSU is useful for the calculation, then it is inserted inside the build/rsu correlation table
-        h2GIS.execute "DROP TABLE IF EXISTS rsu_tempo; CREATE TABLE rsu_tempo AS SELECT * " +
-                "FROM rsu_test"
+        h2GIS """
+                DROP TABLE IF EXISTS rsu_tempo; 
+                CREATE TABLE rsu_tempo AS SELECT * FROM rsu_test
+        """
 
-        def  p =  Geoindicators.RsuIndicators.freeExternalFacadeDensity()
-        assertTrue p.execute([buildingTable: "tempo_build",
-                   rsuTable: "rsu_tempo",
-                   buContiguityColumn: "contiguity",
-                   buTotalFacadeLengthColumn: "total_facade_length",
-                   prefixName: "test", datasource: h2GIS])
+        def p = GI.RsuIndicators.freeExternalFacadeDensity
+        assert p([
+                buildingTable               : "tempo_build",
+                rsuTable                    : "rsu_tempo",
+                buContiguityColumn          : "contiguity",
+                buTotalFacadeLengthColumn   : "total_facade_length",
+                prefixName                  : "test",
+                datasource                  : h2GIS])
         def concat = 0
         h2GIS.eachRow("SELECT * FROM test_rsu_free_external_facade_density WHERE id_rsu = 1"){
             row -> concat+= row.free_external_facade_density
         }
-        assertEquals(0.947, concat)
+        assert 0.947 == concat
     }
 
     @Test
     void groundSkyViewFactorTest() {
         // Only the first 1 first created buildings are selected for the tests
-        h2GIS.execute "DROP TABLE IF EXISTS tempo_build, rsu_free_external_facade_density; CREATE TABLE tempo_build AS SELECT * " +
+        h2GIS "DROP TABLE IF EXISTS tempo_build, rsu_free_external_facade_density; CREATE TABLE tempo_build AS SELECT * " +
                 "FROM building_test WHERE id_build > 8 AND id_build < 27"
         // The geometry of the buildings are useful for the calculation, then they are inserted inside
         // the build/rsu correlation table
-        h2GIS.execute "DROP TABLE IF EXISTS corr_tempo; CREATE TABLE corr_tempo AS SELECT a.*, b.the_geom, b.height_wall " +
+        h2GIS "DROP TABLE IF EXISTS corr_tempo; CREATE TABLE corr_tempo AS SELECT a.*, b.the_geom, b.height_wall " +
                 "FROM rsu_build_corr a, tempo_build b WHERE a.id_build = b.id_build"
 
-        def  p =  Geoindicators.RsuIndicators.groundSkyViewFactor()
-        assertTrue p.execute([rsuTable: "rsu_test",correlationBuildingTable: "corr_tempo", pointDensity: 0.008,
-                              rayLength: 100, numberOfDirection: 60, prefixName: "test",
-                   datasource: h2GIS])
-        assertEquals(0.54, h2GIS.firstRow("SELECT * FROM test_rsu_ground_sky_view_factor WHERE id_rsu = 8")["ground_sky_view_factor"], 0.05)
-        assertEquals(1, h2GIS.firstRow("SELECT * FROM test_rsu_ground_sky_view_factor WHERE id_rsu = 1")["ground_sky_view_factor"])
+        def p = GI.RsuIndicators.groundSkyViewFactor
+        assertTrue p.execute([
+                rsuTable                    : "rsu_test",
+                correlationBuildingTable    : "corr_tempo",
+                pointDensity                : 0.008,
+                rayLength                   : 100,
+                numberOfDirection           : 60,
+                prefixName                  : "test",
+                datasource                  : h2GIS])
+        assertEquals 0.54, h2GIS.firstRow("SELECT * FROM test_rsu_ground_sky_view_factor " +
+                "WHERE id_rsu = 8").ground_sky_view_factor, 0.05
+        assert 1 == h2GIS.firstRow("SELECT * FROM test_rsu_ground_sky_view_factor WHERE id_rsu = 1").ground_sky_view_factor
     }
 
     @Test
     void aspectRatioTest() {
-        def  p =  Geoindicators.RsuIndicators.aspectRatio()
+        def p = GI.RsuIndicators.aspectRatio
         assertTrue p.execute([rsuTable: "rsu_test", rsuFreeExternalFacadeDensityColumn:
                 "rsu_free_external_facade_density", rsuBuildingDensityColumn: "rsu_building_density",
                    prefixName: "test", datasource: h2GIS])
@@ -78,7 +94,7 @@ class RsuIndicatorsTests {
 
     @Test
     void aspectRatioTest2() {
-        def  p =  Geoindicators.RsuIndicators.aspectRatio()
+        def p = GI.RsuIndicators.aspectRatio
         assertTrue p.execute([rsuTable: "rsu_test", rsuFreeExternalFacadeDensityColumn:
                 "rsu_free_external_facade_density", rsuBuildingDensityColumn: "rsu_building_density",
                               prefixName: "test", datasource: h2GIS])
@@ -89,13 +105,13 @@ class RsuIndicatorsTests {
     @Test
     void projectedFacadeAreaDistributionTest() {
         // Only the first 5 first created buildings are selected for the tests
-        h2GIS.execute "DROP TABLE IF EXISTS tempo_build, test_rsu_projected_facade_area_distribution;" +
+        h2GIS "DROP TABLE IF EXISTS tempo_build, test_rsu_projected_facade_area_distribution;" +
                 " CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 6"
 
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def numberOfDirection = 4
         def rangeDeg = 360/numberOfDirection
-        def p = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution()
+        def p = GI.RsuIndicators.projectedFacadeAreaDistribution
         assertTrue p.execute([buildingTable: "tempo_build", rsuTable: "rsu_test", listLayersBottom: listLayersBottom,
                               numberOfDirection: numberOfDirection, prefixName: "test", datasource: h2GIS])
         def concat = ""
@@ -123,13 +139,13 @@ class RsuIndicatorsTests {
     @Test
     void roofAreaDistributionTest() {
         // Only the first 5 first created buildings are selected for the tests
-        h2GIS.execute "DROP TABLE IF EXISTS tempo_build, test_rsu_roof_area_distribution; " +
+        h2GIS "DROP TABLE IF EXISTS tempo_build, test_rsu_roof_area_distribution; " +
                 "CREATE TABLE tempo_build AS SELECT * " +
                 "FROM building_test WHERE id_build < 6 OR " +
                 "id_build < 29 AND id_build > 26"
 
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
-        def p = Geoindicators.RsuIndicators.roofAreaDistribution()
+        def p = GI.RsuIndicators.roofAreaDistribution
         assertTrue p.execute([rsuTable: "rsu_test", buildingTable: "tempo_build",
                    listLayersBottom: listLayersBottom, prefixName: "test",
                    datasource: h2GIS])
@@ -169,10 +185,10 @@ class RsuIndicatorsTests {
                 concat2)
 
         // Test the optionally calculated roof densities
-        def NV1 = h2GIS.firstRow("SELECT * FROM test_rsu_roof_area_distribution WHERE id_rsu = 1")["NON_VERT_ROOF_DENSITY"]
-        def V1 = h2GIS.firstRow("SELECT * FROM test_rsu_roof_area_distribution WHERE id_rsu = 1")["VERT_ROOF_DENSITY"]
-        def NV2 = h2GIS.firstRow("SELECT * FROM test_rsu_roof_area_distribution WHERE id_rsu = 13")["NON_VERT_ROOF_DENSITY"]
-        def V2 = h2GIS.firstRow("SELECT * FROM test_rsu_roof_area_distribution WHERE id_rsu = 13")["VERT_ROOF_DENSITY"]
+        def NV1 = h2GIS.firstRow("SELECT * FROM test_rsu_roof_area_distribution WHERE id_rsu = 1").NON_VERT_ROOF_DENSITY
+        def V1 = h2GIS.firstRow("SELECT * FROM test_rsu_roof_area_distribution WHERE id_rsu = 1").VERT_ROOF_DENSITY
+        def NV2 = h2GIS.firstRow("SELECT * FROM test_rsu_roof_area_distribution WHERE id_rsu = 13").NON_VERT_ROOF_DENSITY
+        def V2 = h2GIS.firstRow("SELECT * FROM test_rsu_roof_area_distribution WHERE id_rsu = 13").VERT_ROOF_DENSITY
         assertEquals(796.64/2000, NV1+V1, 0.001)
         assertEquals(1600.27/10000, NV2+V2, 0.001)
     }
@@ -180,19 +196,19 @@ class RsuIndicatorsTests {
     @Test
     void effectiveTerrainRoughnesslengthTest() {
         // Only the first 5 first created buildings are selected for the tests
-        h2GIS.execute("DROP TABLE IF EXISTS tempo_build, rsu_table, BUILDING_INTERSECTION, BUILDING_INTERSECTION_EXPL, BUILDINGFREE, BUILDINGLAYER; CREATE TABLE tempo_build AS SELECT * " +
+        h2GIS("DROP TABLE IF EXISTS tempo_build, rsu_table, BUILDING_INTERSECTION, BUILDING_INTERSECTION_EXPL, BUILDINGFREE, BUILDINGLAYER; CREATE TABLE tempo_build AS SELECT * " +
                 "FROM building_test WHERE id_build < 6")
 
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def numberOfDirection = 4
-        def pFacadeDistrib = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution()
+        def pFacadeDistrib = GI.RsuIndicators.projectedFacadeAreaDistribution
         assertTrue pFacadeDistrib.execute([buildingTable: "tempo_build",
                                            rsuTable: "rsu_test",
                                            listLayersBottom: listLayersBottom,
                                            numberOfDirection: numberOfDirection,
                                            prefixName: "test",
                                            datasource: h2GIS])
-        def  pGeomAvg =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
+        def pGeomAvg = GI.GenericIndicators.unweightedOperationFromLowerScale
         assertTrue pGeomAvg.execute([inputLowerScaleTableName: "tempo_build",
                                      inputUpperScaleTableName: "rsu_build_corr",
                                      inputIdUp: "id_rsu",
@@ -202,14 +218,14 @@ class RsuIndicatorsTests {
                                      datasource: h2GIS])
 
         // Add the geometry field in the previous resulting Tables
-        h2GIS.execute "ALTER TABLE test_unweighted_operation_from_lower_scale add column the_geom GEOMETRY;" +
+        h2GIS "ALTER TABLE test_unweighted_operation_from_lower_scale add column the_geom GEOMETRY;" +
                 "UPDATE test_unweighted_operation_from_lower_scale set the_geom = (SELECT a.the_geom FROM " +
                 "rsu_test a WHERE a.id_rsu = test_unweighted_operation_from_lower_scale.id_rsu);"
 
-        h2GIS.execute "CREATE TABLE rsu_table AS SELECT a.*, b.geom_avg_height_roof, b.the_geom " +
+        h2GIS "CREATE TABLE rsu_table AS SELECT a.*, b.geom_avg_height_roof, b.the_geom " +
                 "FROM test_rsu_projected_facade_area_distribution a, test_unweighted_operation_from_lower_scale b " +
                 "WHERE a.id_rsu = b.id_rsu"
-        def  p =  Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength()
+        def p = GI.RsuIndicators.effectiveTerrainRoughnessLength
         assertTrue p.execute([rsuTable: "rsu_table",
                               projectedFacadeAreaName: "projected_facade_area_distribution",
                               geometricMeanBuildingHeightName: "geom_avg_height_roof",
@@ -228,10 +244,10 @@ class RsuIndicatorsTests {
     @Test
     void linearRoadOperationsTest() {
         // Only the first 5 first created buildings are selected for the tests
-        h2GIS.execute "DROP TABLE IF EXISTS road_tempo; CREATE TABLE road_tempo AS SELECT * " +
+        h2GIS "DROP TABLE IF EXISTS road_tempo; CREATE TABLE road_tempo AS SELECT * " +
                 "FROM road_test WHERE id_road < 7"
 
-        def p1 =  Geoindicators.RsuIndicators.linearRoadOperations()
+        def p1 = GI.RsuIndicators.linearRoadOperations
         assertTrue p1.execute([rsuTable: "rsu_test",
                                roadTable: "road_test",
                                operations: ["road_direction_distribution", "linear_road_density"],
@@ -249,14 +265,14 @@ class RsuIndicatorsTests {
         assertEquals(10.0, t1.road_direction_distribution_d90_120)
         assertEquals(0.0142, t2.linear_road_density.round(4))
 
-        def p2 =  Geoindicators.RsuIndicators.linearRoadOperations()
+        def p2 = GI.RsuIndicators.linearRoadOperations
         assertTrue p2.execute([rsuTable: "rsu_test", roadTable: "road_test", operations: ["road_direction_distribution"],
                     prefixName: "test", angleRangeSize: 30, levelConsiderated: [0], datasource: h2GIS])
         def t01 = h2GIS.firstRow("SELECT road_direction_distribution_h0_d0_30 " +
                 "FROM test_rsu_road_linear_properties WHERE id_rsu = 14")
         assertEquals(20, t01.road_direction_distribution_h0_d0_30)
 
-        def p3 =  Geoindicators.RsuIndicators.linearRoadOperations()
+        def p3 = GI.RsuIndicators.linearRoadOperations
         assertTrue p3.execute([rsuTable: "rsu_test", roadTable: "road_test", operations: ["linear_road_density"],
                     prefixName: "test", angleRangeSize: 30, levelConsiderated: [-1], datasource: h2GIS])
         def t001 = h2GIS.firstRow("SELECT linear_road_density_hminus1 " +
@@ -267,10 +283,10 @@ class RsuIndicatorsTests {
     @Test
     void effectiveTerrainRoughnessClassTest() {
         // Only the first 5 first created buildings are selected for the tests
-        h2GIS.execute "DROP TABLE IF EXISTS rsu_tempo; CREATE TABLE rsu_tempo AS SELECT *, CASEWHEN(id_rsu = 1, 2.3," +
+        h2GIS "DROP TABLE IF EXISTS rsu_tempo; CREATE TABLE rsu_tempo AS SELECT *, CASEWHEN(id_rsu = 1, 2.3," +
                 "CASEWHEN(id_rsu = 2, 0.1, null)) AS effective_terrain_roughness_length FROM rsu_test"
 
-        def p =  Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass()
+        def p = GI.RsuIndicators.effectiveTerrainRoughnessClass
         assertTrue p.execute([datasource: h2GIS, rsuTable: "rsu_tempo", effectiveTerrainRoughnessLength: "effective_terrain_roughness_length",
                    prefixName: "test"])
         def concat = ""
@@ -284,13 +300,13 @@ class RsuIndicatorsTests {
     @Test
     void extendedFreeFacadeFractionTest() {
         // Only the first 5 first created buildings are selected for the tests
-        h2GIS.execute "DROP TABLE IF EXISTS tempo_build, rsu_free_external_facade_density; CREATE TABLE tempo_build AS SELECT * " +
+        h2GIS "DROP TABLE IF EXISTS tempo_build, rsu_free_external_facade_density; CREATE TABLE tempo_build AS SELECT * " +
                 "FROM building_test WHERE id_build < 6 OR id_build = 35"
         // The geometry of the RSU is useful for the calculation, then it is inserted inside the build/rsu correlation table
-        h2GIS.execute "DROP TABLE IF EXISTS rsu_tempo; CREATE TABLE rsu_tempo AS SELECT * " +
+        h2GIS "DROP TABLE IF EXISTS rsu_tempo; CREATE TABLE rsu_tempo AS SELECT * " +
                 "FROM rsu_test WHERE id_rsu = 1"
 
-        def  p =  Geoindicators.RsuIndicators.extendedFreeFacadeFraction()
+        def p = GI.RsuIndicators.extendedFreeFacadeFraction
         assertTrue p.execute([buildingTable: "tempo_build",
                               rsuTable: "rsu_tempo",
                               buContiguityColumn: "contiguity",
@@ -312,7 +328,7 @@ class RsuIndicatorsTests {
         h2GIS.load(SpatialUnitsTests.class.getResource("hydro_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.class.getResource("zone_test.geojson"),true)
 
-        def  prepareData = Geoindicators.SpatialUnits.prepareRSUData()
+        def prepareData = GI.SpatialUnits.prepareRSUData
         assertTrue prepareData.execute([zoneTable: 'zone_test', roadTable: 'road_test',  railTable: '',
                                         vegetationTable : 'veget_test',
                                         hydrographicTable :'hydro_test',
@@ -322,17 +338,17 @@ class RsuIndicatorsTests {
 
         assertNotNull h2GIS.getTable(outputTableGeoms)
 
-        def rsu = Geoindicators.SpatialUnits.createRSU()
+        def rsu = GI.SpatialUnits.createRSU
         assertTrue rsu.execute([inputTableName: outputTableGeoms, prefixName: "rsu", datasource: h2GIS])
         def outputTable = rsu.results.outputTableName
 
-        def  p =  Geoindicators.RsuIndicators.smallestCommunGeometry()
+        def p = GI.RsuIndicators.smallestCommunGeometry
         assertTrue p.execute([
                               rsuTable: outputTable,buildingTable: "building_test", roadTable:"road_test",vegetationTable: "veget_test",waterTable: "hydro_test",
                               prefixName: "test", datasource: h2GIS])
         def outputTableStats = p.results.outputTableName
 
-        h2GIS.execute """DROP TABLE IF EXISTS stats_rsu;
+        h2GIS """DROP TABLE IF EXISTS stats_rsu;
                     CREATE INDEX ON $outputTableStats (ID_RSU);
                    CREATE TABLE stats_rsu AS SELECT b.the_geom,
                 round(sum(CASE WHEN a.low_vegetation=1 THEN a.area ELSE 0 END),1) AS low_VEGETATION_sum,
@@ -345,7 +361,7 @@ class RsuIndicatorsTests {
 
 
         //Check the sum of building areas by USR
-        h2GIS.execute """DROP TABLE IF EXISTS stats_building;
+        h2GIS """DROP TABLE IF EXISTS stats_building;
                           CREATE TABLE stats_building as select sum(st_area(the_geom)) as building_areas, id_rsu from 
                             (select st_intersection(ST_force2d(a.the_geom), b.the_geom) as the_geom, b.id_rsu from building_test as a,
                             $outputTable as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) and a.zindex=0 ) group by id_rsu;
@@ -358,7 +374,7 @@ class RsuIndicatorsTests {
 
 
         //Check the sum of low vegetation areas by USR
-        h2GIS.execute """DROP TABLE IF EXISTS stats_vegetation_low;
+        h2GIS """DROP TABLE IF EXISTS stats_vegetation_low;
                           CREATE TABLE stats_vegetation_low as select sum(st_area(the_geom)) as vegetation_areas, id_rsu from 
                             (select st_intersection(ST_force2d(a.the_geom), b.the_geom) as the_geom, b.id_rsu from veget_test as a,
                             $outputTable as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) and a.type='low' ) group by id_rsu;
@@ -370,7 +386,7 @@ class RsuIndicatorsTests {
         assertTrue h2GIS.firstRow("select count(*) as count from vegetation_low_compare_stats where diff > 1").count==0
 
         //Check the sum of high vegetation areas by USR
-        h2GIS.execute """DROP TABLE IF EXISTS stats_vegetation_high;
+        h2GIS """DROP TABLE IF EXISTS stats_vegetation_high;
                           CREATE TABLE stats_vegetation_high as select sum(st_area(the_geom)) as vegetation_areas, id_rsu from 
                             (select st_intersection(ST_force2d(a.the_geom), b.the_geom) as the_geom, b.id_rsu from veget_test as a,
                             $outputTable as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) and a.type='high' ) group by id_rsu;
@@ -382,7 +398,7 @@ class RsuIndicatorsTests {
         assertTrue h2GIS.firstRow("select count(*) as count from vegetation_high_compare_stats where diff > 1").count==0
 
         //Check the sum of water areas by USR
-        h2GIS.execute """DROP TABLE IF EXISTS stats_water;
+        h2GIS """DROP TABLE IF EXISTS stats_water;
                           CREATE TABLE stats_water as select sum(st_area(the_geom)) as water_areas, id_rsu from 
                             (select st_intersection(ST_force2d(a.the_geom), b.the_geom) as the_geom, b.id_rsu from hydro_test as a,
                             $outputTable as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) and a.zindex=0 ) group by id_rsu;
@@ -398,12 +414,12 @@ class RsuIndicatorsTests {
     @Test
     void surfaceFractionTest() {
         // Only the RSU 4 is conserved for the test
-        h2GIS.execute "DROP TABLE IF EXISTS rsu_tempo;" +
+        h2GIS "DROP TABLE IF EXISTS rsu_tempo;" +
                 "CREATE TABLE rsu_tempo AS SELECT * " +
                 "FROM rsu_test WHERE id_rsu = 4"
 
         // Need to create the smallest geometries used as input of the surface fraction process
-        def  p =  Geoindicators.RsuIndicators.smallestCommunGeometry()
+        def p = GI.RsuIndicators.smallestCommunGeometry
         assertTrue p.execute([
                 rsuTable: "rsu_tempo",buildingTable: "building_test",vegetationTable: "veget_test",waterTable: "hydro_test",
                 prefixName: "test", datasource: h2GIS])
@@ -411,7 +427,7 @@ class RsuIndicatorsTests {
 
         // Apply the surface fractions for different combinations
         // combination 1
-        def  p0 =  Geoindicators.RsuIndicators.surfaceFractions()
+        def p0 = GI.RsuIndicators.surfaceFractions
         def superpositions0 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]]
         def priorities0 = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
         assertTrue p0.execute([
@@ -428,7 +444,7 @@ class RsuIndicatorsTests {
         assertEquals(1.0/10, result0["building_fraction"])
 
         // combination 2
-        def  p1 =  Geoindicators.RsuIndicators.surfaceFractions()
+        def p1 = GI.RsuIndicators.surfaceFractions
         def superpositions1 = ["high_vegetation": ["building", "water", "low_vegetation", "road", "impervious"]]
         def priorities1 = ["building", "water", "high_vegetation", "low_vegetation", "road", "impervious"]
         assertTrue p1.execute([
@@ -445,7 +461,7 @@ class RsuIndicatorsTests {
         assertEquals(1.0/5, result1["building_fraction"])
 
         // combination 3
-        def  p2 =  Geoindicators.RsuIndicators.surfaceFractions()
+        def p2 = GI.RsuIndicators.surfaceFractions
         def superpositions2 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"],
                 "building": ["low_vegetation"]]
         assertTrue p2.execute([
@@ -466,14 +482,14 @@ class RsuIndicatorsTests {
     @Test
     void surfaceFractionTest3() {
         // Test whether the road fraction is taken into account...
-        h2GIS.execute "DROP TABLE IF EXISTS rsu_tempo, road_tempo;" +
+        h2GIS "DROP TABLE IF EXISTS rsu_tempo, road_tempo;" +
                 "CREATE TABLE rsu_tempo(id_rsu int, the_geom geometry, rsu_area float, rsu_building_density float, rsu_free_external_facade_density float);" +
                 "INSERT INTO rsu_tempo VALUES  (1, 'POLYGON((1000 1000, 1100 1000, 1100 1100, 1000 1100, 1000 1000))'::GEOMETRY, 10000, 0.4, null);" +
                 "CREATE TABLE road_tempo(id_road int, the_geom geometry, width float, zindex int, crossing varchar(30));" +
                 "INSERT INTO road_tempo VALUES (1, 'LINESTRING (1000 1000, 1000 1100)'::GEOMETRY, 10, 0, null);"
 
         // Need to create the smallest geometries used as input of the surface fraction process
-        def  p =  Geoindicators.RsuIndicators.smallestCommunGeometry()
+        def p = GI.RsuIndicators.smallestCommunGeometry
         assertTrue p.execute([
                 rsuTable: "rsu_tempo", roadTable: "road_tempo",
                 prefixName: "test", datasource: h2GIS])
@@ -481,7 +497,7 @@ class RsuIndicatorsTests {
 
         // Apply the surface fractions for different combinations
         // combination 1
-        def  p0 =  Geoindicators.RsuIndicators.surfaceFractions()
+        def p0 = GI.RsuIndicators.surfaceFractions
         def superpositions0 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]]
         def priorities0 = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
         assertTrue p0.execute([
@@ -496,7 +512,7 @@ class RsuIndicatorsTests {
     @Test
     void surfaceFractionTest4() {
         // Test whether the rsu having no surface fraction is not set to null
-        h2GIS.execute """DROP TABLE IF EXISTS rsu_tempo, smallest_geom;
+        h2GIS """DROP TABLE IF EXISTS rsu_tempo, smallest_geom;
                             CREATE TABLE rsu_tempo(id_rsu int, the_geom geometry);
                             INSERT INTO rsu_tempo VALUES  (1, 'POLYGON((1000 1000, 1100 1000, 1100 1100, 1000 1100, 1000 1000))'::GEOMETRY);
                             CREATE TABLE smallest_geom(area double, low_vegetation boolean, high_vegetation boolean,
@@ -506,7 +522,7 @@ class RsuIndicatorsTests {
         
         // Apply the surface fractions for different combinations
         // combination 1
-        def  p0 =  Geoindicators.RsuIndicators.surfaceFractions()
+        def p0 = GI.RsuIndicators.surfaceFractions
         def superpositions0 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]]
         def priorities0 = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
         assertTrue p0.execute([
