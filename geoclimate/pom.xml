@@ -24,10 +24,6 @@
         </dependency>
         <dependency>
             <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
-            <artifactId>preparedata</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
             <artifactId>geoindicators</artifactId>
         </dependency>
         <dependency>

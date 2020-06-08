@@ -1,7 +1,8 @@
 package org.orbisgis.orbisprocess.geoclimate
 
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators as GI
-import org.orbisgis.orbisprocess.geoclimate.preparedata.PrepareData as PD
+import org.orbisgis.orbisprocess.geoclimate.osm.OSM as Osm
+import org.orbisgis.orbisprocess.geoclimate.bdtopo_v2.BDTopo_V2 as Topo
 import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain as PC
 
 import static org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager.load
@@ -12,7 +13,8 @@ import static org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 class Geoclimate {
 
     public static def Geoindicators = load(GI)
-    public static def PrepareData = load(PD)
+    public static def OSM = load(Osm)
+    public static def BDTopo = load(Topo)
     public static def ProcessingChain = load(PC)
 
     /**
@@ -21,8 +23,10 @@ class Geoclimate {
      * @param logger Logger to use in the processes.
      */
     static void setLogger(def logger){
-        PrepareData.logger = logger
+        OSM.logger = logger
+        BDTopo.logger = logger
         ProcessingChain.logger = logger
         Geoindicators.logger = logger
+        OSM.getMetaClass().getMetaPropertyValues().forEach {it.value}
     }
 }

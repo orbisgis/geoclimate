@@ -68,7 +68,12 @@
         <dependencies>
             <dependency>
                 <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
-                <artifactId>preparedata</artifactId>
+                <artifactId>osm</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
+                <artifactId>bdtopo_v2</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
