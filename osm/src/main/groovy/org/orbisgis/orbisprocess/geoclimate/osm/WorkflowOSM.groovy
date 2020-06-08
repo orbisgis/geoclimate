@@ -17,13 +17,14 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
-import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
+import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain as PC
 
 import java.sql.SQLException
 
 @BaseScript GroovyProcessFactory pf
 
 def OSMTools = GroovyProcessManager.load(Tools)
+def ProcessingChain = GroovyProcessManager.load(PC)
 
 /**
  * Extract OSM data and compute geoindicators. The parameters of the processing chain is defined
@@ -130,6 +131,7 @@ create {
             return null
         }
         Map parameters = readJSONParameters(configFile)
+        info 1
         if(parameters){
             info "Reading file parameters from $configFile"
             info parameters.get("description")
@@ -159,6 +161,7 @@ create {
                     h2gis_properties = ["databaseName":h2gis_path, "user": "sa", "password": ""]
                 }
             }
+            info 2
             if(input) {
                 def osmFilters = input.get("osm")
                 if (!osmFilters) {
@@ -206,6 +209,7 @@ create {
                         if(!output_datasource){
                             return null
                         }
+                        info 3
                         def h2gis_datasource = H2GIS.open(h2gis_properties)
                         if(osmFilters && osmFilters in Collection) {
                             def osmprocessing =  osm_processing
@@ -242,6 +246,7 @@ create {
                                         output_datasource:null, outputTableNames :null)){
                                     return null
                                 }
+                                info 4
                                 //Delete database
                                 if(delete_h2gis){
                                     h2gis_datasource.execute("DROP ALL OBJECTS DELETE FILES")
@@ -353,15 +358,15 @@ create {
                     }
                 }
                 //Prepare OSM extraction
-                def query = "[maxsize:1073741824]" + OSMTools.Utilities.buildOSMQuery(zoneTableNames.envelope, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
-                def extract = OSMTools.Loader.extract()
+                def query = "[maxsize:1073741824]" + Utilities.buildOSMQuery(zoneTableNames.envelope, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+                def extract = OSMTools.Loader.extract
                 if (extract.execute(overpassQuery: query)) {
-                    IProcess createGISLayerProcess = OSM.createGISLayers
+                    IProcess createGISLayerProcess = processManager.OSMGISLayers.createGISLayers
                     if (createGISLayerProcess.execute(datasource: h2gis_datasource, osmFilePath: extract.results.outputFilePath, epsg: srid)) {
                         def gisLayersResults = createGISLayerProcess.getResults()
                         if (zoneTableName != null) {
                             info "Formating OSM GIS layers"
-                            IProcess format = OSM.formatBuildingLayer
+                            IProcess format = processManager.FormattingForAbstractModel.formatBuildingLayer
                             format.execute([
                                     datasource                : h2gis_datasource,
                                     inputTableName            : gisLayersResults.buildingTableName,
@@ -369,7 +374,7 @@ create {
                                     epsg                      : srid])
                             def buildingTableName = format.results.outputTableName
 
-                            format = OSM.formatRoadLayer
+                            format = processManager.FormattingForAbstractModel.formatRoadLayer
                             format.execute([
                                     datasource                : h2gis_datasource,
                                     inputTableName            : gisLayersResults.roadTableName,
@@ -378,7 +383,7 @@ create {
                             def roadTableName = format.results.outputTableName
 
 
-                            format = OSM.formatRailsLayer
+                            format = processManager.FormattingForAbstractModel.formatRailsLayer
                             format.execute([
                                     datasource                : h2gis_datasource,
                                     inputTableName            : gisLayersResults.railTableName,
@@ -386,7 +391,7 @@ create {
                                     epsg                      : srid])
                             def railTableName = format.results.outputTableName
 
-                            format = OSM.formatVegetationLayer
+                            format = processManager.FormattingForAbstractModel.formatVegetationLayer
                             format.execute([
                                     datasource                : h2gis_datasource,
                                     inputTableName            : gisLayersResults.vegetationTableName,
@@ -394,7 +399,7 @@ create {
                                     epsg                      : srid])
                             def vegetationTableName = format.results.outputTableName
 
-                            format = OSM.formatHydroLayer
+                            format = processManager.FormattingForAbstractModel.formatHydroLayer
                             format.execute([
                                     datasource                : h2gis_datasource,
                                     inputTableName            : gisLayersResults.hydroTableName,
@@ -403,7 +408,7 @@ create {
                             def hydrographicTableName = format.results.outputTableName
 
                             //TODO : to be used in the geoindicators chains
-                            format = OSM.formatImperviousLayer
+                            format = processManager.FormattingForAbstractModel.formatImperviousLayer
                             format.execute([
                                     datasource                : h2gis_datasource,
                                     inputTableName            : gisLayersResults.imperviousTableName,
@@ -414,7 +419,7 @@ create {
                             info "OSM GIS layers formated"
 
                             //Build the indicators
-                            IProcess geoIndicators = GeoIndicators()
+                            IProcess geoIndicators = ProcessingChain.Workflow.GeoIndicators
                             if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
                                     buildingTable: buildingTableName, roadTable: roadTableName,
                                     railTable: railTableName, vegetationTable: vegetationTableName,
@@ -565,7 +570,7 @@ create {
         def rsuLcz = null
 
         //Create spatial units and relations : building, block, rsu
-        IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
+        IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis
         if (!spatialUnits.execute([datasource       : datasource,           zoneTable           : zoneTable,
                                    buildingTable    : buildingTable,        roadTable           : roadTable,
                                    railTable        : railTable,            vegetationTable     : vegetationTable,
@@ -581,7 +586,7 @@ create {
         String relationRSU = spatialUnits.getResults().outputTableRsuName
 
         //Compute building indicators
-        def computeBuildingsIndicators = ProcessingChain.BuildGeoIndicators.computeBuildingsIndicators()
+        def computeBuildingsIndicators = ProcessingChain.BuildGeoIndicators.computeBuildingsIndicators
         if (!computeBuildingsIndicators.execute([datasource            : datasource,
                                                  inputBuildingTableName: relationBuildings,
                                                  inputRoadTableName    : roadTable,
@@ -596,7 +601,7 @@ create {
         //Compute block indicators
         def blockIndicators = null
         if(indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")){
-            def computeBlockIndicators = ProcessingChain.BuildGeoIndicators.computeBlockIndicators()
+            def computeBlockIndicators = ProcessingChain.BuildGeoIndicators.computeBlockIndicators
             if (!computeBlockIndicators.execute([datasource            : datasource,
                                                  inputBuildingTableName: buildingIndicators,
                                                  inputBlockTableName   : relationBlocks,
@@ -608,7 +613,7 @@ create {
         }
 
         //Compute RSU indicators
-        def computeRSUIndicators = ProcessingChain.BuildGeoIndicators.computeRSUIndicators()
+        def computeRSUIndicators = ProcessingChain.BuildGeoIndicators.computeRSUIndicators
         if (!computeRSUIndicators.execute([datasource       : datasource,
                                            buildingTable    : buildingIndicators,
                                            rsuTable         : relationRSU,
@@ -646,7 +651,7 @@ create {
                                 $queryReplaceNames"""
 
             // The classification algorithm is called
-            def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
+            def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType
             if(!classifyLCZ([rsuLczIndicators   : lczIndicTable,
                              rsuAllIndicators   : computeRSUIndicators.results.outputTableName,
                              normalisationType  : "AVG",
