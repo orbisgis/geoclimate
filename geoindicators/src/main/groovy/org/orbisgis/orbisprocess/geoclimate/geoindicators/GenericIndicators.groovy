@@ -556,3 +556,68 @@ static double getEquality(def myMap, def nbDistCol) {
 
     return equality/sum
 }
+
+/**
+ * This process is used to compute the area proportion of a certain type within a given object (e.g. a proportion
+ * of industrial buildings within all buildings of a RSU). Note that for surface fractions within a given surface
+ * you should use the surfaceFractions IProcess.
+ *
+ * @param inputTableName the table name where are stored the objects having different types to characterize
+ * @param idField ID of the scale used for the 'GROUP BY'
+ * @param typeFieldName The name of the field where is stored the type of the object
+ * @param prefixName String use as prefix to name the output table
+ *
+ * @return A database table name.
+ *
+ * @author Jérémy Bernard
+ */
+create {
+    title "Proportion of a certain type within a given object"
+    id "typeProportion"
+    inputs inputTableName: String, idField: String,
+            typeFieldName: String, prefixName: String, datasource: JdbcDataSource
+    outputs outputTableName: String
+    run { inputTableName, idField, typeFieldName, prefixName, datasource ->
+
+        def GEOMETRIC_FIELD_LOW = "the_geom"
+        def BASE_NAME = "type_proportion"
+
+        info "Executing typeProportion"
+
+        // The name of the outputTableName is constructed
+        def outputTableName = prefix prefixName, BASE_NAME
+
+        // To avoid overwriting the output files of this step, a unique identifier is created
+        // Temporary table names
+        def caseWhenTab = postfix "case_when_tab"
+
+        // Recover a list of the types of the input table
+        def possibleTypes = datasource.rows("SELECT DISTINCT $typeFieldName FROM $inputTableName")
+
+        // Define the pieces of query according to each type of the input table
+        def queryCalc = ""
+        def queryCaseWh = ""
+        possibleTypes.forEach{i->
+            def t = i.TYPE
+            queryCalc += "SUM(AREA_$t)/SUM(AREA) AS FRACTION_$t, "
+            queryCaseWh += "CASE WHEN $typeFieldName='$t' THEN ST_AREA($GEOMETRIC_FIELD_LOW) END AS AREA_$t,"
+        }
+
+        // Calculates the surface of each object depending on its type
+        datasource.execute """DROP TABLE IF EXISTS $caseWhenTab;
+                                CREATE TABLE $caseWhenTab 
+                                        AS SELECT ST_AREA($GEOMETRIC_FIELD_LOW) AS AREA, $idField,
+                                                    ${queryCaseWh[0..-2]} 
+                                        FROM $inputTableName"""
+
+        datasource."$caseWhenTab"."$idField".createIndex()
+
+        // Calculate the proportion of each type
+        datasource.execute """DROP TABLE IF EXISTS $outputTableName;
+                                CREATE TABLE $outputTableName 
+                                        AS SELECT ${queryCalc[0..-2]}
+                                        FROM $caseWhenTab GROUP BY $idField"""
+
+        [outputTableName: outputTableName]
+    }
+}
