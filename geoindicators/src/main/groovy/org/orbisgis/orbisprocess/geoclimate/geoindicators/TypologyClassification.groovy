@@ -156,17 +156,15 @@ create {
             datasource """DROP TABLE IF EXISTS $classifiedRuralLCZ;
                                 CREATE TABLE $classifiedRuralLCZ
                                         AS SELECT   $ID_FIELD_RSU,
-                                                    CASE WHEN IMPERVIOUS_FRACTION_LCZ>PERVIOUS_FRACTION_LCZ
+                                                    CASE WHEN IMPERVIOUS_FRACTION>PERVIOUS_FRACTION_LCZ
                                                             THEN 105
                                                             ELSE CASE WHEN ALL_VEGETATION<WATER_FRACTION_LCZ
                                                                     THEN 107
-                                                                    ELSE CASE WHEN HIGH_ALL_VEGETATION IS NULL
-                                                                            THEN 999
-                                                                            ELSE CASE WHEN HIGH_ALL_VEGETATION<0.1
-                                                                                    THEN 104
-                                                                                    ELSE CASE WHEN HIGH_ALL_VEGETATION<0.75
-                                                                                            THEN 102
-                                                                                            ELSE 101 END END END END END AS LCZ1,
+                                                                    ELSE CASE WHEN HIGH_ALL_VEGETATION IS NULL OR ALL_VEGETATION<0.1 OR ALL_VEGETATION>0.1 AND HIGH_ALL_VEGETATION<0.1
+                                                                            THEN 104
+                                                                            ELSE CASE WHEN HIGH_ALL_VEGETATION<0.75
+                                                                                    THEN 102
+                                                                                    ELSE 101 END END END END END AS LCZ1,
                                                     null AS LCZ2, null AS min_distance, null AS PSS 
                                         FROM $ruralLCZ"""
 
