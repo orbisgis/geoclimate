@@ -138,6 +138,7 @@ create {
                             IMPERVIOUS_FRACTION_LCZ, 
                             PERVIOUS_FRACTION_LCZ, 
                             WATER_FRACTION_LCZ, 
+                            IMPERVIOUS_FRACTION,
                             CASE 
                                 WHEN LOW_VEGETATION_FRACTION_LCZ+HIGH_VEGETATION_FRACTION_LCZ=0
                                     THEN null
@@ -164,7 +165,7 @@ create {
                                                                             THEN 104
                                                                             ELSE CASE WHEN HIGH_ALL_VEGETATION<0.75
                                                                                     THEN 102
-                                                                                    ELSE 101 END END END END END AS LCZ1,
+                                                                                    ELSE 101 END END END END AS LCZ1,
                                                     null AS LCZ2, null AS min_distance, null AS PSS 
                                         FROM $ruralLCZ"""
 
