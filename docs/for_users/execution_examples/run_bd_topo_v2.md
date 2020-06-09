@@ -2,11 +2,11 @@
 
 As seen in [this section](../../chain_documentation/workflow/description.md#Configuration-file), five BD Topo v2 workflow configuration files are available on the Geoclimate Github repository [here](https://github.com/orbisgis/geoclimate/tree/v1.0.0-RC1/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config):
 
-1. [Using an input database and saving results into a database](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_dbinput_dboutput.json)
-2. [Using an input folder and saving results into a database](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_dboutput.json) 
-3. [Using an input folder and saving results into a folder](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_folderoutput.json) 
-4. [Using an input folder with a filtering on the zone id and saving results into a folder](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_folderoutput_id_zones.json) 
-5. [Using an input folder with a filtering on the zone id and saving results into a folder where table names are specifyed](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_id_zones_folderoutput_tablenames.json)
+1. [Using an input database and saving results into a database](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_dbinput_dboutput.json)
+2. [Using an input folder and saving results into a database](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_dboutput.json) 
+3. [Using an input folder and saving results into a folder](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_folderoutput.json) 
+4. [Using an input folder with a filtering on the zone id and saving results into a folder](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_folderoutput_id_zones.json) 
+5. [Using an input folder with a filtering on the zone id and saving results into a folder where table names are specifyed](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_id_zones_folderoutput_tablenames.json)
 
 
 
@@ -34,7 +34,7 @@ The resulting layers will be saved as `.geojson` files in this folder  `/home/ge
 
 ### 2. Configuration file
 
-Download [this configuration file](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_folderoutput.json) and save it the folder  `/home/geoclimate/bdtopo/` with this name `config_all_zones.json`. Then open it in a text editor and:
+Download [this configuration file](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_folderoutput.json) and save it the folder  `/home/geoclimate/bdtopo/` with this name `config_all_zones.json`. Then open it in a text editor and:
 
 1. In the `geoclimatedb` part, adapt the working database address (*e.g* `"path" : "/home/geoclimate/bdtopo/db/geoclimate_db;AUTO_SERVER=TRUE",`)
 2. In the `input` part, replace `"path" :"/tmp/..."` by `"path" :"/home/geoclimate/bdtopo/input/my_project/"`
@@ -150,7 +150,7 @@ The resulting layers will be saved as `.geojson` files in this folder  `/home/ge
 
 ### 2. Configuration file
 
-Download [this configuration file](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_folderoutput_id_zones.json) and save it the folder  `/home/geoclimate/bdtopo/` with this name `config_id_zone.json`. Then open it in a text editor and:
+Download [this configuration file](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_folderoutput_id_zones.json) and save it the folder  `/home/geoclimate/bdtopo/` with this name `config_id_zone.json`. Then open it in a text editor and:
 
 1. In the `geoclimatedb` part, adapt the working database address (*e.g* `"path" : "/home/geoclimate/bdtopo/db/geoclimate_db;AUTO_SERVER=TRUE",`)
 2. In the `input` part, 
