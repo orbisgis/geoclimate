@@ -127,6 +127,9 @@ class TypologyClassificationTests {
                 else if(row.id_rsu == 10){
                     assert 102 == row.LCZ1
                 }
+                else if(row.id_rsu == 12){
+                    assert 10 == row.LCZ1
+                }
         }
     }
 

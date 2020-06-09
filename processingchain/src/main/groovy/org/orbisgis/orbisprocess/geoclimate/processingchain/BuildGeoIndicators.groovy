@@ -541,6 +541,23 @@ create {
             }
         }
 
+        // building type fractions
+        if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY") || indicatorUse*.toUpperCase().contains("LCZ")) {
+            def computeTypeProportion = Geoindicators.GenericIndicators.typeProportion
+            if (!computeTypeProportion([
+                                        inputTableName      : buildingTable,
+                                        idField             : columnIdRsu,
+                                        typeFieldName       : "type",
+                                        prefixName          : temporaryPrefName,
+                                        datasource          : datasource])) {
+                info "Cannot compute the area of the RSU"
+                return
+            }
+            def rsuTableTypeProportion = computeTypeProportion.results.outputTableName
+            finalTablesToJoin.put(rsuTableTypeProportion, columnIdRsu)
+        }
+
+
         // rsu_area (note that the uuid is used as prefix for intermediate tables - indicator alone in a table)
         if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
             def computeGeometryProperties = Geoindicators.GenericIndicators.geometryProperties

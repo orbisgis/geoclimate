@@ -615,7 +615,7 @@ create {
         // Calculate the proportion of each type
         datasource.execute """DROP TABLE IF EXISTS $outputTableName;
                                 CREATE TABLE $outputTableName 
-                                        AS SELECT ${queryCalc[0..-2]}
+                                        AS SELECT $idField, ${queryCalc[0..-2]}
                                         FROM $caseWhenTab GROUP BY $idField"""
 
         [outputTableName: outputTableName]
