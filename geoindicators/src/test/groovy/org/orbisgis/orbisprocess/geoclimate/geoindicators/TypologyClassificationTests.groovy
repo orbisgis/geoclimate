@@ -6,16 +6,12 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
-import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import smile.classification.DataFrameClassifier
 import smile.validation.Accuracy
 import smile.validation.Validation
 import java.util.zip.GZIPInputStream
 
 import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertFalse
-import static org.junit.jupiter.api.Assertions.assertNotNull
-import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.junit.jupiter.api.Assertions.fail
 import static org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS.open
 import static org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager.load
@@ -315,90 +311,6 @@ class TypologyClassificationTests {
             // and could not be classified while they are... Thus set 999 in all cases...
             lczExpected += "999"
            assert lczExpected.contains(row.lcz1.toString()) || lczExpected.contains(row.lcz2.toString())
-        }
-    }
-
-    @Test
-    void lczTestValuesBdTopov2_rural() {
-        // Maps of weights for bd topo
-        def mapOfWeights = ["sky_view_factor"               : 1,
-                            "aspect_ratio"                  : 1,
-                            "building_surface_fraction"     : 2,
-                            "impervious_surface_fraction"   : 0,
-                            "pervious_surface_fraction"     : 0,
-                            "height_of_roughness_elements"  : 1,
-                            "terrain_roughness_length"      : 1]
-
-        // Define table names
-        def lczIndicTable = "lcz_Indic_Table"
-        def indicatorsRightId = "indicator_right_id"
-
-        // Load the training data (LCZ classes that are possible and those which are not possible)
-        def trainingDataPath = getClass().getResource("lczTests/expectedLczArea.geojson").toURI()
-        def trainingDataTable = "expectedLcz"
-        h2GIS.load(trainingDataPath, trainingDataTable)
-
-        // Load the indicators table (indicators characterizing each RSU that are in the training data)
-        def indicatorsPath = getClass().getResource("lczTests/trainingDatabdtopov2.geojson").toURI()
-        def indicatorsTable = "trainingDatabdtopov2"
-        h2GIS.load(indicatorsPath, indicatorsTable)
-
-        // Replace the id_rsu (coming from a specific city) by the id (coming from the true values of LCZ)
-        def allColumns = h2GIS.getTable(indicatorsTable).columns
-        allColumns.remove("ID_RSU")
-        allColumns.remove("ID")
-
-        h2GIS """
-                DROP TABLE IF EXISTS $indicatorsRightId;
-                CREATE TABLE $indicatorsRightId AS 
-                    SELECT id_prim AS id_rsu, ${allColumns.join(",")} FROM $indicatorsTable;
-        """
-
-        def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"                 : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
-                             "BUILDING_FRACTION_LCZ"                : "BUILDING_SURFACE_FRACTION",
-                             "ASPECT_RATIO"                         : "ASPECT_RATIO",
-                             "GROUND_SKY_VIEW_FACTOR"               : "SKY_VIEW_FACTOR",
-                             "PERVIOUS_FRACTION_LCZ"                : "PERVIOUS_SURFACE_FRACTION",
-                             "IMPERVIOUS_FRACTION_LCZ"              : "IMPERVIOUS_SURFACE_FRACTION",
-                             "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH"   : "TERRAIN_ROUGHNESS_LENGTH"]
-
-        // Get into a new table the ID, geometry column and the 7 indicators defined by Stewart and Oke (2012)
-        // for LCZ classification (rename the indicators with the real names)
-        def queryReplaceNames = ""
-        lczIndicNames.each { oldIndic, newIndic ->
-            queryReplaceNames += "ALTER TABLE $lczIndicTable ALTER COLUMN $oldIndic RENAME TO $newIndic;"
-        }
-        h2GIS """
-                DROP TABLE IF EXISTS $lczIndicTable;
-                CREATE TABLE $lczIndicTable AS 
-                    SELECT id_rsu, the_geom, ${lczIndicNames.keySet().join(",")} FROM $indicatorsTable;
-                $queryReplaceNames
-        """
-
-
-        // The classification algorithm is called
-        def classifyLCZ = GI.TypologyClassification.identifyLczType
-        if(!classifyLCZ([rsuLczIndicators   : lczIndicTable,
-                         rsuAllIndicators   : indicatorsRightId,
-                         normalisationType  : "AVG",
-                         mapOfWeights       : mapOfWeights,
-                         prefixName         : "test",
-                         datasource         : h2GIS])){
-            fail("Cannot compute the LCZ classification.")
-        }
-        def rsuLcz = classifyLCZ.results.outputTableName
-
-        h2GIS """
-                DROP TABLE IF EXISTS ${rsuLcz}_buff;
-                CREATE TABLE ${rsuLcz}_buff AS 
-                    SELECT a.*, b.id, b.id_prim FROM $rsuLcz a LEFT JOIN $indicatorsTable b ON a.id_rsu = b.id_prim"""
-
-        h2GIS.eachRow("SELECT  a.lcz, a.bdtopov2, b.* FROM $trainingDataTable a RIGHT JOIN ${rsuLcz}_buff b ON a.id = b.id"){row ->
-            def lczExpected = row.lcz.split(",")
-            // When attributing manually a LCZ to a zone, some very small RSU may have no building
-            // and could not be classified while they are... Thus set 999 in all cases...
-            lczExpected += "999"
-            assert lczExpected.contains(row.lcz1.toString()) || lczExpected.contains(row.lcz2.toString())
         }
     }
 }
