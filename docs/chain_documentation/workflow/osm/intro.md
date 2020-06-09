@@ -52,12 +52,12 @@ The OSM worflow is organized in two tasks :
 
 A json file is used to configure the OSM workflow.
 
-Four examples of OSM configuration files are available on the Geoclimate Github repository [here](https://github.com/orbisgis/geoclimate/tree/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config):
+Four examples of OSM configuration files are available on the Geoclimate Github repository [here](https://github.com/orbisgis/geoclimate/tree/v1.0.0-RC1/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config):
 
-1. [Using an envelop and exporting in a folder](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_envelope_folderoutput.json) 
-2. [Using mixed filters and exporting in a folder](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_mixedfilter_folderoutput.json)
-3. [Using a placename and exporting in a database](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_placename_dboutput.json)
-4. [Using a placename and exporting in a folder](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_placename_folderoutput.json)
+1. [Using an envelop and exporting in a folder](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_envelope_folderoutput.json) 
+2. [Using mixed filters and exporting in a folder](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_mixedfilter_folderoutput.json)
+3. [Using a placename and exporting in a database](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_placename_dboutput.json)
+4. [Using a placename and exporting in a folder](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config/osm_workflow_placename_folderoutput.json)
 
 
 
