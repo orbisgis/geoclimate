@@ -597,8 +597,8 @@ create {
         // Define the pieces of query according to each type of the input table
         def queryCalc = ""
         def queryCaseWh = ""
-        possibleTypes.forEach{i->
-            def t = i.TYPE
+        possibleTypes.forEach{
+            def t = it.TYPE
             queryCalc += "SUM(AREA_$t)/SUM(AREA) AS FRACTION_$t, "
             queryCaseWh += "CASE WHEN $typeFieldName='$t' THEN ST_AREA($GEOMETRIC_FIELD_LOW) END AS AREA_$t,"
         }

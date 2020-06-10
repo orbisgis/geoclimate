@@ -177,7 +177,7 @@ create {
             // II. Urban LCZ types are classified
 
             // Keep only the RSU that have not been classified as rural
-            datasource          """DROP TABLE IF EXISTS $urbanLCZ;
+            datasource  """DROP TABLE IF EXISTS $urbanLCZ;
                                 CREATE TABLE $urbanLCZ
                                         AS SELECT a.*
                                         FROM $rsuAllIndicators a
@@ -208,7 +208,7 @@ create {
             datasource."$ruralAndIndustrialLCZ"."$ID_FIELD_RSU".createIndex()
             datasource."$rsuLczIndicators"."$ID_FIELD_RSU".createIndex()
 
-            datasource          """DROP TABLE IF EXISTS $urbanLCZExceptIndus;
+            datasource """DROP TABLE IF EXISTS $urbanLCZExceptIndus;
                                 CREATE TABLE $urbanLCZExceptIndus
                                         AS SELECT a.*
                                         FROM $rsuLczIndicators a
