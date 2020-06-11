@@ -1,6 +1,6 @@
 # Run Geoclimate with OSM
 
-As seen in [this section](../../chain_documentation/workflow/description.md#Configuration-file), four OSM workflow configuration files are available on the Geoclimate Github repository [here](https://github.com/orbisgis/geoclimate/tree/master/osm/src/test/resources/org/orbisgis/orbisprocess/geoclimate/osm/config):
+As seen in [this section](../../chain_documentation/workflow/description.md#Configuration-file), four OSM workflow configuration files are available on the Geoclimate Github repository [here](https://github.com/orbisgis/geoclimate/tree/v1.0.0-RC1/osm/src/test/resources/org/orbisgis/orbisprocess/geoclimate/osm/config):
 
 1. [Using an envelop and exporting in a folder](https://github.com/orbisgis/geoclimate/blob/master/osm/src/test/resources/org/orbisgis/orbisprocess/geoclimate/osm/config/osm_workflow_envelope_folderoutput.json) 
 2. [Using mixed filters and exporting in a folder](https://github.com/orbisgis/geoclimate/blob/master/osm/src/test/resources/org/orbisgis/orbisprocess/geoclimate/osm/config/osm_workflow_mixedfilter_folderoutput.json)
