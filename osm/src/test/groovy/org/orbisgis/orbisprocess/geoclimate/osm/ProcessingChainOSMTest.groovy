@@ -246,7 +246,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
-    //@Disabled
+    @Disabled
     @Test
     void osmWorkflowToPostGISDatabase() {
         String directory ="./target/geoclimate_chain"
