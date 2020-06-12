@@ -26,7 +26,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         dirFile.mkdir()
         def h2GIS = H2GIS.open(dirFile.absolutePath+File.separator+'osm_chain_db;AUTO_SERVER=TRUE')
         def zoneToExtract = "Pont de veyle"
-        IProcess process = OSM.buildGeoclimateLayers
+        IProcess process = O.PrepareOSM.buildGeoclimateLayers
 
         process.execute([datasource: h2GIS, zoneToExtract :zoneToExtract, distance: 0])
 
@@ -114,9 +114,9 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osm_chain_db;AUTO_SERVER=TRUE")
 
         //Extract and transform OSM data
-        def zoneToExtract = "Montceaux-lès-Provins - Île-De-France"
+        def zoneToExtract = "Plessis-l'Évêque"
 
-        IProcess prepareOSMData = OSM.buildGeoclimateLayers
+        IProcess prepareOSMData = O.PrepareOSM.buildGeoclimateLayers
 
         prepareOSMData.execute([datasource: datasource, zoneToExtract :zoneToExtract, distance: 0])
 
@@ -134,7 +134,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
 
         if(saveResults){
             println("Saving OSM GIS layers")
-            IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles()
+            IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles
             saveTables.execute( [inputTableNames: [buildingTableName,roadTableName,railTableName,hydrographicTableName,
                                                    vegetationTableName,zoneTableName]
                                  , directory: dirFile.absolutePath, datasource: datasource])
