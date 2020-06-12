@@ -37,7 +37,7 @@ create {
         }
 
         info "Building OSM GIS layers"
-        IProcess process = processManager.OSMGISLayers.extractAndCreateGISLayers()
+        IProcess process = processManager.OSMGISLayers.extractAndCreateGISLayers
         if (process.execute([datasource: datasource, zoneToExtract : zoneToExtract,
                 distance: distance])) {
 
@@ -56,7 +56,7 @@ create {
             def epsg = datasource.getSpatialTable(zoneTableName).srid
             if(zoneTableName!=null) {
                 info "Formating OSM GIS layers"
-                IProcess format = processManager.FormattingForAbstractModel.formatBuildingLayer()
+                IProcess format = processManager.FormattingForAbstractModel.formatBuildingLayer
                 format.execute([
                         datasource    : datasource,
                         inputTableName: buildingTableName,
@@ -64,7 +64,7 @@ create {
                         epsg:epsg])
                 buildingTableName = format.results.outputTableName
 
-                format = processManager.FormattingForAbstractModel.formatRoadLayer()
+                format = processManager.FormattingForAbstractModel.formatRoadLayer
                 format.execute([
                         datasource    : datasource,
                         inputTableName: roadTableName,
@@ -73,7 +73,7 @@ create {
                 roadTableName = format.results.outputTableName
 
 
-                format = processManager.FormattingForAbstractModel.formatRailsLayer()
+                format = processManager.FormattingForAbstractModel.formatRailsLayer
                 format.execute([
                         datasource    : datasource,
                         inputTableName: railTableName,
@@ -81,7 +81,7 @@ create {
                         epsg:epsg])
                 railTableName = format.results.outputTableName
 
-                format = processManager.FormattingForAbstractModel.formatVegetationLayer()
+                format = processManager.FormattingForAbstractModel.formatVegetationLayer
                 format.execute([
                         datasource    : datasource,
                         inputTableName: vegetationTableName,
@@ -89,7 +89,7 @@ create {
                         epsg:epsg])
                 vegetationTableName = format.results.outputTableName
 
-                format = processManager.FormattingForAbstractModel.formatHydroLayer()
+                format = processManager.FormattingForAbstractModel.formatHydroLayer
                 format.execute([
                         datasource    : datasource,
                         inputTableName: hydroTableName,
@@ -97,7 +97,7 @@ create {
                         epsg:epsg])
                 hydroTableName = format.results.outputTableName
 
-                format = processManager.FormattingForAbstractModel.formatImperviousLayer()
+                format = processManager.FormattingForAbstractModel.formatImperviousLayer
                 format.execute([
                         datasource    : datasource,
                         inputTableName: imperviousTableName,
