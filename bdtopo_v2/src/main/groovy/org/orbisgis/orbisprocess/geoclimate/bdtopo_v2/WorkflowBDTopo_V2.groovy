@@ -2,16 +2,19 @@ package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
-import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
-import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
-import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 import java.sql.SQLException
+import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain as PC
+
 
 @BaseScript GroovyProcessFactory pf
+
+def ProcessingChain = GroovyProcessManager.load(PC)
+
 
 /**
  * Load the BDTopo layers from a configuration file and compute the geoclimate indicators.
@@ -121,7 +124,7 @@ import java.sql.SQLException
  */
 create {
     title "Create all geoindicators from BDTopo data"
-    id "Workflow"
+    id "workflow"
     inputs configurationFile: String
     outputs outputMessage: String
     run {configurationFile ->
@@ -887,7 +890,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
     int nbAreas = id_zones.size();
 
     //Let's run the BDTopo process for each insee code
-    def prepareBDTopoData = BDTopo_V2.prepareData
+    def prepareBDTopoData = processManager.PrepareBDTopo.prepareData
     def geoIndicatorsComputed = false
     info "$nbAreas communes will be processed"
     id_zones.eachWithIndex { id_zone, index->
@@ -912,18 +915,24 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
             def zoneTableName = prepareBDTopoData.results.outputZone
             def imperviousTableName = prepareBDTopoData.results.outputImpervious
 
-            if (!GeoIndicators.execute( datasource          : h2gis_datasource,           zoneTable       : zoneTableName,
-                    buildingTable       : buildingTableName,    roadTable       : roadTableName,
-                    railTable           : railTableName,        vegetationTable : vegetationTableName,
-                    hydrographicTable   : hydrographicTableName,indicatorUse    : processing_parameters.indicatorUse,
-                    svfSimplified       : processing_parameters.svfSimplified,        prefixName      : "${processing_parameters.prefixName}zone_$id_zone",
-                    mapOfWeights        : processing_parameters.mapOfWeights)) {
-                error "Cannot build the geoindicators for the area with the INSEE id_zone : $id_zone"
+            info "BDTOPO V2 GIS layers formated"
+
+            //Build the indicators
+            IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoindicators
+            if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
+                    buildingTable: buildingTableName, roadTable: roadTableName,
+                    railTable: railTableName, vegetationTable: vegetationTableName,
+                    hydrographicTable: hydrographicTableName, imperviousTable :imperviousTableName,
+                    indicatorUse: processing_parameters.indicatorUse,
+                    svfSimplified: processing_parameters.svfSimplified, prefixName: processing_parameters.prefixName,
+                    mapOfWeights: processing_parameters.mapOfWeights)) {
+                error "Cannot build the geoindicators for the zone $id_zone"
                 geoIndicatorsComputed = false
-            }else{
+            } else {
                 geoIndicatorsComputed = true
                 info "${id_zone} has been processed"
             }
+
             def results = geoIndicators.results
             results.put("buildingTableName", buildingTableName)
             results.put("roadTableName", roadTableName)
@@ -1029,19 +1038,20 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
     def output_vegetation = outputTableNames.vegetation
     def output_impervious = outputTableNames.impervious
 
-
     if (output_block_indicators && !output_datasource.hasTable(output_block_indicators)){
         output_datasource """
                 CREATE TABLE $output_block_indicators (
-                    ID_ZONE VARCHAR,
                     ID_BLOCK INTEGER, THE_GEOM GEOMETRY(GEOMETRY,$srid),
                     ID_RSU INTEGER, AREA DOUBLE PRECISION,
                     FLOOR_AREA DOUBLE PRECISION,VOLUME DOUBLE PRECISION,
-                    HOLE_AREA_DENSITY DOUBLE PRECISION,MAIN_BUILDING_DIRECTION VARCHAR,
-                    BUILDING_DIRECTION_INEQUALITY DOUBLE PRECISION,BUILDING_DIRECTION_UNIQUENESS DOUBLE PRECISION,
+                    HOLE_AREA_DENSITY DOUBLE PRECISION,
+                    BUILDING_DIRECTION_EQUALITY DOUBLE PRECISION,
+                    BUILDING_DIRECTION_UNIQUENESS DOUBLE PRECISION,
+                    MAIN_BUILDING_DIRECTION VARCHAR,
                     CLOSINGNESS DOUBLE PRECISION, NET_COMPACTNESS DOUBLE PRECISION,
                     AVG_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION,
-                    STD_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION
+                    STD_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION,
+                    ID_ZONE VARCHAR
                 );
                 CREATE INDEX IF NOT EXISTS idx_${output_block_indicators}_id_zone ON $output_block_indicators (ID_ZONE);
         """
@@ -1107,112 +1117,112 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
     }
 
     if (output_rsu_indicators && !output_datasource.hasTable(output_rsu_indicators)){
-        output_datasource """
-                CREATE TABLE $output_rsu_indicators (
-                ID_ZONE VARCHAR,
-                THE_GEOM GEOMETRY(GEOMETRY,$srid),
-                ID_RSU INTEGER,
-                HIGH_VEGETATION_FRACTION DOUBLE PRECISION,
-                HIGH_VEGETATION_WATER_FRACTION DOUBLE PRECISION,
-                HIGH_VEGETATION_BUILDING_FRACTION DOUBLE PRECISION,
-                HIGH_VEGETATION_LOW_VEGETATION_FRACTION DOUBLE PRECISION,
-                HIGH_VEGETATION_ROAD_FRACTION DOUBLE PRECISION,
-                HIGH_VEGETATION_IMPERVIOUS_FRACTION DOUBLE PRECISION,
-                WATER_FRACTION DOUBLE PRECISION,
-                BUILDING_FRACTION DOUBLE PRECISION,
-                LOW_VEGETATION_FRACTION DOUBLE PRECISION,
-                ROAD_FRACTION DOUBLE PRECISION,
-                IMPERVIOUS_FRACTION DOUBLE PRECISION,
-                VEGETATION_FRACTION_URB DOUBLE PRECISION,
-                LOW_VEGETATION_FRACTION_URB DOUBLE PRECISION,
-                HIGH_VEGETATION_IMPERVIOUS_FRACTION_URB DOUBLE PRECISION,
-                HIGH_VEGETATION_PERVIOUS_FRACTION_URB DOUBLE PRECISION,
-                ROAD_FRACTION_URB DOUBLE PRECISION,
-                IMPERVIOUS_FRACTION_URB DOUBLE PRECISION,
-                BUILDING_FRACTION_LCZ DOUBLE PRECISION,
-                PERVIOUS_FRACTION_LCZ DOUBLE PRECISION,
-                HIGH_VEGETATION_FRACTION_LCZ DOUBLE PRECISION,
-                LOW_VEGETATION_FRACTION_LCZ DOUBLE PRECISION,
-                IMPERVIOUS_FRACTION_LCZ DOUBLE PRECISION,
-                WATER_FRACTION_LCZ DOUBLE PRECISION,
-                AREA DOUBLE PRECISION,
-                AVG_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION,
-                STD_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION,
-                ROAD_DIRECTION_DISTRIBUTION_H0_D0_30 DOUBLE PRECISION,
-                ROAD_DIRECTION_DISTRIBUTION_H0_D30_60 DOUBLE PRECISION,
-                ROAD_DIRECTION_DISTRIBUTION_H0_D60_90 DOUBLE PRECISION,
-                ROAD_DIRECTION_DISTRIBUTION_H0_D90_120 DOUBLE PRECISION,
-                ROAD_DIRECTION_DISTRIBUTION_H0_D120_150 DOUBLE PRECISION,
-                ROAD_DIRECTION_DISTRIBUTION_H0_D150_180 DOUBLE PRECISION,
-                GROUND_LINEAR_ROAD_DENSITY DOUBLE PRECISION,
-                NON_VERT_ROOF_AREA_H0_10 DOUBLE PRECISION,
-                NON_VERT_ROOF_AREA_H10_20 DOUBLE PRECISION,
-                NON_VERT_ROOF_AREA_H20_30 DOUBLE PRECISION,
-                NON_VERT_ROOF_AREA_H30_40 DOUBLE PRECISION,
-                NON_VERT_ROOF_AREA_H40_50 DOUBLE PRECISION,
-                NON_VERT_ROOF_AREA_H50 DOUBLE PRECISION,
-                VERT_ROOF_AREA_H0_10 DOUBLE PRECISION,
-                VERT_ROOF_AREA_H10_20 DOUBLE PRECISION,
-                VERT_ROOF_AREA_H20_30 DOUBLE PRECISION,
-                VERT_ROOF_AREA_H30_40 DOUBLE PRECISION,
-                VERT_ROOF_AREA_H40_50 DOUBLE PRECISION,
-                VERT_ROOF_AREA_H50 DOUBLE PRECISION,
-                VERT_ROOF_DENSITY DOUBLE PRECISION,
-                NON_VERT_ROOF_DENSITY DOUBLE PRECISION,
-                FREE_EXTERNAL_FACADE_DENSITY DOUBLE PRECISION,
-                GEOM_AVG_HEIGHT_ROOF DOUBLE PRECISION,
-                BUILDING_VOLUME_DENSITY DOUBLE PRECISION,
-                AVG_VOLUME DOUBLE PRECISION,
-                AVG_NUMBER_BUILDING_NEIGHBOR DOUBLE PRECISION,
-                BUILDING_FLOOR_AREA_DENSITY DOUBLE PRECISION,
-                AVG_MINIMUM_BUILDING_SPACING DOUBLE PRECISION,
-                BUILDING_NUMBER_DENSITY DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D0_30 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D0_30 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D0_30 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D0_30 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D0_30 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D0_30 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D30_60 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D30_60 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D30_60 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D30_60 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D30_60 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D30_60 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D60_90 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D60_90 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D60_90 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D60_90 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D60_90 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D60_90 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D90_120 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D90_120 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D90_120 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D90_120 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D90_120 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D90_120 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D120_150 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D120_150 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D120_150 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D120_150 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D120_150 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D120_150 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D150_180 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D150_180 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D150_180 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D150_180 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D150_180 DOUBLE PRECISION,
-                PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D150_180 DOUBLE PRECISION,
-                BUILDING_TOTAL_FRACTION DOUBLE PRECISION,
-                ASPECT_RATIO DOUBLE PRECISION,
-                GROUND_SKY_VIEW_FACTOR DOUBLE PRECISION,
-                EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH DOUBLE PRECISION,
-                EFFECTIVE_TERRAIN_ROUGHNESS_CLASS INTEGER,
-                MAIN_BUILDING_DIRECTION VARCHAR,
-                BUILDING_DIRECTION_INEQUALITY DOUBLE PRECISION,
-                BUILDING_DIRECTION_UNIQUENESS DOUBLE PRECISION
-                );    
-                CREATE INDEX IF NOT EXISTS idx_${output_rsu_indicators}_id_zone ON $output_rsu_indicators (ID_ZONE);
+        output_datasource.execute """
+    CREATE TABLE $output_rsu_indicators (
+    ID_RSU INTEGER,
+	THE_GEOM GEOMETRY(GEOMETRY,$srid),	
+	HIGH_VEGETATION_FRACTION DOUBLE PRECISION,
+	HIGH_VEGETATION_WATER_FRACTION DOUBLE PRECISION,
+	HIGH_VEGETATION_BUILDING_FRACTION DOUBLE PRECISION,
+	HIGH_VEGETATION_LOW_VEGETATION_FRACTION DOUBLE PRECISION,
+	HIGH_VEGETATION_ROAD_FRACTION DOUBLE PRECISION,
+	HIGH_VEGETATION_IMPERVIOUS_FRACTION DOUBLE PRECISION,
+	WATER_FRACTION DOUBLE PRECISION,
+	BUILDING_FRACTION DOUBLE PRECISION,
+	LOW_VEGETATION_FRACTION DOUBLE PRECISION,
+	ROAD_FRACTION DOUBLE PRECISION,
+	IMPERVIOUS_FRACTION DOUBLE PRECISION,
+	VEGETATION_FRACTION_URB DOUBLE PRECISION,
+	LOW_VEGETATION_FRACTION_URB DOUBLE PRECISION,
+	HIGH_VEGETATION_IMPERVIOUS_FRACTION_URB DOUBLE PRECISION,
+	HIGH_VEGETATION_PERVIOUS_FRACTION_URB DOUBLE PRECISION,
+	ROAD_FRACTION_URB DOUBLE PRECISION,
+	IMPERVIOUS_FRACTION_URB DOUBLE PRECISION,
+	BUILDING_FRACTION_LCZ DOUBLE PRECISION,
+	PERVIOUS_FRACTION_LCZ DOUBLE PRECISION,
+	HIGH_VEGETATION_FRACTION_LCZ DOUBLE PRECISION,
+	LOW_VEGETATION_FRACTION_LCZ DOUBLE PRECISION,
+	IMPERVIOUS_FRACTION_LCZ DOUBLE PRECISION,
+	WATER_FRACTION_LCZ DOUBLE PRECISION,
+	AREA DOUBLE PRECISION,
+	AVG_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION,
+	STD_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION,
+	ROAD_DIRECTION_DISTRIBUTION_H0_D0_30 DOUBLE PRECISION,
+	ROAD_DIRECTION_DISTRIBUTION_H0_D30_60 DOUBLE PRECISION,
+	ROAD_DIRECTION_DISTRIBUTION_H0_D60_90 DOUBLE PRECISION,
+	ROAD_DIRECTION_DISTRIBUTION_H0_D90_120 DOUBLE PRECISION,
+	ROAD_DIRECTION_DISTRIBUTION_H0_D120_150 DOUBLE PRECISION,
+	ROAD_DIRECTION_DISTRIBUTION_H0_D150_180 DOUBLE PRECISION,
+	GROUND_LINEAR_ROAD_DENSITY DOUBLE PRECISION,
+	NON_VERT_ROOF_AREA_H0_10 DOUBLE PRECISION,
+	NON_VERT_ROOF_AREA_H10_20 DOUBLE PRECISION,
+	NON_VERT_ROOF_AREA_H20_30 DOUBLE PRECISION,
+	NON_VERT_ROOF_AREA_H30_40 DOUBLE PRECISION,
+	NON_VERT_ROOF_AREA_H40_50 DOUBLE PRECISION,
+	NON_VERT_ROOF_AREA_H50 DOUBLE PRECISION,
+	VERT_ROOF_AREA_H0_10 DOUBLE PRECISION,
+	VERT_ROOF_AREA_H10_20 DOUBLE PRECISION,
+	VERT_ROOF_AREA_H20_30 DOUBLE PRECISION,
+	VERT_ROOF_AREA_H30_40 DOUBLE PRECISION,
+	VERT_ROOF_AREA_H40_50 DOUBLE PRECISION,
+	VERT_ROOF_AREA_H50 DOUBLE PRECISION,
+	VERT_ROOF_DENSITY DOUBLE PRECISION,
+	NON_VERT_ROOF_DENSITY DOUBLE PRECISION,
+	FREE_EXTERNAL_FACADE_DENSITY DOUBLE PRECISION,
+	GEOM_AVG_HEIGHT_ROOF DOUBLE PRECISION,
+	BUILDING_VOLUME_DENSITY DOUBLE PRECISION,
+	AVG_VOLUME DOUBLE PRECISION,
+	AVG_NUMBER_BUILDING_NEIGHBOR DOUBLE PRECISION,
+	BUILDING_FLOOR_AREA_DENSITY DOUBLE PRECISION,
+	AVG_MINIMUM_BUILDING_SPACING DOUBLE PRECISION,
+	BUILDING_NUMBER_DENSITY DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D0_30 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D0_30 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D0_30 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D0_30 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D0_30 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D0_30 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D30_60 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D30_60 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D30_60 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D30_60 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D30_60 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D30_60 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D60_90 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D60_90 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D60_90 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D60_90 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D60_90 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D60_90 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D90_120 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D90_120 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D90_120 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D90_120 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D90_120 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D90_120 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D120_150 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D120_150 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D120_150 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D120_150 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D120_150 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D120_150 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D150_180 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D150_180 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D150_180 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D150_180 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D150_180 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D150_180 DOUBLE PRECISION,
+	BUILDING_TOTAL_FRACTION DOUBLE PRECISION,
+	ASPECT_RATIO DOUBLE PRECISION,
+	GROUND_SKY_VIEW_FACTOR DOUBLE PRECISION,
+	EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH DOUBLE PRECISION,
+	EFFECTIVE_TERRAIN_ROUGHNESS_CLASS INTEGER,
+	BUILDING_DIRECTION_EQUALITY DOUBLE PRECISION,
+	BUILDING_DIRECTION_UNIQUENESS DOUBLE PRECISION,
+	MAIN_BUILDING_DIRECTION VARCHAR,
+    ID_ZONE VARCHAR
+    );    
+        CREATE INDEX IF NOT EXISTS idx_${output_rsu_indicators}_id_zone ON $output_rsu_indicators (ID_ZONE);
         """
     } else if (output_rsu_indicators){
         def outputTableSRID = output_datasource.getSpatialTable(output_rsu_indicators).srid
@@ -1563,147 +1573,6 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
     }
 }
 
-/**
- * Compute all geoindicators at the 3 scales :
- * building, block and RSU
- * Compute also the LCZ classification and the urban typology
- *
- * @return 4 tables outputTableBuildingIndicators, outputTableBlockIndicators, outputTableRsuIndicators,
- * outputTableRsuLcz . The first three tables contains the geoindicators and the last table the LCZ classification.
- * This table can be empty if the user decides not to calculate it.
- *
- */
-
-create {
-    title "Compute all geoindicators"
-    id "GeoIndicators"
-    inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
-            roadTable: String, railTable: String, vegetationTable: String,
-            hydrographicTable: String, surface_vegetation: 100000, surface_hydro: 2500,
-            distance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified:false, prefixName: "",
-            mapOfWeights: ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 2,
-                           "impervious_surface_fraction" : 0, "pervious_surface_fraction": 0,
-                           "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
-    outputs outputTableBuildingIndicators: String, outputTableBlockIndicators: String,
-            outputTableRsuIndicators: String, outputTableRsuLcz:String, outputTableZone:String
-    run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
-          surface_vegetation, surface_hydro, distance,indicatorUse,svfSimplified, prefixName, mapOfWeights ->
-        info "Start computing the geoindicators..."
-        // Temporary tables are created
-        def lczIndicTable = postfix "LCZ_INDIC_TABLE"
-        def COLUMN_ID_RSU = "id_rsu"
-        def GEOMETRIC_COLUMN = "the_geom"
-
-        // Output Lcz table name is set to null in case LCZ indicators are not calculated
-        def rsuLcz = null
-
-        //Create spatial units and relations : building, block, rsu
-        def spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis()
-        if (!spatialUnits([datasource       : datasource,           zoneTable           : zoneTable,
-                           buildingTable    : buildingTable,        roadTable           : roadTable,
-                           railTable        : railTable,            vegetationTable     : vegetationTable,
-                           hydrographicTable: hydrographicTable,    surface_vegetation  : surface_vegetation,
-                           surface_hydro    : surface_hydro,        distance            : distance,
-                           prefixName       : prefixName,           indicatorUse        :indicatorUse])) {
-            error "Cannot create the spatial units"
-            return
-        }
-        def relationBuildings = spatialUnits.results.outputTableBuildingName
-        def relationBlocks = spatialUnits.results.outputTableBlockName
-        def relationRSU = spatialUnits.results.outputTableRsuName
-
-        //Compute building indicators
-        def computeBuildingsIndicators = ProcessingChain.BuildGeoIndicators.computeBuildingsIndicators()
-        if (!computeBuildingsIndicators([datasource            : datasource,
-                                         inputBuildingTableName: relationBuildings,
-                                         inputRoadTableName    : roadTable,
-                                         indicatorUse          : indicatorUse,
-                                         prefixName            : prefixName])) {
-            error "Cannot compute the building indicators"
-            return
-        }
-
-        def buildingIndicators = computeBuildingsIndicators.results.outputTableName
-
-        //Compute block indicators
-        def blockIndicators = null
-        if(indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")){
-            def computeBlockIndicators = ProcessingChain.BuildGeoIndicators.computeBlockIndicators()
-            if (!computeBlockIndicators([datasource            : datasource,
-                                         inputBuildingTableName: buildingIndicators,
-                                         inputBlockTableName   : relationBlocks,
-                                         prefixName            : prefixName])) {
-                error "Cannot compute the block indicators"
-                return
-            }
-            blockIndicators = computeBlockIndicators.results.outputTableName
-        }
-
-        //Compute RSU indicators
-        def computeRSUIndicators = ProcessingChain.BuildGeoIndicators.computeRSUIndicators()
-        if (!computeRSUIndicators([datasource       : datasource,
-                                   buildingTable    : buildingIndicators,
-                                   rsuTable         : relationRSU,
-                                   vegetationTable  : vegetationTable,
-                                   roadTable        : roadTable,
-                                   hydrographicTable: hydrographicTable,
-                                   indicatorUse     : indicatorUse,
-                                   svfSimplified    : svfSimplified,
-                                   prefixName       : prefixName])) {
-            error "Cannot compute the RSU indicators"
-            return
-        }
-        info "All geoindicators have been computed"
-
-        // If the LCZ indicators should be calculated, we only affect a LCZ class to each RSU
-        if(indicatorUse.contains("LCZ")){
-            def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"              : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
-                                 "BUILDING_FRACTION_LCZ"             : "BUILDING_SURFACE_FRACTION",
-                                 "ASPECT_RATIO"                      : "ASPECT_RATIO",
-                                 "GROUND_SKY_VIEW_FACTOR"            : "SKY_VIEW_FACTOR",
-                                 "PERVIOUS_FRACTION_LCZ"             : "PERVIOUS_SURFACE_FRACTION",
-                                 "IMPERVIOUS_FRACTION_LCZ"           : "IMPERVIOUS_SURFACE_FRACTION",
-                                 "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH": "TERRAIN_ROUGHNESS_LENGTH"]
-
-            // Get into a new table the ID, geometry column and the 7 indicators defined by Stewart and Oke (2012)
-            // for LCZ classification (rename the indicators with the real names)
-            def queryReplaceNames = ""
-            lczIndicNames.each { oldIndic, newIndic ->
-                queryReplaceNames += "ALTER TABLE $lczIndicTable ALTER COLUMN $oldIndic RENAME TO $newIndic;"
-            }
-            datasource """
-                    DROP TABLE IF EXISTS $lczIndicTable;
-                    CREATE TABLE $lczIndicTable AS 
-                        SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, ${lczIndicNames.keySet().join(",")} 
-                        FROM ${computeRSUIndicators.results.outputTableName};
-                    $queryReplaceNames
-            """
-
-            // The classification algorithm is called
-            def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
-            if(!classifyLCZ([rsuLczIndicators   : lczIndicTable,
-                             rsuAllIndicators   : computeRSUIndicators.results.outputTableName,
-                             normalisationType  : "AVG",
-                             mapOfWeights       : mapOfWeights,
-                             prefixName         : prefixName,
-                             datasource         : datasource,
-                             prefixName         : prefixName])){
-                info "Cannot compute the LCZ classification."
-                return
-            }
-            rsuLcz = classifyLCZ.results.outputTableName
-        }
-
-        datasource "DROP TABLE IF EXISTS $lczIndicTable;"
-
-
-        return [outputTableBuildingIndicators: computeBuildingsIndicators.results.outputTableName,
-                outputTableBlockIndicators   : blockIndicators,
-                outputTableRsuIndicators     : computeRSUIndicators.results.outputTableName,
-                outputTableRsuLcz   : rsuLcz,
-                outputTableZone:zoneTable]
-    }
-}
 
 /**
  * Parse a json file to a Map

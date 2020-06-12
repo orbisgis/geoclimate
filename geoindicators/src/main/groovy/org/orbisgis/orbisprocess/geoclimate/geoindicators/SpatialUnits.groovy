@@ -17,15 +17,15 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
  * Default value is empty so all RSU are kept.
  * @param prefixName A prefix used to name the output table
  * @param datasource A connection to a database
- *
+ * @param area RSU less or equals than area are removed
  * @return A database table name and the name of the column ID
  */
 create {
     title "Create reference spatial units (RSU)"
     id "createRSU"
-    inputs inputTableName: String, inputZoneTableName: "", prefixName: "", datasource: JdbcDataSource
+    inputs inputTableName: String, inputZoneTableName: "", prefixName: "", datasource: JdbcDataSource, area:0.1d
     outputs outputTableName: String, outputIdRsu: String
-    run { inputTableName, inputZoneTableName, prefixName , datasource ->
+    run { inputTableName, inputZoneTableName, prefixName , datasource, area ->
         
         def COLUMN_ID_NAME = "id_rsu"
         def BASE_NAME = "rsu"
@@ -35,6 +35,11 @@ create {
         def outputTableName = prefix prefixName, BASE_NAME
 
         def epsg = datasource."$inputTableName".srid
+
+        if(area<=0){
+            error "The area value to filter the RSU must be greater to 0"
+            return null
+        }
 
         if(inputZoneTableName){
             datasource."$inputTableName".the_geom.createSpatialIndex()
@@ -47,7 +52,7 @@ create {
                                 FROM $inputTableName)') AS a,
                             $inputZoneTableName AS b
                         WHERE a.the_geom && b.the_geom 
-                        AND ST_INTERSECTS(ST_POINTONSURFACE(a.THE_GEOM), b.the_geom)
+                        AND ST_INTERSECTS(ST_POINTONSURFACE(a.THE_GEOM), b.the_geom) and st_area(a.the_geom) > $area
             """
         }
         else{
@@ -57,7 +62,7 @@ create {
                         SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(ST_FORCE2D(the_geom), $epsg) AS the_geom 
                         FROM ST_EXPLODE('(
                                 SELECT ST_POLYGONIZE(ST_UNION(ST_PRECISIONREDUCER(ST_NODE(ST_ACCUM(ST_FORCE2D(the_geom))), 3))) AS the_geom 
-                                FROM $inputTableName)')"""
+                                FROM $inputTableName)') and st_area(the_geom) > $area"""
         }
 
         info "Reference spatial units table created"

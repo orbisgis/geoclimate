@@ -1001,7 +1001,7 @@ create {
         def rsuLcz = null
 
         //Create spatial units and relations : building, block, rsu
-        IProcess spatialUnits = processManager.GeoIndicators.createUnitsOfAnalysis
+        IProcess spatialUnits = processManager.GeoIndicatorsChain.createUnitsOfAnalysis
         if (!spatialUnits.execute([datasource       : datasource,           zoneTable           : zoneTable,
                                    buildingTable    : buildingTable,        roadTable           : roadTable,
                                    railTable        : railTable,            vegetationTable     : vegetationTable,
@@ -1018,7 +1018,7 @@ create {
 
 
         //Compute building indicators
-        def computeBuildingsIndicators = processManager.GeoIndicators.computeBuildingsIndicators
+        def computeBuildingsIndicators = processManager.GeoIndicatorsChain.computeBuildingsIndicators
         if (!computeBuildingsIndicators.execute([datasource            : datasource,
                                                  inputBuildingTableName: relationBuildings,
                                                  inputRoadTableName    : roadTable,
@@ -1033,7 +1033,7 @@ create {
         //Compute block indicators
         def blockIndicators = null
         if(indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")){
-            def computeBlockIndicators = processManager.GeoIndicators.computeBlockIndicators
+            def computeBlockIndicators = processManager.GeoIndicatorsChain.computeBlockIndicators
             if (!computeBlockIndicators.execute([datasource            : datasource,
                                                  inputBuildingTableName: buildingIndicators,
                                                  inputBlockTableName   : relationBlocks,
@@ -1045,7 +1045,7 @@ create {
         }
 
         //Compute RSU indicators
-        def computeRSUIndicators = processManager.GeoIndicators.computeRSUIndicators
+        def computeRSUIndicators = processManager.GeoIndicatorsChain.computeRSUIndicators
         if (!computeRSUIndicators.execute([datasource       : datasource,
                                            buildingTable    : buildingIndicators,
                                            rsuTable         : relationRSU,

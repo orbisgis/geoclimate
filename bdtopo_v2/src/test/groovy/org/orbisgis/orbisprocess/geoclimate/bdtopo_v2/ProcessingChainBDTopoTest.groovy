@@ -1,10 +1,9 @@
 package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 
 import groovy.json.JsonOutput
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty
+import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
@@ -157,7 +156,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                             "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
 
-        IProcess geodindicators = PC.Workflow.GeoIndicators
+        IProcess geodindicators = PC.GeoIndicatorsChain.computeAllGeoIndicators
         assertTrue geodindicators.execute(datasource: datasource, zoneTable: abstractTables.outputZone,
                 buildingTable: abstractTables.outputBuilding, roadTable: abstractTables.outputRoad,
                 railTable: abstractTables.outputRail, vegetationTable: abstractTables.outputVeget,
@@ -229,7 +228,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()
         //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_dboutput.json").toURI()
         //configFile =getClass().getResource("config/bdtopo_workflow_dbinput_dboutput.json").toURI()
-        IProcess process = BDTopo.workflow
+        IProcess process = BDTopo.WorkflowBDTopo_V2.workflow
         assertTrue(process.execute(configurationFile: configFile))
     }
 
@@ -277,8 +276,32 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                          "hThresholdLev2": 10
                         ]
         ]
-        IProcess process = BDTopo.workflow
+        IProcess process = BDTopo.WorkflowBDTopo_V2.workflow
         assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
+    }
+
+
+    @Test
+    void runBDTopoWorkflow(){
+        def dbSuffixName = "_workflow"
+        def inseeCode = communeToTest
+        def defaultParameters = [distance: 1000,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+                                 svfSimplified:false, prefixName: "",
+                                 mapOfWeights : ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 2,
+                                                 "impervious_surface_fraction" : 0, "pervious_surface_fraction": 0,
+                                                 "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
+                                 hLevMin : 3, hLevMax: 15, hThresholdLev2: 10]
+        H2GIS h2GISDatabase = loadFiles(inseeCode, dbSuffixName)
+        def process = BDTopo.WorkflowBDTopo_V2.bdtopo_processing(h2GISDatabase, defaultParameters, inseeCode, null, null, null, null);
+        checkSpatialTable("block_indicators")
+        checkSpatialTable("building_indicators")
+        checkSpatialTable("rsu_indicators")
+        checkSpatialTable("rsu_lcz")
+    }
+
+    def checkSpatialTable(JdbcDataSource datasource, def tableName){
+        assertTrue(datasource.hasTable(tableName))
+        assertTrue(datasource.getSpatialTable(tableName).getRowCount()>0)
     }
     /**
      * Create a configuration file
