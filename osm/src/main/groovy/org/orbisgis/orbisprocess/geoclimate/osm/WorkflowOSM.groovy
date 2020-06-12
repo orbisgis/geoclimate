@@ -115,7 +115,7 @@ def ProcessingChain = GroovyProcessManager.load(PC)
  */
 create {
     title "Create all Geoindicators from OSM data"
-    id "workflow"
+    id "Workflow"
     inputs configurationFile: ""
     outputs outputMessage: String
     run { configurationFile ->
