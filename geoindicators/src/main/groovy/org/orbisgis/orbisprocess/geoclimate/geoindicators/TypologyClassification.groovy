@@ -37,6 +37,7 @@ import java.util.zip.GZIPOutputStream
  * of the map) for the LCZ classification step (default : all values to 1)
  * @param prefixName String use as prefix to name the output table
  * @param datasource A connection to a database
+ * @param industrialFractionThreshold The fraction of industrial building area above which the RSU is considered as industrial type (LCZ10)
  *
  * References:
  * --> Stewart, Ian D., and Tim R. Oke. "Local climate zones for urban temperature studies." Bulletin of
@@ -53,9 +54,10 @@ create {
             datasource: JdbcDataSource  , normalisationType: "AVG"          ,
             mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                            "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                           "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
+                           "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
+            industrialFractionThreshold: 0.3
     outputs outputTableName: String
-    run { rsuLczIndicators, rsuAllIndicators, prefixName, datasource, normalisationType, mapOfWeights ->
+    run { rsuLczIndicators, rsuAllIndicators, prefixName, datasource, normalisationType, mapOfWeights, industrialFractionThreshold ->
 
         def OPS = ["AVG", "MEDIAN"]
         def ID_FIELD_RSU = "id_rsu"
@@ -88,11 +90,14 @@ create {
             def ruralLCZ = postfix "ruralLCZ"
             def classifiedRuralLCZ = postfix "classifiedRuralLCZ"
             def urbanLCZ = postfix "urbanLCZ"
+            def urbanLCZExceptIndus = postfix "urbanLCZExceptIndus"
             def allLczTable = postfix "allLczTable"
             def pivotedTable = postfix "pivotedTable"
             def mainLczTable = postfix "mainLczTable"
             def classifiedUrbanLcz = postfix "classifiedUrbanLcz"
             def classifiedLcz = postfix "classifiedLcz"
+            def classifiedIndustrialLcz = postfix "classifiedIndustrialLcz"
+            def ruralAndIndustrialLCZ = postfix "ruralAndIndustrialLCZ"
 
 
             // The LCZ definitions are created in a Table of the DataBase (note that the "terrain_roughness_class"
@@ -115,9 +120,9 @@ create {
                     "('6',0.6,0.9,0.3,0.8,0.2,0.4,0.2,0.5,0.3,0.6,3.0,10.0,0.065,0.375)," +
                     "('7',0.2,0.5,1.0,2.0,0.6,0.9,0.0,0.2,0.0,0.3,2.0,4.0,0.175,0.375)," +
                     "('8',0.7,1.0,0.1,0.3,0.3,0.5,0.4,0.5,0.0,0.2,3.0,10.0,0.175,0.375)," +
-                    "('9',0.8,1.0,0.1,0.3,0.1,0.2,0.0,0.2,0.6,0.8,3.0,10.0,0.175,0.75)," +
-                    "('10',0.6,0.9,0.2,0.5,0.2,0.3,0.2,0.4,0.4,0.5,5.0,15.0,0.175,0.75);"
-            /* The rural LCZ types are excluded from the algorithm, they have their own one
+                    "('9',0.8,1.0,0.1,0.3,0.1,0.2,0.0,0.2,0.6,0.8,3.0,10.0,0.175,0.75);"
+            /* The rural LCZ types (AND INDUSTRIAL) are excluded from the algorithm, they have their own one
+                    "('10',0.6,0.9,0.2,0.5,0.2,0.3,0.2,0.4,0.4,0.5,5.0,15.0,0.175,0.75),"
                     "('101',0.0,0.4,1.0,null,0.0,0.1,0.0,0.1,0.9,1.0,3.0,30.0,1.5,null)," +
                     "('102',0.5,0.8,0.3,0.8,0.0,0.1,0.0,0.1,0.9,1.0,3.0,15.0,0.175,0.75)," +
                     "('103',0.7,0.9,0.3,1.0,0.0,0.1,0.0,0.1,0.9,1.0,0.0,2.0,0.065,0.375)," +
@@ -138,6 +143,7 @@ create {
                             IMPERVIOUS_FRACTION_LCZ, 
                             PERVIOUS_FRACTION_LCZ, 
                             WATER_FRACTION_LCZ, 
+                            IMPERVIOUS_FRACTION,
                             CASE 
                                 WHEN LOW_VEGETATION_FRACTION_LCZ+HIGH_VEGETATION_FRACTION_LCZ=0
                                     THEN null
@@ -156,28 +162,57 @@ create {
             datasource """DROP TABLE IF EXISTS $classifiedRuralLCZ;
                                 CREATE TABLE $classifiedRuralLCZ
                                         AS SELECT   $ID_FIELD_RSU,
-                                                    CASE WHEN IMPERVIOUS_FRACTION_LCZ>PERVIOUS_FRACTION_LCZ
+                                                    CASE WHEN IMPERVIOUS_FRACTION>PERVIOUS_FRACTION_LCZ
                                                             THEN 105
                                                             ELSE CASE WHEN ALL_VEGETATION<WATER_FRACTION_LCZ
                                                                     THEN 107
-                                                                    ELSE CASE WHEN HIGH_ALL_VEGETATION IS NULL
-                                                                            THEN 999
-                                                                            ELSE CASE WHEN HIGH_ALL_VEGETATION<0.1
-                                                                                    THEN 104
-                                                                                    ELSE CASE WHEN HIGH_ALL_VEGETATION<0.75
-                                                                                            THEN 102
-                                                                                            ELSE 101 END END END END END AS LCZ1,
+                                                                    ELSE CASE WHEN HIGH_ALL_VEGETATION IS NULL OR ALL_VEGETATION<0.1 OR ALL_VEGETATION>0.1 AND HIGH_ALL_VEGETATION<0.1
+                                                                            THEN 104
+                                                                            ELSE CASE WHEN HIGH_ALL_VEGETATION<0.75
+                                                                                    THEN 102
+                                                                                    ELSE 101 END END END END AS LCZ1,
                                                     null AS LCZ2, null AS min_distance, null AS PSS 
                                         FROM $ruralLCZ"""
 
             // II. Urban LCZ types are classified
 
             // Keep only the RSU that have not been classified as rural
-            datasource """DROP TABLE IF EXISTS $urbanLCZ;
+            datasource  """DROP TABLE IF EXISTS $urbanLCZ;
                                 CREATE TABLE $urbanLCZ
                                         AS SELECT a.*
-                                        FROM $rsuLczIndicators a
+                                        FROM $rsuAllIndicators a
                                         LEFT JOIN $ruralLCZ b
+                                        ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU
+                                        WHERE b.$ID_FIELD_RSU IS NULL;"""
+
+            // 0. Set as industrial areas having more than 'industrialFractionThreshold' % of their building surface being industrial type
+            if(datasource."$urbanLCZ".columns.contains("FRACTION_INDUSTRIAL")) {
+                datasource """DROP TABLE IF EXISTS $classifiedIndustrialLcz;
+                                CREATE TABLE $classifiedIndustrialLcz
+                                        AS SELECT   $ID_FIELD_RSU,
+                                                    10 AS LCZ1,
+                                                    null AS LCZ2, null AS min_distance, null AS PSS 
+                                        FROM $urbanLCZ 
+                                        WHERE FRACTION_INDUSTRIAL > $industrialFractionThreshold;
+                                DROP TABLE IF EXISTS $ruralAndIndustrialLCZ;
+                                CREATE TABLE $ruralAndIndustrialLCZ
+                                            AS SELECT * 
+                                            FROM $classifiedIndustrialLcz 
+                                        UNION ALL 
+                                            SELECT *
+                                            FROM $classifiedRuralLCZ"""
+            }
+            else{
+                datasource """ALTER TABLE $classifiedRuralLCZ RENAME TO $ruralAndIndustrialLCZ"""
+            }
+            datasource."$ruralAndIndustrialLCZ"."$ID_FIELD_RSU".createIndex()
+            datasource."$rsuLczIndicators"."$ID_FIELD_RSU".createIndex()
+
+            datasource """DROP TABLE IF EXISTS $urbanLCZExceptIndus;
+                                CREATE TABLE $urbanLCZExceptIndus
+                                        AS SELECT a.*
+                                        FROM $rsuLczIndicators a
+                                        LEFT JOIN $ruralAndIndustrialLCZ b
                                         ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU
                                         WHERE b.$ID_FIELD_RSU IS NULL;"""
 
@@ -185,7 +220,7 @@ create {
             // (or median and median of the variability)
 
             // For each LCZ indicator...
-            datasource."$urbanLCZ".columns.collect { indicCol ->
+            datasource."$urbanLCZExceptIndus".columns.collect { indicCol ->
                 if (!indicCol.equalsIgnoreCase(ID_FIELD_RSU) && !indicCol.equalsIgnoreCase(GEOMETRIC_FIELD)) {
                     // The values used for normalization ("mean" and "standard deviation") are calculated
                     // (for each column) and stored into maps
@@ -222,7 +257,7 @@ create {
 
             // The input indicator values are normalized according to "center" and "variability" values
             datasource "DROP TABLE IF EXISTS $normalizedValues; CREATE TABLE $normalizedValues " +
-                    "AS SELECT $ID_FIELD_RSU, ${queryValuesNorm[0..-3]} FROM $urbanLCZ"
+                    "AS SELECT $ID_FIELD_RSU, ${queryValuesNorm[0..-3]} FROM $urbanLCZExceptIndus"
 
 
             // 2. The distance of each RSU to each of the LCZ types is calculated in the normalized interval.
@@ -238,7 +273,7 @@ create {
             datasource.eachRow("SELECT * FROM $normalizedRange") { LCZ ->
                 def queryLczDistance = ""
                 // For each indicator...
-                datasource."$urbanLCZ".columns.collect { indic ->
+                datasource."$urbanLCZExceptIndus".columns.collect { indic ->
                     if (!indic.equalsIgnoreCase(ID_FIELD_RSU) && !indic.equalsIgnoreCase(GEOMETRIC_FIELD)) {
                         // Define columns names where are stored lower and upper range values of the current LCZ
                         // and current indicator
@@ -309,7 +344,7 @@ create {
                                 CREATE TABLE $classifiedLcz 
                                         AS SELECT   * 
                                         FROM        $classifiedUrbanLcz
-                                        UNION ALL   SELECT * FROM $classifiedRuralLCZ b;"""
+                                        UNION ALL   SELECT * FROM $ruralAndIndustrialLCZ b;"""
 
             // If the input tables contain a geometric field, we add it to the output table
             if (datasource."$rsuAllIndicators".columns.contains(GEOMETRIC_FIELD)) {

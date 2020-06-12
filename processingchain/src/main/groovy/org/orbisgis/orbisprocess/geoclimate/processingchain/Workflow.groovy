@@ -31,11 +31,13 @@ create {
             distance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified:false, prefixName: "",
             mapOfWeights: ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                            "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                           "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
+                           "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
+            industrialFractionThreshold: 0.3
     outputs outputTableBuildingIndicators: String, outputTableBlockIndicators: String,
             outputTableRsuIndicators: String, outputTableRsuLcz:String, outputTableZone:String
     run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,imperviousTable,
-          surface_vegetation, surface_hydro, distance,indicatorUse,svfSimplified, prefixName, mapOfWeights ->
+          surface_vegetation, surface_hydro, distance,indicatorUse,svfSimplified, prefixName, mapOfWeights,
+          industrialFractionThreshold ->
         info "Start computing the geoindicators..."
         // Temporary tables are created
         def lczIndicTable = postfix "LCZ_INDIC_TABLE"
@@ -137,13 +139,14 @@ create {
 
             // The classification algorithm is called
             def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType
-            if(!classifyLCZ([rsuLczIndicators   : lczIndicTable,
-                             rsuAllIndicators   : computeRSUIndicators.results.outputTableName,
-                             normalisationType  : "AVG",
-                             mapOfWeights       : mapOfWeights,
-                             prefixName         : prefixName,
-                             datasource         : datasource,
-                             prefixName         : prefixName])){
+            if(!classifyLCZ([rsuLczIndicators               : lczIndicTable,
+                             rsuAllIndicators               : computeRSUIndicators.results.outputTableName,
+                             normalisationType              : "AVG",
+                             mapOfWeights                   : mapOfWeights,
+                             prefixName                     : prefixName,
+                             datasource                     : datasource,
+                             prefixName                     : prefixName,
+                             industrialFractionThreshold    : industrialFractionThreshold])){
                 info "Cannot compute the LCZ classification."
                 return
             }
