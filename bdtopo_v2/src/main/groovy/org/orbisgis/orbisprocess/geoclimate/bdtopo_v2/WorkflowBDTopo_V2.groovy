@@ -918,7 +918,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
             info "BDTOPO V2 GIS layers formated"
 
             //Build the indicators
-            IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoindicators
+            IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators
             if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
                     buildingTable: buildingTableName, roadTable: roadTableName,
                     railTable: railTableName, vegetationTable: vegetationTableName,
