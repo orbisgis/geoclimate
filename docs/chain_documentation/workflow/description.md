@@ -67,12 +67,12 @@ To know more about these output tables, read [this page](./outputs.md).
 
 ### The process
 
-The Geoclimate workflow is a groovy file stored [here](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/main/groovy/org/orbisgis/orbisprocess/geoclimate/processingchain/Workflow.groovy).
+The Geoclimate workflow is a groovy file stored [here](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/processingchain/src/main/groovy/org/orbisgis/orbisprocess/geoclimate/processingchain/Workflow.groovy).
 
 In this file, the two dataset use cases are translated into two processes :
 
-- [OSM](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/main/groovy/org/orbisgis/orbisprocess/geoclimate/processingchain/Workflow.groovy#L1540)
-- [BDTOPO_V2](https://github.com/orbisgis/geoclimate/blob/master/processingchain/src/main/groovy/org/orbisgis/orbisprocess/geoclimate/processingchain/Workflow.groovy#L131)
+- [OSM](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/processingchain/src/main/groovy/org/orbisgis/orbisprocess/geoclimate/processingchain/Workflow.groovy#L1540)
+- [BDTOPO_V2](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/processingchain/src/main/groovy/org/orbisgis/orbisprocess/geoclimate/processingchain/Workflow.groovy#L131)
 
 When we will run the geoclimate workflow, we will use one of these two processes.
 

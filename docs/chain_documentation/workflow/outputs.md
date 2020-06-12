@@ -40,7 +40,7 @@ The buildings are outside the studied zone:
 
 This table stores all the indicators computed at the building's scale (and described [here](../indicators/building.md)).
 
-![](../../resources/images/common/icons/github.png) The indicators source code is available [here](https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy).
+![](../../resources/images/common/icons/github.png) The indicators source code is available [here](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BuildingIndicators.groovy).
 
 ![](../../resources/images/common/icons/pk.png) PK = Primary Key
 
@@ -79,7 +79,7 @@ This table stores all the indicators computed at the building's scale (and descr
 
 This table stores all the indicators computed at the block's scale (and described [here](../indicators/block.md)).
 
-![](../../resources/images/common/icons/github.png) The indicators source code is available [here](https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BlockIndicators.groovy).
+![](../../resources/images/common/icons/github.png) The indicators source code is available [here](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/geoindicators/src/main/groovy/org/orbisgis/geoindicators/BlockIndicators.groovy).
 
 ![](../../resources/images/common/icons/pk.png) PK = Primary Key
 
@@ -105,7 +105,7 @@ This table stores all the indicators computed at the block's scale (and describe
 
 This table stores all the indicators computed at the RSU's scale (and described [here](../indicators/rsu.md)).
 
-![](../../resources/images/common/icons/github.png) The indicators source code is available [here](https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/RsuIndicators.groovy).
+![](../../resources/images/common/icons/github.png) The indicators source code is available [here](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/geoindicators/src/main/groovy/org/orbisgis/geoindicators/RsuIndicators.groovy).
 
 ![](../../resources/images/common/icons/pk.png) PK = Primary Key
 
@@ -204,7 +204,7 @@ This table stores all the indicators computed at the RSU's scale (and described 
 
 This table stores the result of the LCZ classification (described [here](../classsifications/lcz.md)) computed at the RSU's scale.
 
-![](../../resources/images/common/icons/github.png) The indicators source code is available [here](https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/RsuIndicators.groovy).
+![](../../resources/images/common/icons/github.png) The indicators source code is available [here](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/geoindicators/src/main/groovy/org/orbisgis/geoindicators/RsuIndicators.groovy).
 
 ![](../../resources/images/common/icons/pk.png) PK = Primary Key
 
@@ -222,7 +222,7 @@ This table stores the result of the LCZ classification (described [here](../clas
 
 This table stores the result of the Urban typology (described [here](../classsifications/territorial_typologies.md)) computed at the RSU's scale.
 
-![](../../resources/images/common/icons/github.png) The indicators source code is available [here](https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/RsuIndicators.groovy).
+![](../../resources/images/common/icons/github.png) The indicators source code is available [here](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/geoindicators/src/main/groovy/org/orbisgis/geoindicators/RsuIndicators.groovy).
 
 ![](../../resources/images/common/icons/pk.png) PK = Primary Key
 
