@@ -13,9 +13,6 @@ import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain as P
 
 @BaseScript GroovyProcessFactory pf
 
-def ProcessingChain = GroovyProcessManager.load(PC)
-
-
 /**
  * Load the BDTopo layers from a configuration file and compute the geoclimate indicators.
  * The configuration file is stored in a json format
@@ -877,6 +874,7 @@ def extractProcessingParameters(def processing_parameters){
  * @return
  */
 def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zones, def outputFolder, def outputFiles, def output_datasource, def outputTableNames ){
+    def ProcessingChain = GroovyProcessManager.load(PC)
     def  srid =  h2gis_datasource.getSpatialTable("IRIS_GE").srid
     if(output_datasource){
         if(!createOutputTables(output_datasource,  outputTableNames, srid)){

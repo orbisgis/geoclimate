@@ -62,7 +62,7 @@ create {
                         SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(ST_FORCE2D(the_geom), $epsg) AS the_geom 
                         FROM ST_EXPLODE('(
                                 SELECT ST_POLYGONIZE(ST_UNION(ST_PRECISIONREDUCER(ST_NODE(ST_ACCUM(ST_FORCE2D(the_geom))), 3))) AS the_geom 
-                                FROM $inputTableName)') and st_area(the_geom) > $area"""
+                                FROM $inputTableName)') where st_area(the_geom) > $area"""
         }
 
         info "Reference spatial units table created"
