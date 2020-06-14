@@ -6,16 +6,12 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
-import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import smile.classification.DataFrameClassifier
 import smile.validation.Accuracy
 import smile.validation.Validation
 import java.util.zip.GZIPInputStream
 
 import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertFalse
-import static org.junit.jupiter.api.Assertions.assertNotNull
-import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.junit.jupiter.api.Assertions.fail
 import static org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS.open
 import static org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager.load
@@ -116,7 +112,19 @@ class TypologyClassificationTests {
                     assert row.PSS < 1
                 }
                 else if(row.id_rsu == 8){
-                    assert 999 == row.LCZ1
+                    assert 104 == row.LCZ1
+                }
+                else if(row.id_rsu == 9){
+                    assert 104 == row.LCZ1
+                }
+                else if(row.id_rsu == 10){
+                    assert 101 == row.LCZ1
+                }
+                else if(row.id_rsu == 10){
+                    assert 102 == row.LCZ1
+                }
+                else if(row.id_rsu == 12){
+                    assert 10 == row.LCZ1
                 }
         }
     }
