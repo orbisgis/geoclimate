@@ -2,6 +2,7 @@ package org.orbisgis.orbisprocess.geoclimate.processingchain
 
 import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators as GI
 
@@ -848,5 +849,279 @@ create {
         info "Geoindicators calculation time: ${tObis / 1000} s"
         [outputTableName: outputTableName]
 
+    }
+}
+
+/** The processing chain creates the units used to describe the territory at three scales: Reference Spatial
+ * Unit (RSU), block and building. The creation of the RSU needs several layers such as the hydrology,
+ * the vegetation, the roads and the rail network and the boundary of the study zone. The blocks are created
+ * from the buildings that are in contact.
+ * Then the relationships between each scale is initialized in each unit table: the RSU ID is stored in
+ * the block and in the building tables whereas the block ID is stored only in the building table.
+ *
+ * @param zoneTable The area of zone to be processed *
+ * @param buildingTable The building table to be processed
+ * @param roadTable The road table to be processed
+ * @param railTable The rail table to be processed
+ * @param vegetationTable The vegetation table to be processed
+ * @param hydrographicTable The hydrographic table to be processed
+ * @param surface_vegetation The minimum area of vegetation that will be considered to delineate the RSU (default 100,000 m²)
+ * @param surface_hydro  The minimum area of water that will be considered to delineate the RSU (default 2,500 m²)
+ * @param distance A distance to group two geometries (e.g. two buildings in a block - default 0.01 m)
+ * @param prefixName A prefix used to name the output table
+ * @param datasource A connection to a database
+ * @param indicatorUse The use defined for the indicator. Depending on this use, only a part of the indicators could
+ * be calculated (default is all indicators : ["LCZ", "URBAN_TYPOLOGY", "TEB"])
+ *
+ * @return outputTableBuildingName Table name where are stored the buildings and the RSU and block ID
+ * @return outputTableBlockName Table name where are stored the blocks and the RSU ID
+ * @return outputTableRsuName Table name where are stored the RSU
+ */
+create {
+    title "Create all new spatial units and their relations : building, block and RSU"
+    id "createUnitsOfAnalysis"
+    inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
+            roadTable: String, railTable: String, vegetationTable: String,
+            hydrographicTable: String, surface_vegetation: 100000, surface_hydro: 2500,
+            distance: double, prefixName: "", indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"]
+    outputs outputTableBuildingName: String, outputTableBlockName: String, outputTableRsuName: String
+    run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
+          surface_vegetation, surface_hydro, distance, prefixName, indicatorUse ->
+        info "Create the units of analysis..."
+
+        // Create the RSU
+        def prepareRSUData = Geoindicators.SpatialUnits.prepareRSUData
+        def createRSU = Geoindicators.SpatialUnits.createRSU
+        if (!prepareRSUData([datasource        : datasource,
+                             zoneTable         : zoneTable,
+                             roadTable         : roadTable,
+                             railTable         : railTable,
+                             vegetationTable   : vegetationTable,
+                             hydrographicTable : hydrographicTable,
+                             surface_vegetation: surface_vegetation,
+                             surface_hydro     : surface_hydro,
+                             prefixName        : prefixName])) {
+            info "Cannot prepare the data for RSU calculation."
+            return
+        }
+        def rsuDataPrepared = prepareRSUData.results.outputTableName
+
+        if (!createRSU([datasource    : datasource,
+                        inputTableName: rsuDataPrepared,
+                        prefixName    : prefixName,
+                        inputZoneTableName: zoneTable])) {
+            info "Cannot compute the RSU."
+            return
+        }
+
+        // By default, the building table is used to calculate the relations between buildings and RSU
+        def inputLowerScaleBuRsu = buildingTable
+        // And the block / RSU table does not exists
+        def tableRsuBlocks = null
+        // If the urban typology is needed
+        if (indicatorUse.contains("URBAN_TYPOLOGY")) {
+            // Create the blocks
+            def createBlocks = Geoindicators.SpatialUnits.createBlocks
+            if (!createBlocks([datasource    : datasource,
+                               inputTableName: buildingTable,
+                               prefixName    : prefixName,
+                               distance      : distance])) {
+                info "Cannot create the blocks."
+                return
+            }
+
+            // Create the relations between RSU and blocks (store in the block table)
+            def createScalesRelationsRsuBl = Geoindicators.SpatialUnits.createScalesRelations
+            if (!createScalesRelationsRsuBl([datasource              : datasource,
+                                             inputLowerScaleTableName: createBlocks.results.outputTableName,
+                                             inputUpperScaleTableName: createRSU.results.outputTableName,
+                                             idColumnUp              : createRSU.results.outputIdRsu,
+                                             prefixName              : prefixName])) {
+                info "Cannot compute the scales relations between blocks and RSU."
+                return
+            }
+
+            // Create the relations between buildings and blocks (store in the buildings table)
+            def createScalesRelationsBlBu = Geoindicators.SpatialUnits.createScalesRelations
+            if (!createScalesRelationsBlBu([datasource              : datasource,
+                                            inputLowerScaleTableName: buildingTable,
+                                            inputUpperScaleTableName: createBlocks.results.outputTableName,
+                                            idColumnUp              : createBlocks.results.outputIdBlock,
+                                            prefixName              : prefixName])) {
+                info "Cannot compute the scales relations between blocks and buildings."
+                return
+            }
+            inputLowerScaleBuRsu = createScalesRelationsBlBu.results.outputTableName
+            tableRsuBlocks = createScalesRelationsRsuBl.results.outputTableName
+        }
+
+
+        // Create the relations between buildings and RSU (store in the buildings table)
+        // WARNING : if the blocks are used, the building table will contain the id_block and id_rsu for each of its
+        // id_build but the relations between id_block and i_rsu should not been consider in this Table
+        // the relationships may indeed be different from the one in the block Table
+        def createScalesRelationsRsuBlBu = Geoindicators.SpatialUnits.createScalesRelations
+        if (!createScalesRelationsRsuBlBu([datasource              : datasource,
+                                           inputLowerScaleTableName: inputLowerScaleBuRsu,
+                                           inputUpperScaleTableName: createRSU.results.outputTableName,
+                                           idColumnUp              : createRSU.results.outputIdRsu,
+                                           prefixName              : prefixName])) {
+            info "Cannot compute the scales relations between buildings and RSU."
+            return
+        }
+
+
+        [outputTableBuildingName: createScalesRelationsRsuBlBu.results.outputTableName,
+         outputTableBlockName   : tableRsuBlocks,
+         outputTableRsuName     : createRSU.results.outputTableName]
+    }
+}
+
+/**
+ * Compute all geoindicators at the 3 scales :
+ * building, block and RSU
+ * Compute also the LCZ classification and the urban typology
+ *
+ * @return 4 tables outputTableBuildingIndicators, outputTableBlockIndicators, outputTableRsuIndicators,
+ * outputTableRsuLcz . The first three tables contains the geoindicators and the last table the LCZ classification.
+ * This table can be empty if the user decides not to calculate it.
+ *
+ */
+create {
+    title "Compute all geoindicators"
+    id "computeAllGeoIndicators"
+    inputs datasource: JdbcDataSource, zoneTable: "", buildingTable: "",
+            roadTable: "", railTable: "", vegetationTable: "",
+            hydrographicTable: "", imperviousTable :"", surface_vegetation: 100000, surface_hydro: 2500,
+            distance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified:false, prefixName: "",
+            mapOfWeights: ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                           "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                           "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
+    outputs outputTableBuildingIndicators: String, outputTableBlockIndicators: String,
+            outputTableRsuIndicators: String, outputTableRsuLcz:String, outputTableZone:String
+    run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,imperviousTable,
+          surface_vegetation, surface_hydro, distance,indicatorUse,svfSimplified, prefixName, mapOfWeights ->
+        info "Start computing the geoindicators..."
+        // Temporary tables are created
+        def lczIndicTable = postfix "LCZ_INDIC_TABLE"
+        def COLUMN_ID_RSU = "id_rsu"
+        def GEOMETRIC_COLUMN = "the_geom"
+
+        //Check data before computing indicators
+
+        if(!zoneTable && !buildingTable && !roadTable){
+            error "To compute the geoindicators the zone, building and road tables must not be null or empty"
+            return null
+        }
+
+        // Output Lcz table name is set to null in case LCZ indicators are not calculated
+        def rsuLcz = null
+
+        //Create spatial units and relations : building, block, rsu
+        IProcess spatialUnits = processManager.GeoIndicatorsChain.createUnitsOfAnalysis
+        if (!spatialUnits.execute([datasource       : datasource,           zoneTable           : zoneTable,
+                                   buildingTable    : buildingTable,        roadTable           : roadTable,
+                                   railTable        : railTable,            vegetationTable     : vegetationTable,
+                                   hydrographicTable: hydrographicTable,    surface_vegetation  : surface_vegetation,
+                                   surface_hydro    : surface_hydro,        distance            : distance,
+                                   prefixName       : prefixName,
+                                   indicatorUse:indicatorUse])) {
+            error "Cannot create the spatial units"
+            return null
+        }
+        def relationBuildings = spatialUnits.getResults().outputTableBuildingName
+        def relationBlocks = spatialUnits.getResults().outputTableBlockName
+        def relationRSU = spatialUnits.getResults().outputTableRsuName
+
+
+        //Compute building indicators
+        def computeBuildingsIndicators = processManager.GeoIndicatorsChain.computeBuildingsIndicators
+        if (!computeBuildingsIndicators.execute([datasource            : datasource,
+                                                 inputBuildingTableName: relationBuildings,
+                                                 inputRoadTableName    : roadTable,
+                                                 indicatorUse          : indicatorUse,
+                                                 prefixName            : prefixName])) {
+            error "Cannot compute the building indicators"
+            return null
+        }
+
+        def buildingIndicators = computeBuildingsIndicators.results.outputTableName
+
+        //Compute block indicators
+        def blockIndicators = null
+        if(indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")){
+            def computeBlockIndicators = processManager.GeoIndicatorsChain.computeBlockIndicators
+            if (!computeBlockIndicators.execute([datasource            : datasource,
+                                                 inputBuildingTableName: buildingIndicators,
+                                                 inputBlockTableName   : relationBlocks,
+                                                 prefixName            : prefixName])) {
+                error "Cannot compute the block indicators"
+                return null
+            }
+            blockIndicators = computeBlockIndicators.results.outputTableName
+        }
+
+        //Compute RSU indicators
+        def computeRSUIndicators = processManager.GeoIndicatorsChain.computeRSUIndicators
+        if (!computeRSUIndicators.execute([datasource       : datasource,
+                                           buildingTable    : buildingIndicators,
+                                           rsuTable         : relationRSU,
+                                           vegetationTable  : vegetationTable,
+                                           roadTable        : roadTable,
+                                           hydrographicTable: hydrographicTable,
+                                           imperviousTable:   imperviousTable,
+                                           indicatorUse     : indicatorUse,
+                                           svfSimplified    : svfSimplified,
+                                           prefixName       : prefixName])) {
+            error "Cannot compute the RSU indicators"
+            return null
+        }
+        info "All geoindicators have been computed"
+
+        // If the LCZ indicators should be calculated, we only affect a LCZ class to each RSU
+        if(indicatorUse.contains("LCZ")){
+            def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"             : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
+                                 "BUILDING_FRACTION_LCZ"            : "BUILDING_SURFACE_FRACTION",
+                                 "ASPECT_RATIO"                     : "ASPECT_RATIO",
+                                 "GROUND_SKY_VIEW_FACTOR"           : "SKY_VIEW_FACTOR",
+                                 "PERVIOUS_FRACTION_LCZ"            : "PERVIOUS_SURFACE_FRACTION",
+                                 "IMPERVIOUS_FRACTION_LCZ"          : "IMPERVIOUS_SURFACE_FRACTION",
+                                 "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH": "TERRAIN_ROUGHNESS_LENGTH"]
+
+            // Get into a new table the ID, geometry column and the 7 indicators defined by Stewart and Oke (2012)
+            // for LCZ classification (rename the indicators with the real names)
+            def queryReplaceNames = ""
+            lczIndicNames.each { oldIndic, newIndic ->
+                queryReplaceNames += "ALTER TABLE $lczIndicTable ALTER COLUMN $oldIndic RENAME TO $newIndic;"
+            }
+            datasource.execute """DROP TABLE IF EXISTS $lczIndicTable;
+                                CREATE TABLE $lczIndicTable 
+                                        AS SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, ${lczIndicNames.keySet().join(",")} 
+                                        FROM ${computeRSUIndicators.results.outputTableName};
+                                $queryReplaceNames"""
+
+            // The classification algorithm is called
+            def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType
+            if(!classifyLCZ([rsuLczIndicators   : lczIndicTable,
+                             rsuAllIndicators   : computeRSUIndicators.results.outputTableName,
+                             normalisationType  : "AVG",
+                             mapOfWeights       : mapOfWeights,
+                             prefixName         : prefixName,
+                             datasource         : datasource,
+                             prefixName         : prefixName])){
+                info "Cannot compute the LCZ classification."
+                return
+            }
+            rsuLcz = classifyLCZ.results.outputTableName
+        }
+
+        datasource.execute "DROP TABLE IF EXISTS $lczIndicTable;"
+
+
+        return [outputTableBuildingIndicators: computeBuildingsIndicators.getResults().outputTableName,
+                outputTableBlockIndicators   : blockIndicators,
+                outputTableRsuIndicators     : computeRSUIndicators.getResults().outputTableName,
+                outputTableRsuLcz   : rsuLcz,
+                outputTableZone:zoneTable]
     }
 }

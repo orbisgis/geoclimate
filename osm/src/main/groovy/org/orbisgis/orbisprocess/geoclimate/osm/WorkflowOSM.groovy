@@ -419,11 +419,12 @@ create {
                             info "OSM GIS layers formated"
 
                             //Build the indicators
-                            IProcess geoIndicators = ProcessingChain.Workflow.GeoIndicators
+                            IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators
                             if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
                                     buildingTable: buildingTableName, roadTable: roadTableName,
                                     railTable: railTableName, vegetationTable: vegetationTableName,
-                                    hydrographicTable: hydrographicTableName, indicatorUse: processing_parameters.indicatorUse,
+                                    hydrographicTable: hydrographicTableName, imperviousTable :imperviousTableName,
+                                    indicatorUse: processing_parameters.indicatorUse,
                                     svfSimplified: processing_parameters.svfSimplified, prefixName: processing_parameters.prefixName,
                                     mapOfWeights: processing_parameters.mapOfWeights)) {
                                 error "Cannot build the geoindicators for the zone $id_zone"
@@ -1105,15 +1106,17 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
 
     if (output_block_indicators && !output_datasource.hasTable(output_block_indicators)){
         output_datasource.execute """CREATE TABLE $output_block_indicators (
-        ID_ZONE VARCHAR,
         ID_BLOCK INTEGER, THE_GEOM GEOMETRY(GEOMETRY,$srid),
         ID_RSU INTEGER, AREA DOUBLE PRECISION,
         FLOOR_AREA DOUBLE PRECISION,VOLUME DOUBLE PRECISION,
-        HOLE_AREA_DENSITY DOUBLE PRECISION,MAIN_BUILDING_DIRECTION VARCHAR,
-        BUILDING_DIRECTION_INEQUALITY DOUBLE PRECISION,BUILDING_DIRECTION_UNIQUENESS DOUBLE PRECISION,
+        HOLE_AREA_DENSITY DOUBLE PRECISION,
+        BUILDING_DIRECTION_EQUALITY DOUBLE PRECISION,
+        BUILDING_DIRECTION_UNIQUENESS DOUBLE PRECISION,
+        MAIN_BUILDING_DIRECTION VARCHAR,
         CLOSINGNESS DOUBLE PRECISION, NET_COMPACTNESS DOUBLE PRECISION,
         AVG_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION,
-        STD_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION
+        STD_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION,
+        ID_ZONE VARCHAR
         );
         CREATE INDEX IF NOT EXISTS idx_${output_block_indicators}_id_zone ON $output_block_indicators (ID_ZONE);"""
     }
@@ -1176,9 +1179,8 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
     if (output_rsu_indicators && !output_datasource.hasTable(output_rsu_indicators)){
         output_datasource.execute """
     CREATE TABLE $output_rsu_indicators (
-    ID_ZONE VARCHAR,
-	THE_GEOM GEOMETRY(GEOMETRY,$srid),
-	ID_RSU INTEGER,
+    ID_RSU INTEGER,
+	THE_GEOM GEOMETRY(GEOMETRY,$srid),	
 	HIGH_VEGETATION_FRACTION DOUBLE PRECISION,
 	HIGH_VEGETATION_WATER_FRACTION DOUBLE PRECISION,
 	HIGH_VEGETATION_BUILDING_FRACTION DOUBLE PRECISION,
@@ -1275,9 +1277,10 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
 	GROUND_SKY_VIEW_FACTOR DOUBLE PRECISION,
 	EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH DOUBLE PRECISION,
 	EFFECTIVE_TERRAIN_ROUGHNESS_CLASS INTEGER,
+	BUILDING_DIRECTION_EQUALITY DOUBLE PRECISION,
+	BUILDING_DIRECTION_UNIQUENESS DOUBLE PRECISION,
 	MAIN_BUILDING_DIRECTION VARCHAR,
-	BUILDING_DIRECTION_INEQUALITY DOUBLE PRECISION,
-	BUILDING_DIRECTION_UNIQUENESS DOUBLE PRECISION
+    ID_ZONE VARCHAR
     );    
         CREATE INDEX IF NOT EXISTS idx_${output_rsu_indicators}_id_zone ON $output_rsu_indicators (ID_ZONE);
         """
