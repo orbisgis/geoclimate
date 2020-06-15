@@ -1260,7 +1260,7 @@ create {
                 def impervious_tmp = postfix "impervious_zindex0"
                 datasource """DROP TABLE IF EXISTS $impervious_tmp;
                 CREATE TABLE $impervious_tmp AS SELECT ST_CollectionExtract(st_intersection(st_force2d(a.the_geom), b.the_geom),3) AS the_geom, b.id_rsu FROM 
-                        $impervious_tmp AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
+                        $imperviousTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom)"""
                 tablesToMerge+= ["$impervious_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $impervious_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
             }

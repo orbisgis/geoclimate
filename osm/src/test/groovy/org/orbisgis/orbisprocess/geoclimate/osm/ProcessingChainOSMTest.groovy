@@ -86,12 +86,12 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         String hydrographicTableName="hydro"
 
 
-        datasource.load(urlBuilding, buildingTableName)
-        datasource.load(urlRoad, roadTableName)
-        datasource.load(urlRail, railTableName)
-        datasource.load(urlVeget, vegetationTableName)
-        datasource.load(urlHydro, hydrographicTableName)
-        datasource.load(urlZone, zoneTableName)
+        datasource.load(urlBuilding, buildingTableName, true)
+        datasource.load(urlRoad, roadTableName, true)
+        datasource.load(urlRail, railTableName, true)
+        datasource.load(urlVeget, vegetationTableName, true)
+        datasource.load(urlHydro, hydrographicTableName, true)
+        datasource.load(urlZone, zoneTableName, true)
 
         //Run tests
         geoIndicatorsCalc(dirFile.absolutePath+File, datasource, zoneTableName, buildingTableName,roadTableName,
@@ -184,7 +184,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                             "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
 
-        IProcess geodindicators = PC.Workflow.GeoIndicators
+        IProcess geodindicators = PC.GeoIndicatorsChain.computeAllGeoIndicators
         assertTrue geodindicators.execute(datasource: datasource, zoneTable: zoneTableName,
                 buildingTable: buildingTableName, roadTable: roadTableName,
                 railTable: railTableName, vegetationTable: vegetationTableName,
@@ -201,7 +201,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
 
     @Disabled
     @Test
-    void osmWorkflowToDatabase() {
+    void osmWorkflowToH2Database() {
         String directory ="./target/geoclimate_chain"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -242,7 +242,54 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                          "hThresholdLev2": 10
                         ]
         ]
-        IProcess process = OSM.workflow
+        IProcess process = O.WorkflowOSM.workflow
+        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+    }
+
+    @Disabled
+    @Test
+    void osmWorkflowToPostGISDatabase() {
+        String directory ="./target/geoclimate_chain"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
+                "geoclimatedb" : [
+                        "path" : "${dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE"}",
+                        "delete" :true
+                ],
+                "input" : [
+                        "osm" : ["romainville"]],
+                "output" :[
+                        "database" :
+                                ["user" : "orbisgis",
+                                 "password":"orbisgis",
+                                 "url": "jdbc:postgresql://localhost:5432/orbisgis_db",
+                                 "tables": ["building_indicators":"building_indicators",
+                                            "block_indicators":"block_indicators",
+                                            "rsu_indicators":"rsu_indicators",
+                                            "rsu_lcz":"rsu_lcz",
+                                            "zones":"zones" ]]],
+                "parameters":
+                        ["distance" : 0,
+                         "indicatorUse": ["LCZ", "TEB", "URBAN_TYPOLOGY"],
+                         "svfSimplified": true,
+                         "prefixName": "",
+                         "mapOfWeights":
+                                 ["sky_view_factor": 1,
+                                  "aspect_ratio": 1,
+                                  "building_surface_fraction": 1,
+                                  "impervious_surface_fraction" : 1,
+                                  "pervious_surface_fraction": 1,
+                                  "height_of_roughness_elements": 1,
+                                  "terrain_roughness_class": 1  ],
+                         "hLevMin": 3,
+                         "hLevMax": 15,
+                         "hThresholdLev2": 10
+                        ]
+        ]
+        IProcess process = O.WorkflowOSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
@@ -264,7 +311,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 "output" :[
                         "folder" : "$directory"]
         ]
-        IProcess process = OSM.workflow
+        IProcess process = O.WorkflowOSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
@@ -286,7 +333,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 "output" :[
                         "folder" : "$directory"]
         ]
-        IProcess process = OSM.workflow
+        IProcess process = O.WorkflowOSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
@@ -308,7 +355,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 "output" :[
                         "folder" : "$directory"]
         ]
-        IProcess process = OSM.workflow
+        IProcess process = O.WorkflowOSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
@@ -368,7 +415,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 "hThresholdLev2": 10
             ]
         ]
-        IProcess process = OSM.workflow
+        IProcess process = O.WorkflowOSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
@@ -407,7 +454,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                          "hThresholdLev2": 10
                         ]
         ]
-        IProcess process = OSM.workflow
+        IProcess process = O.WorkflowOSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
@@ -446,7 +493,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                          "hThresholdLev2": 10
                         ]
         ]
-        IProcess process = OSM.workflow
+        IProcess process = O.WorkflowOSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
