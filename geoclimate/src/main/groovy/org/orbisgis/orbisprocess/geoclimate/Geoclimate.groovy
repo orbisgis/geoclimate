@@ -18,11 +18,11 @@ class Geoclimate {
     public static def ProcessingChain = load(PC)
 
     public static class OSM{
-        public static def Workflow = Geoclimate.Osm.WorkflowOSM.Workflow
+        public static def Workflow = Geoclimate.Osm.WorkflowOSM.workflow
     }
 
     public static class BDTopo_V2{
-        public static def Workflow = Geoclimate.BDTopo.WorkflowBDTopo_V2.Workflow
+        public static def Workflow = Geoclimate.BDTopo.WorkflowBDTopo_V2.workflow
     }
 
     /**

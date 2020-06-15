@@ -121,7 +121,7 @@ import java.sql.SQLException
  */
 create {
     title "Create all geoindicators from BDTopo data"
-    id "Workflow"
+    id "workflow"
     inputs configurationFile: String
     outputs outputMessage: String
     run {configurationFile ->
