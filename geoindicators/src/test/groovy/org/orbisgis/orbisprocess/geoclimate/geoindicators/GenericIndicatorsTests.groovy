@@ -307,4 +307,27 @@ class GenericIndicatorsTests {
         assert "COL1"   == h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION WHERE id = 2")["EXTREMUM_COL"]
         assert "COL1"   == h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION WHERE id = 4")["EXTREMUM_COL"]
     }
+
+    @Test
+    void typeProportionTest() {
+        // Only the first 6 first created buildings are selected since any new created building may alter the results
+        h2GIS """
+                DROP TABLE IF EXISTS tempo_build0, tempo_build, tempo_rsu, unweighted_operation_from_lower_scale1, 
+                unweighted_operation_from_lower_scale2, unweighted_operation_from_lower_scale3; 
+                CREATE TABLE tempo_build AS SELECT a.*
+                        FROM building_test a, rsu_test b
+                        WHERE id_build < 4;"""
+
+        def  p =  GI.GenericIndicators.typeProportion
+        assert p([
+                inputTableName      : "tempo_build",
+                idField             : "id_rsu",
+                typeFieldName       : "type",
+                prefixName          : "",
+                datasource          : h2GIS])
+
+        def result = h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName}")
+        assert (156.0/296).trunc(3) == result.fraction_industrial.trunc(3)
+        assert (140.0/296).trunc(3) == result.fraction_residential.trunc(3)
+    }
 }

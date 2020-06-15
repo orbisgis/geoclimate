@@ -37,7 +37,7 @@ class SpatialUnitsTests {
                 datasource      : h2GIS])
         def outputTable = rsu.results.outputTableName
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
-        assert 10 == countRows.numberOfRows
+        assert 9 == countRows.numberOfRows
     }
 
     @Test

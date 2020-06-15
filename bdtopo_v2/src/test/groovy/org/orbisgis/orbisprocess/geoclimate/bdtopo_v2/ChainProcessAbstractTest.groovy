@@ -34,7 +34,7 @@ class ChainProcessAbstractTest {
                            String hydrographicTableName, boolean saveResults, boolean svfSimplified = false, def indicatorUse,
                            String prefixName = "") {
         //Create spatial units and relations : building, block, rsu
-        IProcess spatialUnits = PC.BuildSpatialUnits.createUnitsOfAnalysis
+        IProcess spatialUnits = PC.GeoIndicatorsChain.createUnitsOfAnalysis
         assertTrue spatialUnits.execute([datasource       : datasource, zoneTable: zoneTableName, buildingTable: buildingTableName,
                                          roadTable        : roadTableName, railTable: railTableName, vegetationTable: vegetationTableName,
                                          hydrographicTable: hydrographicTableName, surface_vegetation: 100000,
@@ -61,7 +61,7 @@ class ChainProcessAbstractTest {
         assertEquals(countRSU.count, maxRSUBlocks.max)
 
         //Compute building indicators
-        def computeBuildingsIndicators = PC.BuildGeoIndicators.computeBuildingsIndicators
+        def computeBuildingsIndicators = PC.GeoIndicatorsChain.computeBuildingsIndicators
         assertTrue computeBuildingsIndicators.execute([datasource            : datasource,
                                                        inputBuildingTableName: relationBuildings,
                                                        inputRoadTableName    : roadTableName,
@@ -80,7 +80,7 @@ class ChainProcessAbstractTest {
 
         //Compute block indicators
         if (indicatorUse.contains("URBAN_TYPOLOGY")) {
-            def computeBlockIndicators = PC.BuildGeoIndicators.computeBlockIndicators
+            def computeBlockIndicators = PC.GeoIndicatorsChain.computeBlockIndicators
             assertTrue computeBlockIndicators.execute([datasource            : datasource,
                                                        inputBuildingTableName: buildingIndicators,
                                                        inputBlockTableName   : relationBlocks,
@@ -97,7 +97,7 @@ class ChainProcessAbstractTest {
         }
 
         //Compute RSU indicators
-        def computeRSUIndicators = PC.BuildGeoIndicators.computeRSUIndicators
+        def computeRSUIndicators = PC.GeoIndicatorsChain.computeRSUIndicators
         assertTrue computeRSUIndicators.execute([datasource       : datasource,
                                                  buildingTable    : buildingIndicators,
                                                  rsuTable         : relationRSU,
