@@ -346,8 +346,12 @@ class TypologyClassificationTests {
         //Reload the table due to the schema modification
         trainingTable.reload()
 
-        def pmed =  GI.TypologyClassification.createRandomForestClassif
+        def pmed =  GI.TypologyClassification.applyRandomForestClassif
+        run {->
         assert pmed.execute([
+                explicativeVariablesTableName   : trainingTableName,
+                defaultModelUrl                 :, pathAndFileName, idName,
+                prefixName, datasource
                 trainingTableName   : trainingTableName,
                 varToModel          : var2model,
                 save                : true,
