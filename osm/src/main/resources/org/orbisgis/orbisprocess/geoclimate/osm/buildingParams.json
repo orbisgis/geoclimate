@@ -38,7 +38,7 @@
         "terminal": 0,
         "healthcare": 1,
         "education": 1,
-        "entertainment_arts_culture": 0,
+        "entertainment, arts and culture": 0,
         "sustenance": 1,
         "military": 0,
         "religious": 0,
@@ -524,7 +524,7 @@
                 "university"
             ]
         },
-        "entertainment_arts_culture": {
+        "entertainment, arts and culture": {
             "leisure": [
                 "! no"
             ]

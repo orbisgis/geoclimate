@@ -376,7 +376,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 "output" :[
                         "folder" : "$directory"]
         ]
-        IProcess process = O.WorkflowOSM.workflow
+        IProcess process = O.WorkflowOSM.Workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 

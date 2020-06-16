@@ -1051,7 +1051,7 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
                     STD_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION,
                     ID_ZONE VARCHAR
                 );
-                CREATE INDEX IF NOT EXISTS idx_${output_block_indicators.replaceAll(".","_")}_id_zone ON $output_block_indicators (ID_ZONE);
+                CREATE INDEX IF NOT EXISTS idx_${output_block_indicators}_id_zone ON $output_block_indicators (ID_ZONE);
         """
     }
     else if (output_block_indicators){
@@ -1098,7 +1098,7 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
                         ROAD_DISTANCE DOUBLE PRECISION,
                         LIKELIHOOD_LARGE_BUILDING DOUBLE PRECISION
                 );
-                CREATE INDEX IF NOT EXISTS idx_${output_building_indicators.replaceAll(".","_")}_id_zone  ON $output_building_indicators (ID_ZONE);
+                CREATE INDEX IF NOT EXISTS idx_${output_building_indicators}_id_zone  ON $output_building_indicators (ID_ZONE);
         """
     }
     else if (output_building_indicators){
@@ -1220,7 +1220,7 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
 	MAIN_BUILDING_DIRECTION VARCHAR,
     ID_ZONE VARCHAR
     );    
-        CREATE INDEX IF NOT EXISTS idx_${output_rsu_indicators.replaceAll(".","_")}_id_zone ON $output_rsu_indicators (ID_ZONE);
+        CREATE INDEX IF NOT EXISTS idx_${output_rsu_indicators}_id_zone ON $output_rsu_indicators (ID_ZONE);
         """
     } else if (output_rsu_indicators){
         def outputTableSRID = output_datasource.getSpatialTable(output_rsu_indicators).srid
@@ -1246,7 +1246,7 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
                         MIN_DISTANCE DOUBLE PRECISION,
                         PSS DOUBLE PRECISION
                 );
-                CREATE INDEX IF NOT EXISTS idx_${output_rsu_lcz.replaceAll(".","_")}_id_zone ON $output_rsu_lcz (ID_ZONE);
+                CREATE INDEX IF NOT EXISTS idx_${output_rsu_lcz}_id_zone ON $output_rsu_lcz (ID_ZONE);
         """
     }else if (output_rsu_lcz){
         def outputTableSRID = output_datasource.getSpatialTable(output_rsu_lcz).srid
@@ -1264,7 +1264,7 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
     if (output_zones && !output_datasource.hasTable(output_zones)){
         output_datasource """
                 CREATE TABLE $output_zones(ID_ZONE VARCHAR, THE_GEOM GEOMETRY(GEOMETRY,$srid));
-                CREATE INDEX IF NOT EXISTS idx_${output_zones.replaceAll(".","_")}_id_zone ON $output_zones (ID_ZONE);
+                CREATE INDEX IF NOT EXISTS idx_${output_zones}_id_zone ON $output_zones (ID_ZONE);
         """
     }else if (output_zones){
         def outputTableSRID = output_datasource.getSpatialTable(output_zones).srid
@@ -1283,7 +1283,7 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
         output_datasource """
                 CREATE TABLE $output_building (THE_GEOM GEOMETRY(POLYGON, $srid), id_build serial, ID_SOURCE VARCHAR, 
                     HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT, NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER);
-                CREATE INDEX IF NOT EXISTS idx_${output_building.replaceAll(".","_")}_id_source ON $output_building (ID_SOURCE);
+                CREATE INDEX IF NOT EXISTS idx_${output_building}_id_source ON $output_building (ID_SOURCE);
         """
     }
     else if (output_building){
@@ -1304,7 +1304,7 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
                 CREATE TABLE $output_road  (THE_GEOM GEOMETRY(GEOMETRY, $srid), id_road serial, ID_SOURCE VARCHAR, 
                         WIDTH FLOAT, TYPE VARCHAR, CROSSING VARCHAR(30), SURFACE VARCHAR, SIDEWALK VARCHAR, 
                         ZINDEX INTEGER);
-                CREATE INDEX IF NOT EXISTS idx_${output_road.replaceAll(".","_")}_id_source ON $output_road (ID_SOURCE);
+                CREATE INDEX IF NOT EXISTS idx_${output_road}_id_source ON $output_road (ID_SOURCE);
         """
     }
     else if (output_road){
@@ -1324,7 +1324,7 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
         output_datasource """
                 CREATE TABLE $output_rail  (THE_GEOM GEOMETRY(GEOMETRY, $srid), id_rail serial,ID_SOURCE VARCHAR, 
                         TYPE VARCHAR,CROSSING VARCHAR(30), ZINDEX INTEGER);
-                CREATE INDEX IF NOT EXISTS idx_${output_rail.replaceAll(".","_")}_id_source ON $output_rail (ID_SOURCE);
+                CREATE INDEX IF NOT EXISTS idx_${output_rail}_id_source ON $output_rail (ID_SOURCE);
         """
     }
     else if (output_rail){
@@ -1343,7 +1343,7 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
     if (output_water && !output_datasource.hasTable(output_water)){
         output_datasource """
                 CREATE TABLE $output_water  (THE_GEOM GEOMETRY(POLYGON, $srid), id_hydro serial, ID_SOURCE VARCHAR);
-                CREATE INDEX IF NOT EXISTS idx_${output_water.replaceAll(".","_")}_id_source ON $output_water (ID_SOURCE);
+                CREATE INDEX IF NOT EXISTS idx_${output_water}_id_source ON $output_water (ID_SOURCE);
         """
     }
     else if (output_water){
@@ -1363,7 +1363,7 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
         output_datasource """
                 CREATE TABLE $output_vegetation  (THE_GEOM GEOMETRY(POLYGON, $srid), id_veget serial, 
                         ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4));
-                CREATE INDEX IF NOT EXISTS idx_${output_vegetation.replaceAll(".","_")}_id_source ON $output_vegetation (ID_SOURCE);
+                CREATE INDEX IF NOT EXISTS idx_${output_vegetation}_id_source ON $output_vegetation (ID_SOURCE);
         """
     }
     else if (output_vegetation){
@@ -1382,7 +1382,7 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
     if (output_impervious && !output_datasource.hasTable(output_impervious)){
         output_datasource """
                 CREATE TABLE $output_impervious  (THE_GEOM GEOMETRY(POLYGON, $srid), id_impervious serial, ID_SOURCE VARCHAR);
-                CREATE INDEX IF NOT EXISTS idx_${output_impervious.replaceAll(".","_")}_id_source ON $output_impervious (ID_SOURCE);
+                CREATE INDEX IF NOT EXISTS idx_${output_impervious}_id_source ON $output_impervious (ID_SOURCE);
         """
     }
     else if (output_impervious){
