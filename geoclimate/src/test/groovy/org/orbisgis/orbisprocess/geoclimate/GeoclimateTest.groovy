@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test
 class GeoclimateTest {
     @Test
     void test() {
-        assert Geoclimate.BDTopo_V2
-        assert Geoclimate.OSM
+        assert Geoclimate.BDTOPO_V2.workflow
+        assert Geoclimate.OSM.workflow
     }
 }
