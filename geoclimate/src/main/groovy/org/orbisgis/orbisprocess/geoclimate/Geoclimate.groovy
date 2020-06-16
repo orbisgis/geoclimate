@@ -18,11 +18,11 @@ class Geoclimate {
     public static def ProcessingChain = load(PC)
 
     public static class OSM{
-        public static def Workflow = Geoclimate.Osm.WorkflowOSM.workflow
+        public static def workflow = Geoclimate.Osm.WorkflowOSM.workflow
     }
 
-    public static class BDTopo_V2{
-        public static def Workflow = Geoclimate.BDTopo.WorkflowBDTopo_V2.workflow
+    public static class BDTOPO_V2{
+        public static def workflow = Geoclimate.BDTopo.WorkflowBDTopo_V2.workflow
     }
 
     /**
@@ -31,10 +31,9 @@ class Geoclimate {
      * @param logger Logger to use in the processes.
      */
     static void setLogger(def logger){
-        OSM.logger = logger
-        BDTopo.logger = logger
-        ProcessingChain.logger = logger
-        Geoindicators.logger = logger
-        OSM.getMetaClass().getMetaPropertyValues().forEach {it.value}
+        Osm.setLogger(logger)
+        BDTopo.setLogger(logger)
+        ProcessingChain.setLogger(logger)
+        Geoindicators.setLogger(logger)
     }
 }
