@@ -29,7 +29,7 @@ For each of them, we give the definition and the hexadecimal color code used to 
 ### Cartography
 
 
-One `urban_typo.sld` style file, based on this classification, is provided in the `/processing_chain/src/main/resources/styles/` folder ([here](https://github.com/orbisgis/geoclimate/tree/master/processingchain/src/main/resources/styles)).
+One `urban_typo.sld` style file, based on this classification, is provided in the `/processing_chain/src/main/resources/styles/` folder ([here](https://github.com/orbisgis/geoclimate/tree/v1.0.0-RC1/processingchain/src/main/resources/styles)).
 
 ![](../../resources/images/chain_documentation/urban_typo_legend.png)
 

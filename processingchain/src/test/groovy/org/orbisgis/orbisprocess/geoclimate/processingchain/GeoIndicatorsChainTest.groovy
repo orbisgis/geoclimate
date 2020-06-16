@@ -53,10 +53,15 @@ class GeoIndicatorsChainTest {
                                "BUILDING_VOLUME_DENSITY", "AVG_VOLUME", "GROUND_LINEAR_ROAD_DENSITY",
                                "GEOM_AVG_HEIGHT_ROOF", "BUILDING_FLOOR_AREA_DENSITY",
                                "AVG_MINIMUM_BUILDING_SPACING", "MAIN_BUILDING_DIRECTION", "BUILDING_DIRECTION_UNIQUENESS",
-                               "BUILDING_DIRECTION_EQUALITY"],
+                               "BUILDING_DIRECTION_EQUALITY", "FRACTION_APARTMENTS","FRACTION_BUILDING","FRACTION_COMMERCIAL",
+                               "FRACTION_EDUCATION","FRACTION_GOVERNMENT","FRACTION_HOUSE","FRACTION_OFFICE",
+                               "FRACTION_RELIGIOUS","FRACTION_RESIDENTIAL","FRACTION_SPORTS_CENTRE","FRACTION_SUSTENANCE"],
             "LCZ"           : ["BUILDING_FRACTION_LCZ", "ASPECT_RATIO", "GROUND_SKY_VIEW_FACTOR", "PERVIOUS_FRACTION_LCZ",
                                "IMPERVIOUS_FRACTION_LCZ", "GEOM_AVG_HEIGHT_ROOF", "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH", "EFFECTIVE_TERRAIN_ROUGHNESS_CLASS",
-                               "HIGH_VEGETATION_FRACTION_LCZ", "LOW_VEGETATION_FRACTION_LCZ", "WATER_FRACTION_LCZ"]]
+                               "HIGH_VEGETATION_FRACTION_LCZ", "LOW_VEGETATION_FRACTION_LCZ", "WATER_FRACTION_LCZ",
+                               "FRACTION_APARTMENTS","FRACTION_BUILDING","FRACTION_COMMERCIAL",
+                               "FRACTION_EDUCATION","FRACTION_GOVERNMENT","FRACTION_HOUSE","FRACTION_OFFICE",
+                               "FRACTION_RELIGIOUS","FRACTION_RESIDENTIAL","FRACTION_SPORTS_CENTRE","FRACTION_SUSTENANCE"]]
 
     // Basic columns at RSU scale
     public static listColBasic = ["ID_RSU", "THE_GEOM"]
@@ -109,7 +114,7 @@ class GeoIndicatorsChainTest {
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                             "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
         def ind_i = ["LCZ"]
-        IProcess GeoIndicatorsCompute_i = PC.Workflow.GeoIndicators
+        IProcess GeoIndicatorsCompute_i = PC.GeoIndicatorsChain.computeAllGeoIndicators
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
@@ -154,7 +159,7 @@ class GeoIndicatorsChainTest {
 
         def ind_i = ["URBAN_TYPOLOGY"]
 
-        IProcess GeoIndicatorsCompute_i = PC.Workflow.GeoIndicators
+        IProcess GeoIndicatorsCompute_i = PC.GeoIndicatorsChain.computeAllGeoIndicators
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
@@ -200,7 +205,7 @@ class GeoIndicatorsChainTest {
 
         def ind_i = ["URBAN_TYPOLOGY", "TEB"]
 
-        IProcess GeoIndicatorsCompute_i = PC.Workflow.GeoIndicators
+        IProcess GeoIndicatorsCompute_i = PC.GeoIndicatorsChain.computeAllGeoIndicators
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
@@ -245,7 +250,7 @@ class GeoIndicatorsChainTest {
 
         def ind_i = ["TEB"]
 
-        IProcess GeoIndicatorsCompute_i = PC.Workflow.GeoIndicators
+        IProcess GeoIndicatorsCompute_i = PC.GeoIndicatorsChain.computeAllGeoIndicators
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
@@ -290,7 +295,7 @@ class GeoIndicatorsChainTest {
 
         def ind_i = ["LCZ", "TEB"]
 
-        IProcess GeoIndicatorsCompute_i = PC.Workflow.GeoIndicators
+        IProcess GeoIndicatorsCompute_i = PC.GeoIndicatorsChain.computeAllGeoIndicators
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
@@ -335,7 +340,7 @@ class GeoIndicatorsChainTest {
 
         def ind_i = ["URBAN_TYPOLOGY", "LCZ"]
 
-        IProcess GeoIndicatorsCompute_i = PC.Workflow.GeoIndicators
+        IProcess GeoIndicatorsCompute_i = PC.GeoIndicatorsChain.computeAllGeoIndicators
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,

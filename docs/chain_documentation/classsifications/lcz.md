@@ -14,7 +14,7 @@ The distance of each RSU to each of the LCZ types is calculated in the normalize
 
 
 
-![](../../resources/images/common/icons/github.png) The LCZ classification source code is available [here](https://github.com/orbisgis/geoclimate/blob/master/geoindicators/src/main/groovy/org/orbisgis/geoindicators/TypologyClassification.groovy).
+![](../../resources/images/common/icons/github.png) The LCZ classification source code is available [here](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/geoindicators/src/main/groovy/org/orbisgis/orbisprocess/geoclimate/geoindicators/TypologyClassification.groovy).
 
 ## Table definition ![](../../resources/images/common/icons/table.png)
 
@@ -61,7 +61,7 @@ For each of them, we give the definition and the hexadecimal color code used to 
 ### Cartography
 
 
-Two `.sld` style files, based on this classification, are provided in the `/processing_chain/src/main/resources/styles/` folder ([here](https://github.com/orbisgis/geoclimate/tree/master/processingchain/src/main/resources/styles)):
+Two `.sld` style files, based on this classification, are provided in the `/processing_chain/src/main/resources/styles/` folder ([here](https://github.com/orbisgis/geoclimate/tree/v1.0.0-RC1/processingchain/src/main/resources/styles)):
 
 - `lcz1.sld` : the style ready to be applied to the field `LCZ1`
 - `lcz2.sld` : the style ready to be applied to the field `LCZ2`

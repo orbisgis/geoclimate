@@ -1,6 +1,6 @@
 # Run Geoclimate with BD Topo v2
 
-As seen in [this section](../../chain_documentation/workflow/description.md#Configuration-file), five BD Topo v2 workflow configuration files are available on the Geoclimate Github repository [here](https://github.com/orbisgis/geoclimate/tree/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config):
+As seen in [this section](../../chain_documentation/workflow/description.md#Configuration-file), five BD Topo v2 workflow configuration files are available on the Geoclimate Github repository [here](https://github.com/orbisgis/geoclimate/tree/v1.0.0-RC1/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config):
 
 1. [Using an input database and saving results into a database](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_dbinput_dboutput.json)
 2. [Using an input folder and saving results into a database](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_dboutput.json) 
