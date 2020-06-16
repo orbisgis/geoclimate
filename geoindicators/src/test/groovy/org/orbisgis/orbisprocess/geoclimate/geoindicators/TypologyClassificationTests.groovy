@@ -305,4 +305,104 @@ class TypologyClassificationTests {
            assert lczExpected.contains(row.lcz1.toString()) || lczExpected.contains(row.lcz2.toString())
         }
     }
+
+    @Test
+    void applyRandomForestClassif() {
+        h2GIS """
+                DROP TABLE IF EXISTS tempo_rsu_for_lcz;
+                CREATE TABLE tempo_rsu_for_lcz AS 
+                    SELECT a.*, b.the_geom 
+                    FROM rsu_test_lcz_indics a 
+                        LEFT JOIN rsu_test b
+                        ON a.id_rsu = b.id_rsu;
+        """
+        // Information about where to find the training dataset for the test
+        def trainingTableName = "training_table"
+        def trainingURL = TypologyClassificationTests.getResource("model/rf/training_data.shp")
+
+        def uuid = UUID.randomUUID().toString().replaceAll("-", "_")
+        def savePath = "target/geoclimate_rf_${uuid}.model"
+
+        def trainingTable = h2GIS.load(trainingURL, trainingTableName,true)
+        assert trainingTable
+
+        // Variable to model
+        def var2model = "I_TYPO"
+
+        // Columns useless for the classification
+        def colsToRemove = ["PK2", "THE_GEOM", "PK"]
+
+        // Remove unnecessary column
+        h2GIS "ALTER TABLE $trainingTableName DROP COLUMN ${colsToRemove.join(",")};"
+
+        //Reload the table due to the schema modification
+        trainingTable.reload()
+
+        def pmed =  GI.TypologyClassification.createRandomForestClassif
+        assert pmed.execute([
+                trainingTableName   : trainingTableName,
+                varToModel          : var2model,
+                save                : true,
+                pathAndFileName     : savePath,
+                ntrees              : 300,
+                mtry                : 7,
+                rule                : "GINI",
+                maxDepth            : 100,
+                maxNodes            : 300,
+                nodeSize            : 5,
+                subsample           : 0.25,
+                datasource          : h2GIS])
+        def model = pmed.results.RfModel
+        assert model
+        assert model instanceof DataFrameClassifier
+
+        // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
+        def df = DataFrame.of(trainingTable)
+        assert df
+        df = df.factorize(var2model)
+        assert df
+        df = df.omitNullRows()
+        def vector = df.apply(var2model)
+        assert vector
+        def truth = vector.toIntArray()
+        assert truth
+        def prediction = Validation.test(model, df)
+        assert prediction
+        def accuracy = Accuracy.of(truth, prediction)
+        assert accuracy
+        assertEquals 0.844, accuracy.round(3), 0.003
+
+
+        // Test that the model is well written in the file and can be used to recover the variable names for example
+        def xs = new XStream()
+        def fileInputStream = new FileInputStream(savePath)
+        assert fileInputStream
+        def gzipInputStream = new GZIPInputStream(fileInputStream)
+        assert gzipInputStream
+        def modelRead = xs.fromXML(gzipInputStream)
+        assert modelRead
+        assert modelRead instanceof DataFrameClassifier
+        def formula = modelRead.formula()
+        assert formula
+        def x = formula.x(df)
+        assert x
+        def names = x.names()
+        assert names
+        names = names.sort()
+        assert names
+        def namesStr = names.join(",")
+        assert namesStr
+
+        def columns = trainingTable.columns
+        assert columns
+        columns = columns.minus(var2model)
+        assert columns
+        columns = columns.sort()
+        assert columns
+        def columnsStr = columns.join(",")
+        assert columnsStr
+
+
+        assert columnsStr == namesStr
+    }
 }
