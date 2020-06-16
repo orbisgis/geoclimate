@@ -346,75 +346,23 @@ class TypologyClassificationTests {
         //Reload the table due to the schema modification
         trainingTable.reload()
 
+        // Input data creation
+        h2GIS "CREATE TABLE inputDataTable AS SELECT * FROM $trainingTableName;" +
+                "ALTER TABLE inputDataTable DROP COLUMN $var2model"
+
+
         def pmed =  GI.TypologyClassification.applyRandomForestClassif
-        run {->
         assert pmed.execute([
-                explicativeVariablesTableName   : trainingTableName,
-                defaultModelUrl                 :, pathAndFileName, idName,
-                prefixName, datasource
-                trainingTableName   : trainingTableName,
-                varToModel          : var2model,
-                save                : true,
-                pathAndFileName     : savePath,
-                ntrees              : 300,
-                mtry                : 7,
-                rule                : "GINI",
-                maxDepth            : 100,
-                maxNodes            : 300,
-                nodeSize            : 5,
-                subsample           : 0.25,
-                datasource          : h2GIS])
-        def model = pmed.results.RfModel
-        assert model
-        assert model instanceof DataFrameClassifier
+                explicativeVariablesTableName   : "inputDataTable",
+                defaultModelUrl                 : "https://github.com/orbisgis/geoclimate/models/model.model",
+                pathAndFileName                 : "",
+                idName                          : "PK",
+                prefixName                      : "test",
+                datasource                      : h2GIS])
+        def predicted = pmed.results.outputTableName
 
         // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
-        def df = DataFrame.of(trainingTable)
-        assert df
-        df = df.factorize(var2model)
-        assert df
-        df = df.omitNullRows()
-        def vector = df.apply(var2model)
-        assert vector
-        def truth = vector.toIntArray()
-        assert truth
-        def prediction = Validation.test(model, df)
-        assert prediction
-        def accuracy = Accuracy.of(truth, prediction)
-        assert accuracy
-        assertEquals 0.844, accuracy.round(3), 0.003
-
-
-        // Test that the model is well written in the file and can be used to recover the variable names for example
-        def xs = new XStream()
-        def fileInputStream = new FileInputStream(savePath)
-        assert fileInputStream
-        def gzipInputStream = new GZIPInputStream(fileInputStream)
-        assert gzipInputStream
-        def modelRead = xs.fromXML(gzipInputStream)
-        assert modelRead
-        assert modelRead instanceof DataFrameClassifier
-        def formula = modelRead.formula()
-        assert formula
-        def x = formula.x(df)
-        assert x
-        def names = x.names()
-        assert names
-        names = names.sort()
-        assert names
-        def namesStr = names.join(",")
-        assert namesStr
-
-        def columns = trainingTable.columns
-        assert columns
-        columns = columns.minus(var2model)
-        assert columns
-        columns = columns.sort()
-        assert columns
-        def columnsStr = columns.join(",")
-        assert columnsStr
-
-
-        assert columnsStr == namesStr
+        def accuracy = h2GIS.firstRow("SELECT COUNT(*) AS ACCURACY FROM $predicted")
+        assertEquals 0.844, accuracy.accuracy.round(3), 0.003
     }
 }
