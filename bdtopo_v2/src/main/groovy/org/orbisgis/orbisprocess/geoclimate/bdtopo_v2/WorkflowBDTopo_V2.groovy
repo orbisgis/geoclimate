@@ -614,7 +614,7 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
         if (count > 0) {
             //Compute the envelope of the extracted area to extract the thematic tables
             def geomToExtract = h2gis_datasource.firstRow("SELECT ST_EXPAND(ST_UNION(ST_ACCUM(the_geom)), 1000) AS THE_GEOM FROM $outputTableName").THE_GEOM
-            int srid = geomToExtract.srid
+            int srid = geomToExtract.SRID
 
             //Extract bati_indifferencie
             inputTableName = "(SELECT ID, THE_GEOM, HAUTEUR FROM ${inputTableNames.bati_indifferencie}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
