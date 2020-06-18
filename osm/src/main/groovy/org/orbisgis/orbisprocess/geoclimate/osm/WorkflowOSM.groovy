@@ -1098,7 +1098,7 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
             , "")
 
     //Export zone
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.zones,id_zone, h2gis_datasource, h2gis_tables.outputTableZone
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.zones, h2gis_datasource, h2gis_tables.outputTableZone
             , "")
 
     //Export building
