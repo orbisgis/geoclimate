@@ -2,9 +2,10 @@ package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.*
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.*
 
-@BaseScript GroovyProcessFactory pf
+@BaseScript Geoindicators geoindicators
 
 
 /**
@@ -19,34 +20,35 @@ import org.orbisgis.orbisdata.processmanager.process.*
  *
  * @author Jérémy Bernard
  */
-create {
-    title "Hole area ratio"
-    id "holeAreaDensity"
-    inputs blockTable: String, prefixName: String, datasource: JdbcDataSource
-    outputs outputTableName: String
-    run {blockTable, prefixName, datasource ->
+IProcess holeAreaDensity() {
+    return create {
+        title "Hole area ratio"
+        id "holeAreaDensity"
+        inputs blockTable: String, prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { blockTable, prefixName, datasource ->
 
-        def GEOMETRIC_FIELD = "the_geom"
-        def ID_COLUMN_BL = "id_block"
-        def BASE_NAME = "hole_area_density"
+            def GEOMETRIC_FIELD = "the_geom"
+            def ID_COLUMN_BL = "id_block"
+            def BASE_NAME = "hole_area_density"
 
-        info "Executing Hole area ratio"
+            info "Executing Hole area ratio"
 
-        // The name of the outputTableName is constructed
-        def outputTableName = prefix(prefixName, "block_" + BASE_NAME)
+            // The name of the outputTableName is constructed
+            def outputTableName = prefix(prefixName, "block_" + BASE_NAME)
 
-        def query = """
+            def query = """
             DROP TABLE IF EXISTS $outputTableName; 
             CREATE TABLE $outputTableName AS 
                 SELECT $ID_COLUMN_BL, ST_AREA(ST_HOLES($GEOMETRIC_FIELD))/ST_AREA($GEOMETRIC_FIELD) AS $BASE_NAME 
                 FROM $blockTable
         """
 
-        datasource query
-        [outputTableName: outputTableName]
+            datasource query
+            [outputTableName: outputTableName]
+        }
     }
 }
-
 /**
  * The sum of the building free external area composing the block are divided by the sum of the building volume.
  * The sum of the building volume is calculated at the power 2/3 in order to have a ratio of homogeneous quantities (same unit)
@@ -65,27 +67,28 @@ create {
  *
  * @author Jérémy Bernard
  */
-create {
-    title "Block net compactness"
-    id "netCompactness"
-    inputs buildTable: String, buildingVolumeField: String, buildingContiguityField: String,
-     prefixName: String, datasource: JdbcDataSource
-    outputs outputTableName: String
-    run { buildTable, buildingVolumeField, buildingContiguityField, prefixName, datasource ->
+IProcess netCompactness() {
+    return create {
+        title "Block net compactness"
+        id "netCompactness"
+        inputs buildTable: String, buildingVolumeField: String, buildingContiguityField: String,
+                prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { buildTable, buildingVolumeField, buildingContiguityField, prefixName, datasource ->
 
-        def GEOMETRY_FIELD_BU = "the_geom"
-        def ID_COLUMN_BL = "id_block"
-        def HEIGHT_WALL = "height_wall"
-        def BASE_NAME = "net_compactness"
+            def GEOMETRY_FIELD_BU = "the_geom"
+            def ID_COLUMN_BL = "id_block"
+            def HEIGHT_WALL = "height_wall"
+            def BASE_NAME = "net_compactness"
 
-        info "Executing Block net net_compactness"
+            info "Executing Block net net_compactness"
 
-        // The name of the outputTableName is constructed
-        def outputTableName = prefix(prefixName, "block_" + BASE_NAME)
+            // The name of the outputTableName is constructed
+            def outputTableName = prefix(prefixName, "block_" + BASE_NAME)
 
-        datasource."$buildTable".id_block.createIndex()
+            datasource."$buildTable".id_block.createIndex()
 
-        def query = """
+            def query = """
             DROP TABLE IF EXISTS $outputTableName; 
             CREATE TABLE $outputTableName AS 
                 SELECT $ID_COLUMN_BL, 
@@ -102,8 +105,9 @@ create {
                 GROUP BY $ID_COLUMN_BL
         """
 
-        datasource query
-        [outputTableName: outputTableName]
+            datasource query
+            [outputTableName: outputTableName]
+        }
     }
 }
 
@@ -132,27 +136,28 @@ create {
  * @return outputTableName Table name in which the block id and their corresponding indicator value are stored
  * @author Jérémy Bernard
  */
-create {
-    title "Closingness of a block"
-    id "closingness"
-    inputs correlationTableName: String, blockTable: String, prefixName: String, datasource: JdbcDataSource
-    outputs outputTableName: String
-    run { correlationTableName, blockTable, prefixName, datasource ->
+IProcess closingness() {
+    return create {
+        title "Closingness of a block"
+        id "closingness"
+        inputs correlationTableName: String, blockTable: String, prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { correlationTableName, blockTable, prefixName, datasource ->
 
-        def GEOMETRY_FIELD_BU = "the_geom"
-        def GEOMETRY_FIELD_BL = "the_geom"
-        def ID_COLUMN_BL = "id_block"
-        def BASE_NAME = "closingness"
+            def GEOMETRY_FIELD_BU = "the_geom"
+            def GEOMETRY_FIELD_BL = "the_geom"
+            def ID_COLUMN_BL = "id_block"
+            def BASE_NAME = "closingness"
 
-        info "Executing Closingness of a block"
+            info "Executing Closingness of a block"
 
-        // The name of the outputTableName is constructed
-        def outputTableName = prefix(prefixName, "block_" + BASE_NAME)
+            // The name of the outputTableName is constructed
+            def outputTableName = prefix(prefixName, "block_" + BASE_NAME)
 
-        datasource."$blockTable".id_block.createIndex()
-        datasource."$correlationTableName".id_block.createIndex()
+            datasource."$blockTable".id_block.createIndex()
+            datasource."$correlationTableName".id_block.createIndex()
 
-        def query = """
+            def query = """
             DROP TABLE IF EXISTS $outputTableName; 
             CREATE TABLE $outputTableName AS 
                 SELECT b.$ID_COLUMN_BL, 
@@ -164,7 +169,8 @@ create {
                 WHERE a.$ID_COLUMN_BL = b.$ID_COLUMN_BL 
                 GROUP BY b.$ID_COLUMN_BL"""
 
-        datasource query
-        [outputTableName: outputTableName]
+            datasource query
+            [outputTableName: outputTableName]
+        }
     }
 }

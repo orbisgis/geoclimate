@@ -11,13 +11,11 @@ import static org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 class BlockIndicatorsTests {
 
     private static def h2GIS
-    private static def GI
     private static def randomDbName() {"${BlockIndicatorsTests.simpleName}_${UUID.randomUUID().toString().replaceAll"-", "_"}"}
 
     @BeforeAll
     static void beforeAll(){
         h2GIS = open"./target/${randomDbName()};AUTO_SERVER=TRUE"
-        GI = load Geoindicators
     }
 
     @BeforeEach
@@ -33,7 +31,7 @@ class BlockIndicatorsTests {
                 CREATE TABLE tempo_block AS SELECT * FROM block_test WHERE id_block = 6
         """
 
-        def p = GI.BlockIndicators.holeAreaDensity
+        def p = Geoindicators.BlockIndicators.holeAreaDensity()
         assert p([
                 blockTable : "tempo_block",
                 prefixName : "test",
@@ -52,7 +50,7 @@ class BlockIndicatorsTests {
                 CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 8
         """
 
-        def p = GI.BuildingIndicators.sizeProperties
+        def p = Geoindicators.BuildingIndicators.sizeProperties()
         assert p([
                 inputBuildingTableName  : "tempo_build",
                 operations              : ["volume"],
@@ -69,7 +67,7 @@ class BlockIndicatorsTests {
                     ON a.id_build = b.id_build
         """
 
-        p = GI.BlockIndicators.netCompactness
+        p = Geoindicators.BlockIndicators.netCompactness()
         assert p([
                 buildTable              : "tempo_build2",
                 buildingVolumeField     : "volume",
@@ -90,7 +88,7 @@ class BlockIndicatorsTests {
                 CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_block = 8
         """
 
-        def p = GI.BlockIndicators.closingness
+        def p = Geoindicators.BlockIndicators.closingness()
         p([
                 correlationTableName    : "tempo_build",
                 blockTable              : "tempo_block",
