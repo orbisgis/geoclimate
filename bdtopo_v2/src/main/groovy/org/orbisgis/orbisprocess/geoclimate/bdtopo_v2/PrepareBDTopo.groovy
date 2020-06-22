@@ -1,7 +1,9 @@
 package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 
 import groovy.transform.BaseScript
+import groovy.transform.Field
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import org.orbisgis.orbisdata.processmanager.process.ProcessMapper
 
@@ -43,7 +45,7 @@ import org.orbisgis.orbisdata.processmanager.process.ProcessMapper
  * @return outputStats List that stores the name of the statistic tables for each layer at different scales
  *
  */
-create {
+@Field IProcess prepareData = create {
     title "Extract and transform BD Topo data to Geoclimate model"
     id "prepareData"
     inputs datasource : JdbcDataSource,
@@ -76,7 +78,7 @@ create {
         }
 
         //Init model
-        def initParametersAbstract = processManager.AbstractTablesInitialization.initParametersAbstract
+        def initParametersAbstract = BDTopo_V2.abstractTablesInitialization.initParametersAbstract
         if (!initParametersAbstract(datasource: datasource)) {
             info "Cannot initialize the geoclimate data model."
             return
@@ -84,7 +86,7 @@ create {
         def abstractTables = initParametersAbstract.results
 
         //Init BD Topo parameters
-        def initTypes = processManager.BDTopoGISLayers.initTypes
+        def initTypes = BDTopo_V2.bDTopoGISLayers.initTypes
         if (!initTypes([datasource: datasource,
                         buildingAbstractUseType: abstractTables.outputBuildingAbstractUseType,
                         roadAbstractType: abstractTables.outputRoadAbstractType, roadAbstractCrossing: abstractTables.outputRoadAbstractCrossing,
@@ -96,7 +98,7 @@ create {
         def initTables = initTypes.results
 
         //Import preprocess
-        def importPreprocess = processManager.BDTopoGISLayers.importPreprocess
+        def importPreprocess = BDTopo_V2.bDTopoGISLayers.importPreprocess
         if (!importPreprocess([datasource: datasource,
                                tableIrisName: tableIrisName,
                                tableBuildIndifName: tableBuildIndifName,
@@ -129,7 +131,7 @@ create {
         def preprocessTables = importPreprocess.results
 
         // Input data formatting and statistics
-        def inputDataFormatting = processManager.InputDataFormatting.formatData
+        def inputDataFormatting = BDTopo_V2.inputDataFormatting.formatData
         if (!inputDataFormatting([datasource: datasource,
                                   inputBuilding: preprocessTables.outputBuildingName,
                                   inputRoad: preprocessTables.outputRoadName,

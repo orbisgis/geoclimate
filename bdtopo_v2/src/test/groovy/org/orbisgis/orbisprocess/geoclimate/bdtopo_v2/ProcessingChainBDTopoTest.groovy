@@ -13,14 +13,13 @@ import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.*
 
-class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
+class ProcessingChainBDTopo_V2Test extends ChainProcessAbstractTest{
 
     private static def PC = GroovyProcessManager.load(ProcessingChain)
-    private static def BDTopo = GroovyProcessManager.load(BDTopo_V2)
 
     private static communeToTest = "12174"
 
-    private static Logger logger = LoggerFactory.getLogger(ProcessingChainBDTopoTest.class)
+    private static Logger logger = LoggerFactory.getLogger(ProcessingChainBDTopo_V2Test.class)
     private static def h2db = "./target/myh2gisbdtopodb"
     private static def bdtopoFoldName = "sample_$communeToTest"
     private static def listTables = ["IRIS_GE", "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL", "BATI_REMARQUABLE",
@@ -66,11 +65,11 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     }
 
     @Test
-    void prepareBDTopoTest(){
+    void prepareBDTopo_V2Test(){
         def dbSuffixName = "_prepare"
         def inseeCode = communeToTest
         H2GIS h2GISDatabase = loadFiles(inseeCode, dbSuffixName)
-        def process = BDTopo.PrepareBDTopo.prepareData
+        def process = BDTopo_V2.prepareBDTopo.prepareData
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -128,7 +127,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     void bdtopoLczFromTestFiles() {
         def dbSuffixName = "_lcz"
         H2GIS datasource = loadFiles(communeToTest, dbSuffixName)
-        def process = BDTopo.PrepareBDTopo.prepareData
+        def process = BDTopo_V2.prepareBDTopo.prepareData
         assertTrue process.execute([datasource: datasource,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -170,7 +169,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     void bdtopoGeoIndicatorsFromTestFiles() {
         def dbSuffixName = "_geoIndicators"
         H2GIS h2GISDatabase = loadFiles(communeToTest, dbSuffixName)
-        def process = BDTopo.PrepareBDTopo.prepareData
+        def process = BDTopo_V2.prepareBDTopo.prepareData
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -207,10 +206,10 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        IProcess processBDTopo = BDTopo.workflow
-        assertTrue(processBDTopo.execute(configurationFile: getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()))mm
-        assertNotNull(processBDTopo.getResults().outputFolder)
-        def baseNamePathAndFileOut = processBDTopo.getResults().outputFolder + File.separator + "zone_" + communeToTest + "_"
+        IProcess processBDTopo_V2 = BDTopo_V2.workflowBDTopo_V2.workflow
+        assertTrue(processBDTopo_V2.execute(configurationFile: getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()))mm
+        assertNotNull(processBDTopo_V2.getResults().outputFolder)
+        def baseNamePathAndFileOut = processBDTopo_V2.getResults().outputFolder + File.separator + "zone_" + communeToTest + "_"
         assertTrue(new File(baseNamePathAndFileOut + "rsu_indicators.geojson").exists())
         assertFalse(new File(baseNamePathAndFileOut + "rsu_lcz.geojson").exists())
         assertFalse(new File(baseNamePathAndFileOut + "block_indicators.geojson").exists())
@@ -219,12 +218,12 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 
     @Test //Integration tests
     @Disabled
-    void testBDTopoConfigurationFile() {
+    void testBDTopo_V2ConfigurationFile() {
         def configFile = getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput.json").toURI()
         //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()
         //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_dboutput.json").toURI()
         //configFile =getClass().getResource("config/bdtopo_workflow_dbinput_dboutput.json").toURI()
-        IProcess process = BDTopo.WorkflowBDTopo_V2.workflow
+        IProcess process = BDTopo_V2.workflowBDTopo_V2.workflow
         assertTrue(process.execute(configurationFile: configFile))
     }
 
@@ -236,7 +235,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         dirFile.delete()
         dirFile.mkdir()
         def bdTopoParameters = [
-                "description" :"Example of configuration file to run the BDTopo workflow and store the results in a folder",
+                "description" :"Example of configuration file to run the BDTopo_V2 workflow and store the results in a folder",
                 "geoclimatedb" : [
                         "path" : "${dirFile.absolutePath+File.separator+"bdtopo_workflow_db;AUTO_SERVER=TRUE"}",
                         "delete" :true
@@ -272,13 +271,13 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                          "hThresholdLev2": 10
                         ]
         ]
-        IProcess process = BDTopo.WorkflowBDTopo_V2.workflow
+        IProcess process = BDTopo_V2.workflowBDTopo_V2.workflow
         assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
     }
 
 
     @Test
-    void runBDTopoWorkflow(){
+    void runBDTopo_V2Workflow(){
         def dbSuffixName = "_workflow"
         def inseeCode = communeToTest
         def defaultParameters = [distance: 1000,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
@@ -288,7 +287,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                                  "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
                                  hLevMin : 3, hLevMax: 15, hThresholdLev2: 10]
         H2GIS h2GISDatabase = loadFiles(inseeCode, dbSuffixName)
-        def process = BDTopo.WorkflowBDTopo_V2.bdtopo_processing(h2GISDatabase, defaultParameters, inseeCode, null, null, null, null);
+        def process = BDTopo_V2.workflowBDTopo_V2.bdtopo_processing(h2GISDatabase, defaultParameters, inseeCode, null, null, null, null);
         checkSpatialTable(h2GISDatabase, "block_indicators")
         checkSpatialTable(h2GISDatabase, "building_indicators")
         checkSpatialTable(h2GISDatabase, "rsu_indicators")

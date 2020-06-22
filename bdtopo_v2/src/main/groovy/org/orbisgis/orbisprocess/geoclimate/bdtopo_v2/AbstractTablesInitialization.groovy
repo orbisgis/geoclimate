@@ -1,7 +1,9 @@
 package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 
 import groovy.transform.BaseScript
+import groovy.transform.Field
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 
 @BaseScript GroovyProcessFactory pf
@@ -23,8 +25,7 @@ import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
  * @return outputVegetAbstractType The name of the table in which the abstract vegetation's types are stored
  * @return outputVegetAbstractParameters The name of the table in which the abstract vegetation's parameters are stored
  */
-
-create {
+@Field IProcess initParametersAbstract = create {
     title 'Initialize the abstract and parameter tables'
     id "initParametersAbstract"
     inputs datasource: JdbcDataSource

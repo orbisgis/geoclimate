@@ -1,6 +1,7 @@
 package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 
 import groovy.transform.BaseScript
+import groovy.transform.Field
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
@@ -51,7 +52,7 @@ import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
  * @return outputZone Table name in which the (ready to be used in the GeoIndicators part) zone is stored
  */
 
-create {
+@Field IProcess formatData = create {
     title 'Allows to control, format and enrich the input data in order to feed the GeoClimate model'
     id "formatData"
     inputs datasource: JdbcDataSource, inputBuilding: String, inputRoad: String, inputRail: String,

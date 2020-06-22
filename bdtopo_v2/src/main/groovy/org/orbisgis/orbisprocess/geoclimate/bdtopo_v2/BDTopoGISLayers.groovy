@@ -2,6 +2,7 @@
 package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 
 import groovy.transform.BaseScript
+import groovy.transform.Field
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
@@ -48,7 +49,7 @@ import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
  * @return outputImperviousName Table name in which the (ready to feed the GeoClimate model) impervious areas are stored
  * @return outputZoneName Table name in which the (ready to feed the GeoClimate model) zone is stored
  */
-create {
+@Field IProcess importPreprocess = create {
     title 'Import and prepare BDTopo layers'
     id "importPreprocess"
     inputs 	datasource                  : JdbcDataSource,
@@ -247,7 +248,7 @@ create {
  * @return outputvegetBDTopoType The name of the table in which the BD Topo vegetation's types are stored
  */
 
-create {
+@Field IProcess initTypes = create {
     title 'Initialize the types tables for BD Topo and define the matching with the abstract types'
     id "initTypes"
     inputs datasource: JdbcDataSource, buildingAbstractUseType: String, roadAbstractType: String,

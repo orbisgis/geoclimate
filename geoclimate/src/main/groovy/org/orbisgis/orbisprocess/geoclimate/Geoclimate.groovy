@@ -14,15 +14,15 @@ class Geoclimate {
 
     public static def Geoindicators = load(GI)
     public static def Osm = load(O)
-    public static def BDTopo = load(Topo)
+    public static Topo BDTopo_V2 = load(Topo)
     public static def ProcessingChain = load(PC)
 
-    public static class OSM{
+    static class OSM{
         public static def workflow = Geoclimate.Osm.WorkflowOSM.workflow
     }
 
-    public static class BDTOPO_V2{
-        public static def workflow = Geoclimate.BDTopo.WorkflowBDTopo_V2.workflow
+    static class BDTOPO_V2{
+        public static def workflow = Geoclimate.BDTopo_V2.WorkflowBDTopo_V2.workflow
     }
 
     /**
@@ -32,7 +32,7 @@ class Geoclimate {
      */
     static void setLogger(def logger){
         Osm.setLogger(logger)
-        BDTopo.setLogger(logger)
+        BDTopo_V2.setLogger(logger)
         ProcessingChain.setLogger(logger)
         Geoindicators.setLogger(logger)
     }

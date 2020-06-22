@@ -2,6 +2,7 @@ package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
+import groovy.transform.Field
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
@@ -119,7 +120,7 @@ import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain as P
  * Meteorological Society 93, no. 12 (2012): 1879-1900.
  *
  */
-create {
+@Field IProcess workflow = create {
     title "Create all geoindicators from BDTopo data"
     id "workflow"
     inputs configurationFile: String
@@ -888,7 +889,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
     int nbAreas = id_zones.size();
 
     //Let's run the BDTopo process for each insee code
-    def prepareBDTopoData = processManager.PrepareBDTopo.prepareData
+    def prepareBDTopoData = BDTopo_V2.prepareBDTopo.prepareData
     def geoIndicatorsComputed = false
     info "$nbAreas communes will be processed"
     id_zones.eachWithIndex { id_zone, index->
