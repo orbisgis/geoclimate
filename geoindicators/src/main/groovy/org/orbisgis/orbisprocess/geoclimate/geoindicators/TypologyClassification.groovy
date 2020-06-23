@@ -2,17 +2,20 @@ package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
 import com.thoughtworks.xstream.XStream
 import groovy.transform.BaseScript
+import org.h2.store.fs.FileUtils
 import org.orbisgis.orbisdata.datamanager.api.dataset.ITable
 import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import smile.base.cart.SplitRule
+import smile.classification.DataFrameClassifier
 import smile.classification.RandomForest
 import smile.data.formula.Formula
 import smile.validation.Accuracy
 import smile.validation.Validation
 
+import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
 @BaseScript GroovyProcessFactory pf
@@ -391,7 +394,7 @@ create {
  *
  * @param trainingTableName The name of the training table where are stored ONLY the explicative variables
  * and the one to model
- * @param varToModel String where is saved the name of the field to model
+ * @param varToModel Name of the field to model
  * @param save Boolean to save the model into a file if needed
  * @param pathAndFileName String of the path and name where the model has to be saved (default "/home/RfModel")
  * @param ntrees The number of trees to build the forest
@@ -419,12 +422,12 @@ create {
             mtry: int, rule: "GINI", maxDepth: int, maxNodes: int, nodeSize: int, subsample: double,
             datasource: JdbcDataSource
     outputs RfModel: RandomForest
-    run { String trainingTableName, String varToModel, save, pathAndFileName,  ntrees, mtry, rule, maxDepth,
+    run { String trainingTableName, String varToModel, save, pathAndFileName, ntrees, mtry, rule, maxDepth,
           maxNodes, nodeSize, subsample, JdbcDataSource datasource ->
 
         def splitRule
-        if(rule){
-            switch(rule.toUpperCase()) {
+        if (rule) {
+            switch (rule.toUpperCase()) {
                 case "GINI":
                 case "ENTROPY":
                     splitRule = SplitRule.valueOf(rule)
@@ -433,20 +436,17 @@ create {
                     error "The rule value ${rule} is not supported. Please use 'GINI' or 'ENTROPY'"
                     return
             }
-        }
-        else{
+        } else {
             error "The rule value cannot be null or empty. Please use 'GINI' or 'ENTROPY'"
             return
         }
         info "Create a Random Forest model"
 
-        //Check if the column names exists
-        def columnTypo = "I_TYPO"
-
         def trainingTable = datasource."$trainingTableName"
 
-        if(!trainingTable.hasColumn(columnTypo, String)){
-            error "The training table should have a String column name 'I_TYPO'"
+        //Check if the column names exists
+        if (!trainingTable.hasColumn(varToModel, String)) {
+            error "The training table should have a String column name $varToModel"
             return
         }
 
@@ -467,7 +467,7 @@ create {
         int[] prediction = Validation.test(model, df)
         int[] truth = df.apply(varToModel).toIntArray()
         def accuracy = Accuracy.of(truth, prediction)
-        info "The percentage of the data that have been well classified is : ${accuracy*100}%"
+        info "The percentage of the data that have been well classified is : ${accuracy * 100}%"
 
         try {
             if (save) {
@@ -477,11 +477,106 @@ create {
                 zOut.close()
             }
         }
-        catch (Exception e){
+        catch (Exception e) {
             error "Cannot save the model", e
             return
         }
 
         [RfModel: model]
+    }
+}
+
+/**
+ * This process is used to apply a RandomForest model on a given dataset (the model may be downloaded on a default
+ * folder or provided by the user). A table containing the predicted values and the id is returned.
+ *
+ * @param explicativeVariablesTableName The name of the table containing the indicators used by the random forest model
+ * @param defaultModelUrl String containing the URL of the default model to use (if the user does not have its own model - default: "")
+ * @param pathAndFileName If the user wants to use its own model, URL of the model file on the user machine (default: "")
+ * @param idName Name of the ID column (which will be removed for the application of the random Forest)
+ * @param prefixName String use as prefix to name the output table
+
+ * @param datasource A connection to a database
+ *
+ * @return RfModel A randomForest model (see smile library for further information about the object)
+ *
+ * @author Jérémy Bernard
+ */
+create {
+    title "Apply a Random Forest classification"
+    id "applyRandomForestClassif"
+    inputs explicativeVariablesTableName: String, defaultModelUrl: "", pathAndFileName: "", idName: String,
+            prefixName: String, datasource: JdbcDataSource
+    outputs outputTableName: String
+    run { String explicativeVariablesTableName, String defaultModelUrl, String pathAndFileName, String idName,
+          String prefixName, JdbcDataSource datasource ->
+
+        info "Apply a Random Forest model"
+
+        // Define the location and the name of the file where will be stored the downloaded model
+        def modelName = defaultModelUrl.split("/")[-1]
+        def modelFolderPath = System.getProperty("user.home")+File.separator+"geoclimate"+File.separator+modelName
+
+        // The name of the outputTableName is constructed
+        def outputTableName = prefix prefixName, modelName
+
+        // The table is recovered
+        def explicativeVariablesTable = datasource."$explicativeVariablesTableName"
+
+        // Read the table containing the explicative variables as a DataFrame
+        def df = DataFrame.of(explicativeVariablesTable)
+
+        // Remove the 'idName' column which is not used in the randomForest algo
+        df=df.drop(idName)
+
+        // Load the RandomForest model
+        def xs = new XStream()
+        def fileInputStream
+        // Check if at least a default value has been set for loading a model either locally or on the internet
+        if(pathAndFileName!="" && defaultModelUrl!=""){
+            // In case the user uses the default model
+            if(pathAndFileName==""){
+                File file = new File(modelFolderPath)
+                // Do not download the file if it is already in its computer
+                if(!file.exists()){
+                    info "Download the default model used for RandomForest Classification and store it in a folder called" +
+                            "geoclimate and located in the home directory of the user"
+                    FileUtils.copyURLToFile(new URL(defaultModelUrl), modelFolderPath)
+                }
+                fileInputStream = new FileInputStream(modelFolderPath)
+            }
+            // In case the user provides its own model
+            else{
+                fileInputStream = new FileInputStream(pathAndFileName)
+            }
+
+            /*// Check if all the model explicative variables are in the 'explicativeVariablesTableName'
+            if(!trainingTable.hasColumn(varToModel, String)){
+                error "The training table should have a String column name $varToModel"
+                return
+            }*/
+
+            def gzipInputStream = new GZIPInputStream(fileInputStream)
+            def model = xs.fromXML(gzipInputStream)
+            def var2model = model.formula.toString().split("~")[0][0..-2]
+            def prediction = Validation.test(model, df.plus(var2model))
+
+            datasource """CREATE TABLE $outputTableName($idName INTEGER, $var2model DOUBLE)"""
+            // Will insert values by batch of 1000 in a new table
+            def i = 0
+            datasource.withBatch(1000) { stmt ->
+                datasource.eachRow("SELECT $idName FROM $explicativeVariablesTableName") { row ->
+                    def id_val = row."$idName"
+                    stmt.addBatch """INSERT INTO $outputTableName 
+                                                VALUES ($id_val, ${prediction[i]})"""
+                    i++
+                }
+            }
+        }
+        else{
+            error "Either 'pathAndFileName' or 'defaultModelUrl' should be filled"
+        }
+
+        [outputTableName: outputTableName]
     }
 }

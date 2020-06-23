@@ -313,4 +313,56 @@ class TypologyClassificationTests {
            assert lczExpected.contains(row.lcz1.toString()) || lczExpected.contains(row.lcz2.toString())
         }
     }
+
+    @Test
+    void applyRandomForestClassif() {
+        h2GIS """
+                DROP TABLE IF EXISTS tempo_rsu_for_lcz;
+                CREATE TABLE tempo_rsu_for_lcz AS 
+                    SELECT a.*, b.the_geom 
+                    FROM rsu_test_lcz_indics a 
+                        LEFT JOIN rsu_test b
+                        ON a.id_rsu = b.id_rsu;
+        """
+        // Information about where to find the training dataset for the test
+        def trainingTableName = "training_table"
+        def trainingURL = TypologyClassificationTests.getResource("model/rf/training_data.shp")
+
+        def uuid = UUID.randomUUID().toString().replaceAll("-", "_")
+        def savePath = "target/geoclimate_rf_${uuid}.model"
+
+        def trainingTable = h2GIS.load(trainingURL, trainingTableName,true)
+        assert trainingTable
+
+        // Variable to model
+        def var2model = "I_TYPO"
+
+        // Columns useless for the classification
+        def colsToRemove = ["PK2", "THE_GEOM", "PK"]
+
+        // Remove unnecessary column
+        h2GIS "ALTER TABLE $trainingTableName DROP COLUMN ${colsToRemove.join(",")};"
+
+        //Reload the table due to the schema modification
+        trainingTable.reload()
+
+        // Input data creation
+        h2GIS "CREATE TABLE inputDataTable AS SELECT * FROM $trainingTableName;" +
+                "ALTER TABLE inputDataTable DROP COLUMN $var2model"
+
+
+        def pmed =  GI.TypologyClassification.applyRandomForestClassif
+        assert pmed.execute([
+                explicativeVariablesTableName   : "inputDataTable",
+                defaultModelUrl                 : "https://github.com/orbisgis/geoclimate/models/model.model",
+                pathAndFileName                 : "",
+                idName                          : "PK",
+                prefixName                      : "test",
+                datasource                      : h2GIS])
+        def predicted = pmed.results.outputTableName
+
+        // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
+        def accuracy = h2GIS.firstRow("SELECT COUNT(*) AS ACCURACY FROM $predicted")
+        assertEquals 0.844, accuracy.accuracy.round(3), 0.003
+    }
 }
