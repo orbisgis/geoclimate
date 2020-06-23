@@ -310,7 +310,7 @@ class TypologyClassificationTests {
             // When attributing manually a LCZ to a zone, some very small RSU may have no building
             // and could not be classified while they are... Thus set 999 in all cases...
             lczExpected += "999"
-           assert lczExpected.contains(row.lcz1.toString()) || lczExpected.contains(row.lcz2.toString())
+            assert lczExpected.contains(row.lcz1.toString()) || lczExpected.contains(row.lcz2.toString())
         }
     }
 
@@ -338,7 +338,7 @@ class TypologyClassificationTests {
         def var2model = "I_TYPO"
 
         // Columns useless for the classification
-        def colsToRemove = ["PK2", "THE_GEOM", "PK"]
+        def colsToRemove = ["PK2", "THE_GEOM"]
 
         // Remove unnecessary column
         h2GIS "ALTER TABLE $trainingTableName DROP COLUMN ${colsToRemove.join(",")};"

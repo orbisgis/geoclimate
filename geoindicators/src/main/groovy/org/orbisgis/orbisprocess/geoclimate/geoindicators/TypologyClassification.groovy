@@ -514,8 +514,9 @@ create {
         info "Apply a Random Forest model"
 
         // Define the location and the name of the file where will be stored the downloaded model
-        def modelName = defaultModelUrl.split("/")[-1]
-        def modelFolderPath = System.getProperty("user.home")+File.separator+"geoclimate"+File.separator+modelName
+        def modelNameFile = defaultModelUrl.split("/")[-1]
+        def modelName = modelNameFile.split("\\.")[0]
+        def modelFolderPath = System.getProperty("user.home")+File.separator+"geoclimate"+File.separator+modelNameFile
 
         // The name of the outputTableName is constructed
         def outputTableName = prefix prefixName, modelName
@@ -526,14 +527,14 @@ create {
         // Read the table containing the explicative variables as a DataFrame
         def df = DataFrame.of(explicativeVariablesTable)
 
-        // Remove the 'idName' column which is not used in the randomForest algo
-        df=df.drop(idName)
+        // Remove the 'idName' column which is not used in the randomForest algo{
+        df = df.drop(idName)
 
         // Load the RandomForest model
         def xs = new XStream()
         def fileInputStream
         // Check if at least a default value has been set for loading a model either locally or on the internet
-        if(pathAndFileName!="" && defaultModelUrl!=""){
+        if(!(pathAndFileName!="" && defaultModelUrl!="")){
             // In case the user uses the default model
             if(pathAndFileName==""){
                 File file = new File(modelFolderPath)
