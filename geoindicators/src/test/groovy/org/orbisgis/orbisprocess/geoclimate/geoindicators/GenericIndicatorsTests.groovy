@@ -323,11 +323,13 @@ class GenericIndicatorsTests {
                 inputTableName      : "tempo_build",
                 idField             : "id_rsu",
                 typeFieldName       : "type",
+                typeAndComposition  : ["industrial": ["industrial"], "residential": ["residential"], "all": ["residential", "industrial"]],
                 prefixName          : "",
                 datasource          : h2GIS])
 
         def result = h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName}")
         assert (156.0/296).trunc(3) == result.fraction_industrial.trunc(3)
         assert (140.0/296).trunc(3) == result.fraction_residential.trunc(3)
+        assert ((140.0+156.0)/296).trunc(3) == result.fraction_all.trunc(3)
     }
 }

@@ -365,6 +365,7 @@ create {
  * of overlapped layers (for example a geometry containing water and low_vegetation must be either water
  * or either low_vegetation, not both (default ["water", "building", "high_vegetation", "low_vegetation",
  * "road", "impervious"]
+ * @param buildingTypeAndComposition Building type proportion that should be calculated (default: ["industrial": ["industrial"]])
  * @param urbanTypoSurfFraction Map containing as key the name of the fraction indicators useful for the urban typology classification
  * and as value a list of the fractions that have to be summed up to calculate the indicator. No need to modify
  * these values if not interested by the urban typology
@@ -393,6 +394,7 @@ create {
             indicatorUse               : ["LCZ", "URBAN_TYPOLOGY", "TEB"],
             surfSuperpositions         : ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]],
             surfPriorities             : ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"],
+            buildingTypeAndComposition : ["industrial": ["industrial"]],
             urbanTypoSurfFraction      : ["vegetation_fraction_urb"                 : ["high_vegetation_fraction",
                                                                                        "low_vegetation_fraction",
                                                                                        "high_vegetation_low_vegetation_fraction",
@@ -441,8 +443,8 @@ create {
           svfPointDensity           , svfRayLength                      , svfNumberOfDirection,
           heightColumnName          , inputFields                       , levelForRoads,
           angleRangeSizeBuDirection , svfSimplified                     , indicatorUse,
-          surfSuperpositions        , surfPriorities                    , urbanTypoSurfFraction,
-          lczSurfFraction           , buildingFractions ->
+          surfSuperpositions        , surfPriorities                    , buildingTypeAndComposition,
+          urbanTypoSurfFraction     , lczSurfFraction                   , buildingFractions ->
 
         info "Start computing RSU indicators..."
         def to_start = System.currentTimeMillis()
@@ -549,6 +551,7 @@ create {
                                         inputTableName      : buildingTable,
                                         idField             : columnIdRsu,
                                         typeFieldName       : "type",
+                                        typeAndComposition  : buildingTypeAndComposition,
                                         prefixName          : temporaryPrefName,
                                         datasource          : datasource])) {
                 info "Cannot compute the area of the RSU"
