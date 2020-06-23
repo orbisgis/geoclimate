@@ -350,7 +350,7 @@ IProcess buildingDirectionDistribution() {
                 datasource sqlQueryDist
 
                 // The main building direction and indicators characterizing the distribution are calculated
-                def computeDistribChar = distributionCharacterization
+                def computeDistribChar = distributionCharacterization()
                 computeDistribChar([distribTableName: build_dir_dist,
                                     inputId         : inputIdUp,
                                     distribIndicator: distribIndicator,

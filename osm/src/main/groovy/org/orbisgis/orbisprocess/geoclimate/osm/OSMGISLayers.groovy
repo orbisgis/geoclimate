@@ -2,6 +2,7 @@ package org.orbisgis.orbisprocess.geoclimate.osm
 
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
+import groovy.transform.Field
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
@@ -17,7 +18,7 @@ import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 
 @BaseScript OSM_Utils osm_utils
 
-def OSMTools = GroovyProcessManager.load(Tools)
+@Field OSMTools = GroovyProcessManager.load(Tools)
 
 /**
   * This process is used to create the GIS layers using the Overpass API

@@ -78,7 +78,7 @@ IProcess prepareData() {
             }
 
             //Init model
-            def initParametersAbstract = processManager.AbstractTablesInitialization.initParametersAbstract
+            def initParametersAbstract = BDTopo_V2.initParametersAbstract
             if (!initParametersAbstract(datasource: datasource)) {
                 info "Cannot initialize the geoclimate data model."
                 return
@@ -86,7 +86,7 @@ IProcess prepareData() {
             def abstractTables = initParametersAbstract.results
 
             //Init BD Topo parameters
-            def initTypes = processManager.BDTopoGISLayers.initTypes
+            def initTypes = BDTopo_V2.initTypes
             if (!initTypes([datasource             : datasource,
                             buildingAbstractUseType: abstractTables.outputBuildingAbstractUseType,
                             roadAbstractType       : abstractTables.outputRoadAbstractType, roadAbstractCrossing: abstractTables.outputRoadAbstractCrossing,
@@ -98,7 +98,7 @@ IProcess prepareData() {
             def initTables = initTypes.results
 
             //Import preprocess
-            def importPreprocess = processManager.BDTopoGISLayers.importPreprocess
+            def importPreprocess = BDTopo_V2.importPreprocess
             if (!importPreprocess([datasource                  : datasource,
                                    tableIrisName               : tableIrisName,
                                    tableBuildIndifName         : tableBuildIndifName,
@@ -131,7 +131,7 @@ IProcess prepareData() {
             def preprocessTables = importPreprocess.results
 
             // Input data formatting and statistics
-            def inputDataFormatting = processManager.InputDataFormatting.formatData
+            def inputDataFormatting = BDTopo_V2.formatInputData
             if (!inputDataFormatting([datasource                : datasource,
                                       inputBuilding             : preprocessTables.outputBuildingName,
                                       inputRoad                 : preprocessTables.outputRoadName,

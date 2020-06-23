@@ -4,13 +4,9 @@ import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
-import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators as GI
-
-import static org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager.load
+import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 
 @BaseScript GroovyProcessFactory pf
-
-def Geoindicators = load(GI)
 
 /**
  * Compute the geoindicators at building scale
@@ -48,7 +44,7 @@ IProcess computeBuildingsIndicators() {
             if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
                 geometryOperations = ["st_perimeter", "st_area"]
             }
-            def computeGeometryProperties = Geoindicators.GenericIndicators.geometryProperties
+            def computeGeometryProperties = Geoindicators.GenericIndicators.geometryProperties()
             if (!computeGeometryProperties([inputTableName: inputBuildingTableName, inputFields: ["id_build"],
                                             operations    : geometryOperations, prefixName: buildingPrefixName,
                                             datasource    : datasource])) {
@@ -65,7 +61,7 @@ IProcess computeBuildingsIndicators() {
                 if (!indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
                     sizeOperations = ["total_facade_length"]
                 }
-                def computeSizeProperties = Geoindicators.BuildingIndicators.sizeProperties
+                def computeSizeProperties = Geoindicators.BuildingIndicators.sizeProperties()
                 if (!computeSizeProperties([inputBuildingTableName: inputBuildingTableName,
                                             operations            : sizeOperations,
                                             prefixName            : buildingPrefixName,
@@ -82,7 +78,7 @@ IProcess computeBuildingsIndicators() {
                 if (indicatorUse*.toUpperCase().contains("LCZ") && !indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
                     neighborOperations = ["contiguity"]
                 }
-                def computeNeighborsProperties = Geoindicators.BuildingIndicators.neighborsProperties
+                def computeNeighborsProperties = Geoindicators.BuildingIndicators.neighborsProperties()
                 if (!computeNeighborsProperties([inputBuildingTableName: inputBuildingTableName,
                                                  operations            : neighborOperations,
                                                  prefixName            : buildingPrefixName,
@@ -96,7 +92,7 @@ IProcess computeBuildingsIndicators() {
 
                 if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
                     // area_concavity + building_form_factor + building_raw_compactness + perimeter_convexity
-                    def computeFormProperties = Geoindicators.BuildingIndicators.formProperties
+                    def computeFormProperties = Geoindicators.BuildingIndicators.formProperties()
                     if (!computeFormProperties([inputBuildingTableName: inputBuildingTableName,
                                                 operations            : ["area_concavity", "form_factor",
                                                                          "raw_compactness",
@@ -111,7 +107,7 @@ IProcess computeBuildingsIndicators() {
                     finalTablesToJoin.put(buildTableFormProperties, idColumnBu)
 
                     // building_minimum_building_spacing
-                    def computeMinimumBuildingSpacing = Geoindicators.BuildingIndicators.minimumBuildingSpacing
+                    def computeMinimumBuildingSpacing = Geoindicators.BuildingIndicators.minimumBuildingSpacing()
                     if (!computeMinimumBuildingSpacing([inputBuildingTableName: inputBuildingTableName,
                                                         bufferDist            : 100,
                                                         prefixName            : buildingPrefixName, datasource: datasource])) {
@@ -122,7 +118,7 @@ IProcess computeBuildingsIndicators() {
                     finalTablesToJoin.put(buildTableComputeMinimumBuildingSpacing, idColumnBu)
 
                     // building_road_distance
-                    def computeRoadDistance = Geoindicators.BuildingIndicators.roadDistance
+                    def computeRoadDistance = Geoindicators.BuildingIndicators.roadDistance()
                     if (!computeRoadDistance([inputBuildingTableName: inputBuildingTableName,
                                               inputRoadTableName    : inputRoadTableName,
                                               bufferDist            : 100,
@@ -135,7 +131,7 @@ IProcess computeBuildingsIndicators() {
                     finalTablesToJoin.put(buildTableComputeRoadDistance, idColumnBu)
 
                     // Join for building_likelihood
-                    def computeJoinNeighbors = Geoindicators.DataUtils.joinTables
+                    def computeJoinNeighbors = Geoindicators.DataUtils.joinTables()
                     if (!computeJoinNeighbors([inputTableNamesWithId: [(buildTableComputeNeighborsProperties): idColumnBu,
                                                                        (inputBuildingTableName)              : idColumnBu],
                                                outputTableName      : buildingPrefixName + "_neighbors",
@@ -146,7 +142,7 @@ IProcess computeBuildingsIndicators() {
                     buildTableJoinNeighbors = computeJoinNeighbors.results.outputTableName
 
                     // building_likelihood_large_building
-                    def computeLikelihoodLargeBuilding = Geoindicators.BuildingIndicators.likelihoodLargeBuilding
+                    def computeLikelihoodLargeBuilding = Geoindicators.BuildingIndicators.likelihoodLargeBuilding()
                     if (!computeLikelihoodLargeBuilding([inputBuildingTableName: buildTableJoinNeighbors,
                                                          nbOfBuildNeighbors    : "number_building_neighbor",
                                                          prefixName            : buildingPrefixName,
@@ -159,7 +155,7 @@ IProcess computeBuildingsIndicators() {
                 }
             }
 
-            def buildingTableJoin = Geoindicators.DataUtils.joinTables
+            def buildingTableJoin = Geoindicators.DataUtils.joinTables()
             if (!buildingTableJoin([inputTableNamesWithId: finalTablesToJoin,
                                     outputTableName      : buildingPrefixName,
                                     datasource           : datasource])) {
@@ -214,7 +210,7 @@ IProcess computeBlockIndicators() {
             //Sum of the building area
             //Sum of the building volume composing the block
             //Sum of block floor area
-            def computeSimpleStats = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale
+            def computeSimpleStats = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
             if (!computeSimpleStats([inputLowerScaleTableName: inputBuildingTableName,
                                      inputUpperScaleTableName: inputBlockTableName,
                                      inputIdUp               : id_block,
@@ -232,7 +228,7 @@ IProcess computeBlockIndicators() {
 
             //Ratio between the holes area and the blocks area
             // block_hole_area_density
-            def computeHoleAreaDensity = Geoindicators.BlockIndicators.holeAreaDensity
+            def computeHoleAreaDensity = Geoindicators.BlockIndicators.holeAreaDensity()
             if (!computeHoleAreaDensity(blockTable: inputBlockTableName,
                     prefixName: blockPrefixName,
                     datasource: datasource)) {
@@ -243,7 +239,7 @@ IProcess computeBlockIndicators() {
 
             //Perkins SKill Score of the distribution of building direction within a block
             // block_perkins_skill_score_building_direction
-            def computePerkinsSkillScoreBuildingDirection = Geoindicators.GenericIndicators.buildingDirectionDistribution
+            def computePerkinsSkillScoreBuildingDirection = Geoindicators.GenericIndicators.buildingDirectionDistribution()
             if (!computePerkinsSkillScoreBuildingDirection([buildingTableName: inputBuildingTableName,
                                                             inputIdUp        : id_block,
                                                             angleRangeSize   : 15,
@@ -256,7 +252,7 @@ IProcess computeBlockIndicators() {
 
 
             //Block closingness
-            def computeClosingness = Geoindicators.BlockIndicators.closingness
+            def computeClosingness = Geoindicators.BlockIndicators.closingness()
             if (!computeClosingness(correlationTableName: inputBuildingTableName,
                     blockTable: inputBlockTableName,
                     prefixName: blockPrefixName,
@@ -267,7 +263,7 @@ IProcess computeBlockIndicators() {
             finalTablesToJoin.put(computeClosingness.results.outputTableName, id_block)
 
             //Block net compactness
-            def computeNetCompactness = Geoindicators.BlockIndicators.netCompactness
+            def computeNetCompactness = Geoindicators.BlockIndicators.netCompactness()
             if (!computeNetCompactness([buildTable             : inputBuildingTableName,
                                         buildingVolumeField    : "volume",
                                         buildingContiguityField: "contiguity",
@@ -280,7 +276,7 @@ IProcess computeBlockIndicators() {
 
             //Block mean building height
             //Block standard deviation building height
-            def computeWeightedAggregatedStatistics = Geoindicators.GenericIndicators.weightedAggregatedStatistics
+            def computeWeightedAggregatedStatistics = Geoindicators.GenericIndicators.weightedAggregatedStatistics()
             if (!computeWeightedAggregatedStatistics([inputLowerScaleTableName : inputBuildingTableName,
                                                       inputUpperScaleTableName : inputBlockTableName,
                                                       inputIdUp                : id_block,
@@ -293,7 +289,7 @@ IProcess computeBlockIndicators() {
             finalTablesToJoin.put(computeWeightedAggregatedStatistics.results.outputTableName, id_block)
 
             //Merge all in one table
-            def blockTableJoin = Geoindicators.DataUtils.joinTables
+            def blockTableJoin = Geoindicators.DataUtils.joinTables()
             if (!blockTableJoin([inputTableNamesWithId: finalTablesToJoin,
                                  outputTableName      : blockPrefixName,
                                  datasource           : datasource])) {
@@ -478,7 +474,7 @@ IProcess computeRSUIndicators() {
 
             // Calculate all surface fractions indicators
             // Need to create the smallest geometries used as input of the surface fraction process
-            def computeSmallestGeom = Geoindicators.RsuIndicators.smallestCommunGeometry
+            def computeSmallestGeom = Geoindicators.RsuIndicators.smallestCommunGeometry()
             if (!computeSmallestGeom.execute([
                     rsuTable       : rsuTable, buildingTable: buildingTable, roadTable: roadTable, vegetationTable: vegetationTable, waterTable: hydrographicTable,
                     imperviousTable: imperviousTable,
@@ -488,7 +484,7 @@ IProcess computeRSUIndicators() {
             }
             def superpositionsTable = computeSmallestGeom.results.outputTableName
             // Calculate the surface fractions from the commun geom
-            def computeSurfaceFractions = Geoindicators.RsuIndicators.surfaceFractions
+            def computeSurfaceFractions = Geoindicators.RsuIndicators.surfaceFractions()
             if (!computeSurfaceFractions.execute([
                     rsuTable      : rsuTable, spatialRelationsTable: superpositionsTable,
                     superpositions: surfSuperpositions,
@@ -548,7 +544,7 @@ IProcess computeRSUIndicators() {
 
             // building type fractions
             if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY") || indicatorUse*.toUpperCase().contains("LCZ")) {
-                def computeTypeProportion = Geoindicators.GenericIndicators.typeProportion
+                def computeTypeProportion = Geoindicators.GenericIndicators.typeProportion()
                 if (!computeTypeProportion([
                         inputTableName: buildingTable,
                         idField       : columnIdRsu,
@@ -565,7 +561,7 @@ IProcess computeRSUIndicators() {
 
             // rsu_area (note that the uuid is used as prefix for intermediate tables - indicator alone in a table)
             if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
-                def computeGeometryProperties = Geoindicators.GenericIndicators.geometryProperties
+                def computeGeometryProperties = Geoindicators.GenericIndicators.geometryProperties()
                 if (!computeGeometryProperties([inputTableName: rsuTable, inputFields: [columnIdRsu],
                                                 operations    : ["st_area"], prefixName: temporaryPrefName,
                                                 datasource    : datasource])) {
@@ -579,7 +575,7 @@ IProcess computeRSUIndicators() {
 
             // Building free external facade density
             if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY") || indicatorUse*.toUpperCase().contains("LCZ")) {
-                def computeFreeExtDensity = Geoindicators.RsuIndicators.freeExternalFacadeDensity
+                def computeFreeExtDensity = Geoindicators.RsuIndicators.freeExternalFacadeDensity()
                 if (!computeFreeExtDensity([buildingTable            : buildingTable, rsuTable: rsuTable,
                                             buContiguityColumn       : "contiguity",
                                             buTotalFacadeLengthColumn: "total_facade_length",
@@ -607,7 +603,7 @@ IProcess computeRSUIndicators() {
                                                                   "minimum_building_spacing": ["AVG"],
                                                                   "building"                : ["NB_DENS"]]
             }
-            def computeRSUStatisticsUnweighted = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale
+            def computeRSUStatisticsUnweighted = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
             if (!computeRSUStatisticsUnweighted([inputLowerScaleTableName: buildingTable,
                                                  inputUpperScaleTableName: rsuTable,
                                                  inputIdUp               : columnIdRsu,
@@ -626,7 +622,7 @@ IProcess computeRSUIndicators() {
 
             // rsu_mean_building_height weighted by their area + rsu_std_building_height weighted by their area.
             if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
-                def computeRSUStatisticsWeighted = Geoindicators.GenericIndicators.weightedAggregatedStatistics
+                def computeRSUStatisticsWeighted = Geoindicators.GenericIndicators.weightedAggregatedStatistics()
                 if (!computeRSUStatisticsWeighted([inputLowerScaleTableName : buildingTable,
                                                    inputUpperScaleTableName : rsuTable,
                                                    inputIdUp                : columnIdRsu,
@@ -647,7 +643,7 @@ IProcess computeRSUIndicators() {
                 if (indicatorUse*.toUpperCase().contains("TEB")) {
                     roadOperations = ["road_direction_distribution", "linear_road_density"]
                 }
-                def computeLinearRoadOperations = Geoindicators.RsuIndicators.linearRoadOperations
+                def computeLinearRoadOperations = Geoindicators.RsuIndicators.linearRoadOperations()
                 if (!computeLinearRoadOperations([rsuTable         : rsuTable,
                                                   roadTable        : roadTable,
                                                   operations       : roadOperations,
@@ -663,7 +659,7 @@ IProcess computeRSUIndicators() {
 
             // rsu_free_vertical_roof_area_distribution + rsu_free_non_vertical_roof_area_distribution
             if (indicatorUse*.toUpperCase().contains("TEB")) {
-                def computeRoofAreaDist = Geoindicators.RsuIndicators.roofAreaDistribution
+                def computeRoofAreaDist = Geoindicators.RsuIndicators.roofAreaDistribution()
                 if (!computeRoofAreaDist([rsuTable        : rsuTable,
                                           buildingTable   : buildingTable,
                                           listLayersBottom: facadeDensListLayersBottom,
@@ -683,7 +679,7 @@ IProcess computeRSUIndicators() {
                     [0, 50, 200]
                     facadeDensNumberOfDirection: 8
                 }
-                def computeProjFacadeDist = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution
+                def computeProjFacadeDist = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution()
                 if (!computeProjFacadeDist([buildingTable    : buildingTable,
                                             rsuTable         : rsuTable,
                                             listLayersBottom : facadeDensListLayersBottom,
@@ -707,7 +703,7 @@ IProcess computeRSUIndicators() {
             }
 
             // Create an intermediate join tables to have all needed input fields for future indicator calculation
-            def computeIntermediateJoin = Geoindicators.DataUtils.joinTables
+            def computeIntermediateJoin = Geoindicators.DataUtils.joinTables()
             if (!computeIntermediateJoin([inputTableNamesWithId: intermediateJoin,
                                           outputTableName      : "tab4aspratio",
                                           datasource           : datasource])) {
@@ -720,7 +716,7 @@ IProcess computeRSUIndicators() {
 
             // rsu_aspect_ratio
             if (indicatorUse*.toUpperCase().contains("LCZ") || indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
-                def computeAspectRatio = Geoindicators.RsuIndicators.aspectRatio
+                def computeAspectRatio = Geoindicators.RsuIndicators.aspectRatio()
                 if (!computeAspectRatio([rsuTable                          : intermediateJoinTable,
                                          rsuFreeExternalFacadeDensityColumn: "free_external_facade_density",
                                          rsuBuildingDensityColumn          : "BUILDING_TOTAL_FRACTION",
@@ -737,7 +733,7 @@ IProcess computeRSUIndicators() {
             if (indicatorUse*.toUpperCase().contains("LCZ")) {
                 // If the fast version is chosen (SVF derived from extended RSU free facade fraction
                 if (svfSimplified == true) {
-                    computeExtFF = Geoindicators.RsuIndicators.extendedFreeFacadeFraction
+                    computeExtFF = Geoindicators.RsuIndicators.extendedFreeFacadeFraction()
                     if (!computeExtFF([buildingTable            : buildingTable,
                                        rsuTable                 : intermediateJoinTable,
                                        buContiguityColumn       : "contiguity",
@@ -750,7 +746,7 @@ IProcess computeRSUIndicators() {
                             "AS SELECT 1-extended_free_facade_fraction AS GROUND_SKY_VIEW_FACTOR, $columnIdRsu " +
                             "FROM ${computeExtFF.results.outputTableName}"
                 } else {
-                    def computeSVF = Geoindicators.RsuIndicators.groundSkyViewFactor
+                    def computeSVF = Geoindicators.RsuIndicators.groundSkyViewFactor()
                     if (!computeSVF([rsuTable                : intermediateJoinTable,
                                      correlationBuildingTable: buildingTable,
                                      pointDensity            : svfPointDensity,
@@ -769,7 +765,7 @@ IProcess computeRSUIndicators() {
             // rsu_effective_terrain_roughness
             if (indicatorUse*.toUpperCase().contains("LCZ") || indicatorUse*.toUpperCase().contains("TEB")) {
                 // Create the join tables to have all needed input fields for aspect ratio computation
-                def computeEffRoughHeight = Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength
+                def computeEffRoughHeight = Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength()
                 if (!computeEffRoughHeight([rsuTable                       : intermediateJoinTable,
                                             projectedFacadeAreaName        : "projected_facade_area_distribution",
                                             geometricMeanBuildingHeightName: "geom_avg_$heightColumnName",
@@ -785,7 +781,7 @@ IProcess computeRSUIndicators() {
 
                 // rsu_terrain_roughness_class
                 if (indicatorUse*.toUpperCase().contains("LCZ")) {
-                    def computeRoughClass = Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass
+                    def computeRoughClass = Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass()
                     if (!computeRoughClass([datasource                     : datasource,
                                             rsuTable                       : effRoughHeight,
                                             effectiveTerrainRoughnessLength: "effective_terrain_roughness_length",
@@ -800,7 +796,7 @@ IProcess computeRSUIndicators() {
 
             // rsu_perkins_skill_score_building_direction_variability
             if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
-                def computePerkinsDirection = Geoindicators.GenericIndicators.buildingDirectionDistribution
+                def computePerkinsDirection = Geoindicators.GenericIndicators.buildingDirectionDistribution()
                 if (!computePerkinsDirection([buildingTableName: buildingTable, inputIdUp: columnIdRsu,
                                               angleRangeSize   : angleRangeSizeBuDirection, prefixName: temporaryPrefName,
                                               datasource       : datasource])) {
@@ -814,7 +810,7 @@ IProcess computeRSUIndicators() {
             // Merge all in one table
             // To avoid duplicate the_geom in the join table, remove it from the intermediate table
             datasource.execute("ALTER TABLE $intermediateJoinTable DROP COLUMN the_geom;")
-            def rsuTableJoin = Geoindicators.DataUtils.joinTables
+            def rsuTableJoin = Geoindicators.DataUtils.joinTables()
             if (!rsuTableJoin([inputTableNamesWithId: finalTablesToJoin,
                                outputTableName      : outputTableName,
                                datasource           : datasource])) {
@@ -894,8 +890,8 @@ IProcess createUnitsOfAnalysis() {
             info "Create the units of analysis..."
 
             // Create the RSU
-            def prepareRSUData = Geoindicators.SpatialUnits.prepareRSUData
-            def createRSU = Geoindicators.SpatialUnits.createRSU
+            def prepareRSUData = Geoindicators.SpatialUnits.prepareRSUData()
+            def createRSU = Geoindicators.SpatialUnits.createRSU()
             if (!prepareRSUData([datasource        : datasource,
                                  zoneTable         : zoneTable,
                                  roadTable         : roadTable,
@@ -925,7 +921,7 @@ IProcess createUnitsOfAnalysis() {
             // If the urban typology is needed
             if (indicatorUse.contains("URBAN_TYPOLOGY")) {
                 // Create the blocks
-                def createBlocks = Geoindicators.SpatialUnits.createBlocks
+                def createBlocks = Geoindicators.SpatialUnits.createBlocks()
                 if (!createBlocks([datasource    : datasource,
                                    inputTableName: buildingTable,
                                    prefixName    : prefixName,
@@ -935,7 +931,7 @@ IProcess createUnitsOfAnalysis() {
                 }
 
                 // Create the relations between RSU and blocks (store in the block table)
-                def createScalesRelationsRsuBl = Geoindicators.SpatialUnits.createScalesRelations
+                def createScalesRelationsRsuBl = Geoindicators.SpatialUnits.createScalesRelations()
                 if (!createScalesRelationsRsuBl([datasource              : datasource,
                                                  inputLowerScaleTableName: createBlocks.results.outputTableName,
                                                  inputUpperScaleTableName: createRSU.results.outputTableName,
@@ -946,7 +942,7 @@ IProcess createUnitsOfAnalysis() {
                 }
 
                 // Create the relations between buildings and blocks (store in the buildings table)
-                def createScalesRelationsBlBu = Geoindicators.SpatialUnits.createScalesRelations
+                def createScalesRelationsBlBu = Geoindicators.SpatialUnits.createScalesRelations()
                 if (!createScalesRelationsBlBu([datasource              : datasource,
                                                 inputLowerScaleTableName: buildingTable,
                                                 inputUpperScaleTableName: createBlocks.results.outputTableName,
@@ -964,7 +960,7 @@ IProcess createUnitsOfAnalysis() {
             // WARNING : if the blocks are used, the building table will contain the id_block and id_rsu for each of its
             // id_build but the relations between id_block and i_rsu should not been consider in this Table
             // the relationships may indeed be different from the one in the block Table
-            def createScalesRelationsRsuBlBu = Geoindicators.SpatialUnits.createScalesRelations
+            def createScalesRelationsRsuBlBu = Geoindicators.SpatialUnits.createScalesRelations()
             if (!createScalesRelationsRsuBlBu([datasource              : datasource,
                                                inputLowerScaleTableName: inputLowerScaleBuRsu,
                                                inputUpperScaleTableName: createRSU.results.outputTableName,
@@ -1023,7 +1019,7 @@ IProcess computeAllGeoIndicators() {
             def rsuLcz = null
 
             //Create spatial units and relations : building, block, rsu
-            IProcess spatialUnits = processManager.GeoIndicatorsChain.createUnitsOfAnalysis
+            IProcess spatialUnits = createUnitsOfAnalysis()
             if (!spatialUnits.execute([datasource       : datasource, zoneTable: zoneTable,
                                        buildingTable    : buildingTable, roadTable: roadTable,
                                        railTable        : railTable, vegetationTable: vegetationTable,
@@ -1040,7 +1036,7 @@ IProcess computeAllGeoIndicators() {
 
 
             //Compute building indicators
-            def computeBuildingsIndicators = processManager.GeoIndicatorsChain.computeBuildingsIndicators
+            def computeBuildingsIndicators = computeBuildingsIndicators()
             if (!computeBuildingsIndicators.execute([datasource            : datasource,
                                                      inputBuildingTableName: relationBuildings,
                                                      inputRoadTableName    : roadTable,
@@ -1055,7 +1051,7 @@ IProcess computeAllGeoIndicators() {
             //Compute block indicators
             def blockIndicators = null
             if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
-                def computeBlockIndicators = processManager.GeoIndicatorsChain.computeBlockIndicators
+                def computeBlockIndicators = computeBlockIndicators()
                 if (!computeBlockIndicators.execute([datasource            : datasource,
                                                      inputBuildingTableName: buildingIndicators,
                                                      inputBlockTableName   : relationBlocks,
@@ -1067,7 +1063,7 @@ IProcess computeAllGeoIndicators() {
             }
 
             //Compute RSU indicators
-            def computeRSUIndicators = processManager.GeoIndicatorsChain.computeRSUIndicators
+            def computeRSUIndicators = computeRSUIndicators()
             if (!computeRSUIndicators.execute([datasource       : datasource,
                                                buildingTable    : buildingIndicators,
                                                rsuTable         : relationRSU,
@@ -1106,7 +1102,7 @@ IProcess computeAllGeoIndicators() {
                                 $queryReplaceNames"""
 
                 // The classification algorithm is called
-                def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType
+                def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
                 if (!classifyLCZ([rsuLczIndicators : lczIndicTable,
                                   rsuAllIndicators : computeRSUIndicators.results.outputTableName,
                                   normalisationType: "AVG",

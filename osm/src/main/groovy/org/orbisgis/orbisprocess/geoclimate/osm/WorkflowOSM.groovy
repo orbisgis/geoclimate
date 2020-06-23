@@ -237,7 +237,7 @@ IProcess workflow() {
                             if (file_outputFolder.canWrite()) {
                                 def h2gis_datasource = H2GIS.open(h2gis_properties)
                                 if (osmFilters && osmFilters in Collection) {
-                                    def osmprocessing = osm_processing
+                                    def osmprocessing = osm_processing()
                                     if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
                                             processing_parameters: processing_parameters,
                                             id_zones: osmFilters, outputFolder: file_outputFolder, ouputTableFiles: outputFolderProperties.tables,

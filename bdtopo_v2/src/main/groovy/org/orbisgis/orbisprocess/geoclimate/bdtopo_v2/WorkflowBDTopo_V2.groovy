@@ -7,6 +7,8 @@ import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
+import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
+
 import java.sql.SQLException
 import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain as PC
 
@@ -856,7 +858,6 @@ def extractProcessingParameters(def processing_parameters){
  * @return
  */
 def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zones, def outputFolder, def outputFiles, def output_datasource, def outputTableNames ){
-    def ProcessingChain = GroovyProcessManager.load(PC)
     def  srid =  h2gis_datasource.getSpatialTable("IRIS_GE").srid
     if(output_datasource){
         if(!createOutputTables(output_datasource,  outputTableNames, srid)){
@@ -870,7 +871,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
     int nbAreas = id_zones.size();
 
     //Let's run the BDTopo process for each insee code
-    def prepareBDTopoData = processManager.PrepareBDTopo.prepareData
+    def prepareBDTopoData = BDTopo_V2.prepareData
     def geoIndicatorsComputed = false
     info "$nbAreas communes will be processed"
     id_zones.eachWithIndex { id_zone, index->
@@ -898,7 +899,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
             info "BDTOPO V2 GIS layers formated"
 
             //Build the indicators
-            IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators
+            IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
             if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
                     buildingTable: buildingTableName, roadTable: roadTableName,
                     railTable: railTableName, vegetationTable: vegetationTableName,
@@ -1004,7 +1005,7 @@ def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource){
  * @param srid epsg code for the output tables
  * @return
  */
-def createOutputTables(def output_datasource, def outputTableNames, def srid){
+static def createOutputTables(def output_datasource, def outputTableNames, def srid){
     //Output table names
     def output_zones = outputTableNames.zones
     def output_building_indicators = outputTableNames.building_indicators
