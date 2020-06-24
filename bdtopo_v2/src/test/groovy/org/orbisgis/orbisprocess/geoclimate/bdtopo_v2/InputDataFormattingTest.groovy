@@ -113,7 +113,6 @@ class InputDataFormattingTest {
             assertNotNull(row.ID_SOURCE)
             assertNotEquals('', row.ID_SOURCE)
             // Check that the HEIGHT_WALL is smaller than 1000m high
-
             assertNotNull(row.HEIGHT_WALL)
             assertNotEquals('', row.HEIGHT_WALL)
             assertTrue(row.HEIGHT_WALL >= 0)

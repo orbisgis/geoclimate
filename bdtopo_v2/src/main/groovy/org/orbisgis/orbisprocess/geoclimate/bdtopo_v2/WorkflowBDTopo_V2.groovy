@@ -876,12 +876,7 @@ def extractProcessingParameters(def processing_parameters){
 def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zones, def outputFolder, def outputFiles, def output_datasource, def outputTableNames ){
     def ProcessingChain = GroovyProcessManager.load(PC)
     def  srid =  h2gis_datasource.getSpatialTable("IRIS_GE").srid
-    if(output_datasource){
-        if(!createOutputTables(output_datasource,  outputTableNames, srid)){
-            error "Cannot prepare the output tables to save the result"
-            return
-        }
-    }
+
     if(!(id_zones in Collection)){
         id_zones = [id_zones]
     }
@@ -1016,391 +1011,6 @@ def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource){
 }
 
 /**
- * Create the output tables in the output_datasource
- * @param output_datasource connexion to the output database
- * @param outputTableNames name of tables to store the geoclimate results
- * @param srid epsg code for the output tables
- * @return
- */
-def createOutputTables(def output_datasource, def outputTableNames, def srid){
-    //Output table names
-    def output_zones = outputTableNames.zones
-    def output_building_indicators = outputTableNames.building_indicators
-    def output_block_indicators = outputTableNames.block_indicators
-    def output_rsu_indicators = outputTableNames.rsu_indicators
-    def output_rsu_lcz = outputTableNames.rsu_lcz
-    def output_building = outputTableNames.building
-    def output_road = outputTableNames.road
-    def output_rail = outputTableNames.rail
-    def output_water = outputTableNames.water
-    def output_vegetation = outputTableNames.vegetation
-    def output_impervious = outputTableNames.impervious
-
-    if (output_block_indicators && !output_datasource.hasTable(output_block_indicators)){
-        output_datasource """
-                CREATE TABLE $output_block_indicators (
-                    ID_BLOCK INTEGER, THE_GEOM GEOMETRY(GEOMETRY,$srid),
-                    ID_RSU INTEGER, AREA DOUBLE PRECISION,
-                    FLOOR_AREA DOUBLE PRECISION,VOLUME DOUBLE PRECISION,
-                    HOLE_AREA_DENSITY DOUBLE PRECISION,
-                    BUILDING_DIRECTION_EQUALITY DOUBLE PRECISION,
-                    BUILDING_DIRECTION_UNIQUENESS DOUBLE PRECISION,
-                    MAIN_BUILDING_DIRECTION VARCHAR,
-                    CLOSINGNESS DOUBLE PRECISION, NET_COMPACTNESS DOUBLE PRECISION,
-                    AVG_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION,
-                    STD_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION,
-                    ID_ZONE VARCHAR
-                );
-                CREATE INDEX IF NOT EXISTS idx_${output_block_indicators.replaceAll(".","_")}_id_zone ON $output_block_indicators (ID_ZONE);
-        """
-    }
-    else if (output_block_indicators){
-        def outputTableSRID = output_datasource.getSpatialTable(output_block_indicators).srid
-        if(outputTableSRID != srid){
-            error "The SRID of the output table ($outputTableSRID) $output_block_indicators is different than the srid of the result table ($srid)"
-            return
-        }
-        //Test if we can write in the database
-        output_datasource """
-                INSERT INTO $output_block_indicators (ID_ZONE) VALUES('geoclimate');
-                DELETE from $output_block_indicators WHERE ID_ZONE= 'geoclimate';
-        """
-    }
-
-    if (output_building_indicators && !output_datasource.hasTable(output_building_indicators)){
-        output_datasource """
-                CREATE TABLE $output_building_indicators (
-                        THE_GEOM GEOMETRY(GEOMETRY,$srid),
-                        ID_BUILD INTEGER,
-                        ID_SOURCE VARCHAR,
-                        HEIGHT_WALL INTEGER,
-                        HEIGHT_ROOF INTEGER,
-                        NB_LEV INTEGER,
-                        TYPE VARCHAR,
-                        MAIN_USE VARCHAR,
-                        ZINDEX INTEGER,
-                        ID_ZONE VARCHAR,
-                        ID_BLOCK INTEGER,
-                        ID_RSU INTEGER,
-                        PERIMETER DOUBLE PRECISION,
-                        AREA DOUBLE PRECISION,
-                        VOLUME DOUBLE PRECISION,
-                        FLOOR_AREA DOUBLE PRECISION,
-                        TOTAL_FACADE_LENGTH DOUBLE PRECISION,
-                        CONTIGUITY DOUBLE PRECISION,
-                        COMMON_WALL_FRACTION DOUBLE PRECISION,
-                        NUMBER_BUILDING_NEIGHBOR BIGINT,
-                        AREA_CONCAVITY DOUBLE PRECISION,
-                        FORM_FACTOR DOUBLE PRECISION,
-                        RAW_COMPACTNESS DOUBLE PRECISION,
-                        PERIMETER_CONVEXITY DOUBLE PRECISION,
-                        MINIMUM_BUILDING_SPACING DOUBLE PRECISION,
-                        ROAD_DISTANCE DOUBLE PRECISION,
-                        LIKELIHOOD_LARGE_BUILDING DOUBLE PRECISION
-                );
-                CREATE INDEX IF NOT EXISTS idx_${output_building_indicators.replaceAll(".","_")}_id_zone  ON $output_building_indicators (ID_ZONE);
-        """
-    }
-    else if (output_building_indicators){
-        def outputTableSRID = output_datasource.getSpatialTable(output_building_indicators).srid
-        if(outputTableSRID != srid){
-            error "The SRID of the output table ($outputTableSRID) $output_building_indicators is different than the srid of the result table ($srid)"
-            return
-        }
-        //Test if we can write in the database
-        output_datasource """
-                INSERT INTO $output_building_indicators (ID_ZONE) VALUES('geoclimate');
-                DELETE from $output_building_indicators WHERE ID_ZONE= 'geoclimate';
-        """
-    }
-
-    if (output_rsu_indicators && !output_datasource.hasTable(output_rsu_indicators)){
-        output_datasource.execute """
-    CREATE TABLE $output_rsu_indicators (
-    ID_RSU INTEGER,
-	THE_GEOM GEOMETRY(GEOMETRY,$srid),	
-	HIGH_VEGETATION_FRACTION DOUBLE PRECISION,
-	HIGH_VEGETATION_WATER_FRACTION DOUBLE PRECISION,
-	HIGH_VEGETATION_BUILDING_FRACTION DOUBLE PRECISION,
-	HIGH_VEGETATION_LOW_VEGETATION_FRACTION DOUBLE PRECISION,
-	HIGH_VEGETATION_ROAD_FRACTION DOUBLE PRECISION,
-	HIGH_VEGETATION_IMPERVIOUS_FRACTION DOUBLE PRECISION,
-	WATER_FRACTION DOUBLE PRECISION,
-	BUILDING_FRACTION DOUBLE PRECISION,
-	LOW_VEGETATION_FRACTION DOUBLE PRECISION,
-	ROAD_FRACTION DOUBLE PRECISION,
-	IMPERVIOUS_FRACTION DOUBLE PRECISION,
-	VEGETATION_FRACTION_URB DOUBLE PRECISION,
-	LOW_VEGETATION_FRACTION_URB DOUBLE PRECISION,
-	HIGH_VEGETATION_IMPERVIOUS_FRACTION_URB DOUBLE PRECISION,
-	HIGH_VEGETATION_PERVIOUS_FRACTION_URB DOUBLE PRECISION,
-	ROAD_FRACTION_URB DOUBLE PRECISION,
-	IMPERVIOUS_FRACTION_URB DOUBLE PRECISION,
-	BUILDING_FRACTION_LCZ DOUBLE PRECISION,
-	PERVIOUS_FRACTION_LCZ DOUBLE PRECISION,
-	HIGH_VEGETATION_FRACTION_LCZ DOUBLE PRECISION,
-	LOW_VEGETATION_FRACTION_LCZ DOUBLE PRECISION,
-	IMPERVIOUS_FRACTION_LCZ DOUBLE PRECISION,
-	WATER_FRACTION_LCZ DOUBLE PRECISION,
-	AREA DOUBLE PRECISION,
-	AVG_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION,
-	STD_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION,
-	ROAD_DIRECTION_DISTRIBUTION_H0_D0_30 DOUBLE PRECISION,
-	ROAD_DIRECTION_DISTRIBUTION_H0_D30_60 DOUBLE PRECISION,
-	ROAD_DIRECTION_DISTRIBUTION_H0_D60_90 DOUBLE PRECISION,
-	ROAD_DIRECTION_DISTRIBUTION_H0_D90_120 DOUBLE PRECISION,
-	ROAD_DIRECTION_DISTRIBUTION_H0_D120_150 DOUBLE PRECISION,
-	ROAD_DIRECTION_DISTRIBUTION_H0_D150_180 DOUBLE PRECISION,
-	GROUND_LINEAR_ROAD_DENSITY DOUBLE PRECISION,
-	NON_VERT_ROOF_AREA_H0_10 DOUBLE PRECISION,
-	NON_VERT_ROOF_AREA_H10_20 DOUBLE PRECISION,
-	NON_VERT_ROOF_AREA_H20_30 DOUBLE PRECISION,
-	NON_VERT_ROOF_AREA_H30_40 DOUBLE PRECISION,
-	NON_VERT_ROOF_AREA_H40_50 DOUBLE PRECISION,
-	NON_VERT_ROOF_AREA_H50 DOUBLE PRECISION,
-	VERT_ROOF_AREA_H0_10 DOUBLE PRECISION,
-	VERT_ROOF_AREA_H10_20 DOUBLE PRECISION,
-	VERT_ROOF_AREA_H20_30 DOUBLE PRECISION,
-	VERT_ROOF_AREA_H30_40 DOUBLE PRECISION,
-	VERT_ROOF_AREA_H40_50 DOUBLE PRECISION,
-	VERT_ROOF_AREA_H50 DOUBLE PRECISION,
-	VERT_ROOF_DENSITY DOUBLE PRECISION,
-	NON_VERT_ROOF_DENSITY DOUBLE PRECISION,
-	FREE_EXTERNAL_FACADE_DENSITY DOUBLE PRECISION,
-	GEOM_AVG_HEIGHT_ROOF DOUBLE PRECISION,
-	BUILDING_VOLUME_DENSITY DOUBLE PRECISION,
-	AVG_VOLUME DOUBLE PRECISION,
-	AVG_NUMBER_BUILDING_NEIGHBOR DOUBLE PRECISION,
-	BUILDING_FLOOR_AREA_DENSITY DOUBLE PRECISION,
-	AVG_MINIMUM_BUILDING_SPACING DOUBLE PRECISION,
-	BUILDING_NUMBER_DENSITY DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D0_30 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D0_30 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D0_30 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D0_30 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D0_30 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D0_30 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D30_60 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D30_60 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D30_60 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D30_60 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D30_60 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D30_60 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D60_90 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D60_90 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D60_90 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D60_90 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D60_90 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D60_90 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D90_120 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D90_120 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D90_120 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D90_120 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D90_120 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D90_120 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D120_150 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D120_150 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D120_150 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D120_150 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D120_150 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D120_150 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D150_180 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D150_180 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D150_180 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D150_180 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D150_180 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D150_180 DOUBLE PRECISION,
-	BUILDING_TOTAL_FRACTION DOUBLE PRECISION,
-	ASPECT_RATIO DOUBLE PRECISION,
-	GROUND_SKY_VIEW_FACTOR DOUBLE PRECISION,
-	EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH DOUBLE PRECISION,
-	EFFECTIVE_TERRAIN_ROUGHNESS_CLASS INTEGER,
-	BUILDING_DIRECTION_EQUALITY DOUBLE PRECISION,
-	BUILDING_DIRECTION_UNIQUENESS DOUBLE PRECISION,
-	MAIN_BUILDING_DIRECTION VARCHAR,
-    ID_ZONE VARCHAR
-    );    
-        CREATE INDEX IF NOT EXISTS idx_${output_rsu_indicators.replaceAll(".","_")}_id_zone ON $output_rsu_indicators (ID_ZONE);
-        """
-    } else if (output_rsu_indicators){
-        def outputTableSRID = output_datasource.getSpatialTable(output_rsu_indicators).srid
-        if(outputTableSRID != srid){
-            error "The SRID of the output table ($outputTableSRID) $output_rsu_indicators is different than the srid of the result table ($srid)"
-            return
-        }
-        //Test if we can write in the database
-        output_datasource.execute """
-                INSERT INTO $output_rsu_indicators (ID_ZONE) VALUES('geoclimate');
-                DELETE from $output_rsu_indicators WHERE ID_ZONE= 'geoclimate';
-        """
-    }
-
-    if (output_rsu_lcz && !output_datasource.hasTable(output_rsu_lcz)){
-        output_datasource.execute """
-                CREATE TABLE $output_rsu_lcz(
-                        ID_ZONE VARCHAR,
-                        ID_RSU INTEGER,
-                        THE_GEOM GEOMETRY(GEOMETRY,$srid),
-                        LCZ1 INTEGER,
-                        LCZ2 INTEGER,
-                        MIN_DISTANCE DOUBLE PRECISION,
-                        PSS DOUBLE PRECISION
-                );
-                CREATE INDEX IF NOT EXISTS idx_${output_rsu_lcz.replaceAll(".","_")}_id_zone ON $output_rsu_lcz (ID_ZONE);
-        """
-    }else if (output_rsu_lcz){
-        def outputTableSRID = output_datasource.getSpatialTable(output_rsu_lcz).srid
-        if(outputTableSRID != srid){
-            error "The SRID of the output table ($outputTableSRID) $output_rsu_lcz is different than the srid of the result table ($srid)"
-            return
-        }
-        //Test if we can write in the database
-        output_datasource """
-                INSERT INTO $output_rsu_lcz (ID_ZONE) VALUES('geoclimate');
-                DELETE from $output_rsu_lcz WHERE ID_ZONE= 'geoclimate';
-        """
-    }
-
-    if (output_zones && !output_datasource.hasTable(output_zones)){
-        output_datasource """
-                CREATE TABLE $output_zones(ID_ZONE VARCHAR, THE_GEOM GEOMETRY(GEOMETRY,$srid));
-                CREATE INDEX IF NOT EXISTS idx_${output_zones.replaceAll(".","_")}_id_zone ON $output_zones (ID_ZONE);
-        """
-    }else if (output_zones){
-        def outputTableSRID = output_datasource.getSpatialTable(output_zones).srid
-        if(outputTableSRID != srid){
-            error "The SRID of the output table ($outputTableSRID) $output_zones is different than the srid of the result table ($srid)"
-            return
-        }
-        //Test if we can write in the database
-        output_datasource """
-                INSERT INTO $output_zones (ID_ZONE) VALUES('geoclimate');
-                DELETE from $output_zones WHERE ID_ZONE= 'geoclimate';
-        """
-    }
-
-    if (output_building && !output_datasource.hasTable(output_building)){
-        output_datasource """
-                CREATE TABLE $output_building (THE_GEOM GEOMETRY(POLYGON, $srid), id_build serial, ID_SOURCE VARCHAR, 
-                    HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT, NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER);
-                CREATE INDEX IF NOT EXISTS idx_${output_building.replaceAll(".","_")}_id_source ON $output_building (ID_SOURCE);
-        """
-    }
-    else if (output_building){
-        def outputTableSRID = output_datasource.getSpatialTable(output_building).srid
-        if(outputTableSRID != srid){
-            error "The SRID of the output table ($outputTableSRID) $output_building is different than the srid of the result table ($srid)"
-            return
-        }
-        //Test if we can write in the database
-        output_datasource """
-                INSERT INTO $output_building (ID_SOURCE) VALUES('geoclimate');
-                DELETE from $output_building WHERE ID_SOURCE= 'geoclimate';
-        """
-    }
-
-    if (output_road && !output_datasource.hasTable(output_road)){
-        output_datasource """
-                CREATE TABLE $output_road  (THE_GEOM GEOMETRY(GEOMETRY, $srid), id_road serial, ID_SOURCE VARCHAR, 
-                        WIDTH FLOAT, TYPE VARCHAR, CROSSING VARCHAR(30), SURFACE VARCHAR, SIDEWALK VARCHAR, 
-                        ZINDEX INTEGER);
-                CREATE INDEX IF NOT EXISTS idx_${output_road.replaceAll(".","_")}_id_source ON $output_road (ID_SOURCE);
-        """
-    }
-    else if (output_road){
-        def outputTableSRID = output_datasource.getSpatialTable(output_road).srid
-        if(outputTableSRID != srid){
-            error "The SRID of the output table ($outputTableSRID) $output_road is different than the srid of the result table ($srid)"
-            return
-        }
-        //Test if we can write in the database
-        output_datasource """
-                INSERT INTO $output_road (ID_SOURCE) VALUES('geoclimate');
-                DELETE from $output_road WHERE ID_SOURCE= 'geoclimate';
-        """
-    }
-
-    if (output_rail && !output_datasource.hasTable(output_rail)){
-        output_datasource """
-                CREATE TABLE $output_rail  (THE_GEOM GEOMETRY(GEOMETRY, $srid), id_rail serial,ID_SOURCE VARCHAR, 
-                        TYPE VARCHAR,CROSSING VARCHAR(30), ZINDEX INTEGER);
-                CREATE INDEX IF NOT EXISTS idx_${output_rail.replaceAll(".","_")}_id_source ON $output_rail (ID_SOURCE);
-        """
-    }
-    else if (output_rail){
-        def outputTableSRID = output_datasource.getSpatialTable(output_rail).srid
-        if(outputTableSRID != srid){
-            error "The SRID of the output table ($outputTableSRID) $output_rail is different than the srid of the result table ($srid)"
-            return
-        }
-        //Test if we can write in the database
-        output_datasource """
-                INSERT INTO $output_rail (ID_SOURCE) VALUES('geoclimate');
-                DELETE from $output_rail WHERE ID_SOURCE= 'geoclimate';
-        """
-    }
-
-    if (output_water && !output_datasource.hasTable(output_water)){
-        output_datasource """
-                CREATE TABLE $output_water  (THE_GEOM GEOMETRY(POLYGON, $srid), id_hydro serial, ID_SOURCE VARCHAR);
-                CREATE INDEX IF NOT EXISTS idx_${output_water.replaceAll(".","_")}_id_source ON $output_water (ID_SOURCE);
-        """
-    }
-    else if (output_water){
-        def outputTableSRID = output_datasource.getSpatialTable(output_water).srid
-        if(outputTableSRID != srid){
-            error "The SRID of the output table ($outputTableSRID) $output_water is different than the srid of the result table ($srid)"
-            return
-        }
-        //Test if we can write in the database
-        output_datasource """
-                INSERT INTO $output_water (ID_SOURCE) VALUES('geoclimate');
-                DELETE from $output_water WHERE ID_SOURCE= 'geoclimate';
-        """
-    }
-
-    if (output_vegetation && !output_datasource.hasTable(output_vegetation)){
-        output_datasource """
-                CREATE TABLE $output_vegetation  (THE_GEOM GEOMETRY(POLYGON, $srid), id_veget serial, 
-                        ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4));
-                CREATE INDEX IF NOT EXISTS idx_${output_vegetation.replaceAll(".","_")}_id_source ON $output_vegetation (ID_SOURCE);
-        """
-    }
-    else if (output_vegetation){
-        def outputTableSRID = output_datasource.getSpatialTable(output_vegetation).srid
-        if(outputTableSRID != srid){
-            error "The SRID of the output table ($outputTableSRID) $output_vegetation is different than the srid of the result table ($srid)"
-            return
-        }
-        //Test if we can write in the database
-        output_datasource """
-                INSERT INTO $output_vegetation (ID_SOURCE) VALUES('geoclimate');
-                DELETE from $output_vegetation WHERE ID_SOURCE= 'geoclimate';
-        """
-    }
-
-    if (output_impervious && !output_datasource.hasTable(output_impervious)){
-        output_datasource """
-                CREATE TABLE $output_impervious  (THE_GEOM GEOMETRY(POLYGON, $srid), id_impervious serial, ID_SOURCE VARCHAR);
-                CREATE INDEX IF NOT EXISTS idx_${output_impervious.replaceAll(".","_")}_id_source ON $output_impervious (ID_SOURCE);
-        """
-    }
-    else if (output_impervious){
-        def outputTableSRID = output_datasource.getSpatialTable(output_impervious).srid
-        if(outputTableSRID != srid){
-            error "The SRID of the output table ($outputTableSRID) $output_impervious is different than the srid of the result table ($srid)"
-            return
-        }
-        //Test if we can write in the database
-        output_datasource """
-                INSERT INTO $output_impervious (ID_SOURCE) VALUES('geoclimate');
-                DELETE from $output_impervious WHERE ID_SOURCE= 'geoclimate';
-        """
-    }
-    return true
-}
-
-/**
  * Save the output tables in a database
  * @param output_datasource a connexion a database
  * @param h2gis_datasource local H2GIS database
@@ -1411,44 +1021,44 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
  */
 def saveTablesInDatabase(def output_datasource, def h2gis_datasource, def outputTableNames, def h2gis_tables, def id_zone, def srid ){
     //Export building indicators
-        indicatorTableBatchExportTable(output_datasource, outputTableNames.building_indicators,id_zone, srid,h2gis_datasource, h2gis_tables.outputTableBuildingIndicators
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.building_indicators,id_zone,h2gis_datasource, h2gis_tables.outputTableBuildingIndicators
                 , 1000, "where id_zone!='outside'")
 
 
     //Export block indicators
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.block_indicators, id_zone,srid, h2gis_datasource, h2gis_tables.outputTableBlockIndicators
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.block_indicators, id_zone, h2gis_datasource, h2gis_tables.outputTableBlockIndicators
             , 1000, "where ID_RSU IS NOT NULL")
 
     //Export rsu indicators
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_indicators, id_zone,srid, h2gis_datasource, h2gis_tables.outputTableRsuIndicators
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_indicators, id_zone, h2gis_datasource, h2gis_tables.outputTableRsuIndicators
             , 1000, "")
 
     //Export rsu lcz
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_lcz, id_zone, srid, h2gis_datasource, h2gis_tables.outputTableRsuLcz
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_lcz, id_zone, h2gis_datasource, h2gis_tables.outputTableRsuLcz
             , 1000, "")
 
     //Export zone
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.zones, id_zone,srid, h2gis_datasource, h2gis_tables.outputTableZone
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.zones, id_zone, h2gis_datasource, h2gis_tables.outputTableZone
             , 1, "")
 
     //Export building
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.building, srid, h2gis_datasource, h2gis_tables.buildingTableName
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.building, id_zone, h2gis_datasource, h2gis_tables.buildingTableName
             , 1000, "")
 
     //Export road
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.road, srid, h2gis_datasource, h2gis_tables.roadTableName
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.road, id_zone,h2gis_datasource, h2gis_tables.roadTableName
             , 1000, "")
     //Export rail
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.rail, srid, h2gis_datasource, h2gis_tables.railTableName
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.rail, id_zone, h2gis_datasource, h2gis_tables.railTableName
             , 1000, "")
     //Export vegetation
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.vegetation, srid, h2gis_datasource, h2gis_tables.vegetationTableName
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.vegetation, id_zone, h2gis_datasource, h2gis_tables.vegetationTableName
             , 1000, "")
     //Export water
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.water, srid, h2gis_datasource, h2gis_tables.hydrographicTableName
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.water, id_zone, h2gis_datasource, h2gis_tables.hydrographicTableName
             , 1000, "")
     //Export impervious
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.impervious, srid, h2gis_datasource, h2gis_tables.imperviousTableName
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.impervious, id_zone, h2gis_datasource, h2gis_tables.imperviousTableName
             , 1000, "")
 }
 

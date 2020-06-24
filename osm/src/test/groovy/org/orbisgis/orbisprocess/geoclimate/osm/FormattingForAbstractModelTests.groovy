@@ -47,6 +47,10 @@ class FormattingForAbstractModelTests {
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF is null").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0").count==0
 
+        //Check type and use terms
+        assertTrue h2GIS.firstRow("select type as building_type from ${format.results.outputTableName} where ID_SOURCE='w122539595'").building_type=='church'
+
+
         //Roads
         format = O.FormattingForAbstractModel.formatRoadLayer
         format.execute([
@@ -110,7 +114,7 @@ class FormattingForAbstractModelTests {
 
     }
 
-    @Disabled
+    //@Disabled
     @Test //enable it to test data extraction from the overpass api
     void extractCreateFormatGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
@@ -122,9 +126,9 @@ class FormattingForAbstractModelTests {
         zoneToExtract = "Paimpol"
         //zoneToExtract = "Londres, Grand Londres, Angleterre, Royaume-Uni"
         //zoneToExtract="Cliscouet, Vannes"
-        zoneToExtract="rezé"
+        //zoneToExtract="rezé"
 
-        IProcess extractData = O.extractAndCreateGISLayers
+        IProcess extractData = O.OSMGISLayers.extractAndCreateGISLayers
         extractData.execute([
                 datasource : h2GIS,
                 zoneToExtract:zoneToExtract ])
@@ -142,7 +146,7 @@ class FormattingForAbstractModelTests {
 
 
             //Buildings
-            IProcess format = O.formatBuildingLayer
+            IProcess format = O.FormattingForAbstractModel.formatBuildingLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.buildingTableName,
@@ -158,7 +162,7 @@ class FormattingForAbstractModelTests {
 
 
             //Roads
-            format = O.formatRoadLayer
+            format = O.FormattingForAbstractModel.formatRoadLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.roadTableName,
@@ -168,7 +172,7 @@ class FormattingForAbstractModelTests {
             assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where width is null or width <= 0").count==0
 
             //Rails
-            format = O.formatRailsLayer
+            format = O.FormattingForAbstractModel.formatRailsLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.railTableName,
@@ -178,7 +182,7 @@ class FormattingForAbstractModelTests {
 
 
             //Vegetation
-            format = O.formatVegetationLayer
+            format = O.FormattingForAbstractModel.formatVegetationLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.vegetationTableName,
@@ -197,17 +201,13 @@ class FormattingForAbstractModelTests {
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_hydro_${formatedPlaceName}.geojson")
 
             //Impervious
-            format = O.formatImperviousLayer
+            format = O.FormattingForAbstractModel.formatImperviousLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.imperviousTableName,
                     inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
                     epsg: epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_${formatedPlaceName}.geojson")
-
-
-
-
         }else {
             assertTrue(false)
         }

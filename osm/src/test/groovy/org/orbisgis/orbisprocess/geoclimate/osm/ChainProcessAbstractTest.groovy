@@ -70,6 +70,7 @@ class ChainProcessAbstractTest {
                                                        indicatorUse          : indicatorUse,
                                                        prefixName            : prefixName])
         String buildingIndicators = computeBuildingsIndicators.getResults().outputTableName
+        assertTrue(datasource.getSpatialTable(buildingIndicators).srid>0)
         if (saveResults) {
             logger.info("Saving building indicators")
             datasource.save(buildingIndicators, directory + File.separator + "${buildingIndicators}.geojson")
@@ -96,6 +97,7 @@ class ChainProcessAbstractTest {
             def countRelationBlocks = datasource.firstRow("select count(*) as count from ${relationBlocks}".toString())
             def countBlocksIndicators = datasource.firstRow("select count(*) as count from ${blockIndicators}".toString())
             assertEquals(countRelationBlocks.count, countBlocksIndicators.count)
+            assertTrue(datasource.getSpatialTable(blockIndicators).srid>0)
         }
 
         //Compute RSU indicators
@@ -119,5 +121,6 @@ class ChainProcessAbstractTest {
         def countRelationRSU = datasource.firstRow("select count(*) as count from ${relationRSU}".toString())
         def countRSUIndicators = datasource.firstRow("select count(*) as count from ${rsuIndicators}".toString())
         assertEquals(countRelationRSU.count, countRSUIndicators.count)
+        assertTrue(datasource.getSpatialTable(rsuIndicators).srid>0)
     }
 }
