@@ -349,7 +349,7 @@ class TypologyClassificationTests {
                 "ALTER TABLE inputDataTable DROP COLUMN $var2model"
 
 
-        def pmed =  GI.TypologyClassification.applyRandomForestClassif
+        def pmed =  Geoindicators.TypologyClassification.applyRandomForestClassif
         assert pmed.execute([
                 explicativeVariablesTableName   : "inputDataTable",
                 defaultModelUrl                 : "https://github.com/orbisgis/geoclimate/models/model.model",
