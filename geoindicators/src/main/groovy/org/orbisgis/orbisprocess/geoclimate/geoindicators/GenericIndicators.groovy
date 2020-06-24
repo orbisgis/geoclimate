@@ -612,25 +612,6 @@ IProcess typeProportion() {
                 queryCalc += "SUM(AREA_${type})/SUM(AREA) AS FRACTION_${type}, "
             }
 
-            // The name of the outputTableName is constructed
-            def outputTableName = prefix prefixName, BASE_NAME
-
-            // To avoid overwriting the output files of this step, a unique identifier is created
-            // Temporary table names
-            def caseWhenTab = postfix "case_when_tab"
-
-            // Recover a list of the types of the input table
-            def possibleTypes = datasource.rows("SELECT DISTINCT $typeFieldName FROM $inputTableName")
-
-            // Define the pieces of query according to each type of the input table
-            def queryCalc = ""
-            def queryCaseWh = ""
-            possibleTypes.forEach {
-                def t = it.TYPE
-                queryCalc += "SUM(AREA_$t)/SUM(AREA) AS FRACTION_$t, "
-                queryCaseWh += "CASE WHEN $typeFieldName='$t' THEN ST_AREA($GEOMETRIC_FIELD_LOW) END AS AREA_$t,"
-            }
-
             // Calculates the surface of each object depending on its type
             datasource.execute """DROP TABLE IF EXISTS $caseWhenTab;
                                 CREATE TABLE $caseWhenTab 
