@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS.open
 import static org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager.load
 
@@ -316,18 +317,71 @@ class GenericIndicatorsTests {
                         FROM building_test a, rsu_test b
                         WHERE id_build < 4;"""
 
-        def  p =  Geoindicators.GenericIndicators.typeProportion()
-        assert p([
-                inputTableName      : "tempo_build",
-                idField             : "id_rsu",
-                typeFieldName       : "type",
-                typeAndComposition  : ["industrial": ["industrial"], "residential": ["residential"], "all": ["residential", "industrial"]],
-                prefixName          : "",
-                datasource          : h2GIS])
+        // Test 1
+        def  p1 =  Geoindicators.GenericIndicators.typeProportion()
+        assert p1([
+                inputTableName          : "tempo_build",
+                idField                 : "id_rsu",
+                typeFieldName           : "type",
+                areaTypeAndComposition  : ["industrial": ["industrial"], "residential": ["residential", "detached"]],
+                prefixName              : "",
+                datasource              : h2GIS])
 
-        def result = h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName}")
-        assert (156.0/296).trunc(3) == result.fraction_industrial.trunc(3)
-        assert (140.0/296).trunc(3) == result.fraction_residential.trunc(3)
-        assert ((140.0+156.0)/296).trunc(3) == result.fraction_all.trunc(3)
+        def result1 = h2GIS.firstRow("SELECT * FROM ${p1.results.outputTableName}")
+        assert (156.0/296).trunc(3) == result1.area_fraction_industrial.trunc(3)
+        assert (140.0/296).trunc(3) == result1.area_fraction_residential.trunc(3)
+
+        // Test 2
+        def  p2 =  Geoindicators.GenericIndicators.typeProportion()
+        assert p2([
+                inputTableName                  : "tempo_build",
+                idField                         : "id_rsu",
+                typeFieldName                   : "type",
+                floorAreaTypeAndComposition     : ["industrial": ["industrial"], "residential": ["residential", "detached"]],
+                prefixName                      : "",
+                datasource                      : h2GIS])
+
+        def result2 = h2GIS.firstRow("SELECT * FROM ${p2.results.outputTableName}")
+        assert (312.0/832).trunc(3) == result2.floor_area_fraction_industrial.trunc(3)
+        assert (520.0/832).trunc(3) == result2.floor_area_fraction_residential.trunc(3)
+
+        // Test 3
+        def  p3 =  Geoindicators.GenericIndicators.typeProportion()
+        assert p3([
+                inputTableName                  : "tempo_build",
+                idField                         : "id_rsu",
+                typeFieldName                   : "type",
+                areaTypeAndComposition          : ["industrial": ["industrial"], "residential": ["residential", "detached"]],
+                floorAreaTypeAndComposition     : ["industrial": ["industrial"], "residential": ["residential", "detached"]],
+                prefixName                      : "",
+                datasource                      : h2GIS])
+
+        def result3 = h2GIS.firstRow("SELECT * FROM ${p3.results.outputTableName}")
+        assert (156.0/296).trunc(3) == result3.area_fraction_industrial.trunc(3)
+        assert (140.0/296).trunc(3) == result3.area_fraction_residential.trunc(3)
+        assert (312.0/832).trunc(3) == result3.floor_area_fraction_industrial.trunc(3)
+        assert (520.0/832).trunc(3) == result3.floor_area_fraction_residential.trunc(3)
+    }
+
+    @Test
+    void typeProportionTest2() {
+        // Test 1
+        def  p =  Geoindicators.GenericIndicators.typeProportion()
+        assertFalse(p([
+                inputTableName              : "tempo_build",
+                idField                     : "id_rsu",
+                typeFieldName               : "type",
+                areaTypeAndComposition      : null,
+                floorAreaTypeAndComposition : null,
+                prefixName                  : "",
+                datasource                  : h2GIS]))
+        assertFalse(p([
+                inputTableName              : "tempo_build",
+                idField                     : "id_rsu",
+                typeFieldName               : "type",
+                "areaTypeAndComposition"    : null,
+                floorAreaTypeAndComposition : [:],
+                prefixName                  : "",
+                datasource                  : h2GIS]))
     }
 }

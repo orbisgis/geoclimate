@@ -364,7 +364,8 @@ IProcess computeBlockIndicators() {
  * of overlapped layers (for example a geometry containing water and low_vegetation must be either water
  * or either low_vegetation, not both (default ["water", "building", "high_vegetation", "low_vegetation",
  * "road", "impervious"]
- * @param buildingTypeAndComposition Building type proportion that should be calculated (default: ["industrial": ["industrial"]])
+ * @param buildingAreaTypeAndComposition Building type proportion that should be calculated (default: ["industrial": ["industrial"]])
+ * @param floorAreaTypeAndComposition Building floor area type proportion that should be calculated (default: ["residential": ["residential"]])
  * @param urbanTypoSurfFraction Map containing as key the name of the fraction indicators useful for the urban typology classification
  * and as value a list of the fractions that have to be summed up to calculate the indicator. No need to modify
  * these values if not interested by the urban typology
@@ -380,22 +381,23 @@ IProcess computeRSUIndicators() {
     return create {
         title "Compute the geoindicators at RSU scale"
         id "computeRSUIndicators"
-        inputs  datasource                 : JdbcDataSource,   buildingTable               : "",
-                rsuTable                   : "",           prefixName                  : "",
-                vegetationTable            : "",           roadTable                   : "",
-                hydrographicTable          : "",           imperviousTable             : "",
-                facadeDensListLayersBottom  : [0, 10, 20, 30, 40, 50],
-                facadeDensNumberOfDirection: 12,               svfPointDensity             : 0.008,
-                svfRayLength               : 100,              svfNumberOfDirection        : 60,
-                heightColumnName           : "height_roof",
-                inputFields                : ["id_build", "the_geom"],
-                levelForRoads              : [0],              angleRangeSizeBuDirection   : 30,
-                svfSimplified              : false,
-                indicatorUse               : ["LCZ", "URBAN_TYPOLOGY", "TEB"],
-                surfSuperpositions         : ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]],
-                surfPriorities             : ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"],
-                buildingTypeAndComposition : ["industrial": ["industrial"]],
-                urbanTypoSurfFraction      : ["vegetation_fraction_urb"                 : ["high_vegetation_fraction",
+        inputs  datasource                      : JdbcDataSource,   buildingTable               : "",
+                rsuTable                        : "",               prefixName                  : "",
+                vegetationTable                 : "",               roadTable                   : "",
+                hydrographicTable               : "",               imperviousTable             : "",
+                facadeDensListLayersBottom      : [0, 10, 20, 30, 40, 50],
+                facadeDensNumberOfDirection     : 12,               svfPointDensity             : 0.008,
+                svfRayLength                    : 100,              svfNumberOfDirection        : 60,
+                heightColumnName                : "height_roof",
+                inputFields                     : ["id_build", "the_geom"],
+                levelForRoads                   : [0],              angleRangeSizeBuDirection   : 30,
+                svfSimplified                   : false,
+                indicatorUse                    : ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+                surfSuperpositions              : ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]],
+                surfPriorities                  : ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"],
+                buildingAreaTypeAndComposition  : ["industrial": ["industrial"]],
+                floorAreaTypeAndComposition     : ["residential": ["residential"]],
+                urbanTypoSurfFraction           : ["vegetation_fraction_urb"                 : ["high_vegetation_fraction",
                                                                                            "low_vegetation_fraction",
                                                                                            "high_vegetation_low_vegetation_fraction",
                                                                                            "high_vegetation_road_fraction",
@@ -439,11 +441,12 @@ IProcess computeRSUIndicators() {
         run { datasource                , buildingTable                     , rsuTable,
               prefixName                , vegetationTable                   , roadTable,
               hydrographicTable         , imperviousTable,
-              facadeDensListLayersBottom        , facadeDensNumberOfDirection,
+              facadeDensListLayersBottom, facadeDensNumberOfDirection,
               svfPointDensity           , svfRayLength                      , svfNumberOfDirection,
               heightColumnName          , inputFields                       , levelForRoads,
               angleRangeSizeBuDirection , svfSimplified                     , indicatorUse,
-              surfSuperpositions        , surfPriorities                    , buildingTypeAndComposition,
+              surfSuperpositions        , surfPriorities                    , buildingAreaTypeAndComposition,
+              floorAreaTypeAndComposition,
               urbanTypoSurfFraction     , lczSurfFraction                   , buildingFractions ->
 
             info "Start computing RSU indicators..."
@@ -548,12 +551,13 @@ IProcess computeRSUIndicators() {
             if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY") || indicatorUse*.toUpperCase().contains("LCZ")) {
                 def computeTypeProportion = Geoindicators.GenericIndicators.typeProportion()
                 if (!computeTypeProportion([
-                                            inputTableName      : buildingTable,
-                                            idField             : columnIdRsu,
-                                            typeFieldName       : "type",
-                                            typeAndComposition  : buildingTypeAndComposition,
-                                            prefixName          : temporaryPrefName,
-                                            datasource          : datasource])) {
+                                            inputTableName                  : buildingTable,
+                                            idField                     : columnIdRsu,
+                                            typeFieldName               : "type",
+                                            areaTypeAndComposition      : buildingAreaTypeAndComposition,
+                                            floorAreaTypeAndComposition : floorAreaTypeAndComposition,
+                                            prefixName                  : temporaryPrefName,
+                                            datasource                  : datasource])) {
                     info "Cannot compute the building type proportion of the RSU"
                     return
                 }
