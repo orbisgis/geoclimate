@@ -10,13 +10,11 @@ import static org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 class SpatialUnitsTests {
 
     private static def h2GIS
-    private static def GI
     private static def randomDbName() {"${SpatialUnitsTests.simpleName}_${UUID.randomUUID().toString().replaceAll"-", "_"}"}
 
     @BeforeAll
     static void beforeAll(){
         h2GIS = open"./target/${randomDbName()};AUTO_SERVER=TRUE"
-        GI = load Geoindicators
     }
 
     @BeforeEach
@@ -30,7 +28,7 @@ class SpatialUnitsTests {
                 DROP TABLE IF EXISTS roads_rsu;
                 CREATE TABLE roads_rsu AS SELECT * FROM road_test WHERE id_road <5
         """
-        def rsu = GI.SpatialUnits.createRSU
+        def rsu = Geoindicators.SpatialUnits.createRSU()
         assert rsu([
                 inputTableName  : "roads_rsu",
                 prefixName      : "rsu",
@@ -48,7 +46,7 @@ class SpatialUnitsTests {
         h2GIS.load(SpatialUnitsTests.getResource("hydro_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.getResource("zone_test.geojson"),true)
 
-        def prepareData = GI.SpatialUnits.prepareRSUData
+        def prepareData = Geoindicators.SpatialUnits.prepareRSUData()
         assert prepareData([
                 zoneTable           : 'zone_test',
                 roadTable           : 'road_test',
@@ -64,7 +62,7 @@ class SpatialUnitsTests {
 
         assert h2GIS."$outputTableGeoms"
 
-        def rsu = GI.SpatialUnits.createRSU
+        def rsu = Geoindicators.SpatialUnits.createRSU()
         assert rsu([inputTableName: outputTableGeoms, prefixName: "rsu", datasource: h2GIS])
         def outputTable = rsu.results.outputTableName
         assert h2GIS.save(outputTable,'./target/rsu.shp')
@@ -80,7 +78,7 @@ class SpatialUnitsTests {
                 DROP TABLE IF EXISTS build_tempo; 
                 CREATE TABLE build_tempo AS SELECT * FROM building_test WHERE id_build <27
         """
-        def blockP = GI.SpatialUnits.createBlocks
+        def blockP = Geoindicators.SpatialUnits.createBlocks()
         assert blockP([inputTableName: "build_tempo",distance:0.01,prefixName: "block", datasource: h2GIS])
         def outputTable = blockP.results.outputTableName
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
@@ -95,7 +93,7 @@ class SpatialUnitsTests {
                     SELECT id_build, the_geom FROM building_test 
                     WHERE id_build < 9 OR id_build > 28 AND id_build < 30
         """
-        def pRsu =  GI.SpatialUnits.createScalesRelations
+        def pRsu =  Geoindicators.SpatialUnits.createScalesRelations()
         assert pRsu.execute([
                 inputLowerScaleTableName    : "build_tempo",
                 inputUpperScaleTableName    : "rsu_test",
@@ -107,7 +105,7 @@ class SpatialUnitsTests {
                 def expected = h2GIS.firstRow("SELECT ${pRsu.results.outputIdColumnUp} FROM rsu_build_corr WHERE id_build = ${row.id_build}".toString())
                 assert row[pRsu.results.outputIdColumnUp] == expected[pRsu.results.outputIdColumnUp]
         }
-        def pBlock =  GI.SpatialUnits.createScalesRelations
+        def pBlock =  Geoindicators.SpatialUnits.createScalesRelations()
         assert pBlock([
                 inputLowerScaleTableName    : "build_tempo",
                 inputUpperScaleTableName    : "block_test",
@@ -130,7 +128,7 @@ class SpatialUnitsTests {
         h2GIS.load(SpatialUnitsTests.class.class.getResource("hydro_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.class.class.getResource("zone_test.geojson"),true)
 
-        def  prepareData = GI.SpatialUnits.prepareRSUData
+        def  prepareData = Geoindicators.SpatialUnits.prepareRSUData()
 
         assert prepareData([
                 zoneTable               : 'zone_test',
@@ -147,7 +145,7 @@ class SpatialUnitsTests {
         def outputTableGeoms = prepareData.results.outputTableName
 
         assert h2GIS."$outputTableGeoms"
-        def rsu = GI.SpatialUnits.createRSU
+        def rsu = Geoindicators.SpatialUnits.createRSU()
         assert rsu.execute([inputTableName: outputTableGeoms, prefixName: "rsu", datasource: h2GIS])
         def outputTable = rsu.results.outputTableName
         assert h2GIS.save(outputTable,'./target/rsu.shp')

@@ -12,14 +12,12 @@ import static org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 class BuildingIndicatorsTests {
 
     private static def h2GIS
-    private static def GI
     private static def randomDbName() {"${BuildingIndicatorsTests.simpleName}_${UUID.randomUUID().toString().replaceAll"-", "_"}"}
 
 
     @BeforeAll
     static void beforeAll(){
         h2GIS = open"./target/${randomDbName()};AUTO_SERVER=TRUE"
-        GI = load Geoindicators
     }
 
     @BeforeEach
@@ -33,7 +31,7 @@ class BuildingIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS tempo_build, test_building_size_properties; " +
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build = 7;"
 
-        def p =  GI.BuildingIndicators.sizeProperties
+        def p =  Geoindicators.BuildingIndicators.sizeProperties()
         assert p([inputBuildingTableName: "tempo_build",
                               operations:["volume", "floor_area", "total_facade_length",
                                           "passive_volume_ratio"],
@@ -53,7 +51,7 @@ class BuildingIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS tempo_build, test_building_neighbors_properties; " +
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 7"
 
-        def  p =  GI.BuildingIndicators.neighborsProperties
+        def  p =  Geoindicators.BuildingIndicators.neighborsProperties()
         assertTrue p.execute([inputBuildingTableName: "tempo_build",
                               operations:["contiguity","common_wall_fraction",
                                           "number_building_neighbor"],
@@ -78,7 +76,7 @@ class BuildingIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS tempo_build, test_building_form_properties; CREATE TABLE tempo_build " +
                 "AS SELECT * FROM building_test WHERE id_build < 8 OR id_build = 30"
 
-        def  p =  GI.BuildingIndicators.formProperties
+        def  p =  Geoindicators.BuildingIndicators.formProperties()
         assertTrue p.execute([inputBuildingTableName: "tempo_build",
                    operations:["area_concavity","form_factor",
                                "raw_compactness", "perimeter_convexity"],
@@ -108,7 +106,7 @@ class BuildingIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS tempo_build, test_building_form_properties; CREATE TABLE tempo_build AS " +
                 "SELECT * FROM building_test WHERE id_build < 7"
 
-        def  p =  GI.BuildingIndicators.minimumBuildingSpacing
+        def  p =  Geoindicators.BuildingIndicators.minimumBuildingSpacing()
         assertTrue p.execute([inputBuildingTableName: "tempo_build", bufferDist:100, prefixName : "test",
                               datasource:h2GIS])
         def concat = ""
@@ -125,7 +123,7 @@ class BuildingIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS tempo_road, test_building_road_distance; CREATE TABLE tempo_road " +
                 "AS SELECT * FROM road_test WHERE id_road < 5"
 
-        def  p =  GI.BuildingIndicators.roadDistance
+        def  p =  Geoindicators.BuildingIndicators.roadDistance()
         assertTrue p.execute([inputBuildingTableName: "building_test", inputRoadTableName: "tempo_road", bufferDist:100,
                    prefixName : "test",datasource:h2GIS])
         def concat = ""
@@ -141,7 +139,7 @@ class BuildingIndicatorsTests {
         h2GIS.execute("DROP TABLE IF EXISTS tempo_build, tempo_build2, test_building_neighbors_properties; " +
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 29")
 
-        def  pneighb =  GI.BuildingIndicators.neighborsProperties
+        def  pneighb =  Geoindicators.BuildingIndicators.neighborsProperties()
         assertTrue pneighb.execute([inputBuildingTableName: "tempo_build",
                    operations:["number_building_neighbor"],
                    prefixName : "test", datasource:h2GIS])
@@ -150,7 +148,7 @@ class BuildingIndicatorsTests {
         h2GIS.execute "CREATE TABLE tempo_build2 AS SELECT a.id_build, a.the_geom, b.number_building_neighbor" +
                 " FROM tempo_build a, test_building_neighbors_properties b WHERE a.id_build = b.id_build"
 
-        def  p =  GI.BuildingIndicators.likelihoodLargeBuilding
+        def  p =  Geoindicators.BuildingIndicators.likelihoodLargeBuilding()
         assertTrue p.execute([inputBuildingTableName: "tempo_build2", nbOfBuildNeighbors: "number_building_neighbor",
                   prefixName : "test", datasource:h2GIS])
         def concat = ""
