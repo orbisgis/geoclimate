@@ -504,82 +504,84 @@ IProcess createRandomForestClassif() {
  *
  * @author Jérémy Bernard
  */
-create {
-    title "Apply a Random Forest classification"
-    id "applyRandomForestClassif"
-    inputs explicativeVariablesTableName: String, defaultModelUrl: "", pathAndFileName: "", idName: String,
-            prefixName: String, datasource: JdbcDataSource
-    outputs outputTableName: String
-    run { String explicativeVariablesTableName, String defaultModelUrl, String pathAndFileName, String idName,
-          String prefixName, JdbcDataSource datasource ->
+IProcess applyRandomForestClassif() {
+    return create {
+        title "Apply a Random Forest classification"
+        id "applyRandomForestClassif"
+        inputs explicativeVariablesTableName: String, defaultModelUrl: "", pathAndFileName: "", idName: String,
+                prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { String explicativeVariablesTableName, String defaultModelUrl, String pathAndFileName, String idName,
+              String prefixName, JdbcDataSource datasource ->
 
-        info "Apply a Random Forest model"
+            info "Apply a Random Forest model"
 
-        // Define the location and the name of the file where will be stored the downloaded model
-        def modelNameFile = defaultModelUrl.split("/")[-1]
-        def modelName = modelNameFile.split("\\.")[0]
-        def modelFolderPath = System.getProperty("user.home")+File.separator+"geoclimate"+File.separator+modelNameFile
+            // Define the location and the name of the file where will be stored the downloaded model
+            def modelNameFile = defaultModelUrl.split("/")[-1]
+            def modelName = modelNameFile.split("\\.")[0]
+            def modelFolderPath = System.getProperty("user.home")+File.separator+"geoclimate"+File.separator+modelNameFile
 
-        // The name of the outputTableName is constructed
-        def outputTableName = prefix prefixName, modelName
+            // The name of the outputTableName is constructed
+            def outputTableName = prefix prefixName, modelName
 
-        // The table is recovered
-        def explicativeVariablesTable = datasource."$explicativeVariablesTableName"
+            // The table is recovered
+            def explicativeVariablesTable = datasource."$explicativeVariablesTableName"
 
-        // Read the table containing the explicative variables as a DataFrame
-        def df = DataFrame.of(explicativeVariablesTable)
+            // Read the table containing the explicative variables as a DataFrame
+            def df = DataFrame.of(explicativeVariablesTable)
 
-        // Remove the 'idName' column which is not used in the randomForest algo{
-        df = df.drop(idName)
+            // Remove the 'idName' column which is not used in the randomForest algo{
+            df = df.drop(idName)
 
-        // Load the RandomForest model
-        def xs = new XStream()
-        def fileInputStream
-        // Check if at least a default value has been set for loading a model either locally or on the internet
-        if(!(pathAndFileName!="" && defaultModelUrl!="")){
-            // In case the user uses the default model
-            if(pathAndFileName==""){
-                File file = new File(modelFolderPath)
-                // Do not download the file if it is already in its computer
-                if(!file.exists()){
-                    info "Download the default model used for RandomForest Classification and store it in a folder called" +
-                            "geoclimate and located in the home directory of the user"
-                    FileUtils.copyURLToFile(new URL(defaultModelUrl), modelFolderPath)
+            // Load the RandomForest model
+            def xs = new XStream()
+            def fileInputStream
+            // Check if at least a default value has been set for loading a model either locally or on the internet
+            if(!(pathAndFileName!="" && defaultModelUrl!="")){
+                // In case the user uses the default model
+                if(pathAndFileName==""){
+                    File file = new File(modelFolderPath)
+                    // Do not download the file if it is already in its computer
+                    if(!file.exists()){
+                        info "Download the default model used for RandomForest Classification and store it in a folder called" +
+                                "geoclimate and located in the home directory of the user"
+                        FileUtils.copyURLToFile(new URL(defaultModelUrl), modelFolderPath)
+                    }
+                    fileInputStream = new FileInputStream(modelFolderPath)
                 }
-                fileInputStream = new FileInputStream(modelFolderPath)
+                // In case the user provides its own model
+                else{
+                    fileInputStream = new FileInputStream(pathAndFileName)
+                }
+
+                /*// Check if all the model explicative variables are in the 'explicativeVariablesTableName'
+                if(!trainingTable.hasColumn(varToModel, String)){
+                    error "The training table should have a String column name $varToModel"
+                    return
+                }*/
+
+                def gzipInputStream = new GZIPInputStream(fileInputStream)
+                def model = xs.fromXML(gzipInputStream)
+                def var2model = model.formula.toString().split("~")[0][0..-2]
+                def prediction = Validation.test(model, df.plus(var2model))
+
+                datasource """CREATE TABLE $outputTableName($idName INTEGER, $var2model DOUBLE)"""
+                // Will insert values by batch of 1000 in a new table
+                def i = 0
+                datasource.withBatch(1000) { stmt ->
+                    datasource.eachRow("SELECT $idName FROM $explicativeVariablesTableName") { row ->
+                        def id_val = row."$idName"
+                        stmt.addBatch """INSERT INTO $outputTableName 
+                                                    VALUES ($id_val, ${prediction[i]})"""
+                        i++
+                    }
+                }
             }
-            // In case the user provides its own model
             else{
-                fileInputStream = new FileInputStream(pathAndFileName)
+                error "Either 'pathAndFileName' or 'defaultModelUrl' should be filled"
             }
 
-            /*// Check if all the model explicative variables are in the 'explicativeVariablesTableName'
-            if(!trainingTable.hasColumn(varToModel, String)){
-                error "The training table should have a String column name $varToModel"
-                return
-            }*/
-
-            def gzipInputStream = new GZIPInputStream(fileInputStream)
-            def model = xs.fromXML(gzipInputStream)
-            def var2model = model.formula.toString().split("~")[0][0..-2]
-            def prediction = Validation.test(model, df.plus(var2model))
-
-            datasource """CREATE TABLE $outputTableName($idName INTEGER, $var2model DOUBLE)"""
-            // Will insert values by batch of 1000 in a new table
-            def i = 0
-            datasource.withBatch(1000) { stmt ->
-                datasource.eachRow("SELECT $idName FROM $explicativeVariablesTableName") { row ->
-                    def id_val = row."$idName"
-                    stmt.addBatch """INSERT INTO $outputTableName 
-                                                VALUES ($id_val, ${prediction[i]})"""
-                    i++
-                }
-            }
+            [outputTableName: outputTableName]
         }
-        else{
-            error "Either 'pathAndFileName' or 'defaultModelUrl' should be filled"
-        }
-
-        [outputTableName: outputTableName]
     }
 }
