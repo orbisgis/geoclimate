@@ -29,10 +29,10 @@ CREATE TABLE rsu_test_all_indics_for_lcz(id_rsu int, sky_view_factor float, aspe
                                         IMPERVIOUS_FRACTION_LCZ float, PERVIOUS_FRACTION_LCZ float, GEOM_AVG_HEIGHT_ROOF float,
                                         EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH float, HIGH_VEGETATION_FRACTION_LCZ float,
                                         LOW_VEGETATION_FRACTION_LCZ float, WATER_FRACTION_LCZ float, IMPERVIOUS_FRACTION float,
-                                        FRACTION_INDUSTRIAL float);
+                                        AREA_FRACTION_INDUSTRIAL float);
 
 INSERT INTO building_test VALUES (1, 1, 1, 0, 'POLYGON((4 4, 10 4, 10 30, 4 30, 4 4))'::GEOMETRY, 8, 8, 156, 64, 2, 64, 0, 0, 'industrial'),
- (2, 2, 1, 0, 'POLYGON((12 4, 20 4, 20 9, 12 9, 12 4))'::GEOMETRY, 10, 13, 40, 26, 3, 26, 0, 0, 'residential'),
+ (2, 2, 1, 0, 'POLYGON((12 4, 20 4, 20 9, 12 9, 12 4))'::GEOMETRY, 10, 13, 40, 26, 3, 26, 0, 0, 'detached'),
  (3, 3, 1, 0, 'POLYGON((25 4, 45 4, 45 9, 25 9, 25 4))'::GEOMETRY, 8, 14, 100, 50, 4, 50, 0, 0, 'residential'),
  (4, 4, 1, 0, 'POLYGON((25 25, 40 25, 40 37, 25 37, 25 25))'::GEOMETRY, 5, 8, 180, 54, 2, 54, 1, 0.18518518518518517, 'residential'),
  (5, 4, 1, 0, 'POLYGON((12 25, 25 25, 25 35, 12 35, 12 25))'::GEOMETRY, 12, 12, 130, 46, 4, 46, 1, 0.09057971014492754, 'residential'),
