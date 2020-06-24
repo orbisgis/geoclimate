@@ -2,11 +2,12 @@ package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.*
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.*
 
 import static java.lang.Math.*
 
-@BaseScript GroovyProcessFactory pf
+@BaseScript Geoindicators geoindicators
 
 /**
  * Process used to compute the sum of all building free facades (roofs are excluded) included in a
@@ -28,28 +29,29 @@ import static java.lang.Math.*
  * @return A database table name.
  * @author Jérémy Bernard
  */
-create {
-    title "RSU free external facade density"
-    id "freeExternalFacadeDensity"
-    inputs buildingTable: String, rsuTable: String, buContiguityColumn: String, buTotalFacadeLengthColumn: String,
-            prefixName: String, datasource: JdbcDataSource
-    outputs outputTableName: String
-    run { buildingTable, rsuTable, buContiguityColumn, buTotalFacadeLengthColumn, prefixName, datasource ->
+IProcess freeExternalFacadeDensity() {
+    return create {
+        title "RSU free external facade density"
+        id "freeExternalFacadeDensity"
+        inputs buildingTable: String, rsuTable: String, buContiguityColumn: String, buTotalFacadeLengthColumn: String,
+                prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { buildingTable, rsuTable, buContiguityColumn, buTotalFacadeLengthColumn, prefixName, datasource ->
 
-        def GEOMETRIC_FIELD_RSU = "the_geom"
-        def ID_FIELD_RSU = "id_rsu"
-        def HEIGHT_WALL = "height_wall"
-        def BASE_NAME = "free_external_facade_density"
+            def GEOMETRIC_FIELD_RSU = "the_geom"
+            def ID_FIELD_RSU = "id_rsu"
+            def HEIGHT_WALL = "height_wall"
+            def BASE_NAME = "free_external_facade_density"
 
-        info "Executing RSU free external facade density"
+            info "Executing RSU free external facade density"
 
-        // The name of the outputTableName is constructed
-        def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
+            // The name of the outputTableName is constructed
+            def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
 
-        datasource."$buildingTable".id_rsu.createIndex()
-        datasource."$rsuTable".id_rsu.createIndex()
+            datasource."$buildingTable".id_rsu.createIndex()
+            datasource."$rsuTable".id_rsu.createIndex()
 
-        def query = """
+            def query = """
                 DROP TABLE IF EXISTS $outputTableName; 
                 CREATE TABLE $outputTableName AS 
                     SELECT COALESCE(
@@ -58,12 +60,13 @@ create {
                             AS $BASE_NAME, 
                         b.$ID_FIELD_RSU """
 
-        query += " FROM $buildingTable a RIGHT JOIN $rsuTable b " +
-                "ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU GROUP BY b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD_RSU;"
+            query += " FROM $buildingTable a RIGHT JOIN $rsuTable b " +
+                    "ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU GROUP BY b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD_RSU;"
 
-        datasource query
+            datasource query
 
-        [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+        }
     }
 }
 
@@ -98,48 +101,49 @@ create {
  * @author Jérémy Bernard
  * @author Erwan Bocher
  */
-create {
-    title "RSU ground sky view factor"
-    id "groundSkyViewFactor"
-    inputs rsuTable: String, correlationBuildingTable: String, pointDensity: 0.008D,
-            rayLength: 100D, numberOfDirection: 60, prefixName: String, datasource: JdbcDataSource
-    outputs outputTableName: String
-    run { rsuTable, correlationBuildingTable, pointDensity, rayLength, numberOfDirection,
-          prefixName, datasource ->
+IProcess groundSkyViewFactor() {
+    return create {
+        title "RSU ground sky view factor"
+        id "groundSkyViewFactor"
+        inputs rsuTable: String, correlationBuildingTable: String, pointDensity: 0.008D,
+                rayLength: 100D, numberOfDirection: 60, prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { rsuTable, correlationBuildingTable, pointDensity, rayLength, numberOfDirection,
+              prefixName, datasource ->
 
-        def GEOMETRIC_COLUMN_RSU = "the_geom"
-        def GEOMETRIC_COLUMN_BU = "the_geom"
-        def ID_COLUMN_RSU = "id_rsu"
-        def HEIGHT_WALL = "height_wall"
-        def BASE_NAME = "ground_sky_view_factor"
+            def GEOMETRIC_COLUMN_RSU = "the_geom"
+            def GEOMETRIC_COLUMN_BU = "the_geom"
+            def ID_COLUMN_RSU = "id_rsu"
+            def HEIGHT_WALL = "height_wall"
+            def BASE_NAME = "ground_sky_view_factor"
 
-        info "Executing RSU ground sky view factor"
+            info "Executing RSU ground sky view factor"
 
-        // To avoid overwriting the output files of this step, a unique identifier is created
-        // Temporary table names
-        def rsuDiff = postfix "rsuDiff"
-        def rsuDiffTot = postfix "rsuDiffTot"
-        def multiptsRSUtot = postfix "multiptsRSUtot"
-        def ptsRSUtot = postfix "ptsRSUtot"
-        def pts_order = postfix "pts_order"
-        def svfPts = postfix "svfPts"
-        def rsuDensPts = postfix "rsuDensPts"
-        def pts_RANG = postfix "pts_RANG"
+            // To avoid overwriting the output files of this step, a unique identifier is created
+            // Temporary table names
+            def rsuDiff = postfix "rsuDiff"
+            def rsuDiffTot = postfix "rsuDiffTot"
+            def multiptsRSUtot = postfix "multiptsRSUtot"
+            def ptsRSUtot = postfix "ptsRSUtot"
+            def pts_order = postfix "pts_order"
+            def svfPts = postfix "svfPts"
+            def rsuDensPts = postfix "rsuDensPts"
+            def pts_RANG = postfix "pts_RANG"
 
-        // The name of the outputTableName is constructed
-        def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
+            // The name of the outputTableName is constructed
+            def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
 
-        // Create the needed index on input tables and the table that will contain the SVF calculation points
-        datasource."$rsuTable"."$GEOMETRIC_COLUMN_RSU".createSpatialIndex()
-        datasource."$rsuTable"."$ID_COLUMN_RSU".createIndex()
+            // Create the needed index on input tables and the table that will contain the SVF calculation points
+            datasource."$rsuTable"."$GEOMETRIC_COLUMN_RSU".createSpatialIndex()
+            datasource."$rsuTable"."$ID_COLUMN_RSU".createIndex()
 
-        datasource."$correlationBuildingTable"."$GEOMETRIC_COLUMN_BU".createSpatialIndex()
-        datasource."$correlationBuildingTable"."$ID_COLUMN_RSU".createIndex()
+            datasource."$correlationBuildingTable"."$GEOMETRIC_COLUMN_BU".createSpatialIndex()
+            datasource."$correlationBuildingTable"."$ID_COLUMN_RSU".createIndex()
 
-        def to_start = System.currentTimeMillis()
+            def to_start = System.currentTimeMillis()
 
-        // Create the geometries of buildings and RSU holes included within each RSU
-        datasource """
+            // Create the geometries of buildings and RSU holes included within each RSU
+            datasource """
                 DROP TABLE IF EXISTS $rsuDiff, $multiptsRSUtot, $rsuDiffTot,$pts_RANG,$pts_order,$ptsRSUtot, $svfPts, $outputTableName;
                 CREATE TABLE $rsuDiff 
                 AS (SELECT  st_difference(a.$GEOMETRIC_COLUMN_RSU, st_makevalid(ST_ACCUM(b.$GEOMETRIC_COLUMN_BU)))
@@ -150,18 +154,18 @@ create {
                 GROUP BY    a.$ID_COLUMN_RSU);
         """
 
-        datasource"""
+            datasource """
                 CREATE INDEX ON $rsuDiff USING BTREE($ID_COLUMN_RSU);
                 CREATE TABLE $rsuDiffTot AS 
                 SELECT b.$ID_COLUMN_RSU, case when a.$ID_COLUMN_RSU is null then b.the_geom else a.the_geom end as the_geom 
                 FROM $rsuTable as b left join $rsuDiff as a on a.$ID_COLUMN_RSU=b.$ID_COLUMN_RSU;
         """
 
-        // The points used for the SVF calculation are regularly selected within each RSU. The points are
-        // located outside buildings (and RSU holes) and the size of the grid mesh used to sample each RSU
-        // (based on the building density + 10%) - if the building density exceeds 90%,
-        // the LCZ 7 building density is then set to 90%)
-        datasource"""CREATE TABLE $multiptsRSUtot AS SELECT $ID_COLUMN_RSU, THE_GEOM 
+            // The points used for the SVF calculation are regularly selected within each RSU. The points are
+            // located outside buildings (and RSU holes) and the size of the grid mesh used to sample each RSU
+            // (based on the building density + 10%) - if the building density exceeds 90%,
+            // the LCZ 7 building density is then set to 90%)
+            datasource """CREATE TABLE $multiptsRSUtot AS SELECT $ID_COLUMN_RSU, THE_GEOM 
                     FROM  
                     ST_EXPLODE('(SELECT $ID_COLUMN_RSU,
                                 case when LEAST(TRUNC($pointDensity*c.rsu_area_free),100)=0 
@@ -172,12 +176,12 @@ create {
                                             AS rsu_area_free, $ID_COLUMN_RSU
                                 FROM        st_explode(''(select * from $rsuDiffTot)'')  where st_area(the_geom)>0) as c)');"""
 
-        // A random sample of points (of size corresponding to the point density defined by $pointDensity)
-        // is drawn in order to have the same density of point in each RSU.
-        datasource."$multiptsRSUtot".the_geom.createSpatialIndex()
+            // A random sample of points (of size corresponding to the point density defined by $pointDensity)
+            // is drawn in order to have the same density of point in each RSU.
+            datasource."$multiptsRSUtot".the_geom.createSpatialIndex()
 
-        // The SVF calculation is performed at point scale
-        datasource """
+            // The SVF calculation is performed at point scale
+            datasource """
                 CREATE TABLE $svfPts 
                 AS SELECT   a.$ID_COLUMN_RSU, 
                             ST_SVF(ST_GEOMETRYN(a.the_geom,1), ST_ACCUM(ST_UPDATEZ(st_force3D(b.$GEOMETRIC_COLUMN_BU), b.$HEIGHT_WALL)), 
@@ -187,10 +191,10 @@ create {
                             ST_DWITHIN(b.$GEOMETRIC_COLUMN_BU, a.the_geom, $rayLength) 
                 GROUP BY    a.the_geom"""
 
-        datasource."$svfPts"."$ID_COLUMN_RSU".createIndex()
+            datasource."$svfPts"."$ID_COLUMN_RSU".createIndex()
 
-        // The result of the SVF calculation is averaged at RSU scale
-        datasource """
+            // The result of the SVF calculation is averaged at RSU scale
+            datasource """
                 CREATE TABLE $outputTableName(id_rsu integer, $BASE_NAME double) 
                 AS          (SELECT a.$ID_COLUMN_RSU, CASE WHEN AVG(b.SVF) is not null THEN AVG(b.SVF) ELSE 1 END
                 FROM        $rsuTable a 
@@ -198,17 +202,17 @@ create {
                 ON          a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU
                 GROUP BY    a.$ID_COLUMN_RSU)"""
 
-        def tObis = System.currentTimeMillis() - to_start
+            def tObis = System.currentTimeMillis() - to_start
 
-        info "SVF calculation time: ${tObis / 1000} s"
+            info "SVF calculation time: ${tObis / 1000} s"
 
-        // The temporary tables are deleted
-        datasource "DROP TABLE IF EXISTS $rsuDiff, $ptsRSUtot, $rsuDiffTot,$pts_order,$multiptsRSUtot, $svfPts"
+            // The temporary tables are deleted
+            datasource "DROP TABLE IF EXISTS $rsuDiff, $ptsRSUtot, $rsuDiffTot,$pts_order,$multiptsRSUtot, $svfPts"
 
-        [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+        }
     }
 }
-
 
 /**
  * Process used to compute the aspect ratio such as defined by Stewart et Oke (2012): mean height-to-width ratio
@@ -229,24 +233,25 @@ create {
  * @return A database table name.
  * @author Jérémy Bernard
  */
-create {
-    title "RSU aspect ratio"
-    id "aspectRatio"
-    inputs rsuTable: String, rsuFreeExternalFacadeDensityColumn: String, rsuBuildingDensityColumn: String,
-            prefixName: String, datasource: JdbcDataSource
-    outputs outputTableName: String
-    run { rsuTable, rsuFreeExternalFacadeDensityColumn, rsuBuildingDensityColumn,
-          prefixName, datasource ->
-        
-        def COLUMN_ID_RSU = "id_rsu"
-        def BASE_NAME = "aspect_ratio"
+IProcess aspectRatio() {
+    return create {
+        title "RSU aspect ratio"
+        id "aspectRatio"
+        inputs rsuTable: String, rsuFreeExternalFacadeDensityColumn: String, rsuBuildingDensityColumn: String,
+                prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { rsuTable, rsuFreeExternalFacadeDensityColumn, rsuBuildingDensityColumn,
+              prefixName, datasource ->
 
-        info "Executing RSU aspect ratio"
+            def COLUMN_ID_RSU = "id_rsu"
+            def BASE_NAME = "aspect_ratio"
 
-        // The name of the outputTableName is constructed
-        def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
+            info "Executing RSU aspect ratio"
 
-        datasource """
+            // The name of the outputTableName is constructed
+            def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
+
+            datasource """
                 DROP TABLE IF EXISTS $outputTableName; 
                 CREATE TABLE $outputTableName AS 
                     SELECT CASE WHEN $rsuBuildingDensityColumn = 1 
@@ -254,7 +259,8 @@ create {
                         ELSE $rsuFreeExternalFacadeDensityColumn/(1-$rsuBuildingDensityColumn) END 
                     AS $BASE_NAME, $COLUMN_ID_RSU FROM $rsuTable"""
 
-        [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+        }
     }
 }
 
@@ -276,54 +282,55 @@ create {
  * @return A database table name.
  * @author Jérémy Bernard
  */
-create {
-    title "RSU projected facade area distribution"
-    id "projectedFacadeAreaDistribution"
-    inputs buildingTable: String, rsuTable: String, listLayersBottom: [0, 10, 20, 30, 40, 50], numberOfDirection: 12,
-            prefixName: String, datasource: JdbcDataSource
-    outputs outputTableName: String
-    run { buildingTable, rsuTable, listLayersBottom, numberOfDirection, prefixName, datasource ->
-        
-        def BASE_NAME = "projected_facade_area_distribution"
-        def GEOMETRIC_COLUMN_RSU = "the_geom"
-        def GEOMETRIC_COLUMN_BU = "the_geom"
-        def ID_COLUMN_RSU = "id_rsu"
-        def ID_COLUMN_BU = "id_build"
-        def HEIGHT_WALL = "height_wall"
+IProcess projectedFacadeAreaDistribution() {
+    return create {
+        title "RSU projected facade area distribution"
+        id "projectedFacadeAreaDistribution"
+        inputs buildingTable: String, rsuTable: String, listLayersBottom: [0, 10, 20, 30, 40, 50], numberOfDirection: 12,
+                prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { buildingTable, rsuTable, listLayersBottom, numberOfDirection, prefixName, datasource ->
 
-        info "Executing RSU projected facade area distribution"
+            def BASE_NAME = "projected_facade_area_distribution"
+            def GEOMETRIC_COLUMN_RSU = "the_geom"
+            def GEOMETRIC_COLUMN_BU = "the_geom"
+            def ID_COLUMN_RSU = "id_rsu"
+            def ID_COLUMN_BU = "id_build"
+            def HEIGHT_WALL = "height_wall"
 
-        // The name of the outputTableName is constructed
-        def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
+            info "Executing RSU projected facade area distribution"
 
-        datasource."$buildingTable".the_geom.createSpatialIndex()
-        datasource."$rsuTable".the_geom.createSpatialIndex()
-        datasource."$buildingTable".id_build.createIndex()
-        datasource."$rsuTable".id_rsu.createIndex()
+            // The name of the outputTableName is constructed
+            def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
 
-        if (360 % numberOfDirection == 0 && numberOfDirection % 2 == 0) {
+            datasource."$buildingTable".the_geom.createSpatialIndex()
+            datasource."$rsuTable".the_geom.createSpatialIndex()
+            datasource."$buildingTable".id_build.createIndex()
+            datasource."$rsuTable".id_rsu.createIndex()
 
-            // To avoid overwriting the output files of this step, a unique identifier is created
-            // Temporary table names
-            def buildingIntersection = postfix "building_intersection"
-            def buildingIntersectionExpl = postfix "building_intersection_expl"
-            def buildingFree = postfix "buildingFree"
-            def buildingLayer = postfix "buildingLayer"
-            def buildingFreeExpl = postfix "buildingFreeExpl"
-            def rsuInter = postfix "rsuInter"
-            def finalIndicator = postfix "finalIndicator"
+            if (360 % numberOfDirection == 0 && numberOfDirection % 2 == 0) {
 
-            // The projection should be performed at the median of the angle interval
-            def dirMedDeg = 180 / numberOfDirection
-            def dirMedRad = toRadians(dirMedDeg)
+                // To avoid overwriting the output files of this step, a unique identifier is created
+                // Temporary table names
+                def buildingIntersection = postfix "building_intersection"
+                def buildingIntersectionExpl = postfix "building_intersection_expl"
+                def buildingFree = postfix "buildingFree"
+                def buildingLayer = postfix "buildingLayer"
+                def buildingFreeExpl = postfix "buildingFreeExpl"
+                def rsuInter = postfix "rsuInter"
+                def finalIndicator = postfix "finalIndicator"
 
-            dirMedDeg = round(dirMedDeg)
+                // The projection should be performed at the median of the angle interval
+                def dirMedDeg = 180 / numberOfDirection
+                def dirMedRad = toRadians(dirMedDeg)
 
-            // The list that will store the fields name is initialized
-            def names = []
+                dirMedDeg = round(dirMedDeg)
 
-            // Common party walls between buildings are calculated
-            datasource """
+                // The list that will store the fields name is initialized
+                def names = []
+
+                // Common party walls between buildings are calculated
+                datasource """
                     DROP TABLE IF EXISTS $buildingIntersection;
                     CREATE TABLE $buildingIntersection( the_geom GEOMETRY, id_build_a INTEGER, id_build_b INTEGER, z_max DOUBLE, z_min DOUBLE) AS 
                         SELECT ST_CollectionExtract(t.the_geom,2), t.id_build_a , t.id_build_b , t.z_max , t.z_min 
@@ -340,15 +347,15 @@ create {
                              AND a.$ID_COLUMN_BU <> b.$ID_COLUMN_BU) AS t
             """
 
-            datasource."$buildingIntersection".id_build_a.createIndex()
-            datasource."$buildingIntersection".id_build_b.createIndex()
+                datasource."$buildingIntersection".id_build_a.createIndex()
+                datasource."$buildingIntersection".id_build_b.createIndex()
 
 
-            // Each free facade is stored TWICE (an intersection could be seen from the point of view of two
-            // buildings).
-            // Facades of isolated buildings are unioned to free facades of non-isolated buildings which are
-            // unioned to free intersection facades. To each facade is affected its corresponding free height
-            datasource """
+                // Each free facade is stored TWICE (an intersection could be seen from the point of view of two
+                // buildings).
+                // Facades of isolated buildings are unioned to free facades of non-isolated buildings which are
+                // unioned to free intersection facades. To each facade is affected its corresponding free height
+                datasource """
                     DROP TABLE IF EXISTS $buildingFree;
                     CREATE TABLE $buildingFree(the_geom GEOMETRY, z_max DOUBLE, z_min DOUBLE) 
                     AS (SELECT  ST_TOMULTISEGMENTS(a.the_geom), a.$HEIGHT_WALL, 0 
@@ -360,40 +367,40 @@ create {
                     GROUP BY b.ID_build_a) UNION ALL (SELECT ST_TOMULTISEGMENTS(the_geom) 
                     AS the_geom, z_max, z_min FROM $buildingIntersection WHERE ID_build_a<ID_build_b)"""
 
-            // The height of wall is calculated for each intermediate level...
-            def layerQuery = "DROP TABLE IF EXISTS $buildingLayer; " +
-                    "CREATE TABLE $buildingLayer AS SELECT the_geom, "
-            for (i in 1..(listLayersBottom.size() - 1)) {
-                names[i - 1] = "${BASE_NAME}_H${listLayersBottom[i - 1]}" +
-                        "_${listLayersBottom[i]}"
-                layerQuery += "CASEWHEN(z_max <= ${listLayersBottom[i - 1]}, 0, " +
-                        "CASEWHEN(z_min >= ${listLayersBottom[i]}, " +
-                        "0, ${listLayersBottom[i] - listLayersBottom[i - 1]}-" +
-                        "GREATEST(${listLayersBottom[i]}-z_max,0)" +
-                        "-GREATEST(z_min-${listLayersBottom[i - 1]},0))) AS ${names[i - 1]} ,"
-            }
+                // The height of wall is calculated for each intermediate level...
+                def layerQuery = "DROP TABLE IF EXISTS $buildingLayer; " +
+                        "CREATE TABLE $buildingLayer AS SELECT the_geom, "
+                for (i in 1..(listLayersBottom.size() - 1)) {
+                    names[i - 1] = "${BASE_NAME}_H${listLayersBottom[i - 1]}" +
+                            "_${listLayersBottom[i]}"
+                    layerQuery += "CASEWHEN(z_max <= ${listLayersBottom[i - 1]}, 0, " +
+                            "CASEWHEN(z_min >= ${listLayersBottom[i]}, " +
+                            "0, ${listLayersBottom[i] - listLayersBottom[i - 1]}-" +
+                            "GREATEST(${listLayersBottom[i]}-z_max,0)" +
+                            "-GREATEST(z_min-${listLayersBottom[i - 1]},0))) AS ${names[i - 1]} ,"
+                }
 
-            // ...and for the final level
-            names[listLayersBottom.size() - 1] = "$BASE_NAME" +
-                    "_H${listLayersBottom[listLayersBottom.size() - 1]}"
-            layerQuery += "CASEWHEN(z_max >= ${listLayersBottom[listLayersBottom.size() - 1]}, " +
-                    "z_max-GREATEST(z_min,${listLayersBottom[listLayersBottom.size() - 1]}), 0) " +
-                    "AS ${names[listLayersBottom.size() - 1]} FROM $buildingFree"
-            datasource layerQuery
+                // ...and for the final level
+                names[listLayersBottom.size() - 1] = "$BASE_NAME" +
+                        "_H${listLayersBottom[listLayersBottom.size() - 1]}"
+                layerQuery += "CASEWHEN(z_max >= ${listLayersBottom[listLayersBottom.size() - 1]}, " +
+                        "z_max-GREATEST(z_min,${listLayersBottom[listLayersBottom.size() - 1]}), 0) " +
+                        "AS ${names[listLayersBottom.size() - 1]} FROM $buildingFree"
+                datasource layerQuery
 
-            // Names and types of all columns are then useful when calling sql queries
-            def namesAndType = names.inject([]) { result, iter ->
-                result+=  " $iter double"
-            }.join(",")
-            def onlyNamesB =  names.inject([]) { result, iter ->
-                result+= "b.$iter"
-            }.join(",")
-            def onlyNames = names.join(",")
+                // Names and types of all columns are then useful when calling sql queries
+                def namesAndType = names.inject([]) { result, iter ->
+                    result += " $iter double"
+                }.join(",")
+                def onlyNamesB = names.inject([]) { result, iter ->
+                    result += "b.$iter"
+                }.join(",")
+                def onlyNames = names.join(",")
 
-            datasource."$buildingLayer".the_geom.createSpatialIndex()
+                datasource."$buildingLayer".the_geom.createSpatialIndex()
 
-            // Intersections between free facades and rsu geometries are calculated
-            datasource """ DROP TABLE IF EXISTS $buildingFreeExpl; 
+                // Intersections between free facades and rsu geometries are calculated
+                datasource """ DROP TABLE IF EXISTS $buildingFreeExpl; 
                     CREATE TABLE $buildingFreeExpl(id_rsu INTEGER, the_geom GEOMETRY, $namesAndType) AS 
                     (SELECT a.$ID_COLUMN_RSU, ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_COLUMN_RSU), ST_TOMULTILINE(b.the_geom)), 
                     ${onlyNamesB} FROM $rsuTable a, $buildingLayer b 
@@ -401,58 +408,57 @@ create {
                     AND ST_INTERSECTS(a.$GEOMETRIC_COLUMN_RSU, b.the_geom))"""
 
 
-            // Intersections  facades are exploded to multisegments
-            datasource "DROP TABLE IF EXISTS $rsuInter; " +
-                    "CREATE TABLE $rsuInter(id_rsu INTEGER, the_geom GEOMETRY, $namesAndType) " +
-                    "AS (SELECT id_rsu, the_geom, ${onlyNames} FROM ST_EXPLODE('$buildingFreeExpl'))"
+                // Intersections  facades are exploded to multisegments
+                datasource "DROP TABLE IF EXISTS $rsuInter; " +
+                        "CREATE TABLE $rsuInter(id_rsu INTEGER, the_geom GEOMETRY, $namesAndType) " +
+                        "AS (SELECT id_rsu, the_geom, ${onlyNames} FROM ST_EXPLODE('$buildingFreeExpl'))"
 
 
-            // The analysis is then performed for each direction ('numberOfDirection' / 2 because calculation
-            // is performed for a direction independently of the "toward")
-            def namesAndTypeDir =[]
-            def onlyNamesDir =[]
-            def sumNamesDir =[]
-            def queryColumns =[]
-            for (int d = 0; d < numberOfDirection / 2; d++) {
-                def dirDeg = d * 360 / numberOfDirection
-                def dirRad = toRadians(dirDeg)
-                def rangeDeg = 360 / numberOfDirection
-                def dirRadMid = dirRad + dirMedRad
-                def dirDegMid = dirDeg + dirMedDeg
-                // Define the field name for each of the directions and vertical layers
-                names.each {
-                    namesAndTypeDir += " " + it + "_D${dirDeg}_${dirDeg+rangeDeg} double"
-                    queryColumns += """CASE
+                // The analysis is then performed for each direction ('numberOfDirection' / 2 because calculation
+                // is performed for a direction independently of the "toward")
+                def namesAndTypeDir = []
+                def onlyNamesDir = []
+                def sumNamesDir = []
+                def queryColumns = []
+                for (int d = 0; d < numberOfDirection / 2; d++) {
+                    def dirDeg = d * 360 / numberOfDirection
+                    def dirRad = toRadians(dirDeg)
+                    def rangeDeg = 360 / numberOfDirection
+                    def dirRadMid = dirRad + dirMedRad
+                    def dirDegMid = dirDeg + dirMedDeg
+                    // Define the field name for each of the directions and vertical layers
+                    names.each {
+                        namesAndTypeDir += " " + it + "_D${dirDeg}_${dirDeg + rangeDeg} double"
+                        queryColumns += """CASE
                             WHEN  a.azimuth-$dirRadMid>PI()/2
                             THEN  a.$it*a.length*COS(a.azimuth-$dirRadMid-PI()/2)/2
                             WHEN  a.azimuth-$dirRadMid<-PI()/2
                             THEN  a.$it*a.length*COS(a.azimuth-$dirRadMid+PI()/2)/2
                             ELSE  a.$it*a.length*ABS(SIN(a.azimuth-$dirRadMid))/2 
-                            END AS ${it}_D${dirDeg}_${dirDeg+rangeDeg}"""
-                    onlyNamesDir += "${it}_D${dirDeg}_${dirDeg+rangeDeg}"
-                    sumNamesDir += "COALESCE(SUM(b.${it}_D${dirDeg}_${dirDeg+rangeDeg}), 0) " +
-                            "AS ${it}_D${dirDeg}_${dirDeg+rangeDeg} "
+                            END AS ${it}_D${dirDeg}_${dirDeg + rangeDeg}"""
+                        onlyNamesDir += "${it}_D${dirDeg}_${dirDeg + rangeDeg}"
+                        sumNamesDir += "COALESCE(SUM(b.${it}_D${dirDeg}_${dirDeg + rangeDeg}), 0) " +
+                                "AS ${it}_D${dirDeg}_${dirDeg + rangeDeg} "
+                    }
                 }
-            }
-            namesAndTypeDir =namesAndTypeDir.join(",")
-            queryColumns =queryColumns.join(",")
-            onlyNamesDir =onlyNamesDir.join(",")
-            sumNamesDir =sumNamesDir.join(",")
+                namesAndTypeDir = namesAndTypeDir.join(",")
+                queryColumns = queryColumns.join(",")
+                onlyNamesDir = onlyNamesDir.join(",")
+                sumNamesDir = sumNamesDir.join(",")
 
-            def query = "DROP TABLE IF EXISTS $finalIndicator; " +
-                    "CREATE TABLE $finalIndicator AS SELECT a.id_rsu," + queryColumns +
-                    " FROM (SELECT id_rsu, CASE WHEN ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom)) >= PI()" +
-                                                    "THEN ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom)) - PI() " +
-                                                    "ELSE ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom)) END AS azimuth," +
-                            " ST_LENGTH(the_geom) AS length, ${onlyNames} FROM $rsuInter) a"
+                def query = "DROP TABLE IF EXISTS $finalIndicator; " +
+                        "CREATE TABLE $finalIndicator AS SELECT a.id_rsu," + queryColumns +
+                        " FROM (SELECT id_rsu, CASE WHEN ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom)) >= PI()" +
+                        "THEN ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom)) - PI() " +
+                        "ELSE ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom)) END AS azimuth," +
+                        " ST_LENGTH(the_geom) AS length, ${onlyNames} FROM $rsuInter) a"
 
-            datasource query
-
+                datasource query
 
 
-            datasource."$finalIndicator".id_rsu.createIndex()
-            // Sum area at RSU scale and fill null values with 0
-            datasource """
+                datasource."$finalIndicator".id_rsu.createIndex()
+                // Sum area at RSU scale and fill null values with 0
+                datasource """
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE    ${outputTableName} 
                     AS SELECT       a.id_rsu, ${sumNamesDir} 
@@ -460,12 +466,13 @@ create {
                     ON              a.id_rsu = b.id_rsu 
                     GROUP BY        a.id_rsu"""
 
-            // Remove all temporary tables created
-            datasource "DROP TABLE IF EXISTS $buildingIntersection, $buildingIntersectionExpl, " +
-                    "$buildingFree, $buildingFreeExpl, $buildingLayer, $rsuInter, $finalIndicator;"
-        }
+                // Remove all temporary tables created
+                datasource "DROP TABLE IF EXISTS $buildingIntersection, $buildingIntersectionExpl, " +
+                        "$buildingFree, $buildingFreeExpl, $buildingLayer, $rsuInter, $finalIndicator;"
+            }
 
-        [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+        }
     }
 }
 
@@ -494,40 +501,41 @@ create {
  *
  * @author Jérémy Bernard
  */
-create {
-    title "RSU roof area distribution"
-    id "roofAreaDistribution"
-    inputs rsuTable: String, buildingTable: String, listLayersBottom: [0, 10, 20, 30, 40, 50], prefixName: String,
-            datasource: JdbcDataSource, density: true
-    outputs outputTableName: String
-    run { rsuTable, buildingTable, listLayersBottom, prefixName, datasource, density ->
-        
-        def GEOMETRIC_COLUMN_RSU = "the_geom"
-        def GEOMETRIC_COLUMN_BU = "the_geom"
-        def ID_COLUMN_RSU = "id_rsu"
-        def ID_COLUMN_BU = "id_build"
-        def HEIGHT_WALL = "height_wall"
-        def HEIGHT_ROOF = "height_roof"
-        def BASE_NAME = "roof_area_distribution"
+IProcess roofAreaDistribution() {
+    return create {
+        title "RSU roof area distribution"
+        id "roofAreaDistribution"
+        inputs rsuTable: String, buildingTable: String, listLayersBottom: [0, 10, 20, 30, 40, 50], prefixName: String,
+                datasource: JdbcDataSource, density: true
+        outputs outputTableName: String
+        run { rsuTable, buildingTable, listLayersBottom, prefixName, datasource, density ->
 
-        info "Executing RSU roof area distribution (and optionally roof density)"
+            def GEOMETRIC_COLUMN_RSU = "the_geom"
+            def GEOMETRIC_COLUMN_BU = "the_geom"
+            def ID_COLUMN_RSU = "id_rsu"
+            def ID_COLUMN_BU = "id_build"
+            def HEIGHT_WALL = "height_wall"
+            def HEIGHT_ROOF = "height_roof"
+            def BASE_NAME = "roof_area_distribution"
 
-        // To avoid overwriting the output files of this step, a unique identifier is created
-        // Temporary table names
-        def buildRoofSurfIni = postfix "build_roof_surf_ini"
-        def buildVertRoofInter = postfix "build_vert_roof_inter"
-        def buildVertRoofAll = postfix "buildVertRoofAll"
-        def buildRoofSurfTot = postfix "build_roof_surf_tot"
-        def optionalTempo = postfix "optionalTempo"
+            info "Executing RSU roof area distribution (and optionally roof density)"
 
-        datasource."$rsuTable".the_geom.createSpatialIndex()
-        datasource."$rsuTable".id_rsu.createIndex()
+            // To avoid overwriting the output files of this step, a unique identifier is created
+            // Temporary table names
+            def buildRoofSurfIni = postfix "build_roof_surf_ini"
+            def buildVertRoofInter = postfix "build_vert_roof_inter"
+            def buildVertRoofAll = postfix "buildVertRoofAll"
+            def buildRoofSurfTot = postfix "build_roof_surf_tot"
+            def optionalTempo = postfix "optionalTempo"
 
-        // The name of the outputTableName is constructed
-        def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
+            datasource."$rsuTable".the_geom.createSpatialIndex()
+            datasource."$rsuTable".id_rsu.createIndex()
 
-        // Vertical and non-vertical (tilted and horizontal) roof areas are calculated
-        datasource """
+            // The name of the outputTableName is constructed
+            def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
+
+            // Vertical and non-vertical (tilted and horizontal) roof areas are calculated
+            datasource """
                 DROP TABLE IF EXISTS $buildRoofSurfIni;
                 CREATE TABLE $buildRoofSurfIni AS 
                     SELECT $GEOMETRIC_COLUMN_BU, 
@@ -543,14 +551,14 @@ create {
         """
 
 
-        // Indexes and spatial indexes are created on rsu and building Tables
-        datasource """CREATE INDEX IF NOT EXISTS ids_ina ON $buildRoofSurfIni USING RTREE($GEOMETRIC_COLUMN_BU);
+            // Indexes and spatial indexes are created on rsu and building Tables
+            datasource """CREATE INDEX IF NOT EXISTS ids_ina ON $buildRoofSurfIni USING RTREE($GEOMETRIC_COLUMN_BU);
                 CREATE INDEX IF NOT EXISTS id_ina ON $buildRoofSurfIni ($ID_COLUMN_BU);"""
 
-        // Vertical roofs that are potentially in contact with the facade of a building neighbor are identified
-        // and the corresponding area is estimated (only if the building roof does not overpass the building
-        // wall of the neighbor)
-        datasource """
+            // Vertical roofs that are potentially in contact with the facade of a building neighbor are identified
+            // and the corresponding area is estimated (only if the building roof does not overpass the building
+            // wall of the neighbor)
+            datasource """
                 DROP TABLE IF EXISTS $buildVertRoofInter; 
                 CREATE TABLE $buildVertRoofInter(id_build INTEGER, vert_roof_to_remove DOUBLE) AS (
                     SELECT b.$ID_COLUMN_BU, 
@@ -564,13 +572,13 @@ create {
                     AND a.z_min >= b.z_max 
                     GROUP BY b.$ID_COLUMN_BU);"""
 
-        // Indexes and spatial indexes are created on rsu and building Tables
-        datasource """CREATE INDEX IF NOT EXISTS id_bu ON $buildVertRoofInter ($ID_COLUMN_BU);"""
+            // Indexes and spatial indexes are created on rsu and building Tables
+            datasource """CREATE INDEX IF NOT EXISTS id_bu ON $buildVertRoofInter ($ID_COLUMN_BU);"""
 
-        // Vertical roofs that are potentially in contact with the facade of a building neighbor are identified
-        // and the corresponding area is estimated (only if the building roof does not overpass the building wall
-        // of the neighbor)
-        datasource """
+            // Vertical roofs that are potentially in contact with the facade of a building neighbor are identified
+            // and the corresponding area is estimated (only if the building roof does not overpass the building wall
+            // of the neighbor)
+            datasource """
                 DROP TABLE IF EXISTS $buildVertRoofAll;
                 CREATE TABLE $buildVertRoofAll(
                     id_build INTEGER, 
@@ -600,17 +608,17 @@ create {
                     LEFT JOIN $buildVertRoofInter b 
                     ON a.$ID_COLUMN_BU=b.$ID_COLUMN_BU);"""
 
-        // Indexes and spatial indexes are created on rsu and building Tables
-        datasource "CREATE INDEX IF NOT EXISTS ids_bu ON $buildVertRoofAll USING RTREE(the_geom); " +
-                "CREATE INDEX IF NOT EXISTS id_bu ON $buildVertRoofAll (id_build); " +
-                "CREATE INDEX IF NOT EXISTS id_rsu ON $buildVertRoofAll (id_rsu);"
+            // Indexes and spatial indexes are created on rsu and building Tables
+            datasource "CREATE INDEX IF NOT EXISTS ids_bu ON $buildVertRoofAll USING RTREE(the_geom); " +
+                    "CREATE INDEX IF NOT EXISTS id_bu ON $buildVertRoofAll (id_build); " +
+                    "CREATE INDEX IF NOT EXISTS id_rsu ON $buildVertRoofAll (id_rsu);"
 
-        //TODO : PEUT-ETRE MIEUX VAUT-IL FAIRE L'INTERSECTION À PART POUR ÉVITER DE LA FAIRE 2 FOIS ICI ?
+            //TODO : PEUT-ETRE MIEUX VAUT-IL FAIRE L'INTERSECTION À PART POUR ÉVITER DE LA FAIRE 2 FOIS ICI ?
 
-        // Update the roof areas (vertical and non vertical) taking into account the vertical roofs shared with
-        // the neighbor facade and the roof surfaces that are not in the RSU. Note that half of the facade
-        // are considered as vertical roofs, the other to "normal roof".
-        datasource """
+            // Update the roof areas (vertical and non vertical) taking into account the vertical roofs shared with
+            // the neighbor facade and the roof surfaces that are not in the RSU. Note that half of the facade
+            // are considered as vertical roofs, the other to "normal roof".
+            datasource """
                 DROP TABLE IF EXISTS $buildRoofSurfTot; 
                 CREATE TABLE $buildRoofSurfTot(
                     id_build INTEGER,
@@ -636,64 +644,65 @@ create {
                     WHERE a.id_rsu=b.$ID_COLUMN_RSU 
                     GROUP BY b.$GEOMETRIC_COLUMN_RSU, a.id_build, a.id_rsu, a.z_max, a.z_min, a.delta_h);"""
 
-        // The roof area is calculated for each level except the last one (> 50 m in the default case)
-        def finalQuery = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT id_rsu, "
-        def nonVertQuery = ""
-        def vertQuery = ""
-        for (i in 1..(listLayersBottom.size() - 1)) {
-            nonVertQuery += " COALESCE(SUM(CASEWHEN(z_max <= ${listLayersBottom[i - 1]}, 0, CASEWHEN(" +
-                    "z_max <= ${listLayersBottom[i]}, CASEWHEN(delta_h=0, non_vertical_roof_area, " +
-                    "non_vertical_roof_area*(z_max-GREATEST(${listLayersBottom[i - 1]},z_min))/delta_h), " +
-                    "CASEWHEN(z_min < ${listLayersBottom[i]}, non_vertical_roof_area*(${listLayersBottom[i]}-" +
-                    "GREATEST(${listLayersBottom[i - 1]},z_min))/delta_h, 0)))),0) AS non_vert_roof_area_H" +
-                    "${listLayersBottom[i - 1]}_${listLayersBottom[i]},"
-            vertQuery += " COALESCE(SUM(CASEWHEN(z_max <= ${listLayersBottom[i - 1]}, 0, CASEWHEN(" +
-                    "z_max <= ${listLayersBottom[i]}, CASEWHEN(delta_h=0, 0, " +
-                    "vertical_roof_area*POWER((z_max-GREATEST(${listLayersBottom[i - 1]}," +
-                    "z_min))/delta_h, 2)), CASEWHEN(z_min < ${listLayersBottom[i]}, " +
-                    "CASEWHEN(z_min>${listLayersBottom[i - 1]}, vertical_roof_area*(1-" +
-                    "POWER((z_max-${listLayersBottom[i]})/delta_h,2)),vertical_roof_area*(" +
-                    "POWER((z_max-${listLayersBottom[i - 1]})/delta_h,2)-POWER((z_max-${listLayersBottom[i]})/" +
-                    "delta_h,2))), 0)))),0) AS vert_roof_area_H${listLayersBottom[i - 1]}_${listLayersBottom[i]},"
-        }
-        // The roof area is calculated for the last level (> 50 m in the default case)
-        def valueLastLevel = listLayersBottom[listLayersBottom.size() - 1]
-        nonVertQuery += " COALESCE(SUM(CASEWHEN(z_max <= $valueLastLevel, 0, CASEWHEN(delta_h=0, non_vertical_roof_area, " +
-                "non_vertical_roof_area*(z_max-GREATEST($valueLastLevel,z_min))/delta_h))),0) AS non_vert_roof_area_H" +
-                "${valueLastLevel},"
-        vertQuery += " COALESCE(SUM(CASEWHEN(z_max <= $valueLastLevel, 0, CASEWHEN(delta_h=0, vertical_roof_area, " +
-                "vertical_roof_area*(z_max-GREATEST($valueLastLevel,z_min))/delta_h))),0) AS vert_roof_area_H" +
-                "${valueLastLevel},"
-
-        def endQuery = " FROM $buildRoofSurfTot GROUP BY id_rsu;"
-
-        datasource finalQuery + nonVertQuery + vertQuery[0..-2] + endQuery
-
-        // Calculate the roof density if needed
-        if (density) {
-            def optionalQuery = "ALTER TABLE $outputTableName RENAME TO $optionalTempo;" +
-                    "CREATE INDEX IF NOT EXISTS id ON $optionalTempo USING BTREE($ID_COLUMN_RSU);" +
-                    "DROP TABLE IF EXISTS $outputTableName; " +
-                    "CREATE TABLE $outputTableName AS SELECT a.*, "
-            def optionalNonVert = "("
-            def optionalVert = "("
-
+            // The roof area is calculated for each level except the last one (> 50 m in the default case)
+            def finalQuery = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT id_rsu, "
+            def nonVertQuery = ""
+            def vertQuery = ""
             for (i in 1..(listLayersBottom.size() - 1)) {
-                optionalNonVert += " a.non_vert_roof_area_H${listLayersBottom[i - 1]}_${listLayersBottom[i]} + "
-                optionalVert += "a.vert_roof_area_H${listLayersBottom[i - 1]}_${listLayersBottom[i]} + "
+                nonVertQuery += " COALESCE(SUM(CASEWHEN(z_max <= ${listLayersBottom[i - 1]}, 0, CASEWHEN(" +
+                        "z_max <= ${listLayersBottom[i]}, CASEWHEN(delta_h=0, non_vertical_roof_area, " +
+                        "non_vertical_roof_area*(z_max-GREATEST(${listLayersBottom[i - 1]},z_min))/delta_h), " +
+                        "CASEWHEN(z_min < ${listLayersBottom[i]}, non_vertical_roof_area*(${listLayersBottom[i]}-" +
+                        "GREATEST(${listLayersBottom[i - 1]},z_min))/delta_h, 0)))),0) AS non_vert_roof_area_H" +
+                        "${listLayersBottom[i - 1]}_${listLayersBottom[i]},"
+                vertQuery += " COALESCE(SUM(CASEWHEN(z_max <= ${listLayersBottom[i - 1]}, 0, CASEWHEN(" +
+                        "z_max <= ${listLayersBottom[i]}, CASEWHEN(delta_h=0, 0, " +
+                        "vertical_roof_area*POWER((z_max-GREATEST(${listLayersBottom[i - 1]}," +
+                        "z_min))/delta_h, 2)), CASEWHEN(z_min < ${listLayersBottom[i]}, " +
+                        "CASEWHEN(z_min>${listLayersBottom[i - 1]}, vertical_roof_area*(1-" +
+                        "POWER((z_max-${listLayersBottom[i]})/delta_h,2)),vertical_roof_area*(" +
+                        "POWER((z_max-${listLayersBottom[i - 1]})/delta_h,2)-POWER((z_max-${listLayersBottom[i]})/" +
+                        "delta_h,2))), 0)))),0) AS vert_roof_area_H${listLayersBottom[i - 1]}_${listLayersBottom[i]},"
             }
-            optionalNonVert += "a.non_vert_roof_area_H$valueLastLevel) / ST_AREA(b.$GEOMETRIC_COLUMN_RSU)"
-            optionalVert += "a.vert_roof_area_H${valueLastLevel}) / ST_AREA(b.$GEOMETRIC_COLUMN_RSU)"
-            optionalQuery += "$optionalNonVert AS VERT_ROOF_DENSITY, $optionalVert AS NON_VERT_ROOF_DENSITY" +
-                    " FROM $optionalTempo a RIGHT JOIN $rsuTable b ON a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU;"
+            // The roof area is calculated for the last level (> 50 m in the default case)
+            def valueLastLevel = listLayersBottom[listLayersBottom.size() - 1]
+            nonVertQuery += " COALESCE(SUM(CASEWHEN(z_max <= $valueLastLevel, 0, CASEWHEN(delta_h=0, non_vertical_roof_area, " +
+                    "non_vertical_roof_area*(z_max-GREATEST($valueLastLevel,z_min))/delta_h))),0) AS non_vert_roof_area_H" +
+                    "${valueLastLevel},"
+            vertQuery += " COALESCE(SUM(CASEWHEN(z_max <= $valueLastLevel, 0, CASEWHEN(delta_h=0, vertical_roof_area, " +
+                    "vertical_roof_area*(z_max-GREATEST($valueLastLevel,z_min))/delta_h))),0) AS vert_roof_area_H" +
+                    "${valueLastLevel},"
 
-            datasource optionalQuery
+            def endQuery = " FROM $buildRoofSurfTot GROUP BY id_rsu;"
+
+            datasource finalQuery + nonVertQuery + vertQuery[0..-2] + endQuery
+
+            // Calculate the roof density if needed
+            if (density) {
+                def optionalQuery = "ALTER TABLE $outputTableName RENAME TO $optionalTempo;" +
+                        "CREATE INDEX IF NOT EXISTS id ON $optionalTempo USING BTREE($ID_COLUMN_RSU);" +
+                        "DROP TABLE IF EXISTS $outputTableName; " +
+                        "CREATE TABLE $outputTableName AS SELECT a.*, "
+                def optionalNonVert = "("
+                def optionalVert = "("
+
+                for (i in 1..(listLayersBottom.size() - 1)) {
+                    optionalNonVert += " a.non_vert_roof_area_H${listLayersBottom[i - 1]}_${listLayersBottom[i]} + "
+                    optionalVert += "a.vert_roof_area_H${listLayersBottom[i - 1]}_${listLayersBottom[i]} + "
+                }
+                optionalNonVert += "a.non_vert_roof_area_H$valueLastLevel) / ST_AREA(b.$GEOMETRIC_COLUMN_RSU)"
+                optionalVert += "a.vert_roof_area_H${valueLastLevel}) / ST_AREA(b.$GEOMETRIC_COLUMN_RSU)"
+                optionalQuery += "$optionalNonVert AS VERT_ROOF_DENSITY, $optionalVert AS NON_VERT_ROOF_DENSITY" +
+                        " FROM $optionalTempo a RIGHT JOIN $rsuTable b ON a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU;"
+
+                datasource optionalQuery
+            }
+
+            datasource "DROP TABLE IF EXISTS $buildRoofSurfIni, $buildVertRoofInter, " +
+                    "$buildVertRoofAll, $buildRoofSurfTot, $optionalTempo;"
+
+            [outputTableName: outputTableName]
         }
-
-        datasource "DROP TABLE IF EXISTS $buildRoofSurfIni, $buildVertRoofInter, " +
-                "$buildVertRoofAll, $buildRoofSurfTot, $optionalTempo;"
-
-        [outputTableName: outputTableName]
     }
 }
 
@@ -733,62 +742,64 @@ create {
  *
  * @author Jérémy Bernard
  */
-create {
-    title "RSU effective terrain roughness height"
-    id "effectiveTerrainRoughnessLength"
-    inputs rsuTable: String, projectedFacadeAreaName: "projected_facade_area_distribution",
-            geometricMeanBuildingHeightName: String, prefixName: String,
-            listLayersBottom: [0, 10, 20, 30, 40, 50], numberOfDirection: 12, datasource: JdbcDataSource
-    outputs outputTableName: String
-    run { rsuTable, projectedFacadeAreaName, geometricMeanBuildingHeightName, prefixName, listLayersBottom,
-          numberOfDirection, datasource ->
+IProcess effectiveTerrainRoughnessLength() {
+    return create {
+        title "RSU effective terrain roughness height"
+        id "effectiveTerrainRoughnessLength"
+        inputs rsuTable: String, projectedFacadeAreaName: "projected_facade_area_distribution",
+                geometricMeanBuildingHeightName: String, prefixName: String,
+                listLayersBottom: [0, 10, 20, 30, 40, 50], numberOfDirection: 12, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { rsuTable, projectedFacadeAreaName, geometricMeanBuildingHeightName, prefixName, listLayersBottom,
+              numberOfDirection, datasource ->
 
-        def GEOMETRIC_COLUMN = "the_geom"
-        def ID_COLUMN_RSU = "id_rsu"
-        def BASE_NAME = "effective_terrain_roughness_length"
+            def GEOMETRIC_COLUMN = "the_geom"
+            def ID_COLUMN_RSU = "id_rsu"
+            def BASE_NAME = "effective_terrain_roughness_length"
 
-        info "Executing RSU effective terrain roughness length"
+            info "Executing RSU effective terrain roughness length"
 
-        // Processes used for the indicator calculation
-        // Some local variables are initialized
-        def names = []
-        // The projection should be performed at the median of the angle interval
-        def dirRangeDeg = round(360 / numberOfDirection)
+            // Processes used for the indicator calculation
+            // Some local variables are initialized
+            def names = []
+            // The projection should be performed at the median of the angle interval
+            def dirRangeDeg = round(360 / numberOfDirection)
 
-        // To avoid overwriting the output files of this step, a unique identifier is created
-        // Temporary table names
-        def lambdaTable = postfix "lambdaTable"
+            // To avoid overwriting the output files of this step, a unique identifier is created
+            // Temporary table names
+            def lambdaTable = postfix "lambdaTable"
 
-        // The name of the outputTableName is constructed
-        def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
+            // The name of the outputTableName is constructed
+            def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
 
-        // The lambda_f indicator is first calculated
-        def lambdaQuery = "DROP TABLE IF EXISTS $lambdaTable;" +
-                "CREATE TABLE $lambdaTable AS SELECT $ID_COLUMN_RSU, $geometricMeanBuildingHeightName, ("
-        for (int i in 1..listLayersBottom.size()) {
-            names[i - 1] = "${projectedFacadeAreaName}_H${listLayersBottom[i - 1]}_${listLayersBottom[i]}"
-            if (i == listLayersBottom.size()) {
-                names[listLayersBottom.size() - 1] =
-                        "${projectedFacadeAreaName}_H${listLayersBottom[listLayersBottom.size() - 1]}"
+            // The lambda_f indicator is first calculated
+            def lambdaQuery = "DROP TABLE IF EXISTS $lambdaTable;" +
+                    "CREATE TABLE $lambdaTable AS SELECT $ID_COLUMN_RSU, $geometricMeanBuildingHeightName, ("
+            for (int i in 1..listLayersBottom.size()) {
+                names[i - 1] = "${projectedFacadeAreaName}_H${listLayersBottom[i - 1]}_${listLayersBottom[i]}"
+                if (i == listLayersBottom.size()) {
+                    names[listLayersBottom.size() - 1] =
+                            "${projectedFacadeAreaName}_H${listLayersBottom[listLayersBottom.size() - 1]}"
+                }
+                for (int d = 0; d < numberOfDirection / 2; d++) {
+                    def dirDeg = d * 360 / numberOfDirection
+                    lambdaQuery += "${names[i - 1]}_D${dirDeg}_${dirDeg + dirRangeDeg}+"
+                }
             }
-            for (int d = 0; d < numberOfDirection / 2; d++) {
-                def dirDeg = d * 360 / numberOfDirection
-                lambdaQuery += "${names[i - 1]}_D${dirDeg}_${dirDeg + dirRangeDeg}+"
-            }
+            lambdaQuery = lambdaQuery[0..-2] + ")/(${numberOfDirection / 2}*ST_AREA($GEOMETRIC_COLUMN)) " +
+                    "AS lambda_f FROM $rsuTable"
+            datasource lambdaQuery
+
+            // The rugosity z0 is calculated according to the indicator lambda_f (the value of indicator z0 is limited to 3 m)
+            datasource "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName " +
+                    "AS SELECT $ID_COLUMN_RSU, CASEWHEN(lambda_f < 0.15, CASEWHEN(lambda_f*$geometricMeanBuildingHeightName>3," +
+                    "3,lambda_f*$geometricMeanBuildingHeightName), CASEWHEN(0.15*$geometricMeanBuildingHeightName>3,3," +
+                    "0.15*$geometricMeanBuildingHeightName)) AS $BASE_NAME FROM $lambdaTable"
+
+            datasource "DROP TABLE IF EXISTS $lambdaTable"
+
+            [outputTableName: outputTableName]
         }
-        lambdaQuery = lambdaQuery[0..-2] + ")/(${numberOfDirection / 2}*ST_AREA($GEOMETRIC_COLUMN)) " +
-                "AS lambda_f FROM $rsuTable"
-        datasource lambdaQuery
-
-        // The rugosity z0 is calculated according to the indicator lambda_f (the value of indicator z0 is limited to 3 m)
-        datasource "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName " +
-                "AS SELECT $ID_COLUMN_RSU, CASEWHEN(lambda_f < 0.15, CASEWHEN(lambda_f*$geometricMeanBuildingHeightName>3," +
-                "3,lambda_f*$geometricMeanBuildingHeightName), CASEWHEN(0.15*$geometricMeanBuildingHeightName>3,3," +
-                "0.15*$geometricMeanBuildingHeightName)) AS $BASE_NAME FROM $lambdaTable"
-
-        datasource "DROP TABLE IF EXISTS $lambdaTable"
-
-        [outputTableName: outputTableName]
     }
 }
 
@@ -816,174 +827,176 @@ create {
  *
  * @author Jérémy Bernard
  */
-create {
-    title "Operations on the linear of road"
-    id "linearRoadOperations"
-    inputs rsuTable: String, roadTable: String, operations: String[], prefixName: String, angleRangeSize: 30,
-            levelConsiderated: [0], datasource: JdbcDataSource
-    outputs outputTableName: String
-    run { rsuTable, roadTable, operations, prefixName, angleRangeSize, levelConsiderated,
-          datasource ->
+IProcess linearRoadOperations() {
+    return create {
+        title "Operations on the linear of road"
+        id "linearRoadOperations"
+        inputs rsuTable: String, roadTable: String, operations: String[], prefixName: String, angleRangeSize: 30,
+                levelConsiderated: [0], datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { rsuTable, roadTable, operations, prefixName, angleRangeSize, levelConsiderated,
+              datasource ->
 
-        def OPS = ["road_direction_distribution", "linear_road_density"]
-        def GEOMETRIC_COLUMN_RSU = "the_geom"
-        def ID_COLUMN_RSU = "id_rsu"
-        def GEOMETRIC_COLUMN_ROAD = "the_geom"
-        def Z_INDEX = "zindex"
-        def BASE_NAME = "rsu_road_linear_properties"
+            def OPS = ["road_direction_distribution", "linear_road_density"]
+            def GEOMETRIC_COLUMN_RSU = "the_geom"
+            def ID_COLUMN_RSU = "id_rsu"
+            def GEOMETRIC_COLUMN_ROAD = "the_geom"
+            def Z_INDEX = "zindex"
+            def BASE_NAME = "rsu_road_linear_properties"
 
-        info "Executing Operations on the linear of road"
+            info "Executing Operations on the linear of road"
 
-        datasource."$rsuTable".the_geom.createSpatialIndex()
-        datasource."$rsuTable".id_rsu.createIndex()
-        datasource."$roadTable".the_geom.createSpatialIndex()
-        datasource."$roadTable".zindex.createIndex()
+            datasource."$rsuTable".the_geom.createSpatialIndex()
+            datasource."$rsuTable".id_rsu.createIndex()
+            datasource."$roadTable".the_geom.createSpatialIndex()
+            datasource."$roadTable".zindex.createIndex()
 
-        // Test whether the angleRangeSize is a divisor of 180°
-        if (180 % angleRangeSize == 0 && 180 / angleRangeSize > 1) {
-            // Test whether the operations filled by the user are OK
-            if (!operations) {
-                error "The parameter operations should not be null or empty"
-            } else {
-                // The operation names are transformed into lower case
-                operations.replaceAll { it.toLowerCase() }
+            // Test whether the angleRangeSize is a divisor of 180°
+            if (180 % angleRangeSize == 0 && 180 / angleRangeSize > 1) {
+                // Test whether the operations filled by the user are OK
+                if (!operations) {
+                    error "The parameter operations should not be null or empty"
+                } else {
+                    // The operation names are transformed into lower case
+                    operations.replaceAll { it.toLowerCase() }
 
-                def opOk = true
-                operations.each { opOk &= OPS.contains(it) }
-                if (opOk) {
-                    // To avoid overwriting the output files of this step, a unique identifier is created
-                    // Temporary table names
-                    def roadInter = postfix "roadInter"
-                    def roadExpl = postfix "roadExpl"
-                    def roadDistrib = postfix "roadDistrib"
-                    def roadDens = postfix "roadDens"
-                    def roadDistTot = postfix "roadDistTot"
-                    def roadDensTot = postfix "roadDensTot"
+                    def opOk = true
+                    operations.each { opOk &= OPS.contains(it) }
+                    if (opOk) {
+                        // To avoid overwriting the output files of this step, a unique identifier is created
+                        // Temporary table names
+                        def roadInter = postfix "roadInter"
+                        def roadExpl = postfix "roadExpl"
+                        def roadDistrib = postfix "roadDistrib"
+                        def roadDens = postfix "roadDens"
+                        def roadDistTot = postfix "roadDistTot"
+                        def roadDensTot = postfix "roadDensTot"
 
-                    // The name of the outputTableName is constructed
-                    def outputTableName = prefix prefixName, BASE_NAME
+                        // The name of the outputTableName is constructed
+                        def outputTableName = prefix prefixName, BASE_NAME
 
-                    //      1. Whatever are the operations to proceed, this step is done the same way
-                    // Only some of the roads are selected according to the level they are located
-                    // Initialize some parameters
-                    def ifZindex = ""
-                    def baseFiltering = "a.$GEOMETRIC_COLUMN_RSU && b.$GEOMETRIC_COLUMN_ROAD AND " +
-                            "ST_INTERSECTS(a.$GEOMETRIC_COLUMN_RSU,b.$GEOMETRIC_COLUMN_ROAD) "
-                    def filtering = baseFiltering
-                    def nameDens = []
-                    def nameDistrib = []
-                    def caseQueryDistrib = ""
-                    def caseQueryDens = ""
+                        //      1. Whatever are the operations to proceed, this step is done the same way
+                        // Only some of the roads are selected according to the level they are located
+                        // Initialize some parameters
+                        def ifZindex = ""
+                        def baseFiltering = "a.$GEOMETRIC_COLUMN_RSU && b.$GEOMETRIC_COLUMN_ROAD AND " +
+                                "ST_INTERSECTS(a.$GEOMETRIC_COLUMN_RSU,b.$GEOMETRIC_COLUMN_ROAD) "
+                        def filtering = baseFiltering
+                        def nameDens = []
+                        def nameDistrib = []
+                        def caseQueryDistrib = ""
+                        def caseQueryDens = ""
 
-                    if (levelConsiderated != null) {
-                        ifZindex = ", b.$Z_INDEX AS zindex"
-                        filtering = ""
-                        levelConsiderated.each { filtering += "$baseFiltering AND b.$Z_INDEX=$it OR " }
-                        filtering = filtering[0..-4]
-                    }
-                    def selectionQuery = "DROP TABLE IF EXISTS $roadInter; " +
-                            "CREATE TABLE $roadInter AS SELECT a.$ID_COLUMN_RSU AS id_rsu, " +
-                            "ST_AREA(a.$GEOMETRIC_COLUMN_RSU) AS rsu_area, ST_INTERSECTION(a.$GEOMETRIC_COLUMN_RSU, " +
-                            "b.$GEOMETRIC_COLUMN_ROAD) AS the_geom $ifZindex FROM $rsuTable a, $roadTable b " +
-                            "WHERE $filtering;"
-                    datasource selectionQuery
-
-                    // If all roads are considered at the same level...
-                    if (!levelConsiderated) {
-                        nameDens.add("linear_road_density")
-                        caseQueryDens = "SUM(ST_LENGTH(the_geom))/rsu_area AS linear_road_density "
-                        for (int d = angleRangeSize; d <= 180; d += angleRangeSize) {
-                            caseQueryDistrib += "SUM(CASEWHEN(azimuth>=${d - angleRangeSize} AND azimuth<$d, length, 0)) AS " +
-                                    "road_direction_distribution_d${d - angleRangeSize}_$d,"
-                            nameDistrib.add("road_direction_distribution_d${d - angleRangeSize}_$d")
+                        if (levelConsiderated != null) {
+                            ifZindex = ", b.$Z_INDEX AS zindex"
+                            filtering = ""
+                            levelConsiderated.each { filtering += "$baseFiltering AND b.$Z_INDEX=$it OR " }
+                            filtering = filtering[0..-4]
                         }
-                    }
-                    // If only certain levels are considered independently
-                    else {
-                        ifZindex = ", zindex "
-                        levelConsiderated.each { lev ->
-                            caseQueryDens += "SUM(CASEWHEN(zindex = $lev, ST_LENGTH(the_geom), 0))/rsu_area " +
-                                    "AS linear_road_density_h${lev.toString().replaceAll('-', 'minus')},"
-                            nameDens.add("linear_road_density_h${lev.toString().replaceAll('-', 'minus')}")
+                        def selectionQuery = "DROP TABLE IF EXISTS $roadInter; " +
+                                "CREATE TABLE $roadInter AS SELECT a.$ID_COLUMN_RSU AS id_rsu, " +
+                                "ST_AREA(a.$GEOMETRIC_COLUMN_RSU) AS rsu_area, ST_INTERSECTION(a.$GEOMETRIC_COLUMN_RSU, " +
+                                "b.$GEOMETRIC_COLUMN_ROAD) AS the_geom $ifZindex FROM $rsuTable a, $roadTable b " +
+                                "WHERE $filtering;"
+                        datasource selectionQuery
+
+                        // If all roads are considered at the same level...
+                        if (!levelConsiderated) {
+                            nameDens.add("linear_road_density")
+                            caseQueryDens = "SUM(ST_LENGTH(the_geom))/rsu_area AS linear_road_density "
                             for (int d = angleRangeSize; d <= 180; d += angleRangeSize) {
-                                caseQueryDistrib += "SUM(CASEWHEN(azimuth>=${d - angleRangeSize} AND azimuth<$d AND " +
-                                        "zindex = $lev, length, 0)) AS " +
-                                        "road_direction_distribution_h${lev.toString().replaceAll("-", "minus")}" +
-                                        "_d${d - angleRangeSize}_$d,"
-                                nameDistrib.add("road_direction_distribution_h${lev.toString().replaceAll("-", "minus")}" +
-                                        "_d${d - angleRangeSize}_$d")
+                                caseQueryDistrib += "SUM(CASEWHEN(azimuth>=${d - angleRangeSize} AND azimuth<$d, length, 0)) AS " +
+                                        "road_direction_distribution_d${d - angleRangeSize}_$d,"
+                                nameDistrib.add("road_direction_distribution_d${d - angleRangeSize}_$d")
                             }
                         }
-                    }
-
-                    //      2. Depending on the operations to proceed, the queries executed during this step will differ
-                    // If the road direction distribution is calculated, explode the roads into segments in order to calculate
-                    // their length for each azimuth range
-                    if (operations.contains("road_direction_distribution")) {
-                        def queryExpl = "DROP TABLE IF EXISTS $roadExpl;" +
-                                "CREATE TABLE $roadExpl AS SELECT id_rsu, the_geom, " +
-                                "CASEWHEN(ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom))>=pi()," +
-                                "ROUND(DEGREES(ST_AZIMUTH(ST_STARTPOINT(the_geom), " +
-                                "ST_ENDPOINT(the_geom))))-180," +
-                                "ROUND(DEGREES(ST_AZIMUTH(ST_STARTPOINT(the_geom), " +
-                                "ST_ENDPOINT(the_geom))))) AS azimuth," +
-                                "ST_LENGTH(the_geom) AS length $ifZindex " +
-                                "FROM ST_EXPLODE('(SELECT ST_TOMULTISEGMENTS(the_geom)" +
-                                " AS the_geom, id_rsu $ifZindex FROM $roadInter)');"
-                        // Calculate the road direction for each direction and optionally level
-                        def queryDistrib = queryExpl + "CREATE TABLE $roadDistrib AS SELECT id_rsu, " +
-                                caseQueryDistrib[0..-2] +
-                                " FROM $roadExpl GROUP BY id_rsu;" +
-                                "CREATE INDEX IF NOT EXISTS id_d ON $roadDistrib USING BTREE(id_rsu);" +
-                                "DROP TABLE IF EXISTS $roadDistTot; CREATE TABLE $roadDistTot($ID_COLUMN_RSU INTEGER," +
-                                "${nameDistrib.join(" double,")} double) AS (SELECT a.$ID_COLUMN_RSU," +
-                                "COALESCE(b.${nameDistrib.join(",0),COALESCE(b.")},0)  " +
-                                "FROM $rsuTable a LEFT JOIN $roadDistrib b ON a.$ID_COLUMN_RSU=b.id_rsu);"
-                        datasource queryDistrib
-
-                        if (!operations.contains("linear_road_density")) {
-                            datasource "DROP TABLE IF EXISTS $outputTableName;" +
-                                    "ALTER TABLE $roadDistTot RENAME TO $outputTableName"
+                        // If only certain levels are considered independently
+                        else {
+                            ifZindex = ", zindex "
+                            levelConsiderated.each { lev ->
+                                caseQueryDens += "SUM(CASEWHEN(zindex = $lev, ST_LENGTH(the_geom), 0))/rsu_area " +
+                                        "AS linear_road_density_h${lev.toString().replaceAll('-', 'minus')},"
+                                nameDens.add("linear_road_density_h${lev.toString().replaceAll('-', 'minus')}")
+                                for (int d = angleRangeSize; d <= 180; d += angleRangeSize) {
+                                    caseQueryDistrib += "SUM(CASEWHEN(azimuth>=${d - angleRangeSize} AND azimuth<$d AND " +
+                                            "zindex = $lev, length, 0)) AS " +
+                                            "road_direction_distribution_h${lev.toString().replaceAll("-", "minus")}" +
+                                            "_d${d - angleRangeSize}_$d,"
+                                    nameDistrib.add("road_direction_distribution_h${lev.toString().replaceAll("-", "minus")}" +
+                                            "_d${d - angleRangeSize}_$d")
+                                }
+                            }
                         }
-                    }
 
-                    // If the rsu linear density should be calculated
-                    if (operations.contains("linear_road_density")) {
-                        String queryDensity = "DROP TABLE IF EXISTS $roadDens;" +
-                                "CREATE TABLE $roadDens AS SELECT id_rsu, " + caseQueryDens[0..-2] +
-                                " FROM $roadInter GROUP BY id_rsu;" +
-                                "CREATE INDEX IF NOT EXISTS id_d ON $roadDens USING BTREE(id_rsu);" +
-                                "DROP TABLE IF EXISTS $roadDensTot; CREATE TABLE $roadDensTot($ID_COLUMN_RSU INTEGER," +
-                                "${nameDens.join(" double,")} double) AS (SELECT a.$ID_COLUMN_RSU," +
-                                "COALESCE(b.${nameDens.join(",0),COALESCE(b.")},0) " +
-                                "FROM $rsuTable a LEFT JOIN $roadDens b ON a.$ID_COLUMN_RSU=b.id_rsu)"
-                        datasource queryDensity
-                        if (!operations.contains("road_direction_distribution")) {
-                            datasource "DROP TABLE IF EXISTS $outputTableName;" +
-                                    "ALTER TABLE $roadDensTot RENAME TO $outputTableName"
+                        //      2. Depending on the operations to proceed, the queries executed during this step will differ
+                        // If the road direction distribution is calculated, explode the roads into segments in order to calculate
+                        // their length for each azimuth range
+                        if (operations.contains("road_direction_distribution")) {
+                            def queryExpl = "DROP TABLE IF EXISTS $roadExpl;" +
+                                    "CREATE TABLE $roadExpl AS SELECT id_rsu, the_geom, " +
+                                    "CASEWHEN(ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom))>=pi()," +
+                                    "ROUND(DEGREES(ST_AZIMUTH(ST_STARTPOINT(the_geom), " +
+                                    "ST_ENDPOINT(the_geom))))-180," +
+                                    "ROUND(DEGREES(ST_AZIMUTH(ST_STARTPOINT(the_geom), " +
+                                    "ST_ENDPOINT(the_geom))))) AS azimuth," +
+                                    "ST_LENGTH(the_geom) AS length $ifZindex " +
+                                    "FROM ST_EXPLODE('(SELECT ST_TOMULTISEGMENTS(the_geom)" +
+                                    " AS the_geom, id_rsu $ifZindex FROM $roadInter)');"
+                            // Calculate the road direction for each direction and optionally level
+                            def queryDistrib = queryExpl + "CREATE TABLE $roadDistrib AS SELECT id_rsu, " +
+                                    caseQueryDistrib[0..-2] +
+                                    " FROM $roadExpl GROUP BY id_rsu;" +
+                                    "CREATE INDEX IF NOT EXISTS id_d ON $roadDistrib USING BTREE(id_rsu);" +
+                                    "DROP TABLE IF EXISTS $roadDistTot; CREATE TABLE $roadDistTot($ID_COLUMN_RSU INTEGER," +
+                                    "${nameDistrib.join(" double,")} double) AS (SELECT a.$ID_COLUMN_RSU," +
+                                    "COALESCE(b.${nameDistrib.join(",0),COALESCE(b.")},0)  " +
+                                    "FROM $rsuTable a LEFT JOIN $roadDistrib b ON a.$ID_COLUMN_RSU=b.id_rsu);"
+                            datasource queryDistrib
+
+                            if (!operations.contains("linear_road_density")) {
+                                datasource "DROP TABLE IF EXISTS $outputTableName;" +
+                                        "ALTER TABLE $roadDistTot RENAME TO $outputTableName"
+                            }
                         }
-                    }
-                    if (operations.contains("road_direction_distribution") &&
-                            operations.contains("linear_road_density")) {
-                        datasource """DROP TABLE if exists $outputTableName; 
+
+                        // If the rsu linear density should be calculated
+                        if (operations.contains("linear_road_density")) {
+                            String queryDensity = "DROP TABLE IF EXISTS $roadDens;" +
+                                    "CREATE TABLE $roadDens AS SELECT id_rsu, " + caseQueryDens[0..-2] +
+                                    " FROM $roadInter GROUP BY id_rsu;" +
+                                    "CREATE INDEX IF NOT EXISTS id_d ON $roadDens USING BTREE(id_rsu);" +
+                                    "DROP TABLE IF EXISTS $roadDensTot; CREATE TABLE $roadDensTot($ID_COLUMN_RSU INTEGER," +
+                                    "${nameDens.join(" double,")} double) AS (SELECT a.$ID_COLUMN_RSU," +
+                                    "COALESCE(b.${nameDens.join(",0),COALESCE(b.")},0) " +
+                                    "FROM $rsuTable a LEFT JOIN $roadDens b ON a.$ID_COLUMN_RSU=b.id_rsu)"
+                            datasource queryDensity
+                            if (!operations.contains("road_direction_distribution")) {
+                                datasource "DROP TABLE IF EXISTS $outputTableName;" +
+                                        "ALTER TABLE $roadDensTot RENAME TO $outputTableName"
+                            }
+                        }
+                        if (operations.contains("road_direction_distribution") &&
+                                operations.contains("linear_road_density")) {
+                            datasource """DROP TABLE if exists $outputTableName; 
                                 CREATE INDEX IF NOT EXISTS idx_$roadDistTot ON $roadDistTot USING BTREE(id_rsu);
                                 CREATE INDEX IF NOT EXISTS idx_$roadDensTot ON $roadDensTot USING BTREE(id_rsu);
                                 CREATE TABLE $outputTableName AS SELECT a.*,
                                 b.${nameDens.join(",b.")} FROM $roadDistTot a LEFT JOIN $roadDensTot b 
                                 ON a.id_rsu=b.id_rsu"""
+                        }
+
+                        datasource "DROP TABLE IF EXISTS $roadInter, $roadExpl, $roadDistrib," +
+                                "$roadDens, $roadDistTot, $roadDensTot"
+
+                        [outputTableName: outputTableName]
+
+                    } else {
+                        error "One of several operations are not valid."
                     }
-
-                    datasource "DROP TABLE IF EXISTS $roadInter, $roadExpl, $roadDistrib," +
-                            "$roadDens, $roadDistTot, $roadDensTot"
-
-                    [outputTableName: outputTableName]
-
-                } else {
-                    error "One of several operations are not valid."
                 }
+            } else {
+                error "Cannot compute the indicator. The range size (angleRangeSize) should be a divisor of 180°"
             }
-        } else {
-            error "Cannot compute the indicator. The range size (angleRangeSize) should be a divisor of 180°"
         }
     }
 }
@@ -1011,34 +1024,36 @@ create {
  *
  * @author Jérémy Bernard
  */
-create {
-    title "RSU effective terrain roughness class"
-    id "effectiveTerrainRoughnessClass"
-    inputs datasource: JdbcDataSource, rsuTable: String, effectiveTerrainRoughnessLength: String, prefixName: String
-    outputs outputTableName: String
-    run { datasource, rsuTable, effectiveTerrainRoughnessLength, prefixName ->
+IProcess effectiveTerrainRoughnessClass() {
+    return create {
+        title "RSU effective terrain roughness class"
+        id "effectiveTerrainRoughnessClass"
+        inputs datasource: JdbcDataSource, rsuTable: String, effectiveTerrainRoughnessLength: String, prefixName: String
+        outputs outputTableName: String
+        run { datasource, rsuTable, effectiveTerrainRoughnessLength, prefixName ->
 
-        def ID_COLUMN_RSU = "id_rsu"
-        def BASE_NAME = "effective_terrain_roughness_class"
+            def ID_COLUMN_RSU = "id_rsu"
+            def BASE_NAME = "effective_terrain_roughness_class"
 
-        info "Executing RSU effective terrain roughness class"
+            info "Executing RSU effective terrain roughness class"
 
-        // The name of the outputTableName is constructed
-        def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
+            // The name of the outputTableName is constructed
+            def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
 
-        // Based on the lookup Table of Davenport
-        datasource "DROP TABLE IF EXISTS $outputTableName;" +
-                "CREATE TABLE $outputTableName AS SELECT $ID_COLUMN_RSU, " +
-                "CASEWHEN($effectiveTerrainRoughnessLength<0.0 OR $effectiveTerrainRoughnessLength IS NULL, null," +
-                "CASEWHEN($effectiveTerrainRoughnessLength<0.00035, 1," +
-                "CASEWHEN($effectiveTerrainRoughnessLength<0.01525, 2," +
-                "CASEWHEN($effectiveTerrainRoughnessLength<0.065, 3," +
-                "CASEWHEN($effectiveTerrainRoughnessLength<0.175, 4," +
-                "CASEWHEN($effectiveTerrainRoughnessLength<0.375, 5," +
-                "CASEWHEN($effectiveTerrainRoughnessLength<0.75, 6," +
-                "CASEWHEN($effectiveTerrainRoughnessLength<1.5, 7, 8)))))))) AS $BASE_NAME FROM $rsuTable"
+            // Based on the lookup Table of Davenport
+            datasource "DROP TABLE IF EXISTS $outputTableName;" +
+                    "CREATE TABLE $outputTableName AS SELECT $ID_COLUMN_RSU, " +
+                    "CASEWHEN($effectiveTerrainRoughnessLength<0.0 OR $effectiveTerrainRoughnessLength IS NULL, null," +
+                    "CASEWHEN($effectiveTerrainRoughnessLength<0.00035, 1," +
+                    "CASEWHEN($effectiveTerrainRoughnessLength<0.01525, 2," +
+                    "CASEWHEN($effectiveTerrainRoughnessLength<0.065, 3," +
+                    "CASEWHEN($effectiveTerrainRoughnessLength<0.175, 4," +
+                    "CASEWHEN($effectiveTerrainRoughnessLength<0.375, 5," +
+                    "CASEWHEN($effectiveTerrainRoughnessLength<0.75, 6," +
+                    "CASEWHEN($effectiveTerrainRoughnessLength<1.5, 7, 8)))))))) AS $BASE_NAME FROM $rsuTable"
 
-        [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+        }
     }
 }
 
@@ -1078,75 +1093,77 @@ create {
 * @return A database table name.
 * @author Jérémy Bernard
 */
-create {
-    title "Extended RSU free facade fraction (for SVF fast)"
-    id "extendedFreeFacadeFraction"
-    inputs buildingTable: String, rsuTable: String, buContiguityColumn: String, buTotalFacadeLengthColumn: String,
-            prefixName: String, buffDist: 10, datasource: JdbcDataSource
-    outputs outputTableName: String
-    run { buildingTable, rsuTable, buContiguityColumn, buTotalFacadeLengthColumn, prefixName, buffDist, datasource ->
+IProcess extendedFreeFacadeFraction() {
+    return create {
+        title "Extended RSU free facade fraction (for SVF fast)"
+        id "extendedFreeFacadeFraction"
+        inputs buildingTable: String, rsuTable: String, buContiguityColumn: String, buTotalFacadeLengthColumn: String,
+                prefixName: String, buffDist: 10, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { buildingTable, rsuTable, buContiguityColumn, buTotalFacadeLengthColumn, prefixName, buffDist, datasource ->
 
-        def GEOMETRIC_FIELD = "the_geom"
-        def ID_FIELD_RSU = "id_rsu"
-        def HEIGHT_WALL = "height_wall"
-        def BASE_NAME = "extended_free_facade_fraction"
+            def GEOMETRIC_FIELD = "the_geom"
+            def ID_FIELD_RSU = "id_rsu"
+            def HEIGHT_WALL = "height_wall"
+            def BASE_NAME = "extended_free_facade_fraction"
 
-        info "Executing RSU free facade fraction (for SVF fast)"
+            info "Executing RSU free facade fraction (for SVF fast)"
 
-        // The name of the outputTableName is constructed
-        def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
+            // The name of the outputTableName is constructed
+            def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
 
-        // Temporary tables are created
-        def extRsuTable = postfix "extRsu"
-        def inclBu = postfix "inclBu"
-        def fullInclBu = postfix "fullInclBu"
-        def notIncBu = postfix "notIncBu"
+            // Temporary tables are created
+            def extRsuTable = postfix "extRsu"
+            def inclBu = postfix "inclBu"
+            def fullInclBu = postfix "fullInclBu"
+            def notIncBu = postfix "notIncBu"
 
-        // The RSU area is extended according to a buffer
-        datasource "DROP TABLE IF EXISTS $extRsuTable; CREATE TABLE $extRsuTable AS SELECT " +
-                "ST_BUFFER($GEOMETRIC_FIELD, $buffDist, 'quad_segs=2') AS $GEOMETRIC_FIELD," +
-                "$ID_FIELD_RSU FROM $rsuTable;"
+            // The RSU area is extended according to a buffer
+            datasource "DROP TABLE IF EXISTS $extRsuTable; CREATE TABLE $extRsuTable AS SELECT " +
+                    "ST_BUFFER($GEOMETRIC_FIELD, $buffDist, 'quad_segs=2') AS $GEOMETRIC_FIELD," +
+                    "$ID_FIELD_RSU FROM $rsuTable;"
 
-        // The facade area of buildings being entirely included in the RSU buffer is calculated
-        datasource."$extRsuTable"."$GEOMETRIC_FIELD".createIndex()
-        datasource."$buildingTable"."$GEOMETRIC_FIELD".createIndex()
+            // The facade area of buildings being entirely included in the RSU buffer is calculated
+            datasource."$extRsuTable"."$GEOMETRIC_FIELD".createIndex()
+            datasource."$buildingTable"."$GEOMETRIC_FIELD".createIndex()
 
-        datasource "DROP TABLE IF EXISTS $inclBu; CREATE TABLE $inclBu AS SELECT " +
-                "COALESCE(SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$HEIGHT_WALL), 0) AS FAC_AREA," +
-                "b.$ID_FIELD_RSU FROM $buildingTable a, $extRsuTable b WHERE ST_COVERS(b.$GEOMETRIC_FIELD," +
-                "a.$GEOMETRIC_FIELD) GROUP BY b.$ID_FIELD_RSU;"
+            datasource "DROP TABLE IF EXISTS $inclBu; CREATE TABLE $inclBu AS SELECT " +
+                    "COALESCE(SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$HEIGHT_WALL), 0) AS FAC_AREA," +
+                    "b.$ID_FIELD_RSU FROM $buildingTable a, $extRsuTable b WHERE ST_COVERS(b.$GEOMETRIC_FIELD," +
+                    "a.$GEOMETRIC_FIELD) GROUP BY b.$ID_FIELD_RSU;"
 
-        // All RSU are feeded with default value
-        datasource."$inclBu"."$ID_FIELD_RSU".createIndex()
-        datasource."$rsuTable"."$ID_FIELD_RSU".createIndex()
+            // All RSU are feeded with default value
+            datasource."$inclBu"."$ID_FIELD_RSU".createIndex()
+            datasource."$rsuTable"."$ID_FIELD_RSU".createIndex()
 
-        datasource "DROP TABLE IF EXISTS $fullInclBu; CREATE TABLE $fullInclBu AS SELECT " +
-                "COALESCE(a.FAC_AREA, 0) AS FAC_AREA, b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD " +
-                "FROM $inclBu a RIGHT JOIN $rsuTable b ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU;"
+            datasource "DROP TABLE IF EXISTS $fullInclBu; CREATE TABLE $fullInclBu AS SELECT " +
+                    "COALESCE(a.FAC_AREA, 0) AS FAC_AREA, b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD " +
+                    "FROM $inclBu a RIGHT JOIN $rsuTable b ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU;"
 
-        // The facade area of buildings being partially included in the RSU buffer is calculated
-        datasource "DROP TABLE IF EXISTS $notIncBu; CREATE TABLE $notIncBu AS SELECT " +
-                "COALESCE(SUM(ST_LENGTH(ST_INTERSECTION(ST_TOMULTILINE(a.$GEOMETRIC_FIELD)," +
-                " b.$GEOMETRIC_FIELD))*a.$HEIGHT_WALL), 0) " +
-                "AS FAC_AREA, b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD FROM $buildingTable a, $extRsuTable b " +
-                "WHERE ST_OVERLAPS(b.$GEOMETRIC_FIELD, a.$GEOMETRIC_FIELD) GROUP BY b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD;"
+            // The facade area of buildings being partially included in the RSU buffer is calculated
+            datasource "DROP TABLE IF EXISTS $notIncBu; CREATE TABLE $notIncBu AS SELECT " +
+                    "COALESCE(SUM(ST_LENGTH(ST_INTERSECTION(ST_TOMULTILINE(a.$GEOMETRIC_FIELD)," +
+                    " b.$GEOMETRIC_FIELD))*a.$HEIGHT_WALL), 0) " +
+                    "AS FAC_AREA, b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD FROM $buildingTable a, $extRsuTable b " +
+                    "WHERE ST_OVERLAPS(b.$GEOMETRIC_FIELD, a.$GEOMETRIC_FIELD) GROUP BY b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD;"
 
-        // The facade fraction is calculated
-        datasource."$notIncBu"."$ID_FIELD_RSU".createIndex()
-        datasource."$fullInclBu"."$ID_FIELD_RSU".createIndex()
+            // The facade fraction is calculated
+            datasource."$notIncBu"."$ID_FIELD_RSU".createIndex()
+            datasource."$fullInclBu"."$ID_FIELD_RSU".createIndex()
 
-        datasource "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
-                "SELECT COALESCE((a.FAC_AREA + b.FAC_AREA) /" +
-                "(a.FAC_AREA + b.FAC_AREA + ST_AREA(ST_BUFFER(a.$GEOMETRIC_FIELD, $buffDist, 'quad_segs=2')))," +
-                " a.FAC_AREA / (a.FAC_AREA  + ST_AREA(ST_BUFFER(a.$GEOMETRIC_FIELD, $buffDist, 'quad_segs=2'))))" +
-                "AS $BASE_NAME, " +
-                "a.$ID_FIELD_RSU, a.$GEOMETRIC_FIELD FROM $fullInclBu a LEFT JOIN $notIncBu b " +
-                "ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU;"
+            datasource "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
+                    "SELECT COALESCE((a.FAC_AREA + b.FAC_AREA) /" +
+                    "(a.FAC_AREA + b.FAC_AREA + ST_AREA(ST_BUFFER(a.$GEOMETRIC_FIELD, $buffDist, 'quad_segs=2')))," +
+                    " a.FAC_AREA / (a.FAC_AREA  + ST_AREA(ST_BUFFER(a.$GEOMETRIC_FIELD, $buffDist, 'quad_segs=2'))))" +
+                    "AS $BASE_NAME, " +
+                    "a.$ID_FIELD_RSU, a.$GEOMETRIC_FIELD FROM $fullInclBu a LEFT JOIN $notIncBu b " +
+                    "ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU;"
 
-        // Drop intermediate tables
-        datasource "DROP TABLE IF EXISTS $extRsuTable, $inclBu, $fullInclBu, $notIncBu;"
+            // Drop intermediate tables
+            datasource "DROP TABLE IF EXISTS $extRsuTable, $inclBu, $fullInclBu, $notIncBu;"
 
-        [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+        }
     }
 }
 
@@ -1178,14 +1195,15 @@ create {
  *
  * @return a table that stores all spatial relations
  */
-create {
+IProcess smallestCommunGeometry() {
+return create {
     title "RSU surface features"
     id "smallestCommunGeometry"
-    inputs rsuTable: String, buildingTable: "",roadTable: "", waterTable:"", vegetationTable: "",
+    inputs rsuTable: String, buildingTable: "", roadTable: "", waterTable: "", vegetationTable: "",
             imperviousTable: "", prefixName: String, datasource: JdbcDataSource
     outputs outputTableName: String
-    run { rsuTable, buildingTable,roadTable,waterTable, vegetationTable,
-        imperviousTable, prefixName, datasource ->
+    run { rsuTable, buildingTable, roadTable, waterTable, vegetationTable,
+          imperviousTable, prefixName, datasource ->
 
         def BASE_NAME = "SMALLEST_COMMUN_GEOMETRY"
 
@@ -1194,11 +1212,11 @@ create {
         // The name of the outputTableName is constructed
         def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
 
-        if(rsuTable && datasource.hasTable(rsuTable)) {
+        if (rsuTable && datasource.hasTable(rsuTable)) {
             datasource."$rsuTable".id_rsu.createIndex()
             datasource."$rsuTable".the_geom.createIndex()
             def tablesToMerge = [:]
-            tablesToMerge+= ["$rsuTable": "select ST_ExteriorRing(the_geom) as the_geom, id_rsu from $rsuTable"]
+            tablesToMerge += ["$rsuTable": "select ST_ExteriorRing(the_geom) as the_geom, id_rsu from $rsuTable"]
             if (roadTable && datasource.hasTable(roadTable)) {
                 info "Preparing table : $roadTable"
                 datasource."$roadTable".the_geom.createIndex()
@@ -1214,10 +1232,10 @@ create {
             $roadTable_zindex0_buffer AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom) GROUP BY b.id_rsu;
             DROP TABLE IF EXISTS $roadTable_zindex0_buffer;
             """
-                tablesToMerge+= ["$road_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $road_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
+                tablesToMerge += ["$road_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $road_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
             }
 
-            if(vegetationTable && datasource.hasTable(vegetationTable)){
+            if (vegetationTable && datasource.hasTable(vegetationTable)) {
                 info "Preparing table : $vegetationTable"
                 datasource."$vegetationTable".the_geom.createIndex()
                 def low_vegetation_rsu_tmp = postfix "low_vegetation_rsu_zindex0"
@@ -1239,11 +1257,11 @@ create {
                 CREATE TABLE $high_vegetation_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.id_rsu FROM 
                         $high_vegetation_rsu_tmp AS a, $rsuTable AS b WHERE a.id_rsu=b.id_rsu group by b.id_rsu;
                 DROP TABLE $low_vegetation_rsu_tmp, $high_vegetation_rsu_tmp;"""
-                tablesToMerge+= ["$low_vegetation_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $low_vegetation_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
-                tablesToMerge+= ["$high_vegetation_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $high_vegetation_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
+                tablesToMerge += ["$low_vegetation_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $low_vegetation_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
+                tablesToMerge += ["$high_vegetation_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $high_vegetation_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
             }
 
-            if(waterTable && datasource.hasTable(waterTable)){
+            if (waterTable && datasource.hasTable(waterTable)) {
                 info "Preparing table : $waterTable"
                 datasource."$waterTable".the_geom.createIndex()
                 def water_tmp = postfix "water_zindex0"
@@ -1251,10 +1269,10 @@ create {
                 CREATE TABLE $water_tmp AS SELECT ST_CollectionExtract(st_intersection(ST_FORCE2d(a.the_geom), b.the_geom),3) AS the_geom, b.id_rsu FROM 
                         $waterTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom)"""
-                tablesToMerge+= ["$water_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $water_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
+                tablesToMerge += ["$water_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $water_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
             }
 
-            if(imperviousTable && datasource.hasTable(imperviousTable)){
+            if (imperviousTable && datasource.hasTable(imperviousTable)) {
                 info "Preparing table : $imperviousTable"
                 datasource."$imperviousTable".the_geom.createIndex()
                 def impervious_tmp = postfix "impervious_zindex0"
@@ -1262,7 +1280,7 @@ create {
                 CREATE TABLE $impervious_tmp AS SELECT ST_CollectionExtract(st_intersection(st_force2d(a.the_geom), b.the_geom),3) AS the_geom, b.id_rsu FROM 
                         $imperviousTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom)"""
-                tablesToMerge+= ["$impervious_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $impervious_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
+                tablesToMerge += ["$impervious_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $impervious_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
             }
 
             if (buildingTable && datasource.hasTable(buildingTable)) {
@@ -1273,12 +1291,12 @@ create {
                 CREATE TABLE $building_tmp AS SELECT ST_CollectionExtract(st_intersection(st_force2d(a.the_geom), b.the_geom),3) AS the_geom, b.id_rsu FROM 
                         $buildingTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.zindex=0"""
-                tablesToMerge+= ["$building_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $building_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
+                tablesToMerge += ["$building_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $building_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
             }
 
             //Merging all tables in one
             info "Grouping all tables in one..."
-            if(!tablesToMerge){
+            if (!tablesToMerge) {
                 error "Any features to compute surface fraction statistics"
                 return
             }
@@ -1310,49 +1328,44 @@ create {
             datasource."$final_polygonize".the_geom.createIndex()
             datasource."$final_polygonize".id_rsu.createIndex()
 
-            def finalMerge =[]
-            tablesToMerge.each{ entry ->
+            def finalMerge = []
+            tablesToMerge.each { entry ->
                 info "Processing table $entry.key"
-                def tmptableName =  "tmp_stats_$entry.key"
-                if(entry.key.startsWith("high_vegetation")){
+                def tmptableName = "tmp_stats_$entry.key"
+                if (entry.key.startsWith("high_vegetation")) {
                     datasource."$entry.key".the_geom.createIndex()
                     datasource."$entry.key".id_rsu.createIndex()
-                datasource """DROP TABLE IF EXISTS $tmptableName;
+                    datasource """DROP TABLE IF EXISTS $tmptableName;
                 CREATE TABLE $tmptableName AS SELECT b.area,0 as low_vegetation, 1 as high_vegetation, 0 as water, 0 as impervious, 0 as road, 0 as building, b.id, b.id_rsu from ${entry.key} as a,
                 $final_polygonize as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) AND a.ID_RSU =b.ID_RSU"""
                     finalMerge.add("SELECT * FROM $tmptableName")
-                }
-                else if(entry.key.startsWith("low_vegetation")){
+                } else if (entry.key.startsWith("low_vegetation")) {
                     datasource."$entry.key".the_geom.createIndex()
                     datasource."$entry.key".id_rsu.createIndex()
                     datasource """DROP TABLE IF EXISTS $tmptableName;
                  CREATE TABLE $tmptableName AS SELECT b.area,1 as low_vegetation, 0 as high_vegetation, 0 as water, 0 as impervious, 0 as road, 0 as building, b.id, b.id_rsu from ${entry.key} as a,
                 $final_polygonize as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) AND a.ID_RSU =b.ID_RSU"""
                     finalMerge.add("SELECT * FROM $tmptableName")
-                }
-                else if(entry.key.startsWith("water")){
+                } else if (entry.key.startsWith("water")) {
                     datasource."$entry.key".the_geom.createIndex()
                     datasource."$entry.key".id_rsu.createIndex()
                     datasource """CREATE TABLE $tmptableName AS SELECT b.area,0 as low_vegetation, 0 as high_vegetation, 1 as water, 0 as impervious, 0 as road,  0 as building, b.id, b.id_rsu from ${entry.key} as a,
                 $final_polygonize as b  where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) AND a.ID_RSU =b.ID_RSU"""
                     finalMerge.add("SELECT * FROM $tmptableName")
-                }
-                else if(entry.key.startsWith("road")){
+                } else if (entry.key.startsWith("road")) {
                     datasource."$entry.key".the_geom.createIndex()
                     datasource """DROP TABLE IF EXISTS $tmptableName;
                     CREATE TABLE $tmptableName AS SELECT b.area, 0 as low_vegetation, 0 as high_vegetation, 0 as water, 0 as impervious, 1 as road, 0 as building, b.id, b.id_rsu from ${entry.key} as a,
                 $final_polygonize as b where a.the_geom && b.the_geom and ST_intersects(a.the_geom, b.the_geom) AND a.ID_RSU =b.ID_RSU"""
                     finalMerge.add("SELECT * FROM $tmptableName")
-                }
-                else if(entry.key.startsWith("impervious")){
+                } else if (entry.key.startsWith("impervious")) {
                     datasource."$entry.key".the_geom.createIndex()
                     datasource."$entry.key".id_rsu.createIndex()
                     datasource """DROP TABLE IF EXISTS $tmptableName;
                 CREATE TABLE $tmptableName AS SELECT b.area, 0 as low_vegetation, 0 as high_vegetation, 0 as water, 1 as impervious, 0 as road, 0 as building, b.id, b.id_rsu from ${entry.key} as a,
                 $final_polygonize as b where a.the_geom && b.the_geom and ST_intersects(a.the_geom, b.the_geom) AND a.ID_RSU =b.ID_RSU"""
                     finalMerge.add("SELECT * FROM $tmptableName")
-                }
-                else if(entry.key.startsWith("building")){
+                } else if (entry.key.startsWith("building")) {
                     datasource."$entry.key".the_geom.createIndex()
                     datasource."$entry.key".id_rsu.createIndex()
                     datasource """DROP TABLE IF EXISTS $tmptableName;
@@ -1362,7 +1375,7 @@ create {
                 }
             }
 
-            if(finalMerge){
+            if (finalMerge) {
                 //Do not drop RSU table
                 tablesToMerge.remove("$rsuTable")
                 def allInfoTableName = postfix "allInfoTableName"
@@ -1377,15 +1390,14 @@ create {
                                       DROP TABLE IF EXISTS ${tablesToMerge.keySet().join(' , ')}, ${allInfoTableName}"""
             }
 
+        } else {
+            error """Cannot compute any surface fraction statistics"""
         }
-        else{
-           error """Cannot compute any surface fraction statistics"""
-        }
-
 
 
         [outputTableName: outputTableName]
     }
+}
 }
 
 /**
@@ -1414,108 +1426,110 @@ create {
  *
  * @return a table where are stored all surface fraction informations
  */
-create {
-    title "RSU surface fractions"
-    id "surfaceFractions"
-    inputs rsuTable: String, spatialRelationsTable: String,
-            superpositions: ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]],
-            priorities: ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"],
-            prefixName: String, datasource: JdbcDataSource
-    outputs outputTableName: String
-    run { rsuTable, spatialRelationsTable,superpositions,priorities,
-          prefixName, datasource ->
+IProcess surfaceFractions() {
+    return create {
+        title "RSU surface fractions"
+        id "surfaceFractions"
+        inputs rsuTable: String, spatialRelationsTable: String,
+                superpositions: ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]],
+                priorities: ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"],
+                prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { rsuTable, spatialRelationsTable, superpositions, priorities,
+              prefixName, datasource ->
 
-        def BASE_NAME = "SURFACE_FRACTIONS"
-        def LAYERS = ["road", "water", "high_vegetation", "low_vegetation", "impervious", "building"]
+            def BASE_NAME = "SURFACE_FRACTIONS"
+            def LAYERS = ["road", "water", "high_vegetation", "low_vegetation", "impervious", "building"]
 
-        info "Executing RSU surface fractions computation"
+            info "Executing RSU surface fractions computation"
 
-        // The name of the outputTableName is constructed
-        def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
+            // The name of the outputTableName is constructed
+            def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
 
-        // Create the indexes on each of the input tables
-        datasource."$rsuTable".id_rsu.createIndex()
-        datasource."$spatialRelationsTable".id_rsu.createIndex()
-        datasource."$spatialRelationsTable".water.createIndex()
-        datasource."$spatialRelationsTable".road.createIndex()
-        datasource."$spatialRelationsTable".impervious.createIndex()
-        datasource."$spatialRelationsTable".building.createIndex()
-        datasource."$spatialRelationsTable".low_vegetation.createIndex()
-        datasource."$spatialRelationsTable".high_vegetation.createIndex()
+            // Create the indexes on each of the input tables
+            datasource."$rsuTable".id_rsu.createIndex()
+            datasource."$spatialRelationsTable".id_rsu.createIndex()
+            datasource."$spatialRelationsTable".water.createIndex()
+            datasource."$spatialRelationsTable".road.createIndex()
+            datasource."$spatialRelationsTable".impervious.createIndex()
+            datasource."$spatialRelationsTable".building.createIndex()
+            datasource."$spatialRelationsTable".low_vegetation.createIndex()
+            datasource."$spatialRelationsTable".high_vegetation.createIndex()
 
-        // Need to set priority number for future sorting
-        def prioritiesMap = [:]
-        def i = 0
-        priorities.each{val ->
-            prioritiesMap[val] = i
-            i ++
-        }
+            // Need to set priority number for future sorting
+            def prioritiesMap = [:]
+            def i = 0
+            priorities.each { val ->
+                prioritiesMap[val] = i
+                i++
+            }
 
-        def query = """DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT b.ID_RSU """
-        def end_query = """ FROM $spatialRelationsTable AS a RIGHT JOIN $rsuTable b 
+            def query = """DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT b.ID_RSU """
+            def end_query = """ FROM $spatialRelationsTable AS a RIGHT JOIN $rsuTable b 
                             ON a.ID_RSU=b.ID_RSU GROUP BY b.ID_RSU;"""
-        // Calculates the fraction of overlapped layers according to "superpositionsWithPriorities"
-        superpositions.each{key, values ->
-            // Calculating the overlaying layer when it has no overlapped layer
-            def tempoLayers = LAYERS.minus([key])
+            // Calculates the fraction of overlapped layers according to "superpositionsWithPriorities"
+            superpositions.each { key, values ->
+                // Calculating the overlaying layer when it has no overlapped layer
+                def tempoLayers = LAYERS.minus([key])
 
-            query += ", COALESCE(SUM(CASE WHEN a.$key =1 AND a.${tempoLayers.join(" =0 AND a.")} =0 THEN a.area ELSE 0 END),0)/st_area(b.the_geom) AS ${key}_fraction "
+                query += ", COALESCE(SUM(CASE WHEN a.$key =1 AND a.${tempoLayers.join(" =0 AND a.")} =0 THEN a.area ELSE 0 END),0)/st_area(b.the_geom) AS ${key}_fraction "
 
-            // Calculate each combination of overlapped layer for the current overlaying layer
-            def notOverlappedLayers = priorities.minus(values).minus([key])
-            // If an non overlapped layer is prioritized, its number should be 0 for the overlapping to happen
-            def nonOverlappedQuery = ""
-            def positionOverlapping = prioritiesMap."$key"
-            if(notOverlappedLayers){
-                notOverlappedLayers.each{val ->
-                    if(positionOverlapping>prioritiesMap.get(val)){
-                        nonOverlappedQuery += " AND a.$val =0 "
+                // Calculate each combination of overlapped layer for the current overlaying layer
+                def notOverlappedLayers = priorities.minus(values).minus([key])
+                // If an non overlapped layer is prioritized, its number should be 0 for the overlapping to happen
+                def nonOverlappedQuery = ""
+                def positionOverlapping = prioritiesMap."$key"
+                if (notOverlappedLayers) {
+                    notOverlappedLayers.each { val ->
+                        if (positionOverlapping > prioritiesMap.get(val)) {
+                            nonOverlappedQuery += " AND a.$val =0 "
+                        }
                     }
                 }
-            }
-            def var2Zero = []
-            def prioritiesWithoutOverlapping = priorities.minus(key)
-            prioritiesWithoutOverlapping.each{val ->
-                if(values.contains(val)){
-                    def var2ZeroQuery = ""
-                    if(var2Zero){
-                        var2ZeroQuery = " AND a." + var2Zero.join("=0 AND a.") + " =0 "
-                    }
-                    query += ", COALESCE(SUM(CASE WHEN a.$key =1 AND a.$val =1 $var2ZeroQuery $nonOverlappedQuery THEN a.area ELSE 0 END),0)/st_area(b.the_geom) AS ${key}_${val}_fraction "
+                def var2Zero = []
+                def prioritiesWithoutOverlapping = priorities.minus(key)
+                prioritiesWithoutOverlapping.each { val ->
+                    if (values.contains(val)) {
+                        def var2ZeroQuery = ""
+                        if (var2Zero) {
+                            var2ZeroQuery = " AND a." + var2Zero.join("=0 AND a.") + " =0 "
+                        }
+                        query += ", COALESCE(SUM(CASE WHEN a.$key =1 AND a.$val =1 $var2ZeroQuery $nonOverlappedQuery THEN a.area ELSE 0 END),0)/st_area(b.the_geom) AS ${key}_${val}_fraction "
 
+                    }
+                    var2Zero.add(val)
+                }
+            }
+
+            // Calculates the fraction for each individual layer using the "priorities" table and considering
+            // already calculated superpositions
+            def varAlreadyUsedQuery = ""
+            def var2Zero = []
+            def overlappingLayers = superpositions.keySet()
+            priorities.each { val ->
+                def var2ZeroQuery = ""
+                if (var2Zero) {
+                    var2ZeroQuery = " AND a." + var2Zero.join("=0 AND a.") + " =0 "
                 }
                 var2Zero.add(val)
-            }
-        }
-
-        // Calculates the fraction for each individual layer using the "priorities" table and considering
-        // already calculated superpositions
-        def varAlreadyUsedQuery = ""
-        def var2Zero = []
-        def overlappingLayers = superpositions.keySet()
-        priorities.each{val ->
-            def var2ZeroQuery = ""
-            if (var2Zero) {
-                var2ZeroQuery = " AND a." + var2Zero.join("=0 AND a.") + " =0 "
-            }
-            var2Zero.add(val)
-            if(!overlappingLayers.contains(val)){
-                // Overlapping layers should be set to zero when they arrive after the current layer
-                // in order of priority
-                def nonOverlappedQuery = ""
-                superpositions.each{key,values->
-                    def positionOverlapping = prioritiesMap.get(key)
-                    if(values.contains(val) & (positionOverlapping > prioritiesMap.get(val))){
-                        nonOverlappedQuery += " AND a.$key =0 "
+                if (!overlappingLayers.contains(val)) {
+                    // Overlapping layers should be set to zero when they arrive after the current layer
+                    // in order of priority
+                    def nonOverlappedQuery = ""
+                    superpositions.each { key, values ->
+                        def positionOverlapping = prioritiesMap.get(key)
+                        if (values.contains(val) & (positionOverlapping > prioritiesMap.get(val))) {
+                            nonOverlappedQuery += " AND a.$key =0 "
+                        }
                     }
+
+                    query += ", COALESCE(SUM(CASE WHEN a.$val =1 $var2ZeroQuery $varAlreadyUsedQuery $nonOverlappedQuery THEN a.area ELSE 0 END),0)/st_area(b.the_geom) AS ${val}_fraction "
+
                 }
-
-                query += ", COALESCE(SUM(CASE WHEN a.$val =1 $var2ZeroQuery $varAlreadyUsedQuery $nonOverlappedQuery THEN a.area ELSE 0 END),0)/st_area(b.the_geom) AS ${val}_fraction "
-
             }
-        }
-        datasource query + end_query
+            datasource query + end_query
 
-        [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+        }
     }
 }

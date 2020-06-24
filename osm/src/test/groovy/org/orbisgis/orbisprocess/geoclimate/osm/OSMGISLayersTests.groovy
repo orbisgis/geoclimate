@@ -12,15 +12,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals
 
 class OSMGISLayersTests {
 
-    def O = GroovyProcessManager.load(OSM)
-
     private static final Logger logger = LoggerFactory.getLogger(OSMGISLayersTests.class)
 
     @Disabled //enable it to test data extraction from the overpass api
     @Test
     void extractAndCreateGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
-        IProcess process = O.OSMGISLayers.extractAndCreateGISLayers
+        IProcess process = OSM.extractAndCreateGISLayers
         process.execute([
                 datasource : h2GIS,
                 zoneToExtract: "Plessis-l'Évêque"])
@@ -34,7 +32,7 @@ class OSMGISLayersTests {
     @Test
     void createGISLayersTest() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
-        IProcess process = O.OSMGISLayers.createGISLayers
+        IProcess process = OSM.createGISLayers
         def osmfile = new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath()
         process.execute([
                 datasource : h2GIS,

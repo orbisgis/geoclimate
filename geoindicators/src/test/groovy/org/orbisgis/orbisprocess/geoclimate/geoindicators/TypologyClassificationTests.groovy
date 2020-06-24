@@ -19,13 +19,11 @@ import static org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 class TypologyClassificationTests {
 
     private static def h2GIS
-    private static def GI
     private static def randomDbName() {"${TypologyClassificationTests.simpleName}_${UUID.randomUUID().toString().replaceAll"-", "_"}"}
 
     @BeforeAll
     static void beforeAll(){
         h2GIS = open"./target/${randomDbName()};AUTO_SERVER=TRUE"
-        GI = load Geoindicators
     }
 
     @BeforeEach
@@ -35,7 +33,7 @@ class TypologyClassificationTests {
 
     @Test
     void identifyLczTypeTest() {
-        def pavg = GI.TypologyClassification.identifyLczType
+        def pavg = Geoindicators.TypologyClassification.identifyLczType()
         assert pavg.execute([
                 rsuLczIndicators    : "rsu_test_lcz_indics",
                 rsuAllIndicators    : "rsu_test_all_indics_for_lcz",
@@ -83,7 +81,7 @@ class TypologyClassificationTests {
                     WHERE a.id_rsu = b.id_rsu;  
         """
 
-        def pmed = GI.TypologyClassification.identifyLczType
+        def pmed = Geoindicators.TypologyClassification.identifyLczType()
         assert pmed([
                 rsuLczIndicators    : "buff_rsu_test_lcz_indics",
                 rsuAllIndicators    : "buff_rsu_test_all_indics_for_lcz",
@@ -161,7 +159,7 @@ class TypologyClassificationTests {
         //Reload the table due to the schema modification
         trainingTable.reload()
 
-        def pmed =  GI.TypologyClassification.createRandomForestClassif
+        def pmed =  Geoindicators.TypologyClassification.createRandomForestClassif()
         assert pmed.execute([
                 trainingTableName   : trainingTableName,
                 varToModel          : var2model,
@@ -289,7 +287,7 @@ class TypologyClassificationTests {
 
 
         // The classification algorithm is called
-        def classifyLCZ = GI.TypologyClassification.identifyLczType
+        def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
         if(!classifyLCZ([rsuLczIndicators   : lczIndicTable,
                          rsuAllIndicators   : indicatorsRightId,
                          normalisationType  : "AVG",

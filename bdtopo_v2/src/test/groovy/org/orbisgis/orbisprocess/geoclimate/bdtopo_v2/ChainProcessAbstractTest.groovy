@@ -11,8 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 class ChainProcessAbstractTest {
-    static def PC = GroovyProcessManager.load(ProcessingChain)
-    static def GI = GroovyProcessManager.load(Geoindicators)
 
     public static Logger logger = LoggerFactory.getLogger(ChainProcessAbstractTest.class)
 
@@ -34,7 +32,7 @@ class ChainProcessAbstractTest {
                            String hydrographicTableName, boolean saveResults, boolean svfSimplified = false, def indicatorUse,
                            String prefixName = "") {
         //Create spatial units and relations : building, block, rsu
-        IProcess spatialUnits = PC.GeoIndicatorsChain.createUnitsOfAnalysis
+        IProcess spatialUnits = ProcessingChain.GeoIndicatorsChain.createUnitsOfAnalysis()
         assertTrue spatialUnits.execute([datasource       : datasource, zoneTable: zoneTableName, buildingTable: buildingTableName,
                                          roadTable        : roadTableName, railTable: railTableName, vegetationTable: vegetationTableName,
                                          hydrographicTable: hydrographicTableName, surface_vegetation: 100000,
@@ -46,7 +44,7 @@ class ChainProcessAbstractTest {
 
         if (saveResults) {
             logger.info("Saving spatial units")
-            IProcess saveTables = GI.DataUtils.saveTablesAsFiles
+            IProcess saveTables = Geoindicators.DataUtils.saveTablesAsFiles()
             saveTables.execute([inputTableNames: spatialUnits.getResults().values()
                                 , directory    : directory, datasource: datasource])
         }
@@ -61,7 +59,7 @@ class ChainProcessAbstractTest {
         assertEquals(countRSU.count, maxRSUBlocks.max)
 
         //Compute building indicators
-        def computeBuildingsIndicators = PC.GeoIndicatorsChain.computeBuildingsIndicators
+        def computeBuildingsIndicators = ProcessingChain.GeoIndicatorsChain.computeBuildingsIndicators()
         assertTrue computeBuildingsIndicators.execute([datasource            : datasource,
                                                        inputBuildingTableName: relationBuildings,
                                                        inputRoadTableName    : roadTableName,
@@ -80,7 +78,7 @@ class ChainProcessAbstractTest {
 
         //Compute block indicators
         if (indicatorUse.contains("URBAN_TYPOLOGY")) {
-            def computeBlockIndicators = PC.GeoIndicatorsChain.computeBlockIndicators
+            def computeBlockIndicators = ProcessingChain.GeoIndicatorsChain.computeBlockIndicators()
             assertTrue computeBlockIndicators.execute([datasource            : datasource,
                                                        inputBuildingTableName: buildingIndicators,
                                                        inputBlockTableName   : relationBlocks,
@@ -97,7 +95,7 @@ class ChainProcessAbstractTest {
         }
 
         //Compute RSU indicators
-        def computeRSUIndicators = PC.GeoIndicatorsChain.computeRSUIndicators
+        def computeRSUIndicators = ProcessingChain.GeoIndicatorsChain.computeRSUIndicators()
         assertTrue computeRSUIndicators.execute([datasource       : datasource,
                                                  buildingTable    : buildingIndicators,
                                                  rsuTable         : relationRSU,

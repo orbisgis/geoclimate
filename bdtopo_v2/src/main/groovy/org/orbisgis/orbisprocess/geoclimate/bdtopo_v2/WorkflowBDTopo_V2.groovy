@@ -7,11 +7,13 @@ import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
+import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
+
 import java.sql.SQLException
 import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain as PC
 
 
-@BaseScript GroovyProcessFactory pf
+@BaseScript BDTopo_V2_Utils bdTopo_v2_utils
 
 /**
  * Load the BDTopo layers from a configuration file and compute the geoclimate indicators.
@@ -119,352 +121,256 @@ import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain as P
  * Meteorological Society 93, no. 12 (2012): 1879-1900.
  *
  */
-create {
-    title "Create all geoindicators from BDTopo data"
-    id "workflow"
-    inputs configurationFile: String
-    outputs outputMessage: String
-    run {configurationFile ->
-        def configFile
-        if(configurationFile) {
-            configFile= new File(configurationFile)
-            if (!configFile.isFile()) {
-                error "Invalid file parameters"
+IProcess workflow() {
+    return create {
+        title "Create all geoindicators from BDTopo data"
+        id "workflow"
+        inputs configurationFile: String
+        outputs outputMessage: String
+        run { configurationFile ->
+            def configFile
+            if (configurationFile) {
+                configFile = new File(configurationFile)
+                if (!configFile.isFile()) {
+                    error "Invalid file parameters"
+                    return
+                }
+            } else {
+                error "The file parameters cannot be null or empty"
                 return
             }
-        }else{
-            error "The file parameters cannot be null or empty"
-            return
-        }
-        Map parameters = readJSONParameters(configFile)
-        if(parameters){
-            info "Reading file parameters from $configFile"
-            info parameters.description
-            def input = parameters.input
-            def output = parameters.output
-            //Default H2GIS database properties
-            def databaseName = postfix System.getProperty("java.io.tmpdir")+File.separator +"bdtopo_v2"
-            def h2gis_properties = ["databaseName":databaseName, "user": "sa", "password": ""]
-            def delete_h2gis = true
-            def geoclimatedb = parameters.geoclimatedb
-            if(geoclimatedb){
-                def h2gis_path = geoclimatedb.path
-                def delete_h2gis_db = geoclimatedb.delete
-                if(delete_h2gis_db==null){
-                    delete_h2gis = true
-                }
-                else if (delete_h2gis_db instanceof String){
-                    delete_h2gis = true
-                    if(delete_h2gis_db.equalsIgnoreCase("false")){
-                        delete_h2gis = false
-                    }
-                }
-                else if(delete_h2gis_db instanceof Boolean){
-                    delete_h2gis = delete_h2gis_db
-                }
-                if(h2gis_path) {
-                    h2gis_properties = ["databaseName":h2gis_path, "user": "sa", "password": ""]
-                }
-            }
-            if(input){
-                def inputDataBase = input.database
-                def inputFolder = input.folder
-                def id_zones = []
-                if(inputFolder && inputDataBase){
-                    error "Please set only one input data provider"
-                }
-                else if(inputFolder){
-                    def inputFolderPath = inputFolder
-                    if(inputFolder in Map){
-                        inputFolderPath  = inputFolder.path
-                        if(!inputFolderPath){
-                            error "The input folder $inputFolderPath cannot be null or empty"
-                            return
+            Map parameters = readJSONParameters(configFile)
+            if (parameters) {
+                info "Reading file parameters from $configFile"
+                info parameters.description
+                def input = parameters.input
+                def output = parameters.output
+                //Default H2GIS database properties
+                def databaseName = postfix System.getProperty("java.io.tmpdir") + File.separator + "bdtopo_v2"
+                def h2gis_properties = ["databaseName": databaseName, "user": "sa", "password": ""]
+                def delete_h2gis = true
+                def geoclimatedb = parameters.geoclimatedb
+                if (geoclimatedb) {
+                    def h2gis_path = geoclimatedb.path
+                    def delete_h2gis_db = geoclimatedb.delete
+                    if (delete_h2gis_db == null) {
+                        delete_h2gis = true
+                    } else if (delete_h2gis_db instanceof String) {
+                        delete_h2gis = true
+                        if (delete_h2gis_db.equalsIgnoreCase("false")) {
+                            delete_h2gis = false
                         }
-                        id_zones = inputFolder.id_zones
+                    } else if (delete_h2gis_db instanceof Boolean) {
+                        delete_h2gis = delete_h2gis_db
                     }
-                    if(output) {
-                        def geoclimatetTableNames = ["building_indicators",
-                                                     "block_indicators",
-                                                     "rsu_indicators",
-                                                     "rsu_lcz",
-                                                     "zones",
-                                                     "building",
-                                                     "road",
-                                                     "rail" ,
-                                                     "water",
-                                                     "vegetation",
-                                                     "impervious"]
-                        //Get processing parameters
-                        def processing_parameters = extractProcessingParameters(parameters.parameters)
-                        def outputDataBase = output.database
-                        def outputFolder = output.folder
-                        if (outputDataBase && outputFolder) {
-                            def outputFolderProperties = outputFolderProperties(outputFolder)
-                            //Check if we can write in the output folder
-                            def file_outputFolder  = new File(outputFolderProperties.path)
-                            if(!file_outputFolder.isDirectory()){
-                                error "The directory $file_outputFolder doesn't exist."
+                    if (h2gis_path) {
+                        h2gis_properties = ["databaseName": h2gis_path, "user": "sa", "password": ""]
+                    }
+                }
+                if (input) {
+                    def inputDataBase = input.database
+                    def inputFolder = input.folder
+                    def id_zones = []
+                    if (inputFolder && inputDataBase) {
+                        error "Please set only one input data provider"
+                    } else if (inputFolder) {
+                        def inputFolderPath = inputFolder
+                        if (inputFolder in Map) {
+                            inputFolderPath = inputFolder.path
+                            if (!inputFolderPath) {
+                                error "The input folder $inputFolderPath cannot be null or empty"
                                 return
                             }
-                            if(!file_outputFolder.canWrite()){
-                                file_outputFolder = null
-                            }
-                            //Check not the conditions for the output database
-                            def outputTableNames = outputDataBase.get("tables")
-                            def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
-                            def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size() !=
-                                    allowedOutputTableNames.size()
-                            if(!allowedOutputTableNames && notSameTableNames){
-                                outputDataBase = null
-                                outputTableNames = null
-                            }
-                            def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
-                            def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
-                            if(!output_datasource){
-                                return
-                            }
-                            def h2gis_datasource = H2GIS.open(h2gis_properties)
-                            id_zones = loadDataFromFolder(inputFolderPath, h2gis_datasource, id_zones)
-                            if(id_zones) {
-                                bdtopo_processing(h2gis_datasource, processing_parameters, id_zones,
-                                        file_outputFolder, outputFolderProperties.tables, output_datasource,
-                                        finalOutputTables)
-                                if(delete_h2gis){
-                                    h2gis_datasource "DROP ALL OBJECTS DELETE FILES"
-                                    info "The local H2GIS database has been deleted"
-                                }
-                            }else{
-                                error "Cannot load the files from the folder $inputFolder"
-                                return
-                            }
-
-                        } else if (outputFolder) {
-                            def outputFolderProperties = outputFolderProperties(outputFolder)
-                            //Check if we can write in the output folder
-                            def file_outputFolder  = new File(outputFolderProperties.path)
-                            if(!file_outputFolder.isDirectory()){
-                                error "The directory $file_outputFolder doesn't exist."
-                                return
-                            }
-                            if(file_outputFolder.canWrite()){
-                                def h2gis_datasource = H2GIS.open(h2gis_properties)
-                                id_zones = loadDataFromFolder(inputFolderPath, h2gis_datasource, id_zones)
-                                if(id_zones) {
-                                    bdtopo_processing(h2gis_datasource, processing_parameters, id_zones,
-                                            file_outputFolder, outputFolderProperties.tables,null, null)
-                                    //Delete database
-                                    if(delete_h2gis){
-                                        h2gis_datasource "DROP ALL OBJECTS DELETE FILES"
-                                        info "The local H2GIS database has been deleted"
-                                        return  [outputMessage:"The $id_zones have been processed"]
-                                    }
-                                }else{
-                                    error "Cannot load the files from the folder $inputFolder"
+                            id_zones = inputFolder.id_zones
+                        }
+                        if (output) {
+                            def geoclimatetTableNames = ["building_indicators",
+                                                         "block_indicators",
+                                                         "rsu_indicators",
+                                                         "rsu_lcz",
+                                                         "zones",
+                                                         "building",
+                                                         "road",
+                                                         "rail",
+                                                         "water",
+                                                         "vegetation",
+                                                         "impervious"]
+                            //Get processing parameters
+                            def processing_parameters = extractProcessingParameters(parameters.parameters)
+                            def outputDataBase = output.database
+                            def outputFolder = output.folder
+                            if (outputDataBase && outputFolder) {
+                                def outputFolderProperties = outputFolderProperties(outputFolder)
+                                //Check if we can write in the output folder
+                                def file_outputFolder = new File(outputFolderProperties.path)
+                                if (!file_outputFolder.isDirectory()) {
+                                    error "The directory $file_outputFolder doesn't exist."
                                     return
                                 }
-                            }
-                            else {
-                                error "You don't have permission to write in the folder $outputFolder \n" +
-                                        "Please check the folder."
-                                return
-                            }
-
-                        } else if (outputDataBase) {
-                            def outputTableNames = outputDataBase.tables
-                            def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
-                            def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size() !=
-                                    allowedOutputTableNames.size()
-                            if(allowedOutputTableNames && !notSameTableNames){
+                                if (!file_outputFolder.canWrite()) {
+                                    file_outputFolder = null
+                                }
+                                //Check not the conditions for the output database
+                                def outputTableNames = outputDataBase.get("tables")
+                                def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
+                                def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size() !=
+                                        allowedOutputTableNames.size()
+                                if (!allowedOutputTableNames && notSameTableNames) {
+                                    outputDataBase = null
+                                    outputTableNames = null
+                                }
                                 def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
                                 def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
-                                if(!output_datasource){
+                                if (!output_datasource) {
                                     return
                                 }
                                 def h2gis_datasource = H2GIS.open(h2gis_properties)
                                 id_zones = loadDataFromFolder(inputFolderPath, h2gis_datasource, id_zones)
-                                if(id_zones) {
-                                    bdtopo_processing(h2gis_datasource, processing_parameters, id_zones, null,null, output_datasource, finalOutputTables)
-                                    if(delete_h2gis){
+                                if (id_zones) {
+                                    bdtopo_processing(h2gis_datasource, processing_parameters, id_zones,
+                                            file_outputFolder, outputFolderProperties.tables, output_datasource,
+                                            finalOutputTables)
+                                    if (delete_h2gis) {
                                         h2gis_datasource "DROP ALL OBJECTS DELETE FILES"
                                         info "The local H2GIS database has been deleted"
                                     }
-                                }else{
+                                } else {
                                     error "Cannot load the files from the folder $inputFolder"
                                     return
                                 }
-                            }else{
-                                error "All output table names must be specified in the configuration file."
+
+                            } else if (outputFolder) {
+                                def outputFolderProperties = outputFolderProperties(outputFolder)
+                                //Check if we can write in the output folder
+                                def file_outputFolder = new File(outputFolderProperties.path)
+                                if (!file_outputFolder.isDirectory()) {
+                                    error "The directory $file_outputFolder doesn't exist."
+                                    return
+                                }
+                                if (file_outputFolder.canWrite()) {
+                                    def h2gis_datasource = H2GIS.open(h2gis_properties)
+                                    id_zones = loadDataFromFolder(inputFolderPath, h2gis_datasource, id_zones)
+                                    if (id_zones) {
+                                        bdtopo_processing(h2gis_datasource, processing_parameters, id_zones,
+                                                file_outputFolder, outputFolderProperties.tables, null, null)
+                                        //Delete database
+                                        if (delete_h2gis) {
+                                            h2gis_datasource "DROP ALL OBJECTS DELETE FILES"
+                                            info "The local H2GIS database has been deleted"
+                                            return [outputMessage: "The $id_zones have been processed"]
+                                        }
+                                    } else {
+                                        error "Cannot load the files from the folder $inputFolder"
+                                        return
+                                    }
+                                } else {
+                                    error "You don't have permission to write in the folder $outputFolder \n" +
+                                            "Please check the folder."
+                                    return
+                                }
+
+                            } else if (outputDataBase) {
+                                def outputTableNames = outputDataBase.tables
+                                def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
+                                def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size() !=
+                                        allowedOutputTableNames.size()
+                                if (allowedOutputTableNames && !notSameTableNames) {
+                                    def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
+                                    def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
+                                    if (!output_datasource) {
+                                        return
+                                    }
+                                    def h2gis_datasource = H2GIS.open(h2gis_properties)
+                                    id_zones = loadDataFromFolder(inputFolderPath, h2gis_datasource, id_zones)
+                                    if (id_zones) {
+                                        bdtopo_processing(h2gis_datasource, processing_parameters, id_zones, null, null, output_datasource, finalOutputTables)
+                                        if (delete_h2gis) {
+                                            h2gis_datasource "DROP ALL OBJECTS DELETE FILES"
+                                            info "The local H2GIS database has been deleted"
+                                        }
+                                    } else {
+                                        error "Cannot load the files from the folder $inputFolder"
+                                        return
+                                    }
+                                } else {
+                                    error "All output table names must be specified in the configuration file."
+                                    return
+                                }
+                            } else {
+                                error "Please set at least one output provider"
                                 return
                             }
                         } else {
                             error "Please set at least one output provider"
                             return
                         }
-                    }
-                    else{
-                        error "Please set at least one output provider"
-                        return
-                    }
 
-                }
-                else if(inputDataBase){
-                    if(output) {
-                        def geoclimatetTableNames = ["building_indicators",
-                                                     "block_indicators",
-                                                     "rsu_indicators",
-                                                     "rsu_lcz",
-                                                     "zones",
-                                                     "building",
-                                                     "road",
-                                                     "rail" ,
-                                                     "water",
-                                                     "vegetation",
-                                                     "impervious"]
-                        //Get processing parameters
-                        def processing_parameters = extractProcessingParameters(parameters.parameters)
-                        def outputDataBase = output.database
-                        def outputFolder = output.folder
-                        if (outputDataBase && outputFolder) {
-                            def outputFolderProperties = outputFolderProperties(outputFolder)
-                            //Check if we can write in the output folder
-                            def file_outputFolder  = new File(outputFolderProperties.path)
-                            if( !file_outputFolder.isDirectory()){
-                                error "The directory $file_outputFolder doesn't exist."
-                                return
-                            }
-                            if(!file_outputFolder.canWrite()){
-                                file_outputFolder = null
-                            }
-                            //Check not the conditions for the output database
-                            def outputTableNames = outputDataBase.tables
-                            def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
-                            def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size() !=
-                                    allowedOutputTableNames.size()
-                            if(!allowedOutputTableNames && notSameTableNames){
-                                outputDataBase=null
-                                outputTableNames=null
-                            }
-                            def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
-                            def codes = inputDataBase.id_zones
-                            if (codes && codes in Collection) {
-                                def inputTableNames = inputDataBase.tables
-                                def h2gis_datasource = H2GIS.open(h2gis_properties)
-                                def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
-                                if(!output_datasource){
+                    } else if (inputDataBase) {
+                        if (output) {
+                            def geoclimatetTableNames = ["building_indicators",
+                                                         "block_indicators",
+                                                         "rsu_indicators",
+                                                         "rsu_lcz",
+                                                         "zones",
+                                                         "building",
+                                                         "road",
+                                                         "rail",
+                                                         "water",
+                                                         "vegetation",
+                                                         "impervious"]
+                            //Get processing parameters
+                            def processing_parameters = extractProcessingParameters(parameters.parameters)
+                            def outputDataBase = output.database
+                            def outputFolder = output.folder
+                            if (outputDataBase && outputFolder) {
+                                def outputFolderProperties = outputFolderProperties(outputFolder)
+                                //Check if we can write in the output folder
+                                def file_outputFolder = new File(outputFolderProperties.path)
+                                if (!file_outputFolder.isDirectory()) {
+                                    error "The directory $file_outputFolder doesn't exist."
                                     return
                                 }
-                                for (code in codes) {
-                                    if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]), code, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
-                                        bdtopo_processing(h2gis_datasource, processing_parameters, code,
-                                                file_outputFolder,outputFolderProperties.tables, output_datasource,
-                                                finalOutputTables)
-                                    }
-                                    else{
-                                        return
-                                    }
+                                if (!file_outputFolder.canWrite()) {
+                                    file_outputFolder = null
                                 }
-                                if(delete_h2gis){
-                                    h2gis_datasource "DROP ALL OBJECTS DELETE FILES"
-                                    info "The local H2GIS database has been deleted"
+                                //Check not the conditions for the output database
+                                def outputTableNames = outputDataBase.tables
+                                def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
+                                def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size() !=
+                                        allowedOutputTableNames.size()
+                                if (!allowedOutputTableNames && notSameTableNames) {
+                                    outputDataBase = null
+                                    outputTableNames = null
                                 }
-
-                            }
-                            else if (codes){
-                                def inputTableNames = inputDataBase.tables
-                                def h2gis_datasource = H2GIS.open(h2gis_properties)
-                                def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
-                                if(!output_datasource){
-                                    return
-                                }
-                                def iris_ge_location = inputTableNames.iris_ge
-                                if (iris_ge_location) {
-                                    output_datasource.eachRow("select distinct insee_com from $iris_ge_locationge where $codes group by insee_com ;") { row ->
-                                        id_zones << row.insee_com
-                                    }
-                                    for (id_zone in id_zones) {
-                                        if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]), id_zone, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
-                                            if(!bdtopo_processing(h2gis_datasource, processing_parameters, id_zone, file_outputFolder, outputFolderProperties.tables,output_datasource, finalOutputTables)){
-                                                error "Cannot execute the geoclimate processing chain on $id_zone"
-                                                return
-                                            }
-                                        }
-                                        else {
-                                            return
-                                        }
-                                    }
-                                    if(delete_h2gis){
-                                        h2gis_datasource "DROP ALL OBJECTS DELETE FILES"
-                                        info "The local H2GIS database has been deleted"
-                                    }
-                                }
-                                else {
-                                    error "Cannot find any commune features from the query $codes"
-                                }
-                            }
-
-                        } else if (outputFolder) {
-                            def outputFolderProperties = outputFolderProperties(outputFolder)
-                            //Check if we can write in the output folder
-                            def file_outputFolder  = new File(outputFolderProperties.path)
-                            if( !file_outputFolder.isDirectory()){
-                                error "The directory $file_outputFolder doesn't exist."
-                                return null
-                            }
-                            if(file_outputFolder.canWrite()) {
-                                def codes = inputDataBase.id_zones
-                                if (codes && codes in Collection) {
-                                    def inputTableNames = inputDataBase.tables
-                                    def h2gis_datasource = H2GIS.open(h2gis_properties)
-                                    for (code in codes) {
-                                        if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]), code, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
-                                            bdtopo_processing(h2gis_datasource, processing_parameters,
-                                                    code,file_outputFolder, outputFolderProperties.tables,null, null)
-                                        } else {
-                                            return
-                                        }
-                                    }
-                                }
-
-                            }
-                            else {
-                                error "You don't have permission to write in the folder $outputFolder. \n Check if the folder exists."
-                                return
-                            }
-                        }
-                        else if (outputDataBase) {
-                            def outputTableNames = outputDataBase.tables
-                            def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
-                            def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size() !=
-                                    allowedOutputTableNames.size()
-                            if(allowedOutputTableNames && !notSameTableNames){
                                 def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
                                 def codes = inputDataBase.id_zones
                                 if (codes && codes in Collection) {
                                     def inputTableNames = inputDataBase.tables
                                     def h2gis_datasource = H2GIS.open(h2gis_properties)
                                     def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
-                                    if(!output_datasource){
-                                        return null
+                                    if (!output_datasource) {
+                                        return
                                     }
                                     for (code in codes) {
                                         if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]), code, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
-                                            bdtopo_processing(h2gis_datasource, processing_parameters, code, null,null, output_datasource, finalOutputTables)
-                                        }
-                                        else{
-                                            return null
+                                            bdtopo_processing(h2gis_datasource, processing_parameters, code,
+                                                    file_outputFolder, outputFolderProperties.tables, output_datasource,
+                                                    finalOutputTables)
+                                        } else {
+                                            return
                                         }
                                     }
-                                    if(delete_h2gis){
+                                    if (delete_h2gis) {
                                         h2gis_datasource "DROP ALL OBJECTS DELETE FILES"
                                         info "The local H2GIS database has been deleted"
                                     }
-                                }else if(codes) {
+
+                                } else if (codes) {
                                     def inputTableNames = inputDataBase.tables
                                     def h2gis_datasource = H2GIS.open(h2gis_properties)
                                     def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
-                                    if(!output_datasource){
-                                        return null
+                                    if (!output_datasource) {
+                                        return
                                     }
                                     def iris_ge_location = inputTableNames.iris_ge
                                     if (iris_ge_location) {
@@ -473,55 +379,133 @@ create {
                                         }
                                         for (id_zone in id_zones) {
                                             if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]), id_zone, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
-                                                if(!bdtopo_processing(h2gis_datasource, processing_parameters, id_zone,null, null, output_datasource, finalOutputTables)){
+                                                if (!bdtopo_processing(h2gis_datasource, processing_parameters, id_zone, file_outputFolder, outputFolderProperties.tables, output_datasource, finalOutputTables)) {
                                                     error "Cannot execute the geoclimate processing chain on $id_zone"
                                                     return
                                                 }
-                                            }
-                                            else {
+                                            } else {
                                                 return
                                             }
                                         }
-                                        if(delete_h2gis){
+                                        if (delete_h2gis) {
                                             h2gis_datasource "DROP ALL OBJECTS DELETE FILES"
                                             info "The local H2GIS database has been deleted"
                                         }
-                                    }
-                                    else {
+                                    } else {
                                         error "Cannot find any commune features from the query $codes"
                                     }
                                 }
 
-                            }else{
-                                error "All output table names must be specified in the configuration file."
+                            } else if (outputFolder) {
+                                def outputFolderProperties = outputFolderProperties(outputFolder)
+                                //Check if we can write in the output folder
+                                def file_outputFolder = new File(outputFolderProperties.path)
+                                if (!file_outputFolder.isDirectory()) {
+                                    error "The directory $file_outputFolder doesn't exist."
+                                    return null
+                                }
+                                if (file_outputFolder.canWrite()) {
+                                    def codes = inputDataBase.id_zones
+                                    if (codes && codes in Collection) {
+                                        def inputTableNames = inputDataBase.tables
+                                        def h2gis_datasource = H2GIS.open(h2gis_properties)
+                                        for (code in codes) {
+                                            if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]), code, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
+                                                bdtopo_processing(h2gis_datasource, processing_parameters,
+                                                        code, file_outputFolder, outputFolderProperties.tables, null, null)
+                                            } else {
+                                                return
+                                            }
+                                        }
+                                    }
+
+                                } else {
+                                    error "You don't have permission to write in the folder $outputFolder. \n Check if the folder exists."
+                                    return
+                                }
+                            } else if (outputDataBase) {
+                                def outputTableNames = outputDataBase.tables
+                                def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
+                                def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size() !=
+                                        allowedOutputTableNames.size()
+                                if (allowedOutputTableNames && !notSameTableNames) {
+                                    def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
+                                    def codes = inputDataBase.id_zones
+                                    if (codes && codes in Collection) {
+                                        def inputTableNames = inputDataBase.tables
+                                        def h2gis_datasource = H2GIS.open(h2gis_properties)
+                                        def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
+                                        if (!output_datasource) {
+                                            return null
+                                        }
+                                        for (code in codes) {
+                                            if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]), code, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
+                                                bdtopo_processing(h2gis_datasource, processing_parameters, code, null, null, output_datasource, finalOutputTables)
+                                            } else {
+                                                return null
+                                            }
+                                        }
+                                        if (delete_h2gis) {
+                                            h2gis_datasource "DROP ALL OBJECTS DELETE FILES"
+                                            info "The local H2GIS database has been deleted"
+                                        }
+                                    } else if (codes) {
+                                        def inputTableNames = inputDataBase.tables
+                                        def h2gis_datasource = H2GIS.open(h2gis_properties)
+                                        def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
+                                        if (!output_datasource) {
+                                            return null
+                                        }
+                                        def iris_ge_location = inputTableNames.iris_ge
+                                        if (iris_ge_location) {
+                                            output_datasource.eachRow("select distinct insee_com from $iris_ge_locationge where $codes group by insee_com ;") { row ->
+                                                id_zones << row.insee_com
+                                            }
+                                            for (id_zone in id_zones) {
+                                                if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]), id_zone, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
+                                                    if (!bdtopo_processing(h2gis_datasource, processing_parameters, id_zone, null, null, output_datasource, finalOutputTables)) {
+                                                        error "Cannot execute the geoclimate processing chain on $id_zone"
+                                                        return
+                                                    }
+                                                } else {
+                                                    return
+                                                }
+                                            }
+                                            if (delete_h2gis) {
+                                                h2gis_datasource "DROP ALL OBJECTS DELETE FILES"
+                                                info "The local H2GIS database has been deleted"
+                                            }
+                                        } else {
+                                            error "Cannot find any commune features from the query $codes"
+                                        }
+                                    }
+
+                                } else {
+                                    error "All output table names must be specified in the configuration file."
+                                    return
+                                }
+
+                            } else {
+                                error "Please set at least one output provider"
                                 return
                             }
 
-                        }
-                        else{
+                        } else {
                             error "Please set at least one output provider"
                             return
                         }
-
+                    } else {
+                        error "Please set a valid input data provider"
                     }
-                    else {
-                        error "Please set at least one output provider"
-                        return
-                    }
+                } else {
+                    error "Cannot find any input parameters."
                 }
-                else{
-                    error "Please set a valid input data provider"
-                }
-            }
-            else{
-                error "Cannot find any input parameters."
-            }
 
+            } else {
+                error "Empty parameters"
+            }
+            return [outputMessage: "The process has been done"]
         }
-        else{
-            error "Empty parameters"
-        }
-        return  [outputMessage:"The process has been done"]
     }
 }
 
@@ -874,7 +858,6 @@ def extractProcessingParameters(def processing_parameters){
  * @return
  */
 def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zones, def outputFolder, def outputFiles, def output_datasource, def outputTableNames ){
-    def ProcessingChain = GroovyProcessManager.load(PC)
     def  srid =  h2gis_datasource.getSpatialTable("IRIS_GE").srid
     if(output_datasource){
         if(!createOutputTables(output_datasource,  outputTableNames, srid)){
@@ -888,7 +871,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
     int nbAreas = id_zones.size();
 
     //Let's run the BDTopo process for each insee code
-    def prepareBDTopoData = processManager.PrepareBDTopo.prepareData
+    def prepareBDTopoData = BDTopo_V2.prepareData
     def geoIndicatorsComputed = false
     info "$nbAreas communes will be processed"
     id_zones.eachWithIndex { id_zone, index->
@@ -916,7 +899,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
             info "BDTOPO V2 GIS layers formated"
 
             //Build the indicators
-            IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators
+            IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
             if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
                     buildingTable: buildingTableName, roadTable: roadTableName,
                     railTable: railTableName, vegetationTable: vegetationTableName,
@@ -1022,7 +1005,7 @@ def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource){
  * @param srid epsg code for the output tables
  * @return
  */
-def createOutputTables(def output_datasource, def outputTableNames, def srid){
+static def createOutputTables(def output_datasource, def outputTableNames, def srid){
     //Output table names
     def output_zones = outputTableNames.zones
     def output_building_indicators = outputTableNames.building_indicators
