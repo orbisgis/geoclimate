@@ -11,13 +11,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue
 
 class FormattingForAbstractModelTests {
 
-    def O = GroovyProcessManager.load(OSM)
-
     @Test
    void formattingGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
         def epsg =2154
-        IProcess extractData = O.OSMGISLayers.createGISLayers
+        IProcess extractData = OSM.createGISLayers
         extractData.execute([
                 datasource : h2GIS,
                 osmFilePath: new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath(),
@@ -32,7 +30,7 @@ class FormattingForAbstractModelTests {
 
 
         //Buildings
-        IProcess format = O.FormattingForAbstractModel.formatBuildingLayer
+        IProcess format = OSM.formatBuildingLayer
         format.execute([
                 datasource : h2GIS,
                 inputTableName: extractData.results.buildingTableName,
@@ -48,7 +46,7 @@ class FormattingForAbstractModelTests {
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0").count==0
 
         //Roads
-        format = O.FormattingForAbstractModel.formatRoadLayer
+        format = OSM.formatRoadLayer
         format.execute([
                 datasource : h2GIS,
                 inputTableName: extractData.results.roadTableName,
@@ -63,7 +61,7 @@ class FormattingForAbstractModelTests {
 
 
         //Rails
-        format = O.FormattingForAbstractModel.formatRailsLayer
+        format = OSM.formatRailsLayer
         format.execute([
                 datasource : h2GIS,
                 inputTableName: extractData.results.railTableName,
@@ -76,7 +74,7 @@ class FormattingForAbstractModelTests {
 
 
         //Vegetation
-        format = O.FormattingForAbstractModel.formatVegetationLayer
+        format = OSM.formatVegetationLayer
         format.execute([
                 datasource : h2GIS,
                 inputTableName: extractData.results.vegetationTableName,
@@ -90,7 +88,7 @@ class FormattingForAbstractModelTests {
 
 
         //Hydrography
-        format = O.FormattingForAbstractModel.formatHydroLayer
+        format = OSM.formatHydroLayer
         format.execute([
                 datasource : h2GIS,
                 inputTableName: extractData.results.hydroTableName,
@@ -99,7 +97,7 @@ class FormattingForAbstractModelTests {
         assertEquals 10, h2GIS.getTable(format.results.outputTableName).rowCount
 
         //Impervious surfaces
-        format = O.FormattingForAbstractModel.formatImperviousLayer
+        format = OSM.formatImperviousLayer
         format.execute([
                 datasource : h2GIS,
                 inputTableName: extractData.results.imperviousTableName,
@@ -124,7 +122,7 @@ class FormattingForAbstractModelTests {
         //zoneToExtract="Cliscouet, Vannes"
         zoneToExtract="rezé"
 
-        IProcess extractData = O.extractAndCreateGISLayers
+        IProcess extractData = OSM.extractAndCreateGISLayers
         extractData.execute([
                 datasource : h2GIS,
                 zoneToExtract:zoneToExtract ])
@@ -142,7 +140,7 @@ class FormattingForAbstractModelTests {
 
 
             //Buildings
-            IProcess format = O.formatBuildingLayer
+            IProcess format = OSM.formatBuildingLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.buildingTableName,
@@ -158,7 +156,7 @@ class FormattingForAbstractModelTests {
 
 
             //Roads
-            format = O.formatRoadLayer
+            format = OSM.formatRoadLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.roadTableName,
@@ -168,7 +166,7 @@ class FormattingForAbstractModelTests {
             assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where width is null or width <= 0").count==0
 
             //Rails
-            format = O.formatRailsLayer
+            format = OSM.formatRailsLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.railTableName,
@@ -178,7 +176,7 @@ class FormattingForAbstractModelTests {
 
 
             //Vegetation
-            format = O.formatVegetationLayer
+            format = OSM.formatVegetationLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.vegetationTableName,
@@ -188,7 +186,7 @@ class FormattingForAbstractModelTests {
 
 
             //Hydrography
-            format = O.formatHydroLayer
+            format = OSM.formatHydroLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.hydroTableName,
@@ -197,7 +195,7 @@ class FormattingForAbstractModelTests {
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_hydro_${formatedPlaceName}.geojson")
 
             //Impervious
-            format = O.formatImperviousLayer
+            format = OSM.formatImperviousLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.imperviousTableName,
@@ -237,7 +235,7 @@ class FormattingForAbstractModelTests {
     void createGISLayersCheckHeight(def zoneToExtract) {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
 
-        IProcess extractData = O.OSMGISLayers.extractAndCreateGISLayers
+        IProcess extractData = OSM.extractAndCreateGISLayers
         extractData.execute([
                 datasource : h2GIS,
                 zoneToExtract:zoneToExtract ])
@@ -247,7 +245,7 @@ class FormattingForAbstractModelTests {
 
 
             //Buildings
-            IProcess format = O.FormattingForAbstractModel.formatBuildingLayer
+            IProcess format = OSM.formatBuildingLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.buildingTableName,

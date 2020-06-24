@@ -1,29 +1,25 @@
 package org.orbisgis.orbisprocess.geoclimate
 
+import org.orbisgis.orbisprocess.geoclimate.geoindicators.*
+import org.orbisgis.orbisprocess.geoclimate.processingchain.*
+import org.orbisgis.orbisprocess.geoclimate.osm.*
+import org.orbisgis.orbisprocess.geoclimate.bdtopo_v2.*
 
-import org.orbisgis.orbisprocess.geoclimate.bdtopo_v2.BDTopo_V2 as Topo
-import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators as GI
-import org.orbisgis.orbisprocess.geoclimate.osm.OSM as O
-import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain as PC
-
-import static org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager.load
 /**
  * Root access point to the Geoindicators processes.
  */
 class Geoclimate {
 
-    public static def Geoindicators = load(GI)
-    public static def Osm = load(O)
-    public static def BDTopo = load(Topo)
-    public static def ProcessingChain = load(PC)
-
-    public static class OSM{
-        public static def workflow = Geoclimate.Osm.WorkflowOSM.workflow
-    }
-
-    public static class BDTOPO_V2{
-        public static def workflow = Geoclimate.BDTopo.WorkflowBDTopo_V2.workflow
-    }
+    public static def GeoIndicatorsChain  = new GeoIndicatorsChain()
+    public static def DataUtils  = new DataUtils()
+    public static def BuildingIndicators = new BuildingIndicators()
+    public static def RsuIndicators = new RsuIndicators()
+    public static def BlockIndicators = new BlockIndicators()
+    public static def GenericIndicators = new GenericIndicators()
+    public static def SpatialUnits = new SpatialUnits()
+    public static def TypologyClassification = new TypologyClassification()
+    public static def OSM = new OSM()
+    public static def BDTOPO_V2 = new BDTopo_V2()
 
     /**
      * Set the logger for all the processes.
@@ -31,9 +27,9 @@ class Geoclimate {
      * @param logger Logger to use in the processes.
      */
     static void setLogger(def logger){
-        Osm.setLogger(logger)
-        BDTopo.setLogger(logger)
-        ProcessingChain.setLogger(logger)
-        Geoindicators.setLogger(logger)
+        OSM_Utils.logger = logger
+        BDTopo_V2_Utils.logger = logger
+        ProcessingChain.logger = logger
+        Geoindicators.logger = logger
     }
 }

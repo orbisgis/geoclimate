@@ -9,13 +9,11 @@ import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 import static org.junit.jupiter.api.Assertions.*
 
 class AbstractTablesInitializationTest {
-    
-    static def BDTopo = GroovyProcessManager.load(BDTopo_V2)
 
     @Test
     void initParametersAbstract(){
         H2GIS h2GISDatabase = H2GIS.open("./target/h2gis_abstract_tables_${UUID.randomUUID()};AUTO_SERVER=TRUE", "sa", "")
-        def process = BDTopo.AbstractTablesInitialization.initParametersAbstract
+        def process = BDTopo_V2.initParametersAbstract
         assertTrue process.execute([datasource: h2GISDatabase])
         process.getResults().each {entry ->
             assertNotNull h2GISDatabase.getTable(entry.getValue())
