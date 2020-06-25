@@ -94,7 +94,7 @@ List of all possible values for the `type` and the `main_use` attributes, in the
 | terminal                        | An airport passenger building                                | [25](https://wiki.openstreetmap.org/wiki/Tag:aeroway=terminal) |
 | healthcare                      | All places that provide healthcare                           |   [26](https://wiki.openstreetmap.org/wiki/Key:healthcare)   |
 | education                       | All places that provide education                            | [27](https://wiki.openstreetmap.org/wiki/Map_Features#Education) |
-| entertainment, arts and culture | All places that provide entertainment, arts and culture      | [28](https://wiki.openstreetmap.org/wiki/Key:amenity#Entertainment.2C_Arts_.26_Culture) |
+| entertainment_arts_culture | All places that provide entertainment, arts and culture      | [28](https://wiki.openstreetmap.org/wiki/Key:amenity#Entertainment.2C_Arts_.26_Culture) |
 | sustenance                      | Buildings, constructions, installations, organized areas and equipment of any food commodity or related food products. ex : bar, pub... | [29](https://wiki.openstreetmap.org/wiki/Map_Features#Sustenance) , [30](https://www.eionet.europa.eu/gemet/en/concept/3362) |
 | military                        | Buildings, constructions, installations necessary to the performance of military activities, either combat or noncombat. | [31](https://www.eionet.europa.eu/gemet/en/concept/13220) , [32](https://wiki.openstreetmap.org/wiki/Map_Features#Military) , [33](https://wiki.openstreetmap.org/wiki/Key:military) |
 | religious                       | Unspecific religious building                                | [34](https://wiki.openstreetmap.org/wiki/Key:building#Religious) |
