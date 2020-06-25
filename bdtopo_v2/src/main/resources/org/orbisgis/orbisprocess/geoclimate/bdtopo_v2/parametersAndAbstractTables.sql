@@ -55,7 +55,7 @@ INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(null, 'toll_booth', 'Toll roads c
 INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(null, 'terminal', 'Airport passenger building', 'https://wiki.openstreetmap.org/wiki/Tag:aeroway=terminal');
 INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(null, 'healthcare', 'All places that provide healthcare', 'https://wiki.openstreetmap.org/wiki/Key:healthcare');
 INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(null, 'education', 'All places that provide education', 'https://wiki.openstreetmap.org/wiki/Map_Features#Education');
-INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(null, 'entertainment, arts and culture', 'All places that provide entertainment, arts and culture', 'https://wiki.openstreetmap.org/wiki/Key:amenity#Entertainment.2C_Arts_.26_Culture');
+INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(null, 'entertainment_arts_culture', 'All places that provide entertainment, arts and culture', 'https://wiki.openstreetmap.org/wiki/Key:amenity#Entertainment.2C_Arts_.26_Culture');
 INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(null, 'sustenance', 'Buildings, constructions, installations, organized areas and equipment  of any food commodity or related food products. ex : bar, pub...', 'https://wiki.openstreetmap.org/wiki/Map_Features#Sustenance');
 INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(null, 'military', 'Buildings, constructions, installations necessary to the performance of military activities, either combat or noncombat', 'https://wiki.openstreetmap.org/wiki/Key:military"');
 INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(null, 'religious', 'Unspecific religious building', 'https://wiki.openstreetmap.org/wiki/Key:building#Religious');
@@ -106,7 +106,7 @@ INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(null, 'toll_booth', 0);
 INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(null, 'terminal', 0);
 INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(null, 'healthcare', 1);
 INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(null, 'education', 1);
-INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(null, 'entertainment, arts and culture', 0);
+INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(null, 'entertainment_arts_culture', 0);
 INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(null, 'sustenance', 1);
 INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(null, 'military', 0);
 INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(null, 'religious', 0);

@@ -1,5 +1,8 @@
 {
-    "tags" : ["building"],
+    "tags" : {
+        "building":[],
+        "railway":["station", "train_station"]
+    },
     "columns":[
     "height", "building:height", "roof:height", "building:roof:height",
     "building:levels", "roof:levels", "building:roof:levels", "building",
@@ -38,7 +41,7 @@
         "terminal": 0,
         "healthcare": 1,
         "education": 1,
-        "entertainment, arts and culture": 0,
+        "entertainment_arts_culture": 0,
         "sustenance": 1,
         "military": 0,
         "religious": 0,
@@ -49,7 +52,7 @@
         "office": 1
     },
     "type" : {
-        "terminal": {
+        "terminal:transportation": {
             "aeroway": [
                 "terminal",
                 "airport_terminal"
@@ -77,13 +80,39 @@
                 "yes"
             ]
         },
+        "chapel:religious": {
+            "building": [
+                "chapel"
+            ],
+            "amenity": [
+                "chapel"
+            ],
+            "place_of_worship": [
+                "chapel"
+            ]
+        },
+        "church:religious": {
+            "building": [
+                "church"
+            ],
+            "amenity": [
+                "church"
+            ],
+            "place_of_worship": [
+                "church"
+            ]
+        },
+        "castle:heritage": {
+            "building": [
+                "castle",
+                "fortress"
+            ]
+        },
         "religious": {
             "building": [
                 "religious",
                 "abbey",
                 "cathedral",
-                "chapel",
-                "church",
                 "mosque",
                 "musalla",
                 "temple",
@@ -112,7 +141,7 @@
                 "! church"
             ]
         },
-        "sport": {
+        "sport:entertainment_arts_culture": {
             "building": [
                 "swimming_pool",
                 "fitness_centre",
@@ -141,7 +170,7 @@
                 "track"
             ]
         },
-        "sports_centre": {
+        "sports_centre:entertainment_arts_culture": {
             "building": [
                 "sports_centre",
                 "sports_hall"
@@ -153,34 +182,6 @@
             "amenity": [
                 "sports_centre",
                 "sports_hall"
-            ]
-        },
-        "chapel": {
-            "building": [
-                "chapel"
-            ],
-            "amenity": [
-                "chapel"
-            ],
-            "place_of_worship": [
-                "chapel"
-            ]
-        },
-        "church": {
-            "building": [
-                "church"
-            ],
-            "amenity": [
-                "church"
-            ],
-            "place_of_worship": [
-                "church"
-            ]
-        },
-        "castle": {
-            "building": [
-                "castle",
-                "fortress"
             ]
         },
         "military": {
@@ -204,7 +205,7 @@
                 "military"
             ]
         },
-        "train_station": {
+        "train_station:transportation": {
             "building": [
                 "train_station"
             ],
@@ -219,7 +220,7 @@
                 "train_station"
             ]
         },
-        "townhall": {
+        "townhall:government": {
             "amenity": [
                 "townhall"
             ],
@@ -227,7 +228,7 @@
                 "townhall"
             ]
         },
-        "toll": {
+        "toll:transportation": {
             "barrier": [
                 "toll_booth"
             ],
@@ -258,7 +259,7 @@
                 "! no"
             ]
         },
-        "grandstand": {
+        "grandstand:entertainment_arts_culture": {
             "building": [
                 "grandstand"
             ],
@@ -272,7 +273,7 @@
                 "yes"
             ]
         },
-        "detached": {
+        "detached:residential": {
             "building": [
                 "detached"
             ],
@@ -280,7 +281,7 @@
                 "detached"
             ]
         },
-        "farm_auxiliary": {
+        "farm_auxiliary:agricultural": {
             "building": [
                 "farm_auxiliary",
                 "barn",
@@ -347,7 +348,7 @@
                 "factory"
             ]
         },
-        "greenhouse": {
+        "greenhouse:agricultural": {
             "building": [
                 "greenhouse"
             ],
@@ -358,7 +359,7 @@
                 "greenhouse"
             ]
         },
-        "silo": {
+        "silo:agricultural": {
             "building": [
                 "silo",
                 "grain_silo"
@@ -368,7 +369,7 @@
                 "grain_silo"
             ]
         },
-        "house": {
+        "house:residential": {
             "building": [
                 "house"
             ],
@@ -376,17 +377,42 @@
                 "! no",
                 "! detached",
                 "! residential",
-                "! villa"
+                "! villa",
+                "residential"
             ],
             "amenity": [
                 "house"
+            ]
+        },
+        "apartments:residential": {
+            "building": [
+                "apartments"
+            ],
+            "residential": [
+                "apartments"
+            ],
+            "amenity": [
+                "apartments"
+            ],
+            "apartments": [
+                "yes"
+            ]
+        },
+        "bungalow:residential": {
+            "building": [
+                "bungalow"
+            ],
+            "house": [
+                "bungalow"
+            ],
+            "amenity": [
+                "bungalow"
             ]
         },
         "residential": {
             "building": [
                 "residential",
                 "villa",
-                "detached",
                 "dormitory",
                 "condominium",
                 "sheltered_housing",
@@ -409,32 +435,7 @@
                 "residential"
             ]
         },
-        "apartments": {
-            "building": [
-                "apartments"
-            ],
-            "residential": [
-                "apartments"
-            ],
-            "amenity": [
-                "apartments"
-            ],
-            "apartments": [
-                "yes"
-            ]
-        },
-        "bungalow": {
-            "building": [
-                "bungalow"
-            ],
-            "house": [
-                "bungalow"
-            ],
-            "amenity": [
-                "bungalow"
-            ]
-        },
-        "ruins": {
+        "ruins:heritage": {
             "building": [
                 "ruins"
             ],
@@ -450,13 +451,13 @@
                 "building"
             ]
         },
-        "farm": {
+        "farm:agricultural": {
             "building": [
                 "farm",
                 "farmhouse"
             ]
         },
-        "barn": {
+        "barn:agricultural": {
             "building": [
                 "barn"
             ],
@@ -524,12 +525,12 @@
                 "university"
             ]
         },
-        "entertainment, arts and culture": {
+        "entertainment_arts_culture": {
             "leisure": [
                 "! no"
             ]
         },
-        "sustenance": {
+        "sustenance:commercial": {
             "amenity": [
                 "restaurant",
                 "bar",
