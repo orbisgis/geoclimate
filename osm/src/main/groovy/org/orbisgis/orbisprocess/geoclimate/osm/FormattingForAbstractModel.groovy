@@ -484,7 +484,16 @@ static String[] getTypeAndUse(def row,def columnNames, def myMap) {
     String strType = null
     String strUse = null
     myMap.each { finalVal ->
-        def finalKey = finalVal.key
+        def type_use = finalVal.key.split(":")
+        def type
+        def use
+        if(type_use.size()==2){
+            type =  type_use[0]
+            use =type_use[1]
+        }else{
+            type = finalVal.key;
+            use = type
+        }
         finalVal.value.each { osmVals ->
             if(columnNames.contains(osmVals.key.toUpperCase())){
                 def  columnValue = row.getString(osmVals.key)
@@ -494,17 +503,15 @@ static String[] getTypeAndUse(def row,def columnNames, def myMap) {
                     osmVal = osmVal.replace("! ","")
                     if ((columnValue != osmVal) && (columnValue != null)) {
                         if (strType == null) {
-                            strType = finalKey
-                        } else {
-                            strUse = finalKey
+                            strType = type
+                            strUse =use
                         }
                     }
                 } else {
                     if (columnValue == osmVal) {
                         if (strType == null) {
-                            strType = finalKey
-                        } else {
-                            strUse = finalKey
+                            strType = type
+                            strUse =use
                         }
                     }
                 }
