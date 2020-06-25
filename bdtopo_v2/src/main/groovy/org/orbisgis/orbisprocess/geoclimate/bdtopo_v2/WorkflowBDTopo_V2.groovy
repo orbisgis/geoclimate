@@ -76,13 +76,13 @@ import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain as P
  *         "svfSimplified": false,
  *         "prefixName": "",
  *         "mapOfWeights":
- *         {"sky_view_factor": 2,
- *             "aspect_ratio": 1,
- *             "building_surface_fraction": 4,
- *             "impervious_surface_fraction" : 0,
- *             "pervious_surface_fraction": 0,
- *             "height_of_roughness_elements": 3,
- *             "terrain_roughness_length": 1},
+ *         {"sky_view_factor"                : 4,
+ *          "aspect_ratio"                   : 3,
+ *          "building_surface_fraction"      : 8,
+ *          "impervious_surface_fraction"    : 0,
+ *          "pervious_surface_fraction"      : 0,
+ *           "height_of_roughness_elements"   : 6,
+ *           "terrain_roughness_length"       : 0.5},
  *         "hLevMin": 3,
  *         "hLevMax": 15,
  *         "hThresho2": 10
@@ -800,9 +800,13 @@ def findIDZones(def h2gis_datasource, def id_zones){
 def extractProcessingParameters(def processing_parameters){
     def defaultParameters = [distance: 1000,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
                              svfSimplified:false, prefixName: "",
-                             mapOfWeights : ["sky_view_factor" : 2, "aspect_ratio": 1, "building_surface_fraction": 4,
-                                             "impervious_surface_fraction" : 0, "pervious_surface_fraction": 0,
-                                             "height_of_roughness_elements": 3, "terrain_roughness_length": 1],
+                             mapOfWeights : ["sky_view_factor"                : 4,
+                                             "aspect_ratio"                   : 3,
+                                             "building_surface_fraction"      : 8,
+                                             "impervious_surface_fraction"    : 0,
+                                             "pervious_surface_fraction"      : 0,
+                                             "height_of_roughness_elements"   : 6,
+                                             "terrain_roughness_length"       : 0.5],
                              hLevMin : 3, hLevMax: 15, hThresholdLev2: 10]
     if(processing_parameters){
         def distanceP =  processing_parameters.distance
