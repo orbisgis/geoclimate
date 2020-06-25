@@ -9,7 +9,7 @@ import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 
-@BaseScript GroovyProcessFactory pf
+@BaseScript OSM_Utils osm_utils
 
 /**
  * This process is used to format the OSM buildings table into a table that matches the constraints
@@ -23,73 +23,74 @@ import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
  * @param jsonFilename name of the json formatted file containing the filtering parameters
  * @return outputTableName The name of the final buildings table
  */
-create {
-    title "Transform OSM buildings table into a table that matches the constraints of the GeoClimate input model"
-    id "formatBuildingLayer"
-    inputs datasource : JdbcDataSource , inputTableName:String, inputZoneEnvelopeTableName:"", epsg: int, h_lev_min:3, h_lev_max: 15, hThresholdLev2:10, jsonFilename : ""
-    outputs outputTableName: String
-    run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, epsg, h_lev_min, h_lev_max, hThresholdLev2, jsonFilename ->
-        def outputTableName = postfix "INPUT_BUILDING"
-        info 'Formating building layer'
-        outputTableName = "INPUT_BUILDING_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-        datasource """ 
+IProcess formatBuildingLayer() {
+    return create {
+        title "Transform OSM buildings table into a table that matches the constraints of the GeoClimate input model"
+        id "formatBuildingLayer"
+        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, h_lev_min: 3, h_lev_max: 15, hThresholdLev2: 10, jsonFilename: ""
+        outputs outputTableName: String
+        run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, epsg, h_lev_min, h_lev_max, hThresholdLev2, jsonFilename ->
+            def outputTableName = postfix "INPUT_BUILDING"
+            info 'Formating building layer'
+            outputTableName = "INPUT_BUILDING_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+            datasource """ 
                 DROP TABLE if exists ${outputTableName};
                 CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id_build serial, ID_SOURCE VARCHAR, 
                     HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT, NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER);
             """
-        if (inputTableName) {
-            def paramsDefaultFile = this.class.getResourceAsStream("buildingParams.json")
-            def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
-            def mappingTypeAndUse = parametersMap.type
-            def typeAndLevel = parametersMap.level
-            def queryMapper = "SELECT "
-            def columnToMap = parametersMap.columns
-            def inputSpatialTable = datasource."$inputTableName"
-            if (inputSpatialTable.rowCount > 0) {
-                inputSpatialTable.the_geom.createSpatialIndex()
-                def columnNames = inputSpatialTable.columns
-                columnNames.remove("THE_GEOM")
-                queryMapper += columnsMapper(columnNames, columnToMap)
-                if (inputZoneEnvelopeTableName) {
-                    queryMapper += " , case when st_isvalid(a.the_geom) then a.the_geom else st_makevalid(st_force2D(a.the_geom)) end  as the_geom FROM $inputTableName as a,  $inputZoneEnvelopeTableName as b WHERE a.the_geom && b.the_geom and st_intersects(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) and st_area(a.the_geom)>1"
-                } else {
-                    queryMapper += " , case when st_isvalid(a.the_geom) then a.the_geom else st_makevalid(st_force2D(a.the_geom)) end as the_geom FROM $inputTableName as a where st_area(a.the_geom)>1"
-                }
-                datasource.withBatch(1000) { stmt ->
-                    datasource.eachRow(queryMapper) { row ->
-                        String height = row.height
-                        String b_height = row.'building:height'
-                        String roof_height = row.'roof:height'
-                        String b_roof_height = row.'building:roof:height'
-                        String b_lev = row.'building:levels'
-                        String roof_lev = row.'roof:levels'
-                        String b_roof_lev = row.'building:roof:levels'
-                        def heightWall = getHeightWall(height, b_height, roof_height, b_roof_height)
-                        def heightRoof = getHeightRoof(height, b_height)
+            if (inputTableName) {
+                def paramsDefaultFile = this.class.getResourceAsStream("buildingParams.json")
+                def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
+                def mappingTypeAndUse = parametersMap.type
+                def typeAndLevel = parametersMap.level
+                def queryMapper = "SELECT "
+                def columnToMap = parametersMap.columns
+                def inputSpatialTable = datasource."$inputTableName"
+                if (inputSpatialTable.rowCount > 0) {
+                    inputSpatialTable.the_geom.createSpatialIndex()
+                    def columnNames = inputSpatialTable.columns
+                    columnNames.remove("THE_GEOM")
+                    queryMapper += columnsMapper(columnNames, columnToMap)
+                    if (inputZoneEnvelopeTableName) {
+                        queryMapper += " , case when st_isvalid(a.the_geom) then a.the_geom else st_makevalid(st_force2D(a.the_geom)) end  as the_geom FROM $inputTableName as a,  $inputZoneEnvelopeTableName as b WHERE a.the_geom && b.the_geom and st_intersects(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) and st_area(a.the_geom)>1"
+                    } else {
+                        queryMapper += " , case when st_isvalid(a.the_geom) then a.the_geom else st_makevalid(st_force2D(a.the_geom)) end as the_geom FROM $inputTableName as a where st_area(a.the_geom)>1"
+                    }
+                    datasource.withBatch(1000) { stmt ->
+                        datasource.eachRow(queryMapper) { row ->
+                            String height = row.height
+                            String b_height = row.'building:height'
+                            String roof_height = row.'roof:height'
+                            String b_roof_height = row.'building:roof:height'
+                            String b_lev = row.'building:levels'
+                            String roof_lev = row.'roof:levels'
+                            String b_roof_lev = row.'building:roof:levels'
+                            def heightWall = getHeightWall(height, b_height, roof_height, b_roof_height)
+                            def heightRoof = getHeightRoof(height, b_height)
 
-                        def nbLevels = getNbLevels(b_lev, roof_lev, b_roof_lev)
+                            def nbLevels = getNbLevels(b_lev, roof_lev, b_roof_lev)
 
-                        if (nbLevels >= 0) {
-                            def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
-                            def use = typeAndUseValues[1]
-                            def type = typeAndUseValues[0]
-                            if (!type) {
-                                type = 'building'
-                            }
+                            if (nbLevels >= 0) {
+                                def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
+                                def use = typeAndUseValues[1]
+                                def type = typeAndUseValues[0]
+                                if (!type) {
+                                    type = 'building'
+                                }
 
-                            def nbLevelFromType = typeAndLevel[type]
+                                def nbLevelFromType = typeAndLevel[type]
 
-                            def formatedHeight = formatHeightsAndNbLevels(heightWall, heightRoof, nbLevels, h_lev_min,
-                                    h_lev_max, hThresholdLev2, nbLevelFromType == null ? 0 : nbLevelFromType)
+                                def formatedHeight = formatHeightsAndNbLevels(heightWall, heightRoof, nbLevels, h_lev_min,
+                                        h_lev_max, hThresholdLev2, nbLevelFromType == null ? 0 : nbLevelFromType)
 
-                            def zIndex = getZIndex(row.'layer')
+                                def zIndex = getZIndex(row.'layer')
 
-                            if (formatedHeight.nbLevels > 0 && zIndex >= 0 && type) {
-                                Geometry geom = row.the_geom
-                                for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                    Geometry subGeom = geom.getGeometryN(i)
-                                    if (subGeom instanceof Polygon) {
-                                        stmt.addBatch """
+                                if (formatedHeight.nbLevels > 0 && zIndex >= 0 && type) {
+                                    Geometry geom = row.the_geom
+                                    for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                        Geometry subGeom = geom.getGeometryN(i)
+                                        if (subGeom instanceof Polygon) {
+                                            stmt.addBatch """
                                                 INSERT INTO ${outputTableName} values(
                                                     ST_GEOMFROMTEXT('${subGeom}',$epsg), 
                                                     null, 
@@ -101,6 +102,7 @@ create {
                                                     '${use}',
                                                     ${zIndex})
                                         """.toString()
+                                        }
                                     }
                                 }
                             }
@@ -108,12 +110,11 @@ create {
                     }
                 }
             }
+            info 'Buildings transformation finishes'
+            [outputTableName: outputTableName]
         }
-        info 'Buildings transformation finishes'
-        [outputTableName: outputTableName]
     }
 }
-
 
 /**
  * This process is used to transform the OSM roads table into a table that matches the constraints
@@ -124,64 +125,65 @@ create {
  * @param jsonFilename name of the json formatted file containing the filtering parameters
  * @return outputTableName The name of the final roads table
  */
-create {
-title "Format the raw roads table into a table that matches the constraints of the GeoClimate Input Model"
-id "formatRoadLayer"
-inputs datasource  : JdbcDataSource, inputTableName : String, inputZoneEnvelopeTableName : "", epsg: int, jsonFilename : ""
-outputs outputTableName: String
-run { datasource, inputTableName,inputZoneEnvelopeTableName,epsg, jsonFilename ->
-    info('Formating road layer')
-        def outputTableName = postfix "INPUT_ROAD"
-        datasource """
+IProcess formatRoadLayer() {
+    return create {
+        title "Format the raw roads table into a table that matches the constraints of the GeoClimate Input Model"
+        id "formatRoadLayer"
+        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, jsonFilename: ""
+        outputs outputTableName: String
+        run { datasource, inputTableName, inputZoneEnvelopeTableName, epsg, jsonFilename ->
+            info('Formating road layer')
+            def outputTableName = postfix "INPUT_ROAD"
+            datasource """
             DROP TABLE IF EXISTS $outputTableName;
             CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_road serial, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR, CROSSING VARCHAR(30),
                 SURFACE VARCHAR, SIDEWALK VARCHAR, ZINDEX INTEGER);
         """
-       if(inputTableName){
-            //Define the mapping between the values in OSM and those used in the abstract model
-            def paramsDefaultFile = this.class.getResourceAsStream("roadParams.json")
-            def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
-            def mappingForRoadType = parametersMap.type
-            def mappingForSurface = parametersMap.surface
-            def typeAndWidth = parametersMap.width
-            def crossingValues = parametersMap.crossing
-            def queryMapper = "SELECT "
-            def columnToMap = parametersMap.columns
-            def inputSpatialTable = datasource."$inputTableName"
-            if(inputSpatialTable.rowCount>0) {
-                inputSpatialTable.the_geom.createSpatialIndex()
-                def columnNames = inputSpatialTable.columns
-                columnNames.remove("THE_GEOM")
-                queryMapper += columnsMapper(columnNames, columnToMap)
-                if(inputZoneEnvelopeTableName) {
-                    queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) then st_intersection(st_force2D(a.the_geom), b.the_geom) else a.the_geom end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
-                }else{
-                    queryMapper += ", a.the_geom FROM $inputTableName  as a"
-                }
+            if (inputTableName) {
+                //Define the mapping between the values in OSM and those used in the abstract model
+                def paramsDefaultFile = this.class.getResourceAsStream("roadParams.json")
+                def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
+                def mappingForRoadType = parametersMap.type
+                def mappingForSurface = parametersMap.surface
+                def typeAndWidth = parametersMap.width
+                def crossingValues = parametersMap.crossing
+                def queryMapper = "SELECT "
+                def columnToMap = parametersMap.columns
+                def inputSpatialTable = datasource."$inputTableName"
+                if (inputSpatialTable.rowCount > 0) {
+                    inputSpatialTable.the_geom.createSpatialIndex()
+                    def columnNames = inputSpatialTable.columns
+                    columnNames.remove("THE_GEOM")
+                    queryMapper += columnsMapper(columnNames, columnToMap)
+                    if (inputZoneEnvelopeTableName) {
+                        queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) then st_intersection(st_force2D(a.the_geom), b.the_geom) else a.the_geom end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
+                    } else {
+                        queryMapper += ", a.the_geom FROM $inputTableName  as a"
+                    }
 
-                datasource.withBatch(1000) { stmt ->
-                    datasource.eachRow(queryMapper) { row ->
-                        def width = getWidth(row.'width')
-                        String type = getTypeValue(row, columnNames, mappingForRoadType)
-                        if (!type) {
-                            type = 'unclassified'
-                        }
-                        def widthFromType = typeAndWidth[type]
-                        if (width <= 0 && widthFromType) {
-                            width = widthFromType
-                        }
-                        def crossing = row.'bridge'
-                        if (crossing) {
-                            crossing = crossingValues.bridge.contains(crossing) ? "'bridge'" : null
-                        }
+                    datasource.withBatch(1000) { stmt ->
+                        datasource.eachRow(queryMapper) { row ->
+                            def width = getWidth(row.'width')
+                            String type = getTypeValue(row, columnNames, mappingForRoadType)
+                            if (!type) {
+                                type = 'unclassified'
+                            }
+                            def widthFromType = typeAndWidth[type]
+                            if (width <= 0 && widthFromType) {
+                                width = widthFromType
+                            }
+                            def crossing = row.'bridge'
+                            if (crossing) {
+                                crossing = crossingValues.bridge.contains(crossing) ? "'bridge'" : null
+                            }
 
-                        String surface = getTypeValue(row, columnNames, mappingForSurface)
-                        String sidewalk = getSidewalk(row.'sidewalk')
-                        def zIndex = getZIndex(row.'layer')
-                        if (zIndex >= 0 && type) {
-                            Geometry geom = row.the_geom
-                            for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                stmt.addBatch """
+                            String surface = getTypeValue(row, columnNames, mappingForSurface)
+                            String sidewalk = getSidewalk(row.'sidewalk')
+                            def zIndex = getZIndex(row.'layer')
+                            if (zIndex >= 0 && type) {
+                                Geometry geom = row.the_geom
+                                for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                    stmt.addBatch """
                                     INSERT INTO $outputTableName VALUES(ST_GEOMFROMTEXT(
                                         '${geom.getGeometryN(i)}',$epsg), 
                                         null, 
@@ -193,14 +195,15 @@ run { datasource, inputTableName,inputZoneEnvelopeTableName,epsg, jsonFilename -
                                         '${sidewalk}',
                                         ${zIndex})
                                 """.toString()
+                                }
                             }
                         }
                     }
                 }
             }
+            info('Roads transformation finishes')
+            [outputTableName: outputTableName]
         }
-    info('Roads transformation finishes')
-        [outputTableName: outputTableName]
     }
 }
 
@@ -213,59 +216,60 @@ run { datasource, inputTableName,inputZoneEnvelopeTableName,epsg, jsonFilename -
  * @param jsonFilename name of the json formatted file containing the filtering parameters
  * @return outputTableName The name of the final rails table
  */
-create {
-    title "Format the raw rails table into a table that matches the constraints of the GeoClimate Input Model"
-    id "formatRailsLayer"
-    inputs datasource : JdbcDataSource , inputTableName: String, inputZoneEnvelopeTableName:"", epsg: int, jsonFilename : ""
-    outputs outputTableName: String
-    run { datasource, inputTableName,inputZoneEnvelopeTableName,epsg, jsonFilename ->
-        info('Rails transformation starts')
-        def outputTableName = "INPUT_RAILS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+IProcess formatRailsLayer() {
+    return create {
+        title "Format the raw rails table into a table that matches the constraints of the GeoClimate Input Model"
+        id "formatRailsLayer"
+        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, jsonFilename: ""
+        outputs outputTableName: String
+        run { datasource, inputTableName, inputZoneEnvelopeTableName, epsg, jsonFilename ->
+            info('Rails transformation starts')
+            def outputTableName = "INPUT_RAILS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             datasource.execute """ drop table if exists $outputTableName;
                 CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_rail serial,ID_SOURCE VARCHAR, TYPE VARCHAR,CROSSING VARCHAR(30), ZINDEX INTEGER);"""
 
-        if(inputTableName!=null){
-            def paramsDefaultFile = this.class.getResourceAsStream("railParams.json")
-            def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
-            def mappingType = parametersMap.get("type")
-            def crossingValues = parametersMap.get("crossing")
+            if (inputTableName != null) {
+                def paramsDefaultFile = this.class.getResourceAsStream("railParams.json")
+                def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
+                def mappingType = parametersMap.get("type")
+                def crossingValues = parametersMap.get("crossing")
 
-            def queryMapper = "SELECT "
-            def columnToMap = parametersMap.get("columns")
+                def queryMapper = "SELECT "
+                def columnToMap = parametersMap.get("columns")
 
 
-            def inputSpatialTable = datasource."$inputTableName"
-            if(inputSpatialTable.rowCount>0) {
-                inputSpatialTable.the_geom.createSpatialIndex()
-                def columnNames = inputSpatialTable.columns
-                columnNames.remove("THE_GEOM")
+                def inputSpatialTable = datasource."$inputTableName"
+                if (inputSpatialTable.rowCount > 0) {
+                    inputSpatialTable.the_geom.createSpatialIndex()
+                    def columnNames = inputSpatialTable.columns
+                    columnNames.remove("THE_GEOM")
 
-                queryMapper += columnsMapper(columnNames, columnToMap)
-                if(inputZoneEnvelopeTableName){
-                queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) then st_intersection(st_force2D(a.the_geom), b.the_geom) else a.the_geom end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
-                }else{
-                    queryMapper += ", a.the_geom FROM $inputTableName  as a"
+                    queryMapper += columnsMapper(columnNames, columnToMap)
+                    if (inputZoneEnvelopeTableName) {
+                        queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) then st_intersection(st_force2D(a.the_geom), b.the_geom) else a.the_geom end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
+                    } else {
+                        queryMapper += ", a.the_geom FROM $inputTableName  as a"
 
-                }
-                datasource.withBatch(1000) { stmt ->
-                    datasource.eachRow(queryMapper) { row ->
-                        def type = getTypeValue(row, columnNames, mappingType)
-                        def zIndex = getZIndex(row.'layer')
-                        //special treatment if type is subway
-                        if (type == "subway") {
-                            if (!((row.tunnel != null && row.tunnel == "no" && zIndex >= 0)
-                                    || (row.bridge != null && (row.bridge == "yes" || row.bridge == "viaduct")))) {
-                                type = null
+                    }
+                    datasource.withBatch(1000) { stmt ->
+                        datasource.eachRow(queryMapper) { row ->
+                            def type = getTypeValue(row, columnNames, mappingType)
+                            def zIndex = getZIndex(row.'layer')
+                            //special treatment if type is subway
+                            if (type == "subway") {
+                                if (!((row.tunnel != null && row.tunnel == "no" && zIndex >= 0)
+                                        || (row.bridge != null && (row.bridge == "yes" || row.bridge == "viaduct")))) {
+                                    type = null
+                                }
                             }
-                        }
-                        def crossing = row.'bridge'
-                        if (crossing) {
-                            crossing = crossingValues.bridge.contains(crossing) ? "'bridge'" : null
-                        }
-                        if (zIndex >= 0 && type) {
-                            Geometry geom = row.the_geom
-                            for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                stmt.addBatch """
+                            def crossing = row.'bridge'
+                            if (crossing) {
+                                crossing = crossingValues.bridge.contains(crossing) ? "'bridge'" : null
+                            }
+                            if (zIndex >= 0 && type) {
+                                Geometry geom = row.the_geom
+                                for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                    stmt.addBatch """
                                     INSERT INTO $outputTableName values(ST_GEOMFROMTEXT(
                                     '${geom.getGeometryN(i)}',$epsg), 
                                     null, 
@@ -274,14 +278,15 @@ create {
                                     ${crossing},
                                     ${zIndex})
                                 """
+                                }
                             }
                         }
                     }
                 }
             }
+            info('Rails transformation finishes')
+            [outputTableName: outputTableName]
         }
-        info('Rails transformation finishes')
-        [outputTableName: outputTableName]
     }
 }
 
@@ -294,46 +299,47 @@ create {
  * @param jsonFilename name of the json formatted file containing the filtering parameters
  * @return outputTableName The name of the final vegetation table
  */
-create {
-    title "Format the raw vegetation table into a table that matches the constraints of the GeoClimate Input Model"
-    id "formatVegetationLayer"
-    inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName:"",epsg: int, jsonFilename: ""
-    outputs outputTableName: String
-    run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, epsg, jsonFilename ->
-        info('Vegetation transformation starts')
-        def outputTableName = postfix "INPUT_VEGET"
-        datasource """ 
+IProcess formatVegetationLayer() {
+    return create {
+        title "Format the raw vegetation table into a table that matches the constraints of the GeoClimate Input Model"
+        id "formatVegetationLayer"
+        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, jsonFilename: ""
+        outputs outputTableName: String
+        run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, epsg, jsonFilename ->
+            info('Vegetation transformation starts')
+            def outputTableName = postfix "INPUT_VEGET"
+            datasource """ 
                 DROP TABLE IF EXISTS $outputTableName;
                 CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_veget serial, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4));"""
-        if (inputTableName) {
-            def paramsDefaultFile = this.class.getResourceAsStream("vegetParams.json")
-            def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
-            def mappingType = parametersMap.get("type")
-            def typeAndVegClass = parametersMap.get("class")
-            def queryMapper = "SELECT "
-            def columnToMap = parametersMap.get("columns")
-            def inputSpatialTable = datasource."$inputTableName"
-            if(inputSpatialTable.rowCount>0) {
-                inputSpatialTable.the_geom.createSpatialIndex()
-                def columnNames = inputSpatialTable.columns
-                columnNames.remove("THE_GEOM")
+            if (inputTableName) {
+                def paramsDefaultFile = this.class.getResourceAsStream("vegetParams.json")
+                def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
+                def mappingType = parametersMap.get("type")
+                def typeAndVegClass = parametersMap.get("class")
+                def queryMapper = "SELECT "
+                def columnToMap = parametersMap.get("columns")
+                def inputSpatialTable = datasource."$inputTableName"
+                if (inputSpatialTable.rowCount > 0) {
+                    inputSpatialTable.the_geom.createSpatialIndex()
+                    def columnNames = inputSpatialTable.columns
+                    columnNames.remove("THE_GEOM")
 
-                queryMapper += columnsMapper(columnNames, columnToMap)
-                if(inputZoneEnvelopeTableName){
-                queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(st_force2D(a.the_geom)) end, b.the_geom) then st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom)) else st_makevalid(a.the_geom) end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
-                }else{
-                    queryMapper += ", st_makevalid(st_force2D(a.the_geom)) the_geom FROM $inputTableName  as a"
-                }
-                datasource.withBatch(1000) { stmt ->
-                    datasource.eachRow(queryMapper) { row ->
-                        def type = getTypeValue(row, columnNames, mappingType)
-                        def height_class = typeAndVegClass[type]
-                        if (type) {
-                            Geometry geom = row.the_geom
-                            for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                Geometry subGeom = geom.getGeometryN(i)
-                                if (subGeom instanceof Polygon) {
-                                    stmt.addBatch """
+                    queryMapper += columnsMapper(columnNames, columnToMap)
+                    if (inputZoneEnvelopeTableName) {
+                        queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(st_force2D(a.the_geom)) end, b.the_geom) then st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom)) else st_makevalid(a.the_geom) end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
+                    } else {
+                        queryMapper += ", st_makevalid(st_force2D(a.the_geom)) the_geom FROM $inputTableName  as a"
+                    }
+                    datasource.withBatch(1000) { stmt ->
+                        datasource.eachRow(queryMapper) { row ->
+                            def type = getTypeValue(row, columnNames, mappingType)
+                            def height_class = typeAndVegClass[type]
+                            if (type) {
+                                Geometry geom = row.the_geom
+                                for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                    Geometry subGeom = geom.getGeometryN(i)
+                                    if (subGeom instanceof Polygon) {
+                                        stmt.addBatch """
                                             INSERT INTO $outputTableName VALUES(
                                                 ST_GEOMFROMTEXT('${subGeom}',$epsg), 
                                                 null, 
@@ -341,15 +347,16 @@ create {
                                                 '${type}', 
                                                 '${height_class}')
                                     """
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
+            info('Vegetation transformation finishes')
+            [outputTableName: outputTableName]
         }
-        info('Vegetation transformation finishes')
-        [outputTableName: outputTableName]
     }
 }
 
@@ -360,91 +367,31 @@ create {
  * @param inputTableName The name of the raw hydro table in the DB
  * @return outputTableName The name of the final hydro table
  */
-create {
-    title "Format the raw hydro table into a table that matches the constraints of the GeoClimate Input Model"
-    id "formatHydroLayer"
-    inputs datasource    : JdbcDataSource, inputTableName: String,inputZoneEnvelopeTableName : "",epsg: int
-    outputs outputTableName: String
-    run { datasource, inputTableName,inputZoneEnvelopeTableName,epsg ->
-        info('Hydro transformation starts')
-        def outputTableName = "INPUT_HYDRO_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-        datasource.execute """Drop table if exists $outputTableName;
+IProcess formatHydroLayer() {
+    return create {
+        title "Format the raw hydro table into a table that matches the constraints of the GeoClimate Input Model"
+        id "formatHydroLayer"
+        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int
+        outputs outputTableName: String
+        run { datasource, inputTableName, inputZoneEnvelopeTableName, epsg ->
+            info('Hydro transformation starts')
+            def outputTableName = "INPUT_HYDRO_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+            datasource.execute """Drop table if exists $outputTableName;
                     CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_hydro serial, ID_SOURCE VARCHAR);"""
 
-        if(inputTableName!=null){
-            ISpatialTable inputSpatialTable = datasource.getSpatialTable(inputTableName)
-            if(inputSpatialTable.rowCount>0) {
-                inputSpatialTable.the_geom.createSpatialIndex()
-                String query
-                if(inputZoneEnvelopeTableName) {
-                    query = "select id, CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(st_force2D(a.the_geom)) end, b.the_geom) then st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom)) else st_makevalid(a.the_geom) end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
-                }else{
-                    query = "select id,  st_makevalid(st_force2D(a.the_geom)) as the_geom FROM $inputTableName  as a"
+            if (inputTableName != null) {
+                ISpatialTable inputSpatialTable = datasource.getSpatialTable(inputTableName)
+                if (inputSpatialTable.rowCount > 0) {
+                    inputSpatialTable.the_geom.createSpatialIndex()
+                    String query
+                    if (inputZoneEnvelopeTableName) {
+                        query = "select id, CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(st_force2D(a.the_geom)) end, b.the_geom) then st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom)) else st_makevalid(a.the_geom) end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
+                    } else {
+                        query = "select id,  st_makevalid(st_force2D(a.the_geom)) as the_geom FROM $inputTableName  as a"
 
-                }
-                datasource.withBatch(1000) { stmt ->
-                    datasource.eachRow(query) { row ->
-                        Geometry geom = row.the_geom
-                        for (int i = 0; i < geom.getNumGeometries(); i++) {
-                            Geometry subGeom = geom.getGeometryN(i)
-                            if (subGeom instanceof Polygon) {
-                                stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), null, '${row.id}')"
-                            }
-                        }
                     }
-                }
-            }
-        }
-        info('Hydro transformation finishes')
-        [outputTableName: outputTableName]
-    }
-}
-
-/**
- * This process is used to transform the raw impervious table into a table that matches the constraints
- * of the geoClimate Input Model
- * @param datasource A connexion to a DB containing the raw impervious table
- * @param inputTableName The name of the raw impervious table in the DB
- * @return outputTableName The name of the final impervious table
- */
-create {
-    title "Format the raw impervious table into a table that matches the constraints of the GeoClimate Input Model"
-    id "formatImperviousLayer"
-    inputs datasource    : JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName:"", epsg: int,jsonFilename: ""
-    outputs outputTableName: String
-    run { datasource, inputTableName,inputZoneEnvelopeTableName,epsg,jsonFilename ->
-        info('Impervious transformation starts')
-        def outputTableName = "INPUT_IMPERVIOUS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-        datasource.execute """Drop table if exists $outputTableName;
-                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_impervious serial, ID_SOURCE VARCHAR);"""
-        info(inputTableName)
-        if(inputTableName!=null){
-            def paramsDefaultFile = this.class.getResourceAsStream("imperviousParams.json")
-            def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
-            def queryMapper = "SELECT "
-            def columnToMap = parametersMap.get("columns")
-            ISpatialTable inputSpatialTable = datasource.getSpatialTable(inputTableName)
-            if(inputSpatialTable.rowCount>0) {
-                inputSpatialTable.the_geom.createSpatialIndex()
-                def columnNames = inputSpatialTable.columns
-                columnNames.remove("THE_GEOM")
-                queryMapper += columnsMapper(columnNames, columnToMap)
-                if(inputZoneEnvelopeTableName){
-                queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(st_force2D(a.the_geom)) end, b.the_geom) then st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom)) else st_makevalid(a.the_geom) end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
-                }
-                else{
-                    queryMapper += ", st_makevalid(st_force2D(a.the_geom)) as the_geom FROM $inputTableName  as a"
-                }
-                datasource.withBatch(1000) { stmt ->
-                    datasource.eachRow(queryMapper) { row ->
-                        def toAdd = true
-                        if ((row.surface != null) && (row.surface == "grass")) {
-                            toAdd = false
-                        }
-                        if ((row.parking != null) && (row.parking == "underground")) {
-                            toAdd = false
-                        }
-                        if (toAdd) {
+                    datasource.withBatch(1000) { stmt ->
+                        datasource.eachRow(query) { row ->
                             Geometry geom = row.the_geom
                             for (int i = 0; i < geom.getNumGeometries(); i++) {
                                 Geometry subGeom = geom.getGeometryN(i)
@@ -456,9 +403,72 @@ create {
                     }
                 }
             }
+            info('Hydro transformation finishes')
+            [outputTableName: outputTableName]
         }
-        info('Impervious transformation finishes')
-        [outputTableName: outputTableName]
+    }
+}
+
+/**
+ * This process is used to transform the raw impervious table into a table that matches the constraints
+ * of the geoClimate Input Model
+ * @param datasource A connexion to a DB containing the raw impervious table
+ * @param inputTableName The name of the raw impervious table in the DB
+ * @return outputTableName The name of the final impervious table
+ */
+IProcess formatImperviousLayer() {
+    return create {
+        title "Format the raw impervious table into a table that matches the constraints of the GeoClimate Input Model"
+        id "formatImperviousLayer"
+        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, jsonFilename: ""
+        outputs outputTableName: String
+        run { datasource, inputTableName, inputZoneEnvelopeTableName, epsg, jsonFilename ->
+            info('Impervious transformation starts')
+            def outputTableName = "INPUT_IMPERVIOUS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+            datasource.execute """Drop table if exists $outputTableName;
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_impervious serial, ID_SOURCE VARCHAR);"""
+            info(inputTableName)
+            if (inputTableName != null) {
+                def paramsDefaultFile = this.class.getResourceAsStream("imperviousParams.json")
+                def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
+                def queryMapper = "SELECT "
+                def columnToMap = parametersMap.get("columns")
+                ISpatialTable inputSpatialTable = datasource.getSpatialTable(inputTableName)
+                if (inputSpatialTable.rowCount > 0) {
+                    inputSpatialTable.the_geom.createSpatialIndex()
+                    def columnNames = inputSpatialTable.columns
+                    columnNames.remove("THE_GEOM")
+                    queryMapper += columnsMapper(columnNames, columnToMap)
+                    if (inputZoneEnvelopeTableName) {
+                        queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(st_force2D(a.the_geom)) end, b.the_geom) then st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom)) else st_makevalid(a.the_geom) end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
+                    } else {
+                        queryMapper += ", st_makevalid(st_force2D(a.the_geom)) as the_geom FROM $inputTableName  as a"
+                    }
+                    datasource.withBatch(1000) { stmt ->
+                        datasource.eachRow(queryMapper) { row ->
+                            def toAdd = true
+                            if ((row.surface != null) && (row.surface == "grass")) {
+                                toAdd = false
+                            }
+                            if ((row.parking != null) && (row.parking == "underground")) {
+                                toAdd = false
+                            }
+                            if (toAdd) {
+                                Geometry geom = row.the_geom
+                                for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                    Geometry subGeom = geom.getGeometryN(i)
+                                    if (subGeom instanceof Polygon) {
+                                        stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), null, '${row.id}')"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            info('Impervious transformation finishes')
+            [outputTableName: outputTableName]
+        }
     }
 }
 

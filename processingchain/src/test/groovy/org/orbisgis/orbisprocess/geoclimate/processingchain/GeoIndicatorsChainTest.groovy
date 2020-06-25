@@ -13,8 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue
 
 class GeoIndicatorsChainTest {
 
-    def static PC = GroovyProcessManager.load(ProcessingChain)
-
     public static Logger logger = LoggerFactory.getLogger(GeoIndicatorsChainTest.class)
 
     // Indicator list (at RSU scale) for each type of use
@@ -53,15 +51,11 @@ class GeoIndicatorsChainTest {
                                "BUILDING_VOLUME_DENSITY", "AVG_VOLUME", "GROUND_LINEAR_ROAD_DENSITY",
                                "GEOM_AVG_HEIGHT_ROOF", "BUILDING_FLOOR_AREA_DENSITY",
                                "AVG_MINIMUM_BUILDING_SPACING", "MAIN_BUILDING_DIRECTION", "BUILDING_DIRECTION_UNIQUENESS",
-                               "BUILDING_DIRECTION_EQUALITY", "FRACTION_APARTMENTS","FRACTION_BUILDING","FRACTION_COMMERCIAL",
-                               "FRACTION_EDUCATION","FRACTION_GOVERNMENT","FRACTION_HOUSE","FRACTION_OFFICE",
-                               "FRACTION_RELIGIOUS","FRACTION_RESIDENTIAL","FRACTION_SPORTS_CENTRE","FRACTION_SUSTENANCE"],
+                               "BUILDING_DIRECTION_EQUALITY", "AREA_FRACTION_INDUSTRIAL", "FLOOR_AREA_FRACTION_RESIDENTIAL"],
             "LCZ"           : ["BUILDING_FRACTION_LCZ", "ASPECT_RATIO", "GROUND_SKY_VIEW_FACTOR", "PERVIOUS_FRACTION_LCZ",
                                "IMPERVIOUS_FRACTION_LCZ", "GEOM_AVG_HEIGHT_ROOF", "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH", "EFFECTIVE_TERRAIN_ROUGHNESS_CLASS",
-                               "HIGH_VEGETATION_FRACTION_LCZ", "LOW_VEGETATION_FRACTION_LCZ", "WATER_FRACTION_LCZ",
-                               "FRACTION_APARTMENTS","FRACTION_BUILDING","FRACTION_COMMERCIAL",
-                               "FRACTION_EDUCATION","FRACTION_GOVERNMENT","FRACTION_HOUSE","FRACTION_OFFICE",
-                               "FRACTION_RELIGIOUS","FRACTION_RESIDENTIAL","FRACTION_SPORTS_CENTRE","FRACTION_SUSTENANCE"]]
+                               "HIGH_VEGETATION_FRACTION_LCZ", "LOW_VEGETATION_FRACTION_LCZ", "WATER_FRACTION_LCZ", "AREA_FRACTION_INDUSTRIAL",
+                                "FLOOR_AREA_FRACTION_RESIDENTIAL"]]
 
     // Basic columns at RSU scale
     public static listColBasic = ["ID_RSU", "THE_GEOM"]
@@ -92,12 +86,12 @@ class GeoIndicatorsChainTest {
      * @return
      */
     def initTables(def datasource){
-        datasource.load(PC.class.getResource("BUILDING.geojson"), "BUILDING", true)
-        datasource.load(PC.class.getResource("ROAD.geojson"), "ROAD", true)
-        datasource.load(PC.class.getResource("RAIL.geojson"), "RAIL", true)
-        datasource.load(PC.class.getResource("VEGET.geojson"), "VEGET", true)
-        datasource.load(PC.class.getResource("HYDRO.geojson"), "HYDRO", true)
-        datasource.load(PC.class.getResource("ZONE.geojson"), "ZONE", true)
+        datasource.load(ProcessingChain.class.getResource("BUILDING.geojson"), "BUILDING", true)
+        datasource.load(ProcessingChain.class.getResource("ROAD.geojson"), "ROAD", true)
+        datasource.load(ProcessingChain.class.getResource("RAIL.geojson"), "RAIL", true)
+        datasource.load(ProcessingChain.class.getResource("VEGET.geojson"), "VEGET", true)
+        datasource.load(ProcessingChain.class.getResource("HYDRO.geojson"), "HYDRO", true)
+        datasource.load(ProcessingChain.class.getResource("ZONE.geojson"), "ZONE", true)
         return [zoneTable: "ZONE", buildingTable: "BUILDING", roadTable: "ROAD",
                 railTable: "RAIL", vegetationTable: "VEGET", hydrographicTable: "HYDRO"]
     }
@@ -114,7 +108,7 @@ class GeoIndicatorsChainTest {
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                             "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
         def ind_i = ["LCZ"]
-        IProcess GeoIndicatorsCompute_i = PC.GeoIndicatorsChain.computeAllGeoIndicators
+        IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
@@ -159,7 +153,7 @@ class GeoIndicatorsChainTest {
 
         def ind_i = ["URBAN_TYPOLOGY"]
 
-        IProcess GeoIndicatorsCompute_i = PC.GeoIndicatorsChain.computeAllGeoIndicators
+        IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
@@ -205,7 +199,7 @@ class GeoIndicatorsChainTest {
 
         def ind_i = ["URBAN_TYPOLOGY", "TEB"]
 
-        IProcess GeoIndicatorsCompute_i = PC.GeoIndicatorsChain.computeAllGeoIndicators
+        IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
@@ -250,7 +244,7 @@ class GeoIndicatorsChainTest {
 
         def ind_i = ["TEB"]
 
-        IProcess GeoIndicatorsCompute_i = PC.GeoIndicatorsChain.computeAllGeoIndicators
+        IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
@@ -295,7 +289,7 @@ class GeoIndicatorsChainTest {
 
         def ind_i = ["LCZ", "TEB"]
 
-        IProcess GeoIndicatorsCompute_i = PC.GeoIndicatorsChain.computeAllGeoIndicators
+        IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
@@ -340,7 +334,7 @@ class GeoIndicatorsChainTest {
 
         def ind_i = ["URBAN_TYPOLOGY", "LCZ"]
 
-        IProcess GeoIndicatorsCompute_i = PC.GeoIndicatorsChain.computeAllGeoIndicators
+        IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,

@@ -11,8 +11,6 @@ import static org.junit.jupiter.api.Assertions.*
 
 class InputDataFormattingTest {
 
-    static def BDTopo = GroovyProcessManager.load(BDTopo_V2)
-
     def h2GISDatabase
 
     public static communeToTest = "12174"
@@ -46,7 +44,7 @@ class InputDataFormattingTest {
 
     @Test
     void inputDataFormatting(){
-        def processImport = BDTopo.BDTopoGISLayers.importPreprocess
+        def processImport = BDTopo_V2.importPreprocess
         assertTrue processImport.execute([datasource: h2GISDatabase,
                                           tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                           tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -64,7 +62,7 @@ class InputDataFormattingTest {
         ])
         def resultsImport=processImport.results
 
-        def processFormatting = BDTopo.InputDataFormatting.formatData
+        def processFormatting = BDTopo_V2.formatInputData
         assertTrue processFormatting.execute([datasource: h2GISDatabase,
                          inputBuilding: resultsImport.outputBuildingName, inputRoad: resultsImport.outputRoadName,
                          inputRail: resultsImport.outputRailName, inputHydro: resultsImport.outputHydroName,

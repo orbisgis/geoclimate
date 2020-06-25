@@ -26,10 +26,9 @@ import java.sql.ResultSet
 import java.sql.SQLException
 import java.sql.Statement
 
-@BaseScript GroovyProcessFactory pf
+@BaseScript OSM_Utils osm_utils
 
 def OSMTools = GroovyProcessManager.load(Tools)
-def ProcessingChain = GroovyProcessManager.load(PC)
 
 /**
  * Extract OSM data and compute geoindicators. The parameters of the processing chain is defined
@@ -119,212 +118,208 @@ def ProcessingChain = GroovyProcessManager.load(PC)
  * Meteorological Society 93, no. 12 (2012): 1879-1900.
  *
  */
-create {
-    title "Create all Geoindicators from OSM data"
-    id "workflow"
-    inputs configurationFile: ""
-    outputs outputMessage: String
-    run { configurationFile ->
-        def configFile
-        if(configurationFile) {
-            configFile= new File(configurationFile)
-            if (!configFile.isFile()) {
-                error "Invalid file parameters"
-                return null
-            }
-        }else{
-            error "The file parameters cannot be null or empty"
-            return null
-        }
-        Map parameters = readJSONParameters(configFile)
-        info 1
-        if(parameters){
-            info "Reading file parameters from $configFile"
-            info parameters.get("description")
-            def input = parameters.get("input")
-            def output = parameters.get("output")
-            //Default H2GIS database properties
-            def databaseName = postfix System.getProperty("java.io.tmpdir")+File.separator +"osm"
-            def h2gis_properties = ["databaseName":databaseName, "user": "sa", "password": ""]
-            def delete_h2gis = true
-            def geoclimatedb = parameters.get("geoclimatedb")
-            if(geoclimatedb){
-                def h2gis_path = geoclimatedb.get("path")
-                def delete_h2gis_db = geoclimatedb.get("delete")
-                if(delete_h2gis_db==null){
-                    delete_h2gis = true
-                }
-                else if (delete_h2gis_db instanceof String){
-                    delete_h2gis = true
-                    if(delete_h2gis_db.equalsIgnoreCase("false")){
-                        delete_h2gis=false
-                    }
-                }
-                else if(delete_h2gis_db instanceof Boolean){
-                    delete_h2gis=delete_h2gis_db
-                }
-                if(h2gis_path) {
-                    h2gis_properties = ["databaseName":h2gis_path, "user": "sa", "password": ""]
-                }
-            }
-            info 2
-            if(input) {
-                def osmFilters = input.get("osm")
-                if (!osmFilters) {
-                    error "Please set at least one OSM filter. e.g osm : ['A place name']"
+IProcess workflow() {
+    return create {
+        title "Create all Geoindicators from OSM data"
+        id "workflow"
+        inputs configurationFile: ""
+        outputs outputMessage: String
+        run { configurationFile ->
+            def configFile
+            if (configurationFile) {
+                configFile = new File(configurationFile)
+                if (!configFile.isFile()) {
+                    error "Invalid file parameters"
                     return null
                 }
+            } else {
+                error "The file parameters cannot be null or empty"
+                return null
+            }
+            Map parameters = readJSONParameters(configFile)
+            info 1
+            if (parameters) {
+                info "Reading file parameters from $configFile"
+                info parameters.get("description")
+                def input = parameters.get("input")
+                def output = parameters.get("output")
+                //Default H2GIS database properties
+                def databaseName = postfix System.getProperty("java.io.tmpdir") + File.separator + "osm"
+                def h2gis_properties = ["databaseName": databaseName, "user": "sa", "password": ""]
+                def delete_h2gis = true
+                def geoclimatedb = parameters.get("geoclimatedb")
+                if (geoclimatedb) {
+                    def h2gis_path = geoclimatedb.get("path")
+                    def delete_h2gis_db = geoclimatedb.get("delete")
+                    if (delete_h2gis_db == null) {
+                        delete_h2gis = true
+                    } else if (delete_h2gis_db instanceof String) {
+                        delete_h2gis = true
+                        if (delete_h2gis_db.equalsIgnoreCase("false")) {
+                            delete_h2gis = false
+                        }
+                    } else if (delete_h2gis_db instanceof Boolean) {
+                        delete_h2gis = delete_h2gis_db
+                    }
+                    if (h2gis_path) {
+                        h2gis_properties = ["databaseName": h2gis_path, "user": "sa", "password": ""]
+                    }
+                }
+                info 2
+                if (input) {
+                    def osmFilters = input.get("osm")
+                    if (!osmFilters) {
+                        error "Please set at least one OSM filter. e.g osm : ['A place name']"
+                        return null
+                    }
 
-                if(output) {
-                    def geoclimatetTableNames = ["building_indicators",
-                                                 "block_indicators",
-                                                 "rsu_indicators",
-                                                 "rsu_lcz",
-                                                 "zones",
-                                                 "building",
-                                                 "road",
-                                                 "rail" ,
-                                                 "water",
-                                                 "vegetation",
-                                                 "impervious"]
-                    //Get processing parameters
-                    def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
-                    def outputSRID = output.get("srid")
-                    def outputDataBase = output.get("database")
-                    def outputFolder = output.get("folder")
-                    if (outputDataBase && outputFolder) {
-                        def outputFolderProperties = outputFolderProperties(outputFolder)
-                        //Check if we can write in the output folder
-                        def file_outputFolder  = new File(outputFolderProperties.path)
-                        if( !file_outputFolder.isDirectory()){
-                            error "The directory $file_outputFolder doesn't exist."
-                            return null
-                        }
-                        if(!file_outputFolder.canWrite()){
-                            file_outputFolder = null
-                        }
-                        //Check not the conditions for the output database
-                        def outputTableNames = outputDataBase.get("tables")
-                        def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
-                        def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size()!=allowedOutputTableNames.size()
-                        if(!allowedOutputTableNames && notSameTableNames){
-                            outputDataBase=null
-                            outputTableNames=null
-                        }
-                        def finalOutputTables = outputTableNames.subMap(allowedTableNames)
-                        def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
-                        if(!output_datasource){
-                            return null
-                        }
-                        info 3
-                        def h2gis_datasource = H2GIS.open(h2gis_properties)
-                        if(osmFilters && osmFilters in Collection) {
-                            def osmprocessing =  osm_processing
-                            if(!osmprocessing.execute(h2gis_datasource:h2gis_datasource,
-                                    processing_parameters:processing_parameters,
-                                    id_zones :osmFilters, outputFolder:file_outputFolder,ouputTableFiles :outputFolderProperties.tables,
-                                    output_datasource:output_datasource, outputTableNames :finalOutputTables, outputSRID :outputSRID)){
+                    if (output) {
+                        def geoclimatetTableNames = ["building_indicators",
+                                                     "block_indicators",
+                                                     "rsu_indicators",
+                                                     "rsu_lcz",
+                                                     "zones",
+                                                     "building",
+                                                     "road",
+                                                     "rail",
+                                                     "water",
+                                                     "vegetation",
+                                                     "impervious"]
+                        //Get processing parameters
+                        def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
+                        def outputSRID = output.get("srid")
+                        def outputDataBase = output.get("database")
+                        def outputFolder = output.get("folder")
+                        if (outputDataBase && outputFolder) {
+                            def outputFolderProperties = outputFolderProperties(outputFolder)
+                            //Check if we can write in the output folder
+                            def file_outputFolder = new File(outputFolderProperties.path)
+                            if (!file_outputFolder.isDirectory()) {
+                                error "The directory $file_outputFolder doesn't exist."
                                 return null
                             }
-                            if(delete_h2gis){
-                                h2gis_datasource.execute("DROP ALL OBJECTS DELETE FILES")
-                                info "The local H2GIS database has been deleted"
+                            if (!file_outputFolder.canWrite()) {
+                                file_outputFolder = null
                             }
-                        }else{
-                            error "Cannot find any OSM filters"
-                            return null
-                        }
-
-                    } else if (outputFolder) {
-                        //Check if we can write in the output folder
-                        def outputFolderProperties = outputFolderProperties(outputFolder)
-                        def file_outputFolder  = new File(outputFolderProperties.path)
-                        if( !file_outputFolder.isDirectory()){
-                            error "The directory $file_outputFolder doesn't exist."
-                            return null
-                        }
-                        if(file_outputFolder.canWrite()){
-                            def h2gis_datasource = H2GIS.open(h2gis_properties)
-                            if(osmFilters && osmFilters in Collection) {
-                                def osmprocessing =  osm_processing
-                                if(!osmprocessing.execute(h2gis_datasource:h2gis_datasource,
-                                        processing_parameters:processing_parameters,
-                                        id_zones :osmFilters, outputFolder:file_outputFolder,ouputTableFiles :outputFolderProperties.tables,
-                                        output_datasource:null, outputTableNames :null, outputSRID :outputSRID)){
-                                    return null
-                                }
-                                info 4
-                                //Delete database
-                                if(delete_h2gis){
-                                    h2gis_datasource.execute("DROP ALL OBJECTS DELETE FILES")
-                                    info "The local H2GIS database has been deleted"
-                                    return  [outputMessage:"The ${osmFilters.join(",")} have been processed"]
-                                }
-                            }else{
-                                error "Cannot load the files from the folder $inputFolder"
-                                return null
+                            //Check not the conditions for the output database
+                            def outputTableNames = outputDataBase.get("tables")
+                            def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
+                            def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size() != allowedOutputTableNames.size()
+                            if (!allowedOutputTableNames && notSameTableNames) {
+                                outputDataBase = null
+                                outputTableNames = null
                             }
-                        }
-                        else {
-                            error "You don't have permission to write in the folder $outputFolder \n Please check the folder."
-                            return null
-                        }
-
-                    } else if (outputDataBase) {
-                        def outputTableNames = outputDataBase.get("tables")
-                        def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
-                        def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size()!=allowedOutputTableNames.size()
-                        if(allowedOutputTableNames && !notSameTableNames){
-                            def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
+                            def finalOutputTables = outputTableNames.subMap(allowedTableNames)
                             def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
-                            if(!output_datasource){
+                            if (!output_datasource) {
                                 return null
                             }
+                            info 3
                             def h2gis_datasource = H2GIS.open(h2gis_properties)
-                            if(osmFilters && osmFilters in Collection) {
-                                def osmprocessing =  osm_processing
-                                if(!osmprocessing.execute(h2gis_datasource:h2gis_datasource,
-                                        processing_parameters:processing_parameters,
-                                        id_zones :osmFilters, outputFolder:null,ouputTableFiles :null,
-                                        output_datasource:output_datasource, outputTableNames :finalOutputTables,outputSRID :outputSRID)){
+                            if (osmFilters && osmFilters in Collection) {
+                                def osmprocessing = osm_processing
+                                if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
+                                        processing_parameters: processing_parameters,
+                                        id_zones: osmFilters, outputFolder: file_outputFolder, ouputTableFiles: outputFolderProperties.tables,
+                                        output_datasource: output_datasource, outputTableNames: finalOutputTables, outputSRID :outputSRID)) {
                                     return null
                                 }
-                                if(delete_h2gis){
+                                if (delete_h2gis) {
                                     h2gis_datasource.execute("DROP ALL OBJECTS DELETE FILES")
                                     info "The local H2GIS database has been deleted"
                                 }
-                            }else{
-                                error "Cannot load the files from the folder $inputFolder"
+                            } else {
+                                error "Cannot find any OSM filters"
                                 return null
                             }
 
-                        }else{
-                            error "All output table names must be specified in the configuration file."
+                        } else if (outputFolder) {
+                            //Check if we can write in the output folder
+                            def outputFolderProperties = outputFolderProperties(outputFolder)
+                            def file_outputFolder = new File(outputFolderProperties.path)
+                            if (!file_outputFolder.isDirectory()) {
+                                error "The directory $file_outputFolder doesn't exist."
+                                return null
+                            }
+                            if (file_outputFolder.canWrite()) {
+                                def h2gis_datasource = H2GIS.open(h2gis_properties)
+                                if (osmFilters && osmFilters in Collection) {
+                                    def osmprocessing = osm_processing()
+                                    if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
+                                            processing_parameters: processing_parameters,
+                                            id_zones: osmFilters, outputFolder: file_outputFolder, ouputTableFiles: outputFolderProperties.tables,
+                                            output_datasource: null, outputTableNames: null, outputSRID :outputSRID)) {
+                                        return null
+                                    }
+                                    info 4
+                                    //Delete database
+                                    if (delete_h2gis) {
+                                        h2gis_datasource.execute("DROP ALL OBJECTS DELETE FILES")
+                                        info "The local H2GIS database has been deleted"
+                                        return [outputMessage: "The ${osmFilters.join(",")} have been processed"]
+                                    }
+                                } else {
+                                    error "Cannot load the files from the folder $inputFolder"
+                                    return null
+                                }
+                            } else {
+                                error "You don't have permission to write in the folder $outputFolder \n Please check the folder."
+                                return null
+                            }
+
+                        } else if (outputDataBase) {
+                            def outputTableNames = outputDataBase.get("tables")
+                            def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
+                            def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size() != allowedOutputTableNames.size()
+                            if (allowedOutputTableNames && !notSameTableNames) {
+                                def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
+                                def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
+                                if (!output_datasource) {
+                                    return null
+                                }
+                                def h2gis_datasource = H2GIS.open(h2gis_properties)
+                                if (osmFilters && osmFilters in Collection) {
+                                    def osmprocessing = osm_processing
+                                    if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
+                                            processing_parameters: processing_parameters,
+                                            id_zones: osmFilters, outputFolder: null, ouputTableFiles: null,
+                                            output_datasource: output_datasource, outputTableNames: finalOutputTables,outputSRID :outputSRID)) {
+                                        return null
+                                    }
+                                    if (delete_h2gis) {
+                                        h2gis_datasource.execute("DROP ALL OBJECTS DELETE FILES")
+                                        info "The local H2GIS database has been deleted"
+                                    }
+                                } else {
+                                    error "Cannot load the files from the folder $inputFolder"
+                                    return null
+                                }
+
+                            } else {
+                                error "All output table names must be specified in the configuration file."
+                                return null
+                            }
+                        } else {
+                            error "Please set at least one output provider"
                             return null
                         }
+
                     } else {
                         error "Please set at least one output provider"
                         return null
                     }
 
+                } else {
+                    error "Cannot find any input parameter to extract data from Overpass API."
+
                 }
-                else{
-                    error "Please set at least one output provider"
-                    return null
-                }
-
+            } else {
+                error "Empty parameters"
             }
-            else{
-                error "Cannot find any input parameter to extract data from Overpass API."
 
-            }
+            return [outputMessage: "The process has been done"]
+
         }
-        else{
-            error "Empty parameters"
-        }
-
-        return  [outputMessage:"The process has been done"]
-
     }
 }
 
@@ -340,136 +335,137 @@ create {
  * @param outputTableNames the name of the tables in the output_datasource to save the results
  * @return
  */
-create {
-    title "Build OSM data and compute the geoindicators"
-    id "osm_processing"
-    inputs h2gis_datasource: JdbcDataSource,  processing_parameters: Map, id_zones: Map,
-            outputFolder:"", ouputTableFiles:"", output_datasource:"", outputTableNames:"", outputSRID : String
-    outputs outputMessage: String
-    run { h2gis_datasource,  processing_parameters, id_zones,  outputFolder,  ouputTableFiles,  output_datasource,  outputTableNames, outputSRID  ->
+IProcess osm_processing() {
+    return create {
+        title "Build OSM data and compute the geoindicators"
+        id "osm_processing"
+        inputs h2gis_datasource: JdbcDataSource, processing_parameters: Map, id_zones: Map,
+                outputFolder: "", ouputTableFiles: "", output_datasource: "", outputTableNames: "", outputSRID : String
+        outputs outputMessage: String
+        run { h2gis_datasource, processing_parameters, id_zones, outputFolder, ouputTableFiles, output_datasource, outputTableNames, outputSRID ->
 
-        int nbAreas = id_zones.size();
-        info "$nbAreas osm areas will be processed"
-        def geoIndicatorsComputed =false
-        id_zones.eachWithIndex { id_zone, index ->
-            //Extract the zone table and read its SRID
-            def zoneTableNames = extractOSMZone(h2gis_datasource, id_zone, processing_parameters)
-            if (zoneTableNames) {
-                id_zone = id_zone in Map ? "bbox_" + id_zone.join('_') : id_zone
-                def zoneTableName = zoneTableNames.outputZoneTable
-                def zoneEnvelopeTableName = zoneTableNames.outputZoneEnvelopeTable
-                def srid = h2gis_datasource.getSpatialTable(zoneTableName).srid
-                if(outputSRID || outputSRID==srid){
-                    outputSRID=0
-                }else{
-                    outputSRID=0
-                }
-                //Prepare OSM extraction
-                def query = "[maxsize:1073741824]" + Utilities.buildOSMQuery(zoneTableNames.envelope, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
-                def extract = OSMTools.Loader.extract
-                if (extract.execute(overpassQuery: query)) {
-                    IProcess createGISLayerProcess = processManager.OSMGISLayers.createGISLayers
-                    if (createGISLayerProcess.execute(datasource: h2gis_datasource, osmFilePath: extract.results.outputFilePath, epsg: srid)) {
-                        def gisLayersResults = createGISLayerProcess.getResults()
-                        if (zoneTableName != null) {
-                            info "Formating OSM GIS layers"
-                            IProcess format = processManager.FormattingForAbstractModel.formatBuildingLayer
-                            format.execute([
-                                    datasource                : h2gis_datasource,
-                                    inputTableName            : gisLayersResults.buildingTableName,
-                                    inputZoneEnvelopeTableName: zoneEnvelopeTableName,
-                                    epsg                      : srid])
-                            def buildingTableName = format.results.outputTableName
+            int nbAreas = id_zones.size();
+            info "$nbAreas osm areas will be processed"
+            def geoIndicatorsComputed = false
+            id_zones.eachWithIndex { id_zone, index ->
+                //Extract the zone table and read its SRID
+                def zoneTableNames = extractOSMZone(h2gis_datasource, id_zone, processing_parameters)
+                if (zoneTableNames) {
+                    id_zone = id_zone in Map ? "bbox_" + id_zone.join('_') : id_zone
+                    def zoneTableName = zoneTableNames.outputZoneTable
+                    def zoneEnvelopeTableName = zoneTableNames.outputZoneEnvelopeTable
+                    def srid = h2gis_datasource.getSpatialTable(zoneTableName).srid
+                    if(outputSRID || outputSRID==srid){
+                        outputSRID=0
+                    }else{
+                        outputSRID=0
+                    }
+                    //Prepare OSM extraction
+                    def query = "[maxsize:1073741824]" + Utilities.buildOSMQuery(zoneTableNames.envelope, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+                    def extract = OSMTools.Loader.extract
+                    if (extract.execute(overpassQuery: query)) {
+                        IProcess createGISLayerProcess = processManager.OSMGISLayers.createGISLayers
+                        if (createGISLayerProcess.execute(datasource: h2gis_datasource, osmFilePath: extract.results.outputFilePath, epsg: srid)) {
+                            def gisLayersResults = createGISLayerProcess.getResults()
+                            if (zoneTableName != null) {
+                                info "Formating OSM GIS layers"
+                                IProcess format = processManager.FormattingForAbstractModel.formatBuildingLayer
+                                format.execute([
+                                        datasource                : h2gis_datasource,
+                                        inputTableName            : gisLayersResults.buildingTableName,
+                                        inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                        epsg                      : srid])
+                                def buildingTableName = format.results.outputTableName
 
-                            format = processManager.FormattingForAbstractModel.formatRoadLayer
-                            format.execute([
-                                    datasource                : h2gis_datasource,
-                                    inputTableName            : gisLayersResults.roadTableName,
-                                    inputZoneEnvelopeTableName: zoneEnvelopeTableName,
-                                    epsg                      : srid])
-                            def roadTableName = format.results.outputTableName
+                                format = processManager.FormattingForAbstractModel.formatRoadLayer
+                                format.execute([
+                                        datasource                : h2gis_datasource,
+                                        inputTableName            : gisLayersResults.roadTableName,
+                                        inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                        epsg                      : srid])
+                                def roadTableName = format.results.outputTableName
 
 
-                            format = processManager.FormattingForAbstractModel.formatRailsLayer
-                            format.execute([
-                                    datasource                : h2gis_datasource,
-                                    inputTableName            : gisLayersResults.railTableName,
-                                    inputZoneEnvelopeTableName: zoneEnvelopeTableName,
-                                    epsg                      : srid])
-                            def railTableName = format.results.outputTableName
+                                format = processManager.FormattingForAbstractModel.formatRailsLayer
+                                format.execute([
+                                        datasource                : h2gis_datasource,
+                                        inputTableName            : gisLayersResults.railTableName,
+                                        inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                        epsg                      : srid])
+                                def railTableName = format.results.outputTableName
 
-                            format = processManager.FormattingForAbstractModel.formatVegetationLayer
-                            format.execute([
-                                    datasource                : h2gis_datasource,
-                                    inputTableName            : gisLayersResults.vegetationTableName,
-                                    inputZoneEnvelopeTableName: zoneEnvelopeTableName,
-                                    epsg                      : srid])
-                            def vegetationTableName = format.results.outputTableName
+                                format = processManager.FormattingForAbstractModel.formatVegetationLayer
+                                format.execute([
+                                        datasource                : h2gis_datasource,
+                                        inputTableName            : gisLayersResults.vegetationTableName,
+                                        inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                        epsg                      : srid])
+                                def vegetationTableName = format.results.outputTableName
 
-                            format = processManager.FormattingForAbstractModel.formatHydroLayer
-                            format.execute([
-                                    datasource                : h2gis_datasource,
-                                    inputTableName            : gisLayersResults.hydroTableName,
-                                    inputZoneEnvelopeTableName: zoneEnvelopeTableName,
-                                    epsg                      : srid])
-                            def hydrographicTableName = format.results.outputTableName
+                                format = processManager.FormattingForAbstractModel.formatHydroLayer
+                                format.execute([
+                                        datasource                : h2gis_datasource,
+                                        inputTableName            : gisLayersResults.hydroTableName,
+                                        inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                        epsg                      : srid])
+                                def hydrographicTableName = format.results.outputTableName
 
-                            //TODO : to be used in the geoindicators chains
-                            format = processManager.FormattingForAbstractModel.formatImperviousLayer
-                            format.execute([
-                                    datasource                : h2gis_datasource,
-                                    inputTableName            : gisLayersResults.imperviousTableName,
-                                    inputZoneEnvelopeTableName: zoneEnvelopeTableName,
-                                    epsg                      : srid])
-                            def imperviousTableName = format.results.outputTableName
+                                //TODO : to be used in the geoindicators chains
+                                format = processManager.FormattingForAbstractModel.formatImperviousLayer
+                                format.execute([
+                                        datasource                : h2gis_datasource,
+                                        inputTableName            : gisLayersResults.imperviousTableName,
+                                        inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                        epsg                      : srid])
+                                def imperviousTableName = format.results.outputTableName
 
-                            info "OSM GIS layers formated"
+                                info "OSM GIS layers formated"
 
-                            //Build the indicators
-                            IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators
-                            if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
-                                    buildingTable: buildingTableName, roadTable: roadTableName,
-                                    railTable: railTableName, vegetationTable: vegetationTableName,
-                                    hydrographicTable: hydrographicTableName, imperviousTable :imperviousTableName,
-                                    indicatorUse: processing_parameters.indicatorUse,
-                                    svfSimplified: processing_parameters.svfSimplified, prefixName: processing_parameters.prefixName,
-                                    mapOfWeights: processing_parameters.mapOfWeights)) {
-                                error "Cannot build the geoindicators for the zone $id_zone"
-                                geoIndicatorsComputed = false
-                            } else {
-                                geoIndicatorsComputed = true
-                                info "${id_zone} has been processed"
+                                //Build the indicators
+                                IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators
+                                if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
+                                        buildingTable: buildingTableName, roadTable: roadTableName,
+                                        railTable: railTableName, vegetationTable: vegetationTableName,
+                                        hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
+                                        indicatorUse: processing_parameters.indicatorUse,
+                                        svfSimplified: processing_parameters.svfSimplified, prefixName: processing_parameters.prefixName,
+                                        mapOfWeights: processing_parameters.mapOfWeights)) {
+                                    error "Cannot build the geoindicators for the zone $id_zone"
+                                    geoIndicatorsComputed = false
+                                } else {
+                                    geoIndicatorsComputed = true
+                                    info "${id_zone} has been processed"
+                                }
+                                def results = geoIndicators.getResults()
+                                results.put("buildingTableName", buildingTableName)
+                                results.put("roadTableName", roadTableName)
+                                results.put("railTableName", railTableName)
+                                results.put("hydrographicTableName", hydrographicTableName)
+                                results.put("vegetationTableName", vegetationTableName)
+                                results.put("imperviousTableName", imperviousTableName)
+                                if (outputFolder && geoIndicatorsComputed && ouputTableFiles) {
+                                    saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID)
+                                }
+                                if (output_datasource && geoIndicatorsComputed) {
+                                    saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone,srid, outputSRID)
+                                }
                             }
-                            def results = geoIndicators.getResults()
-                            results.put("buildingTableName", buildingTableName)
-                            results.put("roadTableName", roadTableName)
-                            results.put("railTableName", railTableName)
-                            results.put("hydrographicTableName", hydrographicTableName)
-                            results.put("vegetationTableName", vegetationTableName)
-                            results.put("imperviousTableName", imperviousTableName)
-                            if (outputFolder && geoIndicatorsComputed && ouputTableFiles) {
-                                saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID)
-                            }
-                            if (output_datasource && geoIndicatorsComputed) {
-                                saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone,srid, outputSRID)
-                            }
+                        } else {
+                            error "Cannot load the OSM file ${extract.results.outputFilePath}"
                         }
                     } else {
-                        error "Cannot load the OSM file ${extract.results.outputFilePath}"
+                        error "Cannot execute the overpass query $query"
                     }
                 } else {
-                    error "Cannot execute the overpass query $query"
+                    error "Cannot calculate a bounding box to extract OSM data"
                 }
-            } else {
-                error "Cannot calculate a bounding box to extract OSM data"
-            }
 
-            info "Number of areas processed ${index + 1} on $nbAreas"
+                info "Number of areas processed ${index + 1} on $nbAreas"
+            }
+            return [outputMessage: "The OSM processing tasks have been done"]
         }
-        return  [outputMessage:"The OSM processing tasks have been done"]
     }
 }
-
 
 /**
  * Extract the OSM zone and its envelope area from Nominatim API
@@ -551,136 +547,137 @@ def extractOSMZone(def datasource, def zoneToExtract, def processing_parameters)
  * This table can be empty if the user decides not to calculate it.
  *
  */
-create {
-    title "Compute all geoindicators"
-    id "GeoIndicators"
-    inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
-            roadTable: String, railTable: String, vegetationTable: String,
-            hydrographicTable: String, surface_vegetation: 100000, surface_hydro: 2500,
-            distance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified:false, prefixName: "",
-            mapOfWeights: ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
-                           "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                           "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
-    outputs outputTableBuildingIndicators: String, outputTableBlockIndicators: String,
-            outputTableRsuIndicators: String, outputTableRsuLcz:String, outputTableZone:String
-    run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
-          surface_vegetation, surface_hydro, distance,indicatorUse,svfSimplified, prefixName, mapOfWeights ->
-        info "Start computing the geoindicators..."
-        // Temporary tables are created
-        def lczIndicTable = postfix "LCZ_INDIC_TABLE"
-        def COLUMN_ID_RSU = "id_rsu"
-        def GEOMETRIC_COLUMN = "the_geom"
+IProcess GeoIndicators() {
+    return create {
+        title "Compute all geoindicators"
+        id "GeoIndicators"
+        inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
+                roadTable: String, railTable: String, vegetationTable: String,
+                hydrographicTable: String, surface_vegetation: 100000, surface_hydro: 2500,
+                distance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified: false, prefixName: "",
+                mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                               "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                               "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
+        outputs outputTableBuildingIndicators: String, outputTableBlockIndicators: String,
+                outputTableRsuIndicators: String, outputTableRsuLcz: String, outputTableZone: String
+        run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
+              surface_vegetation, surface_hydro, distance, indicatorUse, svfSimplified, prefixName, mapOfWeights ->
+            info "Start computing the geoindicators..."
+            // Temporary tables are created
+            def lczIndicTable = postfix "LCZ_INDIC_TABLE"
+            def COLUMN_ID_RSU = "id_rsu"
+            def GEOMETRIC_COLUMN = "the_geom"
 
-        // Output Lcz table name is set to null in case LCZ indicators are not calculated
-        def rsuLcz = null
+            // Output Lcz table name is set to null in case LCZ indicators are not calculated
+            def rsuLcz = null
 
-        //Create spatial units and relations : building, block, rsu
-        IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis
-        if (!spatialUnits.execute([datasource       : datasource,           zoneTable           : zoneTable,
-                                   buildingTable    : buildingTable,        roadTable           : roadTable,
-                                   railTable        : railTable,            vegetationTable     : vegetationTable,
-                                   hydrographicTable: hydrographicTable,    surface_vegetation  : surface_vegetation,
-                                   surface_hydro    : surface_hydro,        distance            : distance,
-                                   prefixName       : prefixName,
-                                   indicatorUse:indicatorUse])) {
-            error "Cannot create the spatial units"
-            return null
-        }
-        String relationBuildings = spatialUnits.getResults().outputTableBuildingName
-        String relationBlocks = spatialUnits.getResults().outputTableBlockName
-        String relationRSU = spatialUnits.getResults().outputTableRsuName
-
-        //Compute building indicators
-        def computeBuildingsIndicators = ProcessingChain.BuildGeoIndicators.computeBuildingsIndicators
-        if (!computeBuildingsIndicators.execute([datasource            : datasource,
-                                                 inputBuildingTableName: relationBuildings,
-                                                 inputRoadTableName    : roadTable,
-                                                 indicatorUse          : indicatorUse,
-                                                 prefixName            : prefixName])) {
-            error "Cannot compute the building indicators"
-            return null
-        }
-
-        def buildingIndicators = computeBuildingsIndicators.results.outputTableName
-
-        //Compute block indicators
-        def blockIndicators = null
-        if(indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")){
-            def computeBlockIndicators = ProcessingChain.BuildGeoIndicators.computeBlockIndicators
-            if (!computeBlockIndicators.execute([datasource            : datasource,
-                                                 inputBuildingTableName: buildingIndicators,
-                                                 inputBlockTableName   : relationBlocks,
-                                                 prefixName            : prefixName])) {
-                error "Cannot compute the block indicators"
+            //Create spatial units and relations : building, block, rsu
+            IProcess spatialUnits = ProcessingChain.BuildSpatialUnits.createUnitsOfAnalysis
+            if (!spatialUnits.execute([datasource       : datasource, zoneTable: zoneTable,
+                                       buildingTable    : buildingTable, roadTable: roadTable,
+                                       railTable        : railTable, vegetationTable: vegetationTable,
+                                       hydrographicTable: hydrographicTable, surface_vegetation: surface_vegetation,
+                                       surface_hydro    : surface_hydro, distance: distance,
+                                       prefixName       : prefixName,
+                                       indicatorUse     : indicatorUse])) {
+                error "Cannot create the spatial units"
                 return null
             }
-            blockIndicators = computeBlockIndicators.results.outputTableName
-        }
+            String relationBuildings = spatialUnits.getResults().outputTableBuildingName
+            String relationBlocks = spatialUnits.getResults().outputTableBlockName
+            String relationRSU = spatialUnits.getResults().outputTableRsuName
 
-        //Compute RSU indicators
-        def computeRSUIndicators = ProcessingChain.BuildGeoIndicators.computeRSUIndicators
-        if (!computeRSUIndicators.execute([datasource       : datasource,
-                                           buildingTable    : buildingIndicators,
-                                           rsuTable         : relationRSU,
-                                           vegetationTable  : vegetationTable,
-                                           roadTable        : roadTable,
-                                           hydrographicTable: hydrographicTable,
-                                           indicatorUse     : indicatorUse,
-                                           svfSimplified    : svfSimplified,
-                                           prefixName       : prefixName])) {
-            error "Cannot compute the RSU indicators"
-            return null
-        }
-        info "All geoindicators have been computed"
-
-        // If the LCZ indicators should be calculated, we only affect a LCZ class to each RSU
-        if(indicatorUse.contains("LCZ")){
-            def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"             : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
-                                 "BUILDING_FRACTION_LCZ"            : "BUILDING_SURFACE_FRACTION",
-                                 "ASPECT_RATIO"                     : "ASPECT_RATIO",
-                                 "GROUND_SKY_VIEW_FACTOR"           : "SKY_VIEW_FACTOR",
-                                 "PERVIOUS_FRACTION_LCZ"            : "PERVIOUS_SURFACE_FRACTION",
-                                 "IMPERVIOUS_FRACTION_LCZ"          : "IMPERVIOUS_SURFACE_FRACTION",
-                                 "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH": "TERRAIN_ROUGHNESS_LENGTH"]
-
-            // Get into a new table the ID, geometry column and the 7 indicators defined by Stewart and Oke (2012)
-            // for LCZ classification (rename the indicators with the real names)
-            def queryReplaceNames = ""
-            lczIndicNames.each { oldIndic, newIndic ->
-                queryReplaceNames += "ALTER TABLE $lczIndicTable ALTER COLUMN $oldIndic RENAME TO $newIndic;"
+            //Compute building indicators
+            def computeBuildingsIndicators = ProcessingChain.BuildGeoIndicators.computeBuildingsIndicators
+            if (!computeBuildingsIndicators.execute([datasource            : datasource,
+                                                     inputBuildingTableName: relationBuildings,
+                                                     inputRoadTableName    : roadTable,
+                                                     indicatorUse          : indicatorUse,
+                                                     prefixName            : prefixName])) {
+                error "Cannot compute the building indicators"
+                return null
             }
-            datasource """DROP TABLE IF EXISTS $lczIndicTable;
+
+            def buildingIndicators = computeBuildingsIndicators.results.outputTableName
+
+            //Compute block indicators
+            def blockIndicators = null
+            if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
+                def computeBlockIndicators = ProcessingChain.BuildGeoIndicators.computeBlockIndicators
+                if (!computeBlockIndicators.execute([datasource            : datasource,
+                                                     inputBuildingTableName: buildingIndicators,
+                                                     inputBlockTableName   : relationBlocks,
+                                                     prefixName            : prefixName])) {
+                    error "Cannot compute the block indicators"
+                    return null
+                }
+                blockIndicators = computeBlockIndicators.results.outputTableName
+            }
+
+            //Compute RSU indicators
+            def computeRSUIndicators = ProcessingChain.BuildGeoIndicators.computeRSUIndicators
+            if (!computeRSUIndicators.execute([datasource       : datasource,
+                                               buildingTable    : buildingIndicators,
+                                               rsuTable         : relationRSU,
+                                               vegetationTable  : vegetationTable,
+                                               roadTable        : roadTable,
+                                               hydrographicTable: hydrographicTable,
+                                               indicatorUse     : indicatorUse,
+                                               svfSimplified    : svfSimplified,
+                                               prefixName       : prefixName])) {
+                error "Cannot compute the RSU indicators"
+                return null
+            }
+            info "All geoindicators have been computed"
+
+            // If the LCZ indicators should be calculated, we only affect a LCZ class to each RSU
+            if (indicatorUse.contains("LCZ")) {
+                def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"              : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
+                                     "BUILDING_FRACTION_LCZ"             : "BUILDING_SURFACE_FRACTION",
+                                     "ASPECT_RATIO"                      : "ASPECT_RATIO",
+                                     "GROUND_SKY_VIEW_FACTOR"            : "SKY_VIEW_FACTOR",
+                                     "PERVIOUS_FRACTION_LCZ"             : "PERVIOUS_SURFACE_FRACTION",
+                                     "IMPERVIOUS_FRACTION_LCZ"           : "IMPERVIOUS_SURFACE_FRACTION",
+                                     "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH": "TERRAIN_ROUGHNESS_LENGTH"]
+
+                // Get into a new table the ID, geometry column and the 7 indicators defined by Stewart and Oke (2012)
+                // for LCZ classification (rename the indicators with the real names)
+                def queryReplaceNames = ""
+                lczIndicNames.each { oldIndic, newIndic ->
+                    queryReplaceNames += "ALTER TABLE $lczIndicTable ALTER COLUMN $oldIndic RENAME TO $newIndic;"
+                }
+                datasource """DROP TABLE IF EXISTS $lczIndicTable;
                                 CREATE TABLE $lczIndicTable 
                                         AS SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, ${lczIndicNames.keySet().join(",")} 
                                         FROM ${computeRSUIndicators.results.outputTableName};
                                 $queryReplaceNames"""
 
-            // The classification algorithm is called
-            def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType
-            if(!classifyLCZ([rsuLczIndicators   : lczIndicTable,
-                             rsuAllIndicators   : computeRSUIndicators.results.outputTableName,
-                             normalisationType  : "AVG",
-                             mapOfWeights       : mapOfWeights,
-                             prefixName         : prefixName,
-                             datasource         : datasource,
-                             prefixName         : prefixName])){
-                info "Cannot compute the LCZ classification."
-                return
+                // The classification algorithm is called
+                def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType
+                if (!classifyLCZ([rsuLczIndicators : lczIndicTable,
+                                  rsuAllIndicators : computeRSUIndicators.results.outputTableName,
+                                  normalisationType: "AVG",
+                                  mapOfWeights     : mapOfWeights,
+                                  prefixName       : prefixName,
+                                  datasource       : datasource,
+                                  prefixName       : prefixName])) {
+                    info "Cannot compute the LCZ classification."
+                    return
+                }
+                rsuLcz = classifyLCZ.results.outputTableName
             }
-            rsuLcz = classifyLCZ.results.outputTableName
+
+            datasource "DROP TABLE IF EXISTS $lczIndicTable;"
+
+
+            return [outputTableBuildingIndicators: computeBuildingsIndicators.getResults().outputTableName,
+                    outputTableBlockIndicators   : blockIndicators,
+                    outputTableRsuIndicators     : computeRSUIndicators.getResults().outputTableName,
+                    outputTableRsuLcz            : rsuLcz,
+                    outputTableZone              : zoneTable]
         }
-
-        datasource "DROP TABLE IF EXISTS $lczIndicTable;"
-
-
-        return [outputTableBuildingIndicators: computeBuildingsIndicators.getResults().outputTableName,
-                outputTableBlockIndicators   : blockIndicators,
-                outputTableRsuIndicators     : computeRSUIndicators.getResults().outputTableName,
-                outputTableRsuLcz   : rsuLcz,
-                outputTableZone:zoneTable]
     }
 }
-
 
 /**
  * Return the properties parameters to store results in a folder
@@ -1093,6 +1090,363 @@ def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource,def o
         }
         info "${outputTable} has been saved in ${filePath}."
     }
+}
+
+/**
+ * Create the output tables in the output_datasource
+ * @param output_datasource connexion to the output database
+ * @param outputTableNames name of tables to store the geoclimate results
+ * @param srid epsg code for the output tables
+ * @return
+ */
+def createOutputTables(def output_datasource, def outputTableNames, def srid){
+    //Output table names
+    def output_zones = outputTableNames.zones
+    def output_building_indicators = outputTableNames.building_indicators
+    def output_block_indicators = outputTableNames.block_indicators
+    def output_rsu_indicators = outputTableNames.rsu_indicators
+    def output_rsu_lcz = outputTableNames.rsu_lcz
+    def output_building = outputTableNames.building
+    def output_road = outputTableNames.road
+    def output_rail = outputTableNames.rail
+    def output_water = outputTableNames.water
+    def output_vegetation = outputTableNames.vegetation
+    def output_impervious = outputTableNames.impervious
+
+
+    if (output_block_indicators && !output_datasource.hasTable(output_block_indicators)){
+        output_datasource.execute """CREATE TABLE $output_block_indicators (
+        ID_BLOCK INTEGER, THE_GEOM GEOMETRY(GEOMETRY,$srid),
+        ID_RSU INTEGER, AREA DOUBLE PRECISION,
+        FLOOR_AREA DOUBLE PRECISION,VOLUME DOUBLE PRECISION,
+        HOLE_AREA_DENSITY DOUBLE PRECISION,
+        BUILDING_DIRECTION_EQUALITY DOUBLE PRECISION,
+        BUILDING_DIRECTION_UNIQUENESS DOUBLE PRECISION,
+        MAIN_BUILDING_DIRECTION VARCHAR,
+        CLOSINGNESS DOUBLE PRECISION, NET_COMPACTNESS DOUBLE PRECISION,
+        AVG_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION,
+        STD_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION,
+        ID_ZONE VARCHAR
+        );
+        CREATE INDEX IF NOT EXISTS idx_${output_block_indicators}_id_zone ON $output_block_indicators (ID_ZONE);"""
+    }
+    else if (output_block_indicators){
+        def outputTableSRID = output_datasource.getSpatialTable(output_block_indicators).srid
+        if(outputTableSRID!=srid){
+            error "The SRID of the output table ($outputTableSRID) $output_block_indicators is different than the srid of the result table ($srid)"
+            return null
+        }
+        //Test if we can write in the database
+        output_datasource.execute """INSERT INTO $output_block_indicators (ID_ZONE) VALUES('geoclimate');
+        DELETE from $output_block_indicators WHERE ID_ZONE= 'geoclimate';"""
+    }
+
+    if (output_building_indicators && !output_datasource.hasTable(output_building_indicators)){
+        output_datasource.execute """
+        CREATE TABLE $output_building_indicators (
+                THE_GEOM GEOMETRY(GEOMETRY,$srid),
+                ID_BUILD INTEGER,
+                ID_SOURCE VARCHAR,
+                HEIGHT_WALL INTEGER,
+                HEIGHT_ROOF INTEGER,
+                NB_LEV INTEGER,
+                TYPE VARCHAR,
+                MAIN_USE VARCHAR,
+                ZINDEX INTEGER,
+                ID_ZONE VARCHAR,
+                ID_BLOCK INTEGER,
+                ID_RSU INTEGER,
+                PERIMETER DOUBLE PRECISION,
+                AREA DOUBLE PRECISION,
+                VOLUME DOUBLE PRECISION,
+                FLOOR_AREA DOUBLE PRECISION,
+                TOTAL_FACADE_LENGTH DOUBLE PRECISION,
+                CONTIGUITY DOUBLE PRECISION,
+                COMMON_WALL_FRACTION DOUBLE PRECISION,
+                NUMBER_BUILDING_NEIGHBOR BIGINT,
+                AREA_CONCAVITY DOUBLE PRECISION,
+                FORM_FACTOR DOUBLE PRECISION,
+                RAW_COMPACTNESS DOUBLE PRECISION,
+                PERIMETER_CONVEXITY DOUBLE PRECISION,
+                MINIMUM_BUILDING_SPACING DOUBLE PRECISION,
+                ROAD_DISTANCE DOUBLE PRECISION,
+                LIKELIHOOD_LARGE_BUILDING DOUBLE PRECISION
+        );
+        CREATE INDEX IF NOT EXISTS idx_${output_building_indicators}_id_zone  ON $output_building_indicators (ID_ZONE);
+        """
+    }
+    else if (output_building_indicators){
+        def outputTableSRID = output_datasource.getSpatialTable(output_building_indicators).srid
+        if(outputTableSRID!=srid){
+            error "The SRID of the output table ($outputTableSRID) $output_building_indicators is different than the srid of the result table ($srid)"
+            return null
+        }
+        //Test if we can write in the database
+        output_datasource.execute """INSERT INTO $output_building_indicators (ID_ZONE) VALUES('geoclimate');
+        DELETE from $output_building_indicators WHERE ID_ZONE= 'geoclimate';"""
+    }
+
+    if (output_rsu_indicators && !output_datasource.hasTable(output_rsu_indicators)){
+        output_datasource.execute """
+    CREATE TABLE $output_rsu_indicators (
+    ID_RSU INTEGER,
+	THE_GEOM GEOMETRY(GEOMETRY,$srid),	
+	HIGH_VEGETATION_FRACTION DOUBLE PRECISION,
+	HIGH_VEGETATION_WATER_FRACTION DOUBLE PRECISION,
+	HIGH_VEGETATION_BUILDING_FRACTION DOUBLE PRECISION,
+	HIGH_VEGETATION_LOW_VEGETATION_FRACTION DOUBLE PRECISION,
+	HIGH_VEGETATION_ROAD_FRACTION DOUBLE PRECISION,
+	HIGH_VEGETATION_IMPERVIOUS_FRACTION DOUBLE PRECISION,
+	WATER_FRACTION DOUBLE PRECISION,
+	BUILDING_FRACTION DOUBLE PRECISION,
+	LOW_VEGETATION_FRACTION DOUBLE PRECISION,
+	ROAD_FRACTION DOUBLE PRECISION,
+	IMPERVIOUS_FRACTION DOUBLE PRECISION,
+	VEGETATION_FRACTION_URB DOUBLE PRECISION,
+	LOW_VEGETATION_FRACTION_URB DOUBLE PRECISION,
+	HIGH_VEGETATION_IMPERVIOUS_FRACTION_URB DOUBLE PRECISION,
+	HIGH_VEGETATION_PERVIOUS_FRACTION_URB DOUBLE PRECISION,
+	ROAD_FRACTION_URB DOUBLE PRECISION,
+	IMPERVIOUS_FRACTION_URB DOUBLE PRECISION,
+	BUILDING_FRACTION_LCZ DOUBLE PRECISION,
+	PERVIOUS_FRACTION_LCZ DOUBLE PRECISION,
+	HIGH_VEGETATION_FRACTION_LCZ DOUBLE PRECISION,
+	LOW_VEGETATION_FRACTION_LCZ DOUBLE PRECISION,
+	IMPERVIOUS_FRACTION_LCZ DOUBLE PRECISION,
+	WATER_FRACTION_LCZ DOUBLE PRECISION,
+	AREA DOUBLE PRECISION,
+	AVG_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION,
+	STD_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION,
+	ROAD_DIRECTION_DISTRIBUTION_H0_D0_30 DOUBLE PRECISION,
+	ROAD_DIRECTION_DISTRIBUTION_H0_D30_60 DOUBLE PRECISION,
+	ROAD_DIRECTION_DISTRIBUTION_H0_D60_90 DOUBLE PRECISION,
+	ROAD_DIRECTION_DISTRIBUTION_H0_D90_120 DOUBLE PRECISION,
+	ROAD_DIRECTION_DISTRIBUTION_H0_D120_150 DOUBLE PRECISION,
+	ROAD_DIRECTION_DISTRIBUTION_H0_D150_180 DOUBLE PRECISION,
+	GROUND_LINEAR_ROAD_DENSITY DOUBLE PRECISION,
+	NON_VERT_ROOF_AREA_H0_10 DOUBLE PRECISION,
+	NON_VERT_ROOF_AREA_H10_20 DOUBLE PRECISION,
+	NON_VERT_ROOF_AREA_H20_30 DOUBLE PRECISION,
+	NON_VERT_ROOF_AREA_H30_40 DOUBLE PRECISION,
+	NON_VERT_ROOF_AREA_H40_50 DOUBLE PRECISION,
+	NON_VERT_ROOF_AREA_H50 DOUBLE PRECISION,
+	VERT_ROOF_AREA_H0_10 DOUBLE PRECISION,
+	VERT_ROOF_AREA_H10_20 DOUBLE PRECISION,
+	VERT_ROOF_AREA_H20_30 DOUBLE PRECISION,
+	VERT_ROOF_AREA_H30_40 DOUBLE PRECISION,
+	VERT_ROOF_AREA_H40_50 DOUBLE PRECISION,
+	VERT_ROOF_AREA_H50 DOUBLE PRECISION,
+	VERT_ROOF_DENSITY DOUBLE PRECISION,
+	NON_VERT_ROOF_DENSITY DOUBLE PRECISION,
+	FREE_EXTERNAL_FACADE_DENSITY DOUBLE PRECISION,
+	GEOM_AVG_HEIGHT_ROOF DOUBLE PRECISION,
+	BUILDING_VOLUME_DENSITY DOUBLE PRECISION,
+	AVG_VOLUME DOUBLE PRECISION,
+	AVG_NUMBER_BUILDING_NEIGHBOR DOUBLE PRECISION,
+	BUILDING_FLOOR_AREA_DENSITY DOUBLE PRECISION,
+	AVG_MINIMUM_BUILDING_SPACING DOUBLE PRECISION,
+	BUILDING_NUMBER_DENSITY DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D0_30 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D0_30 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D0_30 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D0_30 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D0_30 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D0_30 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D30_60 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D30_60 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D30_60 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D30_60 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D30_60 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D30_60 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D60_90 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D60_90 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D60_90 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D60_90 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D60_90 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D60_90 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D90_120 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D90_120 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D90_120 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D90_120 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D90_120 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D90_120 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D120_150 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D120_150 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D120_150 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D120_150 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D120_150 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D120_150 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D150_180 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D150_180 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D150_180 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D150_180 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D150_180 DOUBLE PRECISION,
+	PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D150_180 DOUBLE PRECISION,
+	BUILDING_TOTAL_FRACTION DOUBLE PRECISION,
+	ASPECT_RATIO DOUBLE PRECISION,
+	GROUND_SKY_VIEW_FACTOR DOUBLE PRECISION,
+	EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH DOUBLE PRECISION,
+	EFFECTIVE_TERRAIN_ROUGHNESS_CLASS INTEGER,
+	BUILDING_DIRECTION_EQUALITY DOUBLE PRECISION,
+	BUILDING_DIRECTION_UNIQUENESS DOUBLE PRECISION,
+	MAIN_BUILDING_DIRECTION VARCHAR,
+    ID_ZONE VARCHAR
+    );    
+        CREATE INDEX IF NOT EXISTS idx_${output_rsu_indicators}_id_zone ON $output_rsu_indicators (ID_ZONE);
+        """
+    } else if (output_rsu_indicators){
+        def outputTableSRID = output_datasource.getSpatialTable(output_rsu_indicators).srid
+        if(outputTableSRID!=srid){
+            error "The SRID of the output table ($outputTableSRID) $output_rsu_indicators is different than the srid of the result table ($srid)"
+            return null
+        }
+        //Test if we can write in the database
+        output_datasource.execute """INSERT INTO $output_rsu_indicators (ID_ZONE) VALUES('geoclimate');
+        DELETE from $output_rsu_indicators WHERE ID_ZONE= 'geoclimate';"""
+    }
+
+    if (output_rsu_lcz && !output_datasource.hasTable(output_rsu_lcz)){
+        output_datasource.execute """
+        CREATE TABLE $output_rsu_lcz(
+                ID_ZONE VARCHAR,
+                ID_RSU INTEGER,
+                THE_GEOM GEOMETRY(GEOMETRY,$srid),
+                LCZ1 INTEGER,
+                LCZ2 INTEGER,
+                MIN_DISTANCE DOUBLE PRECISION,
+                PSS DOUBLE PRECISION
+        );
+        CREATE INDEX IF NOT EXISTS idx_${output_rsu_lcz}_id_zone ON $output_rsu_lcz (ID_ZONE);
+        """
+    }else if (output_rsu_lcz){
+        def outputTableSRID = output_datasource.getSpatialTable(output_rsu_lcz).srid
+        if(outputTableSRID!=srid){
+            error "The SRID of the output table ($outputTableSRID) $output_rsu_lcz is different than the srid of the result table ($srid)"
+            return null
+        }
+        //Test if we can write in the database
+        output_datasource.execute """INSERT INTO $output_rsu_lcz (ID_ZONE) VALUES('geoclimate');
+        DELETE from $output_rsu_lcz WHERE ID_ZONE= 'geoclimate';"""
+    }
+
+    if (output_zones && !output_datasource.hasTable(output_zones)){
+        output_datasource.execute """
+        CREATE TABLE $output_zones(
+                ID_ZONE VARCHAR,
+                THE_GEOM GEOMETRY(GEOMETRY,$srid)
+        );
+        CREATE INDEX IF NOT EXISTS idx_${output_zones}_id_zone ON $output_zones (ID_ZONE);
+        """
+    }else if (output_zones){
+        def outputTableSRID = output_datasource.getSpatialTable(output_zones).srid
+        if(outputTableSRID!=srid){
+            error "The SRID of the output table ($outputTableSRID) $output_zones is different than the srid of the result table ($srid)"
+            return null
+        }
+        //Test if we can write in the database
+        output_datasource.execute """INSERT INTO $output_zones (ID_ZONE) VALUES('geoclimate');
+        DELETE from $output_zones WHERE ID_ZONE= 'geoclimate';"""
+    }
+
+    if (output_building && !output_datasource.hasTable(output_building)){
+        output_datasource.execute """CREATE TABLE $output_building  (THE_GEOM GEOMETRY(POLYGON, $srid), 
+        id_build serial, ID_SOURCE VARCHAR, HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT,
+        NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER);
+        CREATE INDEX IF NOT EXISTS idx_${output_building}_id_source ON $output_building (ID_SOURCE);"""
+    }
+    else if (output_building){
+        def outputTableSRID = output_datasource.getSpatialTable(output_building).srid
+        if(outputTableSRID!=srid){
+            error "The SRID of the output table ($outputTableSRID) $output_building is different than the srid of the result table ($srid)"
+            return null
+        }
+        //Test if we can write in the database
+        output_datasource.execute """INSERT INTO $output_building (ID_SOURCE) VALUES('geoclimate');
+        DELETE from $output_building WHERE ID_SOURCE= 'geoclimate';"""
+    }
+
+    if (output_road && !output_datasource.hasTable(output_road)){
+        output_datasource.execute """CREATE TABLE $output_road  (THE_GEOM GEOMETRY(GEOMETRY, $srid), 
+        id_road serial, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR, CROSSING VARCHAR(30),
+        SURFACE VARCHAR, SIDEWALK VARCHAR, ZINDEX INTEGER);
+        CREATE INDEX IF NOT EXISTS idx_${output_road}_id_source ON $output_road (ID_SOURCE);"""
+    }
+    else if (output_road){
+        def outputTableSRID = output_datasource.getSpatialTable(output_road).srid
+        if(outputTableSRID!=srid){
+            error "The SRID of the output table ($outputTableSRID) $output_road is different than the srid of the result table ($srid)"
+            return null
+        }
+        //Test if we can write in the database
+        output_datasource.execute """INSERT INTO $output_road (ID_SOURCE) VALUES('geoclimate');
+        DELETE from $output_road WHERE ID_SOURCE= 'geoclimate';"""
+    }
+
+    if (output_rail && !output_datasource.hasTable(output_rail)){
+        output_datasource.execute """CREATE TABLE $output_rail  (THE_GEOM GEOMETRY(GEOMETRY, $srid), 
+        id_rail serial,ID_SOURCE VARCHAR, TYPE VARCHAR,CROSSING VARCHAR(30), ZINDEX INTEGER);
+        CREATE INDEX IF NOT EXISTS idx_${output_rail}_id_source ON $output_rail (ID_SOURCE);"""
+    }
+    else if (output_rail){
+        def outputTableSRID = output_datasource.getSpatialTable(output_rail).srid
+        if(outputTableSRID!=srid){
+            error "The SRID of the output table ($outputTableSRID) $output_rail is different than the srid of the result table ($srid)"
+            return null
+        }
+        //Test if we can write in the database
+        output_datasource.execute """INSERT INTO $output_rail (ID_SOURCE) VALUES('geoclimate');
+        DELETE from $output_rail WHERE ID_SOURCE= 'geoclimate';"""
+    }
+
+    if (output_water && !output_datasource.hasTable(output_water)){
+        output_datasource.execute """CREATE TABLE $output_water  (THE_GEOM GEOMETRY(POLYGON, $srid), 
+        id_hydro serial, ID_SOURCE VARCHAR);
+        CREATE INDEX IF NOT EXISTS idx_${output_water}_id_source ON $output_water (ID_SOURCE);"""
+    }
+    else if (output_water){
+        def outputTableSRID = output_datasource.getSpatialTable(output_water).srid
+        if(outputTableSRID!=srid){
+            error "The SRID of the output table ($outputTableSRID) $output_water is different than the srid of the result table ($srid)"
+            return null
+        }
+        //Test if we can write in the database
+        output_datasource.execute """INSERT INTO $output_water (ID_SOURCE) VALUES('geoclimate');
+        DELETE from $output_water WHERE ID_SOURCE= 'geoclimate';"""
+    }
+
+    if (output_vegetation && !output_datasource.hasTable(output_vegetation)){
+        output_datasource.execute """CREATE TABLE $output_vegetation  (THE_GEOM GEOMETRY(POLYGON, $srid), 
+        id_veget serial, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4));
+        CREATE INDEX IF NOT EXISTS idx_${output_vegetation}_id_source ON $output_vegetation (ID_SOURCE);"""
+    }
+    else if (output_vegetation){
+        def outputTableSRID = output_datasource.getSpatialTable(output_vegetation).srid
+        if(outputTableSRID!=srid){
+            error "The SRID of the output table ($outputTableSRID) $output_vegetation is different than the srid of the result table ($srid)"
+            return null
+        }
+        //Test if we can write in the database
+        output_datasource.execute """INSERT INTO $output_vegetation (ID_SOURCE) VALUES('geoclimate');
+        DELETE from $output_vegetation WHERE ID_SOURCE= 'geoclimate';"""
+    }
+
+    if (output_impervious && !output_datasource.hasTable(output_impervious)){
+        output_datasource.execute """CREATE TABLE $output_impervious  (THE_GEOM GEOMETRY(POLYGON, $srid), 
+id_impervious serial, ID_SOURCE VARCHAR);
+        CREATE INDEX IF NOT EXISTS idx_${output_impervious}_id_source ON $output_impervious (ID_SOURCE);"""
+    }
+    else if (output_impervious){
+        def outputTableSRID = output_datasource.getSpatialTable(output_impervious).srid
+        if(outputTableSRID!=srid){
+            error "The SRID of the output table ($outputTableSRID) $output_impervious is different than the srid of the result table ($srid)"
+            return null
+        }
+        //Test if we can write in the database
+        output_datasource.execute """INSERT INTO $output_impervious (ID_SOURCE) VALUES('geoclimate');
+        DELETE from $output_impervious WHERE ID_SOURCE= 'geoclimate';"""
+    }
+
+    return true
 }
 
 /**

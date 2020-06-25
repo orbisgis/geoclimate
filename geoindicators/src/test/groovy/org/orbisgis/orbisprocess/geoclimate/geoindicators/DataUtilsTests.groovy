@@ -10,13 +10,11 @@ import static org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 class DataUtilsTests {
 
     private static def h2GIS
-    private static def GI
     private static def randomDbName() {"${DataUtilsTests.simpleName}_${UUID.randomUUID().toString().replaceAll"-", "_"}"}
 
     @BeforeAll
     static void beforeAll(){
         h2GIS = open"./target/${randomDbName()};AUTO_SERVER=TRUE"
-        GI = load Geoindicators
     }
 
     @BeforeEach
@@ -36,7 +34,7 @@ class DataUtilsTests {
 
     @Test
     void joinTest() {
-        def p = GI.DataUtils.joinTables
+        def p = Geoindicators.DataUtils.joinTables()
         assert p([
                 inputTableNamesWithId   : [tablea:"ida", tableb:"idb", tablec:"idc"],
                 outputTableName         : "test",
@@ -51,7 +49,7 @@ class DataUtilsTests {
 
     @Test
     void joinTest2() {
-        def p = GI.DataUtils.joinTables
+        def p = Geoindicators.DataUtils.joinTables()
         assert p([
                 inputTableNamesWithId   : [tablea:"ida", tableb:"idb", tablec:"idc"],
                 outputTableName         : "test",
@@ -68,7 +66,7 @@ class DataUtilsTests {
     @Test
     void saveTablesAsFiles() {
         def directory = "./target/savedFiles"
-        def p = GI.DataUtils.saveTablesAsFiles
+        def p = Geoindicators.DataUtils.saveTablesAsFiles()
         assert p([
                 inputTableNames : ["tablea","tablegeom"],
                 directory       : directory,
