@@ -282,7 +282,7 @@ IProcess identifyLczType() {
                             // Piece of query useful for calculating the RSU distance to the current LCZ
                             // for the current indicator
                             queryLczDistance +=
-                                    "POWER(${mapOfWeights[indic.toLowerCase()]}*CASEWHEN(${LCZ[valLow]} IS NULL," +
+                                    "${mapOfWeights[indic.toLowerCase()]}*POWER(CASEWHEN(${LCZ[valLow]} IS NULL," +
                                             "CASEWHEN($indic<${LCZ[valUpp]}, 0, ${LCZ[valUpp]}-$indic)," +
                                             "CASEWHEN(${LCZ[valUpp]} IS NULL," +
                                             "CASEWHEN($indic>${LCZ[valLow]},0,${LCZ[valLow]}-$indic)," +
