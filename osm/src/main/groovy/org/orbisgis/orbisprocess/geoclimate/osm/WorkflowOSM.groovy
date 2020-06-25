@@ -1108,7 +1108,7 @@ def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource,def o
 def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_datasource, def outputTableNames, def h2gis_tables, def id_zone,def inputSRID, def outputSRID){
     //Export building indicators
     indicatorTableBatchExportTable(output_datasource, outputTableNames.building_indicators,id_zone,h2gis_datasource, h2gis_tables.outputTableBuildingIndicators
-            , "", inputSRID, outputSRID)
+            , "ID_RSU IS NOT NULL", inputSRID, outputSRID)
 
     //Export block indicators
      indicatorTableBatchExportTable(output_datasource, outputTableNames.block_indicators,id_zone, h2gis_datasource, h2gis_tables.outputTableBlockIndicators
@@ -1166,63 +1166,79 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
             if (output_datasource.hasTable(output_table)) {
                 output_datasource.execute("DELETE FROM $output_table WHERE id_zone=?", id_zone.toString());
                 //If the table exists we populate it with the last result
-                info "Start to export the table $h2gis_table_to_save into the table $output_table"
+                info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
                 int BATCH_MAX_SIZE = 1000;
-                PreparedStatement preparedStatement = null;
                 ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource)
                 if (inputRes) {
+                    def outputColumns = output_datasource.getTable(output_table).getColumnsTypes();
                     def outputconnection = output_datasource.getConnection()
                     try {
-                        int columnsCount = inputRes.getColumnCount();
-                        StringBuilder insertTable = new StringBuilder("INSERT INTO ");
-                        insertTable.append(output_table).append(" VALUES(?");
-                        for (int i = 2; i <= columnsCount; i++) {
-                            insertTable.append(",").append("?");
+                        def inputColumns = inputRes.getColumnsTypes();
+                        //We check if the number of columns is not the same
+                        //If there is more columns in the input table we alter the output table
+                        def outPutColumnsNames = outputColumns.keySet()
+                        int columnsCount = outPutColumnsNames.size();
+                        def diffCols = inputColumns.keySet().findAll { e -> !outPutColumnsNames*.toLowerCase().contains(e.toLowerCase()) }
+                        def alterTable = ""
+                        if (diffCols) {
+                            inputColumns.each { entry ->
+                                if (diffCols.contains(entry.key)) {
+                                    alterTable += "ALTER TABLE $output_table ADD COLUMN $entry.key ${entry.value.equalsIgnoreCase("double") ? "DOUBLE PRECISION" : entry.value};"
+                                    outputColumns.put(entry.key, entry.value)
+                                }
+                            }
+                            output_datasource.execute(alterTable)
                         }
-                        insertTable.append(")");
+                        def finalOutputColumns = outputColumns.keySet();
+
+                        def insertTable = "INSERT INTO $output_table (${finalOutputColumns.join(",")}) VALUES("
+
+                        def flatList = outputColumns.inject([]) { result, iter ->
+                            result += ":${iter.key.toLowerCase()}"
+                        }.join(",")
+                        insertTable += flatList
+                        insertTable += ")";
+                        //Collect all values
+                        def ouputValues = finalOutputColumns.collectEntries { [it.toLowerCase(), null] }
+                        ouputValues.put("id_zone", id_zone)
                         outputconnection.setAutoCommit(false);
-                        preparedStatement = outputconnection.prepareStatement(insertTable.toString());
-                        long batchSize = 0;
-                        while (inputRes.next()) {
-                            for (int i = 1; i <= columnsCount; i++) {
-                                preparedStatement.setObject(i, inputRes.getObject(i));
+                        output_datasource.withBatch(BATCH_MAX_SIZE, insertTable) { ps ->
+                            inputRes.eachRow { row ->
+                                //Fill the value
+                                inputColumns.keySet().each { columnName ->
+                                    def inputValue = row.getObject(columnName)
+                                    if (inputValue) {
+                                        ouputValues.put(columnName.toLowerCase(), inputValue)
+                                    } else {
+                                        ouputValues.put(columnName.toLowerCase(), null)
+                                    }
+                                }
+                                ps.addBatch(ouputValues)
                             }
-                            preparedStatement.addBatch();
-                            batchSize++;
-                            if (batchSize >= BATCH_MAX_SIZE) {
-                                preparedStatement.executeBatch();
-                                outputconnection.commit();
-                                preparedStatement.clearBatch();
-                                batchSize = 0;
-                            }
-                        }
-                        if (batchSize > 0) {
-                            preparedStatement.executeBatch();
                         }
                     } catch (SQLException e) {
                         error("Cannot save the table $output_table.\n", e);
                         return false;
                     } finally {
                         outputconnection.setAutoCommit(true);
-                        if (preparedStatement != null) {
-                            preparedStatement.close();
-                        }
+                        info "The table $h2gis_table_to_save has been exported into the table $output_table"
                     }
-                    info "The table $h2gis_table_to_save has been exported into the table $output_table"
                 }
             }else {
                 info "Start to export the table $h2gis_table_to_save into the table $output_table"
                 if (filter) {
                     if(outputSRID==0){
-                        h2gis_datasource.select().from(h2gis_table_to_save).where(filter).getTable().save(output_datasource, output_table, true);
-                    }
+                        h2gis_datasource.select().from(h2gis_table_to_save).where(filter).getSpatialTable().save(output_datasource, output_table, true);
+                     }
                     else{
                         h2gis_datasource.select().from(h2gis_table_to_save).where(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true);
                     }
+                    //Workarround to update the SRID on resulset
+                    output_datasource.execute"""ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);"""
                 } else {
                     if(outputSRID==0){
                         h2gis_datasource.getTable(h2gis_table_to_save).save(output_datasource, output_table, true);
-                    }else{
+                   }else{
                         h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(outputSRID).save(output_datasource, output_table, true);
                     }
                 }
@@ -1252,9 +1268,8 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
             if (output_datasource.hasTable(output_table)) {
                 output_datasource.execute("DELETE FROM $output_table WHERE id_zone=?", id_zone.toString());
                 //If the table exists we populate it with the last result
-                info "Start to export the table $h2gis_table_to_save into the table $output_table"
+                info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
                 int BATCH_MAX_SIZE = 1000;
-                PreparedStatement preparedStatement = null;
                 ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource)
                 if (inputRes) {
                     def outputColumns  = output_datasource.getTable(output_table).getColumnsTypes();
@@ -1265,65 +1280,66 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                         //If there is more columns in the input table we alter the output table
                         def outPutColumnsNames = outputColumns.keySet()
                         int columnsCount = outPutColumnsNames.size();
-                        def diffCols = inputColumns.keySet().findAll { e ->  !outPutColumnsNames.contains( e ) }
+                        def diffCols = inputColumns.keySet().findAll { e ->  !outPutColumnsNames*.toLowerCase().contains( e.toLowerCase() ) }
                         def alterTable = ""
                         if(diffCols){
-                            inputNames.each { entry ->
+                            inputColumns.each { entry ->
                                 if (diffCols.contains(entry.key)){
                                     alterTable += "ALTER TABLE $output_table ADD COLUMN $entry.key ${entry.value.equalsIgnoreCase("double")?"DOUBLE PRECISION":entry.value};"
+                                    outputColumns.put(entry.key, entry.value)
                                 }
                             }
                             output_datasource.execute(alterTable)
-                            columnsCount+=diffCols.size();
                         }
-                        StringBuilder insertTable = new StringBuilder("INSERT INTO ");
-                        insertTable.append(output_table).append(" VALUES(?");
-                        for (int i = 1; i <= columnsCount; i++) {
-                            insertTable.append(",").append("?");
-                        }
-                        insertTable.append(")");
+                        def finalOutputColumns = outputColumns.keySet();
+
+                        def insertTable = "INSERT INTO $output_table (${finalOutputColumns.join(",")}) VALUES("
+
+                        def flatList =  outputColumns.inject([]) { result, iter ->
+                            result+= ":${iter.key.toLowerCase()}"
+                        }.join(",")
+                        insertTable+= flatList
+                        insertTable+=")";
+                        //Collect all values
+                        def ouputValues = finalOutputColumns.collectEntries {[it.toLowerCase(), null]}
+                        ouputValues.put("id_zone", id_zone)
                         outputconnection.setAutoCommit(false);
-                        preparedStatement = outputconnection.prepareStatement(insertTable.toString());
-                        long batchSize = 0;
-                        while (inputRes.next()) {
-                            for (int i = 1; i <= columnsCount; i++) {
-                                preparedStatement.setObject(i, inputRes.getObject(i));
+                            output_datasource.withBatch(BATCH_MAX_SIZE, insertTable) { ps ->
+                                inputRes.eachRow{ row ->
+                                    //Fill the value
+                                    inputColumns.keySet().each{columnName ->
+                                        def inputValue = row.getObject(columnName)
+                                        if(inputValue){
+                                            ouputValues.put(columnName.toLowerCase(), inputValue)
+                                        }else{
+                                            ouputValues.put(columnName.toLowerCase(), null)
+                                        }
+                                    }
+                                    ps.addBatch(ouputValues)
+                                }
                             }
-                            preparedStatement.setObject(columnsCount + 1, id_zone);
-                            preparedStatement.addBatch();
-                            batchSize++;
-                            if (batchSize >= BATCH_MAX_SIZE) {
-                                preparedStatement.executeBatch();
-                                outputconnection.commit();
-                                preparedStatement.clearBatch();
-                                batchSize = 0;
-                            }
-                        }
-                        if (batchSize > 0) {
-                            preparedStatement.executeBatch();
-                        }
+
                     } catch (SQLException e) {
                         error("Cannot save the table $output_table.\n", e);
                         return false;
                     } finally {
                         outputconnection.setAutoCommit(true);
-                        if (preparedStatement != null) {
-                            preparedStatement.close();
-                        }
                         info "The table $h2gis_table_to_save has been exported into the table $output_table"
                     }
                 }
                 } else {
-                    info "Start to export the table $h2gis_table_to_save into the table $output_table"
+                    info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
                     if (filter) {
                         if (outputSRID == 0) {
-                            h2gis_datasource.select().from(h2gis_table_to_save).where(filter).getTable().save(output_datasource, output_table, true);
+                            h2gis_datasource.select().from(h2gis_table_to_save).where(filter).getSpatialTable().save(output_datasource, output_table, true);
                         } else {
                             h2gis_datasource.select().from(h2gis_table_to_save).where(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true);
                         }
+                        //Workarround to update the SRID on resulset
+                        output_datasource.execute"""ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);"""
                     } else {
                         if (outputSRID == 0) {
-                            h2gis_datasource.getTable(h2gis_table_to_save).save(output_datasource, output_table, true);
+                            h2gis_datasource.getSpatialTable(h2gis_table_to_save).save(output_datasource, output_table, true);
                         } else {
                             h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(outputSRID).save(output_datasource, output_table, true);
                         }
