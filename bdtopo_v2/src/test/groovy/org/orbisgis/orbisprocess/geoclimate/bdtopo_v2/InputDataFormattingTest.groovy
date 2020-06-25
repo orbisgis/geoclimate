@@ -111,7 +111,6 @@ class InputDataFormattingTest {
             assertNotNull(row.ID_SOURCE)
             assertNotEquals('', row.ID_SOURCE)
             // Check that the HEIGHT_WALL is smaller than 1000m high
-
             assertNotNull(row.HEIGHT_WALL)
             assertNotEquals('', row.HEIGHT_WALL)
             assertTrue(row.HEIGHT_WALL >= 0)
@@ -134,6 +133,15 @@ class InputDataFormattingTest {
             assertNotNull(row.ID_ZONE)
             assertNotEquals('', row.ID_ZONE)
         }
+
+        //Check value for  specific features
+        //TODO: to be fixed nb_level is wrong
+        /*def res =  h2GISDatabase.firstRow("select type,  nb_lev, height_wall, height_roof from ${tableName} where ID_SOURCE='BATIMENT0000000257021459'")
+        assertEquals("building", res.TYPE)
+        assertEquals(1, res.NB_LEV)
+        assertEquals(6, res.HEIGHT_WALL)
+        assertEquals(6, res.HEIGHT_ROOF)*/
+
         /*
         // Specific cases
         // -------------------------------
