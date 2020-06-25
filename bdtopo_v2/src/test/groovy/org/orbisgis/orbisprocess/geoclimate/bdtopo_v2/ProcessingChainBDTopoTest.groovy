@@ -225,7 +225,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_dboutput.json").toURI()
         //configFile =getClass().getResource("config/bdtopo_workflow_dbinput_dboutput.json").toURI()
         IProcess process = BDTopo.WorkflowBDTopo_V2.workflow
-        assertTrue(process.execute(configurationFile: configFile))
+        assertTrue(process.execute(configurationFile: "/home/ebocher/applications/geoclimate/bdtopo_workflow_dbinput_dboutput_erwan.json"))
     }
 
     @Disabled
@@ -288,7 +288,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                                  "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
                                  hLevMin : 3, hLevMax: 15, hThresholdLev2: 10]
         H2GIS h2GISDatabase = loadFiles(inseeCode, dbSuffixName)
-        def process = BDTopo.WorkflowBDTopo_V2.bdtopo_processing(h2GISDatabase, defaultParameters, inseeCode, null, null, null, null);
+        def process = BDTopo.WorkflowBDTopo_V2.bdtopo_processing(h2GISDatabase, defaultParameters, inseeCode, null, null, null, null,0);
         checkSpatialTable(h2GISDatabase, "block_indicators")
         checkSpatialTable(h2GISDatabase, "building_indicators")
         checkSpatialTable(h2GISDatabase, "rsu_indicators")
