@@ -864,7 +864,7 @@ def extractProcessingParameters(def processing_parameters){
  * @param outputTableNames the name of the tables in the output_datasource to save the results
  * @return
  */
-def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zones, def outputFolder, def outputFiles, def output_datasource, def outputTableNames ){
+def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zones, def outputFolder, def outputFiles, def output_datasource, def outputTableNames, def outputSRID){
     def  srid =  h2gis_datasource.getSpatialTable("IRIS_GE").srid
 
     if(!(id_zones in Collection)){
