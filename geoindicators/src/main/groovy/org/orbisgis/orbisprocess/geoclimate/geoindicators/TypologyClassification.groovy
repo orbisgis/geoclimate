@@ -148,7 +148,7 @@ IProcess identifyLczType() {
                             CASE 
                                 WHEN LOW_VEGETATION_FRACTION_LCZ+HIGH_VEGETATION_FRACTION_LCZ=0
                                     THEN null
-                                    ELSE HIGH_VEGETATION_FRACTION_LCZ/(LOW_VEGETATION_FRACTION_LCZ+HIGH_VEGETATION_FRACTION_LCZ)
+                                    ELSE HIGH_VEGETATION_FRACTION_LCZ/(1-IMPERVIOUS_FRACTION_LCZ-WATER_FRACTION_LCZ-BUILDING_FRACTION_LCZ)
                                     END
                                 AS HIGH_ALL_VEGETATION,
                             LOW_VEGETATION_FRACTION_LCZ+HIGH_VEGETATION_FRACTION_LCZ AS ALL_VEGETATION
@@ -163,11 +163,11 @@ IProcess identifyLczType() {
                 datasource """DROP TABLE IF EXISTS $classifiedRuralLCZ;
                                 CREATE TABLE $classifiedRuralLCZ
                                         AS SELECT   $ID_FIELD_RSU,
-                                                    CASE WHEN IMPERVIOUS_FRACTION>PERVIOUS_FRACTION_LCZ
+                                                    CASE WHEN IMPERVIOUS_FRACTION_LCZ>PERVIOUS_FRACTION_LCZ AND IMPERVIOUS_FRACTION_LCZ>0.05
                                                             THEN 105
                                                             ELSE CASE WHEN ALL_VEGETATION<WATER_FRACTION_LCZ
                                                                     THEN 107
-                                                                    ELSE CASE WHEN HIGH_ALL_VEGETATION IS NULL OR ALL_VEGETATION<0.1 OR ALL_VEGETATION>0.1 AND HIGH_ALL_VEGETATION<0.1
+                                                                    ELSE CASE WHEN HIGH_ALL_VEGETATION IS NULL OR HIGH_ALL_VEGETATION<0.05
                                                                             THEN 104
                                                                             ELSE CASE WHEN HIGH_ALL_VEGETATION<0.75
                                                                                     THEN 102
