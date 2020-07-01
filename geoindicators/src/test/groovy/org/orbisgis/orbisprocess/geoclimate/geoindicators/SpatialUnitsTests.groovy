@@ -5,7 +5,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 import static org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS.open
-import static org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager.load
 
 class SpatialUnitsTests {
 
@@ -93,7 +92,7 @@ class SpatialUnitsTests {
                     SELECT id_build, the_geom FROM building_test 
                     WHERE id_build < 9 OR id_build > 28 AND id_build < 30
         """
-        def pRsu =  Geoindicators.SpatialUnits.createScalesRelations()
+        def pRsu =  Geoindicators.SpatialUnits.spatialJoin()
         assert pRsu.execute([
                 inputLowerScaleTableName    : "build_tempo",
                 inputUpperScaleTableName    : "rsu_test",
@@ -105,7 +104,7 @@ class SpatialUnitsTests {
                 def expected = h2GIS.firstRow("SELECT ${pRsu.results.outputIdColumnUp} FROM rsu_build_corr WHERE id_build = ${row.id_build}".toString())
                 assert row[pRsu.results.outputIdColumnUp] == expected[pRsu.results.outputIdColumnUp]
         }
-        def pBlock =  Geoindicators.SpatialUnits.createScalesRelations()
+        def pBlock =  Geoindicators.SpatialUnits.spatialJoin()
         assert pBlock([
                 inputLowerScaleTableName    : "build_tempo",
                 inputUpperScaleTableName    : "block_test",

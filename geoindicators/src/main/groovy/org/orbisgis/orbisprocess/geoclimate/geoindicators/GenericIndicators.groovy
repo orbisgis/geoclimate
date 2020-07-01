@@ -13,9 +13,9 @@ import org.orbisgis.orbisdata.processmanager.process.*
  * surface fractions it is highly recommended to use the surfaceFractions IProcess (since it considers the potential
  * layer superpositions (building, high vegetation, low vegetation, etc.).
  *
- * @param inputLowerScaleTableName the table name where are stored low scale objects and the id of the upper scale
- * zone they are belonging to (e.g. buildings)
- * @param inputUpperScaleTableName the table of the upper scale where the informations has to be aggregated to
+ * @param inputLowerScaleTableName the table name where are stored low scale objects (e.g. buildings)
+ * and the id of the upper scale zone (e.g. RSU) they are belonging to
+ * @param inputUpperScaleTableName the table of the upper scale where the informations have to be aggregated to (e.g. RSU)
  * @param inputIdUp the ID of the upper scale
  * @param inputVarAndOperations a map containing as key the informations that has to be transformed from the lower to
  * the upper scale and as values a LIST of operation to apply to this information (e.g. ["building_area":["SUM", "NB_DENS"]]).
@@ -115,9 +115,9 @@ IProcess unweightedOperationFromLowerScale() {
  * example the mean building roof height within a reference spatial unit where the roof height values are weighted
  * by the values of building area)
  *
- *  @param inputLowerScaleTableName the table name where are stored low scale objects and the id of the upper scale
- *  zone they are belonging to (e.g. buildings)
- *  @param inputUpperScaleTableName the table of the upper scale where the informations has to be aggregated to
+ *  @param inputLowerScaleTableName the table name where are stored low scale objects (e.g. buildings)
+ *  and the id of the upper scale zone (e.g. RSU) they are belonging to
+ *  @param inputUpperScaleTableName the table of the upper scale where the informations have to be aggregated to (e.g. RSU)
  *  @param inputIdUp the ID of the upper scale
  *  @param inputVarWeightsOperations a map containing as key the informations that has to be transformed from the lower to
  *  the upper scale, and as value a map containing as key the variable that has to be used as weight and as values

@@ -351,53 +351,76 @@ IProcess createBlocks() {
 }
 
 /**
- * This process is used to link each object of a lower scale to an upper scale ID (i.e.: building to RSU). If a
- * lower scale object intersects several upper scale objects, the user may choose the number of upper scale object
- * kept by the lower scale object as relation (the upper scale objects are retained based on the
- * area shared between the objects (i.e. building and RSU - default 1). If nbRelations is null, all relations are
- * conserved.
+ * This process is used to spatially link polygons coming from two tables. It may be used to find the relationships
+ * between a building and a block, a building and a RSU but also between a building from a first dataset and a building
+ * from a second dataset (the datasets may come from a different data provider or from a different year).
  *
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
- * @param inputLowerScaleTableName The input table where are stored the lowerScale objects (i.e. buildings)
- * @param inputUpperScaleTableName The input table where are stored the upperScale objects (i.e. RSU)
- * @param idColumnUp The column name where is stored the ID of the upperScale objects (i.e. RSU)
+ * @param inputTable1 A first input table where are stored polygons (note that all columns will be conserved in the resulting table)
+ * @param inputTable2 A second input table where are stored polygons
+ * @param idColumnTab1 The column name where is stored the ID of table 1
+ * @param idColumnTab2 The column name where is stored the ID of table 2
  * @param prefixName A prefix used to name the output table
- * @param nbRelations Number of relations that the lower scale object can have with the upper scale object (i.e. if
- * nbRelations = 1 for buildings and RSU, the buildings can have only one RSU as relation)
+ * @param pointOnSurface Whether or not the spatial join may be performed on pointOnSurfaceTypes of spatial join that may be used (default false):
+ *          --> True: polygons from the first table are converted to points before to be spatially join with polygons from the second table
+ *          --> False: polygons from the first table are directly spatially joined with polygons from the second table
+ * @param nbRelations If 'pointOnSurface' is False, number of relations that one polygon in Table 2 may have with
+ * polygons from Table 1 (e.g. if nbRelations = 1 for buildings and RSU, the buildings can have only one RSU as relation).
+ * The selection of which polygon(s) need to be conserved is based on shared polygons area. By default, this parameter
+ * has no value and thus all relations are conserved
  *
- * @return A database table name and the name of its ID field
+ * @return outputTableName A table name containing ID from table 1, ID from table 2 and AREA shared by the two objects (if pointOnSurface = false)
+ * @return idColumnTab2 The ID name of the table 2
  */
-IProcess createScalesRelations() {
+IProcess spatialJoin() {
     return create {
-        title "Creating the Tables of relations between two scales"
-        id "createScalesRelations"
-        inputs inputLowerScaleTableName: String, inputUpperScaleTableName: String, idColumnUp: String,
-                prefixName: String, nbRelations: 1, datasource: JdbcDataSource
+        title "Creating the spatial join between two tables of polygons"
+        id "spatialJoin"
+        inputs inputTable1: String, inputTable2: String, idColumnTab1: String,
+                idColumnTab2: String, prefixName: String, pointOnSurface: false, nbRelations: int,
+                datasource: JdbcDataSource
         outputs outputTableName: String, outputIdColumnUp: String
-        run { inputLowerScaleTableName, inputUpperScaleTableName, idColumnUp, prefixName, nbRelations, datasource ->
+        run { inputTable1, inputTable2, idColumnTab1, idColumnTab2, prefixName, pointOnSurface,
+              nbRelations, datasource ->
 
             def GEOMETRIC_COLUMN_LOW = "the_geom"
             def GEOMETRIC_COLUMN_UP = "the_geom"
 
-            info "Creating the Tables of relations between the twos scales :  $inputLowerScaleTableName and $inputUpperScaleTableName"
+            info "Creating a spatial join between objects from two tables :  $inputTable1 and $inputTable2"
 
             // The name of the outputTableName is constructed (the prefix name is not added since it is already contained
             // in the inputLowerScaleTableName object
-            def outputTableName = postfix inputLowerScaleTableName, "corr"
-            datasource."$inputLowerScaleTableName".the_geom.createSpatialIndex()
-            datasource."$inputUpperScaleTableName".the_geom.createSpatialIndex()
+            def outputTableName = postfix "${inputTable1}_${inputTable2}", "join"
+            datasource."$inputTable1".the_geom.createSpatialIndex()
+            datasource."$inputTable2".the_geom.createSpatialIndex()
 
-            datasource """DROP TABLE IF EXISTS $outputTableName;
-                 CREATE TABLE $outputTableName AS SELECT a.*, (SELECT b.$idColumnUp 
-                 FROM $inputUpperScaleTableName b WHERE a.$GEOMETRIC_COLUMN_LOW && b.$GEOMETRIC_COLUMN_UP AND 
+            def query = """DROP TABLE IF EXISTS $outputTableName;
+                 CREATE TABLE $outputTableName AS SELECT a.*,"""
+            def subqueryNbRelations = ""
+            if (pointOnSurface){
+                query += """(SELECT b.$idColumnTab2
+                 FROM $inputTable2 b WHERE a.$GEOMETRIC_COLUMN_LOW && b.$GEOMETRIC_COLUMN_UP AND 
                  ST_INTERSECTS(st_force2d(a.$GEOMETRIC_COLUMN_LOW), st_force2d(b.$GEOMETRIC_COLUMN_UP)) ORDER BY 
                  ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$GEOMETRIC_COLUMN_LOW)), st_force2d(st_makevalid(b.$GEOMETRIC_COLUMN_UP)))) 
-                 DESC LIMIT 1) AS $idColumnUp FROM $inputLowerScaleTableName a """
+                 $subqueryNbRelations) AS $idColumnTab2 FROM $inputTable1 a """
+            }
+            else {
+                if(nbRelations!=null){
+                    subqueryNbRelations += """DESC LIMIT $nbRelations"""
+                }
+                query += """(SELECT b.$idColumnTab2
+                 FROM $inputTable2 b WHERE a.$GEOMETRIC_COLUMN_LOW && b.$GEOMETRIC_COLUMN_UP AND 
+                 ST_INTERSECTS(st_force2d(a.$GEOMETRIC_COLUMN_LOW), st_force2d(b.$GEOMETRIC_COLUMN_UP)) ORDER BY 
+                 ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$GEOMETRIC_COLUMN_LOW)), st_force2d(st_makevalid(b.$GEOMETRIC_COLUMN_UP)))) 
+                 $subqueryNbRelations) AS $idColumnTab2 FROM $inputTable1 a """
+            }
 
-            info "The relations between scales have been created between :  $inputLowerScaleTableName and $inputUpperScaleTableName"
+            datasource query
 
-            [outputTableName: outputTableName, outputIdColumnUp: idColumnUp]
+            info "The spatial join have been performed between :  $inputTable1 and $inputTable2"
+
+            [outputTableName: outputTableName, outputIdColumnUp: idColumnTab2]
         }
     }
 }
