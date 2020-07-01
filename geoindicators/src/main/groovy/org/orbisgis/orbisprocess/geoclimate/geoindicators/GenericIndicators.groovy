@@ -574,6 +574,10 @@ static double getEquality(def myMap, def nbDistCol) {
  * @param inputTableName the table name where are stored the objects having different types to characterize
  * @param idField ID of the scale used for the 'GROUP BY'
  * @param typeFieldName The name of the field where is stored the type of the object
+ * @param areaTypeAndComposition Types that should be calculated and objects included in this type
+ * (e.g. for building table could be: ["residential": ["residential", "detached"]])
+ * @param floorAreaTypeAndComposition (ONLY FOR BUILDING OBJECTS) Types that should be calculated and objects included in this type
+ * (e.g. for building table could be: ["residential": ["residential", "detached"]])
  * @param prefixName String use as prefix to name the output table
  *
  * @return A database table name.
@@ -584,51 +588,71 @@ IProcess typeProportion() {
     return create {
         title "Proportion of a certain type within a given object"
         id "typeProportion"
-        inputs inputTableName: String, idField: String,
-                typeFieldName: String, prefixName: String, datasource: JdbcDataSource
+        inputs inputTableName: String, idField: String          , floorAreaTypeAndComposition: [:],
+                typeFieldName: String, areaTypeAndComposition: [:], prefixName: String,
+                datasource: JdbcDataSource
         outputs outputTableName: String
-        run { inputTableName, idField, typeFieldName, prefixName, datasource ->
+        run { inputTableName, idField, floorAreaTypeAndComposition, typeFieldName, areaTypeAndComposition,
+              prefixName, datasource ->
 
             def GEOMETRIC_FIELD_LOW = "the_geom"
             def BASE_NAME = "type_proportion"
+            def NB_LEV = "nb_lev"
 
             info "Executing typeProportion"
 
-            // The name of the outputTableName is constructed
-            def outputTableName = prefix prefixName, BASE_NAME
+            if((areaTypeAndComposition.size()>0 && floorAreaTypeAndComposition != null) ||
+                    (areaTypeAndComposition != null && floorAreaTypeAndComposition.size()>0)) {
+                // The name of the outputTableName is constructed
+                def outputTableName = prefix prefixName, BASE_NAME
 
-            // To avoid overwriting the output files of this step, a unique identifier is created
-            // Temporary table names
-            def caseWhenTab = postfix "case_when_tab"
+                // To avoid overwriting the output files of this step, a unique identifier is created
+                // Temporary table names
+                def caseWhenTab = postfix "case_when_tab"
 
-            // Recover a list of the types of the input table
-            def possibleTypes = datasource.rows("SELECT DISTINCT $typeFieldName FROM $inputTableName")
+                // Define the pieces of query according to each type of the input table
+                def queryCalc = ""
+                def queryCaseWh = ""
+                // For the area fractions
+                if(areaTypeAndComposition.size()>0){
+                    queryCaseWh += " ST_AREA($GEOMETRIC_FIELD_LOW) AS AREA, "
+                    areaTypeAndComposition.forEach { type, compo ->
+                        queryCaseWh += "CASE WHEN $typeFieldName='${compo.join("' OR $typeFieldName='")}' THEN ST_AREA($GEOMETRIC_FIELD_LOW) END AS AREA_${type},"
+                        queryCalc += "SUM(AREA_${type})/SUM(AREA) AS AREA_FRACTION_${type}, "
+                    }
+                }
 
-            // Define the pieces of query according to each type of the input table
-            def queryCalc = ""
-            def queryCaseWh = ""
-            possibleTypes.forEach {
-                def t = it.TYPE
-                queryCalc += "SUM(AREA_$t)/SUM(AREA) AS FRACTION_$t, "
-                queryCaseWh += "CASE WHEN $typeFieldName='$t' THEN ST_AREA($GEOMETRIC_FIELD_LOW) END AS AREA_$t,"
+                // For the floor area fractions in case the objects are buildings
+                if(floorAreaTypeAndComposition.size()>0){
+                    queryCaseWh += " ST_AREA($GEOMETRIC_FIELD_LOW)*$NB_LEV AS FLOOR_AREA, "
+                    floorAreaTypeAndComposition.forEach { type, compo ->
+                        queryCaseWh += "CASE WHEN $typeFieldName='${compo.join("' OR $typeFieldName='")}' THEN ST_AREA($GEOMETRIC_FIELD_LOW)*$NB_LEV END AS FLOOR_AREA_${type},"
+                        queryCalc += "SUM(FLOOR_AREA_${type})/SUM(FLOOR_AREA) AS FLOOR_AREA_FRACTION_${type}, "
+                    }
+                }
+
+
+                // Calculates the surface of each object depending on its type
+                datasource.execute """DROP TABLE IF EXISTS $caseWhenTab;
+                                    CREATE TABLE $caseWhenTab 
+                                            AS SELECT $idField,
+                                                        ${queryCaseWh[0..-2]} 
+                                            FROM $inputTableName"""
+
+                datasource."$caseWhenTab"."$idField".createIndex()
+
+                // Calculate the proportion of each type
+                datasource.execute """DROP TABLE IF EXISTS $outputTableName;
+                                    CREATE TABLE $outputTableName 
+                                            AS SELECT $idField, ${queryCalc[0..-2]}
+                                            FROM $caseWhenTab GROUP BY $idField"""
+
+                [outputTableName: outputTableName]
             }
-
-            // Calculates the surface of each object depending on its type
-            datasource.execute """DROP TABLE IF EXISTS $caseWhenTab;
-                                CREATE TABLE $caseWhenTab 
-                                        AS SELECT ST_AREA($GEOMETRIC_FIELD_LOW) AS AREA, $idField,
-                                                    ${queryCaseWh[0..-2]} 
-                                        FROM $inputTableName"""
-
-            datasource."$caseWhenTab"."$idField".createIndex()
-
-            // Calculate the proportion of each type
-            datasource.execute """DROP TABLE IF EXISTS $outputTableName;
-                                CREATE TABLE $outputTableName 
-                                        AS SELECT $idField, ${queryCalc[0..-2]}
-                                        FROM $caseWhenTab GROUP BY $idField"""
-
-            [outputTableName: outputTableName]
+            else{
+                error "'floorAreaTypeAndComposition' or 'areaTypeAndComposition' arguments should be a Map " +
+                        "with at least one combination key-value"
+            }
         }
     }
 }

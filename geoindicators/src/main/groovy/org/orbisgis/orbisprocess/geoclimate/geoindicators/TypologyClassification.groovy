@@ -190,14 +190,14 @@ IProcess identifyLczType() {
                                         WHERE b.$ID_FIELD_RSU IS NULL;"""
 
                 // 0. Set as industrial areas having more than 'industrialFractionThreshold' % of their building surface being industrial type
-                if (datasource."$urbanLCZ".columns.contains("FRACTION_INDUSTRIAL")) {
+                if (datasource."$urbanLCZ".columns.contains("AREA_FRACTION_INDUSTRIAL")) {
                     datasource """DROP TABLE IF EXISTS $classifiedIndustrialLcz;
                                 CREATE TABLE $classifiedIndustrialLcz
                                         AS SELECT   $ID_FIELD_RSU,
                                                     10 AS LCZ1,
                                                     null AS LCZ2, null AS min_distance, null AS PSS 
                                         FROM $urbanLCZ 
-                                        WHERE FRACTION_INDUSTRIAL > $industrialFractionThreshold;
+                                        WHERE AREA_FRACTION_INDUSTRIAL > $industrialFractionThreshold;
                                 DROP TABLE IF EXISTS $ruralAndIndustrialLCZ;
                                 CREATE TABLE $ruralAndIndustrialLCZ
                                             AS SELECT * 

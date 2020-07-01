@@ -285,7 +285,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                                  "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
                                  hLevMin : 3, hLevMax: 15, hThresholdLev2: 10]
         H2GIS h2GISDatabase = loadFiles(inseeCode, dbSuffixName)
-        def process = new WorkflowBDTopo_V2().bdtopo_processing(h2GISDatabase, defaultParameters, inseeCode, null, null, null, null);
+        def process = new WorkflowBDTopo_V2().bdtopo_processing(h2GISDatabase, defaultParameters, inseeCode, null, null, null, null, 0);
         checkSpatialTable(h2GISDatabase, "block_indicators")
         checkSpatialTable(h2GISDatabase, "building_indicators")
         checkSpatialTable(h2GISDatabase, "rsu_indicators")

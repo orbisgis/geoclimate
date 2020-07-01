@@ -364,6 +364,8 @@ IProcess computeBlockIndicators() {
  * of overlapped layers (for example a geometry containing water and low_vegetation must be either water
  * or either low_vegetation, not both (default ["water", "building", "high_vegetation", "low_vegetation",
  * "road", "impervious"]
+ * @param buildingAreaTypeAndComposition Building type proportion that should be calculated (default: ["industrial": ["industrial"]])
+ * @param floorAreaTypeAndComposition Building floor area type proportion that should be calculated (default: ["residential": ["residential"]])
  * @param urbanTypoSurfFraction Map containing as key the name of the fraction indicators useful for the urban typology classification
  * and as value a list of the fractions that have to be summed up to calculate the indicator. No need to modify
  * these values if not interested by the urban typology
@@ -379,70 +381,73 @@ IProcess computeRSUIndicators() {
     return create {
         title "Compute the geoindicators at RSU scale"
         id "computeRSUIndicators"
-        inputs datasource: JdbcDataSource, buildingTable: "",
-                rsuTable: "", prefixName: "",
-                vegetationTable: "", roadTable: "",
-                hydrographicTable: "", imperviousTable: "",
-                facadeDensListLayersBottom: [0, 10, 20, 30, 40, 50],
-                facadeDensNumberOfDirection: 12, svfPointDensity: 0.008,
-                svfRayLength: 100, svfNumberOfDirection: 60,
-                heightColumnName: "height_roof",
-                inputFields: ["id_build", "the_geom"],
-                levelForRoads: [0], angleRangeSizeBuDirection: 30,
-                svfSimplified: false,
-                indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
-                surfSuperpositions: ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]],
-                surfPriorities: ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"],
-                urbanTypoSurfFraction: ["vegetation_fraction_urb"                : ["high_vegetation_fraction",
-                                                                                    "low_vegetation_fraction",
-                                                                                    "high_vegetation_low_vegetation_fraction",
-                                                                                    "high_vegetation_road_fraction",
-                                                                                    "high_vegetation_impervious_fraction",
-                                                                                    "high_vegetation_water_fraction",
-                                                                                    "high_vegetation_building_fraction"],
-                                        "low_vegetation_fraction_urb"            : ["low_vegetation_fraction"],
-                                        "high_vegetation_impervious_fraction_urb": ["high_vegetation_road_fraction",
-                                                                                    "high_vegetation_impervious_fraction"],
-                                        "high_vegetation_pervious_fraction_urb"  : ["high_vegetation_fraction",
-                                                                                    "high_vegetation_low_vegetation_fraction",
-                                                                                    "high_vegetation_water_fraction"],
-                                        "road_fraction_urb"                      : ["road_fraction",
-                                                                                    "high_vegetation_road_fraction"],
-                                        "impervious_fraction_urb"                : ["road_fraction",
-                                                                                    "high_vegetation_road_fraction",
-                                                                                    "impervious_fraction",
-                                                                                    "high_vegetation_impervious_fraction"]],
-                lczSurfFraction: ["building_fraction_lcz"       : ["building_fraction",
-                                                                   "high_vegetation_building_fraction"],
-                                  "pervious_fraction_lcz"       : ["high_vegetation_fraction",
-                                                                   "low_vegetation_fraction",
-                                                                   "water_fraction",
-                                                                   "high_vegetation_low_vegetation_fraction",
-                                                                   "high_vegetation_water_fraction"],
-                                  "high_vegetation_fraction_lcz": ["high_vegetation_fraction",
-                                                                   "high_vegetation_low_vegetation_fraction",
-                                                                   "high_vegetation_road_fraction",
-                                                                   "high_vegetation_impervious_fraction",
-                                                                   "high_vegetation_water_fraction",
-                                                                   "high_vegetation_building_fraction"],
-                                  "low_vegetation_fraction_lcz" : ["low_vegetation_fraction"],
-                                  "impervious_fraction_lcz"     : ["impervious_fraction",
-                                                                   "road_fraction",
-                                                                   "high_vegetation_impervious_fraction",
-                                                                   "high_vegetation_road_fraction"],
-                                  "water_fraction_lcz"          : ["water_fraction",
-                                                                   "high_vegetation_water_fraction"]],
-                buildingFractions: ["high_vegetation_building_fraction", "building_fraction"]
+        inputs  datasource                      : JdbcDataSource,   buildingTable               : "",
+                rsuTable                        : "",               prefixName                  : "",
+                vegetationTable                 : "",               roadTable                   : "",
+                hydrographicTable               : "",               imperviousTable             : "",
+                facadeDensListLayersBottom      : [0, 10, 20, 30, 40, 50],
+                facadeDensNumberOfDirection     : 12,               svfPointDensity             : 0.008,
+                svfRayLength                    : 100,              svfNumberOfDirection        : 60,
+                heightColumnName                : "height_roof",
+                inputFields                     : ["id_build", "the_geom"],
+                levelForRoads                   : [0],              angleRangeSizeBuDirection   : 30,
+                svfSimplified                   : false,
+                indicatorUse                    : ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+                surfSuperpositions              : ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]],
+                surfPriorities                  : ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"],
+                buildingAreaTypeAndComposition  : ["industrial": ["industrial"]],
+                floorAreaTypeAndComposition     : ["residential": ["residential"]],
+                urbanTypoSurfFraction           : ["vegetation_fraction_urb"                 : ["high_vegetation_fraction",
+                                                                                           "low_vegetation_fraction",
+                                                                                           "high_vegetation_low_vegetation_fraction",
+                                                                                           "high_vegetation_road_fraction",
+                                                                                           "high_vegetation_impervious_fraction",
+                                                                                           "high_vegetation_water_fraction",
+                                                                                           "high_vegetation_building_fraction"],
+                                             "low_vegetation_fraction_urb"                  : ["low_vegetation_fraction"],
+                                             "high_vegetation_impervious_fraction_urb"  : ["high_vegetation_road_fraction",
+                                                                                           "high_vegetation_impervious_fraction"],
+                                             "high_vegetation_pervious_fraction_urb"    : ["high_vegetation_fraction",
+                                                                                           "high_vegetation_low_vegetation_fraction",
+                                                                                           "high_vegetation_water_fraction"],
+                                             "road_fraction_urb"                        : ["road_fraction",
+                                                                                           "high_vegetation_road_fraction"],
+                                             "impervious_fraction_urb"                  : ["road_fraction",
+                                                                                           "high_vegetation_road_fraction",
+                                                                                           "impervious_fraction",
+                                                                                           "high_vegetation_impervious_fraction"]],
+                lczSurfFraction             : ["building_fraction_lcz"                  : ["building_fraction",
+                                                                                           "high_vegetation_building_fraction"],
+                                              "pervious_fraction_lcz"                   : ["high_vegetation_fraction",
+                                                                                           "low_vegetation_fraction",
+                                                                                           "water_fraction",
+                                                                                           "high_vegetation_low_vegetation_fraction",
+                                                                                           "high_vegetation_water_fraction"],
+                                              "high_vegetation_fraction_lcz"            : ["high_vegetation_fraction",
+                                                                                           "high_vegetation_low_vegetation_fraction",
+                                                                                           "high_vegetation_road_fraction",
+                                                                                           "high_vegetation_impervious_fraction",
+                                                                                           "high_vegetation_water_fraction",
+                                                                                           "high_vegetation_building_fraction"],
+                                              "low_vegetation_fraction_lcz"             : ["low_vegetation_fraction"],
+                                              "impervious_fraction_lcz"                 : ["impervious_fraction",
+                                                                                            "road_fraction",
+                                                                                            "high_vegetation_impervious_fraction",
+                                                                                            "high_vegetation_road_fraction"],
+                                              "water_fraction_lcz"                      : ["water_fraction",
+                                                                                            "high_vegetation_water_fraction"]],
+                buildingFractions          : ["high_vegetation_building_fraction","building_fraction"]
         outputs outputTableName: String
-        run { datasource, buildingTable, rsuTable,
-              prefixName, vegetationTable, roadTable,
-              hydrographicTable, imperviousTable,
+        run { datasource                , buildingTable                     , rsuTable,
+              prefixName                , vegetationTable                   , roadTable,
+              hydrographicTable         , imperviousTable,
               facadeDensListLayersBottom, facadeDensNumberOfDirection,
-              svfPointDensity, svfRayLength, svfNumberOfDirection,
-              heightColumnName, inputFields, levelForRoads,
-              angleRangeSizeBuDirection, svfSimplified, indicatorUse,
-              surfSuperpositions, surfPriorities, urbanTypoSurfFraction,
-              lczSurfFraction, buildingFractions ->
+              svfPointDensity           , svfRayLength                      , svfNumberOfDirection,
+              heightColumnName          , inputFields                       , levelForRoads,
+              angleRangeSizeBuDirection , svfSimplified                     , indicatorUse,
+              surfSuperpositions        , surfPriorities                    , buildingAreaTypeAndComposition,
+              floorAreaTypeAndComposition,
+              urbanTypoSurfFraction     , lczSurfFraction                   , buildingFractions ->
 
             info "Start computing RSU indicators..."
             def to_start = System.currentTimeMillis()
@@ -474,22 +479,22 @@ IProcess computeRSUIndicators() {
 
             // Calculate all surface fractions indicators
             // Need to create the smallest geometries used as input of the surface fraction process
-            def computeSmallestGeom = Geoindicators.RsuIndicators.smallestCommunGeometry()
+            def  computeSmallestGeom =  Geoindicators.RsuIndicators.smallestCommunGeometry()
             if (!computeSmallestGeom.execute([
-                    rsuTable       : rsuTable, buildingTable: buildingTable, roadTable: roadTable, vegetationTable: vegetationTable, waterTable: hydrographicTable,
-                    imperviousTable: imperviousTable,
-                    prefixName     : temporaryPrefName, datasource: datasource])) {
+                    rsuTable: rsuTable,buildingTable: buildingTable,roadTable : roadTable, vegetationTable: vegetationTable,waterTable: hydrographicTable,
+                    imperviousTable:imperviousTable,
+                    prefixName: temporaryPrefName, datasource: datasource])){
                 info "Cannot compute the smallest commun geometries"
                 return
             }
             def superpositionsTable = computeSmallestGeom.results.outputTableName
             // Calculate the surface fractions from the commun geom
-            def computeSurfaceFractions = Geoindicators.RsuIndicators.surfaceFractions()
+            def  computeSurfaceFractions =  Geoindicators.RsuIndicators.surfaceFractions()
             if (!computeSurfaceFractions.execute([
-                    rsuTable      : rsuTable, spatialRelationsTable: superpositionsTable,
+                    rsuTable: rsuTable, spatialRelationsTable: superpositionsTable,
                     superpositions: surfSuperpositions,
-                    priorities    : surfPriorities,
-                    prefixName    : temporaryPrefName, datasource: datasource])) {
+                    priorities: surfPriorities,
+                    prefixName: temporaryPrefName, datasource: datasource])){
                 info "Cannot compute the surface fractions"
                 return
             }
@@ -546,18 +551,19 @@ IProcess computeRSUIndicators() {
             if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY") || indicatorUse*.toUpperCase().contains("LCZ")) {
                 def computeTypeProportion = Geoindicators.GenericIndicators.typeProportion()
                 if (!computeTypeProportion([
-                        inputTableName: buildingTable,
-                        idField       : columnIdRsu,
-                        typeFieldName : "type",
-                        prefixName    : temporaryPrefName,
-                        datasource    : datasource])) {
-                    info "Cannot compute the area of the RSU"
+                                            inputTableName                  : buildingTable,
+                                            idField                     : columnIdRsu,
+                                            typeFieldName               : "type",
+                                            areaTypeAndComposition      : buildingAreaTypeAndComposition,
+                                            floorAreaTypeAndComposition : floorAreaTypeAndComposition,
+                                            prefixName                  : temporaryPrefName,
+                                            datasource                  : datasource])) {
+                    info "Cannot compute the building type proportion of the RSU"
                     return
                 }
                 def rsuTableTypeProportion = computeTypeProportion.results.outputTableName
                 finalTablesToJoin.put(rsuTableTypeProportion, columnIdRsu)
             }
-
 
             // rsu_area (note that the uuid is used as prefix for intermediate tables - indicator alone in a table)
             if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
@@ -847,7 +853,6 @@ IProcess computeRSUIndicators() {
 
             info "Geoindicators calculation time: ${tObis / 1000} s"
             [outputTableName: outputTableName]
-
         }
     }
 }
