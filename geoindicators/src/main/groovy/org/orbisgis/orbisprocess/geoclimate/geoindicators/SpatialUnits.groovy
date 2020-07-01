@@ -399,11 +399,9 @@ IProcess spatialJoin() {
                  CREATE TABLE $outputTableName AS SELECT a.*,"""
             def subqueryNbRelations = ""
             if (pointOnSurface){
-                query += """(SELECT b.$idColumnTab2
-                 FROM $inputTable2 b WHERE a.$GEOMETRIC_COLUMN_LOW && b.$GEOMETRIC_COLUMN_UP AND 
-                 ST_INTERSECTS(st_force2d(a.$GEOMETRIC_COLUMN_LOW), st_force2d(b.$GEOMETRIC_COLUMN_UP)) ORDER BY 
-                 ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$GEOMETRIC_COLUMN_LOW)), st_force2d(st_makevalid(b.$GEOMETRIC_COLUMN_UP)))) 
-                 $subqueryNbRelations) AS $idColumnTab2 FROM $inputTable1 a """
+                query += """b.$idColumnTab2 FROM $inputTable1 a, $inputTable2 b 
+                            WHERE ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_LOW) && st_force2d(b.$GEOMETRIC_COLUMN_UP) AND 
+                            ST_INTERSECTS(ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_LOW), st_force2d(b.$GEOMETRIC_COLUMN_UP))"""
             }
             else {
                 if(nbRelations!=null){
