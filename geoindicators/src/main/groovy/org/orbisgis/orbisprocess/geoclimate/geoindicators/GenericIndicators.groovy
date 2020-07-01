@@ -601,8 +601,7 @@ IProcess typeProportion() {
 
             info "Executing typeProportion"
 
-            if((areaTypeAndComposition.size()>0 && floorAreaTypeAndComposition != null) ||
-                    (areaTypeAndComposition != null && floorAreaTypeAndComposition.size()>0)) {
+            if(areaTypeAndComposition || floorAreaTypeAndComposition) {
                 // The name of the outputTableName is constructed
                 def outputTableName = prefix prefixName, BASE_NAME
 
