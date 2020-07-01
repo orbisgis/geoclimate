@@ -380,7 +380,7 @@ IProcess spatialJoin() {
         inputs inputTable1: String, inputTable2: String, idColumnTab1: String,
                 idColumnTab2: String, prefixName: String, pointOnSurface: false, nbRelations: int,
                 datasource: JdbcDataSource
-        outputs outputTableName: String, outputIdColumnUp: String
+        outputs outputTableName: String, idColumnTab2: String
         run { inputTable1, inputTable2, idColumnTab1, idColumnTab2, prefixName, pointOnSurface,
               nbRelations, datasource ->
 
@@ -392,33 +392,44 @@ IProcess spatialJoin() {
             // The name of the outputTableName is constructed (the prefix name is not added since it is already contained
             // in the inputLowerScaleTableName object
             def outputTableName = postfix "${inputTable1}_${inputTable2}", "join"
-            datasource."$inputTable1".the_geom.createSpatialIndex()
-            datasource."$inputTable2".the_geom.createSpatialIndex()
+            datasource."$inputTable1".the_geom.createIndex()
+            datasource."$inputTable2".the_geom.createIndex()
+            datasource."$inputTable2"[idColumnTab2].createIndex()
 
-            def query = """DROP TABLE IF EXISTS $outputTableName;
-                 CREATE TABLE $outputTableName AS SELECT a.*,"""
+            def query = """DROP TABLE IF EXISTS $outputTableName;"""
             def subqueryNbRelations = ""
             if (pointOnSurface){
-                query += """b.$idColumnTab2 FROM $inputTable1 a, $inputTable2 b 
-                            WHERE ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_LOW) && st_force2d(b.$GEOMETRIC_COLUMN_UP) AND 
-                            ST_INTERSECTS(ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_LOW), st_force2d(b.$GEOMETRIC_COLUMN_UP))"""
+                query += """CREATE TABLE $outputTableName AS SELECT a.*, b.$idColumnTab2 
+                                    FROM $inputTable1 a, $inputTable2 b 
+                                    WHERE   ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_LOW) && st_force2d(b.$GEOMETRIC_COLUMN_UP) AND 
+                                            ST_INTERSECTS(ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_LOW), st_force2d(b.$GEOMETRIC_COLUMN_UP))"""
             }
             else {
+                def temporaryTab = "temporaryTab"
                 if(nbRelations!=null){
                     subqueryNbRelations += """DESC LIMIT $nbRelations"""
                 }
-                query += """(SELECT b.$idColumnTab2
-                 FROM $inputTable2 b WHERE a.$GEOMETRIC_COLUMN_LOW && b.$GEOMETRIC_COLUMN_UP AND 
-                 ST_INTERSECTS(st_force2d(a.$GEOMETRIC_COLUMN_LOW), st_force2d(b.$GEOMETRIC_COLUMN_UP)) ORDER BY 
-                 ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$GEOMETRIC_COLUMN_LOW)), st_force2d(st_makevalid(b.$GEOMETRIC_COLUMN_UP)))) 
-                 $subqueryNbRelations) AS $idColumnTab2 FROM $inputTable1 a """
+                query += """DROP TABLE IF EXISTS $temporaryTab;
+                            CREATE TABLE $temporaryTab 
+                                    AS SELECT   a.*, b.$idColumnTab2,
+                                                ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$GEOMETRIC_COLUMN_LOW)), 
+                                                st_force2d(st_makevalid(b.$GEOMETRIC_COLUMN_UP)))) AS AREA
+                                    FROM    $inputTable1 a, $inputTable2 b
+                                    WHERE   a.$GEOMETRIC_COLUMN_LOW && b.$GEOMETRIC_COLUMN_UP AND 
+                                            ST_INTERSECTS(st_force2d(a.$GEOMETRIC_COLUMN_LOW), st_force2d(b.$GEOMETRIC_COLUMN_UP));
+                            CREATE INDEX IF NOT EXISTS id_area ON $temporaryTab USING BTREE(AREA);
+                            CREATE TABLE $outputTableName 
+                                    AS SELECT   *
+                                    FROM $temporaryTab
+                                    ORDER BY AREA
+                                    $subqueryNbRelations"""
             }
 
             datasource query
 
             info "The spatial join have been performed between :  $inputTable1 and $inputTable2"
 
-            [outputTableName: outputTableName, outputIdColumnUp: idColumnTab2]
+            [outputTableName: outputTableName, idColumnTab2: idColumnTab2]
         }
     }
 }
