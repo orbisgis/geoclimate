@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertFalse
+import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS.open
 import static org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager.load
 
@@ -365,6 +366,13 @@ class GenericIndicatorsTests {
 
     @Test
     void typeProportionTest2() {
+        // Only the first 6 first created buildings are selected since any new created building may alter the results
+        h2GIS """
+                DROP TABLE IF EXISTS tempo_build0, tempo_build, tempo_rsu, unweighted_operation_from_lower_scale1, 
+                unweighted_operation_from_lower_scale2, unweighted_operation_from_lower_scale3; 
+                CREATE TABLE tempo_build AS SELECT a.*
+                        FROM building_test a, rsu_test b
+                        WHERE id_build < 4;"""
         // Test 1
         def  p =  Geoindicators.GenericIndicators.typeProportion()
         assertFalse(p([
@@ -375,12 +383,12 @@ class GenericIndicatorsTests {
                 floorAreaTypeAndComposition : null,
                 prefixName                  : "",
                 datasource                  : h2GIS]))
-        assertFalse(p([
+        assertTrue(p([
                 inputTableName              : "tempo_build",
                 idField                     : "id_rsu",
                 typeFieldName               : "type",
-                "areaTypeAndComposition"    : null,
-                floorAreaTypeAndComposition : [:],
+                areaTypeAndComposition      : null,
+                floorAreaTypeAndComposition : ["industrial": ["industrial"], "residential": ["residential", "detached"]],
                 prefixName                  : "",
                 datasource                  : h2GIS]))
     }
