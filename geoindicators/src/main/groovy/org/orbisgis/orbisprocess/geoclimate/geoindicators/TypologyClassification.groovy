@@ -524,15 +524,6 @@ IProcess applyRandomForestClassif() {
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, modelName
 
-            // The table is recovered
-            def explicativeVariablesTable = datasource."$explicativeVariablesTableName"
-
-            // Read the table containing the explicative variables as a DataFrame
-            def df = DataFrame.of(explicativeVariablesTable)
-
-            // Remove the 'idName' column which is not used in the randomForest algo{
-            df = df.drop(idName)
-
             // Load the RandomForest model
             def xs = new XStream()
             def fileInputStream
@@ -560,22 +551,29 @@ IProcess applyRandomForestClassif() {
                     return
                 }*/
 
+                // Load the model and recover the name of the variable to model
                 def gzipInputStream = new GZIPInputStream(fileInputStream)
                 def model = xs.fromXML(gzipInputStream)
                 def var2model = model.formula.toString().split("~")[0][0..-2]
-                def prediction = Validation.test(model, df.plus(var2model))
 
-                datasource """CREATE TABLE $outputTableName($idName INTEGER, $var2model DOUBLE)"""
-                // Will insert values by batch of 1000 in a new table
-                def i = 0
-                datasource.withBatch(1000) { stmt ->
-                    datasource.eachRow("SELECT $idName FROM $explicativeVariablesTableName") { row ->
-                        def id_val = row."$idName"
-                        stmt.addBatch """INSERT INTO $outputTableName 
-                                                    VALUES ($id_val, ${prediction[i]})"""
-                        i++
-                    }
-                }
+                // We need to add the name of the predicted variable in order to use the model
+                datasource.execute """ALTER TABLE $explicativeVariablesTableName ADD COLUMN $var2model INTEGER DEFAULT 0"""
+                datasource."$explicativeVariablesTableName".reload()
+
+                // The table containing explicative variables is recovered
+                def explicativeVariablesTable = datasource."$explicativeVariablesTableName"
+                println explicativeVariablesTable.getFirstRow()
+                // Read the table containing the explicative variables as a DataFrame
+                def df = DataFrame.of(explicativeVariablesTable)
+
+                // Remove the 'idName' column which is not used in the randomForest algo{
+                df = df.drop(idName)
+
+                def prediction = Validation.test(model, df)
+
+                df.merge(prediction)
+
+                df.save(datasource, outputTableName, true)
             }
             else{
                 error "Either 'pathAndFileName' or 'defaultModelUrl' should be filled"
