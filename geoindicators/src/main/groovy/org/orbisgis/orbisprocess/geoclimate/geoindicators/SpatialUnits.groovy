@@ -357,10 +357,10 @@ IProcess createBlocks() {
  *
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
- * @param inputTable1 A first input table where are stored polygons (note that all columns will be conserved in the resulting table)
- * @param inputTable2 A second input table where are stored polygons
- * @param idColumnTab1 The column name where is stored the ID of table 1
- * @param idColumnTab2 The column name where is stored the ID of table 2
+ * @param sourceTable A first input table where are stored polygons (note that all columns will be conserved in the resulting table)
+ * @param targetTable A second input table where are stored polygons
+ * @param idColumnSource The column name where is stored the ID of table source
+ * @param idColumnTarget The column name where is stored the ID of table target
  * @param prefixName A prefix used to name the output table
  * @param pointOnSurface Whether or not the spatial join may be performed on pointOnSurfaceTypes of spatial join that may be used (default false):
  *          --> True: polygons from the first table are converted to points before to be spatially join with polygons from the second table
@@ -371,65 +371,58 @@ IProcess createBlocks() {
  * has no value and thus all relations are conserved
  *
  * @return outputTableName A table name containing ID from table 1, ID from table 2 and AREA shared by the two objects (if pointOnSurface = false)
- * @return idColumnTab2 The ID name of the table 2
+ * @return idColumnTarget The ID name of the target table
  */
 IProcess spatialJoin() {
     return create {
         title "Creating the spatial join between two tables of polygons"
         id "spatialJoin"
-        inputs inputTable1: String, inputTable2: String, idColumnTab1: String,
-                idColumnTab2: String, prefixName: String, pointOnSurface: false, nbRelations: int,
+        inputs sourceTable: String, targetTable: String, idColumnSource: String,
+                idColumnTarget: String, prefixName: String, pointOnSurface: false, nbRelations: Integer,
                 datasource: JdbcDataSource
-        outputs outputTableName: String, idColumnTab2: String
-        run { inputTable1, inputTable2, idColumnTab1, idColumnTab2, prefixName, pointOnSurface,
+        outputs outputTableName: String, idColumnTarget: String
+        run { sourceTable, targetTable, idColumnSource, idColumnTarget, prefixName, pointOnSurface,
               nbRelations, datasource ->
 
             def GEOMETRIC_COLUMN_LOW = "the_geom"
             def GEOMETRIC_COLUMN_UP = "the_geom"
 
-            info "Creating a spatial join between objects from two tables :  $inputTable1 and $inputTable2"
+            info "Creating a spatial join between objects from two tables :  $sourceTable and $targetTable"
 
             // The name of the outputTableName is constructed (the prefix name is not added since it is already contained
             // in the inputLowerScaleTableName object
-            def outputTableName = postfix "${inputTable1}_${inputTable2}", "join"
-            datasource."$inputTable1".the_geom.createIndex()
-            datasource."$inputTable2".the_geom.createIndex()
-            datasource."$inputTable2"[idColumnTab2].createIndex()
+            def outputTableName = postfix "${sourceTable}_${targetTable}", "join"
+            datasource."$sourceTable".the_geom.createIndex()
+            datasource."$targetTable".the_geom.createIndex()
 
             def query = """DROP TABLE IF EXISTS $outputTableName;"""
             def subqueryNbRelations = ""
             if (pointOnSurface){
-                query += """CREATE TABLE $outputTableName AS SELECT a.*, b.$idColumnTab2 
-                                    FROM $inputTable1 a, $inputTable2 b 
+                query += """CREATE TABLE $outputTableName AS SELECT a.*, b.$idColumnTarget 
+                                    FROM $sourceTable a, $targetTable b 
                                     WHERE   ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_LOW) && st_force2d(b.$GEOMETRIC_COLUMN_UP) AND 
                                             ST_INTERSECTS(ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_LOW), st_force2d(b.$GEOMETRIC_COLUMN_UP))"""
             }
             else {
-                def temporaryTab = "temporaryTab"
-                if(nbRelations!=null){
-                    subqueryNbRelations += """DESC LIMIT $nbRelations"""
-                }
-                query += """DROP TABLE IF EXISTS $temporaryTab;
-                            CREATE TABLE $temporaryTab 
-                                    AS SELECT   a.*, b.$idColumnTab2,
+                def columns = datasource.getTable(sourceTable).getColumns().join(",")
+                columns+= ",  $idColumnTarget"
+                query += """CREATE TABLE $outputTableName 
+                                    AS SELECT $columns FROM (SELECT   a.*, b.$idColumnTarget,
                                                 ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$GEOMETRIC_COLUMN_LOW)), 
                                                 st_force2d(st_makevalid(b.$GEOMETRIC_COLUMN_UP)))) AS AREA
-                                    FROM    $inputTable1 a, $inputTable2 b
+                                    FROM    $sourceTable a, $targetTable b
                                     WHERE   a.$GEOMETRIC_COLUMN_LOW && b.$GEOMETRIC_COLUMN_UP AND 
-                                            ST_INTERSECTS(st_force2d(a.$GEOMETRIC_COLUMN_LOW), st_force2d(b.$GEOMETRIC_COLUMN_UP));
-                            CREATE INDEX IF NOT EXISTS id_area ON $temporaryTab USING BTREE(AREA);
-                            CREATE TABLE $outputTableName 
-                                    AS SELECT   *
-                                    FROM $temporaryTab
-                                    ORDER BY AREA
-                                    $subqueryNbRelations"""
+                                            ST_INTERSECTS(st_force2d(a.$GEOMETRIC_COLUMN_LOW), st_force2d(b.$GEOMETRIC_COLUMN_UP))) as foo ORDER BY AREA"""
+                if(nbRelations){
+                    query  += """ DESC LIMIT $nbRelations"""
+                }
             }
 
             datasource query
 
-            info "The spatial join have been performed between :  $inputTable1 and $inputTable2"
+            info "The spatial join have been performed between :  $sourceTable and $targetTable"
 
-            [outputTableName: outputTableName, idColumnTab2: idColumnTab2]
+            [outputTableName: outputTableName, idColumnTarget: idColumnTarget]
         }
     }
 }

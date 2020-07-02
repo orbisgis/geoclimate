@@ -4,6 +4,8 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
+import static org.junit.jupiter.api.Assertions.assertEquals
+
 import static org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS.open
 
 class SpatialUnitsTests {
@@ -94,25 +96,25 @@ class SpatialUnitsTests {
         """
         def pRsu =  Geoindicators.SpatialUnits.spatialJoin()
         assert pRsu.execute([
-                inputTable1     : "build_tempo",
-                inputTable2     : "rsu_test",
-                idColumnTab1    : "id_build",
-                idColumnTab2    : "id_rsu",
+                sourceTable     : "build_tempo",
+                targetTable     : "rsu_test",
+                idColumnSource    : "id_build",
+                idColumnTarget    : "id_rsu",
                 pointOnSurface  : false,
                 nbRelations     : 1,
                 prefixName      : "test",
                 datasource      : h2GIS])
         h2GIS.eachRow("SELECT * FROM ${pRsu.results.outputTableName}"){
             row ->
-                def expected = h2GIS.firstRow("SELECT ${pRsu.results.idColumnTab2} FROM rsu_build_corr WHERE id_build = ${row.id_build}".toString())
-                assert row[pRsu.results.idColumnTab2] == expected[pRsu.results.idColumnTab2]
+                def expected = h2GIS.firstRow("SELECT ${pRsu.results.idColumnTarget} FROM rsu_build_corr WHERE id_build = ${row.id_build}".toString())
+                assert row[pRsu.results.idColumnTarget] == expected[pRsu.results.idColumnTarget]
         }
         def pBlock =  Geoindicators.SpatialUnits.spatialJoin()
         assert pBlock([
-                inputTable1     : "build_tempo",
-                inputTable2     : "block_test",
-                idColumnTab1    : "id_build",
-                idColumnTab2    : "id_block",
+                sourceTable     : "build_tempo",
+                targetTable     : "block_test",
+                idColumnSource    : "id_build",
+                idColumnTarget    : "id_block",
                 pointOnSurface  : false,
                 nbRelations     : 1,
                 prefixName      : "test",
@@ -120,8 +122,8 @@ class SpatialUnitsTests {
 
         h2GIS.eachRow("SELECT * FROM ${pBlock.results.outputTableName}".toString()){
             row ->
-                def expected = h2GIS.firstRow "SELECT ${pBlock.results.idColumnTab2} FROM block_build_corr WHERE id_build = ${row.id_build}".toString()
-                assert row[pBlock.results.idColumnTab2] == expected[pBlock.results.idColumnTab2]
+                def expected = h2GIS.firstRow "SELECT ${pBlock.results.idColumnTarget} FROM block_build_corr WHERE id_build = ${row.id_build}".toString()
+                assert row[pBlock.results.idColumnTarget] == expected[pBlock.results.idColumnTarget]
         }
     }
 
@@ -139,30 +141,25 @@ class SpatialUnitsTests {
         """
         def pNbRelationsAll =  Geoindicators.SpatialUnits.spatialJoin()
         assert pNbRelationsAll.execute([
-                inputTable1     : "tab1",
-                inputTable2     : "tab2",
-                idColumnTab1    : "id1",
-                idColumnTab2    : "id2",
+                sourceTable     : "tab1",
+                targetTable     : "tab2",
+                idColumnSource  : "id1",
+                idColumnTarget  : "id2",
                 pointOnSurface  : false,
                 nbRelations     : null,
                 prefixName      : "test",
                 datasource      : h2GIS])
-        def area1_1 = h2GIS.firstRow("SELECT AREA FROM ${pNbRelationsAll.results.outputTableName} WHERE ID1 = 1 AND ID2=1")
-        def area2_1 = h2GIS.firstRow("SELECT AREA FROM ${pNbRelationsAll.results.outputTableName} WHERE ID1 = 2 AND ID2=1")
-        def area3_1 = h2GIS.firstRow("SELECT AREA FROM ${pNbRelationsAll.results.outputTableName} WHERE ID1 = 3 AND ID2=1")
-        def area3_2 = h2GIS.firstRow("SELECT AREA FROM ${pNbRelationsAll.results.outputTableName} WHERE ID1 = 3 AND ID2=2")
+        assertEquals 1, h2GIS.firstRow("SELECT count(*) as count FROM ${pNbRelationsAll.results.outputTableName} WHERE ID1 = 1 AND ID2=1").count
+        assertEquals 1, h2GIS.firstRow("SELECT count(*) as count  FROM ${pNbRelationsAll.results.outputTableName} WHERE ID1 = 2 AND ID2=1").count
+        assertEquals 2, h2GIS.firstRow("SELECT count(*) as count  FROM ${pNbRelationsAll.results.outputTableName} WHERE (ID1 = 3 AND ID2=1) or (ID1 = 3 AND ID2=2)").count
 
-        assert area1_1.AREA == 200
-        assert area2_1.AREA == 150
-        assert area3_1.AREA == 50
-        assert area3_2.AREA == 25
 
         def pPointOnSurface =  Geoindicators.SpatialUnits.spatialJoin()
         assert pPointOnSurface.execute([
-                inputTable1     : "tab1",
-                inputTable2     : "tab2",
-                idColumnTab1    : "id1",
-                idColumnTab2    : "id2",
+                sourceTable     : "tab1",
+                targetTable     : "tab2",
+                idColumnSource  : "id1",
+                idColumnTarget  : "id2",
                 pointOnSurface  : true,
                 nbRelations     : null,
                 prefixName      : "test",
