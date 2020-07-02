@@ -614,23 +614,19 @@ IProcess typeProportion() {
                 def queryCaseWh = ""
                 // For the area fractions
                 if(areaTypeAndComposition){
-                    if(areaTypeAndComposition.size()>0){
-                        queryCaseWh += " ST_AREA($GEOMETRIC_FIELD_LOW) AS AREA, "
-                        areaTypeAndComposition.forEach { type, compo ->
-                            queryCaseWh += "CASE WHEN $typeFieldName='${compo.join("' OR $typeFieldName='")}' THEN ST_AREA($GEOMETRIC_FIELD_LOW) END AS AREA_${type},"
-                            queryCalc += "SUM(AREA_${type})/SUM(AREA) AS AREA_FRACTION_${type}, "
-                        }
+                    queryCaseWh += " ST_AREA($GEOMETRIC_FIELD_LOW) AS AREA, "
+                    areaTypeAndComposition.forEach { type, compo ->
+                        queryCaseWh += "CASE WHEN $typeFieldName='${compo.join("' OR $typeFieldName='")}' THEN ST_AREA($GEOMETRIC_FIELD_LOW) END AS AREA_${type},"
+                        queryCalc += "SUM(AREA_${type})/SUM(AREA) AS AREA_FRACTION_${type}, "
                     }
                 }
 
                 // For the floor area fractions in case the objects are buildings
                 if(floorAreaTypeAndComposition) {
-                    if (floorAreaTypeAndComposition.size() > 0) {
-                        queryCaseWh += " ST_AREA($GEOMETRIC_FIELD_LOW)*$NB_LEV AS FLOOR_AREA, "
-                        floorAreaTypeAndComposition.forEach { type, compo ->
-                            queryCaseWh += "CASE WHEN $typeFieldName='${compo.join("' OR $typeFieldName='")}' THEN ST_AREA($GEOMETRIC_FIELD_LOW)*$NB_LEV END AS FLOOR_AREA_${type},"
-                            queryCalc += "SUM(FLOOR_AREA_${type})/SUM(FLOOR_AREA) AS FLOOR_AREA_FRACTION_${type}, "
-                        }
+                    queryCaseWh += " ST_AREA($GEOMETRIC_FIELD_LOW)*$NB_LEV AS FLOOR_AREA, "
+                    floorAreaTypeAndComposition.forEach { type, compo ->
+                        queryCaseWh += "CASE WHEN $typeFieldName='${compo.join("' OR $typeFieldName='")}' THEN ST_AREA($GEOMETRIC_FIELD_LOW)*$NB_LEV END AS FLOOR_AREA_${type},"
+                        queryCalc += "SUM(FLOOR_AREA_${type})/SUM(FLOOR_AREA) AS FLOOR_AREA_FRACTION_${type}, "
                     }
                 }
 
