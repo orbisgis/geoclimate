@@ -360,7 +360,7 @@ class TypologyClassificationTests {
         def predicted = pmed.results.outputTableName
 
         // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
-        def accuracy = h2GIS.firstRow("SELECT COUNT(*) AS ACCURACY FROM $predicted")
-        assertEquals 0.844, accuracy.accuracy.round(3), 0.003
+        def nb_null = h2GIS.firstRow("SELECT COUNT(*) AS NB_null FROM $predicted WHERE $var2model=0")
+        assert nb_null.nb_null, 0
     }
 }

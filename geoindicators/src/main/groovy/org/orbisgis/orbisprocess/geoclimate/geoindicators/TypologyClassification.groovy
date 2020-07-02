@@ -12,6 +12,8 @@ import smile.base.cart.SplitRule
 import smile.classification.DataFrameClassifier
 import smile.classification.RandomForest
 import smile.data.formula.Formula
+import smile.data.vector.BaseVector
+import smile.data.vector.IntVector
 import smile.validation.Accuracy
 import smile.validation.Validation
 
@@ -394,6 +396,8 @@ IProcess identifyLczType() {
  * @param trainingTableName The name of the training table where are stored ONLY the explicative variables
  * and the one to model
  * @param varToModel Name of the field to model
+ * @param explicativeVariables List of the explicative variables to use in the training. If empty, all columns in
+ * the training table (except 'varToModel') are used (default []).
  * @param save Boolean to save the model into a file if needed
  * @param pathAndFileName String of the path and name where the model has to be saved (default "/home/RfModel")
  * @param ntrees The number of trees to build the forest
@@ -418,11 +422,11 @@ IProcess createRandomForestClassif() {
     return create {
         title "Create a Random Forest model"
         id "createRandomForestClassif"
-        inputs trainingTableName: String, varToModel: String, save: boolean, pathAndFileName: String, ntrees: int,
+        inputs trainingTableName: String, varToModel: String, explicativeVariables: String[], save: boolean, pathAndFileName: String, ntrees: int,
                 mtry: int, rule: "GINI", maxDepth: int, maxNodes: int, nodeSize: int, subsample: double,
                 datasource: JdbcDataSource
         outputs RfModel: RandomForest
-        run { String trainingTableName, String varToModel, save, pathAndFileName, ntrees, mtry, rule, maxDepth,
+        run { String trainingTableName, String varToModel, explicativeVariables, save, pathAndFileName, ntrees, mtry, rule, maxDepth,
               maxNodes, nodeSize, subsample, JdbcDataSource datasource ->
 
             def splitRule
@@ -451,7 +455,15 @@ IProcess createRandomForestClassif() {
             }
 
             // Read the training table as a DataFrame
-            def df = DataFrame.of(trainingTable)
+            def df0 = DataFrame.of(trainingTable)
+
+            // If needed, select only some specific columns for the training in the dataframe
+            if (explicativeVariables){
+                if (explicativeVariables.isEmpty()){
+
+                }
+            }
+            def df = df0.select()
 
             def formula = Formula.lhs(varToModel)
 
@@ -562,16 +574,13 @@ IProcess applyRandomForestClassif() {
 
                 // The table containing explicative variables is recovered
                 def explicativeVariablesTable = datasource."$explicativeVariablesTableName"
-                println explicativeVariablesTable.getFirstRow()
+
                 // Read the table containing the explicative variables as a DataFrame
                 def df = DataFrame.of(explicativeVariablesTable)
 
-                // Remove the 'idName' column which is not used in the randomForest algo{
-                df = df.drop(idName)
+                int[] prediction = Validation.test(model, df)
 
-                def prediction = Validation.test(model, df)
-
-                df.merge(prediction)
+                df.merge(IntVector.of("name", prediction))
 
                 df.save(datasource, outputTableName, true)
             }
