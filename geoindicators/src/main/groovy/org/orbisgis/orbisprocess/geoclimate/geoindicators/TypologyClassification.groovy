@@ -146,7 +146,7 @@ IProcess identifyLczType() {
                             WATER_FRACTION_LCZ, 
                             IMPERVIOUS_FRACTION,
                             CASE 
-                                WHEN LOW_VEGETATION_FRACTION_LCZ+HIGH_VEGETATION_FRACTION_LCZ=0
+                                WHEN IMPERVIOUS_FRACTION_LCZ+WATER_FRACTION_LCZ+BUILDING_FRACTION_LCZ=1
                                     THEN null
                                     ELSE HIGH_VEGETATION_FRACTION_LCZ/(1-IMPERVIOUS_FRACTION_LCZ-WATER_FRACTION_LCZ-BUILDING_FRACTION_LCZ)
                                     END
