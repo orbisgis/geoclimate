@@ -601,8 +601,7 @@ IProcess typeProportion() {
 
             info "Executing typeProportion"
 
-            if((areaTypeAndComposition.size()>0 && floorAreaTypeAndComposition != null) ||
-                    (areaTypeAndComposition != null && floorAreaTypeAndComposition.size()>0)) {
+            if(areaTypeAndComposition || floorAreaTypeAndComposition) {
                 // The name of the outputTableName is constructed
                 def outputTableName = prefix prefixName, BASE_NAME
 
@@ -614,7 +613,7 @@ IProcess typeProportion() {
                 def queryCalc = ""
                 def queryCaseWh = ""
                 // For the area fractions
-                if(areaTypeAndComposition.size()>0){
+                if(areaTypeAndComposition){
                     queryCaseWh += " ST_AREA($GEOMETRIC_FIELD_LOW) AS AREA, "
                     areaTypeAndComposition.forEach { type, compo ->
                         queryCaseWh += "CASE WHEN $typeFieldName='${compo.join("' OR $typeFieldName='")}' THEN ST_AREA($GEOMETRIC_FIELD_LOW) END AS AREA_${type},"
@@ -623,7 +622,7 @@ IProcess typeProportion() {
                 }
 
                 // For the floor area fractions in case the objects are buildings
-                if(floorAreaTypeAndComposition.size()>0){
+                if(floorAreaTypeAndComposition) {
                     queryCaseWh += " ST_AREA($GEOMETRIC_FIELD_LOW)*$NB_LEV AS FLOOR_AREA, "
                     floorAreaTypeAndComposition.forEach { type, compo ->
                         queryCaseWh += "CASE WHEN $typeFieldName='${compo.join("' OR $typeFieldName='")}' THEN ST_AREA($GEOMETRIC_FIELD_LOW)*$NB_LEV END AS FLOOR_AREA_${type},"

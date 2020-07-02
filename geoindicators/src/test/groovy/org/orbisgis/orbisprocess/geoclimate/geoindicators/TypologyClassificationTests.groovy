@@ -21,6 +21,7 @@ class TypologyClassificationTests {
     private static def h2GIS
     private static def randomDbName() {"${TypologyClassificationTests.simpleName}_${UUID.randomUUID().toString().replaceAll"-", "_"}"}
 
+
     @BeforeAll
     static void beforeAll(){
         h2GIS = open"./target/${randomDbName()};AUTO_SERVER=TRUE"
@@ -125,6 +126,27 @@ class TypologyClassificationTests {
                     assert 10 == row.LCZ1
                 }
         }
+        // Test with real indicator values (Montreuil ID_RSU 795), (l'haye les roses ID_RSU 965 and 1026)
+        def pReal = Geoindicators.TypologyClassification.identifyLczType()
+        assert pReal([
+                rsuLczIndicators    : "buff_rsu_test_lcz_indics",
+                rsuAllIndicators    : "buff_rsu_test_all_indics_for_lcz",
+                normalisationType   : "AVG",
+                mapOfWeights        : ["sky_view_factor"                : 4,
+                                       "aspect_ratio"                   : 3,
+                                       "building_surface_fraction"      : 8,
+                                       "impervious_surface_fraction"    : 0,
+                                       "pervious_surface_fraction"      : 0,
+                                       "height_of_roughness_elements"   : 6,
+                                       "terrain_roughness_length"       : 0.5],
+                prefixName          : "test",
+                datasource          : h2GIS])
+        assert 6 == h2GIS.firstRow("SELECT LCZ1 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 13").lcz1
+        assert 6 == h2GIS.firstRow("SELECT LCZ1 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 14").lcz1
+        assert 4 == h2GIS.firstRow("SELECT LCZ1 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 15").lcz1
+        assert 5 == h2GIS.firstRow("SELECT LCZ2 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 15").lcz2
+        assert 6 == h2GIS.firstRow("SELECT LCZ1 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 16").lcz1
+        assert 102 == h2GIS.firstRow("SELECT LCZ1 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 17").lcz1
     }
 
     @Test
