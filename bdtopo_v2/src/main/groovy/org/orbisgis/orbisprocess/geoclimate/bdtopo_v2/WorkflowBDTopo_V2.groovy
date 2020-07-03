@@ -199,7 +199,8 @@ IProcess workflow() {
                             //Get processing parameters
                             def processing_parameters = extractProcessingParameters(parameters.parameters)
                             def outputDataBase = output.database
-                            def outputFolder = output.folder
+                            def outputFolder = output.folder				
+                            def outputSRID = output.get("srid")
                             if (outputDataBase && outputFolder) {
                                 def outputFolderProperties = outputFolderProperties(outputFolder)
                                 //Check if we can write in the output folder
