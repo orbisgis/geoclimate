@@ -98,7 +98,6 @@ class SpatialUnitsTests {
         assert pRsu.execute([
                 sourceTable     : "build_tempo",
                 targetTable     : "rsu_test",
-                idColumnSource    : "id_build",
                 idColumnTarget    : "id_rsu",
                 pointOnSurface  : false,
                 nbRelations     : 1,
@@ -113,7 +112,6 @@ class SpatialUnitsTests {
         assert pBlock([
                 sourceTable     : "build_tempo",
                 targetTable     : "block_test",
-                idColumnSource    : "id_build",
                 idColumnTarget    : "id_block",
                 pointOnSurface  : false,
                 nbRelations     : 1,
@@ -143,7 +141,6 @@ class SpatialUnitsTests {
         assert pNbRelationsAll.execute([
                 sourceTable     : "tab1",
                 targetTable     : "tab2",
-                idColumnSource  : "id1",
                 idColumnTarget  : "id2",
                 pointOnSurface  : false,
                 nbRelations     : null,
@@ -158,7 +155,6 @@ class SpatialUnitsTests {
         assert pPointOnSurface.execute([
                 sourceTable     : "tab1",
                 targetTable     : "tab2",
-                idColumnSource  : "id1",
                 idColumnTarget  : "id2",
                 pointOnSurface  : true,
                 nbRelations     : null,

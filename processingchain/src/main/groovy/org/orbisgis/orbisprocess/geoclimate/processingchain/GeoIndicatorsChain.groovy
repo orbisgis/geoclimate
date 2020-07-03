@@ -940,7 +940,6 @@ IProcess createUnitsOfAnalysis() {
                 if (!createScalesRelationsRsuBl([datasource              : datasource,
                                                  sourceTable             : createBlocks.results.outputTableName,
                                                  targetTable             : createRSU.results.outputTableName,
-                                                 idColumnSource          : "id_block",
                                                  idColumnTarget          : createRSU.results.outputIdRsu,
                                                  prefixName              : prefixName,
                                                  nbRelations             : 1])) {
@@ -953,7 +952,6 @@ IProcess createUnitsOfAnalysis() {
                 if (!createScalesRelationsBlBu([datasource              : datasource,
                                                 sourceTable             : buildingTable,
                                                 targetTable             : createBlocks.results.outputTableName,
-                                                idColumnSource          : "id_build",
                                                 idColumnTarget          : createBlocks.results.outputIdBlock,
                                                 prefixName              : prefixName,
                                                 nbRelations             : 1])) {
@@ -973,7 +971,6 @@ IProcess createUnitsOfAnalysis() {
             if (!createScalesRelationsRsuBlBu([datasource              : datasource,
                                                sourceTable             : inputLowerScaleBuRsu,
                                                targetTable             : createRSU.results.outputTableName,
-                                               idColumnSource          : "id_build",
                                                idColumnTarget          : createRSU.results.outputIdRsu,
                                                prefixName              : prefixName,
                                                nbRelations             : 1])) {

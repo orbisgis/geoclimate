@@ -359,7 +359,6 @@ IProcess createBlocks() {
  * the resulting database will be stored
  * @param sourceTable A first input table where are stored polygons (note that all columns will be conserved in the resulting table)
  * @param targetTable A second input table where are stored polygons
- * @param idColumnSource The column name where is stored the ID of table source
  * @param idColumnTarget The column name where is stored the ID of table target
  * @param prefixName A prefix used to name the output table
  * @param pointOnSurface Whether or not the spatial join may be performed on pointOnSurfaceTypes of spatial join that may be used (default false):
@@ -377,15 +376,15 @@ IProcess spatialJoin() {
     return create {
         title "Creating the spatial join between two tables of polygons"
         id "spatialJoin"
-        inputs sourceTable: String, targetTable: String, idColumnSource: String,
+        inputs sourceTable: String, targetTable: String,
                 idColumnTarget: String, prefixName: String, pointOnSurface: false, nbRelations: Integer,
                 datasource: JdbcDataSource
         outputs outputTableName: String, idColumnTarget: String
-        run { sourceTable, targetTable, idColumnSource, idColumnTarget, prefixName, pointOnSurface,
+        run { sourceTable, targetTable, idColumnTarget, prefixName, pointOnSurface,
               nbRelations, datasource ->
 
-            def GEOMETRIC_COLUMN_LOW = "the_geom"
-            def GEOMETRIC_COLUMN_UP = "the_geom"
+            def GEOMETRIC_COLUMN_SOURCE = "the_geom"
+            def GEOMETRIC_COLUMN_TARGET = "the_geom"
 
             info "Creating a spatial join between objects from two tables :  $sourceTable and $targetTable"
 
@@ -395,30 +394,38 @@ IProcess spatialJoin() {
             datasource."$sourceTable".the_geom.createIndex()
             datasource."$targetTable".the_geom.createIndex()
 
-            def query = """DROP TABLE IF EXISTS $outputTableName;"""
-            def subqueryNbRelations = ""
             if (pointOnSurface){
-                query += """CREATE TABLE $outputTableName AS SELECT a.*, b.$idColumnTarget 
-                                    FROM $sourceTable a, $targetTable b 
-                                    WHERE   ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_LOW) && st_force2d(b.$GEOMETRIC_COLUMN_UP) AND 
-                                            ST_INTERSECTS(ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_LOW), st_force2d(b.$GEOMETRIC_COLUMN_UP))"""
-            }
+                datasource """    DROP TABLE IF EXISTS $outputTableName;
+                                CREATE TABLE $outputTableName AS SELECT a.*, b.$idColumnTarget 
+                                        FROM $sourceTable a, $targetTable b 
+                                        WHERE   ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_SOURCE) && st_force2d(b.$GEOMETRIC_COLUMN_TARGET) AND 
+                                                ST_INTERSECTS(ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_SOURCE), st_force2d(b.$GEOMETRIC_COLUMN_TARGET))"""
+                }
             else {
-                def columns = datasource.getTable(sourceTable).getColumns().join(",")
-                columns+= ",  $idColumnTarget"
-                query += """CREATE TABLE $outputTableName 
-                                    AS SELECT $columns FROM (SELECT   a.*, b.$idColumnTarget,
-                                                ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$GEOMETRIC_COLUMN_LOW)), 
-                                                st_force2d(st_makevalid(b.$GEOMETRIC_COLUMN_UP)))) AS AREA
-                                    FROM    $sourceTable a, $targetTable b
-                                    WHERE   a.$GEOMETRIC_COLUMN_LOW && b.$GEOMETRIC_COLUMN_UP AND 
-                                            ST_INTERSECTS(st_force2d(a.$GEOMETRIC_COLUMN_LOW), st_force2d(b.$GEOMETRIC_COLUMN_UP))) as foo ORDER BY AREA"""
-                if(nbRelations){
-                    query  += """ DESC LIMIT $nbRelations"""
+                if (nbRelations != null) {
+                    datasource """  DROP TABLE IF EXISTS $outputTableName;
+                                    CREATE TABLE $outputTableName 
+                                            AS SELECT   a.*, 
+                                                        (SELECT b.$idColumnTarget 
+                                                            FROM $targetTable b 
+                                                            WHERE a.$GEOMETRIC_COLUMN_SOURCE && b.$GEOMETRIC_COLUMN_TARGET AND 
+                                                                 ST_INTERSECTS(st_force2d(a.$GEOMETRIC_COLUMN_SOURCE), 
+                                                                                            st_force2d(b.$GEOMETRIC_COLUMN_TARGET)) 
+                                                        ORDER BY ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$GEOMETRIC_COLUMN_SOURCE)),
+                                                                                         st_force2d(st_makevalid(b.$GEOMETRIC_COLUMN_TARGET))))
+                                                        DESC LIMIT $nbRelations) AS $idColumnTarget 
+                                            FROM $sourceTable a"""
+                } else {
+                    datasource """  DROP TABLE IF EXISTS $outputTableName;
+                                    CREATE TABLE $outputTableName 
+                                            AS SELECT   a.*, b.$idColumnTarget,
+                                                        ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$GEOMETRIC_COLUMN_SOURCE)), 
+                                                        st_force2d(st_makevalid(b.$GEOMETRIC_COLUMN_TARGET)))) AS AREA
+                                            FROM    $sourceTable a, $targetTable b
+                                            WHERE   a.$GEOMETRIC_COLUMN_SOURCE && b.$GEOMETRIC_COLUMN_TARGET AND 
+                                                    ST_INTERSECTS(st_force2d(a.$GEOMETRIC_COLUMN_SOURCE), st_force2d(b.$GEOMETRIC_COLUMN_TARGET));"""
                 }
             }
-
-            datasource query
 
             info "The spatial join have been performed between :  $sourceTable and $targetTable"
 
