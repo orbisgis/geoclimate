@@ -363,4 +363,52 @@ class TypologyClassificationTests {
         def nb_null = h2GIS.firstRow("SELECT COUNT(*) AS NB_null FROM $predicted WHERE $var2model=0")
         assert nb_null.nb_null, 0
     }
+
+    @Test
+    void tempoCreateRandomForestClassifTest() {
+        // Information about where to find the training dataset for the test
+        def trainingTableName = "training_table"
+        def trainingURL = "/home/decide/Bureau/lcz_OSM.json"
+        def savePath = "/home/decide/Code/Intel/geoclimate/models/LCZ_OSM_RF_1.0.model"
+        def var2model = "LCZ"
+
+        def databaseTrainingDataSet = open"/tmp/lczIdf;AUTO_SERVER=TRUE"
+
+        def trainingTable = h2GIS.load(databaseTrainingDataSet, trainingURL, trainingTableName,true)
+        assert trainingTable
+
+        def pmed =  Geoindicators.TypologyClassification.createRandomForestClassif()
+        assert pmed.execute([
+                trainingTableName   : trainingTableName,
+                varToModel          : var2model,
+                save                : true,
+                pathAndFileName     : savePath,
+                ntrees              : 500,
+                mtry                : 7,
+                rule                : "GINI",
+                maxDepth            : 100,
+                maxNodes            : 300,
+                nodeSize            : 3,
+                subsample           : 1.0,
+                datasource          : h2GIS])
+        def model = pmed.results.RfModel
+        assert model
+        assert model instanceof DataFrameClassifier
+
+        // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
+        def df = DataFrame.of(trainingTable)
+        assert df
+        df = df.factorize(var2model)
+        assert df
+        df = df.omitNullRows()
+        def vector = df.apply(var2model)
+        assert vector
+        def truth = vector.toIntArray()
+        assert truth
+        def prediction = Validation.test(model, df)
+        assert prediction
+        def accuracy = Accuracy.of(truth, prediction)
+        assert accuracy
+        assertEquals 0.844, accuracy.round(3), 0.003
+    }
 }

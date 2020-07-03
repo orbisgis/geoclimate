@@ -422,7 +422,7 @@ IProcess createRandomForestClassif() {
     return create {
         title "Create a Random Forest model"
         id "createRandomForestClassif"
-        inputs trainingTableName: String, varToModel: String, explicativeVariables: String[], save: boolean, pathAndFileName: String, ntrees: int,
+        inputs trainingTableName: String, varToModel: String, explicativeVariables: [], save: boolean, pathAndFileName: String, ntrees: int,
                 mtry: int, rule: "GINI", maxDepth: int, maxNodes: int, nodeSize: int, subsample: double,
                 datasource: JdbcDataSource
         outputs RfModel: RandomForest
@@ -454,17 +454,14 @@ IProcess createRandomForestClassif() {
                 return
             }
 
-            // Read the training table as a DataFrame
-            def df0 = DataFrame.of(trainingTable)
-
             // If needed, select only some specific columns for the training in the dataframe
+            def df
             if (explicativeVariables){
-                if (explicativeVariables.isEmpty()){
-
-                }
+                df = DataFrame.of(datasource.select(explicativeVariables).from(trainingTableName).getTable())
             }
-            def df = df0.select()
-
+            else{
+                df = DataFrame.of(datasource.select().from(trainingTableName).getTable())
+            }
             def formula = Formula.lhs(varToModel)
 
             // Convert the variable to model into factors (if string for example) and remove rows containing null values
