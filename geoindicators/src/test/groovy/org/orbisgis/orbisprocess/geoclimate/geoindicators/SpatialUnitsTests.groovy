@@ -4,8 +4,9 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
+import static org.junit.jupiter.api.Assertions.assertEquals
+
 import static org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS.open
-import static org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager.load
 
 class SpatialUnitsTests {
 
@@ -86,38 +87,80 @@ class SpatialUnitsTests {
     }
 
     @Test
-    void createScalesRelationsTest() {
+    void spatialJoinTest() {
         h2GIS """
                 DROP TABLE IF EXISTS build_tempo; 
                 CREATE TABLE build_tempo AS 
                     SELECT id_build, the_geom FROM building_test 
                     WHERE id_build < 9 OR id_build > 28 AND id_build < 30
         """
-        def pRsu =  Geoindicators.SpatialUnits.createScalesRelations()
+        def pRsu =  Geoindicators.SpatialUnits.spatialJoin()
         assert pRsu.execute([
-                inputLowerScaleTableName    : "build_tempo",
-                inputUpperScaleTableName    : "rsu_test",
-                idColumnUp                  : "id_rsu",
-                prefixName                  : "test",
-                datasource                  : h2GIS])
+                sourceTable     : "build_tempo",
+                targetTable     : "rsu_test",
+                idColumnTarget    : "id_rsu",
+                pointOnSurface  : false,
+                nbRelations     : 1,
+                prefixName      : "test",
+                datasource      : h2GIS])
         h2GIS.eachRow("SELECT * FROM ${pRsu.results.outputTableName}"){
             row ->
-                def expected = h2GIS.firstRow("SELECT ${pRsu.results.outputIdColumnUp} FROM rsu_build_corr WHERE id_build = ${row.id_build}".toString())
-                assert row[pRsu.results.outputIdColumnUp] == expected[pRsu.results.outputIdColumnUp]
+                def expected = h2GIS.firstRow("SELECT ${pRsu.results.idColumnTarget} FROM rsu_build_corr WHERE id_build = ${row.id_build}".toString())
+                assert row[pRsu.results.idColumnTarget] == expected[pRsu.results.idColumnTarget]
         }
-        def pBlock =  Geoindicators.SpatialUnits.createScalesRelations()
+        def pBlock =  Geoindicators.SpatialUnits.spatialJoin()
         assert pBlock([
-                inputLowerScaleTableName    : "build_tempo",
-                inputUpperScaleTableName    : "block_test",
-                idColumnUp                  : "id_block",
-                prefixName                  : "test",
-                datasource                  : h2GIS])
+                sourceTable     : "build_tempo",
+                targetTable     : "block_test",
+                idColumnTarget    : "id_block",
+                pointOnSurface  : false,
+                nbRelations     : 1,
+                prefixName      : "test",
+                datasource      : h2GIS])
 
         h2GIS.eachRow("SELECT * FROM ${pBlock.results.outputTableName}".toString()){
             row ->
-                def expected = h2GIS.firstRow "SELECT ${pBlock.results.outputIdColumnUp} FROM block_build_corr WHERE id_build = ${row.id_build}".toString()
-                assert row[pBlock.results.outputIdColumnUp] == expected[pBlock.results.outputIdColumnUp]
+                def expected = h2GIS.firstRow "SELECT ${pBlock.results.idColumnTarget} FROM block_build_corr WHERE id_build = ${row.id_build}".toString()
+                assert row[pBlock.results.idColumnTarget] == expected[pBlock.results.idColumnTarget]
         }
+    }
+
+    @Test
+    void spatialJoinTest2() {
+        h2GIS """
+                DROP TABLE IF EXISTS tab1, tab2;
+                CREATE TABLE tab1(id1 int, the_geom geometry);
+                CREATE TABLE tab2(id2 int, the_geom geometry);
+                INSERT INTO tab1 VALUES (1, 'POLYGON((0 0, 10 0, 10 20, 0 20, 0 0))'),
+                                        (2, 'POLYGON((10 5, 20 5, 20 20, 10 20, 10 5))'),
+                                        (3, 'POLYGON((10 -10, 25 -10, 25 5, 10 5, 10 -10))');
+                INSERT INTO tab2 VALUES (1, 'POLYGON((0 0, 20 0, 20 20, 0 20, 0 0))'),
+                                        (2, 'POLYGON((20 0, 30 0, 30 20, 20 20, 20 0))');
+        """
+        def pNbRelationsAll =  Geoindicators.SpatialUnits.spatialJoin()
+        assert pNbRelationsAll.execute([
+                sourceTable     : "tab1",
+                targetTable     : "tab2",
+                idColumnTarget  : "id2",
+                pointOnSurface  : false,
+                nbRelations     : null,
+                prefixName      : "test",
+                datasource      : h2GIS])
+        assertEquals 1, h2GIS.firstRow("SELECT count(*) as count FROM ${pNbRelationsAll.results.outputTableName} WHERE ID1 = 1 AND ID2=1").count
+        assertEquals 1, h2GIS.firstRow("SELECT count(*) as count  FROM ${pNbRelationsAll.results.outputTableName} WHERE ID1 = 2 AND ID2=1").count
+        assertEquals 2, h2GIS.firstRow("SELECT count(*) as count  FROM ${pNbRelationsAll.results.outputTableName} WHERE (ID1 = 3 AND ID2=1) or (ID1 = 3 AND ID2=2)").count
+
+
+        def pPointOnSurface =  Geoindicators.SpatialUnits.spatialJoin()
+        assert pPointOnSurface.execute([
+                sourceTable     : "tab1",
+                targetTable     : "tab2",
+                idColumnTarget  : "id2",
+                pointOnSurface  : true,
+                nbRelations     : null,
+                prefixName      : "test",
+                datasource      : h2GIS])
+        assert h2GIS.getTable(pPointOnSurface.results.outputTableName).getRowCount() == 2
     }
 
     @Test

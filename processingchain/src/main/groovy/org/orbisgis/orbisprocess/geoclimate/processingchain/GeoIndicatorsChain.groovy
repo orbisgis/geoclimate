@@ -936,23 +936,25 @@ IProcess createUnitsOfAnalysis() {
                 }
 
                 // Create the relations between RSU and blocks (store in the block table)
-                def createScalesRelationsRsuBl = Geoindicators.SpatialUnits.createScalesRelations()
+                def createScalesRelationsRsuBl = Geoindicators.SpatialUnits.spatialJoin()
                 if (!createScalesRelationsRsuBl([datasource              : datasource,
-                                                 inputLowerScaleTableName: createBlocks.results.outputTableName,
-                                                 inputUpperScaleTableName: createRSU.results.outputTableName,
-                                                 idColumnUp              : createRSU.results.outputIdRsu,
-                                                 prefixName              : prefixName])) {
+                                                 sourceTable             : createBlocks.results.outputTableName,
+                                                 targetTable             : createRSU.results.outputTableName,
+                                                 idColumnTarget          : createRSU.results.outputIdRsu,
+                                                 prefixName              : prefixName,
+                                                 nbRelations             : 1])) {
                     info "Cannot compute the scales relations between blocks and RSU."
                     return
                 }
 
                 // Create the relations between buildings and blocks (store in the buildings table)
-                def createScalesRelationsBlBu = Geoindicators.SpatialUnits.createScalesRelations()
+                def createScalesRelationsBlBu = Geoindicators.SpatialUnits.spatialJoin()
                 if (!createScalesRelationsBlBu([datasource              : datasource,
-                                                inputLowerScaleTableName: buildingTable,
-                                                inputUpperScaleTableName: createBlocks.results.outputTableName,
-                                                idColumnUp              : createBlocks.results.outputIdBlock,
-                                                prefixName              : prefixName])) {
+                                                sourceTable             : buildingTable,
+                                                targetTable             : createBlocks.results.outputTableName,
+                                                idColumnTarget          : createBlocks.results.outputIdBlock,
+                                                prefixName              : prefixName,
+                                                nbRelations             : 1])) {
                     info "Cannot compute the scales relations between blocks and buildings."
                     return
                 }
@@ -965,12 +967,13 @@ IProcess createUnitsOfAnalysis() {
             // WARNING : if the blocks are used, the building table will contain the id_block and id_rsu for each of its
             // id_build but the relations between id_block and i_rsu should not been consider in this Table
             // the relationships may indeed be different from the one in the block Table
-            def createScalesRelationsRsuBlBu = Geoindicators.SpatialUnits.createScalesRelations()
+            def createScalesRelationsRsuBlBu = Geoindicators.SpatialUnits.spatialJoin()
             if (!createScalesRelationsRsuBlBu([datasource              : datasource,
-                                               inputLowerScaleTableName: inputLowerScaleBuRsu,
-                                               inputUpperScaleTableName: createRSU.results.outputTableName,
-                                               idColumnUp              : createRSU.results.outputIdRsu,
-                                               prefixName              : prefixName])) {
+                                               sourceTable             : inputLowerScaleBuRsu,
+                                               targetTable             : createRSU.results.outputTableName,
+                                               idColumnTarget          : createRSU.results.outputIdRsu,
+                                               prefixName              : prefixName,
+                                               nbRelations             : 1])) {
                 info "Cannot compute the scales relations between buildings and RSU."
                 return
             }
