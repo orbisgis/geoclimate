@@ -89,7 +89,7 @@ class InputDataFormattingTest {
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(10, table.columnCount)
-        assertEquals(3219, table.rowCount)
+        assertEquals(23, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.the_geom.spatial)
         assertEquals('INTEGER', table.columnType('ID_BUILD'))
@@ -142,137 +142,137 @@ class InputDataFormattingTest {
         assertEquals(6, res.HEIGHT_WALL)
         assertEquals(6, res.HEIGHT_ROOF)*/
 
-        /*
+        
         // Specific cases
         // -------------------------------
-        // ... with the building 'BATIMENT0000000290114260' : HAUTEUR = 0 / TYPE = 'Bâtiment sportif'
+        // ... with the building 'BREMAR0001' : HAUTEUR = 0 / TYPE = 'Bâtiment sportif'
         assertEquals(3, h2GISDatabase.firstRow("SELECT HEIGHT_WALL FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290114260';")["HEIGHT_WALL"])
+                "WHERE ID_SOURCE='BREMAR0001';")["HEIGHT_WALL"])
         assertEquals(3, h2GISDatabase.firstRow("SELECT HEIGHT_ROOF FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290114260';")["HEIGHT_ROOF"])
+                "WHERE ID_SOURCE='BREMAR0001';")["HEIGHT_ROOF"])
         assertEquals(1, h2GISDatabase.firstRow("SELECT NB_LEV FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290114260';")["NB_LEV"])
+                "WHERE ID_SOURCE='BREMAR0001';")["NB_LEV"])
         assertEquals('sports_centre', h2GISDatabase.firstRow("SELECT TYPE FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290114260';")["TYPE"])
+                "WHERE ID_SOURCE='BREMAR0001';")["TYPE"])
 
-        //... with the building 'BATIMENT0000000290116893' : HAUTEUR = 0 / NATURE = 'Tour, donjon, moulin'
+        //... with the building 'BREMAR0002' : HAUTEUR = 0 / NATURE = 'Tour, donjon, moulin'
         assertEquals(3, h2GISDatabase.firstRow("SELECT HEIGHT_WALL FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290116893';")["HEIGHT_WALL"])
+                "WHERE ID_SOURCE='BREMAR0002';")["HEIGHT_WALL"])
         assertEquals(3, h2GISDatabase.firstRow("SELECT HEIGHT_ROOF FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290116893';")["HEIGHT_ROOF"])
+                "WHERE ID_SOURCE='BREMAR0002';")["HEIGHT_ROOF"])
         assertEquals(1, h2GISDatabase.firstRow("SELECT NB_LEV FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290116893';")["NB_LEV"])
+                "WHERE ID_SOURCE='BREMAR0002';")["NB_LEV"])
         assertEquals('historic', h2GISDatabase.firstRow("SELECT TYPE FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290116893';")["TYPE"])
+                "WHERE ID_SOURCE='BREMAR0002';")["TYPE"])
 
-        //... with the building 'BATIMENT0000000290116890' : HAUTEUR = 12 / NATURE = 'Chapelle'
+        //... with the building 'BREMAR0003' : HAUTEUR = 12 / NATURE = 'Chapelle'
         assertEquals(12, h2GISDatabase.firstRow("SELECT HEIGHT_WALL FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290116890';")["HEIGHT_WALL"])
+                "WHERE ID_SOURCE='BREMAR0003';")["HEIGHT_WALL"])
         assertEquals(12, h2GISDatabase.firstRow("SELECT HEIGHT_ROOF FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290116890';")["HEIGHT_ROOF"])
+                "WHERE ID_SOURCE='BREMAR0003';")["HEIGHT_ROOF"])
         assertEquals(1, h2GISDatabase.firstRow("SELECT NB_LEV FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290116890';")["NB_LEV"])
+                "WHERE ID_SOURCE='BREMAR0003';")["NB_LEV"])
         assertEquals('chapel', h2GISDatabase.firstRow("SELECT TYPE FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290116890';")["TYPE"])
+                "WHERE ID_SOURCE='BREMAR0003';")["TYPE"])
 
-        //... with the building 'BATIMENT0000000290120391' : HAUTEUR = 20 / NATURE = 'Mairie'
+        //... with the building 'BREMAR0004' : HAUTEUR = 20 / NATURE = 'Mairie'
         assertEquals(20, h2GISDatabase.firstRow("SELECT HEIGHT_WALL FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290120391';")["HEIGHT_WALL"])
+                "WHERE ID_SOURCE='BREMAR0004';")["HEIGHT_WALL"])
         assertEquals(20, h2GISDatabase.firstRow("SELECT HEIGHT_ROOF FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290120391';")["HEIGHT_ROOF"])
+                "WHERE ID_SOURCE='BREMAR0004';")["HEIGHT_ROOF"])
         assertEquals(6, h2GISDatabase.firstRow("SELECT NB_LEV FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290120391';")["NB_LEV"])
+                "WHERE ID_SOURCE='BREMAR0004';")["NB_LEV"])
         assertEquals('townhall', h2GISDatabase.firstRow("SELECT TYPE FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290120391';")["TYPE"])
+                "WHERE ID_SOURCE='BREMAR0004';")["TYPE"])
 
-        //... with the building 'BATIMENT0000000290118405' : HAUTEUR = 13 / NATURE = 'Bâtiment commercial'
+        //... with the building 'BINDUS0001' : HAUTEUR = 13 / NATURE = 'Bâtiment commercial'
         assertEquals(13, h2GISDatabase.firstRow("SELECT HEIGHT_WALL FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290118405';")["HEIGHT_WALL"])
+                "WHERE ID_SOURCE='BINDUS0001';")["HEIGHT_WALL"])
         assertEquals(13, h2GISDatabase.firstRow("SELECT HEIGHT_ROOF FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290118405';")["HEIGHT_ROOF"])
+                "WHERE ID_SOURCE='BINDUS0001';")["HEIGHT_ROOF"])
         assertEquals(4, h2GISDatabase.firstRow("SELECT NB_LEV FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290118405';")["NB_LEV"])
+                "WHERE ID_SOURCE='BINDUS0001';")["NB_LEV"])
         assertEquals('commercial', h2GISDatabase.firstRow("SELECT TYPE FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290118405';")["TYPE"])
+                "WHERE ID_SOURCE='BINDUS0001';")["TYPE"])
 
-        //... with the building 'BATIMENT0000000087495394' : HAUTEUR = 10 / NATURE = 'Bâtiment industriel'
+        //... with the building 'BINDUS0002' : HAUTEUR = 10 / NATURE = 'Bâtiment industriel'
         assertEquals(10, h2GISDatabase.firstRow("SELECT HEIGHT_WALL FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000087495394';")["HEIGHT_WALL"])
+                "WHERE ID_SOURCE='BINDUS0002';")["HEIGHT_WALL"])
         assertEquals(10, h2GISDatabase.firstRow("SELECT HEIGHT_ROOF FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000087495394';")["HEIGHT_ROOF"])
+                "WHERE ID_SOURCE='BINDUS0002';")["HEIGHT_ROOF"])
         assertEquals(1, h2GISDatabase.firstRow("SELECT NB_LEV FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000087495394';")["NB_LEV"])
+                "WHERE ID_SOURCE='BINDUS0002';")["NB_LEV"])
         assertEquals('industrial', h2GISDatabase.firstRow("SELECT TYPE FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000087495394';")["TYPE"])
+                "WHERE ID_SOURCE='BINDUS0002';")["TYPE"])
 
-        //... with the building 'BATIMENT0000000290120660' : HAUTEUR = 0 / Bati indif so no NATURE
+        //... with the building 'BINDIF0001' : HAUTEUR = 0 / Bati indif so no NATURE
         assertEquals(3, h2GISDatabase.firstRow("SELECT HEIGHT_WALL FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290120660';")["HEIGHT_WALL"])
+                "WHERE ID_SOURCE='BINDIF0001';")["HEIGHT_WALL"])
         assertEquals(3, h2GISDatabase.firstRow("SELECT HEIGHT_ROOF FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290120660';")["HEIGHT_ROOF"])
+                "WHERE ID_SOURCE='BINDIF0001';")["HEIGHT_ROOF"])
         assertEquals(1, h2GISDatabase.firstRow("SELECT NB_LEV FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290120660';")["NB_LEV"])
+                "WHERE ID_SOURCE='BINDIF0001';")["NB_LEV"])
         assertEquals('building', h2GISDatabase.firstRow("SELECT TYPE FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290120660';")["TYPE"])
+                "WHERE ID_SOURCE='BINDIF0001';")["TYPE"])
 
-        //... with the building 'BATIMENT0000000290120079' : HAUTEUR = 17 / Bati indif so no NATURE
+        //... with the building 'BINDIF0002' : HAUTEUR = 17 / Bati indif so no NATURE
         assertEquals(17, h2GISDatabase.firstRow("SELECT HEIGHT_WALL FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290120079';")["HEIGHT_WALL"])
+                "WHERE ID_SOURCE='BINDIF0002';")["HEIGHT_WALL"])
         assertEquals(17, h2GISDatabase.firstRow("SELECT HEIGHT_ROOF FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290120079';")["HEIGHT_ROOF"])
+                "WHERE ID_SOURCE='BINDIF0002';")["HEIGHT_ROOF"])
         assertEquals(5, h2GISDatabase.firstRow("SELECT NB_LEV FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290120079';")["NB_LEV"])
+                "WHERE ID_SOURCE='BINDIF0002';")["NB_LEV"])
         assertEquals('building', h2GISDatabase.firstRow("SELECT TYPE FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290120079';")["TYPE"])
+                "WHERE ID_SOURCE='BINDIF0002';")["TYPE"])
 
         // Check if building are well selected or not ...
-        // ... with the building (INDIF) 'BATIMENT0000000290126798' which is inside the zone --> so expected 1
+        // ... with the building (INDIF) 'BINDIF0003' which is inside the zone --> so expected 1
         assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290126798';")["TOTAL"])
-        // ... with the building (INDIF) 'BATIMENT0000000257286964' which is inside the buffer zone --> so expected 1
+                "WHERE ID_SOURCE='BINDIF0003';")["TOTAL"])
+        // ... with the building (INDIF) 'BINDIF0004' which is inside the buffer zone --> so expected 1
         assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000257286964';")["TOTAL"])
-        // ... with the building (INDIF) 'BATIMENT0000000292067581' which is outside the buffer zone --> so expected 0
+                "WHERE ID_SOURCE='BINDIF0004';")["TOTAL"])
+        // ... with the building (INDIF) 'BINDIF0005' which is outside the buffer zone --> so expected 0
         assertEquals(0, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000292067581';")["TOTAL"])
-        // ... with the building (INDUS) 'BATIMENT0000000290110613' which is inside the zone --> so expected 1
+                "WHERE ID_SOURCE='BINDIF0005';")["TOTAL"])
+        // ... with the building (INDUS) 'BINDUS0003' which is inside the zone --> so expected 1
         assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290110613';")["TOTAL"])
-        // ... with the building (INDUS) 'BATIMENT0000000292063421' which is inside the buffer zone --> so expected 1
+                "WHERE ID_SOURCE='BINDUS0003';")["TOTAL"])
+        // ... with the building (INDUS) 'BINDUS0005' which is inside the buffer zone --> so expected 1
         assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000292059690';")["TOTAL"])
-        // ... with the building (INDUS) 'BATIMENT0000000292059690' which is outside the buffer zone --> so expected 0
+                "WHERE ID_SOURCE='BINDUS0005';")["TOTAL"])
+        // ... with the building (INDUS) 'BINDUS0006' which is outside the buffer zone --> so expected 0
         assertEquals(0, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000257295295';")["TOTAL"])
-        // ... with the building (REMARQ) 'BATIMENT0000000290127091' which is inside the zone --> so expected 1
+                "WHERE ID_SOURCE='BINDUS0006';")["TOTAL"])
+        // ... with the building (REMARQ) 'BREMAR0005' which is inside the zone --> so expected 1
         assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290127091';")["TOTAL"])
-        // ... with the building (REMARQ) 'BATIMENT0000000292060079' which is inside the buffer zone --> so expected 1
+                "WHERE ID_SOURCE='BREMAR0005';")["TOTAL"])
+        // ... with the building (REMARQ) 'BREMAR0006' which is inside the buffer zone --> so expected 1
         assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000292060079';")["TOTAL"])
-        // ... with the building (REMARQ) 'BATIMENT0000000292060350' which is outside the buffer zone --> so expected 0
+                "WHERE ID_SOURCE='BREMAR0006';")["TOTAL"])
+        // ... with the building (REMARQ) 'BREMAR0007' which is outside the buffer zone --> so expected 0
         assertEquals(0, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000292060350';")["TOTAL"])
+                "WHERE ID_SOURCE='BREMAR0007';")["TOTAL"])
 
         // Check if building are associated to the appropriate city (ZONE_ID) ...
-        // ... with the building (INDIF) 'BATIMENT0000000290126764' which in Vannes (56260)
+        // ... with the building (INDIF) 'BINDIF0006' which in Vannes (56260)
         assertEquals('56260', h2GISDatabase.firstRow("SELECT ID_ZONE FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290126764';")["ID_ZONE"])
-        // ... with the building (INDIF) 'BATIMENT0000000292059008' which in Saint-Avé (56206 - so 'outside' expected)
+                "WHERE ID_SOURCE='BINDIF0006';")["ID_ZONE"])
+        // ... with the building (INDIF) 'BINDIF0007' which in Saint-Avé (56206 - so 'outside' expected)
         assertEquals('outside', h2GISDatabase.firstRow("SELECT ID_ZONE FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000292059008';")["ID_ZONE"])
-        // ... with the building (INDIF) 'BATIMENT0000000291363628' which in Arradon (56003 - so 'outside' expected)
+                "WHERE ID_SOURCE='BINDIF0007';")["ID_ZONE"])
+        // ... with the building (INDIF) 'BINDIF0008' which in Arradon (56003 - so 'outside' expected)
         assertEquals('outside', h2GISDatabase.firstRow("SELECT ID_ZONE FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000291363628';")["ID_ZONE"])
+                "WHERE ID_SOURCE='BINDIF0008';")["ID_ZONE"])
 
         // Verifies that a building that straddles two communes is assigned to the right area
-        // ... with the building (INDIF) 'BATIMENT0000000290543985' which main part is in Séné (56243 - so 'outside' expected)
+        // ... with the building (INDIF) 'BINDIF0009' which main part is in Séné (56243 - so 'outside' expected)
         assertEquals('outside', h2GISDatabase.firstRow("SELECT ID_ZONE FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000290543985';")["ID_ZONE"])
-        // ... with the building (INDIF) 'BATIMENT0000000087495765' which main part is in Vannes (56260)
+                "WHERE ID_SOURCE='BINDIF0009';")["ID_ZONE"])
+        // ... with the building (INDIF) 'BINDIF0010' which main part is in Vannes (56260)
         assertEquals('56260', h2GISDatabase.firstRow("SELECT ID_ZONE FROM BUILDING " +
-                "WHERE ID_SOURCE='BATIMENT0000000087495765';")["ID_ZONE"])
-        */
+                "WHERE ID_SOURCE='BINDIF0010';")["ID_ZONE"])
+        
 
         // ------------------
         // Check if the BUILDING_STATS_ZONE table has the correct number of columns and rows
@@ -408,7 +408,7 @@ class InputDataFormattingTest {
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(9, table.columnCount)
-        assertEquals(1779, table.rowCount)
+        assertEquals(10, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.the_geom.spatial)
         assertEquals('INTEGER', table.columnType('ID_ROAD'))
@@ -441,62 +441,62 @@ class InputDataFormattingTest {
             assertNotNull(row.CROSSING)
             assertNotEquals('', row.CROSSING)
         }
-        /*
+        
         // Specific cases
         // -------------------------------
-        //... with the road 'TRONROUT0000000306711343' : LARGEUR = 0 / NATURE = 'Sentier'
+        //... with the road 'ROUTE0001' : LARGEUR = 0 / NATURE = 'Sentier'
         assertEquals(1, h2GISDatabase.firstRow("SELECT WIDTH FROM ROAD " +
-                "WHERE ID_SOURCE='TRONROUT0000000306711343';")["WIDTH"])
+                "WHERE ID_SOURCE='ROUTE0001';")["WIDTH"])
         assertEquals('path', h2GISDatabase.firstRow("SELECT TYPE FROM ROAD " +
-                "WHERE ID_SOURCE='TRONROUT0000000306711343';")["TYPE"])
+                "WHERE ID_SOURCE='ROUTE0001';")["TYPE"])
 
-        //... with the road 'TRONROUT0000000087744143' : LARGEUR = 5,5 / NATURE = 'Route à 1 chaussée'
+        //... with the road 'ROUTE0002' : LARGEUR = 5,5 / NATURE = 'Route à 1 chaussée'
         assertEquals(5.5, h2GISDatabase.firstRow("SELECT WIDTH FROM ROAD " +
-                "WHERE ID_SOURCE='TRONROUT0000000087744143';")["WIDTH"])
+                "WHERE ID_SOURCE='ROUTE0002';")["WIDTH"])
         assertEquals('unclassified', h2GISDatabase.firstRow("SELECT TYPE FROM ROAD " +
-                "WHERE ID_SOURCE='TRONROUT0000000087744143';")["TYPE"])
+                "WHERE ID_SOURCE='ROUTE0002';")["TYPE"])
 
-        //... with the road 'TRONROUT0000000306712994' : LARGEUR = 0 / NATURE = 'Route empierrée'
+        //... with the road 'ROUTE0003' : LARGEUR = 0 / NATURE = 'Route empierrée'
         assertEquals(2, h2GISDatabase.firstRow("SELECT WIDTH FROM ROAD " +
-                "WHERE ID_SOURCE='TRONROUT0000000306712994';")["WIDTH"])
+                "WHERE ID_SOURCE='ROUTE0003';")["WIDTH"])
         assertEquals('track', h2GISDatabase.firstRow("SELECT TYPE FROM ROAD " +
-                "WHERE ID_SOURCE='TRONROUT0000000306712994';")["TYPE"])
+                "WHERE ID_SOURCE='ROUTE0003';")["TYPE"])
 
-        //... with the road 'TRONROUT0000000087744296' : LARGEUR = 10 / NATURE = 'Quasi-autoroute'
+        //... with the road 'ROUTE0004' : LARGEUR = 10 / NATURE = 'Quasi-autoroute'
         assertEquals(10, h2GISDatabase.firstRow("SELECT WIDTH FROM ROAD " +
-                "WHERE ID_SOURCE='TRONROUT0000000087744296';")["WIDTH"])
+                "WHERE ID_SOURCE='ROUTE0004';")["WIDTH"])
         assertEquals('trunk', h2GISDatabase.firstRow("SELECT TYPE FROM ROAD " +
-                "WHERE ID_SOURCE='TRONROUT0000000087744296';")["TYPE"])
+                "WHERE ID_SOURCE='ROUTE0004';")["TYPE"])
 
-        //... with the road 'TRONROUT0000000087744456' : LARGEUR = 4 / NATURE = 'Bretelle'
+        //... with the road 'ROUTE0005' : LARGEUR = 4 / NATURE = 'Bretelle'
         assertEquals(4, h2GISDatabase.firstRow("SELECT WIDTH FROM ROAD " +
-                "WHERE ID_SOURCE='TRONROUT0000000087744456';")["WIDTH"])
+                "WHERE ID_SOURCE='ROUTE0005';")["WIDTH"])
         assertEquals('highway_link', h2GISDatabase.firstRow("SELECT TYPE FROM ROAD " +
-                "WHERE ID_SOURCE='TRONROUT0000000087744456';")["TYPE"])
+                "WHERE ID_SOURCE='ROUTE0005';")["TYPE"])
 
-        //... with the road 'TRONROUT0000000306711352' : LARGEUR = 0 / NATURE = 'Route empierrée'
+        //... with the road 'ROUTE0006' : LARGEUR = 0 / NATURE = 'Route empierrée'
         assertEquals(2, h2GISDatabase.firstRow("SELECT WIDTH FROM ROAD " +
-                "WHERE ID_SOURCE='TRONROUT0000000306711352';")["WIDTH"])
+                "WHERE ID_SOURCE='ROUTE0006';")["WIDTH"])
         assertEquals('track', h2GISDatabase.firstRow("SELECT TYPE FROM ROAD " +
-                "WHERE ID_SOURCE='TRONROUT0000000306711352';")["TYPE"])
+                "WHERE ID_SOURCE='ROUTE0006';")["TYPE"])
 
-        //... with the road 'TRONROUT0000000296508508' : LARGEUR = 0 / NATURE = 'Piste cyclable'
+        //... with the road 'ROUTE0007' : LARGEUR = 0 / NATURE = 'Piste cyclable'
         assertEquals(1, h2GISDatabase.firstRow("SELECT WIDTH FROM ROAD " +
-                "WHERE ID_SOURCE='TRONROUT0000000296508508';")["WIDTH"])
+                "WHERE ID_SOURCE='ROUTE0007';")["WIDTH"])
         assertEquals('cycleway', h2GISDatabase.firstRow("SELECT TYPE FROM ROAD " +
-                "WHERE ID_SOURCE='TRONROUT0000000296508508';")["TYPE"])
+                "WHERE ID_SOURCE='ROUTE0007';")["TYPE"])
 
         // Check if roads are well selected or not ...
-        // ... with the road 'TRONROUT0000000087738203' which is inside the zone --> so expected 1
+        // ... with the road 'ROUTE0008' which is inside the zone --> so expected 1
         assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM ROAD " +
-                "WHERE ID_SOURCE='TRONROUT0000000087738203';")["TOTAL"])
-        // ... with the road 'TRONROUT0000000114038426' which is inside the buffer zone --> so expected 1
+                "WHERE ID_SOURCE='ROUTE0008';")["TOTAL"])
+        // ... with the road 'ROUTE0009' which is inside the buffer zone --> so expected 1
         assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM ROAD " +
-                "WHERE ID_SOURCE='TRONROUT0000000114038426';")["TOTAL"])
-        // ... with the road 'TRONROUT0000000087732938' which is outside the buffer zone --> so expected 0
+                "WHERE ID_SOURCE='ROUTE0009';")["TOTAL"])
+        // ... with the road 'ROUTE0010' which is outside the buffer zone --> so expected 0
         assertEquals(0, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM ROAD " +
-                "WHERE ID_SOURCE='TRONROUT0000000087732938';")["TOTAL"])
-        */
+                "WHERE ID_SOURCE='ROUTE0010';")["TOTAL"])
+        
 
         // ------------------
         // Check if the ROAD_STATS_ZONE table has the correct number of columns and rows
@@ -614,7 +614,7 @@ class InputDataFormattingTest {
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(6, table.columnCount)
-        assertEquals(5, table.rowCount)
+        assertEquals(3, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.the_geom.spatial)
         assertEquals('INTEGER', table.columnType('ID_RAIL'))
@@ -637,28 +637,28 @@ class InputDataFormattingTest {
             assertNotNull(row.CROSSING)
             assertNotEquals('', row.CROSSING)
         }
-        /*
+        
         // Specific cases
         // -------------------------------
-        //... with the rail 'TRONFERR0000000087164801' : NATURE = 'Voie de service'
+        //... with the rail 'RAIL0001' : NATURE = 'Voie de service'
         assertEquals('service_track', h2GISDatabase.firstRow("SELECT TYPE FROM RAIL " +
-                "WHERE ID_SOURCE='TRONFERR0000000087164801';")["TYPE"])
+                "WHERE ID_SOURCE='RAIL0001';")["TYPE"])
 
-        //... with the rail 'TRONFERR0000000087164787' : NATURE = 'Principale'
+        //... with the rail 'RAIL0002' : NATURE = 'Principale'
         assertEquals('rail', h2GISDatabase.firstRow("SELECT TYPE FROM RAIL " +
-                "WHERE ID_SOURCE='TRONFERR0000000087164787';")["TYPE"])
+                "WHERE ID_SOURCE='RAIL0002';")["TYPE"])
 
         // Check if rails are well selected or not ...
-        // ... with the rail 'TRONFERR0000000087164787' which is inside the zone --> so expected 1
+        // ... with the rail 'RAIL0002' which is inside the zone --> so expected 1
         assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM RAIL " +
-                "WHERE ID_SOURCE='TRONFERR0000000087164787';")["TOTAL"])
-        // ... with the rail 'TRONFERR0000000087164791' which is intersecting the zone --> so expected 1
+                "WHERE ID_SOURCE='RAIL0002';")["TOTAL"])
+        // ... with the rail 'RAIL0003' which is intersecting the zone --> so expected 1
         assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM RAIL " +
-                "WHERE ID_SOURCE='TRONFERR0000000087164791';")["TOTAL"])
-        // ... with the rail 'TRONFERR0000000087164796' which is not intersecting the zone --> so expected 0
+                "WHERE ID_SOURCE='RAIL0003';")["TOTAL"])
+        // ... with the rail 'RAIL0004' which is not intersecting the zone --> so expected 0
         assertEquals(0, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM RAIL " +
-                "WHERE ID_SOURCE='TRONFERR0000000087164796';")["TOTAL"])
-        */
+                "WHERE ID_SOURCE='RAIL0004';")["TOTAL"])
+        
 
         // ------------------
         // Check if the RAIL_STATS_ZONE table has the correct number of columns and rows
@@ -722,22 +722,22 @@ class InputDataFormattingTest {
             assertNotNull(row.ID_SOURCE)
             assertNotEquals('', row.ID_SOURCE)
         }
-        /*
+        
         // Specific cases
         // -------------------------------
         // Check if hydrographic area are well selected or not ...
-        // ... with the hydro area 'SURF_EAU0000000087197615' which is inside the zone --> so expected 1
+        // ... with the hydro area 'SURFEAU0001' which is inside the zone --> so expected 1
         assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM HYDRO " +
-                "WHERE ID_SOURCE='SURF_EAU0000000087197615';")["TOTAL"])
-        // ... with the hydro area 'EAU0000000313881261' which is inside the extended zone --> so expected 1
+                "WHERE ID_SOURCE='SURFEAU0001';")["TOTAL"])
+        // ... with the hydro area 'SURFEAU0002' which is inside the extended zone --> so expected 1
         assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM HYDRO " +
-                "WHERE ID_SOURCE='SURF_EAU0000000313881261';")["TOTAL"])
-        // ... with the hydro area 'SURF_EAU0000000301051080' which is outside the extended zone --> so expected 0
+                "WHERE ID_SOURCE='SURFEAU0002';")["TOTAL"])
+        // ... with the hydro area 'SURFEAU0003' which is outside the extended zone --> so expected 0
         assertEquals(0, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM HYDRO " +
-                "WHERE ID_SOURCE='SURF_EAU0000000301051080';")["TOTAL"])
+                "WHERE ID_SOURCE='SURFEAU0003';")["TOTAL"])
 
 
-        // Check that the intersection between the Hydro geom (ID_SOURCE = SURF_EAU0000000087197136) and the RSU is possible
+        // Check that the intersection between the Hydro geom (ID_SOURCE = SURFEAU0004) and the RSU is possible
         assertEquals('POLYGON ((265847.762403373 6746613.707730148, 265852.5 6746616.3, 265854.3 6746616.7, ' +
                 '265857.3 6746616.6, 265859.5 6746615.3, 265861.6 6746612.2, 265863.1 6746602.4, 265865 6746588.1, ' +
                 '265864 6746585.8, 265862.9 6746584.1, 265861.9 6746583.1, 265859.2 6746581.3, 265843.7 6746572.6, ' +
@@ -799,9 +799,9 @@ class InputDataFormattingTest {
                 "265723.1 6746328.9, 265719.2 6746330.9, 265715.2 6746329, 265712.7 6746330.5, 265710.2 6746329, " +
                 "265707.7 6746330.5, 265682.2 6746327.3, 265675.8 6746328.6, 265676.7 6746332.8, 265671.7 6746332.8, " +
                 "265670.7 6746329.8, 265666.2 6746327.9, 265660.2 6746328.9, 265654.2 6746323.5, 265652.709 " +
-                "6746320.319))'::geometry) as THE_GEOM FROM HYDRO WHERE ID_SOURCE='SURF_EAU0000000087197136';")["THE_GEOM"].toString())
+                "6746320.319))'::geometry) as THE_GEOM FROM HYDRO WHERE ID_SOURCE='SURFEAU0004';")["THE_GEOM"].toString())
 
-        */
+        
 
         // ------------------
         // Check if the HYDRO_STATS_ZONE table has the correct number of columns and rows
@@ -897,47 +897,47 @@ class InputDataFormattingTest {
             assertNotNull(row.HEIGHT_CLASS)
             assertNotEquals('', row.HEIGHT_CLASS)
         }
-        /*
+        
         // Specific cases
         // -------------------------------
-        //... with the vegetation area 'ZONEVEGE0000000222250983' : NATURE = 'Forêt fermée de feuillus'
+        //... with the vegetation area 'VEGET0001' : NATURE = 'Forêt fermée de feuillus'
         assertEquals('forest', h2GISDatabase.firstRow("SELECT TYPE FROM VEGET " +
-                "WHERE ID_SOURCE='ZONEVEGE0000000222250983';")["TYPE"])
+                "WHERE ID_SOURCE='VEGET0001';")["TYPE"])
         assertEquals('high', h2GISDatabase.firstRow("SELECT HEIGHT_CLASS FROM VEGET " +
-                "WHERE ID_SOURCE='ZONEVEGE0000000222250983';")["HEIGHT_CLASS"])
+                "WHERE ID_SOURCE='VEGET0001';")["HEIGHT_CLASS"])
 
-        //... with the vegetation area 'ZONEVEGE0000000222266277' : NATURE = 'Forêt fermée mixte'
+        //... with the vegetation area 'VEGET0002' : NATURE = 'Forêt fermée mixte'
         assertEquals('forest', h2GISDatabase.firstRow("SELECT TYPE FROM VEGET " +
-                "WHERE ID_SOURCE='ZONEVEGE0000000222266277';")["TYPE"])
+                "WHERE ID_SOURCE='VEGET0002';")["TYPE"])
         assertEquals('high', h2GISDatabase.firstRow("SELECT HEIGHT_CLASS FROM VEGET " +
-                "WHERE ID_SOURCE='ZONEVEGE0000000222266277';")["HEIGHT_CLASS"])
+                "WHERE ID_SOURCE='VEGET0002';")["HEIGHT_CLASS"])
 
-        //... with the vegetation area 'ZONEVEGE0000000222259742' : NATURE = 'Bois'
+        //... with the vegetation area 'VEGET0003' : NATURE = 'Bois'
         assertEquals('forest', h2GISDatabase.firstRow("SELECT TYPE FROM VEGET " +
-                "WHERE ID_SOURCE='ZONEVEGE0000000222259742';")["TYPE"])
+                "WHERE ID_SOURCE='VEGET0003';")["TYPE"])
         assertEquals('high', h2GISDatabase.firstRow("SELECT HEIGHT_CLASS FROM VEGET " +
-                "WHERE ID_SOURCE='ZONEVEGE0000000222259742';")["HEIGHT_CLASS"])
+                "WHERE ID_SOURCE='VEGET0003';")["HEIGHT_CLASS"])
 
-        //... with the vegetation area 'ZONEVEGE0000000222262077' : NATURE = 'Haie'
+        //... with the vegetation area 'VEGET0004' : NATURE = 'Haie'
         assertEquals('hedge', h2GISDatabase.firstRow("SELECT TYPE FROM VEGET " +
-                "WHERE ID_SOURCE='ZONEVEGE0000000222262077';")["TYPE"])
+                "WHERE ID_SOURCE='VEGET0004';")["TYPE"])
         assertEquals('high', h2GISDatabase.firstRow("SELECT HEIGHT_CLASS FROM VEGET " +
-                "WHERE ID_SOURCE='ZONEVEGE0000000222262077';")["HEIGHT_CLASS"])
+                "WHERE ID_SOURCE='VEGET0004';")["HEIGHT_CLASS"])
 
         // Check if vegetation area are well selected or not ...
-        // ... with the veget area 'ZONEVEGE0000000222259852' which is inside the zone --> so expected 1
+        // ... with the veget area 'VEGET0005' which is inside the zone --> so expected 1
         assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM VEGET " +
-                "WHERE ID_SOURCE='ZONEVEGE0000000222259852';")["TOTAL"])
-        // ... with the veget area 'ZONEVEGE0000000222246505' which is inside the extended zone --> so expected 1
+                "WHERE ID_SOURCE='VEGET0005';")["TOTAL"])
+        // ... with the veget area 'VEGET0006' which is inside the extended zone --> so expected 1
         assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM VEGET " +
-                "WHERE ID_SOURCE='ZONEVEGE0000000222246505';")["TOTAL"])
-        // ... with the veget area 'ZONEVEGE0000000222257768' which is intersecting the extended zone (having a part outside) --> so expected 1
+                "WHERE ID_SOURCE='VEGET0006';")["TOTAL"])
+        // ... with the veget area 'VEGET0007' which is intersecting the extended zone (having a part outside) --> so expected 1
         assertEquals(1, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM VEGET " +
-                "WHERE ID_SOURCE='ZONEVEGE0000000222257768';")["TOTAL"])
-        // ... with the veget area 'ZONEVEGE0000000222248816' which is outside the extended zone --> so expected 0
+                "WHERE ID_SOURCE='VEGET0007';")["TOTAL"])
+        // ... with the veget area 'VEGET0008' which is outside the extended zone --> so expected 0
         assertEquals(0, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM VEGET " +
-                "WHERE ID_SOURCE='ZONEVEGE0000000222248816';")["TOTAL"])
-        */
+                "WHERE ID_SOURCE='VEGET0008';")["TOTAL"])
+        
 
         // ------------------
         // Check if the VEGET_STATS_ZONE table has the correct number of columns and rows
