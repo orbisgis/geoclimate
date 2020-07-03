@@ -4,7 +4,6 @@ package org.orbisgis.orbisprocess.geoclimate.processingchain
 import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -152,7 +151,6 @@ class GeoIndicatorsChainTest {
                             "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
 
         def ind_i = ["URBAN_TYPOLOGY"]
-
         IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
