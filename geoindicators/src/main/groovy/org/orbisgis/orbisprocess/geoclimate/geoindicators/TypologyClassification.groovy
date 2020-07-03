@@ -123,7 +123,7 @@ IProcess identifyLczType() {
                         "('3',0.2,0.6,0.8,1.5,0.4,0.7,0.2,0.5,0.0,0.3,3.0,10.0,0.375,0.75)," +
                         "('4',0.5,0.7,0.8,1.3,0.2,0.4,0.3,0.4,0.3,0.4,25.0,null,0.75,null)," +
                         "('5',0.5,0.8,0.3,0.8,0.2,0.4,0.3,0.5,0.2,0.4,10.0,25.0,0.175,0.75)," +
-                        "('6',0.6,0.9,0.3,0.8,0.2,0.4,0.2,0.5,0.3,0.6,3.0,10.0,0.065,0.375)," +
+                        "('6',0.6,0.9,0.3,0.8,0.2,0.4,0.2,0.5,0.3,0.6,3.0,10.0,0.175,0.75)," +
                         "('7',0.2,0.5,1.0,2.0,0.6,0.9,0.0,0.2,0.0,0.3,2.0,4.0,0.175,0.375)," +
                         "('8',0.7,1.0,0.1,0.3,0.3,0.5,0.4,0.5,0.0,0.2,3.0,10.0,0.175,0.375)," +
                         "('9',0.8,1.0,0.1,0.3,0.1,0.2,0.0,0.2,0.6,0.8,3.0,10.0,0.175,0.75);"
@@ -151,9 +151,9 @@ IProcess identifyLczType() {
                             WATER_FRACTION_LCZ, 
                             IMPERVIOUS_FRACTION,
                             CASE 
-                                WHEN LOW_VEGETATION_FRACTION_LCZ+HIGH_VEGETATION_FRACTION_LCZ=0
+                                WHEN IMPERVIOUS_FRACTION_LCZ+WATER_FRACTION_LCZ+BUILDING_FRACTION_LCZ=1
                                     THEN null
-                                    ELSE HIGH_VEGETATION_FRACTION_LCZ/(LOW_VEGETATION_FRACTION_LCZ+HIGH_VEGETATION_FRACTION_LCZ)
+                                    ELSE HIGH_VEGETATION_FRACTION_LCZ/(1-IMPERVIOUS_FRACTION_LCZ-WATER_FRACTION_LCZ-BUILDING_FRACTION_LCZ)
                                     END
                                 AS HIGH_ALL_VEGETATION,
                             LOW_VEGETATION_FRACTION_LCZ+HIGH_VEGETATION_FRACTION_LCZ AS ALL_VEGETATION
@@ -168,11 +168,11 @@ IProcess identifyLczType() {
                 datasource """DROP TABLE IF EXISTS $classifiedRuralLCZ;
                                 CREATE TABLE $classifiedRuralLCZ
                                         AS SELECT   $ID_FIELD_RSU,
-                                                    CASE WHEN IMPERVIOUS_FRACTION>PERVIOUS_FRACTION_LCZ
+                                                    CASE WHEN IMPERVIOUS_FRACTION_LCZ>PERVIOUS_FRACTION_LCZ AND IMPERVIOUS_FRACTION_LCZ>0.05
                                                             THEN 105
                                                             ELSE CASE WHEN ALL_VEGETATION<WATER_FRACTION_LCZ
                                                                     THEN 107
-                                                                    ELSE CASE WHEN HIGH_ALL_VEGETATION IS NULL OR ALL_VEGETATION<0.1 OR ALL_VEGETATION>0.1 AND HIGH_ALL_VEGETATION<0.1
+                                                                    ELSE CASE WHEN HIGH_ALL_VEGETATION IS NULL OR HIGH_ALL_VEGETATION<0.05
                                                                             THEN 104
                                                                             ELSE CASE WHEN HIGH_ALL_VEGETATION<0.75
                                                                                     THEN 102
@@ -287,7 +287,7 @@ IProcess identifyLczType() {
                             // Piece of query useful for calculating the RSU distance to the current LCZ
                             // for the current indicator
                             queryLczDistance +=
-                                    "POWER(${mapOfWeights[indic.toLowerCase()]}*CASEWHEN(${LCZ[valLow]} IS NULL," +
+                                    "${mapOfWeights[indic.toLowerCase()]}*POWER(CASEWHEN(${LCZ[valLow]} IS NULL," +
                                             "CASEWHEN($indic<${LCZ[valUpp]}, 0, ${LCZ[valUpp]}-$indic)," +
                                             "CASEWHEN(${LCZ[valUpp]} IS NULL," +
                                             "CASEWHEN($indic>${LCZ[valLow]},0,${LCZ[valLow]}-$indic)," +
