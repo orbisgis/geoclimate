@@ -368,14 +368,14 @@ class TypologyClassificationTests {
     void tempoCreateRandomForestClassifTest() {
         // Information about where to find the training dataset for the test
         def trainingTableName = "training_table"
-        def trainingURL = "/home/decide/Bureau/lcz_OSM.json"
+        def tableName = "ALL_LCZ"
         def savePath = "/home/decide/Code/Intel/geoclimate/models/LCZ_OSM_RF_1.0.model"
         def var2model = "LCZ"
 
         def databaseTrainingDataSet = open"/tmp/lczIdf;AUTO_SERVER=TRUE"
 
-        def trainingTable = h2GIS.load(databaseTrainingDataSet, trainingURL, trainingTableName,true)
-        assert trainingTable
+        h2GIS.load(databaseTrainingDataSet, tableName, trainingTableName, true)
+        assert h2GIS."$trainingTableName"
 
         def pmed =  Geoindicators.TypologyClassification.createRandomForestClassif()
         assert pmed.execute([
