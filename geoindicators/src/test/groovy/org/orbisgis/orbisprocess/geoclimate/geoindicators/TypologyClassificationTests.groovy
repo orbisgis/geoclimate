@@ -386,16 +386,20 @@ class TypologyClassificationTests {
         assert nb_null.nb_null, 0
     }
 
+    //This test is used to create the training model from a specific dataset
+    @Disabled
     @Test
     void tempoCreateRandomForestClassifTest() {
         // Information about where to find the training dataset for the test
         def trainingTableName = "training_table"
         def tableName = "ALL_LCZ"
-        def savePath = "/home/decide/Code/Intel/geoclimate/models/LCZ_OSM_RF_1.0.model"
+        String directory ="./target/model"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def savePath = directory+File.separator+"LCZ_OSM_RF_1.0.model"
         def var2model = "LCZ"
-
-        def databaseTrainingDataSet = open"/tmp/lczIdf;AUTO_SERVER=TRUE"
-
+        def databaseTrainingDataSet = open"${directory+File.separator}lczIdf;AUTO_SERVER=TRUE"
         h2GIS.load(databaseTrainingDataSet, tableName, trainingTableName, true)
         assert h2GIS."$trainingTableName"
 
