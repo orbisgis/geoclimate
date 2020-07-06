@@ -405,11 +405,11 @@ class TypologyClassificationTests {
                 varToModel          : var2model,
                 save                : true,
                 pathAndFileName     : savePath,
-                ntrees              : 500,
-                mtry                : 7,
+                ntrees              : 100,
+                mtry                : 20,
                 rule                : "GINI",
-                maxDepth            : 100,
-                maxNodes            : 300,
+                maxDepth            : 20,
+                maxNodes            : 600,
                 nodeSize            : 3,
                 subsample           : 1.0,
                 datasource          : h2GIS])
@@ -418,7 +418,7 @@ class TypologyClassificationTests {
         assert model instanceof DataFrameClassifier
 
         // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
-        def df = DataFrame.of(trainingTable)
+        def df = DataFrame.of(h2GIS."$trainingTableName")
         assert df
         df = df.factorize(var2model)
         assert df
@@ -431,6 +431,6 @@ class TypologyClassificationTests {
         assert prediction
         def accuracy = Accuracy.of(truth, prediction)
         assert accuracy
-        assertEquals 0.556, accuracy.round(3), 1.5
+        assertEquals 0.725, accuracy.round(3), 1.5
     }
 }
