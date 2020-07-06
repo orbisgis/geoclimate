@@ -136,84 +136,61 @@ class InputDataFormattingTest {
         // Specific cases
         // -------------------------------
         // ... with the building 'BREMAR0001' : HAUTEUR = 0 / TYPE = 'Bâtiment sportif'
-        assertEquals(3, h2GISDatabase.firstRow("SELECT HEIGHT_WALL FROM BUILDING " +
-                "WHERE ID_SOURCE='BREMAR0001';")["HEIGHT_WALL"])
-        assertEquals(3, h2GISDatabase.firstRow("SELECT HEIGHT_ROOF FROM BUILDING " +
-                "WHERE ID_SOURCE='BREMAR0001';")["HEIGHT_ROOF"])
-        assertEquals(1, h2GISDatabase.firstRow("SELECT NB_LEV FROM BUILDING " +
-                "WHERE ID_SOURCE='BREMAR0001';")["NB_LEV"])
-        assertEquals('sports_centre', h2GISDatabase.firstRow("SELECT TYPE FROM BUILDING " +
-                "WHERE ID_SOURCE='BREMAR0001';")["TYPE"])
+        def row_test = h2GISDatabase.firstRow("SELECT HEIGHT_WALL, HEIGHT_ROOF, NB_LEV, TYPE FROM BUILDING WHERE ID_SOURCE='BREMAR0001';")
+            assertEquals(3, row_test["HEIGHT_WALL"])
+            assertEquals(3, row_test["HEIGHT_ROOF"])
+            assertEquals(1, row_test["NB_LEV"])
+            assertEquals('sports_centre', row_test["TYPE"])
 
         //... with the building 'BREMAR0002' : HAUTEUR = 0 / NATURE = 'Tour, donjon, moulin'
-        assertEquals(3, h2GISDatabase.firstRow("SELECT HEIGHT_WALL FROM BUILDING " +
-                "WHERE ID_SOURCE='BREMAR0002';")["HEIGHT_WALL"])
-        assertEquals(3, h2GISDatabase.firstRow("SELECT HEIGHT_ROOF FROM BUILDING " +
-                "WHERE ID_SOURCE='BREMAR0002';")["HEIGHT_ROOF"])
-        assertEquals(1, h2GISDatabase.firstRow("SELECT NB_LEV FROM BUILDING " +
-                "WHERE ID_SOURCE='BREMAR0002';")["NB_LEV"])
-        assertEquals('historic', h2GISDatabase.firstRow("SELECT TYPE FROM BUILDING " +
-                "WHERE ID_SOURCE='BREMAR0002';")["TYPE"])
+        row_test = h2GISDatabase.firstRow("SELECT HEIGHT_WALL, HEIGHT_ROOF, NB_LEV, TYPE FROM BUILDING WHERE ID_SOURCE='BREMAR0002';")
+            assertEquals(3, row_test["HEIGHT_WALL"])
+            assertEquals(3, row_test["HEIGHT_ROOF"])
+            assertEquals(1, row_test["NB_LEV"])
+            assertEquals('historic', row_test["TYPE"])
 
         //... with the building 'BREMAR0003' : HAUTEUR = 12 / NATURE = 'Chapelle'
-        assertEquals(12, h2GISDatabase.firstRow("SELECT HEIGHT_WALL FROM BUILDING " +
-                "WHERE ID_SOURCE='BREMAR0003';")["HEIGHT_WALL"])
-        assertEquals(12, h2GISDatabase.firstRow("SELECT HEIGHT_ROOF FROM BUILDING " +
-                "WHERE ID_SOURCE='BREMAR0003';")["HEIGHT_ROOF"])
-        assertEquals(1, h2GISDatabase.firstRow("SELECT NB_LEV FROM BUILDING " +
-                "WHERE ID_SOURCE='BREMAR0003';")["NB_LEV"])
-        assertEquals('chapel', h2GISDatabase.firstRow("SELECT TYPE FROM BUILDING " +
-                "WHERE ID_SOURCE='BREMAR0003';")["TYPE"])
+        row_test = h2GISDatabase.firstRow("SELECT HEIGHT_WALL, HEIGHT_ROOF, NB_LEV, TYPE FROM BUILDING WHERE ID_SOURCE='BREMAR0003';")
+            assertEquals(12, row_test["HEIGHT_WALL"])
+            assertEquals(12, row_test["HEIGHT_ROOF"])
+            assertEquals(1, row_test["NB_LEV"])
+            assertEquals('chapel', row_test["TYPE"])
 
         //... with the building 'BREMAR0004' : HAUTEUR = 20 / NATURE = 'Mairie'
-        assertEquals(20, h2GISDatabase.firstRow("SELECT HEIGHT_WALL FROM BUILDING " +
-                "WHERE ID_SOURCE='BREMAR0004';")["HEIGHT_WALL"])
-        assertEquals(20, h2GISDatabase.firstRow("SELECT HEIGHT_ROOF FROM BUILDING " +
-                "WHERE ID_SOURCE='BREMAR0004';")["HEIGHT_ROOF"])
-        assertEquals(6, h2GISDatabase.firstRow("SELECT NB_LEV FROM BUILDING " +
-                "WHERE ID_SOURCE='BREMAR0004';")["NB_LEV"])
-        assertEquals('townhall', h2GISDatabase.firstRow("SELECT TYPE FROM BUILDING " +
-                "WHERE ID_SOURCE='BREMAR0004';")["TYPE"])
+        row_test = h2GISDatabase.firstRow("SELECT HEIGHT_WALL, HEIGHT_ROOF, NB_LEV, TYPE FROM BUILDING WHERE ID_SOURCE='BREMAR0004';")
+            assertEquals(20, row_test["HEIGHT_WALL"])
+            assertEquals(20, row_test["HEIGHT_ROOF"])
+            assertEquals(6, row_test["NB_LEV"])
+            assertEquals('townhall', row_test["TYPE"])
 
         //... with the building 'BINDUS0001' : HAUTEUR = 13 / NATURE = 'Bâtiment commercial'
-        assertEquals(13, h2GISDatabase.firstRow("SELECT HEIGHT_WALL FROM BUILDING " +
-                "WHERE ID_SOURCE='BINDUS0001';")["HEIGHT_WALL"])
-        assertEquals(13, h2GISDatabase.firstRow("SELECT HEIGHT_ROOF FROM BUILDING " +
-                "WHERE ID_SOURCE='BINDUS0001';")["HEIGHT_ROOF"])
-        assertEquals(4, h2GISDatabase.firstRow("SELECT NB_LEV FROM BUILDING " +
-                "WHERE ID_SOURCE='BINDUS0001';")["NB_LEV"])
-        assertEquals('commercial', h2GISDatabase.firstRow("SELECT TYPE FROM BUILDING " +
-                "WHERE ID_SOURCE='BINDUS0001';")["TYPE"])
+        row_test = h2GISDatabase.firstRow("SELECT HEIGHT_WALL, HEIGHT_ROOF, NB_LEV, TYPE FROM BUILDING WHERE ID_SOURCE='BINDUS0001';")
+            assertEquals(13, row_test["HEIGHT_WALL"])
+            assertEquals(13, row_test["HEIGHT_ROOF"])
+            assertEquals(4, row_test["NB_LEV"])
+            assertEquals('commercial', row_test["TYPE"])
 
         //... with the building 'BINDUS0002' : HAUTEUR = 10 / NATURE = 'Bâtiment industriel'
-        assertEquals(10, h2GISDatabase.firstRow("SELECT HEIGHT_WALL FROM BUILDING " +
-                "WHERE ID_SOURCE='BINDUS0002';")["HEIGHT_WALL"])
-        assertEquals(10, h2GISDatabase.firstRow("SELECT HEIGHT_ROOF FROM BUILDING " +
-                "WHERE ID_SOURCE='BINDUS0002';")["HEIGHT_ROOF"])
-        assertEquals(1, h2GISDatabase.firstRow("SELECT NB_LEV FROM BUILDING " +
-                "WHERE ID_SOURCE='BINDUS0002';")["NB_LEV"])
-        assertEquals('industrial', h2GISDatabase.firstRow("SELECT TYPE FROM BUILDING " +
-                "WHERE ID_SOURCE='BINDUS0002';")["TYPE"])
+        row_test = h2GISDatabase.firstRow("SELECT HEIGHT_WALL, HEIGHT_ROOF, NB_LEV, TYPE FROM BUILDING WHERE ID_SOURCE='BINDUS0002';")
+            assertEquals(10, row_test["HEIGHT_WALL"])
+            assertEquals(10, row_test["HEIGHT_ROOF"])
+            assertEquals(1, row_test["NB_LEV"])
+            assertEquals('industrial', row_test["TYPE"])
 
         //... with the building 'BINDIF0001' : HAUTEUR = 0 / Bati indif so no NATURE
-        assertEquals(3, h2GISDatabase.firstRow("SELECT HEIGHT_WALL FROM BUILDING " +
-                "WHERE ID_SOURCE='BINDIF0001';")["HEIGHT_WALL"])
-        assertEquals(3, h2GISDatabase.firstRow("SELECT HEIGHT_ROOF FROM BUILDING " +
-                "WHERE ID_SOURCE='BINDIF0001';")["HEIGHT_ROOF"])
-        assertEquals(1, h2GISDatabase.firstRow("SELECT NB_LEV FROM BUILDING " +
-                "WHERE ID_SOURCE='BINDIF0001';")["NB_LEV"])
-        assertEquals('building', h2GISDatabase.firstRow("SELECT TYPE FROM BUILDING " +
-                "WHERE ID_SOURCE='BINDIF0001';")["TYPE"])
+        row_test = h2GISDatabase.firstRow("SELECT HEIGHT_WALL, HEIGHT_ROOF, NB_LEV, TYPE FROM BUILDING WHERE ID_SOURCE='BINDIF0001';")
+            assertEquals(3, row_test["HEIGHT_WALL"])
+            assertEquals(3, row_test["HEIGHT_ROOF"])
+            assertEquals(1, row_test["NB_LEV"])
+            assertEquals('building', row_test["TYPE"])
 
         //... with the building 'BINDIF0002' : HAUTEUR = 17 / Bati indif so no NATURE
-        assertEquals(17, h2GISDatabase.firstRow("SELECT HEIGHT_WALL FROM BUILDING " +
-                "WHERE ID_SOURCE='BINDIF0002';")["HEIGHT_WALL"])
-        assertEquals(17, h2GISDatabase.firstRow("SELECT HEIGHT_ROOF FROM BUILDING " +
-                "WHERE ID_SOURCE='BINDIF0002';")["HEIGHT_ROOF"])
-        assertEquals(5, h2GISDatabase.firstRow("SELECT NB_LEV FROM BUILDING " +
-                "WHERE ID_SOURCE='BINDIF0002';")["NB_LEV"])
-        assertEquals('building', h2GISDatabase.firstRow("SELECT TYPE FROM BUILDING " +
-                "WHERE ID_SOURCE='BINDIF0002';")["TYPE"])
+        row_test = h2GISDatabase.firstRow("SELECT HEIGHT_WALL, HEIGHT_ROOF, NB_LEV, TYPE FROM BUILDING WHERE ID_SOURCE='BINDIF0002';")
+            assertEquals(17, row_test["HEIGHT_WALL"])
+            assertEquals(17, row_test["HEIGHT_ROOF"])
+            assertEquals(5, row_test["NB_LEV"])
+            assertEquals('building', row_test["TYPE"])
+
 
         // Check if building are well selected or not ...
         // ... with the building (INDIF) 'BINDIF0003' which is inside the zone --> so expected 1
@@ -435,46 +412,40 @@ class InputDataFormattingTest {
         // Specific cases
         // -------------------------------
         //... with the road 'ROUTE0001' : LARGEUR = 0 / NATURE = 'Sentier'
-        assertEquals(1, h2GISDatabase.firstRow("SELECT WIDTH FROM ROAD " +
-                "WHERE ID_SOURCE='ROUTE0001';")["WIDTH"])
-        assertEquals('path', h2GISDatabase.firstRow("SELECT TYPE FROM ROAD " +
-                "WHERE ID_SOURCE='ROUTE0001';")["TYPE"])
+        row_test = h2GISDatabase.firstRow("SELECT WIDTH, TYPE FROM ROAD WHERE ID_SOURCE='ROUTE0001';")
+        assertEquals(1, row_test["WIDTH"])
+        assertEquals('path', row_test["TYPE"])
 
         //... with the road 'ROUTE0002' : LARGEUR = 5,5 / NATURE = 'Route à 1 chaussée'
-        assertEquals(5.5, h2GISDatabase.firstRow("SELECT WIDTH FROM ROAD " +
-                "WHERE ID_SOURCE='ROUTE0002';")["WIDTH"])
-        assertEquals('unclassified', h2GISDatabase.firstRow("SELECT TYPE FROM ROAD " +
-                "WHERE ID_SOURCE='ROUTE0002';")["TYPE"])
+        row_test = h2GISDatabase.firstRow("SELECT WIDTH, TYPE FROM ROAD WHERE ID_SOURCE='ROUTE0002';")
+        assertEquals(5.5, row_test["WIDTH"])
+        assertEquals('unclassified', row_test["TYPE"])
 
         //... with the road 'ROUTE0003' : LARGEUR = 0 / NATURE = 'Route empierrée'
-        assertEquals(2, h2GISDatabase.firstRow("SELECT WIDTH FROM ROAD " +
-                "WHERE ID_SOURCE='ROUTE0003';")["WIDTH"])
-        assertEquals('track', h2GISDatabase.firstRow("SELECT TYPE FROM ROAD " +
-                "WHERE ID_SOURCE='ROUTE0003';")["TYPE"])
+        row_test = h2GISDatabase.firstRow("SELECT WIDTH, TYPE FROM ROAD WHERE ID_SOURCE='ROUTE0003';")
+        assertEquals(2, row_test["WIDTH"])
+        assertEquals('track', row_test["TYPE"])
 
         //... with the road 'ROUTE0004' : LARGEUR = 10 / NATURE = 'Quasi-autoroute'
-        assertEquals(10, h2GISDatabase.firstRow("SELECT WIDTH FROM ROAD " +
-                "WHERE ID_SOURCE='ROUTE0004';")["WIDTH"])
-        assertEquals('trunk', h2GISDatabase.firstRow("SELECT TYPE FROM ROAD " +
-                "WHERE ID_SOURCE='ROUTE0004';")["TYPE"])
+        row_test = h2GISDatabase.firstRow("SELECT WIDTH, TYPE FROM ROAD WHERE ID_SOURCE='ROUTE0004';")
+        assertEquals(10, row_test["WIDTH"])
+        assertEquals('trunk', row_test["TYPE"])
 
         //... with the road 'ROUTE0005' : LARGEUR = 4 / NATURE = 'Bretelle'
-        assertEquals(4, h2GISDatabase.firstRow("SELECT WIDTH FROM ROAD " +
-                "WHERE ID_SOURCE='ROUTE0005';")["WIDTH"])
-        assertEquals('highway_link', h2GISDatabase.firstRow("SELECT TYPE FROM ROAD " +
-                "WHERE ID_SOURCE='ROUTE0005';")["TYPE"])
+        row_test = h2GISDatabase.firstRow("SELECT WIDTH, TYPE FROM ROAD WHERE ID_SOURCE='ROUTE0005';")
+        assertEquals(4, row_test["WIDTH"])
+        assertEquals('highway_link', row_test["TYPE"])
 
         //... with the road 'ROUTE0006' : LARGEUR = 0 / NATURE = 'Route empierrée'
-        assertEquals(2, h2GISDatabase.firstRow("SELECT WIDTH FROM ROAD " +
-                "WHERE ID_SOURCE='ROUTE0006';")["WIDTH"])
-        assertEquals('track', h2GISDatabase.firstRow("SELECT TYPE FROM ROAD " +
-                "WHERE ID_SOURCE='ROUTE0006';")["TYPE"])
+        row_test = h2GISDatabase.firstRow("SELECT WIDTH, TYPE FROM ROAD WHERE ID_SOURCE='ROUTE0006';")
+        assertEquals(2, row_test["WIDTH"])
+        assertEquals('track', row_test["TYPE"])
 
         //... with the road 'ROUTE0007' : LARGEUR = 0 / NATURE = 'Piste cyclable'
-        assertEquals(1, h2GISDatabase.firstRow("SELECT WIDTH FROM ROAD " +
-                "WHERE ID_SOURCE='ROUTE0007';")["WIDTH"])
-        assertEquals('cycleway', h2GISDatabase.firstRow("SELECT TYPE FROM ROAD " +
-                "WHERE ID_SOURCE='ROUTE0007';")["TYPE"])
+        row_test = h2GISDatabase.firstRow("SELECT WIDTH, TYPE FROM ROAD WHERE ID_SOURCE='ROUTE0007';")
+        assertEquals(1, row_test["WIDTH"])
+        assertEquals('cycleway', row_test["TYPE"])
+
 
         // Check if roads are well selected or not ...
         // ... with the road 'ROUTE0008' which is inside the zone --> so expected 1
@@ -826,28 +797,25 @@ class InputDataFormattingTest {
         // Specific cases
         // -------------------------------
         //... with the vegetation area 'VEGET0001' : NATURE = 'Forêt fermée de feuillus'
-        assertEquals('forest', h2GISDatabase.firstRow("SELECT TYPE FROM VEGET " +
-                "WHERE ID_SOURCE='VEGET0001';")["TYPE"])
-        assertEquals('high', h2GISDatabase.firstRow("SELECT HEIGHT_CLASS FROM VEGET " +
-                "WHERE ID_SOURCE='VEGET0001';")["HEIGHT_CLASS"])
+        row_test = h2GISDatabase.firstRow("SELECT TYPE, HEIGHT_CLASS FROM VEGET WHERE ID_SOURCE='VEGET0001';")
+        assertEquals('forest', row_test["TYPE"])
+        assertEquals('high', row_test["HEIGHT_CLASS"])
 
         //... with the vegetation area 'VEGET0002' : NATURE = 'Forêt fermée mixte'
-        assertEquals('forest', h2GISDatabase.firstRow("SELECT TYPE FROM VEGET " +
-                "WHERE ID_SOURCE='VEGET0002';")["TYPE"])
-        assertEquals('high', h2GISDatabase.firstRow("SELECT HEIGHT_CLASS FROM VEGET " +
-                "WHERE ID_SOURCE='VEGET0002';")["HEIGHT_CLASS"])
+        row_test = h2GISDatabase.firstRow("SELECT TYPE, HEIGHT_CLASS FROM VEGET WHERE ID_SOURCE='VEGET0002';")
+        assertEquals('forest', row_test["TYPE"])
+        assertEquals('high', row_test["HEIGHT_CLASS"])
 
         //... with the vegetation area 'VEGET0003' : NATURE = 'Bois'
-        assertEquals('forest', h2GISDatabase.firstRow("SELECT TYPE FROM VEGET " +
-                "WHERE ID_SOURCE='VEGET0003';")["TYPE"])
-        assertEquals('high', h2GISDatabase.firstRow("SELECT HEIGHT_CLASS FROM VEGET " +
-                "WHERE ID_SOURCE='VEGET0003';")["HEIGHT_CLASS"])
+        row_test = h2GISDatabase.firstRow("SELECT TYPE, HEIGHT_CLASS FROM VEGET WHERE ID_SOURCE='VEGET0003';")
+        assertEquals('forest', row_test["TYPE"])
+        assertEquals('high', row_test["HEIGHT_CLASS"])
 
         //... with the vegetation area 'VEGET0004' : NATURE = 'Haie'
-        assertEquals('hedge', h2GISDatabase.firstRow("SELECT TYPE FROM VEGET " +
-                "WHERE ID_SOURCE='VEGET0004';")["TYPE"])
-        assertEquals('high', h2GISDatabase.firstRow("SELECT HEIGHT_CLASS FROM VEGET " +
-                "WHERE ID_SOURCE='VEGET0004';")["HEIGHT_CLASS"])
+        row_test = h2GISDatabase.firstRow("SELECT TYPE, HEIGHT_CLASS FROM VEGET WHERE ID_SOURCE='VEGET0004';")
+        assertEquals('hedge', row_test["TYPE"])
+        assertEquals('high', row_test["HEIGHT_CLASS"])
+
 
         // Check if vegetation area are well selected or not ...
         // ... with the veget area 'VEGET0005' which is inside the zone --> so expected 1
