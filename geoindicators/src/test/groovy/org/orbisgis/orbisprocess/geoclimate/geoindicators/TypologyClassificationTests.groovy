@@ -374,7 +374,6 @@ class TypologyClassificationTests {
         def pmed =  Geoindicators.TypologyClassification.applyRandomForestClassif()
         assert pmed.execute([
                 explicativeVariablesTableName   : "inputDataTable",
-                defaultModelUrl                 : "https://github.com/orbisgis/geoclimate/models/model.model",
                 pathAndFileName                 : "",
                 idName                          : "PK",
                 prefixName                      : "test",
