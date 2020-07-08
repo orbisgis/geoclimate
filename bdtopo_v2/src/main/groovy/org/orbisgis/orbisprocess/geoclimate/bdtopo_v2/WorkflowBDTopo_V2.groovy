@@ -4,6 +4,7 @@ import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.api.dataset.ITable
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
+import org.orbisgis.orbisdata.datamanager.jdbc.io.IOMethods
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
@@ -601,7 +602,7 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
         String inputTableName = "(SELECT THE_GEOM, INSEE_COM FROM $iris_ge_location WHERE insee_com=''$code'')"
         String outputTableName = "IRIS_GE"
         info "Loading in the H2GIS database $outputTableName"
-        h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
+        IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
         def count = h2gis_datasource."$outputTableName".rowCount
         if (count > 0) {
             //Compute the envelope of the extracted area to extract the thematic tables
@@ -612,67 +613,67 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
             inputTableName = "(SELECT ID, THE_GEOM, HAUTEUR FROM ${inputTableNames.bati_indifferencie}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "BATI_INDIFFERENCIE"
             info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
 
             //Extract bati_industriel
             inputTableName = "(SELECT ID, THE_GEOM, NATURE, HAUTEUR FROM ${inputTableNames.bati_industriel}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "BATI_INDUSTRIEL"
             info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
 
             //Extract bati_remarquable
             inputTableName = "(SELECT ID, THE_GEOM, NATURE, HAUTEUR FROM ${inputTableNames.bati_remarquable}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "BATI_REMARQUABLE"
             info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
 
             //Extract route
             inputTableName = "(SELECT ID, THE_GEOM, NATURE, LARGEUR, POS_SOL, FRANCHISST FROM ${inputTableNames.route}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "ROUTE"
             info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
 
             //Extract troncon_voie_ferree
             inputTableName = "(SELECT ID, THE_GEOM, NATURE, LARGEUR, POS_SOL, FRANCHISST FROM ${inputTableNames.troncon_voie_ferree}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "TRONCON_VOIE_FERREE"
             info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
 
             //Extract surface_eau
             inputTableName = "(SELECT ID, THE_GEOM FROM ${inputTableNames.surface_eau}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "SURFACE_EAU"
             info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
 
             //Extract zone_vegetation
             inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.zone_vegetation}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "ZONE_VEGETATION"
             info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
 
             //Extract terrain_sport
             inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.terrain_sport}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY) AND NATURE=''Piste de sport'')"
             outputTableName = "TERRAIN_SPORT"
             info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
 
             //Extract construction_surfacique
             inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.construction_surfacique}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY) AND (NATURE=''Barrage'' OR NATURE=''Ecluse'' OR NATURE=''Escalier''))"
             outputTableName = "CONSTRUCTION_SURFACIQUE"
             info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
 
             //Extract surface_route
             inputTableName = "(SELECT ID, THE_GEOM  FROM ${inputTableNames.surface_route}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "SURFACE_ROUTE"
             info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
 
             //Extract surface_activite
             inputTableName = "(SELECT ID, THE_GEOM, CATEGORIE  FROM ${inputTableNames.surface_activite}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY) AND (CATEGORIE=''Administratif'' OR CATEGORIE=''Enseignement'' OR CATEGORIE=''Santé''))"
             outputTableName = "SURFACE_ACTIVITE"
             info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
 
             return true
 

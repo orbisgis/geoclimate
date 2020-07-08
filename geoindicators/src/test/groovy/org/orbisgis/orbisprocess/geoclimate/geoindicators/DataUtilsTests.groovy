@@ -72,7 +72,7 @@ class DataUtilsTests {
                 directory       : directory,
                 datasource      : h2GIS])
 
-        assert 1 == h2GIS.load(directory+File.separator+"tablegeom.geojson", true).rowCount
-        assert 1 == h2GIS.load(directory+File.separator+"tablea.csv", true).rowCount
+        assert 1 == h2GIS.table(h2GIS.load(directory+File.separator+"tablegeom.geojson", true)).rowCount
+        assert 1 == h2GIS.table(h2GIS.load(directory+File.separator+"tablea.csv", true)).rowCount
     }
 }

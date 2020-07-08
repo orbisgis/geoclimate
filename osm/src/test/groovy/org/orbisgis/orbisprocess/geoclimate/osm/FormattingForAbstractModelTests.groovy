@@ -7,6 +7,7 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 
 import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 class FormattingForAbstractModelTests {
@@ -35,7 +36,7 @@ class FormattingForAbstractModelTests {
                 inputTableName: extractData.results.buildingTableName,
                 epsg: epsg,
                 jsonFilename: null])
-        assertTrue h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated.shp")
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated.shp")
         assertEquals 1040, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count==0
@@ -65,7 +66,7 @@ class FormattingForAbstractModelTests {
                 inputTableName: extractData.results.roadTableName,
                 epsg: epsg,
                 jsonFilename: null])
-        assertTrue h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_formated.shp")
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_formated.shp")
         assertEquals 197, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH is null").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH<=0").count==0
@@ -79,7 +80,7 @@ class FormattingForAbstractModelTests {
                 epsg: epsg,
                 jsonFilename: null])
 
-        assertTrue h2GIS.getTable(format.results.outputTableName).save("./target/osm_rails_formated.shp")
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_rails_formated.shp")
         assertEquals 41, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where CROSSING IS NOT NULL").count==8
 
@@ -92,7 +93,7 @@ class FormattingForAbstractModelTests {
                 epsg: epsg,
                 jsonFilename: null
         ])
-        assertTrue h2GIS.getTable(format.results.outputTableName).save("./target/osm_vegetation_formated.shp")
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_vegetation_formated.shp")
         assertEquals 140, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where type is null").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_CLASS is null").count==0
@@ -104,7 +105,7 @@ class FormattingForAbstractModelTests {
                 datasource : h2GIS,
                 inputTableName: extractData.results.hydroTableName,
                 epsg: epsg])
-        assertTrue h2GIS.getTable(format.results.outputTableName).save("./target/osm_hydro_formated.shp")
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_hydro_formated.shp")
         assertEquals 10, h2GIS.getTable(format.results.outputTableName).rowCount
 
         //Impervious surfaces
@@ -113,7 +114,7 @@ class FormattingForAbstractModelTests {
                 datasource : h2GIS,
                 inputTableName: extractData.results.imperviousTableName,
                 epsg: epsg])
-        assertTrue h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_formated.shp")
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_formated.shp")
         assertEquals 43, h2GIS.getTable(format.results.outputTableName).rowCount
 
 
