@@ -1655,7 +1655,7 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                         h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(outputSRID).save(output_datasource, output_table, true);
                     }
                 }
-                output_datasource.execute("ALTER TABLE $output_table ADD COLUMN id_zone VARCHAR");
+                output_datasource.execute("ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS id_zone VARCHAR");
                 output_datasource.execute("UPDATE $output_table SET id_zone= ?", id_zone);
                 output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""")
                 info "The table $h2gis_table_to_save has been exported into the table $output_table"
