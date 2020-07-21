@@ -454,11 +454,11 @@ IProcess createRandomForestClassif() {
             // If needed, select only some specific columns for the training in the dataframe
             def df
             if (explicativeVariables){
-                def tabFin = datasource.select(explicativeVariables).from(trainingTableName).getTable()
+                def tabFin = datasource.getTable(trainingTableName).columns(explicativeVariables).getTable()
                 df = DataFrame.of(tabFin)
             }
             else{
-                def tabFin = datasource.select().from(trainingTableName).getTable()
+                def tabFin = datasource.getTable(trainingTableName)
                 df = DataFrame.of(tabFin)
             }
             def formula = Formula.lhs(varToModel)
