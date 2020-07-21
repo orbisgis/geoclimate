@@ -351,7 +351,7 @@ class TypologyClassificationTests {
         def uuid = UUID.randomUUID().toString().replaceAll("-", "_")
         def savePath = "target/geoclimate_rf_${uuid}.model"
 
-        def trainingTable = h2GIS.load(trainingURL, trainingTableName,true)
+        def trainingTable = h2GIS.getTable(h2GIS.load(trainingURL, trainingTableName,true))
         assert trainingTable
 
         // Variable to model
@@ -374,7 +374,6 @@ class TypologyClassificationTests {
         def pmed =  Geoindicators.TypologyClassification.applyRandomForestClassif()
         assert pmed.execute([
                 explicativeVariablesTableName   : "inputDataTable",
-                defaultModelUrl                 : "https://github.com/orbisgis/geoclimate/models/model.model",
                 pathAndFileName                 : "",
                 idName                          : "PK",
                 prefixName                      : "test",

@@ -2,20 +2,17 @@ package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
 import com.thoughtworks.xstream.XStream
 import groovy.transform.BaseScript
-import org.h2.store.fs.FileUtils
-import org.orbisgis.orbisdata.datamanager.api.dataset.ITable
 import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import smile.base.cart.SplitRule
-import smile.classification.DataFrameClassifier
 import smile.classification.RandomForest
 import smile.data.formula.Formula
-import smile.data.vector.BaseVector
 import smile.data.vector.IntVector
 import smile.validation.Accuracy
 import smile.validation.Validation
+import org.apache.commons.io.FileUtils
+import org.apache.commons.io.FilenameUtils
 
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
@@ -504,7 +501,6 @@ IProcess createRandomForestClassif() {
  * folder or provided by the user). A table containing the predicted values and the id is returned.
  *
  * @param explicativeVariablesTableName The name of the table containing the indicators used by the random forest model
- * @param defaultModelUrl String containing the URL of the default model to use (if the user does not have its own model - default: "")
  * @param pathAndFileName If the user wants to use its own model, URL of the model file on the user machine (default: "")
  * @param idName Name of the ID column (which will be removed for the application of the random Forest)
  * @param prefixName String use as prefix to name the output table
@@ -519,74 +515,67 @@ IProcess applyRandomForestClassif() {
     return create {
         title "Apply a Random Forest classification"
         id "applyRandomForestClassif"
-        inputs explicativeVariablesTableName: String, defaultModelUrl: "", pathAndFileName: "", idName: String,
+        inputs explicativeVariablesTableName: String, pathAndFileName: "", idName: String,
                 prefixName: String, datasource: JdbcDataSource
         outputs outputTableName: String
-        run { String explicativeVariablesTableName, String defaultModelUrl, String pathAndFileName, String idName,
+        run { String explicativeVariablesTableName, String pathAndFileName, String idName,
               String prefixName, JdbcDataSource datasource ->
 
             info "Apply a Random Forest model"
-
-            // Define the location and the name of the file where will be stored the downloaded model
-            def modelNameFile = defaultModelUrl.split("/")[-1]
-            def modelName = modelNameFile.split("\\.")[0]
-            def modelFolderPath = System.getProperty("user.home")+File.separator+"geoclimate"+File.separator+modelNameFile
-
+            //The model is not provided by the user is used
+            def modelName;
+            File inputModelFile;
+            if (!pathAndFileName) {
+                //We look for the default model
+                //Default model name
+                modelName = "LCZ_OSM_RF_1.0";
+                def modelURL = "https://github.com/orbisgis/geoclimate/raw/master/models/${modelName}.model"
+                inputModelFile = new File(System.getProperty("user.home") + File.separator + ".geoclimate" + File.separator + modelName + ".model")
+                //The model doesn't exist on the local folder we download it
+                if (!inputModelFile.exists()) {
+                    FileUtils.copyURLToFile(new URL(modelURL, inputModelFile))
+                    if (!inputModelFile.exists()) {
+                        error "Cannot find any model file to apply the classification tree"
+                        return null
+                    }
+                }
+            } else {
+                inputModelFile = new File(pathAndFileName);
+                if (!inputModelFile.exists()) {
+                    error "Cannot find any model file to apply the classification tree"
+                    return null
+                } else {
+                    modelName = FilenameUtils.getBaseName(pathAndFileName)
+                }
+            }
+            def fileInputStream = new FileInputStream(inputModelFile)
             // The name of the outputTableName is constructed
-            def outputTableName = prefix prefixName, modelName
-
+            def outputTableName = prefix prefixName, modelName.toLowerCase();
             // Load the RandomForest model
             def xs = new XStream()
-            def fileInputStream
-            // Check if at least a default value has been set for loading a model either locally or on the internet
-            if(!(pathAndFileName!="" && defaultModelUrl!="")){
-                // In case the user uses the default model
-                if(pathAndFileName==""){
-                    File file = new File(modelFolderPath)
-                    // Do not download the file if it is already in its computer
-                    if(!file.exists()){
-                        info "Download the default model used for RandomForest Classification and store it in a folder called" +
-                                "geoclimate and located in the home directory of the user"
-                        FileUtils.copyURLToFile(new URL(defaultModelUrl), modelFolderPath)
-                    }
-                    fileInputStream = new FileInputStream(modelFolderPath)
-                }
-                // In case the user provides its own model
-                else{
-                    fileInputStream = new FileInputStream(pathAndFileName)
-                }
+            /*// Check if all the model explicative variables are in the 'explicativeVariablesTableName'
+           if(!trainingTable.hasColumn(varToModel, String)){
+               error "The training table should have a String column name $varToModel"
+               return
+           }*/
+            // Load the model and recover the name of the variable to model
+            def gzipInputStream = new GZIPInputStream(fileInputStream)
+            def model = xs.fromXML(gzipInputStream)
+            def var2model = model.formula.toString().split("~")[0][0..-2]
 
-                /*// Check if all the model explicative variables are in the 'explicativeVariablesTableName'
-                if(!trainingTable.hasColumn(varToModel, String)){
-                    error "The training table should have a String column name $varToModel"
-                    return
-                }*/
+            // We need to add the name of the predicted variable in order to use the model
+            datasource.execute """ALTER TABLE $explicativeVariablesTableName ADD COLUMN $var2model INTEGER DEFAULT 0"""
+            datasource."$explicativeVariablesTableName".reload()
 
-                // Load the model and recover the name of the variable to model
-                def gzipInputStream = new GZIPInputStream(fileInputStream)
-                def model = xs.fromXML(gzipInputStream)
-                def var2model = model.formula.toString().split("~")[0][0..-2]
+            // The table containing explicative variables is recovered
+            def explicativeVariablesTable = datasource."$explicativeVariablesTableName"
 
-                // We need to add the name of the predicted variable in order to use the model
-                datasource.execute """ALTER TABLE $explicativeVariablesTableName ADD COLUMN $var2model INTEGER DEFAULT 0"""
-                datasource."$explicativeVariablesTableName".reload()
+            // Read the table containing the explicative variables as a DataFrame
+            def df = DataFrame.of(explicativeVariablesTable)
 
-                // The table containing explicative variables is recovered
-                def explicativeVariablesTable = datasource."$explicativeVariablesTableName"
-
-                // Read the table containing the explicative variables as a DataFrame
-                def df = DataFrame.of(explicativeVariablesTable)
-
-                int[] prediction = Validation.test(model, df)
-
-                df.merge(IntVector.of("name", prediction))
-
-                df.save(datasource, outputTableName, true)
-            }
-            else{
-                error "Either 'pathAndFileName' or 'defaultModelUrl' should be filled"
-            }
-
+            int[] prediction = Validation.test(model, df)
+            df.merge(IntVector.of("name", prediction))
+            df.save(datasource, outputTableName, true)
             [outputTableName: outputTableName]
         }
     }
