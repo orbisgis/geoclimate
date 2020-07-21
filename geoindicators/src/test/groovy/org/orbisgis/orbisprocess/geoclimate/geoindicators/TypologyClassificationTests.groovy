@@ -367,8 +367,7 @@ class TypologyClassificationTests {
         trainingTable.reload()
 
         // Input data creation
-        h2GIS "CREATE TABLE inputDataTable AS SELECT * FROM $trainingTableName;" +
-                "ALTER TABLE inputDataTable DROP COLUMN $var2model"
+        h2GIS "CREATE TABLE inputDataTable AS SELECT * FROM $trainingTableName;"
 
 
         def pmed =  Geoindicators.TypologyClassification.applyRandomForestClassif()
