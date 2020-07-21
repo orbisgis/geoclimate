@@ -355,7 +355,7 @@ class TypologyClassificationTests {
         assert trainingTable
 
         // Variable to model
-        def var2model = "I_TYPO"
+        def var2model = "LCZ"
 
         // Columns useless for the classification
         def colsToRemove = ["PK2", "THE_GEOM"]
