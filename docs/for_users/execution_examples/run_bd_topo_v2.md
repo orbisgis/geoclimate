@@ -37,7 +37,7 @@ The resulting layers will be saved as `.geojson` files in this folder  `/home/ge
 Download [this configuration file](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_folderoutput.json) and save it the folder  `/home/geoclimate/bdtopo/` with this name `config_all_zones.json`. Then open it in a text editor and:
 
 1. In the `geoclimatedb` part, adapt the working database address (*e.g* `"path" : "/home/geoclimate/bdtopo/db/geoclimate_db;AUTO_SERVER=TRUE",`)
-2. In the `input` part, replace `"path" :"/tmp/..."` by `"path" :"/home/geoclimate/bdtopo/input/my_project/"`
+2. In the `input` part, replace `"folder" :"/tmp/..."` by `"folder" :"/home/geoclimate/bdtopo/input/my_project/"`
 3. In the `output` part, replace `"folder" : "/tmp/..."},` by `"folder" : "/home/geoclimate/bdtopo/output/"},`
 4. In the `parameters` part, replace `"indicatorUse": ["TEB"]` by `"indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"]`
 5. Save these modifications.
