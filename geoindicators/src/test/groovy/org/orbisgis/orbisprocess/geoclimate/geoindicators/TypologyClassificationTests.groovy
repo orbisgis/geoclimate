@@ -166,7 +166,7 @@ class TypologyClassificationTests {
         def uuid = UUID.randomUUID().toString().replaceAll("-", "_")
         def savePath = "target/geoclimate_rf_${uuid}.model"
 
-        def trainingTable = h2GIS.load(trainingURL, trainingTableName,true)
+        def trainingTable = h2GIS.table(h2GIS.load(trainingURL, trainingTableName,true))
         assert trainingTable
 
         // Variable to model

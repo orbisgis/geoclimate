@@ -4,14 +4,12 @@ import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.api.dataset.ITable
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
+import org.orbisgis.orbisdata.datamanager.jdbc.io.IOMethods
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
 
 import java.sql.SQLException
-import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain as PC
 
 
 @BaseScript BDTopo_V2_Utils bdTopo_v2_utils
@@ -601,7 +599,7 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
         String inputTableName = "(SELECT THE_GEOM, INSEE_COM FROM $iris_ge_location WHERE insee_com=''$code'')"
         String outputTableName = "IRIS_GE"
         info "Loading in the H2GIS database $outputTableName"
-        h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
+        IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
         def count = h2gis_datasource."$outputTableName".rowCount
         if (count > 0) {
             //Compute the envelope of the extracted area to extract the thematic tables
@@ -612,67 +610,67 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
             inputTableName = "(SELECT ID, THE_GEOM, HAUTEUR FROM ${inputTableNames.bati_indifferencie}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "BATI_INDIFFERENCIE"
             info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
 
             //Extract bati_industriel
             inputTableName = "(SELECT ID, THE_GEOM, NATURE, HAUTEUR FROM ${inputTableNames.bati_industriel}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "BATI_INDUSTRIEL"
             info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
 
             //Extract bati_remarquable
             inputTableName = "(SELECT ID, THE_GEOM, NATURE, HAUTEUR FROM ${inputTableNames.bati_remarquable}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "BATI_REMARQUABLE"
             info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
 
             //Extract route
             inputTableName = "(SELECT ID, THE_GEOM, NATURE, LARGEUR, POS_SOL, FRANCHISST FROM ${inputTableNames.route}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "ROUTE"
             info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
 
             //Extract troncon_voie_ferree
             inputTableName = "(SELECT ID, THE_GEOM, NATURE, LARGEUR, POS_SOL, FRANCHISST FROM ${inputTableNames.troncon_voie_ferree}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "TRONCON_VOIE_FERREE"
             info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
 
             //Extract surface_eau
             inputTableName = "(SELECT ID, THE_GEOM FROM ${inputTableNames.surface_eau}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "SURFACE_EAU"
             info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
 
             //Extract zone_vegetation
             inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.zone_vegetation}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "ZONE_VEGETATION"
             info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
 
             //Extract terrain_sport
             inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.terrain_sport}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY) AND NATURE=''Piste de sport'')"
             outputTableName = "TERRAIN_SPORT"
             info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
 
             //Extract construction_surfacique
             inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.construction_surfacique}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY) AND (NATURE=''Barrage'' OR NATURE=''Ecluse'' OR NATURE=''Escalier''))"
             outputTableName = "CONSTRUCTION_SURFACIQUE"
             info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
 
             //Extract surface_route
             inputTableName = "(SELECT ID, THE_GEOM  FROM ${inputTableNames.surface_route}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "SURFACE_ROUTE"
             info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
 
             //Extract surface_activite
             inputTableName = "(SELECT ID, THE_GEOM, CATEGORIE  FROM ${inputTableNames.surface_activite}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY) AND (CATEGORIE=''Administratif'' OR CATEGORIE=''Enseignement'' OR CATEGORIE=''Santé''))"
             outputTableName = "SURFACE_ACTIVITE"
             info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
 
             return true
 
@@ -1418,12 +1416,12 @@ static def createOutputTables(def output_datasource, def outputTableNames, def s
 def saveTablesInDatabase(def output_datasource, def h2gis_datasource, def outputTableNames, def h2gis_tables, def id_zone, def inputSRID, def outputSRID ){
     //Export building indicators
     indicatorTableBatchExportTable(output_datasource, outputTableNames.building_indicators,id_zone,h2gis_datasource, h2gis_tables.outputTableBuildingIndicators
-                ,  "id_zone!='outside'",  inputSRID, outputSRID)
+                ,  "where id_zone!='outside'",  inputSRID, outputSRID)
 
 
     //Export block indicators
     indicatorTableBatchExportTable(output_datasource, outputTableNames.block_indicators, id_zone, h2gis_datasource, h2gis_tables.outputTableBlockIndicators
-            , "ID_RSU IS NOT NULL",  inputSRID, outputSRID)
+            , "where ID_RSU IS NOT NULL",  inputSRID, outputSRID)
 
     //Export rsu indicators
     indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_indicators, id_zone, h2gis_datasource, h2gis_tables.outputTableRsuIndicators
@@ -1538,10 +1536,10 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
                 info "Start to export the table $h2gis_table_to_save into the table $output_table"
                 if (filter) {
                     if(outputSRID==0){
-                        h2gis_datasource.select().from(h2gis_table_to_save).where(filter).getSpatialTable().save(output_datasource, output_table, true);
+                        h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().save(output_datasource, output_table, true);
                     }
                     else{
-                        h2gis_datasource.select().from(h2gis_table_to_save).where(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true);
+                        h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true);
                     }
                     //Workarround to update the SRID on resulset
                     output_datasource.execute"""ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);"""
@@ -1641,9 +1639,9 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                 info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
                 if (filter) {
                     if (outputSRID == 0) {
-                        h2gis_datasource.select().from(h2gis_table_to_save).where(filter).getSpatialTable().save(output_datasource, output_table, true);
+                        h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().save(output_datasource, output_table, true);
                     } else {
-                        h2gis_datasource.select().from(h2gis_table_to_save).where(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true);
+                        h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true);
                     }
                     //Workarround to update the SRID on resulset
                     output_datasource.execute"""ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);"""
@@ -1654,7 +1652,9 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                         h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(outputSRID).save(output_datasource, output_table, true);
                     }
                 }
-                output_datasource.execute("ALTER TABLE $output_table ADD COLUMN id_zone VARCHAR");
+                if(!output_datasource.getTable(output_table).hasColumn("id_zone")) {
+                    output_datasource.execute("ALTER TABLE $output_table ADD COLUMN id_zone VARCHAR");
+                }
                 output_datasource.execute("UPDATE $output_table SET id_zone= ?", id_zone);
                 output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""")
                 info "The table $h2gis_table_to_save has been exported into the table $output_table"
@@ -1678,12 +1678,12 @@ def prepareTableOutput(def h2gis_table_to_save, def filter, def inputSRID,def h2
     if (filter) {
         if(outputSRID==0){
             if(inputSRID==targetTableSrid){
-                inputRes =  h2gis_datasource.select().from(h2gis_table_to_save).where(filter).getTable()
+                inputRes =  h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getTable()
             }else {
                 if(targetTableSrid==0 && inputSRID==0){
-                    return h2gis_datasource.select().from(h2gis_table_to_save).where(filter).getTable()
+                    return h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getTable()
                 }else if(targetTableSrid!=0 && inputSRID!=0){
-                    return h2gis_datasource.select().from(h2gis_table_to_save).where(filter).getSpatialTable().reproject(targetTableSrid)
+                    return h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(targetTableSrid)
                 }
                 else{
                     error("Cannot export the $h2gis_table_to_save into the table $output_table \n due to inconsistent SRID")
@@ -1693,12 +1693,12 @@ def prepareTableOutput(def h2gis_table_to_save, def filter, def inputSRID,def h2
         }
         else{
             if(inputSRID==targetTableSrid){
-                return h2gis_datasource.select().from(h2gis_table_to_save).getTable()
+                return h2gis_datasource.getTable(h2gis_table_to_save)
             }else{
                 if(targetTableSrid==0 && inputSRID==0) {
-                    return h2gis_datasource.select().from(h2gis_table_to_save).getTable()
+                    return h2gis_datasource.getTable(h2gis_table_to_save)
                 }else if(targetTableSrid!=0 && inputSRID!=0){
-                    return h2gis_datasource.select().from(h2gis_table_to_save).getSpatialTable().reproject(targetTableSrid)
+                    return h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(targetTableSrid)
                 }
                 else{
                     error("Cannot export the $h2gis_table_to_save into the table $output_table \n due to inconsistent SRID")
@@ -1710,12 +1710,12 @@ def prepareTableOutput(def h2gis_table_to_save, def filter, def inputSRID,def h2
     else {
         if(outputSRID==0){
             if(inputSRID==targetTableSrid){
-                return  h2gis_datasource.select().from(h2gis_table_to_save).getTable()
+                return  h2gis_datasource.getTable(h2gis_table_to_save)
             }else {
                 if(targetTableSrid==0 && inputSRID==0) {
-                    return h2gis_datasource.select().from(h2gis_table_to_save).getTable()
+                    return h2gis_datasource.getTable(h2gis_table_to_save)
                 }else if(targetTableSrid!=0 && inputSRID!=0){
-                    return h2gis_datasource.select().from(h2gis_table_to_save).getSpatialTable().reproject(targetTableSrid)
+                    return h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(targetTableSrid)
                 }
                 else{
                     error("Cannot export the $h2gis_table_to_save into the table $output_table \n due to inconsistent SRID")
@@ -1725,12 +1725,12 @@ def prepareTableOutput(def h2gis_table_to_save, def filter, def inputSRID,def h2
         }
         else{
             if(inputSRID==targetTableSrid){
-                return h2gis_datasource.select().from(h2gis_table_to_save).getTable()
+                return h2gis_datasource.getTable(h2gis_table_to_save)
             }else{
                 if(targetTableSrid==0 && inputSRID==0) {
-                    return h2gis_datasource.select().from(h2gis_table_to_save).getTable()
+                    return h2gis_datasource.getTable(h2gis_table_to_save)
                 }else if(targetTableSrid!=0 && inputSRID!=0){
-                    return h2gis_datasource.select().from(h2gis_table_to_save).getSpatialTable().reproject(targetTableSrid)
+                    return h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(targetTableSrid)
                 }
                 else{
                     error("Cannot export the $h2gis_table_to_save into the table $output_table \n due to inconsistent SRID")
