@@ -134,7 +134,7 @@ IProcess neighborsProperties() {
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
 
-            datasource."$inputBuildingTableName".the_geom.createIndex()
+            datasource."$inputBuildingTableName".the_geom.createSpatialIndex()
             datasource."$inputBuildingTableName".id_build.createIndex()
 
             def query = " CREATE TABLE $build_intersec AS SELECT "
@@ -311,7 +311,7 @@ IProcess minimumBuildingSpacing() {
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, "building_" + BASE_NAME
 
-            datasource."$inputBuildingTableName".the_geom.createIndex()
+            datasource."$inputBuildingTableName".the_geom.createSpatialIndex()
             datasource."$inputBuildingTableName".id_build.createIndex()
 
             datasource """

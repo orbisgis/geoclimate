@@ -391,8 +391,8 @@ IProcess spatialJoin() {
             // The name of the outputTableName is constructed (the prefix name is not added since it is already contained
             // in the inputLowerScaleTableName object
             def outputTableName = postfix "${sourceTable}_${targetTable}", "join"
-            datasource."$sourceTable".the_geom.createIndex()
-            datasource."$targetTable".the_geom.createIndex()
+            datasource."$sourceTable".the_geom.createSpatialIndex()
+            datasource."$targetTable".the_geom.createSpatialIndex()
 
             if (pointOnSurface){
                 datasource """    DROP TABLE IF EXISTS $outputTableName;
