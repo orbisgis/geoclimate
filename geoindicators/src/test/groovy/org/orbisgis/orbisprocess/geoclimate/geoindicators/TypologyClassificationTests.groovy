@@ -334,37 +334,25 @@ class TypologyClassificationTests {
         }
     }
 
+    // Should be activated after the first version
+    @Disabled
     @Test
     void applyRandomForestClassif() {
-        h2GIS """
-                DROP TABLE IF EXISTS tempo_rsu_for_lcz;
-                CREATE TABLE tempo_rsu_for_lcz AS 
-                    SELECT a.*, b.the_geom 
-                    FROM rsu_test_lcz_indics a 
-                        LEFT JOIN rsu_test b
-                        ON a.id_rsu = b.id_rsu;
-        """
         // Information about where to find the training dataset for the test
         def trainingTableName = "training_table"
-        def trainingURL = TypologyClassificationTests.getResource("model/rf/training_data.shp")
+        def trainingURL = "/home/decide/Code/Intel/geoclimate/models/TRAINING_DATA_LCZ_OSM_RF_1_0.gz"
+        def savePath = "/home/decide/Code/Intel/geoclimate/models/LCZ_OSM_RF_1_0.model"
 
-        def uuid = UUID.randomUUID().toString().replaceAll("-", "_")
-        def savePath = "target/geoclimate_rf_${uuid}.model"
-
-        def trainingTable = h2GIS.getTable(h2GIS.load(trainingURL, trainingTableName,true))
-        assert trainingTable
-
-        // Variable to model
-        def var2model = "LCZ"
+        h2GIS """ CALL GEOJSONREAD('${trainingURL}', '$trainingTableName');"""
 
         // Columns useless for the classification
-        def colsToRemove = ["PK2", "THE_GEOM"]
+        def colsToRemove = ["THE_GEOM", "LCZ"]
 
         // Remove unnecessary column
         h2GIS "ALTER TABLE $trainingTableName DROP COLUMN ${colsToRemove.join(",")};"
 
         //Reload the table due to the schema modification
-        trainingTable.reload()
+        h2GIS.getTable(trainingTableName).reload()
 
         // Input data creation
         h2GIS "CREATE TABLE inputDataTable AS SELECT * FROM $trainingTableName;"
@@ -373,14 +361,14 @@ class TypologyClassificationTests {
         def pmed =  Geoindicators.TypologyClassification.applyRandomForestClassif()
         assert pmed.execute([
                 explicativeVariablesTableName   : "inputDataTable",
-                pathAndFileName                 : "",
+                pathAndFileName                 : savePath,
                 idName                          : "PK",
                 prefixName                      : "test",
                 datasource                      : h2GIS])
         def predicted = pmed.results.outputTableName
 
         // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
-        def nb_null = h2GIS.firstRow("SELECT COUNT(*) AS NB_null FROM $predicted WHERE $var2model=0")
+        def nb_null = h2GIS.firstRow("SELECT COUNT(*) AS NB_null FROM $predicted WHERE LCZ=0")
         assert nb_null.nb_null, 0
     }
 
@@ -388,17 +376,25 @@ class TypologyClassificationTests {
     @Disabled
     @Test
     void tempoCreateRandomForestClassifTest() {
+        // Specify the model and training datat appropriate to the right use
+        def model_name = "LCZ_OSM_RF_1_0"
+        def training_data_name = "TRAINING_DATA_LCZ_OSM_RF_1_0"
+        // Name of the variable to model
+        def var2model = "LCZ"
+
         // Information about where to find the training dataset for the test
         def trainingTableName = "training_table"
-        def tableName = "ALL_LCZ"
-        String directory ="./target/model"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
-        def savePath = directory+File.separator+"LCZ_OSM_RF_1.0.model"
-        def var2model = "LCZ"
-        def databaseTrainingDataSet = open"${directory+File.separator}lczIdf;AUTO_SERVER=TRUE"
-        h2GIS.load(databaseTrainingDataSet, tableName, trainingTableName, true)
+        String directory ="/home/decide/Code/Intel/geoclimate/models"
+        def savePath = directory+File.separator+model_name+".model"
+
+        // Read the training data
+        h2GIS """ CALL GEOJSONREAD('${directory+File.separator+training_data_name+".gz"}', '$trainingTableName')"""
+        // Remove unnecessary column
+        h2GIS "ALTER TABLE $trainingTableName DROP COLUMN the_geom;"
+
+        //Reload the table due to the schema modification
+        h2GIS.getTable(trainingTableName).reload()
+
         assert h2GIS."$trainingTableName"
 
         def pmed =  Geoindicators.TypologyClassification.createRandomForestClassif()
@@ -421,18 +417,12 @@ class TypologyClassificationTests {
 
         // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
         def df = DataFrame.of(h2GIS."$trainingTableName")
-        assert df
         df = df.factorize(var2model)
-        assert df
         df = df.omitNullRows()
         def vector = df.apply(var2model)
-        assert vector
         def truth = vector.toIntArray()
-        assert truth
         def prediction = Validation.test(model, df)
-        assert prediction
         def accuracy = Accuracy.of(truth, prediction)
-        assert accuracy
         assertEquals 0.725, accuracy.round(3), 1.5
     }
 }

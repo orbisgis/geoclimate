@@ -480,7 +480,7 @@ IProcess createRandomForestClassif() {
 
             try {
                 if (save) {
-                    def zOut = new GZIPOutputStream(new FileOutputStream(pathAndFileName));
+                    def zOut = new GZIPOutputStream(new FileOutputStream(pathAndFileName))
                     def xs = new XStream()
                     xs.toXML(model, zOut)
                     zOut.close()
@@ -528,7 +528,7 @@ IProcess applyRandomForestClassif() {
             if (!pathAndFileName) {
                 //We look for the default model
                 //Default model name
-                modelName = "LCZ_OSM_RF_1.0";
+                modelName = "LCZ_OSM_RF_1.0"
                 def modelURL = "https://github.com/orbisgis/geoclimate/raw/master/models/${modelName}.model"
                 inputModelFile = new File(System.getProperty("user.home") + File.separator + ".geoclimate" + File.separator + modelName + ".model")
                 //The model doesn't exist on the local folder we download it
