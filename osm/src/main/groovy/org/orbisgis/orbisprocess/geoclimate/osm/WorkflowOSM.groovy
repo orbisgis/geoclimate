@@ -18,6 +18,8 @@ import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
+import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
+
 import java.sql.SQLException
 
 @BaseScript OSM_Utils osm_utils
@@ -131,7 +133,7 @@ IProcess workflow() {
                 return null
             }
             Map parameters = readJSONParameters(configFile)
-            info 1
+
             if (parameters) {
                 info "Reading file parameters from $configFile"
                 info parameters.get("description")
@@ -159,7 +161,7 @@ IProcess workflow() {
                         h2gis_properties = ["databaseName": h2gis_path, "user": "sa", "password": ""]
                     }
                 }
-                info 2
+
                 if (input) {
                     def osmFilters = input.get("osm")
                     if (!osmFilters) {
@@ -208,7 +210,7 @@ IProcess workflow() {
                             if (!output_datasource) {
                                 return null
                             }
-                            info 3
+
                             def h2gis_datasource = H2GIS.open(h2gis_properties)
                             if (osmFilters && osmFilters in Collection) {
                                 def osmprocessing = osm_processing()
@@ -245,7 +247,6 @@ IProcess workflow() {
                                             output_datasource: null, outputTableNames: null, outputSRID :outputSRID)) {
                                         return null
                                     }
-                                    info 4
                                     //Delete database
                                     if (delete_h2gis) {
                                         h2gis_datasource.execute("DROP ALL OBJECTS DELETE FILES")
@@ -358,12 +359,12 @@ IProcess osm_processing() {
                     def query = "[maxsize:1073741824]" + Utilities.buildOSMQuery(zoneTableNames.envelope, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
                     def extract = OSMTools.Loader.extract
                     if (extract.execute(overpassQuery: query)) {
-                        IProcess createGISLayerProcess = processManager.OSMGISLayers.createGISLayers
+                        IProcess createGISLayerProcess = OSM.createGISLayers
                         if (createGISLayerProcess.execute(datasource: h2gis_datasource, osmFilePath: extract.results.outputFilePath, epsg: srid)) {
                             def gisLayersResults = createGISLayerProcess.getResults()
                             if (zoneTableName != null) {
                                 info "Formating OSM GIS layers"
-                                IProcess format = processManager.FormattingForAbstractModel.formatBuildingLayer
+                                IProcess format = OSM.formatBuildingLayer
                                 format.execute([
                                         datasource                : h2gis_datasource,
                                         inputTableName            : gisLayersResults.buildingTableName,
@@ -371,7 +372,7 @@ IProcess osm_processing() {
                                         epsg                      : srid])
                                 def buildingTableName = format.results.outputTableName
 
-                                format = processManager.FormattingForAbstractModel.formatRoadLayer
+                                format = OSM.formatRoadLayer
                                 format.execute([
                                         datasource                : h2gis_datasource,
                                         inputTableName            : gisLayersResults.roadTableName,
@@ -380,7 +381,7 @@ IProcess osm_processing() {
                                 def roadTableName = format.results.outputTableName
 
 
-                                format = processManager.FormattingForAbstractModel.formatRailsLayer
+                                format = OSM.formatRailsLayer
                                 format.execute([
                                         datasource                : h2gis_datasource,
                                         inputTableName            : gisLayersResults.railTableName,
@@ -388,7 +389,7 @@ IProcess osm_processing() {
                                         epsg                      : srid])
                                 def railTableName = format.results.outputTableName
 
-                                format = processManager.FormattingForAbstractModel.formatVegetationLayer
+                                format = OSM.formatVegetationLayer
                                 format.execute([
                                         datasource                : h2gis_datasource,
                                         inputTableName            : gisLayersResults.vegetationTableName,
@@ -396,7 +397,7 @@ IProcess osm_processing() {
                                         epsg                      : srid])
                                 def vegetationTableName = format.results.outputTableName
 
-                                format = processManager.FormattingForAbstractModel.formatHydroLayer
+                                format = OSM.formatHydroLayer
                                 format.execute([
                                         datasource                : h2gis_datasource,
                                         inputTableName            : gisLayersResults.hydroTableName,
@@ -405,7 +406,7 @@ IProcess osm_processing() {
                                 def hydrographicTableName = format.results.outputTableName
 
                                 //TODO : to be used in the geoindicators chains
-                                format = processManager.FormattingForAbstractModel.formatImperviousLayer
+                                format = OSM.formatImperviousLayer
                                 format.execute([
                                         datasource                : h2gis_datasource,
                                         inputTableName            : gisLayersResults.imperviousTableName,
@@ -416,7 +417,7 @@ IProcess osm_processing() {
                                 info "OSM GIS layers formated"
 
                                 //Build the indicators
-                                IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators
+                                IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
                                 if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
                                         buildingTable: buildingTableName, roadTable: roadTableName,
                                         railTable: railTableName, vegetationTable: vegetationTableName,
