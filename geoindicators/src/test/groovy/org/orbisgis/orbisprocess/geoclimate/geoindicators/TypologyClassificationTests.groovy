@@ -355,7 +355,7 @@ class TypologyClassificationTests {
         h2GIS.getTable(trainingTableName).reload()
 
         // Input data creation
-        h2GIS "CREATE TABLE inputDataTable AS SELECT * FROM $trainingTableName;"
+        h2GIS "CREATE TABLE inputDataTable AS SELECT * FROM $trainingTableName LIMIT 3000;"
 
 
         def pmed =  Geoindicators.TypologyClassification.applyRandomForestClassif()
@@ -388,12 +388,19 @@ class TypologyClassificationTests {
         def savePath = directory+File.separator+model_name+".model"
 
         // Read the training data
-        h2GIS """ CALL GEOJSONREAD('${directory+File.separator+training_data_name+".gz"}', '$trainingTableName')"""
+        h2GIS """ CALL GEOJSONREAD('${directory+File.separator+training_data_name+".gz"}', 'tempo')"""
         // Remove unnecessary column
-        h2GIS "ALTER TABLE $trainingTableName DROP COLUMN the_geom;"
-
+        h2GIS "ALTER TABLE tempo DROP COLUMN the_geom;"
         //Reload the table due to the schema modification
-        h2GIS.getTable(trainingTableName).reload()
+        h2GIS.getTable("tempo").reload()
+
+        def columns = h2GIS.getTable("tempo").getColumns()
+        columns = columns.minus(var2model)
+
+        h2GIS """   DROP TABLE IF EXISTS $trainingTableName;
+                    CREATE TABLE $trainingTableName
+                            AS SELECT $var2model::int AS LCZ, ${columns.join(",")}
+                            FROM tempo"""
 
         assert h2GIS."$trainingTableName"
 

@@ -446,11 +446,10 @@ IProcess createRandomForestClassif() {
             def trainingTable = datasource."$trainingTableName"
 
             //Check if the column names exists
-            if (!trainingTable.hasColumn(varToModel, String)) {
-                error "The training table should have a String column name $varToModel"
+            if (!trainingTable.hasColumn(varToModel)) {
+                error "The training table should have a column named $varToModel"
                 return
             }
-
             // If needed, select only some specific columns for the training in the dataframe
             def df
             if (explicativeVariables){
@@ -462,15 +461,20 @@ IProcess createRandomForestClassif() {
                 df = DataFrame.of(tabFin)
             }
             def formula = Formula.lhs(varToModel)
-
+/*
             // Convert the variable to model into factors (if string for example) and remove rows containing null values
-            df = df.factorize(varToModel).omitNullRows()
-
+            if(df.getColumnType(varToModel) == "String"){
+                df = df.factorize(varToModel).omitNullRows()
+            }
+            else{
+                df = df.omitNullRows()
+            }*/
+            df = df.omitNullRows()
+            println df
             // Create the randomForest
             def model = RandomForest.fit(formula, df, ntrees, mtry, splitRule, maxDepth, maxNodes, nodeSize, subsample)
 
-
-
+            println "ok"
             // Calculate the prediction using the same sample in order to identify what is the
             // data rate that has been well classified
             int[] prediction = Validation.test(model, df)
@@ -574,7 +578,9 @@ IProcess applyRandomForestClassif() {
             def df = DataFrame.of(explicativeVariablesTable)
 
             int[] prediction = Validation.test(model, df)
-            df.merge(IntVector.of("name", prediction))
+            // We need to add the remove the initial predicted variable in order to not have duplicated...
+            df=df.drop(var2model)
+            df=df.merge(IntVector.of(var2model, prediction))
             df.save(datasource, outputTableName, true)
             [outputTableName: outputTableName]
         }
