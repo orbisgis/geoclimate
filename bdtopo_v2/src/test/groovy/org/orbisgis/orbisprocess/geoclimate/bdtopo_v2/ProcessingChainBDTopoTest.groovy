@@ -222,7 +222,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_dboutput.json").toURI()
         //configFile =getClass().getResource("config/bdtopo_workflow_dbinput_dboutput.json").toURI()
         IProcess process = BDTopo_V2.workflow
-        assertTrue(process.execute(configurationFile: configFile))
+        assertTrue(process.execute(configurationFile:configFile))
     }
 
     @Disabled

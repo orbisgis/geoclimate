@@ -304,7 +304,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["romainville"]],
+                        "osm" : ["Saint Jean La Poterie"]],
                 "output" :[
                         "folder" : "$directory"]
         ]
