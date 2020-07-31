@@ -144,7 +144,7 @@ class TypologyClassificationTests {
         assert 6 == h2GIS.firstRow("SELECT LCZ1 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 13").lcz1
         assert 6 == h2GIS.firstRow("SELECT LCZ1 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 14").lcz1
         assert 4 == h2GIS.firstRow("SELECT LCZ1 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 15").lcz1
-        assert 5 == h2GIS.firstRow("SELECT LCZ2 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 15").lcz2
+        assert 4 == h2GIS.firstRow("SELECT LCZ2 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 15").lcz2
         assert 6 == h2GIS.firstRow("SELECT LCZ1 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 16").lcz1
         assert 102 == h2GIS.firstRow("SELECT LCZ1 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 17").lcz1
     }
