@@ -309,6 +309,7 @@ IProcess identifyLczType() {
                                     FROM        $normalizedValues;"""
 
                 // The distribution is characterized
+                datasource """DROP TABLE IF EXISTS ${prefix prefixName, 'DISTRIBUTION_REPARTITION'}"""
                 def computeDistribChar = Geoindicators.GenericIndicators.distributionCharacterization()
                 computeDistribChar([distribTableName: distribLczTable,
                                     inputId         : ID_FIELD_RSU,
