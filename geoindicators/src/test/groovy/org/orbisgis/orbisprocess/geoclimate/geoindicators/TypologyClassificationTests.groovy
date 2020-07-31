@@ -54,7 +54,7 @@ class TypologyClassificationTests {
             results[id] = [:]
             results[id]["LCZ1"] = row.LCZ1
             results[id]["min_distance"] = row.min_distance
-            results[id]["PSS"] = row.PSS
+            results[id]["PSS"] = row.LCZ_EQUALITY_VALUE
         }
         assert 1 == results[1]["LCZ1"]
         assert 0 == results[1]["min_distance"]
@@ -108,7 +108,7 @@ class TypologyClassificationTests {
                 else if(row.id_rsu == 2){
                     assert 8 == row.LCZ1
                     assert row.min_distance > 0
-                    assert row.PSS < 1
+                    assert row.LCZ_EQUALITY_VALUE < 1
                 }
                 else if(row.id_rsu == 8){
                     assert 104 == row.LCZ1

@@ -239,6 +239,8 @@ class GenericIndicatorsTests {
                 inputId             : "id",
                 distribIndicator    : ["equality", "uniqueness"],
                 extremum            : "GREATEST",
+                keep2ndCol          : true,
+                keepColVal          : true,
                 prefixName          : "test",
                 datasource          : h2GIS])
         def resultTab = p1.results.outputTableName
@@ -249,6 +251,8 @@ class GenericIndicatorsTests {
         assert 1        == h2GIS.firstRow("SELECT * FROM $resultTab WHERE id = 4").UNIQUENESS_VALUE
         assert "COL3"   == h2GIS.firstRow("SELECT * FROM $resultTab WHERE id = 2").EXTREMUM_COL
         assert "COL4"   == h2GIS.firstRow("SELECT * FROM $resultTab WHERE id = 4").EXTREMUM_COL
+        assert "COL4"   == h2GIS.firstRow("SELECT * FROM $resultTab WHERE id = 3").EXTREMUM_COL2
+        assert 60   == h2GIS.firstRow("SELECT * FROM $resultTab WHERE id = 3").EXTREMUM_VAL
     }
 
     @Test
