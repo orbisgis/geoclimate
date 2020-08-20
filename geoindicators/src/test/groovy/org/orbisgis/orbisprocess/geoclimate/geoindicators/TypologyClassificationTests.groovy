@@ -334,16 +334,15 @@ class TypologyClassificationTests {
         }
     }
 
-    // Should be activated after the first version
-    @Disabled
     @Test
     void applyRandomForestClassif() {
         // Information about where to find the training dataset for the test
         def trainingTableName = "training_table"
-        def trainingURL = "/home/decide/Code/Intel/geoclimate/models/TRAINING_DATA_LCZ_OSM_RF_1_0.gz"
-        def savePath = "/home/decide/Code/Intel/geoclimate/models/LCZ_OSM_RF_1_0.model"
+        def trainingURL = "../models/TRAINING_DATA_LCZ_OSM_RF_1_0.gz"
+        def savePath = "../models/LCZ_OSM_RF_1_0.model"
 
-        h2GIS """ CALL GEOJSONREAD('${trainingURL}', '$trainingTableName');"""
+
+        h2GIS """ drop table if exists $trainingTableName; CALL GEOJSONREAD('${trainingURL}', '$trainingTableName');"""
 
         // Columns useless for the classification
         def colsToRemove = ["THE_GEOM", "LCZ"]
@@ -368,8 +367,8 @@ class TypologyClassificationTests {
         def predicted = pmed.results.outputTableName
 
         // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
-        def nb_null = h2GIS.firstRow("SELECT COUNT(*) AS NB_null FROM $predicted WHERE LCZ=0")
-        assert nb_null.nb_null, 0
+        def nb_null = h2GIS.firstRow("SELECT COUNT(*) AS count FROM $predicted WHERE LCZ=0")
+        assertEquals(nb_null.COUNT, 0)
     }
 
     //This test is used to create the training model from a specific dataset
@@ -378,15 +377,16 @@ class TypologyClassificationTests {
     void tempoCreateRandomForestClassifTest() {
         // Specify the model and training datat appropriate to the right use
         def model_name = "LCZ_OSM_RF_1_0"
-        def training_data_name = "TRAINING_DATA_LCZ_OSM_RF_1_0"
+        def training_data_name = "cd"
         // Name of the variable to model
         def var2model = "LCZ"
 
         // Information about where to find the training dataset for the test
         def trainingTableName = "training_table"
-        String directory ="/home/decide/Code/Intel/geoclimate/models"
+        String directory =".../geoclimate/models/"
         def savePath = directory+File.separator+model_name+".model"
 
+        if(new File(directory).exists()){
         // Read the training data
         h2GIS """ CALL GEOJSONREAD('${directory+File.separator+training_data_name+".gz"}', 'tempo')"""
         // Remove unnecessary column
@@ -431,5 +431,9 @@ class TypologyClassificationTests {
         def prediction = Validation.test(model, df)
         def accuracy = Accuracy.of(truth, prediction)
         assertEquals 0.725, accuracy.round(3), 1.5
+        }
+        else{
+            println("The model has not been create because the output directory doesn't exist")
+        }
     }
 }

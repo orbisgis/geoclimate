@@ -461,27 +461,17 @@ IProcess createRandomForestClassif() {
                 df = DataFrame.of(tabFin)
             }
             def formula = Formula.lhs(varToModel)
-/*
-            // Convert the variable to model into factors (if string for example) and remove rows containing null values
-            if(df.getColumnType(varToModel) == "String"){
-                df = df.factorize(varToModel).omitNullRows()
-            }
-            else{
-                df = df.omitNullRows()
-            }*/
-            df = df.omitNullRows()
-            println df
+            def dfFactorized = df.factorize(varToModel);
+            dfFactorized = dfFactorized.omitNullRows()
             // Create the randomForest
-            def model = RandomForest.fit(formula, df, ntrees, mtry, splitRule, maxDepth, maxNodes, nodeSize, subsample)
+            def model = RandomForest.fit(formula, dfFactorized, ntrees, mtry, splitRule, maxDepth, maxNodes, nodeSize, subsample)
 
-            println "ok"
             // Calculate the prediction using the same sample in order to identify what is the
             // data rate that has been well classified
-            int[] prediction = Validation.test(model, df)
-            int[] truth = df.apply(varToModel).toIntArray()
+            int[] prediction = Validation.test(model, dfFactorized)
+            int[] truth = dfFactorized.apply(varToModel).toIntArray()
             def accuracy = Accuracy.of(truth, prediction)
             info "The percentage of the data that have been well classified is : ${accuracy * 100}%"
-
             try {
                 if (save) {
                     def zOut = new GZIPOutputStream(new FileOutputStream(pathAndFileName))
