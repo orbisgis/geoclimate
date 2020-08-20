@@ -384,7 +384,7 @@ class TypologyClassificationTests {
 
         // Information about where to find the training dataset for the test
         def trainingTableName = "training_table"
-        String directory ="/home/decide/Code/Intel/geoclimate/models"
+        String directory ="/home/ebocher/Autres/codes/geoclimate2/geoclimate/models/"
         def savePath = directory+File.separator+model_name+".model"
 
         // Read the training data
