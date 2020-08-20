@@ -2,17 +2,19 @@ package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
 import com.thoughtworks.xstream.XStream
 import groovy.transform.BaseScript
-import org.orbisgis.orbisdata.datamanager.api.dataset.ITable
 import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import smile.base.cart.SplitRule
 import smile.classification.RandomForest
 import smile.data.formula.Formula
+import smile.data.vector.IntVector
 import smile.validation.Accuracy
 import smile.validation.Validation
+import org.apache.commons.io.FileUtils
+import org.apache.commons.io.FilenameUtils
 
+import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
 @BaseScript Geoindicators geoindicators
@@ -390,7 +392,9 @@ IProcess identifyLczType() {
  *
  * @param trainingTableName The name of the training table where are stored ONLY the explicative variables
  * and the one to model
- * @param varToModel String where is saved the name of the field to model
+ * @param varToModel Name of the field to model
+ * @param explicativeVariables List of the explicative variables to use in the training. If empty, all columns in
+ * the training table (except 'varToModel') are used (default []).
  * @param save Boolean to save the model into a file if needed
  * @param pathAndFileName String of the path and name where the model has to be saved (default "/home/RfModel")
  * @param ntrees The number of trees to build the forest
@@ -415,11 +419,11 @@ IProcess createRandomForestClassif() {
     return create {
         title "Create a Random Forest model"
         id "createRandomForestClassif"
-        inputs trainingTableName: String, varToModel: String, save: boolean, pathAndFileName: String, ntrees: int,
+        inputs trainingTableName: String, varToModel: String, explicativeVariables: [], save: boolean, pathAndFileName: String, ntrees: int,
                 mtry: int, rule: "GINI", maxDepth: int, maxNodes: int, nodeSize: int, subsample: double,
                 datasource: JdbcDataSource
         outputs RfModel: RandomForest
-        run { String trainingTableName, String varToModel, save, pathAndFileName, ntrees, mtry, rule, maxDepth,
+        run { String trainingTableName, String varToModel, explicativeVariables, save, pathAndFileName, ntrees, mtry, rule, maxDepth,
               maxNodes, nodeSize, subsample, JdbcDataSource datasource ->
 
             def splitRule
@@ -439,38 +443,38 @@ IProcess createRandomForestClassif() {
             }
             info "Create a Random Forest model"
 
-            //Check if the column names exists
-            def columnTypo = "I_TYPO"
-
             def trainingTable = datasource."$trainingTableName"
 
-            if (!trainingTable.hasColumn(columnTypo, String)) {
-                error "The training table should have a String column name 'I_TYPO'"
+            //Check if the column names exists
+            if (!trainingTable.hasColumn(varToModel)) {
+                error "The training table should have a column named $varToModel"
                 return
             }
-
-            // Read the training table as a DataFrame
-            def df = DataFrame.of(trainingTable)
-
+            // If needed, select only some specific columns for the training in the dataframe
+            def df
+            if (explicativeVariables){
+                def tabFin = datasource.getTable(trainingTableName).columns(explicativeVariables).getTable()
+                df = DataFrame.of(tabFin)
+            }
+            else{
+                def tabFin = datasource.getTable(trainingTableName)
+                df = DataFrame.of(tabFin)
+            }
             def formula = Formula.lhs(varToModel)
-
-            // Convert the variable to model into factors (if string for example) and remove rows containing null values
-            df = df.factorize(varToModel).omitNullRows()
-
+            def dfFactorized = df.factorize(varToModel);
+            dfFactorized = dfFactorized.omitNullRows()
             // Create the randomForest
-            def model = RandomForest.fit(formula, df, ntrees, mtry, splitRule, maxDepth, maxNodes, nodeSize, subsample)
-
+            def model = RandomForest.fit(formula, dfFactorized, ntrees, mtry, splitRule, maxDepth, maxNodes, nodeSize, subsample)
 
             // Calculate the prediction using the same sample in order to identify what is the
             // data rate that has been well classified
-            int[] prediction = Validation.test(model, df)
-            int[] truth = df.apply(varToModel).toIntArray()
+            int[] prediction = Validation.test(model, dfFactorized)
+            int[] truth = dfFactorized.apply(varToModel).toIntArray()
             def accuracy = Accuracy.of(truth, prediction)
             info "The percentage of the data that have been well classified is : ${accuracy * 100}%"
-
             try {
                 if (save) {
-                    def zOut = new GZIPOutputStream(new FileOutputStream(pathAndFileName));
+                    def zOut = new GZIPOutputStream(new FileOutputStream(pathAndFileName))
                     def xs = new XStream()
                     xs.toXML(model, zOut)
                     zOut.close()
@@ -480,8 +484,95 @@ IProcess createRandomForestClassif() {
                 error "Cannot save the model", e
                 return
             }
-
             [RfModel: model]
+        }
+    }
+
+}
+
+/**
+ * This process is used to apply a RandomForest model on a given dataset (the model may be downloaded on a default
+ * folder or provided by the user). A table containing the predicted values and the id is returned.
+ *
+ * @param explicativeVariablesTableName The name of the table containing the indicators used by the random forest model
+ * @param pathAndFileName If the user wants to use its own model, URL of the model file on the user machine (default: "")
+ * @param idName Name of the ID column (which will be removed for the application of the random Forest)
+ * @param prefixName String use as prefix to name the output table
+
+ * @param datasource A connection to a database
+ *
+ * @return RfModel A randomForest model (see smile library for further information about the object)
+ *
+ * @author Jérémy Bernard
+ */
+IProcess applyRandomForestClassif() {
+    return create {
+        title "Apply a Random Forest classification"
+        id "applyRandomForestClassif"
+        inputs explicativeVariablesTableName: String, pathAndFileName: "", idName: String,
+                prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { String explicativeVariablesTableName, String pathAndFileName, String idName,
+              String prefixName, JdbcDataSource datasource ->
+
+            info "Apply a Random Forest model"
+            //The model is not provided by the user is used
+            def modelName;
+            File inputModelFile;
+            if (!pathAndFileName) {
+                //We look for the default model
+                //Default model name
+                modelName = "LCZ_OSM_RF_1.0"
+                def modelURL = "https://github.com/orbisgis/geoclimate/raw/master/models/${modelName}.model"
+                inputModelFile = new File(System.getProperty("user.home") + File.separator + ".geoclimate" + File.separator + modelName + ".model")
+                //The model doesn't exist on the local folder we download it
+                if (!inputModelFile.exists()) {
+                    FileUtils.copyURLToFile(new URL(modelURL, inputModelFile))
+                    if (!inputModelFile.exists()) {
+                        error "Cannot find any model file to apply the classification tree"
+                        return null
+                    }
+                }
+            } else {
+                inputModelFile = new File(pathAndFileName);
+                if (!inputModelFile.exists()) {
+                    error "Cannot find any model file to apply the classification tree"
+                    return null
+                } else {
+                    modelName = FilenameUtils.getBaseName(pathAndFileName)
+                }
+            }
+            def fileInputStream = new FileInputStream(inputModelFile)
+            // The name of the outputTableName is constructed
+            def outputTableName = prefix prefixName, modelName.toLowerCase();
+            // Load the RandomForest model
+            def xs = new XStream()
+            /*// Check if all the model explicative variables are in the 'explicativeVariablesTableName'
+           if(!trainingTable.hasColumn(varToModel, String)){
+               error "The training table should have a String column name $varToModel"
+               return
+           }*/
+            // Load the model and recover the name of the variable to model
+            def gzipInputStream = new GZIPInputStream(fileInputStream)
+            def model = xs.fromXML(gzipInputStream)
+            def var2model = model.formula.toString().split("~")[0][0..-2]
+
+            // We need to add the name of the predicted variable in order to use the model
+            datasource.execute """ALTER TABLE $explicativeVariablesTableName ADD COLUMN $var2model INTEGER DEFAULT 0"""
+            datasource."$explicativeVariablesTableName".reload()
+
+            // The table containing explicative variables is recovered
+            def explicativeVariablesTable = datasource."$explicativeVariablesTableName"
+
+            // Read the table containing the explicative variables as a DataFrame
+            def df = DataFrame.of(explicativeVariablesTable)
+
+            int[] prediction = Validation.test(model, df)
+            // We need to add the remove the initial predicted variable in order to not have duplicated...
+            df=df.drop(var2model)
+            df=df.merge(IntVector.of(var2model, prediction))
+            df.save(datasource, outputTableName, true)
+            [outputTableName: outputTableName]
         }
     }
 }
