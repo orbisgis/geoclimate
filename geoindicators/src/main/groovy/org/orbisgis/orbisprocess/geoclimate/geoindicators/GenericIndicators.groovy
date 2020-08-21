@@ -695,7 +695,6 @@ IProcess typeProportion() {
                     }
                 }
 
-
                 // Calculates the surface of each object depending on its type
                 datasource.execute """DROP TABLE IF EXISTS $caseWhenTab;
                                     CREATE TABLE $caseWhenTab 

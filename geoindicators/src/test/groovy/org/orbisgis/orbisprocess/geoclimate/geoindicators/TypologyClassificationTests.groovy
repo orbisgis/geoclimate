@@ -330,7 +330,110 @@ class TypologyClassificationTests {
             // When attributing manually a LCZ to a zone, some very small RSU may have no building
             // and could not be classified while they are... Thus set 999 in all cases...
             lczExpected += "999"
-           assert lczExpected.contains(row.lcz1.toString()) || lczExpected.contains(row.lcz2.toString())
+            assert lczExpected.contains(row.lcz1.toString()) || lczExpected.contains(row.lcz2.toString())
+        }
+    }
+
+    @Test
+    void applyRandomForestClassif() {
+        // Information about where to find the training dataset for the test
+        def trainingTableName = "training_table"
+        def trainingURL = "../models/TRAINING_DATA_LCZ_OSM_RF_1_0.gz"
+        def savePath = "../models/LCZ_OSM_RF_1_0.model"
+
+
+        h2GIS """ drop table if exists $trainingTableName; CALL GEOJSONREAD('${trainingURL}', '$trainingTableName');"""
+
+        // Columns useless for the classification
+        def colsToRemove = ["THE_GEOM", "LCZ"]
+
+        // Remove unnecessary column
+        h2GIS "ALTER TABLE $trainingTableName DROP COLUMN ${colsToRemove.join(",")};"
+
+        //Reload the table due to the schema modification
+        h2GIS.getTable(trainingTableName).reload()
+
+        // Input data creation
+        h2GIS "CREATE TABLE inputDataTable AS SELECT * FROM $trainingTableName LIMIT 3000;"
+
+
+        def pmed =  Geoindicators.TypologyClassification.applyRandomForestClassif()
+        assert pmed.execute([
+                explicativeVariablesTableName   : "inputDataTable",
+                pathAndFileName                 : savePath,
+                idName                          : "PK",
+                prefixName                      : "test",
+                datasource                      : h2GIS])
+        def predicted = pmed.results.outputTableName
+
+        // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
+        def nb_null = h2GIS.firstRow("SELECT COUNT(*) AS count FROM $predicted WHERE LCZ=0")
+        assertEquals(nb_null.COUNT, 0)
+    }
+
+    //This test is used to create the training model from a specific dataset
+    @Disabled
+    @Test
+    void tempoCreateRandomForestClassifTest() {
+        // Specify the model and training datat appropriate to the right use
+        def model_name = "LCZ_OSM_RF_1_0"
+        def training_data_name = "cd"
+        // Name of the variable to model
+        def var2model = "LCZ"
+
+        // Information about where to find the training dataset for the test
+        def trainingTableName = "training_table"
+        String directory =".../geoclimate/models/"
+        def savePath = directory+File.separator+model_name+".model"
+
+        if(new File(directory).exists()){
+        // Read the training data
+        h2GIS """ CALL GEOJSONREAD('${directory+File.separator+training_data_name+".gz"}', 'tempo')"""
+        // Remove unnecessary column
+        h2GIS "ALTER TABLE tempo DROP COLUMN the_geom;"
+        //Reload the table due to the schema modification
+        h2GIS.getTable("tempo").reload()
+
+        def columns = h2GIS.getTable("tempo").getColumns()
+        columns = columns.minus(var2model)
+
+        h2GIS """   DROP TABLE IF EXISTS $trainingTableName;
+                    CREATE TABLE $trainingTableName
+                            AS SELECT $var2model::int AS LCZ, ${columns.join(",")}
+                            FROM tempo"""
+
+        assert h2GIS."$trainingTableName"
+
+        def pmed =  Geoindicators.TypologyClassification.createRandomForestClassif()
+        assert pmed.execute([
+                trainingTableName   : trainingTableName,
+                varToModel          : var2model,
+                save                : true,
+                pathAndFileName     : savePath,
+                ntrees              : 100,
+                mtry                : 20,
+                rule                : "GINI",
+                maxDepth            : 20,
+                maxNodes            : 600,
+                nodeSize            : 3,
+                subsample           : 1.0,
+                datasource          : h2GIS])
+        def model = pmed.results.RfModel
+        assert model
+        assert model instanceof DataFrameClassifier
+
+        // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
+        def df = DataFrame.of(h2GIS."$trainingTableName")
+        df = df.factorize(var2model)
+        df = df.omitNullRows()
+        def vector = df.apply(var2model)
+        def truth = vector.toIntArray()
+        def prediction = Validation.test(model, df)
+        def accuracy = Accuracy.of(truth, prediction)
+        assertEquals 0.725, accuracy.round(3), 1.5
+        }
+        else{
+            println("The model has not been create because the output directory doesn't exist")
         }
     }
 }
