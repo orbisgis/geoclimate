@@ -621,7 +621,6 @@ static double getUniqueness(def myMap, def idxExtrem, def idxExtrem_1) {
  * @return A double : the value of the EQUALITY indicator for this RSU
  */
 static double getEquality(def myMap, def nbDistCol) {
-    println myMap.values()
     def sum = myMap.values().sum()
     def equality = 0
     myMap.values().each{it ->
