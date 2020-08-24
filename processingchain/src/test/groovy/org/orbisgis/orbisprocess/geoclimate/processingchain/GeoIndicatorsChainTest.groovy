@@ -364,6 +364,44 @@ class GeoIndicatorsChainTest {
         }
     }
 
+    @Test
+    void GeoIndicatorsTest7() {
+        File directory = new File("./target/geoindicators_workflow")
+        H2GIS datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
+        def inputTableNames = initTables(datasource)
+        boolean svfSimplified = false
+        boolean lczRandomForest = true
+        def prefixName = ""
+        def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                            "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                            "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+        def ind_i = ["LCZ"]
+        IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
+        assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
+                buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
+                railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
+                hydrographicTable: inputTableNames.hydrographicTable, indicatorUse: ind_i,
+                svfSimplified: svfSimplified, prefixName: prefixName,
+                mapOfWeights: mapOfWeights, lczRandomForest: lczRandomForest)
+
+        def expectListRsuTempo = listColBasic + listColCommon
+        expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
+        def expectListRsu = expectListRsuTempo.toUnique()
+        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuIndicators).columns
+        // We test that there is no missing indicators in the RSU table
+        for (i in expectListRsu) {
+            assertTrue realListRsu.contains(i)
+        }
+        if (ind_i.contains("LCZ")) {
+            def expectListLczTempo = listColLcz
+            expectListLczTempo = expectListLczTempo + listColBasic
+            def expectListLcz = expectListLczTempo.sort()
+            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuLcz).columns.sort())
+        } else {
+            assertEquals(null, GeoIndicatorsCompute_i.results.outputTableRsuLcz)
+        }
+    }
+
     /**
      * Method to check the result for the RSU indicators table
      * Please add new checks here
