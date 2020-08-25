@@ -259,6 +259,8 @@ class FormattingForAbstractModelTests {
                     inputTableName: extractData.results.buildingTableName,
                     inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
                     epsg: epsg])
+
+            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where 1=1").count>0
             assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count==0
             assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count==0
             assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL is null").count==0
@@ -271,6 +273,38 @@ class FormattingForAbstractModelTests {
         }
     }
 
+    @Test
+    void formattingGISBuildingLayer() {
+        def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
+        def epsg = 2154
+        IProcess extractData = OSM.createGISLayers
+        extractData.execute([
+                datasource : h2GIS,
+                osmFilePath: new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath(),
+                epsg       : epsg])
+
+        assertEquals 1038, h2GIS.getTable(extractData.results.buildingTableName).rowCount
+        assertEquals 198, h2GIS.getTable(extractData.results.roadTableName).rowCount
+        assertEquals 44, h2GIS.getTable(extractData.results.railTableName).rowCount
+        assertEquals 135, h2GIS.getTable(extractData.results.vegetationTableName).rowCount
+        assertEquals 10, h2GIS.getTable(extractData.results.hydroTableName).rowCount
+        assertEquals 43, h2GIS.getTable(extractData.results.imperviousTableName).rowCount
+
+        //Buildings
+        IProcess format = OSM.formatBuildingLayer
+        format.execute([
+                datasource    : h2GIS,
+                inputTableName: extractData.results.buildingTableName,
+                epsg          : epsg,
+                jsonFilename  : null])
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated.shp")
+        assertEquals 1040, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL is null").count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL<0").count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF is null").count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0").count == 0
+    }
+
 }
-
-

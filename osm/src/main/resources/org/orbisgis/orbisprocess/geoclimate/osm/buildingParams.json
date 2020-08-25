@@ -4,8 +4,8 @@
         "railway":["station", "train_station"]
     },
     "columns":[
-    "height", "building:height", "roof:height", "building:roof:height",
-    "building:levels", "roof:levels", "building:roof:levels", "building",
+    "height", "roof:height",
+    "building:levels", "roof:levels", "building",
     "amenity", "layer", "aeroway", "historic", "leisure", "monument",
     "place_of_worship", "military", "railway", "public_transport",
     "barrier", "government", "historic:building", "grandstand",
