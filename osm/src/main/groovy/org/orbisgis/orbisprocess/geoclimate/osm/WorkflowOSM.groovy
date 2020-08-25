@@ -2,13 +2,11 @@ package org.orbisgis.orbisprocess.geoclimate.osm
 
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
-import groovy.transform.Field
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.GeographyUtilities
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
-import org.orbisgis.orbisanalysis.osm.OSMTools as Tools
 import org.orbisgis.orbisanalysis.osm.utils.Utilities
 import org.orbisgis.orbisanalysis.osm.utils.OSMElement
 import org.orbisgis.orbisdata.datamanager.api.dataset.ITable
@@ -16,15 +14,12 @@ import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
 
 import java.sql.SQLException
 
 @BaseScript OSM_Utils osm_utils
-
-@Field OSMTools = GroovyProcessManager.load(Tools)
 
 /**
  * Extract OSM data and compute geoindicators. The parameters of the processing chain is defined
@@ -357,7 +352,7 @@ IProcess osm_processing() {
                     }
                     //Prepare OSM extraction
                     def query = "[maxsize:1073741824]" + Utilities.buildOSMQuery(zoneTableNames.envelope, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
-                    def extract = OSMTools.Loader.extract
+                    def extract = OSMTools.Loader.extract()
                     if (extract.execute(overpassQuery: query)) {
                         IProcess createGISLayerProcess = OSM.createGISLayers
                         if (createGISLayerProcess.execute(datasource: h2gis_datasource, osmFilePath: extract.results.outputFilePath, epsg: srid)) {
@@ -865,7 +860,6 @@ def updateDriverURL(def input_database_properties){
         error"Invalid output database url"
         return null
     }
-
 }
 
 /**
