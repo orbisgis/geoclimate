@@ -59,16 +59,13 @@ IProcess formatBuildingLayer() {
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             String height = row.height
-                            String b_height = row.'building:height'
                             String roof_height = row.'roof:height'
-                            String b_roof_height = row.'building:roof:height'
                             String b_lev = row.'building:levels'
                             String roof_lev = row.'roof:levels'
-                            String b_roof_lev = row.'building:roof:levels'
-                            def heightWall = getHeightWall(height, b_height, roof_height, b_roof_height)
-                            def heightRoof = getHeightRoof(height, b_height)
+                            def heightRoof = getHeightRoof(height)
+                            def heightWall = getHeightWall(heightRoof, roof_height)
 
-                            def nbLevels = getNbLevels(b_lev, roof_lev, b_roof_lev)
+                            def nbLevels = getNbLevels(b_lev, roof_lev)
 
                             if (nbLevels >= 0) {
                                 def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
@@ -78,10 +75,10 @@ IProcess formatBuildingLayer() {
                                     type = 'building'
                                 }
 
-                                def nbLevelFromType = typeAndLevel[type]
+                                def nbLevelsFromType = typeAndLevel[type]
 
                                 def formatedHeight = formatHeightsAndNbLevels(heightWall, heightRoof, nbLevels, h_lev_min,
-                                        h_lev_max, hThresholdLev2, nbLevelFromType == null ? 0 : nbLevelFromType)
+                                        h_lev_max, hThresholdLev2, nbLevelsFromType == null ? 0 : nbLevelsFromType)
 
                                 def zIndex = getZIndex(row.'layer')
 
@@ -527,43 +524,38 @@ static String[] getTypeAndUse(def row,def columnNames, def myMap) {
 }
 
 /**
-* This function defines the value of the column height_wall according to the values of height, b_height, r_height and b_r_height
-* @param row The row of the raw table to examine
-* @return The calculated value of height_wall (default value : 0)
-*/
-static float getHeightWall(height, b_height, r_height, b_r_height) {
+ * This function defines the value of the column height_wall according to the values of height and r_height
+ * @param height value of the building height
+ * @param r_height value of the roof height
+ * @return The calculated value of height_wall (default value : 0)
+ */
+
+static float getHeightWall(height, r_height) {
     float result = 0
-    if ((height != null && height.isFloat()) || (b_height != null && b_height.isFloat())) {
-       if ((r_height != null && r_height.isFloat()) || (b_r_height != null && b_r_height.isFloat())) {
-           if (b_height != null && b_height.isFloat()) {
-               if (b_r_height != null && b_r_height.isFloat()) {
-                    result = b_height.toFloat() - b_r_height.toFloat()
-               } else {
-                   result = b_height.toFloat() - r_height.toFloat()
-               }
-           } else {
-                if (b_r_height != null && b_r_height.isFloat()) {
-                    result = height.toFloat() - b_r_height.toFloat()
-               } else {
-                   result = height.toFloat() - r_height.toFloat()
-               }
-            }
-        }
-   }
- return result
+       if (r_height != null && r_height.isFloat())  {
+           if (r_height.toFloat()<height) {
+               result = height - r_height.toFloat()
+           }
+       } else {
+           result = height
+       }
+    return result
 }
 
 /**
  * Rule to guarantee the height wall, height roof and number of levels values
- * @param height_wall value
- * @param height_roof value
- * @param nb_lev value
+ * @param heightWall value
+ * @param heightRoof value
+ * @param nbLevels value
  * @param h_lev_min value
  * @param h_lev_max value
  * @param hThresholdLev2 value
  * @param nbLevFromType value
  * @param hThresholdLev2 value
  * @return a map with the new values
+ */
+/*  TODO : when all the values are already available, it mmight happen that this control modify them. For example, a tower of 32 levels is 92 meters high.
+     The control will put the value of heightRoof to 96 whereas it was 92. Do we accept it or are the real values considered as more reliable then the theoretical ones ?
  */
 static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels, def h_lev_min,
                                    def h_lev_max,def hThresholdLev2, def nbLevFromType){
@@ -572,50 +564,28 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
     if(heightWall==0){
         if(heightRoof==0){
             if(nbLevels==0){
-                heightWall= h_lev_min
+                heightWall = h_lev_min
             }
             else {
-                heightWall= h_lev_min*nbLevels
+                heightWall = h_lev_min*nbLevels
             }
         }
         else {
-            heightWall= heightRoof
+            heightWall = heightRoof
         }
     }
-    // Update height_roof
+    // Update heightRoof
     if(heightRoof==0){
-        if(heightWall==0){
-            if(nbLevels==0){
-                heightRoof= h_lev_min
-            }
-            else {
-                heightRoof= h_lev_min*nbLevels
-            }
-        }
-        else{
-            heightRoof= heightWall
-        }
+            heightRoof = heightWall
     }
-    // Update nb_lev
+    // Update nbLevels
     // If the nb_lev parameter (in the abstract table) is equal to 1 or 2
     // (and height_wall > 10m) then apply the rule. Else, the nb_lev is equal to 1
-    if(nbLevFromType==1 || nbLevFromType==2 && heightWall> hThresholdLev2){
-        if(nbLevels==0){
-            if(heightWall==0){
-                if(heightRoof==0){
-                    nbLevels= 1
-                }
-                else{
-                    nbLevels= heightRoof/h_lev_min
-                }
-            }
-            else {
-                nbLevels= heightWall/h_lev_min
-            }
-        }
-    }
-    else{
+    if(nbLevels==0) {
         nbLevels = 1
+        if (nbLevFromType == 1 || (nbLevFromType == 2 && heightWall > hThresholdLev2)) {
+            nbLevels = heightWall / h_lev_min
+        }
     }
 
    // Control of heights and number of levels
@@ -624,14 +594,14 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
         heightRoof = heightWall
     }
     def tmpHmin=  nbLevels*h_lev_min
-    // Check if there is a high difference beetween the "real" and "theorical (based on the level number) roof heights
+    // Check if there is a high difference between the "real" and "theorical (based on the level number) roof heights
     if(tmpHmin>heightRoof){
-        heightRoof= tmpHmin
+        heightRoof = tmpHmin
     }
     def tmpHmax=  nbLevels*h_lev_max
     if(nbLevFromType==1 || nbLevFromType==2 && heightWall> hThresholdLev2){
-    if(tmpHmax<heightWall){
-        nbLevels= heightWall/h_lev_max
+        if(tmpHmax<heightWall){
+            nbLevels = heightWall/h_lev_max
     }
     }
     return [heightWall:heightWall, heightRoof:heightRoof, nbLevels:nbLevels]
@@ -644,32 +614,40 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
  * @param row The row of the raw table to examine
  * @return The calculated value of height_roof (default value : 0)
  */
-static float getHeightRoof(height,b_height ) {
+static float getHeightRoof(height ) {
     float result = 0
-    if ((height != null && height.isFloat()) || (b_height != null && b_height.isFloat())) {
-        if (height != null && height.isFloat()) {
+    if (height != null) {
+        if (height.isFloat()) {
             result = height.toFloat()
         } else {
-            result = b_height.toFloat()
+            // see if a pattern can be found and convert in meters
+            def matcher = ("99.12 m" =~ /^(\d+|\d+\.\d+) ?(ft|foot|feet|'|m) ?(\d+)? ?("|in)?/)
+            if (matcher.find()) {
+                def (_, h, u, d) = matcher[0]
+                if (u == "m") {
+                    result = h.toFloat()
+                } else {
+                    result = h.toFloat() * 0.3048
+                    if (d != null) {
+                        result += d.toFloat() * 0.0254
+                    }
+                }
+            }
         }
     }
     return result
 }
 
 /**
- * This function defines the value of the column nb_lev according to the values of b_lev, r_lev and b_r_lev
+ * This function defines the value of the column nb_lev according to the values of b_lev and r_lev
  * @param row The row of the raw table to examine
  * @return The calculated value of nb_lev (default value : 0)
  */
-static int getNbLevels (b_lev ,r_lev,b_r_lev) {
+static int getNbLevels (b_lev ,r_lev) {
     int result = 0
     if (b_lev != null && b_lev.isFloat()) {
-        if ((r_lev != null && r_lev.isFloat()) || (b_r_lev != null && b_r_lev.isFloat())) {
-            if (r_lev != null && r_lev.isFloat()) {
-                result = b_lev.toFloat() + r_lev.toFloat()
-            } else {
-                result = b_lev.toFloat() + b_r_lev.toFloat()
-            }
+        if (r_lev != null && r_lev.isFloat()) {
+            result = b_lev.toFloat() + r_lev.toFloat()
         } else {
             result = b_lev.toFloat()
         }
