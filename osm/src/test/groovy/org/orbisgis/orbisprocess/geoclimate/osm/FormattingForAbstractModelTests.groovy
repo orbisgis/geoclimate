@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue
 
 class FormattingForAbstractModelTests {
 
-    @Test
+   @Test
    void formattingGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
         def epsg =2154
@@ -21,14 +21,14 @@ class FormattingForAbstractModelTests {
                 datasource : h2GIS,
                 osmFilePath: new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath(),
                 epsg :epsg])
-
+        /**
         assertEquals 1038, h2GIS.getTable(extractData.results.buildingTableName).rowCount
         assertEquals 198, h2GIS.getTable(extractData.results.roadTableName).rowCount
         assertEquals 44, h2GIS.getTable(extractData.results.railTableName).rowCount
         assertEquals 135, h2GIS.getTable(extractData.results.vegetationTableName).rowCount
         assertEquals 10, h2GIS.getTable(extractData.results.hydroTableName).rowCount
         assertEquals 43, h2GIS.getTable(extractData.results.imperviousTableName).rowCount
-
+        */
         //Buildings
         IProcess format = OSM.formatBuildingLayer
         format.execute([
@@ -44,12 +44,14 @@ class FormattingForAbstractModelTests {
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL<0").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF is null").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<HEIGHT_WALL").count==0
 
+        /**
         //Check value for  specific features
         //TODO: to be fixed
-        /*def res =  h2GIS.firstRow("select type,  nb_lev, height_wall, height_roof from ${format.results.outputTableName} where ID_SOURCE='w122539595'")
+        def res =  h2GIS.firstRow("select type,  nb_lev, height_wall, height_roof from ${format.results.outputTableName} where ID_SOURCE='w122539595'")
         assertEquals("church", res.type)
-        assertEquals(0, res.nb_lev)
+        assertEquals(1, res.nb_lev)
         assertEquals(3, res.height_wall)
         assertEquals(3, res.height_roof)
 
@@ -120,7 +122,7 @@ class FormattingForAbstractModelTests {
 
     }
 
-    //@Disabled
+    @Disabled
     @Test //enable it to test data extraction from the overpass api
     void extractCreateFormatGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
@@ -218,14 +220,14 @@ class FormattingForAbstractModelTests {
             assertTrue(false)
         }
     }
-
+    @Disabled
     @Test
     void apiOSMGISBuildingCheckHeight1() {
         //OSM URL https://www.openstreetmap.org/way/227927910
         def zoneToExtract =  [48.87644088590647,2.3938433825969696,48.877258515821225,2.3952582478523254]
         createGISLayersCheckHeight(zoneToExtract)
     }
-
+    @Disabled
     @Test
     void apiOSMGISBuildingCheckHeight2() {
         //OSM URL https://www.openstreetmap.org/way/79083537
