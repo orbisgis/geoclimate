@@ -131,7 +131,7 @@ IProcess workflow() {
             if (configurationFile) {
                 configFile = new File(configurationFile)
                 if (!configFile.isFile()) {
-                    error "Invalid file parameters"
+                    error "Parameters file not found"
                     return
                 }
             } else {
