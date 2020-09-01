@@ -1030,7 +1030,8 @@ IProcess computeAllGeoIndicators() {
                 }
 
                 // Output Lcz table name is set to null in case LCZ indicators are not calculated
-                def rsuLcz = null
+                def rsuLcz = "rsu_lcz"
+                def rsuLczWithoutGeom = "rsu_lcz_without_geom"
 
                 //Create spatial units and relations : building, block, rsu
                 IProcess spatialUnits = createUnitsOfAnalysis()
@@ -1078,6 +1079,7 @@ IProcess computeAllGeoIndicators() {
                 }
 
                 //Compute RSU indicators
+                def rsuIndicators = null
                 def computeRSUIndicators = computeRSUIndicators()
                 if (!computeRSUIndicators.execute([datasource       : datasource,
                                                    buildingTable    : buildingIndicators,
@@ -1092,6 +1094,7 @@ IProcess computeAllGeoIndicators() {
                     error "Cannot compute the RSU indicators"
                     return null
                 }
+                rsuIndicators = computeRSUIndicators.results.outputTableName
                 info "All geoindicators have been computed"
 
                 // If the LCZ indicators should be calculated, we only affect a LCZ class to each RSU
@@ -1101,7 +1104,7 @@ IProcess computeAllGeoIndicators() {
                         applygatherScales.execute([
                                 buildingTable    : buildingIndicators,
                                 blockTable       : blockIndicators,
-                                rsuTable         : computeRSUIndicators.results.outputTableName,
+                                rsuTable         : rsuIndicators,
                                 targetedScale    : "RSU",
                                 operationsToApply: ["AVG", "STD"],
                                 prefixName       : prefixName,
@@ -1115,8 +1118,21 @@ IProcess computeAllGeoIndicators() {
                                 idName                       : COLUMN_ID_RSU,
                                 prefixName                   : prefixName,
                                 datasource                   : datasource])
-                        rsuLcz = applyRF.results.outputTableName
-                    } else {
+                        rsuLczWithoutGeom = applyRF.results.outputTableName
+                        datasource.execute """  ALTER TABLE $rsuLczWithoutGeom RENAME COLUMN LCZ TO LCZ1;
+                                                ALTER TABLE $rsuLczWithoutGeom ADD COLUMN LCZ2 INT;
+                                                ALTER TABLE $rsuLczWithoutGeom ADD COLUMN MIN_DISTANCE DOUBLE;
+                                                ALTER TABLE $rsuLczWithoutGeom ADD COLUMN PSS DOUBLE;"""
+                        datasource."$rsuLczWithoutGeom".reload()
+                        datasource."$rsuLczWithoutGeom"."$COLUMN_ID_RSU".createIndex()
+                        datasource."$relationRSU"."$COLUMN_ID_RSU".createIndex()
+                        datasource.execute """  DROP TABLE IF EXISTS $rsuLcz;
+                                            CREATE TABLE $rsuLcz
+                                                    AS SELECT a.*, b.the_geom
+                                                    FROM $rsuLczWithoutGeom a RIGHT JOIN $relationRSU b
+                                                    ON a.$COLUMN_ID_RSU = b.$COLUMN_ID_RSU"""
+                    }
+                    else {
                         def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"              : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
                                              "BUILDING_FRACTION_LCZ"             : "BUILDING_SURFACE_FRACTION",
                                              "ASPECT_RATIO"                      : "ASPECT_RATIO",
@@ -1131,6 +1147,7 @@ IProcess computeAllGeoIndicators() {
                         lczIndicNames.each { oldIndic, newIndic ->
                             queryReplaceNames += "ALTER TABLE $lczIndicTable ALTER COLUMN $oldIndic RENAME TO $newIndic;"
                         }
+                        datasource."$lczIndicTable".reload()
                         datasource.execute """DROP TABLE IF EXISTS $lczIndicTable;
                                 CREATE TABLE $lczIndicTable 
                                         AS SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, ${lczIndicNames.keySet().join(",")} 
@@ -1153,7 +1170,7 @@ IProcess computeAllGeoIndicators() {
                     }
                 }
 
-                datasource.execute "DROP TABLE IF EXISTS $lczIndicTable;"
+                datasource.execute "DROP TABLE IF EXISTS $lczIndicTable, $rsuLczWithoutGeom;"
 
 
                 return [outputTableBuildingIndicators: computeBuildingsIndicators.getResults().outputTableName,

@@ -567,10 +567,16 @@ IProcess applyRandomForestClassif() {
             // Read the table containing the explicative variables as a DataFrame
             def df = DataFrame.of(explicativeVariablesTable)
 
-            int[] prediction = Validation.test(model, df)
+            // Remove the id for the application of the randomForest
+            def df_var = df.drop(idName.toUpperCase())
+
+            int[] prediction = Validation.test(model, df_var)
             // We need to add the remove the initial predicted variable in order to not have duplicated...
             df=df.drop(var2model)
             df=df.merge(IntVector.of(var2model, prediction))
+
+            // Keep only the id and the value of the classification
+            df = df.select(idName.toUpperCase(), var2model.toUpperCase())
             df.save(datasource, outputTableName, true)
             [outputTableName: outputTableName]
         }

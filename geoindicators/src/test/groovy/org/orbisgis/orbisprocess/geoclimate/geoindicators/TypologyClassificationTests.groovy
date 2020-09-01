@@ -340,7 +340,7 @@ class TypologyClassificationTests {
         def trainingTableName = "training_table"
         def trainingURL = "../models/TRAINING_DATA_LCZ_OSM_RF_1_0.gz"
         def savePath = "../models/LCZ_OSM_RF_1_0.model"
-
+        def ID = "ID_RSU"
 
         h2GIS """ drop table if exists $trainingTableName; CALL GEOJSONREAD('${trainingURL}', '$trainingTableName');"""
 
@@ -349,6 +349,9 @@ class TypologyClassificationTests {
 
         // Remove unnecessary column
         h2GIS "ALTER TABLE $trainingTableName DROP COLUMN ${colsToRemove.join(",")};"
+
+        // Add an ID column
+        h2GIS """ALTER TABLE $trainingTableName ADD COLUMN $ID INT AUTO_INCREMENT PRIMARY KEY"""
 
         //Reload the table due to the schema modification
         h2GIS.getTable(trainingTableName).reload()
@@ -361,7 +364,7 @@ class TypologyClassificationTests {
         assert pmed.execute([
                 explicativeVariablesTableName   : "inputDataTable",
                 pathAndFileName                 : savePath,
-                idName                          : "PK",
+                idName                          : ID,
                 prefixName                      : "test",
                 datasource                      : h2GIS])
         def predicted = pmed.results.outputTableName
