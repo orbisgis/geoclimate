@@ -525,7 +525,7 @@ IProcess applyRandomForestClassif() {
                 modelName = "LCZ_OSM_RF_1.0"
                 def modelURL = "https://github.com/orbisgis/geoclimate/raw/master/models/${modelName}.model"
                 inputModelFile = new File(System.getProperty("user.home") + File.separator + ".geoclimate" + File.separator + modelName + ".model")
-                //The model doesn't exist on the local folder we download it
+                // The model doesn't exist on the local folder we download it
                 if (!inputModelFile.exists()) {
                     FileUtils.copyURLToFile(new URL(modelURL, inputModelFile))
                     if (!inputModelFile.exists()) {

@@ -105,7 +105,7 @@ class GeoIndicatorsChainTest {
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                            "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+                            "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
         def ind_i = ["LCZ"]
         IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
@@ -148,7 +148,7 @@ class GeoIndicatorsChainTest {
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                            "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+                            "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
 
         def ind_i = ["URBAN_TYPOLOGY"]
         IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
@@ -193,7 +193,7 @@ class GeoIndicatorsChainTest {
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                            "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+                            "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
 
         def ind_i = ["URBAN_TYPOLOGY", "TEB"]
 
@@ -238,7 +238,7 @@ class GeoIndicatorsChainTest {
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                            "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+                            "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
 
         def ind_i = ["TEB"]
 
@@ -283,7 +283,7 @@ class GeoIndicatorsChainTest {
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                            "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+                            "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
 
         def ind_i = ["LCZ", "TEB"]
 
@@ -328,7 +328,7 @@ class GeoIndicatorsChainTest {
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                            "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+                            "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
 
         def ind_i = ["URBAN_TYPOLOGY", "LCZ"]
 
@@ -372,17 +372,16 @@ class GeoIndicatorsChainTest {
         boolean svfSimplified = false
         boolean lczRandomForest = true
         def prefixName = ""
-        def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
-                            "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                            "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
         def ind_i = ["LCZ"]
+        def modelPath = "../models/LCZ_OSM_RF_1_0.model"
+
         IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
                 hydrographicTable: inputTableNames.hydrographicTable, indicatorUse: ind_i,
-                svfSimplified: svfSimplified, prefixName: prefixName,
-                mapOfWeights: mapOfWeights, lczRandomForest: lczRandomForest)
+                svfSimplified: svfSimplified, prefixName: prefixName, lczRandomForest: lczRandomForest,
+                lczRfModelPath: modelPath)
 
         def expectListRsuTempo = listColBasic + listColCommon
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()

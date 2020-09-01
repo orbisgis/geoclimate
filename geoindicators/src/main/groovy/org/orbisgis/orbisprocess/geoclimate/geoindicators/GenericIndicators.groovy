@@ -694,8 +694,6 @@ IProcess gatherScales() {
 
             info """ Executing the gathering of scales (to building or to RSU scale)"""
 
-            println targetedScale
-
             if((targetedScale.toUpperCase() == "RSU") || (targetedScale.toUpperCase() == "BUILDING")){
                 // Temporary tables that will be deleted at the end of the process
                 def finalScaleTableName = postfix "final_before_join"
@@ -719,6 +717,7 @@ IProcess gatherScales() {
                         inputVarAndOperationsBuild[col] = operationsToApply
                     }
                 }
+                // Calculate building indicators averaged at RSU scale
                 def calcBuildStat = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
                 calcBuildStat.execute([	inputLowerScaleTableName: buildingTable,
                                            inputUpperScaleTableName: rsuTable,
@@ -731,7 +730,7 @@ IProcess gatherScales() {
                 def buildRsuCol2Rename = datasource.getTable(buildIndicRsuScale).getColumns()
                 def listBuildRsuRename = []
                 for (col in buildRsuCol2Rename){
-                    if(col != "ID_BUILD" && col != "ID_BLOCK" && col != "ID_BLOCK" && col != "THE_GEOM"){
+                    if(col != "ID_BUILD" && col != "ID_BLOCK" && col != "ID_RSU" && col != "THE_GEOM"){
                         listBuildRsuRename.add("a.$col AS build_$col")
                     }
                 }
@@ -767,7 +766,7 @@ IProcess gatherScales() {
                     finalScaleTableName = rsuTable
                     // Useful for merge between buildings and rsu tables
                     idbuildForMerge = "id_rsu"
-                    idBlockForMerge = "id_block"
+                    idBlockForMerge = "id_rsu"
                     // Useful if the classif is a regression
                     idName = "id_rsu"
                 }
@@ -816,7 +815,7 @@ IProcess gatherScales() {
                 }
 
                 // Gather all indicators (coming from three different scales) in a single table (the 'targetTableScale' scale)
-                // Note that in order to avoid crashes of the join due to column duplicate, indicators are prefixed
+                // Note that in order to avoid crashes of the join due to column duplicate, indicators have been prefixed
                 datasource.getTable(buildIndicRsuScale).id_rsu.createIndex()
                 datasource.getTable(finalScaleTableName).id_rsu.createIndex()
                 datasource.execute """ DROP TABLE IF EXISTS $scale1ScaleFin;
