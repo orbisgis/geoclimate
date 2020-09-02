@@ -1021,7 +1021,10 @@ IProcess computeAllGeoIndicators() {
 
             if (!lczRandomForest || (lczRandomForest && lczRfModelPath)) {
                 // If the randomForest should be used, need to calculate all indicators
-                indicatorUse = ["URBAN_TYPOLOGY", "LCZ"]
+                if ((indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) ||
+                        (indicatorUse*.toUpperCase().contains("LCZ") && lczRandomForest)) {
+                    indicatorUse = ["URBAN_TYPOLOGY", "LCZ"]
+                }
 
                 //Check data before computing indicators
                 if (!zoneTable && !buildingTable && !roadTable) {
@@ -1066,7 +1069,7 @@ IProcess computeAllGeoIndicators() {
                 //Compute block indicators
                 def blockIndicators = null
                 if ((indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) ||
-                        (indicatorUse*.toUpperCase().contains("LCZ")) && lczRandomForest) {
+                        (indicatorUse*.toUpperCase().contains("LCZ") && lczRandomForest)) {
                     def computeBlockIndicators = computeBlockIndicators()
                     if (!computeBlockIndicators.execute([datasource            : datasource,
                                                          inputBuildingTableName: buildingIndicators,
@@ -1147,12 +1150,13 @@ IProcess computeAllGeoIndicators() {
                         lczIndicNames.each { oldIndic, newIndic ->
                             queryReplaceNames += "ALTER TABLE $lczIndicTable ALTER COLUMN $oldIndic RENAME TO $newIndic;"
                         }
-                        datasource."$lczIndicTable".reload()
                         datasource.execute """DROP TABLE IF EXISTS $lczIndicTable;
                                 CREATE TABLE $lczIndicTable 
                                         AS SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, ${lczIndicNames.keySet().join(",")} 
                                         FROM ${computeRSUIndicators.results.outputTableName};
                                 $queryReplaceNames"""
+
+                        datasource."$lczIndicTable".reload()
 
                         // The classification algorithm is called
                         def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
@@ -1167,10 +1171,11 @@ IProcess computeAllGeoIndicators() {
                             return
                         }
                         rsuLcz = classifyLCZ.results.outputTableName
+                        datasource.execute "DROP TABLE IF EXISTS $lczIndicTable"
                     }
                 }
 
-                datasource.execute "DROP TABLE IF EXISTS $lczIndicTable, $rsuLczWithoutGeom;"
+                datasource.execute "DROP TABLE IF EXISTS $rsuLczWithoutGeom;"
 
 
                 return [outputTableBuildingIndicators: computeBuildingsIndicators.getResults().outputTableName,
