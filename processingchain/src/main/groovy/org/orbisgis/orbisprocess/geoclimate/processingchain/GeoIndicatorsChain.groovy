@@ -1021,8 +1021,7 @@ IProcess computeAllGeoIndicators() {
 
             if (!lczRandomForest || (lczRandomForest && lczRfModelPath)) {
                 // If the randomForest should be used, need to calculate all indicators
-                if ((indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) ||
-                        (indicatorUse*.toUpperCase().contains("LCZ") && lczRandomForest)) {
+                if (indicatorUse*.toUpperCase().contains("LCZ") && lczRandomForest) {
                     indicatorUse = ["URBAN_TYPOLOGY", "LCZ"]
                 }
 

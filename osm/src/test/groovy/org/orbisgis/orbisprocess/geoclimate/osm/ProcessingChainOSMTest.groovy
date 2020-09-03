@@ -32,6 +32,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         // Create the RSU
         def prepareRSUData = Geoindicators.SpatialUnits.prepareRSUData()
         def createRSU = Geoindicators.SpatialUnits.createRSU()
+        def createRSU = Geoindicators.SpatialUnits.createRSU()
         if (prepareRSUData([datasource        : h2GIS,
                              zoneTable         : process.getResults().outputZone,
                              roadTable         : process.getResults().outputRoad,
