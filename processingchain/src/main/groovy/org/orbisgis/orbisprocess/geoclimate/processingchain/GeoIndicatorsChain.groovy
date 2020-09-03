@@ -1032,7 +1032,7 @@ IProcess computeAllGeoIndicators() {
                 }
 
                 // Output Lcz table name is set to null in case LCZ indicators are not calculated
-                def rsuLcz = "rsu_lcz"
+                def rsuLcz = null
                 def rsuLczWithoutGeom = "rsu_lcz_without_geom"
 
                 //Create spatial units and relations : building, block, rsu
@@ -1128,8 +1128,8 @@ IProcess computeAllGeoIndicators() {
                         datasource."$rsuLczWithoutGeom".reload()
                         datasource."$rsuLczWithoutGeom"."$COLUMN_ID_RSU".createIndex()
                         datasource."$relationRSU"."$COLUMN_ID_RSU".createIndex()
-                        datasource.execute """  DROP TABLE IF EXISTS $rsuLcz;
-                                            CREATE TABLE $rsuLcz
+                        datasource.execute """  DROP TABLE IF EXISTS rsu_lcz;
+                                            CREATE TABLE rsu_lcz
                                                     AS SELECT a.*, b.the_geom
                                                     FROM $rsuLczWithoutGeom a RIGHT JOIN $relationRSU b
                                                     ON a.$COLUMN_ID_RSU = b.$COLUMN_ID_RSU"""
