@@ -67,7 +67,7 @@ class GeoIndicatorsChainTest {
                                    "HIGH_VEGETATION_BUILDING_FRACTION"]
 
     // Column names in the LCZ Table
-    public static listColLcz = ["LCZ1", "LCZ2", "MIN_DISTANCE", "PSS"]
+    public static listColLcz = ["LCZ1", "LCZ2", "LCZ_EQUALITY_VALUE", "LCZ_UNIQUENESS_VALUE", "MIN_DISTANCE"]
 
     // Indicator lists for urban typology use at building and block scales
     public static listUrbTyp =
