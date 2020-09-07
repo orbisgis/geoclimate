@@ -78,8 +78,6 @@ IProcess identifyLczType() {
                 def variabilityValue = [:]
                 def queryRangeNorm = ""
                 def queryValuesNorm = ""
-                def queryForPivot = ""
-                def queryPerkinsSkill = ""
 
                 // The name of the outputTableName is constructed
                 def outputTableName = prefix prefixName, BASE_NAME
@@ -89,7 +87,8 @@ IProcess identifyLczType() {
                 def LCZ_classes = postfix "LCZ_classes"
                 def normalizedValues = postfix "normalizedValues"
                 def normalizedRange = postfix "normalizedRange"
-                def buffLczTable = postfix "buffLczTable"
+                def distribLczTable = postfix "distribLczTable"
+                def distribLczTableInt = postfix "distribLczTableInt"
                 def ruralLCZ = postfix "ruralLCZ"
                 def classifiedRuralLCZ = postfix "classifiedRuralLCZ"
                 def urbanLCZ = postfix "urbanLCZ"
@@ -135,6 +134,20 @@ IProcess identifyLczType() {
                     "('107',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.0,0,0.00035);"
             */
 
+                // LCZ types need to be String when using the IProcess 'distributionCHaracterization',
+                // thus need to define a correspondence table
+                def correspondenceMap = [   "LCZ1": 1,
+                                            "LCZ2": 2,
+                                            "LCZ3": 3,
+                                            "LCZ4": 4,
+                                            "LCZ5": 5,
+                                            "LCZ6": 6,
+                                            "LCZ7": 7,
+                                            "LCZ8": 8,
+                                            "LCZ9": 9]
+
+
+
                 // I. Rural LCZ types are classified according to a "manual" decision tree
                 datasource."$rsuAllIndicators".BUILDING_FRACTION_LCZ.createIndex()
                 datasource."$rsuAllIndicators".ASPECT_RATIO.createIndex()
@@ -174,9 +187,8 @@ IProcess identifyLczType() {
                                                                             ELSE CASE WHEN HIGH_ALL_VEGETATION<0.75
                                                                                     THEN 102
                                                                                     ELSE 101 END END END END AS LCZ1,
-                                                    null AS LCZ2, null AS min_distance, null AS PSS 
+                                                    null AS LCZ2, null AS min_distance, null AS LCZ_UNIQUENESS_VALUE, null AS LCZ_EQUALITY_VALUE
                                         FROM $ruralLCZ"""
-
                 // II. Urban LCZ types are classified
 
                 // Keep only the RSU that have not been classified as rural
@@ -194,7 +206,7 @@ IProcess identifyLczType() {
                                 CREATE TABLE $classifiedIndustrialLcz
                                         AS SELECT   $ID_FIELD_RSU,
                                                     10 AS LCZ1,
-                                                    null AS LCZ2, null AS min_distance, null AS PSS 
+                                                    null AS LCZ2, null AS min_distance, null AS LCZ_UNIQUENESS_VALUE, null AS LCZ_EQUALITY_VALUE
                                         FROM $urbanLCZ 
                                         WHERE AREA_FRACTION_INDUSTRIAL > $industrialFractionThreshold;
                                 DROP TABLE IF EXISTS $ruralAndIndustrialLCZ;
@@ -266,14 +278,10 @@ IProcess identifyLczType() {
                 // The two LCZ types being the closest to the RSU indicators are associated to this RSU. An indicator
                 // of uncertainty based on the Perkin Skill Score method is also associated to this "assignment".
 
-                // Create the table where will be stored the distance to each LCZ for each RSU
-                datasource "DROP TABLE IF EXISTS $allLczTable; CREATE TABLE $allLczTable(" +
-                        "pk serial, $ID_FIELD_RSU integer, lcz varchar, distance float);"
-
-
                 // For each LCZ type...
+                def queryLczDistance = ""
                 datasource.eachRow("SELECT * FROM $normalizedRange") { LCZ ->
-                    def queryLczDistance = ""
+                    queryLczDistance += "SQRT("
                     // For each indicator...
                     datasource."$urbanLCZExceptIndus".columns.collect { indic ->
                         if (!indic.equalsIgnoreCase(ID_FIELD_RSU) && !indic.equalsIgnoreCase(GEOMETRIC_FIELD)) {
@@ -293,59 +301,58 @@ IProcess identifyLczType() {
                         }
                     }
 
-                    // Fill the table where are stored the distance of each RSU to each LCZ type
-                    datasource "DROP TABLE IF EXISTS $buffLczTable; ALTER TABLE $allLczTable RENAME TO $buffLczTable;" +
-                            "DROP TABLE IF EXISTS $allLczTable; " +
-                            "CREATE TABLE $allLczTable(pk serial, $ID_FIELD_RSU integer, lcz varchar, distance float) " +
-                            "AS (SELECT pk, $ID_FIELD_RSU, lcz, distance FROM $buffLczTable UNION ALL " +
-                            "SELECT null, $ID_FIELD_RSU, '${LCZ.name}', SQRT(${queryLczDistance[0..-2]}) FROM $normalizedValues)"
-
+                    queryLczDistance = "${queryLczDistance[0..-2]}) AS LCZ${LCZ.name},"
                 }
 
-                // The name of the two closest LCZ types are conserved
-                datasource "DROP TABLE IF EXISTS $mainLczTable;" +
-                        "CREATE INDEX IF NOT EXISTS all_id ON $allLczTable USING BTREE($ID_FIELD_RSU); " +
-                        "CREATE TABLE $mainLczTable AS SELECT a.$ID_FIELD_RSU, " +
-                        "CAST(SELECT b.lcz FROM $allLczTable b " +
-                        "WHERE a.$ID_FIELD_RSU = b.$ID_FIELD_RSU " +
-                        "ORDER BY b.distance ASC LIMIT 1 AS INTEGER) AS LCZ1," +
-                        "CAST(SELECT b.lcz FROM $allLczTable b " +
-                        "WHERE a.$ID_FIELD_RSU = b.$ID_FIELD_RSU " +
-                        "ORDER BY b.distance ASC LIMIT 1 OFFSET 1 AS INTEGER) AS LCZ2 " +
-                        "FROM $allLczTable a GROUP BY $ID_FIELD_RSU"
+                // Create the distribution table (the distance to each LCZ type - as column - is calculated for each RSU - as row)
+                datasource  """DROP TABLE IF EXISTS $distribLczTable;
+                            CREATE TABLE $distribLczTable 
+                                    AS SELECT   $ID_FIELD_RSU, ${queryLczDistance[0..-2]}
+                                    FROM        $normalizedValues;"""
 
-                // Recover the LCZ TYPES list and the number of types in a map
-                def lczTypeTempo = datasource.rows "SELECT name FROM $LCZ_classes"
-                def lczType = []
-                lczTypeTempo.each { l ->
-                    lczType.add("${l["NAME"]}")
+                // The distribution is characterized
+                datasource """DROP TABLE IF EXISTS ${prefix prefixName, 'DISTRIBUTION_REPARTITION'}"""
+                def computeDistribChar = Geoindicators.GenericIndicators.distributionCharacterization()
+                computeDistribChar([distribTableName: distribLczTable,
+                                    inputId         : ID_FIELD_RSU,
+                                    distribIndicator: ["equality", "uniqueness"],
+                                    extremum        : "LEAST",
+                                    keep2ndCol      : true,
+                                    keepColVal      : true,
+                                    prefixName      : prefixName,
+                                    datasource      : datasource])
+                def resultsDistrib = computeDistribChar.results.outputTableName
+
+                // Rename the standard indicators into names consistent with the current IProcess (LCZ type...)
+                datasource """  ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_COL TO LCZ1;
+                                ALTER TABLE $resultsDistrib RENAME COLUMN UNIQUENESS_VALUE TO LCZ_UNIQUENESS_VALUE;
+                                ALTER TABLE $resultsDistrib RENAME COLUMN EQUALITY_VALUE TO LCZ_EQUALITY_VALUE;
+                                ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_COL2 TO LCZ2;
+                                ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_VAL TO MIN_DISTANCE;"""
+
+                // Need to replace the string LCZ values by an integer
+                datasource."$resultsDistrib".lcz1.createIndex()
+                datasource."$resultsDistrib".lcz2.createIndex()
+                def casewhenQuery1 = ""
+                def casewhenQuery2 = ""
+                def parenthesis = ""
+                correspondenceMap.each{lczString, lczInt ->
+                    casewhenQuery1 += "CASEWHEN(LCZ1 = '$lczString', $lczInt, "
+                    casewhenQuery2 += "CASEWHEN(LCZ2 = '$lczString', $lczInt, "
+                    parenthesis += ")"
                 }
-                // For each LCZ type...
-                datasource.eachRow("SELECT name FROM $LCZ_classes") { LCZ ->
-                    // Piece of query that will be useful for pivoting the LCZ distance table
-                    queryForPivot += "MAX(CASEWHEN(lcz = '${LCZ.name}', distance, null)) AS \"${LCZ.name}\","
-
-                    // Piece of query that will be useful for the calculation of the Perkins Skill Score
-                    queryPerkinsSkill += "LEAST(1./${lczType.size()}, b.\"${LCZ.name}\"/(b.\"${lczType.join("\"+b.\"")}\"))+"
-                }
-
-                // The table is pivoted in order to have the distance for each LCZ type as column and for each RSU as row.
-                // Then for each RSU, the distance to the closest LCZ type is stored and the Perkins Skill Score is calculated
-                datasource "DROP TABLE IF EXISTS $pivotedTable;" +
-                        "CREATE TABLE $pivotedTable AS SELECT $ID_FIELD_RSU," +
-                        "${queryForPivot[0..-2]} FROM $allLczTable GROUP BY $ID_FIELD_RSU;" +
-                        "DROP TABLE IF EXISTS $outputTableName;" +
-                        "CREATE INDEX IF NOT EXISTS main_id ON $mainLczTable USING BTREE($ID_FIELD_RSU);" +
-                        "CREATE INDEX IF NOT EXISTS piv_id ON $pivotedTable USING BTREE($ID_FIELD_RSU);" +
-                        "CREATE TABLE $classifiedUrbanLcz AS SELECT a.*, LEAST(b.\"${lczType.join("\",b.\"")}\") AS min_distance, " +
-                        "${queryPerkinsSkill[0..-2]} AS PSS FROM $mainLczTable a LEFT JOIN " +
-                        "$pivotedTable b ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU;"
+                datasource """  DROP TABLE IF EXISTS $distribLczTableInt;
+                                CREATE TABLE $distribLczTableInt
+                                        AS SELECT   $ID_FIELD_RSU, $casewhenQuery1 null$parenthesis AS LCZ1,
+                                                    $casewhenQuery1 null$parenthesis AS LCZ2, 
+                                                    MIN_DISTANCE, LCZ_UNIQUENESS_VALUE, LCZ_EQUALITY_VALUE 
+                                        FROM $resultsDistrib"""
 
                 // Then urban and rural LCZ types are merged into a single table
                 datasource """DROP TABLE IF EXISTS $classifiedLcz;
                                 CREATE TABLE $classifiedLcz 
                                         AS SELECT   * 
-                                        FROM        $classifiedUrbanLcz
+                                        FROM        $distribLczTableInt
                                         UNION ALL   SELECT * FROM $ruralAndIndustrialLCZ b;"""
 
                 // If the input tables contain a geometric field, we add it to the output table
@@ -368,9 +375,10 @@ IProcess identifyLczType() {
                 }
 
                 // Temporary tables are deleted
-                datasource """DROP TABLE IF EXISTS $LCZ_classes, $normalizedValues, $normalizedRange,
-                    $buffLczTable, $allLczTable, $pivotedTable, $mainLczTable, $classifiedLcz, $classifiedUrbanLcz,
-                    $classifiedRuralLCZ;"""
+                datasource """DROP TABLE IF EXISTS ${prefixName}_distribution_repartition,
+                    $LCZ_classes, $normalizedValues, $normalizedRange,
+                    $distribLczTable, $distribLczTableInt, $allLczTable, $pivotedTable, $mainLczTable, 
+                    $classifiedLcz, $classifiedUrbanLcz, $classifiedRuralLCZ;"""
 
                 info "The LCZ classification has been performed."
 

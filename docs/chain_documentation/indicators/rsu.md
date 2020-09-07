@@ -161,9 +161,9 @@ Below are presented all the indicators computed at the RSU's scale.
 
 **Description**: Indicates how unique is the RSU main building direction.
 
-**Range of values**: [1, +inf] - the higher the value, the more unique is the main building direction
+**Range of values**: [0, 1] - the higher the value, the more unique is the main building direction
 
-**Method**: `Length_First_Dir / Length_Second_Dir `
+**Method**: `Length_First_Dir / (Length_Second_Dir + Length_First_Dir) `
 
 
 

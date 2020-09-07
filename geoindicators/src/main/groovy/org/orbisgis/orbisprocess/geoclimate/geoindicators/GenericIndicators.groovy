@@ -432,6 +432,8 @@ IProcess buildingDirectionDistribution() {
  * @param extremum String indicating the kind of extremum to calculate (default "GREATEST")
  *      --> "LEAST"
  *      --> "GREATEST"
+ * @param keep2ndCol Whether or not the 2nd extremum value should be conserved (default False)
+ * @param keepColVal Whether or not the value of the extremum col should be conserved (default False)
  * @param prefixName String use as prefix to name the output table
  *
  * Reference:
@@ -447,13 +449,16 @@ IProcess distributionCharacterization() {
         title "Distribution characterization"
         id "distributionCharacterization"
         inputs distribTableName: String, inputId: String, prefixName: String,
-                datasource: JdbcDataSource, distribIndicator: ["equality", "uniqueness"], extremum: "GREATEST"
+                datasource: JdbcDataSource, distribIndicator: ["equality", "uniqueness"], extremum: "GREATEST",
+                keep2ndCol: false, keepColVal: false
         outputs outputTableName: String
-        run { distribTableName, inputId, prefixName, datasource, distribIndicator, extremum ->
+        run { distribTableName, inputId, prefixName, datasource, distribIndicator, extremum, keep2ndCol, keepColVal ->
 
             def EQUALITY = "EQUALITY_VALUE"
             def UNIQUENESS = "UNIQUENESS_VALUE"
             def EXTREMUM_COL = "EXTREMUM_COL"
+            def EXTREMUM_COL2 = "EXTREMUM_COL2"
+            def EXTREMUM_VAL = "EXTREMUM_VAL"
             def BASENAME = "DISTRIBUTION_REPARTITION"
 
             info "Executing equality and uniqueness indicators"
@@ -476,9 +481,20 @@ IProcess distributionCharacterization() {
 
 
                 if (distribIndicator.contains("equality") && !distribIndicator.contains("uniqueness")) {
-                    datasource """CREATE TABLE $outputTableName($inputId integer, 
+                    def queryCreateTable = """CREATE TABLE $outputTableName($inputId integer, 
                                                                     $EQUALITY DOUBLE,
                                                                     $EXTREMUM_COL VARCHAR)"""
+                    // If the second extremum col should be conserved
+                    if(keep2ndCol){
+                        queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_COL2 VARCHAR)"
+                    }
+                    // If the value of the extremum column should be conserved
+                    if(keepColVal){
+                        queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_VAL DOUBLE)"
+                    }
+
+
+                    datasource queryCreateTable
                     // Will insert values by batch of 1000 in the table
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow("SELECT * FROM $distribTableName") { row ->
@@ -486,16 +502,35 @@ IProcess distributionCharacterization() {
                             def id_rsu = rowMap."$inputId"
                             rowMap.remove(inputId.toUpperCase())
                             def sortedMap = rowMap.sort { it.value }
-                            stmt.addBatch """INSERT INTO $outputTableName 
+                            def queryInsert = """INSERT INTO $outputTableName 
                                                 VALUES ($id_rsu, ${getEquality(sortedMap, nbDistCol)},
                                                         '${sortedMap.keySet()[idxExtrem]}')"""
+                            // If the second extremum col should be conserved
+                            if(keep2ndCol){
+                                queryInsert = "${queryInsert[0..-2]}, '${sortedMap.keySet()[idxExtrem_1]}')"
+                            }
+                            // If the value of the extremum column should be conserved
+                            if(keepColVal){
+                                queryInsert = "${queryInsert[0..-2]}, ${sortedMap.values()[idxExtrem]})"
+                            }
+                            stmt.addBatch queryInsert
                         }
                     }
 
                 } else if (!distribIndicator.contains("equality") && distribIndicator.contains("uniqueness")) {
-                    datasource """CREATE TABLE $outputTableName($inputId integer, 
+                    def queryCreateTable = """CREATE TABLE $outputTableName($inputId integer, 
                                                                     $UNIQUENESS DOUBLE,
                                                                     $EXTREMUM_COL VARCHAR)"""
+                    // If the second extremum col should be conserved
+                    if(keep2ndCol){
+                        queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_COL2 VARCHAR)"
+                    }
+                    // If the value of the extremum column should be conserved
+                    if(keepColVal){
+                        queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_VAL DOUBLE)"
+                    }
+
+                    datasource queryCreateTable
                     // Will insert values by batch of 1000 in the table
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow("SELECT * FROM $distribTableName") { row ->
@@ -503,16 +538,36 @@ IProcess distributionCharacterization() {
                             def id_rsu = rowMap."$inputId"
                             rowMap.remove(inputId.toUpperCase())
                             def sortedMap = rowMap.sort { it.value }
-                            stmt.addBatch """INSERT INTO $outputTableName 
+                            def queryInsert = """INSERT INTO $outputTableName 
                                                 VALUES ($id_rsu, ${getUniqueness(sortedMap, idxExtrem, idxExtrem_1)},
                                                         '${sortedMap.keySet()[idxExtrem]}')"""
+                            // If the second extremum col should be conserved
+                            if(keep2ndCol){
+                                queryInsert = "${queryInsert[0..-2]}, '${sortedMap.keySet()[idxExtrem_1]}')"
+                            }
+                            // If the value of the extremum column should be conserved
+                            if(keepColVal){
+                                queryInsert = "${queryInsert[0..-2]}, ${sortedMap.values()[idxExtrem]})"
+                            }
+                            stmt.addBatch queryInsert
                         }
                     }
                 } else if (distribIndicator.contains("equality") && distribIndicator.contains("uniqueness")) {
-                    datasource """CREATE TABLE $outputTableName($inputId integer, 
+                    def queryCreateTable = """CREATE TABLE $outputTableName($inputId integer, 
                                                                     $EQUALITY DOUBLE,
                                                                     $UNIQUENESS DOUBLE,
                                                                     $EXTREMUM_COL VARCHAR)"""
+                    // If the second extremum col should be conserved
+                    if(keep2ndCol){
+                        queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_COL2 VARCHAR)"
+                    }
+                    // If the value of the extremum column should be conserved
+                    if(keepColVal){
+                        queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_VAL DOUBLE)"
+                    }
+
+                    datasource queryCreateTable
+
 
                     // Will insert values by batch of 1000 in the table
                     datasource.withBatch(1000) { stmt ->
@@ -522,10 +577,19 @@ IProcess distributionCharacterization() {
                             def id_rsu = rowMap."$inputId"
                             rowMap.remove(inputId)
                             def sortedMap = rowMap.sort { it.value }
-                            stmt.addBatch """INSERT INTO $outputTableName 
+                            def queryInsert = """INSERT INTO $outputTableName 
                                                 VALUES ($id_rsu, ${getEquality(sortedMap, nbDistCol)},
                                                         ${getUniqueness(sortedMap, idxExtrem, idxExtrem_1)},
                                                         '${sortedMap.keySet()[idxExtrem]}')"""
+                            // If the second extremum col should be conserved
+                            if(keep2ndCol){
+                                queryInsert = "${queryInsert[0..-2]}, '${sortedMap.keySet()[idxExtrem_1]}')"
+                            }
+                            // If the value of the extremum column should be conserved
+                            if(keepColVal){
+                                queryInsert = "${queryInsert[0..-2]}, ${sortedMap.values()[idxExtrem]})"
+                            }
+                            stmt.addBatch queryInsert
                         }
                     }
                 }
