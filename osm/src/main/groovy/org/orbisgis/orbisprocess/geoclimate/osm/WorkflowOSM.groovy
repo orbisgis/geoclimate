@@ -134,6 +134,7 @@ IProcess workflow() {
                 info parameters.get("description")
                 def input = parameters.get("input")
                 def output = parameters.get("output")
+                def estimateHeight = parameters.get("estimateHeight")
                 //Default H2GIS database properties
                 def databaseName = postfix System.getProperty("java.io.tmpdir") + File.separator + "osm"
                 def h2gis_properties = ["databaseName": databaseName, "user": "sa", "password": ""]
@@ -165,17 +166,17 @@ IProcess workflow() {
                     }
 
                     if (output) {
-                        def geoclimatetTableNames = ["building_indicators",
-                                                     "block_indicators",
-                                                     "rsu_indicators",
-                                                     "rsu_lcz",
-                                                     "zones",
-                                                     "building",
-                                                     "road",
-                                                     "rail",
-                                                     "water",
-                                                     "vegetation",
-                                                     "impervious"]
+                        def geoclimateTableNames = ["building_indicators",
+                                                    "block_indicators",
+                                                    "rsu_indicators",
+                                                    "rsu_lcz",
+                                                    "zones",
+                                                    "building",
+                                                    "road",
+                                                    "rail",
+                                                    "water",
+                                                    "vegetation",
+                                                    "impervious"]
                         //Get processing parameters
                         def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
                         def outputSRID = output.get("srid")
@@ -194,7 +195,7 @@ IProcess workflow() {
                             }
                             //Check not the conditions for the output database
                             def outputTableNames = outputDataBase.get("tables")
-                            def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
+                            def allowedOutputTableNames = geoclimateTableNames.intersect(outputTableNames.keySet())
                             def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size() != allowedOutputTableNames.size()
                             if (!allowedOutputTableNames && notSameTableNames) {
                                 outputDataBase = null
@@ -259,7 +260,7 @@ IProcess workflow() {
 
                         } else if (outputDataBase) {
                             def outputTableNames = outputDataBase.get("tables")
-                            def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
+                            def allowedOutputTableNames = geoclimateTableNames.intersect(outputTableNames.keySet())
                             def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size() != allowedOutputTableNames.size()
                             if (allowedOutputTableNames && !notSameTableNames) {
                                 def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
@@ -359,13 +360,19 @@ IProcess osm_processing() {
                             def gisLayersResults = createGISLayerProcess.getResults()
                             if (zoneTableName != null) {
                                 info "Formating OSM GIS layers"
+                                def estimateHeight = processing_parameters."estimateHeight"
                                 IProcess format = OSM.formatBuildingLayer
                                 format.execute([
                                         datasource                : h2gis_datasource,
                                         inputTableName            : gisLayersResults.buildingTableName,
                                         inputZoneEnvelopeTableName: zoneEnvelopeTableName,
-                                        epsg                      : srid])
+                                        epsg                      : srid,
+                                        estimateHeight            : estimateHeight])
                                 def buildingTableName = format.results.outputTableName
+                                if (estimateHeight) {
+                                    def buildingEstimateTableName = format.results.outputEstimateTableName
+                                }
+
 
                                 format = OSM.formatRoadLayer
                                 format.execute([

@@ -7,7 +7,7 @@ package org.orbisgis.orbisprocess.geoclimate.osm
 class OSM  {
 
     public static def workflow
-    public  static def formatBuildingLayer;
+    public static def formatBuildingLayer;
     public static def formatVegetationLayer
     public static def formatRoadLayer
     public static def formatRailsLayer
