@@ -600,7 +600,7 @@ IProcess applyRandomForestClassif() {
                 Connection outputconnection = datasource.getConnection();
                 try {
                     Statement outputconnectionStatement = outputconnection.createStatement();
-                    outputconnectionStatement.execute("DROP TABLE IF EXISTS " + outputTableName);
+                    outputconnectionStatement.execute("DROP TABLE IF EXISTS " + tableName);
                     def create_table_ = "CREATE TABLE ${tableName} (${idName.toUpperCase()} VARCHAR, ${var2model.toUpperCase()} INT)" ;
                     def insertTable = "INSERT INTO ${tableName}  VALUES(?,?)";
                     outputconnection.setAutoCommit(false);
@@ -620,9 +620,9 @@ IProcess applyRandomForestClassif() {
                             preparedStatement.clearBatch();
                             batchSize = 0;
                         }
-                        if (batch_size > 0) {
-                            preparedStatement.executeBatch();
-                        }
+                    }
+                    if (batch_size > 0) {
+                        preparedStatement.executeBatch();
                     }
                 } catch (SQLException e) {
                     LOGGER.error("Cannot save the dataframe.\n", e);
@@ -637,8 +637,7 @@ IProcess applyRandomForestClassif() {
                 LOGGER.error("Cannot save the dataframe.\n", e);
                 return null;
             }
-
-            [outputTableName: outputTableName]
+            [outputTableName: tableName]
         }
     }
 }
