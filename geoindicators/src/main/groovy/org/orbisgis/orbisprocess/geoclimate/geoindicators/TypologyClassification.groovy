@@ -2,18 +2,25 @@ package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
 import com.thoughtworks.xstream.XStream
 import groovy.transform.BaseScript
+import org.h2gis.utilities.TableLocation
 import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import smile.base.cart.SplitRule
 import smile.classification.RandomForest
 import smile.data.formula.Formula
+import smile.data.type.DataType
 import smile.data.vector.IntVector
 import smile.validation.Accuracy
 import smile.validation.Validation
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
 
+import org.orbisgis.orbisdata.datamanager.api.dataset.DataBaseType;
+import java.sql.Connection
+import java.sql.PreparedStatement
+import java.sql.SQLException
+import java.sql.Statement
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
@@ -530,7 +537,7 @@ IProcess applyRandomForestClassif() {
             if (!pathAndFileName) {
                 //We look for the default model
                 //Default model name
-                modelName = "LCZ_OSM_RF_1.0"
+                modelName = "LCZ_OSM_RF_1_0"
                 def modelURL = "https://github.com/orbisgis/geoclimate/raw/master/models/${modelName}.model"
                 inputModelFile = new File(System.getProperty("user.home") + File.separator + ".geoclimate" + File.separator + modelName + ".model")
                 // The model doesn't exist on the local folder we download it
@@ -583,9 +590,54 @@ IProcess applyRandomForestClassif() {
             df=df.drop(var2model)
             df=df.merge(IntVector.of(var2model, prediction))
 
+            //TODO change this after SMILE answer's
+            Map factorizedValues = model.trees.get(0).tree.response.measure.value2level
             // Keep only the id and the value of the classification
             df = df.select(idName.toUpperCase(), var2model.toUpperCase())
-            df.save(datasource, outputTableName, true)
+            String tableName = TableLocation.parse(outputTableName, datasource.getDataBaseType() == DataBaseType.H2GIS).toString(datasource.getDataBaseType() == DataBaseType.H2GIS);
+            try {
+                PreparedStatement preparedStatement = null;
+                Connection outputconnection = datasource.getConnection();
+                try {
+                    Statement outputconnectionStatement = outputconnection.createStatement();
+                    outputconnectionStatement.execute("DROP TABLE IF EXISTS " + outputTableName);
+                    def create_table_ = "CREATE TABLE ${tableName} (${idName.toUpperCase()} VARCHAR, ${var2model.toUpperCase()} INT)" ;
+                    def insertTable = "INSERT INTO ${tableName}  VALUES(?,?)";
+                    outputconnection.setAutoCommit(false);
+                    outputconnectionStatement.execute(create_table_.toString());
+                    preparedStatement = outputconnection.prepareStatement(insertTable.toString());
+                    long batch_size = 0;
+                    int batchSize = 1000;
+                    while (df.next()) {
+                        def id = df.getString(0)
+                        def lczValue = df.getInt(1)
+                        preparedStatement.setObject( 1, id);
+                        preparedStatement.setObject( 2, factorizedValues.get(lczValue));
+                        preparedStatement.addBatch();
+                        batch_size++;
+                        if (batch_size >= batchSize) {
+                            preparedStatement.executeBatch();
+                            preparedStatement.clearBatch();
+                            batchSize = 0;
+                        }
+                        if (batch_size > 0) {
+                            preparedStatement.executeBatch();
+                        }
+                    }
+                } catch (SQLException e) {
+                    LOGGER.error("Cannot save the dataframe.\n", e);
+                    return null;
+                } finally {
+                    outputconnection.setAutoCommit(true);
+                    if (preparedStatement != null) {
+                        preparedStatement.close();
+                    }
+                }
+            } catch (SQLException e) {
+                LOGGER.error("Cannot save the dataframe.\n", e);
+                return null;
+            }
+
             [outputTableName: outputTableName]
         }
     }
