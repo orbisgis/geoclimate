@@ -718,3 +718,188 @@ IProcess typeProportion() {
         }
     }
 }
+
+
+/**
+ * This process is used to join building, block and RSU tables either at building scale or at RSU scale. For both scales
+ * building indicators are averaged at RSU scale. If the 'targetedScale'="RSU", block indicators are also averaged at RSU scale.
+ *
+ * @param buildingTable the building table name
+ * @param blockTable the block table name (default "")
+ * @param rsuTable the rsu table name
+ * @param targetedScale The scale of the resulting table (either "RSU" or "BUILDING", default "RSU")
+ * @param operationsToApply Operations (using 'unweightedOperationFromLowerScale' IProcess) to apply
+ * to building and block in case 'targetedScale'="RSU" (default ["AVG", "STD"])
+ * @param areaTypeAndComposition Types that should be calculated and objects included in this type
+ * (e.g. for building table could be: ["residential": ["residential", "detached"]])
+ * @param floorAreaTypeAndComposition (ONLY FOR BUILDING OBJECTS) Types that should be calculated and objects included in this type
+ * (e.g. for building table could be: ["residential": ["residential", "detached"]])
+ * @param prefixName String use as prefix to name the output table
+ *
+ * @return A database table name.
+ *
+ * @author Jérémy Bernard
+ */
+IProcess gatherScales() {
+    return create {
+        title "Proportion of a certain type within a given object"
+        id "typeProportion"
+        inputs  buildingTable: String, blockTable: "", rsuTable: String,
+                targetedScale: "RSU", operationsToApply: ["AVG", "STD"], prefixName: String,
+                datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { buildingTable, blockTable, rsuTable, targetedScale, operationsToApply,
+              prefixName, datasource ->
+
+            // List of columns to remove from the analysis in building and block tables
+            def BLOCK_COL_TO_REMOVE = ["THE_GEOM", "ID_RSU", "ID_BLOCK", "MAIN_BUILDING_DIRECTION"]
+            def BUILD_COL_TO_REMOVE = ["THE_GEOM", "ID_RSU", "ID_BUILD", "ID_BLOCK", "NB_LEV", "ZINDEX", "MAIN_USE", "TYPE", "ID_SOURCE"]
+            def BASE_NAME = "all_scales_table"
+
+            info """ Executing the gathering of scales (to building or to RSU scale)"""
+
+            if((targetedScale.toUpperCase() == "RSU") || (targetedScale.toUpperCase() == "BUILDING")){
+                // Temporary tables that will be deleted at the end of the process
+                def finalScaleTableName = postfix "final_before_join"
+                def scale1ScaleFin = postfix "scale1_scale_fin"
+
+                // The name of the outputTableName is constructed
+                def outputTableName = prefix prefixName, BASE_NAME
+
+                // Some tables will be needed to call only some specific columns
+                def listblockFinalRename = []
+
+                def blockIndicFinalScale = blockTable
+                def idbuildForMerge
+                def idBlockForMerge
+
+                // Calculate average and variance at RSU scale from each indicator of the building scale
+                def inputVarAndOperationsBuild = [:]
+                def buildIndicators = datasource.getTable(buildingTable).getColumns()
+                for (col in buildIndicators){
+                    if (!BUILD_COL_TO_REMOVE.contains(col)){
+                        inputVarAndOperationsBuild[col] = operationsToApply
+                    }
+                }
+                // Calculate building indicators averaged at RSU scale
+                def calcBuildStat = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
+                calcBuildStat.execute([	inputLowerScaleTableName: buildingTable,
+                                           inputUpperScaleTableName: rsuTable,
+                                           inputIdUp: "id_rsu", inputIdLow: "id_build",
+                                           inputVarAndOperations: inputVarAndOperationsBuild,
+                                           prefixName: "bu", datasource: datasource])
+                def buildIndicRsuScale = calcBuildStat.results.outputTableName
+
+                // To avoid crashes of the join due to column duplicate, need to prefix some names
+                def buildRsuCol2Rename = datasource.getTable(buildIndicRsuScale).getColumns()
+                def listBuildRsuRename = []
+                for (col in buildRsuCol2Rename){
+                    if(col != "ID_BUILD" && col != "ID_BLOCK" && col != "ID_RSU" && col != "THE_GEOM"){
+                        listBuildRsuRename.add("a.$col AS build_$col")
+                    }
+                }
+
+                // Special processes if the scale of analysis is RSU
+                if (targetedScale.toUpperCase() == "RSU") {
+                    // Calculate building average and variance at RSU scale from each indicator of the block scale
+                    def inputVarAndOperationsBlock = [:]
+                    def blockIndicators = datasource.getTable(blockTable).getColumns()
+                    for (col in blockIndicators) {
+                        if (!BLOCK_COL_TO_REMOVE.contains(col)) {
+                            inputVarAndOperationsBlock[col] = operationsToApply
+                        }
+                    }
+                    // Calculate block indicators averaged at RSU scale
+                    def calcBlockStat = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
+                    calcBlockStat.execute([inputLowerScaleTableName: blockTable,
+                                           inputUpperScaleTableName: rsuTable,
+                                           inputIdUp               : "id_rsu", inputIdLow: "id_block",
+                                           inputVarAndOperations   : inputVarAndOperationsBlock,
+                                           prefixName              : "bl", datasource: datasource])
+                    blockIndicFinalScale = calcBlockStat.results.outputTableName
+
+                    // To avoid crashes of the join due to column duplicate, need to prefix some names
+                    def blockRsuCol2Rename = datasource.getTable(blockIndicFinalScale).getColumns()
+                    for (col in blockRsuCol2Rename) {
+                        if (col != "ID_BLOCK" && col != "ID_RSU" && col != "THE_GEOM") {
+                            listblockFinalRename.add("b.$col AS block_$col")
+                        }
+                    }
+
+                    // Define generic name whatever be the 'targetedScale'
+                    finalScaleTableName = rsuTable
+                    // Useful for merge between buildings and rsu tables
+                    idbuildForMerge = "id_rsu"
+                    idBlockForMerge = "id_rsu"
+                    // Useful if the classif is a regression
+                    idName = "id_rsu"
+                }
+
+                // Special processes if the scale of analysis is building
+                else if (targetedScale.toUpperCase() == "BUILDING") {
+                    // Need to join RSU and building tables
+                    def listRsuCol = datasource.getTable(rsuTable).getColumns()
+                    def listRsuRename = []
+                    for (col in listRsuCol) {
+                        if (col != "ID_RSU" && col != "THE_GEOM") {
+                            listRsuRename.add("a.$col AS rsu_$col")
+                        }
+                    }
+                    def listBuildCol = datasource.getTable(buildingTable).getColumns()
+                    def listBuildRename = []
+                    for (col in listBuildCol) {
+                        if (col != "ID_RSU" && col != "ID_BLOCK" && col != "ID_BUILD" && col != "THE_GEOM") {
+                            listBuildRename.add("b.$col AS build_$col")
+                        } else {
+                            listBuildRename.add("b.$col")
+                        }
+                    }
+
+                    // Merge scales (building and Rsu indicators)
+                    datasource.getTable(rsuTable).id_rsu.createIndex()
+                    datasource.getTable(buildingTable).id_rsu.createIndex()
+                    datasource.execute """ DROP TABLE IF EXISTS $finalScaleTableName;
+                                CREATE TABLE $finalScaleTableName 
+                                    AS SELECT ${listRsuRename.join(', ')}, ${listBuildRename.join(', ')} 
+                                    FROM $rsuTable a RIGHT JOIN $buildingTable b
+                                    ON a.id_rsu = b.id_rsu;"""
+
+                    // To avoid crashes of the join due to column duplicate, need to prefix some names
+                    def blockCol2Rename = datasource.getTable(blockTable).getColumns()
+                    for (col in blockCol2Rename) {
+                        if (col != "ID_BLOCK" && col != "ID_RSU" && col != "THE_GEOM") {
+                            listblockFinalRename.add("b.$col AS block_$col")
+                        }
+                    }
+                    // Useful for merge between gathered building and rsu indicators and building indicators averaged at RSU scale
+                    idbuildForMerge = "id_rsu"
+                    idBlockForMerge = "id_block"
+                    // Useful if the classif is a regression
+                    idName = "id_build"
+                }
+
+                // Gather all indicators (coming from three different scales) in a single table (the 'targetTableScale' scale)
+                // Note that in order to avoid crashes of the join due to column duplicate, indicators have been prefixed
+                datasource.getTable(buildIndicRsuScale).id_rsu.createIndex()
+                datasource.getTable(finalScaleTableName).id_rsu.createIndex()
+                datasource.execute """ DROP TABLE IF EXISTS $scale1ScaleFin;
+                            CREATE TABLE $scale1ScaleFin 
+                                AS SELECT ${listBuildRsuRename.join(', ')}, b.*
+                                FROM $buildIndicRsuScale a RIGHT JOIN $finalScaleTableName b
+                                ON a.$idbuildForMerge = b.$idbuildForMerge;"""
+                datasource.getTable(blockIndicFinalScale)."$idBlockForMerge".createIndex()
+                datasource.getTable(scale1ScaleFin)."$idBlockForMerge".createIndex()
+                datasource.execute """ DROP TABLE IF EXISTS $outputTableName;
+                            CREATE TABLE $outputTableName 
+                                AS SELECT a.*, ${listblockFinalRename.join(', ')}
+                                FROM $scale1ScaleFin a LEFT JOIN $blockIndicFinalScale b
+                                ON a.$idBlockForMerge = b.$idBlockForMerge;"""
+
+                [outputTableName: outputTableName]
+            }
+            else{
+                error """ The 'targetedScale' parameter should either be 'RSU' or 'BUILDING' """
+            }
+        }
+    }
+}
