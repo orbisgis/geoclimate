@@ -3,6 +3,7 @@ package org.orbisgis.orbisprocess.geoclimate.geoindicators
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.locationtech.jts.io.WKTReader
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 
@@ -197,4 +198,15 @@ class SpatialUnitsTests {
         assert 246 == countRows.numberOfRows
     }
 
+    @Test
+    void regularGridTest() {
+        def gridP = Geoindicators.SpatialUnits.regularGrid()
+        WKTReader wktReader = new WKTReader()
+        def box = wktReader.read('POLYGON((-180 -80, 180 -80, 180 80, -180 80, -180 -80))')
+        assert gridP.execute([geometry: box, deltaX: 1, deltaY: 1, outputTable: "grid", datasource: h2GIS])
+        def outputTable = gridP.results.outputTableName
+        assert h2GIS."$outputTable"
+        def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
+        assert 57600 == countRows.numberOfRows
+    }
 }

@@ -1,6 +1,8 @@
 package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
+import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.io.WKTReader
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
@@ -430,6 +432,42 @@ IProcess spatialJoin() {
             info "The spatial join have been performed between :  $sourceTable and $targetTable"
 
             [outputTableName: outputTableName, idColumnTarget: idColumnTarget]
+        }
+    }
+}
+
+/**
+ * This process is used to generate a regular grid in meters.
+ *
+ * @param geometry A geometry defined as Point, Line or Polygon
+ * @param deltaX A integer that represents the horizontal step of a ceil in the mesh
+ * @param deltaY A integer that represents the vertical step of a ceil in the mesh
+ * @param outputTable A Table that contains the geometry defining the regular grid
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ *        the resulting database will be stored
+ * @param outputTableName The name of the created table
+ * */
+IProcess regularGrid() {
+    return create {
+        title "Creating a regular grid in meters"
+        id "regularGrid"
+        inputs geometry: Geometry, deltaX: int, deltaY: int, outputTable: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+
+        run { geometry, deltaX, deltaY, outputTable, datasource ->
+            if (datasource.hasTable("$outputTable")) {
+                error "Table already exists"
+                return error
+            }
+            else {
+                info "Creating a regular grid in meters"
+                def outputTableName = "${outputTable}"
+                datasource """   CREATE TABLE $outputTableName AS SELECT * FROM 
+                                     ST_MakeGrid('$geometry'::geometry, $deltaX, $deltaY);
+                                 SELECT * FROM $outputTableName; 
+                           """
+                [outputTableName: outputTableName]
+            }
         }
     }
 }
