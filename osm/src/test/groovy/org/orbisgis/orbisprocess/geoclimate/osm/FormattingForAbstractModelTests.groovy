@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue
 
 class FormattingForAbstractModelTests {
 
-   @Test
+    @Test
    void formattingGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
         def epsg =2154
@@ -44,7 +44,6 @@ class FormattingForAbstractModelTests {
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL<0").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF is null").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0").count==0
-
 
         //Check value for  specific features
         //TODO: to be fixed
