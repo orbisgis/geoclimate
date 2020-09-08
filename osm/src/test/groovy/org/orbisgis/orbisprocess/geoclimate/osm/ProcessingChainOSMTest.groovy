@@ -50,7 +50,6 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                             prefixName    : prefixName])) {
                 h2GIS.getTable(createRSU.results.outputTableName).save(dirFile.absolutePath+File.separator+"${prefixName}.geojson")
             }
-
         }
     }
 
