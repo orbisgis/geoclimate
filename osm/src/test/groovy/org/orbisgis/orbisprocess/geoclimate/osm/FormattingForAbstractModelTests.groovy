@@ -292,13 +292,14 @@ class FormattingForAbstractModelTests {
         assertEquals 10, h2GIS.getTable(extractData.results.hydroTableName).rowCount
         assertEquals 43, h2GIS.getTable(extractData.results.imperviousTableName).rowCount
 
-        //Buildings
+        //Buildings with estimation state
         IProcess format = OSM.formatBuildingLayer
         format.execute([
                 datasource    : h2GIS,
                 inputTableName: extractData.results.buildingTableName,
                 epsg          : epsg,
-                jsonFilename  : null])
+                jsonFilename  : null,
+                estimateHeight : true])
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated.shp")
         assertEquals 1040, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count == 0
@@ -307,6 +308,21 @@ class FormattingForAbstractModelTests {
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL<0").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF is null").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0").count == 0
+        assertEquals 1040, h2GIS.getTable(format.results.outputEstimateTableName).rowCount
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputEstimateTableName} where ESTIMATED = false").count == 4
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} join ${format.results.outputEstimateTableName} using (id_build, id_source) where 1=1").count == 1040
+        //Buildings without estimation state
+/*
+        IProcess format = OSM.formatBuildingLayer
+        format.execute([
+        datasource    : h2GIS,
+        inputTableName: extractData.results.buildingTableName,
+        epsg          : epsg,
+        jsonFilename  : null,
+        estimateHeight : false])
+        assertEquals 1040, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertEquals "", format.results.outputEstimateTableName
+*/
     }
 
 }

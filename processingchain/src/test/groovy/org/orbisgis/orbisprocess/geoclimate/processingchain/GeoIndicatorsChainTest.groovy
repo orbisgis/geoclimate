@@ -67,7 +67,7 @@ class GeoIndicatorsChainTest {
                                    "HIGH_VEGETATION_BUILDING_FRACTION"]
 
     // Column names in the LCZ Table
-    public static listColLcz = ["LCZ1", "LCZ2", "MIN_DISTANCE", "PSS"]
+    public static listColLcz = ["LCZ1", "LCZ2", "LCZ_EQUALITY_VALUE", "LCZ_UNIQUENESS_VALUE", "MIN_DISTANCE"]
 
     // Indicator lists for urban typology use at building and block scales
     public static listUrbTyp =
@@ -105,7 +105,7 @@ class GeoIndicatorsChainTest {
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                            "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+                            "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
         def ind_i = ["LCZ"]
         IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
@@ -148,7 +148,7 @@ class GeoIndicatorsChainTest {
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                            "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+                            "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
 
         def ind_i = ["URBAN_TYPOLOGY"]
         IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
@@ -193,7 +193,7 @@ class GeoIndicatorsChainTest {
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                            "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+                            "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
 
         def ind_i = ["URBAN_TYPOLOGY", "TEB"]
 
@@ -238,7 +238,7 @@ class GeoIndicatorsChainTest {
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                            "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+                            "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
 
         def ind_i = ["TEB"]
 
@@ -283,7 +283,7 @@ class GeoIndicatorsChainTest {
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                            "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+                            "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
 
         def ind_i = ["LCZ", "TEB"]
 
@@ -328,7 +328,7 @@ class GeoIndicatorsChainTest {
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                            "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
+                            "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
 
         def ind_i = ["URBAN_TYPOLOGY", "LCZ"]
 
