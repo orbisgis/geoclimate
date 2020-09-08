@@ -23,6 +23,7 @@
             "terrain_roughness_class": 1},
         "hLevMin": 3,
         "hLevMax": 15,
-        "hThresholdLev2": 10
+        "hThresholdLev2": 10,
+        "estimateHeight" : true
     }
 }
