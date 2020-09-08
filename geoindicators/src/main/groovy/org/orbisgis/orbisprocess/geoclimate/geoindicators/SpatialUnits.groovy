@@ -440,8 +440,8 @@ IProcess spatialJoin() {
  * This process is used to generate a regular grid in meters.
  *
  * @param geometry A geometry defined as Point, Line or Polygon
- * @param deltaX A integer that represents the horizontal step of a ceil in the mesh
- * @param deltaY A integer that represents the vertical step of a ceil in the mesh
+ * @param deltaX An integer that represents the horizontal step of a cell in the mesh
+ * @param deltaY An integer that represents the vertical step of a cell in the mesh
  * @param outputTable A Table that contains the geometry defining the regular grid
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  *        the resulting database will be stored
@@ -455,18 +455,16 @@ IProcess regularGrid() {
         outputs outputTableName: String
 
         run { geometry, deltaX, deltaY, outputTable, datasource ->
-            if (datasource.hasTable("$outputTable")) {
+            if (datasource.hasTable(outputTable)) {
                 error "Table already exists"
-                return error
+                return null
             }
             else {
                 info "Creating a regular grid in meters"
-                def outputTableName = "${outputTable}"
-                datasource """   CREATE TABLE $outputTableName AS SELECT * FROM 
+                datasource """   CREATE TABLE $outputTable AS SELECT * FROM 
                                      ST_MakeGrid('$geometry'::geometry, $deltaX, $deltaY);
-                                 SELECT * FROM $outputTableName; 
                            """
-                [outputTableName: outputTableName]
+                [outputTableName: outputTable]
             }
         }
     }

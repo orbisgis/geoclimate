@@ -201,7 +201,7 @@ class SpatialUnitsTests {
     @Test
     void regularGridTest() {
         def gridP = Geoindicators.SpatialUnits.regularGrid()
-        WKTReader wktReader = new WKTReader()
+        def wktReader = new WKTReader()
         def box = wktReader.read('POLYGON((-180 -80, 180 -80, 180 80, -180 80, -180 -80))')
         assert gridP.execute([geometry: box, deltaX: 1, deltaY: 1, outputTable: "grid", datasource: h2GIS])
         def outputTable = gridP.results.outputTableName
