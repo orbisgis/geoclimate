@@ -392,10 +392,7 @@ class GeoIndicatorsChainTest {
             assertTrue realListRsu.contains(i)
         }
         if (ind_i.contains("LCZ")) {
-            def expectListLczTempo = listColLcz
-            expectListLczTempo = expectListLczTempo + listColBasic
-            def expectListLcz = expectListLczTempo.sort()
-            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuLcz).columns.sort())
+            assertEquals(["ID_RSU", "LCZ1","THE_GEOM"], datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuLcz).columns.sort())
         } else {
             assertEquals(null, GeoIndicatorsCompute_i.results.outputTableRsuLcz)
         }

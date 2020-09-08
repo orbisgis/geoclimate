@@ -1121,15 +1121,13 @@ IProcess computeAllGeoIndicators() {
                                 prefixName                   : prefixName,
                                 datasource                   : datasource])
                         rsuLczWithoutGeom = applyRF.results.outputTableName
-                        datasource.execute """  ALTER TABLE $rsuLczWithoutGeom RENAME COLUMN LCZ TO LCZ1;
-                                                ALTER TABLE $rsuLczWithoutGeom ADD COLUMN LCZ2 INT;
-                                                ALTER TABLE $rsuLczWithoutGeom ADD COLUMN MIN_DISTANCE DOUBLE;
-                                                ALTER TABLE $rsuLczWithoutGeom ADD COLUMN PSS DOUBLE;"""
+                        datasource.execute """  ALTER TABLE $rsuLczWithoutGeom RENAME COLUMN LCZ TO LCZ1;"""
                         datasource."$rsuLczWithoutGeom".reload()
                         datasource."$rsuLczWithoutGeom"."$COLUMN_ID_RSU".createIndex()
                         datasource."$relationRSU"."$COLUMN_ID_RSU".createIndex()
-                        datasource.execute """  DROP TABLE IF EXISTS rsu_lcz;
-                                            CREATE TABLE rsu_lcz
+                        rsuLcz = prefix(prefixName, "rsu_lcz")
+                        datasource.execute """  DROP TABLE IF EXISTS $rsuLcz;
+                                            CREATE TABLE $rsuLcz
                                                     AS SELECT a.*, b.the_geom
                                                     FROM $rsuLczWithoutGeom a RIGHT JOIN $relationRSU b
                                                     ON a.$COLUMN_ID_RSU = b.$COLUMN_ID_RSU"""
