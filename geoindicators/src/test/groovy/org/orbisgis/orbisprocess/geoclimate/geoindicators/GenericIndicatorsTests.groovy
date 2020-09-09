@@ -231,7 +231,7 @@ class GenericIndicatorsTests {
         def  p =  Geoindicators.GenericIndicators.buildingDirectionDistribution()
         assert p([
                 buildingTableName   : "tempo_build",
-                initialTable        : "rsu_test",
+                tableUp             : "rsu_test",
                 inputIdUp           : "id_rsu",
                 angleRangeSize      : 15,
                 prefixName          : "test",
@@ -262,6 +262,7 @@ class GenericIndicatorsTests {
         def  p1 =  Geoindicators.GenericIndicators.distributionCharacterization()
         assert p1([
                 distribTableName    : "distrib_test",
+                initialTable        : "distrib_test",
                 inputId             : "id",
                 distribIndicator    : ["equality", "uniqueness"],
                 extremum            : "GREATEST",
@@ -297,6 +298,7 @@ class GenericIndicatorsTests {
         def  p1 =  Geoindicators.GenericIndicators.distributionCharacterization()
         assert p1([
                 distribTableName    : "distrib_test",
+                initialTable        : "distrib_test",
                 inputId             : "id",
                 distribIndicator    : ["uniqueness"],
                 extremum            : "LEAST",
@@ -326,6 +328,7 @@ class GenericIndicatorsTests {
         def  p1 =  Geoindicators.GenericIndicators.distributionCharacterization()
         assert p1([
                 distribTableName    : "distrib_test",
+                initialTable        : "distrib_test",
                 inputId             : "id",
                 distribIndicator    : ["equality"],
                 extremum            : "LEAST",

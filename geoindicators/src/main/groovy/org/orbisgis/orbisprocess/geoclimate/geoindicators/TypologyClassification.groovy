@@ -322,6 +322,7 @@ IProcess identifyLczType() {
                 def computeDistribChar = Geoindicators.GenericIndicators.distributionCharacterization()
                 computeDistribChar([distribTableName: distribLczTable,
                                     inputId         : ID_FIELD_RSU,
+                                    initialTable    : rsuLczIndicators,
                                     distribIndicator: ["equality", "uniqueness"],
                                     extremum        : "LEAST",
                                     keep2ndCol      : true,

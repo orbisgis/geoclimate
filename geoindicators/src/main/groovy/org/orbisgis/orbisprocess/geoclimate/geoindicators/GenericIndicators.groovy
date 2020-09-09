@@ -522,6 +522,17 @@ IProcess distributionCharacterization() {
                             stmt.addBatch queryInsert
                         }
                     }
+                    // Set to default value (for example if we characterize the building direction in a RSU having no building...)
+                    datasource."$outputTableMissingSomeObjects"."$inputId".createIndex()
+                    datasource."$initialTable"."$inputId".createIndex()
+                    datasource """DROP TABLE IF EXISTS $outputTableName;
+                                CREATE TABLE $outputTableName 
+                                    AS SELECT       COALESCE(a.$EQUALITY, -1) AS $EQUALITY,
+                                                    COALESCE(a.$EXTREMUM_COL, 'unknown') AS $EXTREMUM_COL,
+                                                    b.$inputId 
+                                        FROM $outputTableMissingSomeObjects a RIGHT JOIN $initialTable b
+                                        ON a.$inputId = b.$inputId;
+                                        """
 
                 } else if (!distribIndicator.contains("equality") && distribIndicator.contains("uniqueness")) {
                     def queryCreateTable = """CREATE TABLE $outputTableMissingSomeObjects($inputId integer, 
@@ -558,6 +569,17 @@ IProcess distributionCharacterization() {
                             stmt.addBatch queryInsert
                         }
                     }
+                    // Set to default value (for example if we characterize the building direction in a RSU having no building...)
+                    datasource."$outputTableMissingSomeObjects"."$inputId".createIndex()
+                    datasource."$initialTable"."$inputId".createIndex()
+                    datasource """DROP TABLE IF EXISTS $outputTableName;
+                                CREATE TABLE $outputTableName 
+                                    AS SELECT       COALESCE(a.$UNIQUENESS, -1) AS $UNIQUENESS,
+                                                    COALESCE(a.$EXTREMUM_COL, 'unknown') AS $EXTREMUM_COL,
+                                                    b.$inputId 
+                                        FROM $outputTableMissingSomeObjects a RIGHT JOIN $initialTable b
+                                        ON a.$inputId = b.$inputId;
+                                        """
                 } else if (distribIndicator.contains("equality") && distribIndicator.contains("uniqueness")) {
                     def queryCreateTable = """CREATE TABLE $outputTableMissingSomeObjects($inputId integer, 
                                                                     $EQUALITY DOUBLE,
@@ -597,15 +619,19 @@ IProcess distributionCharacterization() {
                             stmt.addBatch queryInsert
                         }
                     }
-                }
-
-                // Set to default value (for example if we characterize the building direction in a RSU having no building...)
-                def finalCol = datasource."$outputTableMissingSomeObjects"
-                datasource """DROP TABLE IF EXISTS $outputTableName;
+                    // Set to default value (for example if we characterize the building direction in a RSU having no building...)
+                    datasource."$outputTableMissingSomeObjects"."$inputId".createIndex()
+                    datasource."$initialTable"."$inputId".createIndex()
+                    datasource """DROP TABLE IF EXISTS $outputTableName;
                                 CREATE TABLE $outputTableName 
-                                        AS SELECT a.${finalCol.join(", a.")}, b.$inputId 
+                                    AS SELECT       COALESCE(a.$EQUALITY, -1) AS $EQUALITY,
+                                                    COALESCE(a.$UNIQUENESS, -1) AS $UNIQUENESS,
+                                                    COALESCE(a.$EXTREMUM_COL, 'unknown') AS $EXTREMUM_COL,
+                                                    b.$inputId 
                                         FROM $outputTableMissingSomeObjects a RIGHT JOIN $initialTable b
+                                        ON a.$inputId = b.$inputId;
                                         """
+                }
 
                 [outputTableName: outputTableName]
             } else {
