@@ -677,6 +677,8 @@ static double getEquality(def myMap, def nbDistCol) {
  *
  * @param inputTableName the table name where are stored the objects having different types to characterize
  * @param idField ID of the scale used for the 'GROUP BY'
+ * @param inputUpperTableName the name of the upper scale table (where is performed the group by - e.g. RSU if building type
+ * must be gathered at RSU scale to have the proportion of industrial, residential, etc.)
  * @param typeFieldName The name of the field where is stored the type of the object
  * @param areaTypeAndComposition Types that should be calculated and objects included in this type
  * (e.g. for building table could be: ["residential": ["residential", "detached"]])
@@ -692,11 +694,12 @@ IProcess typeProportion() {
     return create {
         title "Proportion of a certain type within a given object"
         id "typeProportion"
-        inputs inputTableName: String, idField: String          , floorAreaTypeAndComposition: [:],
+        inputs inputTableName: String, idField: String          , inputUpperTableName: String,
+                floorAreaTypeAndComposition: [:],
                 typeFieldName: String, areaTypeAndComposition: [:], prefixName: String,
                 datasource: JdbcDataSource
         outputs outputTableName: String
-        run { inputTableName, idField, floorAreaTypeAndComposition, typeFieldName, areaTypeAndComposition,
+        run { inputTableName, idField, inputUpperTableName, floorAreaTypeAndComposition, typeFieldName, areaTypeAndComposition,
               prefixName, datasource ->
 
             def GEOMETRIC_FIELD_LOW = "the_geom"
@@ -712,6 +715,7 @@ IProcess typeProportion() {
                 // To avoid overwriting the output files of this step, a unique identifier is created
                 // Temporary table names
                 def caseWhenTab = postfix "case_when_tab"
+                def outputTableWithNull = postfix "output_table_with_null"
 
                 // Define the pieces of query according to each type of the input table
                 def queryCalc = ""
@@ -744,10 +748,27 @@ IProcess typeProportion() {
                 datasource."$caseWhenTab"."$idField".createIndex()
 
                 // Calculate the proportion of each type
-                datasource.execute """DROP TABLE IF EXISTS $outputTableName;
-                                    CREATE TABLE $outputTableName 
+                datasource.execute """DROP TABLE IF EXISTS $outputTableWithNull;
+                                    CREATE TABLE $outputTableWithNull 
                                             AS SELECT $idField, ${queryCalc[0..-2]}
                                             FROM $caseWhenTab GROUP BY $idField"""
+
+                // Set 0 as default value (for example if we characterize the building type in a RSU having no building...)
+                def allFinalCol = datasource."$outputTableWithNull".getColumns()
+                allFinalCol = allFinalCol.minus([idField.toUpperCase()])
+                datasource."$inputUpperTableName"."$idField".createIndex()
+                datasource."$outputTableWithNull"."$idField".createIndex()
+                def pieceOfQuery = ""
+                allFinalCol.each{col ->
+                    pieceOfQuery += "COALESCE(a.$col, 0) AS $col, "
+                }
+                datasource """DROP TABLE IF EXISTS $outputTableName;
+                                CREATE TABLE $outputTableName 
+                                    AS SELECT       ${pieceOfQuery[0..-2]}
+                                                    b.$idField 
+                                        FROM $outputTableWithNull a RIGHT JOIN $inputUpperTableName b
+                                        ON a.$idField = b.$idField;
+                                        """
 
                 [outputTableName: outputTableName]
             }

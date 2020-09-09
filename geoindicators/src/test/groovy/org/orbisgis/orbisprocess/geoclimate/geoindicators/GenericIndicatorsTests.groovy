@@ -345,17 +345,17 @@ class GenericIndicatorsTests {
     void typeProportionTest() {
         // Only the first 6 first created buildings are selected since any new created building may alter the results
         h2GIS """
-                DROP TABLE IF EXISTS tempo_build0, tempo_build, tempo_rsu, unweighted_operation_from_lower_scale1, 
-                unweighted_operation_from_lower_scale2, unweighted_operation_from_lower_scale3; 
+                DROP TABLE IF EXISTS tempo_build; 
                 CREATE TABLE tempo_build AS SELECT a.*
-                        FROM building_test a, rsu_test b
-                        WHERE id_build < 4;"""
+                        FROM building_test a
+                        WHERE a.id_build < 4;"""
 
         // Test 1
         def  p1 =  Geoindicators.GenericIndicators.typeProportion()
         assert p1([
                 inputTableName          : "tempo_build",
                 idField                 : "id_rsu",
+                inputUpperTableName     : "rsu_test",
                 typeFieldName           : "type",
                 areaTypeAndComposition  : ["industrial": ["industrial"], "residential": ["residential", "detached"]],
                 prefixName              : "",
@@ -364,12 +364,16 @@ class GenericIndicatorsTests {
         def result1 = h2GIS.firstRow("SELECT * FROM ${p1.results.outputTableName}")
         assert (156.0/296).trunc(3) == result1.area_fraction_industrial.trunc(3)
         assert (140.0/296).trunc(3) == result1.area_fraction_residential.trunc(3)
+        def resultNull = h2GIS.firstRow("SELECT * FROM ${p1.results.outputTableName} WHERE id_rsu = 14")
+        assert 0 == resultNull.area_fraction_industrial
+        assert 0 == resultNull.area_fraction_residential
 
         // Test 2
         def  p2 =  Geoindicators.GenericIndicators.typeProportion()
         assert p2([
                 inputTableName                  : "tempo_build",
                 idField                         : "id_rsu",
+                inputUpperTableName             : "rsu_test",
                 typeFieldName                   : "type",
                 floorAreaTypeAndComposition     : ["industrial": ["industrial"], "residential": ["residential", "detached"]],
                 prefixName                      : "",
@@ -384,6 +388,7 @@ class GenericIndicatorsTests {
         assert p3([
                 inputTableName                  : "tempo_build",
                 idField                         : "id_rsu",
+                inputUpperTableName             : "rsu_test",
                 typeFieldName                   : "type",
                 areaTypeAndComposition          : ["industrial": ["industrial"], "residential": ["residential", "detached"]],
                 floorAreaTypeAndComposition     : ["industrial": ["industrial"], "residential": ["residential", "detached"]],
@@ -411,6 +416,7 @@ class GenericIndicatorsTests {
         assertFalse(p([
                 inputTableName              : "tempo_build",
                 idField                     : "id_rsu",
+                inputUpperTableName         : "rsu_test",
                 typeFieldName               : "type",
                 areaTypeAndComposition      : null,
                 floorAreaTypeAndComposition : null,
@@ -419,6 +425,7 @@ class GenericIndicatorsTests {
         assertTrue(p([
                 inputTableName              : "tempo_build",
                 idField                     : "id_rsu",
+                inputUpperTableName         : "rsu_test",
                 typeFieldName               : "type",
                 areaTypeAndComposition      : null,
                 floorAreaTypeAndComposition : ["industrial": ["industrial"], "residential": ["residential", "detached"]],

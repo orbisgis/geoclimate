@@ -554,6 +554,7 @@ IProcess computeRSUIndicators() {
                 if (!computeTypeProportion([
                                             inputTableName                  : buildingTable,
                                             idField                     : columnIdRsu,
+                                            inputUpperTableName         : rsuTable,
                                             typeFieldName               : "type",
                                             areaTypeAndComposition      : buildingAreaTypeAndComposition,
                                             floorAreaTypeAndComposition : floorAreaTypeAndComposition,
