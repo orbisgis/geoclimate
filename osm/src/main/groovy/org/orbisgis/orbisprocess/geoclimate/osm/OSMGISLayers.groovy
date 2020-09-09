@@ -2,7 +2,6 @@ package org.orbisgis.orbisprocess.geoclimate.osm
 
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
-import groovy.transform.Field
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
@@ -13,7 +12,6 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.h2gis.utilities.GeographyUtilities
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.orbisgis.orbisanalysis.osm.utils.OSMElement
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 
 @BaseScript OSM_Utils osm_utils
 

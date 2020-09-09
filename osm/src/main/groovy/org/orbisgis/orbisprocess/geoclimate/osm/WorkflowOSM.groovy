@@ -16,6 +16,7 @@ import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
+import org.orbisgis.orbisanalysis.osm.OSMTools
 
 import java.sql.SQLException
 
@@ -426,7 +427,8 @@ IProcess osm_processing() {
                                         hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
                                         indicatorUse: processing_parameters.indicatorUse,
                                         svfSimplified: processing_parameters.svfSimplified, prefixName: processing_parameters.prefixName,
-                                        mapOfWeights: processing_parameters.mapOfWeights)) {
+                                        mapOfWeights: processing_parameters.mapOfWeights,
+                                        lczRandomForest : processing_parameters.lczRandomForest)) {
                                     error "Cannot build the geoindicators for the zone $id_zone"
                                     geoIndicatorsComputed = false
                                 } else {
@@ -969,7 +971,8 @@ def extractProcessingParameters(def processing_parameters){
                              mapOfWeights : ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                              "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                              "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
-                             hLevMin : 3, hLevMax: 15, hThresholdLev2: 10]
+                             hLevMin : 3, hLevMax: 15, hThresholdLev2: 10,
+                             lczRandomForest :true]
     if(processing_parameters){
         def distanceP =  processing_parameters.distance
         if(distanceP && distanceP in Number){
@@ -1004,6 +1007,10 @@ def extractProcessingParameters(def processing_parameters){
         def hThresholdLev2P =  processing_parameters.hThresholdLev2
         if(hThresholdLev2P && hThresholdLev2P in Integer){
             defaultParameters.hThresholdLev2 = hThresholdLev2P
+        }
+        def lczRandomForest = processing_parameters.lczRandomForest
+        if(lczRandomForest && lczRandomForest in Boolean){
+            defaultParameters.lczRandomForest = lczRandomForest
         }
 
         return defaultParameters
