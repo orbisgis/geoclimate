@@ -221,6 +221,32 @@ class GenericIndicatorsTests {
     }
 
     @Test
+    void buildingDirectionDistributionTest2() {
+        // Only the first 6 first created buildings are selected since any new created building may alter the results
+        h2GIS """
+                DROP TABLE IF EXISTS tempo_build, test_MAIN_BUILDING_DIRECTION, test_DISTRIBUTION_REPARTITION; 
+                CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 9
+        """
+
+        def  p =  Geoindicators.GenericIndicators.buildingDirectionDistribution()
+        assert p([
+                buildingTableName   : "tempo_build",
+                initialTable        : "rsu_test",
+                inputIdUp           : "id_rsu",
+                angleRangeSize      : 15,
+                prefixName          : "test",
+                datasource          : h2GIS,
+                distribIndicator    : ["equality", "uniqueness"]])
+
+        assertEquals(-1, h2GIS.firstRow("SELECT * FROM test_MAIN_BUILDING_DIRECTION " +
+                "WHERE id_rsu = 14").BUILDING_DIRECTION_EQUALITY, 0.0001)
+        assert "unknown" == h2GIS.firstRow("SELECT * FROM test_MAIN_BUILDING_DIRECTION " +
+                "WHERE id_rsu = 14")."main_building_direction"
+        assertEquals(-1, h2GIS.firstRow("SELECT * FROM test_MAIN_BUILDING_DIRECTION " +
+                "WHERE id_rsu = 14").BUILDING_DIRECTION_UNIQUENESS, 0.0001)
+    }
+
+    @Test
     void distributionCharacterizationTest1() {
         // Tests with extremum = "GREATEST" and all distribIndicators
 
