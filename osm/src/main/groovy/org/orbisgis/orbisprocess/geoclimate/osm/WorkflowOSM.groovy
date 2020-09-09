@@ -16,6 +16,7 @@ import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
+import org.orbisgis.orbisanalysis.osm.OSMTools
 
 import java.sql.SQLException
 
@@ -134,6 +135,7 @@ IProcess workflow() {
                 info parameters.get("description")
                 def input = parameters.get("input")
                 def output = parameters.get("output")
+                def estimateHeight = parameters.get("estimateHeight")
                 //Default H2GIS database properties
                 def databaseName = postfix System.getProperty("java.io.tmpdir") + File.separator + "osm"
                 def h2gis_properties = ["databaseName": databaseName, "user": "sa", "password": ""]
@@ -165,17 +167,17 @@ IProcess workflow() {
                     }
 
                     if (output) {
-                        def geoclimatetTableNames = ["building_indicators",
-                                                     "block_indicators",
-                                                     "rsu_indicators",
-                                                     "rsu_lcz",
-                                                     "zones",
-                                                     "building",
-                                                     "road",
-                                                     "rail",
-                                                     "water",
-                                                     "vegetation",
-                                                     "impervious"]
+                        def geoclimateTableNames = ["building_indicators",
+                                                    "block_indicators",
+                                                    "rsu_indicators",
+                                                    "rsu_lcz",
+                                                    "zones",
+                                                    "building",
+                                                    "road",
+                                                    "rail",
+                                                    "water",
+                                                    "vegetation",
+                                                    "impervious"]
                         //Get processing parameters
                         def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
                         def outputSRID = output.get("srid")
@@ -194,7 +196,7 @@ IProcess workflow() {
                             }
                             //Check not the conditions for the output database
                             def outputTableNames = outputDataBase.get("tables")
-                            def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
+                            def allowedOutputTableNames = geoclimateTableNames.intersect(outputTableNames.keySet())
                             def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size() != allowedOutputTableNames.size()
                             if (!allowedOutputTableNames && notSameTableNames) {
                                 outputDataBase = null
@@ -259,7 +261,7 @@ IProcess workflow() {
 
                         } else if (outputDataBase) {
                             def outputTableNames = outputDataBase.get("tables")
-                            def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
+                            def allowedOutputTableNames = geoclimateTableNames.intersect(outputTableNames.keySet())
                             def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size() != allowedOutputTableNames.size()
                             if (allowedOutputTableNames && !notSameTableNames) {
                                 def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
@@ -359,13 +361,19 @@ IProcess osm_processing() {
                             def gisLayersResults = createGISLayerProcess.getResults()
                             if (zoneTableName != null) {
                                 info "Formating OSM GIS layers"
+                                def estimateHeight = processing_parameters."estimateHeight"
                                 IProcess format = OSM.formatBuildingLayer
                                 format.execute([
                                         datasource                : h2gis_datasource,
                                         inputTableName            : gisLayersResults.buildingTableName,
                                         inputZoneEnvelopeTableName: zoneEnvelopeTableName,
-                                        epsg                      : srid])
+                                        epsg                      : srid,
+                                        estimateHeight            : estimateHeight])
                                 def buildingTableName = format.results.outputTableName
+                                if (estimateHeight) {
+                                    def buildingEstimateTableName = format.results.outputEstimateTableName
+                                }
+
 
                                 format = OSM.formatRoadLayer
                                 format.execute([
@@ -419,7 +427,8 @@ IProcess osm_processing() {
                                         hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
                                         indicatorUse: processing_parameters.indicatorUse,
                                         svfSimplified: processing_parameters.svfSimplified, prefixName: processing_parameters.prefixName,
-                                        mapOfWeights: processing_parameters.mapOfWeights)) {
+                                        mapOfWeights: processing_parameters.mapOfWeights,
+                                        lczRandomForest : processing_parameters.lczRandomForest)) {
                                     error "Cannot build the geoindicators for the zone $id_zone"
                                     geoIndicatorsComputed = false
                                 } else {
@@ -962,7 +971,8 @@ def extractProcessingParameters(def processing_parameters){
                              mapOfWeights : ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                              "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                              "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
-                             hLevMin : 3, hLevMax: 15, hThresholdLev2: 10]
+                             hLevMin : 3, hLevMax: 15, hThresholdLev2: 10,
+                             lczRandomForest :true]
     if(processing_parameters){
         def distanceP =  processing_parameters.distance
         if(distanceP && distanceP in Number){
@@ -997,6 +1007,10 @@ def extractProcessingParameters(def processing_parameters){
         def hThresholdLev2P =  processing_parameters.hThresholdLev2
         if(hThresholdLev2P && hThresholdLev2P in Integer){
             defaultParameters.hThresholdLev2 = hThresholdLev2P
+        }
+        def lczRandomForest = processing_parameters.lczRandomForest
+        if(lczRandomForest && lczRandomForest in Boolean){
+            defaultParameters.lczRandomForest = lczRandomForest
         }
 
         return defaultParameters

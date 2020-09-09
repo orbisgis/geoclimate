@@ -50,7 +50,6 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                             prefixName    : prefixName])) {
                 h2GIS.getTable(createRSU.results.outputTableName).save(dirFile.absolutePath+File.separator+"${prefixName}.geojson")
             }
-
         }
     }
 
@@ -233,7 +232,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                                   "impervious_surface_fraction" : 1,
                                   "pervious_surface_fraction": 1,
                                   "height_of_roughness_elements": 1,
-                                  "terrain_roughness_length": 1  ],
+                                  "terrain_roughness_length": 1],
                          "hLevMin": 3,
                          "hLevMax": 15,
                          "hThresholdLev2": 10

@@ -19,20 +19,33 @@ import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
  * @param hLevMin Minimum building level height
  * @param hLevMax Maximum building level height
  * @param hThresholdLev2 Threshold on the building height, used to determine the number of levels
- * @param epsg epsgcode to apply
- * @param jsonFilename name of the json formatted file containing the filtering parameters
+ * @param epsg EPSG code to apply
+ * @param jsonFilename Name of the json formatted file containing the filtering parameters
+ * @param estimateHeight Boolean indicating if the buildings heights have to be estimated or not
  * @return outputTableName The name of the final buildings table
+ * @return outputEstimatedTableName The name of the table containing the state of estimation for each building
  */
 IProcess formatBuildingLayer() {
     return create {
         title "Transform OSM buildings table into a table that matches the constraints of the GeoClimate input model"
         id "formatBuildingLayer"
-        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, h_lev_min: 3, h_lev_max: 15, hThresholdLev2: 10, jsonFilename: ""
-        outputs outputTableName: String
-        run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, epsg, h_lev_min, h_lev_max, hThresholdLev2, jsonFilename ->
+        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, h_lev_min: 3, h_lev_max: 15, hThresholdLev2: 10, jsonFilename: "", estimateHeight: false
+        outputs outputTableName: String, outputEstimateTableName: String
+        run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, epsg, h_lev_min, h_lev_max, hThresholdLev2, jsonFilename, estimateHeight ->
             def outputTableName = postfix "INPUT_BUILDING"
             info 'Formating building layer'
             outputTableName = "INPUT_BUILDING_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+            def outputEstimateTableName = ""
+            if (estimateHeight) {
+                outputEstimateTableName = "EST_${outputTableName}"
+                datasource """
+                    DROP TABLE if exists ${outputEstimateTableName};
+                    CREATE TABLE ${outputEstimateTableName} (
+                        id_build serial,
+                        ID_SOURCE VARCHAR,
+                        estimated boolean)
+                """
+            }
             datasource """ 
                 DROP TABLE if exists ${outputTableName};
                 CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id_build serial, ID_SOURCE VARCHAR, 
@@ -98,7 +111,15 @@ IProcess formatBuildingLayer() {
                                                     '${type}',
                                                     '${use}',
                                                     ${zIndex})
-                                        """.toString()
+                                            """.toString()
+                                            if (estimateHeight) {
+                                                stmt.addBatch """
+                                                INSERT INTO ${outputEstimateTableName} values(
+                                                    null, 
+                                                    '${row.id}',
+                                                    ${formatedHeight.estimated})
+                                                """.toString()
+                                            }
                                         }
                                     }
                                 }
@@ -108,7 +129,7 @@ IProcess formatBuildingLayer() {
                 }
             }
             info 'Buildings transformation finishes'
-            [outputTableName: outputTableName]
+            [outputTableName: outputTableName, outputEstimateTableName: outputEstimateTableName]
         }
     }
 }
@@ -561,10 +582,12 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
                                    def h_lev_max,def hThresholdLev2, def nbLevFromType){
     //Initialisation of heights and number of levels
     // Update height_wall
+    def boolean estimated =false
     if(heightWall==0){
         if(heightRoof==0){
             if(nbLevels==0){
                 heightWall = h_lev_min
+                estimated = true
             }
             else {
                 heightWall = h_lev_min*nbLevels
@@ -576,7 +599,7 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
     }
     // Update heightRoof
     if(heightRoof==0){
-            heightRoof = heightWall
+        heightRoof = heightWall
     }
     // Update nbLevels
     // If the nb_lev parameter (in the abstract table) is equal to 1 or 2
@@ -604,7 +627,7 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
             nbLevels = heightWall/h_lev_max
     }
     }
-    return [heightWall:heightWall, heightRoof:heightRoof, nbLevels:nbLevels]
+    return [heightWall:heightWall, heightRoof:heightRoof, nbLevels:nbLevels, estimated:estimated]
 
 }
 
