@@ -483,6 +483,8 @@ IProcess distributionCharacterization() {
                     idxExtrem_1 = 1
                 }
 
+                def queryCoalesce = ""
+
                 // Create temporary tables
                 def outputTableMissingSomeObjects = postfix "output_table_missing_some_objects"
 
@@ -522,17 +524,8 @@ IProcess distributionCharacterization() {
                             stmt.addBatch queryInsert
                         }
                     }
-                    // Set to default value (for example if we characterize the building direction in a RSU having no building...)
-                    datasource."$outputTableMissingSomeObjects"."$inputId".createIndex()
-                    datasource."$initialTable"."$inputId".createIndex()
-                    datasource """DROP TABLE IF EXISTS $outputTableName;
-                                CREATE TABLE $outputTableName 
-                                    AS SELECT       COALESCE(a.$EQUALITY, -1) AS $EQUALITY,
-                                                    COALESCE(a.$EXTREMUM_COL, 'unknown') AS $EXTREMUM_COL,
-                                                    b.$inputId 
-                                        FROM $outputTableMissingSomeObjects a RIGHT JOIN $initialTable b
-                                        ON a.$inputId = b.$inputId;
-                                        """
+                    queryCoalesce += """    COALESCE(a.$EQUALITY, -1) AS $EQUALITY,
+                                            COALESCE(a.$EXTREMUM_COL, 'unknown') AS $EXTREMUM_COL,"""
 
                 } else if (!distribIndicator.contains("equality") && distribIndicator.contains("uniqueness")) {
                     def queryCreateTable = """CREATE TABLE $outputTableMissingSomeObjects($inputId integer, 
@@ -569,17 +562,8 @@ IProcess distributionCharacterization() {
                             stmt.addBatch queryInsert
                         }
                     }
-                    // Set to default value (for example if we characterize the building direction in a RSU having no building...)
-                    datasource."$outputTableMissingSomeObjects"."$inputId".createIndex()
-                    datasource."$initialTable"."$inputId".createIndex()
-                    datasource """DROP TABLE IF EXISTS $outputTableName;
-                                CREATE TABLE $outputTableName 
-                                    AS SELECT       COALESCE(a.$UNIQUENESS, -1) AS $UNIQUENESS,
-                                                    COALESCE(a.$EXTREMUM_COL, 'unknown') AS $EXTREMUM_COL,
-                                                    b.$inputId 
-                                        FROM $outputTableMissingSomeObjects a RIGHT JOIN $initialTable b
-                                        ON a.$inputId = b.$inputId;
-                                        """
+                    queryCoalesce += """    COALESCE(a.$UNIQUENESS, -1) AS $UNIQUENESS,
+                                            COALESCE(a.$EXTREMUM_COL, 'unknown') AS $EXTREMUM_COL,"""
                 } else if (distribIndicator.contains("equality") && distribIndicator.contains("uniqueness")) {
                     def queryCreateTable = """CREATE TABLE $outputTableMissingSomeObjects($inputId integer, 
                                                                     $EQUALITY DOUBLE,
@@ -619,19 +603,28 @@ IProcess distributionCharacterization() {
                             stmt.addBatch queryInsert
                         }
                     }
-                    // Set to default value (for example if we characterize the building direction in a RSU having no building...)
-                    datasource."$outputTableMissingSomeObjects"."$inputId".createIndex()
-                    datasource."$initialTable"."$inputId".createIndex()
-                    datasource """DROP TABLE IF EXISTS $outputTableName;
+                    queryCoalesce += """    COALESCE(a.$EQUALITY, -1) AS $EQUALITY,
+                                            COALESCE(a.$UNIQUENESS, -1) AS $UNIQUENESS,
+                                            COALESCE(a.$EXTREMUM_COL, 'unknown') AS $EXTREMUM_COL,"""
+                }
+                // If the second extremum col should be conserved
+                if(keep2ndCol){
+                    queryCoalesce += "COALESCE(a.$EXTREMUM_COL2, 'unknown') AS $EXTREMUM_COL2,  "
+                }
+                if(keepColVal){
+                    queryCoalesce += "COALESCE(a.$EXTREMUM_VAL, -1) AS $EXTREMUM_VAL,  "
+                }
+                // Set to default value (for example if we characterize the building direction in a RSU having no building...)
+                datasource."$outputTableMissingSomeObjects"."$inputId".createIndex()
+                datasource."$initialTable"."$inputId".createIndex()
+                datasource """DROP TABLE IF EXISTS $outputTableName;
                                 CREATE TABLE $outputTableName 
-                                    AS SELECT       COALESCE(a.$EQUALITY, -1) AS $EQUALITY,
-                                                    COALESCE(a.$UNIQUENESS, -1) AS $UNIQUENESS,
-                                                    COALESCE(a.$EXTREMUM_COL, 'unknown') AS $EXTREMUM_COL,
+                                    AS SELECT       $queryCoalesce
                                                     b.$inputId 
                                         FROM $outputTableMissingSomeObjects a RIGHT JOIN $initialTable b
                                         ON a.$inputId = b.$inputId;
                                         """
-                }
+
 
                 [outputTableName: outputTableName]
             } else {

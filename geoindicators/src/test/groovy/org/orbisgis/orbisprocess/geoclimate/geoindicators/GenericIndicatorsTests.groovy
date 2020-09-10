@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS.open
-import static org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager.load
 
 class GenericIndicatorsTests {
 
@@ -207,6 +206,7 @@ class GenericIndicatorsTests {
         assert p([
                 buildingTableName   : "tempo_build",
                 inputIdUp           : "id_block",
+                tableUp             : "block_test",
                 angleRangeSize      : 15,
                 prefixName          : "test",
                 datasource          : h2GIS,
