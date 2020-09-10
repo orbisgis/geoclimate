@@ -645,35 +645,36 @@ IProcess roofAreaDistribution() {
                     GROUP BY b.$GEOMETRIC_COLUMN_RSU, a.id_build, a.id_rsu, a.z_max, a.z_min, a.delta_h);"""
 
             // The roof area is calculated for each level except the last one (> 50 m in the default case)
-            def finalQuery = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT id_rsu, "
+            def finalQuery = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT b.id_rsu, "
             def nonVertQuery = ""
             def vertQuery = ""
             for (i in 1..(listLayersBottom.size() - 1)) {
-                nonVertQuery += " COALESCE(SUM(CASEWHEN(z_max <= ${listLayersBottom[i - 1]}, 0, CASEWHEN(" +
-                        "z_max <= ${listLayersBottom[i]}, CASEWHEN(delta_h=0, non_vertical_roof_area, " +
-                        "non_vertical_roof_area*(z_max-GREATEST(${listLayersBottom[i - 1]},z_min))/delta_h), " +
-                        "CASEWHEN(z_min < ${listLayersBottom[i]}, non_vertical_roof_area*(${listLayersBottom[i]}-" +
-                        "GREATEST(${listLayersBottom[i - 1]},z_min))/delta_h, 0)))),0) AS non_vert_roof_area_H" +
+                nonVertQuery += " COALESCE(SUM(CASEWHEN(a.z_max <= ${listLayersBottom[i - 1]}, 0, CASEWHEN(" +
+                        "a.z_max <= ${listLayersBottom[i]}, CASEWHEN(a.delta_h=0, a.non_vertical_roof_area, " +
+                        "a.non_vertical_roof_area*(a.z_max-GREATEST(${listLayersBottom[i - 1]},a.z_min))/a.delta_h), " +
+                        "CASEWHEN(a.z_min < ${listLayersBottom[i]}, a.non_vertical_roof_area*(${listLayersBottom[i]}-" +
+                        "GREATEST(${listLayersBottom[i - 1]},a.z_min))/a.delta_h, 0)))),0) AS non_vert_roof_area_H" +
                         "${listLayersBottom[i - 1]}_${listLayersBottom[i]},"
-                vertQuery += " COALESCE(SUM(CASEWHEN(z_max <= ${listLayersBottom[i - 1]}, 0, CASEWHEN(" +
-                        "z_max <= ${listLayersBottom[i]}, CASEWHEN(delta_h=0, 0, " +
-                        "vertical_roof_area*POWER((z_max-GREATEST(${listLayersBottom[i - 1]}," +
-                        "z_min))/delta_h, 2)), CASEWHEN(z_min < ${listLayersBottom[i]}, " +
-                        "CASEWHEN(z_min>${listLayersBottom[i - 1]}, vertical_roof_area*(1-" +
-                        "POWER((z_max-${listLayersBottom[i]})/delta_h,2)),vertical_roof_area*(" +
-                        "POWER((z_max-${listLayersBottom[i - 1]})/delta_h,2)-POWER((z_max-${listLayersBottom[i]})/" +
-                        "delta_h,2))), 0)))),0) AS vert_roof_area_H${listLayersBottom[i - 1]}_${listLayersBottom[i]},"
+                vertQuery += " COALESCE(SUM(CASEWHEN(a.z_max <= ${listLayersBottom[i - 1]}, 0, CASEWHEN(" +
+                        "a.z_max <= ${listLayersBottom[i]}, CASEWHEN(a.delta_h=0, 0, " +
+                        "a.vertical_roof_area*POWER((a.z_max-GREATEST(${listLayersBottom[i - 1]}," +
+                        "a.z_min))/a.delta_h, 2)), CASEWHEN(a.z_min < ${listLayersBottom[i]}, " +
+                        "CASEWHEN(a.z_min>${listLayersBottom[i - 1]}, a.vertical_roof_area*(1-" +
+                        "POWER((a.z_max-${listLayersBottom[i]})/a.delta_h,2)),a.vertical_roof_area*(" +
+                        "POWER((a.z_max-${listLayersBottom[i - 1]})/a.delta_h,2)-POWER((a.z_max-${listLayersBottom[i]})/" +
+                        "a.delta_h,2))), 0)))),0) AS vert_roof_area_H${listLayersBottom[i - 1]}_${listLayersBottom[i]},"
             }
             // The roof area is calculated for the last level (> 50 m in the default case)
             def valueLastLevel = listLayersBottom[listLayersBottom.size() - 1]
-            nonVertQuery += " COALESCE(SUM(CASEWHEN(z_max <= $valueLastLevel, 0, CASEWHEN(delta_h=0, non_vertical_roof_area, " +
-                    "non_vertical_roof_area*(z_max-GREATEST($valueLastLevel,z_min))/delta_h))),0) AS non_vert_roof_area_H" +
+            nonVertQuery += " COALESCE(SUM(CASEWHEN(a.z_max <= $valueLastLevel, 0, CASEWHEN(a.delta_h=0, a.non_vertical_roof_area, " +
+                    "a.non_vertical_roof_area*(a.z_max-GREATEST($valueLastLevel,a.z_min))/a.delta_h))),0) AS non_vert_roof_area_H" +
                     "${valueLastLevel},"
-            vertQuery += " COALESCE(SUM(CASEWHEN(z_max <= $valueLastLevel, 0, CASEWHEN(delta_h=0, vertical_roof_area, " +
-                    "vertical_roof_area*(z_max-GREATEST($valueLastLevel,z_min))/delta_h))),0) AS vert_roof_area_H" +
+            vertQuery += " COALESCE(SUM(CASEWHEN(a.z_max <= $valueLastLevel, 0, CASEWHEN(a.delta_h=0, a.vertical_roof_area, " +
+                    "a.vertical_roof_area*(a.z_max-GREATEST($valueLastLevel,a.z_min))/a.delta_h))),0) AS vert_roof_area_H" +
                     "${valueLastLevel},"
 
-            def endQuery = " FROM $buildRoofSurfTot GROUP BY id_rsu;"
+            def endQuery = """ FROM $buildRoofSurfTot a RIGHT JOIN $rsuTable b 
+                                    ON a.id_rsu = b.id_rsu GROUP BY b.id_rsu;"""
 
             datasource finalQuery + nonVertQuery + vertQuery[0..-2] + endQuery
 
