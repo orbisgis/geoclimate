@@ -141,8 +141,10 @@ class GeoIndicatorsChainTest {
         def dfRsu = DataFrame.of(datasource."$GeoIndicatorsCompute_i.results.outputTableRsuIndicators")
         assertEquals dfRsu.nrows(), dfRsu.omitNullRows().nrows()
         def dfBuild = DataFrame.of(datasource."$GeoIndicatorsCompute_i.results.outputTableBuildingIndicators")
+        dfBuild = dfBuild.drop("ID_RSU")
         assertEquals dfBuild.nrows(), dfBuild.omitNullRows().nrows()
         def dfBlock = DataFrame.of(datasource."$GeoIndicatorsCompute_i.results.outputTableBlockIndicators")
+        dfBlock = dfBlock.drop("ID_RSU")
         assertEquals dfBlock.nrows(), dfBlock.omitNullRows().nrows()
 
     }
