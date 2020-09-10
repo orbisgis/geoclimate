@@ -625,6 +625,7 @@ IProcess distributionCharacterization() {
                                         ON a.$inputId = b.$inputId;
                                         """
 
+                datasource.execute """DROP TABLE IF EXISTS $outputTableMissingSomeObjects"""
 
                 [outputTableName: outputTableName]
             } else {
@@ -762,6 +763,8 @@ IProcess typeProportion() {
                                         FROM $outputTableWithNull a RIGHT JOIN $inputUpperTableName b
                                         ON a.$idField = b.$idField;
                                         """
+
+                datasource.execute """DROP TABLE IF EXISTS $outputTableWithNull"""
 
                 [outputTableName: outputTableName]
             }
