@@ -241,6 +241,7 @@ IProcess computeBlockIndicators() {
             // block_perkins_skill_score_building_direction
             def computePerkinsSkillScoreBuildingDirection = Geoindicators.GenericIndicators.buildingDirectionDistribution()
             if (!computePerkinsSkillScoreBuildingDirection([buildingTableName: inputBuildingTableName,
+                                                            tableUp          : inputBlockTableName,
                                                             inputIdUp        : id_block,
                                                             angleRangeSize   : 15,
                                                             prefixName       : blockPrefixName,
@@ -553,6 +554,7 @@ IProcess computeRSUIndicators() {
                 if (!computeTypeProportion([
                                             inputTableName                  : buildingTable,
                                             idField                     : columnIdRsu,
+                                            inputUpperTableName         : rsuTable,
                                             typeFieldName               : "type",
                                             areaTypeAndComposition      : buildingAreaTypeAndComposition,
                                             floorAreaTypeAndComposition : floorAreaTypeAndComposition,
@@ -803,7 +805,9 @@ IProcess computeRSUIndicators() {
             // rsu_perkins_skill_score_building_direction_variability
             if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
                 def computePerkinsDirection = Geoindicators.GenericIndicators.buildingDirectionDistribution()
-                if (!computePerkinsDirection([buildingTableName: buildingTable, inputIdUp: columnIdRsu,
+                if (!computePerkinsDirection([buildingTableName: buildingTable,
+                                              tableUp          : rsuTable,
+                                              inputIdUp        : columnIdRsu,
                                               angleRangeSize   : angleRangeSizeBuDirection, prefixName: temporaryPrefName,
                                               datasource       : datasource])) {
                     info "Cannot compute the perkins Skill Score building direction distribution."

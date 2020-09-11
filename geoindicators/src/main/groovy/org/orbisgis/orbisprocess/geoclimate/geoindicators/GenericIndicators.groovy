@@ -265,6 +265,7 @@ IProcess geometryProperties() {
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
  * @param buildingTableName the name of the input ITable where are stored the geometry field, the building and the block/RSU ID
+ * @param tableUp the name of the table where are stored all objects of the upper scale (usually RSU or block)
  * @param inputIdUp the ID of the upper scale
  * @param angleRangeSize the range size (in °) of each interval angle used to calculate the distribution of building direction
  * (should be a divisor of 180 - default 15°)
@@ -287,10 +288,10 @@ IProcess buildingDirectionDistribution() {
     return create {
         title "Perkins skill score building direction"
         id "buildingDirectionDistribution"
-        inputs buildingTableName: String, inputIdUp: String, angleRangeSize: 15, prefixName: String,
+        inputs buildingTableName: String, tableUp: String, inputIdUp: String, angleRangeSize: 15, prefixName: String,
                 datasource: JdbcDataSource, distribIndicator: ["equality", "uniqueness"]
         outputs outputTableName: String
-        run { buildingTableName, inputIdUp, angleRangeSize, prefixName, datasource, distribIndicator ->
+        run { buildingTableName, tableUp, inputIdUp, angleRangeSize, prefixName, datasource, distribIndicator ->
 
             def GEOMETRIC_FIELD = "the_geom"
             def ID_FIELD_BU = "id_build"
@@ -352,6 +353,7 @@ IProcess buildingDirectionDistribution() {
                 // The main building direction and indicators characterizing the distribution are calculated
                 def computeDistribChar = distributionCharacterization()
                 computeDistribChar([distribTableName: build_dir_dist,
+                                    initialTable    : tableUp,
                                     inputId         : inputIdUp,
                                     distribIndicator: distribIndicator,
                                     extremum        : "GREATEST",
@@ -423,6 +425,8 @@ IProcess buildingDirectionDistribution() {
  * the resulting database will be stored
  * @param distribTableName the name of the input ITable where are stored an ID of the geometry to consider and each column
  * of the distribution to characterize
+ * @param initialTable the name of the input ITable where are stored all the objects where the informations of
+ * distribution characterization are aggregated
  * @param inputId The ID of the input data
  * @param distribIndicator List containing the type of indicator to calculate to define the repartition of the distribution
  * (default ["equality", "uniqueness"])
@@ -448,11 +452,11 @@ IProcess distributionCharacterization() {
     return create {
         title "Distribution characterization"
         id "distributionCharacterization"
-        inputs distribTableName: String, inputId: String, prefixName: String,
+        inputs distribTableName: String, initialTable: String, inputId: String, prefixName: String,
                 datasource: JdbcDataSource, distribIndicator: ["equality", "uniqueness"], extremum: "GREATEST",
                 keep2ndCol: false, keepColVal: false
         outputs outputTableName: String
-        run { distribTableName, inputId, prefixName, datasource, distribIndicator, extremum, keep2ndCol, keepColVal ->
+        run { distribTableName, initialTable, inputId, prefixName, datasource, distribIndicator, extremum, keep2ndCol, keepColVal ->
 
             def EQUALITY = "EQUALITY_VALUE"
             def UNIQUENESS = "UNIQUENESS_VALUE"
@@ -479,9 +483,13 @@ IProcess distributionCharacterization() {
                     idxExtrem_1 = 1
                 }
 
+                def queryCoalesce = ""
+
+                // Create temporary tables
+                def outputTableMissingSomeObjects = postfix "output_table_missing_some_objects"
 
                 if (distribIndicator.contains("equality") && !distribIndicator.contains("uniqueness")) {
-                    def queryCreateTable = """CREATE TABLE $outputTableName($inputId integer, 
+                    def queryCreateTable = """CREATE TABLE $outputTableMissingSomeObjects($inputId integer, 
                                                                     $EQUALITY DOUBLE,
                                                                     $EXTREMUM_COL VARCHAR)"""
                     // If the second extremum col should be conserved
@@ -502,7 +510,7 @@ IProcess distributionCharacterization() {
                             def id_rsu = rowMap."$inputId"
                             rowMap.remove(inputId.toUpperCase())
                             def sortedMap = rowMap.sort { it.value }
-                            def queryInsert = """INSERT INTO $outputTableName 
+                            def queryInsert = """INSERT INTO $outputTableMissingSomeObjects 
                                                 VALUES ($id_rsu, ${getEquality(sortedMap, nbDistCol)},
                                                         '${sortedMap.keySet()[idxExtrem]}')"""
                             // If the second extremum col should be conserved
@@ -516,9 +524,11 @@ IProcess distributionCharacterization() {
                             stmt.addBatch queryInsert
                         }
                     }
+                    queryCoalesce += """    COALESCE(a.$EQUALITY, -1) AS $EQUALITY,
+                                            COALESCE(a.$EXTREMUM_COL, 'unknown') AS $EXTREMUM_COL,"""
 
                 } else if (!distribIndicator.contains("equality") && distribIndicator.contains("uniqueness")) {
-                    def queryCreateTable = """CREATE TABLE $outputTableName($inputId integer, 
+                    def queryCreateTable = """CREATE TABLE $outputTableMissingSomeObjects($inputId integer, 
                                                                     $UNIQUENESS DOUBLE,
                                                                     $EXTREMUM_COL VARCHAR)"""
                     // If the second extremum col should be conserved
@@ -538,7 +548,7 @@ IProcess distributionCharacterization() {
                             def id_rsu = rowMap."$inputId"
                             rowMap.remove(inputId.toUpperCase())
                             def sortedMap = rowMap.sort { it.value }
-                            def queryInsert = """INSERT INTO $outputTableName 
+                            def queryInsert = """INSERT INTO $outputTableMissingSomeObjects 
                                                 VALUES ($id_rsu, ${getUniqueness(sortedMap, idxExtrem, idxExtrem_1)},
                                                         '${sortedMap.keySet()[idxExtrem]}')"""
                             // If the second extremum col should be conserved
@@ -552,8 +562,10 @@ IProcess distributionCharacterization() {
                             stmt.addBatch queryInsert
                         }
                     }
+                    queryCoalesce += """    COALESCE(a.$UNIQUENESS, -1) AS $UNIQUENESS,
+                                            COALESCE(a.$EXTREMUM_COL, 'unknown') AS $EXTREMUM_COL,"""
                 } else if (distribIndicator.contains("equality") && distribIndicator.contains("uniqueness")) {
-                    def queryCreateTable = """CREATE TABLE $outputTableName($inputId integer, 
+                    def queryCreateTable = """CREATE TABLE $outputTableMissingSomeObjects($inputId integer, 
                                                                     $EQUALITY DOUBLE,
                                                                     $UNIQUENESS DOUBLE,
                                                                     $EXTREMUM_COL VARCHAR)"""
@@ -571,13 +583,12 @@ IProcess distributionCharacterization() {
 
                     // Will insert values by batch of 1000 in the table
                     datasource.withBatch(1000) { stmt ->
-
                         datasource.eachRow("SELECT * FROM $distribTableName") { row ->
                             def rowMap = row.toRowResult()
                             def id_rsu = rowMap."$inputId"
                             rowMap.remove(inputId)
                             def sortedMap = rowMap.sort { it.value }
-                            def queryInsert = """INSERT INTO $outputTableName 
+                            def queryInsert = """INSERT INTO $outputTableMissingSomeObjects 
                                                 VALUES ($id_rsu, ${getEquality(sortedMap, nbDistCol)},
                                                         ${getUniqueness(sortedMap, idxExtrem, idxExtrem_1)},
                                                         '${sortedMap.keySet()[idxExtrem]}')"""
@@ -592,7 +603,30 @@ IProcess distributionCharacterization() {
                             stmt.addBatch queryInsert
                         }
                     }
+                    queryCoalesce += """    COALESCE(a.$EQUALITY, -1) AS $EQUALITY,
+                                            COALESCE(a.$UNIQUENESS, -1) AS $UNIQUENESS,
+                                            COALESCE(a.$EXTREMUM_COL, 'unknown') AS $EXTREMUM_COL,"""
                 }
+                // If the second extremum col should be conserved
+                if(keep2ndCol){
+                    queryCoalesce += "COALESCE(a.$EXTREMUM_COL2, 'unknown') AS $EXTREMUM_COL2,  "
+                }
+                if(keepColVal){
+                    queryCoalesce += "COALESCE(a.$EXTREMUM_VAL, -1) AS $EXTREMUM_VAL,  "
+                }
+                // Set to default value (for example if we characterize the building direction in a RSU having no building...)
+                datasource."$outputTableMissingSomeObjects"."$inputId".createIndex()
+                datasource."$initialTable"."$inputId".createIndex()
+                datasource """DROP TABLE IF EXISTS $outputTableName;
+                                CREATE TABLE $outputTableName 
+                                    AS SELECT       $queryCoalesce
+                                                    b.$inputId 
+                                        FROM $outputTableMissingSomeObjects a RIGHT JOIN $initialTable b
+                                        ON a.$inputId = b.$inputId;
+                                        """
+
+                datasource.execute """DROP TABLE IF EXISTS $outputTableMissingSomeObjects"""
+
                 [outputTableName: outputTableName]
             } else {
                 error """The 'extremum' input parameter should be equal to "GREATEST" or "LEAST"""
@@ -637,6 +671,8 @@ static double getEquality(def myMap, def nbDistCol) {
  *
  * @param inputTableName the table name where are stored the objects having different types to characterize
  * @param idField ID of the scale used for the 'GROUP BY'
+ * @param inputUpperTableName the name of the upper scale table (where is performed the group by - e.g. RSU if building type
+ * must be gathered at RSU scale to have the proportion of industrial, residential, etc.)
  * @param typeFieldName The name of the field where is stored the type of the object
  * @param areaTypeAndComposition Types that should be calculated and objects included in this type
  * (e.g. for building table could be: ["residential": ["residential", "detached"]])
@@ -652,11 +688,12 @@ IProcess typeProportion() {
     return create {
         title "Proportion of a certain type within a given object"
         id "typeProportion"
-        inputs inputTableName: String, idField: String          , floorAreaTypeAndComposition: [:],
+        inputs inputTableName: String, idField: String          , inputUpperTableName: String,
+                floorAreaTypeAndComposition: [:],
                 typeFieldName: String, areaTypeAndComposition: [:], prefixName: String,
                 datasource: JdbcDataSource
         outputs outputTableName: String
-        run { inputTableName, idField, floorAreaTypeAndComposition, typeFieldName, areaTypeAndComposition,
+        run { inputTableName, idField, inputUpperTableName, floorAreaTypeAndComposition, typeFieldName, areaTypeAndComposition,
               prefixName, datasource ->
 
             def GEOMETRIC_FIELD_LOW = "the_geom"
@@ -672,6 +709,7 @@ IProcess typeProportion() {
                 // To avoid overwriting the output files of this step, a unique identifier is created
                 // Temporary table names
                 def caseWhenTab = postfix "case_when_tab"
+                def outputTableWithNull = postfix "output_table_with_null"
 
                 // Define the pieces of query according to each type of the input table
                 def queryCalc = ""
@@ -704,10 +742,29 @@ IProcess typeProportion() {
                 datasource."$caseWhenTab"."$idField".createIndex()
 
                 // Calculate the proportion of each type
-                datasource.execute """DROP TABLE IF EXISTS $outputTableName;
-                                    CREATE TABLE $outputTableName 
+                datasource.execute """DROP TABLE IF EXISTS $outputTableWithNull;
+                                    CREATE TABLE $outputTableWithNull 
                                             AS SELECT $idField, ${queryCalc[0..-2]}
                                             FROM $caseWhenTab GROUP BY $idField"""
+
+                // Set 0 as default value (for example if we characterize the building type in a RSU having no building...)
+                def allFinalCol = datasource."$outputTableWithNull".getColumns()
+                allFinalCol = allFinalCol.minus([idField.toUpperCase()])
+                datasource."$inputUpperTableName"."$idField".createIndex()
+                datasource."$outputTableWithNull"."$idField".createIndex()
+                def pieceOfQuery = ""
+                allFinalCol.each{col ->
+                    pieceOfQuery += "COALESCE(a.$col, 0) AS $col, "
+                }
+                datasource """DROP TABLE IF EXISTS $outputTableName;
+                                CREATE TABLE $outputTableName 
+                                    AS SELECT       ${pieceOfQuery[0..-2]}
+                                                    b.$idField 
+                                        FROM $outputTableWithNull a RIGHT JOIN $inputUpperTableName b
+                                        ON a.$idField = b.$idField;
+                                        """
+
+                datasource.execute """DROP TABLE IF EXISTS $outputTableWithNull"""
 
                 [outputTableName: outputTableName]
             }
