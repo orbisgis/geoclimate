@@ -228,11 +228,11 @@ class SpatialUnitsTests {
         postGIS.execute("DROP TABLE IF EXISTS grid")
         def gridP = Geoindicators.SpatialUnits.regularGrid()
         def wktReader = new WKTReader()
-        def box = wktReader.read('POLYGON((-180 -80, 180 -80, 180 80, -180 80, -180 -80))')
+        def box = wktReader.read('POLYGON((-5 -5, 5 -5, 5 5, -5 5, -5 -5))')
         assert gridP.execute([geometry: box, deltaX: 1, deltaY: 1, tableName: "grid", datasource: postGIS])
         def outputTable = gridP.results.outputTableName
         assert postGIS."$outputTable"
         def countRows = postGIS.firstRow "select count(*) as numberOfRows from $outputTable"
-        assert 57600 == countRows.numberOfRows
+        assert 100 == countRows.numberOfRows
     }
 }

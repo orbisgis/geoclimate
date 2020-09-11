@@ -482,24 +482,18 @@ IProcess regularGrid() {
                     try {
                         def createTable = "CREATE TABLE $tableName(THE_GEOM GEOMETRY(POLYGON), ID INT, ID_COL INT, ID_ROW INT);"
                         def insertTable = "INSERT INTO $tableName VALUES (?, ?, ?, ?);"
-
                         datasource.execute(createTable)
                         preparedStatement = outputConnection.prepareStatement(insertTable)
-
                         def result = ST_MakeGrid.createGrid(outputConnection, ValueGeometry.getFromGeometry(geometry), deltaX, deltaY)
 
                         long batch_size = 0
                         int batchSize = 1000
 
                         while (result.next()) {
-                            def geom = result.getObject(1)
-                            def id = result.getInt(2)
-                            def id_col = result.getInt(3)
-                            def id_row = result.getInt(4)
-                            preparedStatement.setObject( 1, geom)
-                            preparedStatement.setObject( 2, id)
-                            preparedStatement.setObject( 3, id_col)
-                            preparedStatement.setObject( 4, id_row)
+                            preparedStatement.setObject( 1, result.getObject(1))
+                            preparedStatement.setObject( 2, result.getInt(2))
+                            preparedStatement.setObject( 3, result.getInt(3))
+                            preparedStatement.setObject( 4, result.getInt(4))
                             preparedStatement.addBatch()
                             batch_size++
                             if (batch_size >= batchSize) {
@@ -512,7 +506,7 @@ IProcess regularGrid() {
                             preparedStatement.executeBatch()
                         }
                     } catch (SQLException e) {
-                        error("Cannot save the resultset.\n", e)
+                        error("Cannot create the grid with the parameters.\n", e)
                         return null
                     } finally {
                         if (preparedStatement != null) {
@@ -520,7 +514,7 @@ IProcess regularGrid() {
                         }
                     }
             }
-            info "regular grid stored in table: $tableName"
+            info "The grid $tableName has been created"
             [outputTableName: tableName]
          }
     }
