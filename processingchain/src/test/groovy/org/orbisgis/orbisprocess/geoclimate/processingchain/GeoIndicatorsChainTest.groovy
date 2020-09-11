@@ -2,6 +2,7 @@ package org.orbisgis.orbisprocess.geoclimate.processingchain
 
 
 import org.junit.jupiter.api.Test
+import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.slf4j.Logger
@@ -106,7 +107,7 @@ class GeoIndicatorsChainTest {
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                             "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
-        def ind_i = ["LCZ"]
+        def ind_i = ["LCZ", "URBAN_TYPOLOGY", "TEB"]
         IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
@@ -137,6 +138,15 @@ class GeoIndicatorsChainTest {
         } else {
             assertEquals(null, GeoIndicatorsCompute_i.results.outputTableRsuLcz)
         }
+        def dfRsu = DataFrame.of(datasource."$GeoIndicatorsCompute_i.results.outputTableRsuIndicators")
+        assertEquals dfRsu.nrows(), dfRsu.omitNullRows().nrows()
+        def dfBuild = DataFrame.of(datasource."$GeoIndicatorsCompute_i.results.outputTableBuildingIndicators")
+        dfBuild = dfBuild.drop("ID_RSU")
+        assertEquals dfBuild.nrows(), dfBuild.omitNullRows().nrows()
+        def dfBlock = DataFrame.of(datasource."$GeoIndicatorsCompute_i.results.outputTableBlockIndicators")
+        dfBlock = dfBlock.drop("ID_RSU")
+        assertEquals dfBlock.nrows(), dfBlock.omitNullRows().nrows()
+
     }
 
     @Test

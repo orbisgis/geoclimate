@@ -14,7 +14,6 @@ import java.util.zip.GZIPInputStream
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.fail
 import static org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS.open
-import static org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager.load
 
 class TypologyClassificationTests {
 
