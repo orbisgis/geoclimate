@@ -470,13 +470,13 @@ IProcess createGrid() {
                 return null
             }
             if (datasource instanceof H2GIS) {
-                info "Creating a regular grid with H2GIS"
+                info "Creating a grid with H2GIS"
                 datasource """CREATE TABLE $tableName AS SELECT * FROM 
                                      ST_MakeGrid('$geometry'::geometry, $deltaX, $deltaY);
                            """
             }
             else if (datasource instanceof POSTGIS) {
-                info "Creating a regular grid with POSTGIS"
+                info "Creating a grid with POSTGIS"
                     PreparedStatement preparedStatement = null
                     Connection outputConnection = datasource.getConnection()
                     try {

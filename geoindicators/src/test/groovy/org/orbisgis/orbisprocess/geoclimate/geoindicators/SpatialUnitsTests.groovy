@@ -209,9 +209,10 @@ class SpatialUnitsTests {
         assert 246 == countRows.numberOfRows
     }
 
-    @EnabledIfSystemProperty(named = "test.h2gis", matches = "false")
+    @EnabledIfSystemProperty(named = "test.h2gis", matches = "true")
     @Test
     void gridTestH2GIS() {
+        h2GIS.execute("DROP TABLE IF EXISTS grid")
         def gridP = Geoindicators.SpatialUnits.createGrid()
         def wktReader = new WKTReader()
         def box = wktReader.read('POLYGON((-50 -50, 50 -50, 50 50, -50 50, -50 -50))')
