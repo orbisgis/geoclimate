@@ -447,12 +447,12 @@ IProcess spatialJoin() {
 }
 
 /**
- * This process is used to generate a regular grid.
+ * This process is used to generate a continuous grid.
  *
  * @param geometry A geometry that defines either Point, Line or Polygon
  * @param deltaX The horizontal spatial step of a cell in the grid
  * @param deltaY The vertical spatial step of a cell in the grid
- * @param tableName A Table that contains the geometry of the regular grid
+ * @param tableName A Table that contains the geometry of the grid
  * @param datasource A connexion to a database (H2GIS, POSTGIS, ...) where are stored the input Table and in which
  *        the resulting database will be stored
  * @param outputTableName The name of the created table
