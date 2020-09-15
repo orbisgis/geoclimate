@@ -450,14 +450,14 @@ IProcess spatialJoin() {
  * This process is used to generate a regular grid.
  *
  * @param geometry A geometry that defines either Point, Line or Polygon
- * @param deltaX An integer that represents the spatial horizontal step of a cell in the mesh
- * @param deltaY An integer that represents the spatial vertical step of a cell in the mesh
- * @param outputTable A Table that contains the geometry of the regular grid
+ * @param deltaX The horizontal spatial step of a cell in the grid
+ * @param deltaY The vertical spatial step of a cell in the grid
+ * @param tableName A Table that contains the geometry of the regular grid
  * @param datasource A connexion to a database (H2GIS, POSTGIS, ...) where are stored the input Table and in which
  *        the resulting database will be stored
  * @param outputTableName The name of the created table
  * */
-IProcess regularGrid() {
+IProcess createGrid() {
     return create {
         title "Creating a regular grid in meters"
         id "regularGrid"
@@ -514,7 +514,7 @@ IProcess regularGrid() {
                         }
                     }
             }
-            info "The grid $tableName has been created"
+            info "The grid '$tableName' has been created"
             [outputTableName: tableName]
          }
     }

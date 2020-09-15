@@ -211,25 +211,25 @@ class SpatialUnitsTests {
 
     @EnabledIfSystemProperty(named = "test.h2gis", matches = "false")
     @Test
-    void regularGridTestH2GIS() {
-        def gridP = Geoindicators.SpatialUnits.regularGrid()
+    void gridTestH2GIS() {
+        def gridP = Geoindicators.SpatialUnits.createGrid()
         def wktReader = new WKTReader()
-        def box = wktReader.read('POLYGON((-180 -80, 180 -80, 180 80, -180 80, -180 -80))')
-        assert gridP.execute([geometry: box, deltaX: 1, deltaY: 1, tableName: "grid", datasource: h2GIS])
+        def box = wktReader.read('POLYGON((-50 -50, 50 -50, 50 50, -50 50, -50 -50))')
+        assert gridP.execute([geometry: box, deltaX: 10, deltaY: 10, tableName: "grid", datasource: h2GIS])
         def outputTable = gridP.results.outputTableName
         assert h2GIS."$outputTable"
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
-        assert 57600 == countRows.numberOfRows
+        assert 100 == countRows.numberOfRows
     }
 
     @EnabledIfSystemProperty(named = "test.postgis", matches = "true")
     @Test
-    void regularGridTestPOSTGIS() {
+    void gridTestPOSTGIS() {
         postGIS.execute("DROP TABLE IF EXISTS grid")
-        def gridP = Geoindicators.SpatialUnits.regularGrid()
+        def gridP = Geoindicators.SpatialUnits.createGrid()
         def wktReader = new WKTReader()
-        def box = wktReader.read('POLYGON((-5 -5, 5 -5, 5 5, -5 5, -5 -5))')
-        assert gridP.execute([geometry: box, deltaX: 1, deltaY: 1, tableName: "grid", datasource: postGIS])
+        def box = wktReader.read('POLYGON((-50 -50, 50 -50, 50 50, -50 50, -50 -50))')
+        assert gridP.execute([geometry: box, deltaX: 10, deltaY: 10, tableName: "grid", datasource: postGIS])
         def outputTable = gridP.results.outputTableName
         assert postGIS."$outputTable"
         def countRows = postGIS.firstRow "select count(*) as numberOfRows from $outputTable"
