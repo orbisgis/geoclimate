@@ -3,6 +3,9 @@ package org.orbisgis.orbisprocess.geoclimate.geoindicators
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty
+import org.locationtech.jts.io.WKTReader
+import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 
@@ -10,12 +13,21 @@ import static org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS.open
 
 class SpatialUnitsTests {
 
+    def static dbProperties = [databaseName: 'orbisgis_db',
+                               user        : 'orbisgis',
+                               password    : 'orbisgis',
+                               url         : 'jdbc:postgresql://localhost:5432/'
+    ]
+    static POSTGIS postGIS;
+
     private static def h2GIS
     private static def randomDbName() {"${SpatialUnitsTests.simpleName}_${UUID.randomUUID().toString().replaceAll"-", "_"}"}
 
     @BeforeAll
     static void beforeAll(){
         h2GIS = open"./target/${randomDbName()};AUTO_SERVER=TRUE"
+        postGIS = POSTGIS.open(dbProperties)
+        System.setProperty("test.postgis", Boolean.toString(postGIS != null));
     }
 
     @BeforeEach
@@ -197,4 +209,30 @@ class SpatialUnitsTests {
         assert 246 == countRows.numberOfRows
     }
 
+    @EnabledIfSystemProperty(named = "test.h2gis", matches = "false")
+    @Test
+    void regularGridTestH2GIS() {
+        def gridP = Geoindicators.SpatialUnits.regularGrid()
+        def wktReader = new WKTReader()
+        def box = wktReader.read('POLYGON((-180 -80, 180 -80, 180 80, -180 80, -180 -80))')
+        assert gridP.execute([geometry: box, deltaX: 1, deltaY: 1, tableName: "grid", datasource: h2GIS])
+        def outputTable = gridP.results.outputTableName
+        assert h2GIS."$outputTable"
+        def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
+        assert 57600 == countRows.numberOfRows
+    }
+
+    @EnabledIfSystemProperty(named = "test.postgis", matches = "true")
+    @Test
+    void regularGridTestPOSTGIS() {
+        postGIS.execute("DROP TABLE IF EXISTS grid")
+        def gridP = Geoindicators.SpatialUnits.regularGrid()
+        def wktReader = new WKTReader()
+        def box = wktReader.read('POLYGON((-5 -5, 5 -5, 5 5, -5 5, -5 -5))')
+        assert gridP.execute([geometry: box, deltaX: 1, deltaY: 1, tableName: "grid", datasource: postGIS])
+        def outputTable = gridP.results.outputTableName
+        assert postGIS."$outputTable"
+        def countRows = postGIS.firstRow "select count(*) as numberOfRows from $outputTable"
+        assert 100 == countRows.numberOfRows
+    }
 }

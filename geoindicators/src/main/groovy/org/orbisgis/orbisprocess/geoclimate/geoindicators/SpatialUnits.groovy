@@ -1,9 +1,21 @@
 package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
+import org.h2.value.ValueGeometry
+import org.h2gis.functions.spatial.create.ST_MakeGrid
+import org.h2gis.utilities.TableLocation
+import org.locationtech.jts.geom.Geometry
+import org.orbisgis.orbisdata.datamanager.api.dataset.DataBaseType
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
+import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
+import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
+
+import java.sql.Connection
+import java.sql.PreparedStatement
+import java.sql.SQLException
+import java.sql.Statement
 
 import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedComponents
 
@@ -431,5 +443,79 @@ IProcess spatialJoin() {
 
             [outputTableName: outputTableName, idColumnTarget: idColumnTarget]
         }
+    }
+}
+
+/**
+ * This process is used to generate a regular grid.
+ *
+ * @param geometry A geometry that defines either Point, Line or Polygon
+ * @param deltaX An integer that represents the spatial horizontal step of a cell in the mesh
+ * @param deltaY An integer that represents the spatial vertical step of a cell in the mesh
+ * @param outputTable A Table that contains the geometry of the regular grid
+ * @param datasource A connexion to a database (H2GIS, POSTGIS, ...) where are stored the input Table and in which
+ *        the resulting database will be stored
+ * @param outputTableName The name of the created table
+ * */
+IProcess regularGrid() {
+    return create {
+        title "Creating a regular grid in meters"
+        id "regularGrid"
+        inputs geometry: Geometry, deltaX: double, deltaY: double, tableName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+
+        run { geometry, deltaX, deltaY, tableName, datasource ->
+            if (datasource.hasTable(tableName)) {
+                info "Table $tableName already exists"
+                return null
+            }
+            if (datasource instanceof H2GIS) {
+                info "Creating a regular grid with H2GIS"
+                datasource """CREATE TABLE $tableName AS SELECT * FROM 
+                                     ST_MakeGrid('$geometry'::geometry, $deltaX, $deltaY);
+                           """
+            }
+            else if (datasource instanceof POSTGIS) {
+                info "Creating a regular grid with POSTGIS"
+                    PreparedStatement preparedStatement = null
+                    Connection outputConnection = datasource.getConnection()
+                    try {
+                        def createTable = "CREATE TABLE $tableName(THE_GEOM GEOMETRY(POLYGON), ID INT, ID_COL INT, ID_ROW INT);"
+                        def insertTable = "INSERT INTO $tableName VALUES (?, ?, ?, ?);"
+                        datasource.execute(createTable)
+                        preparedStatement = outputConnection.prepareStatement(insertTable)
+                        def result = ST_MakeGrid.createGrid(outputConnection, ValueGeometry.getFromGeometry(geometry), deltaX, deltaY)
+
+                        long batch_size = 0
+                        int batchSize = 1000
+
+                        while (result.next()) {
+                            preparedStatement.setObject( 1, result.getObject(1))
+                            preparedStatement.setObject( 2, result.getInt(2))
+                            preparedStatement.setObject( 3, result.getInt(3))
+                            preparedStatement.setObject( 4, result.getInt(4))
+                            preparedStatement.addBatch()
+                            batch_size++
+                            if (batch_size >= batchSize) {
+                                preparedStatement.executeBatch()
+                                preparedStatement.clearBatch()
+                                batchSize = 0;
+                            }
+                        }
+                        if (batch_size > 0) {
+                            preparedStatement.executeBatch()
+                        }
+                    } catch (SQLException e) {
+                        error("Cannot create the grid with the parameters.\n", e)
+                        return null
+                    } finally {
+                        if (preparedStatement != null) {
+                            preparedStatement.close()
+                        }
+                    }
+            }
+            info "The grid $tableName has been created"
+            [outputTableName: tableName]
+         }
     }
 }
