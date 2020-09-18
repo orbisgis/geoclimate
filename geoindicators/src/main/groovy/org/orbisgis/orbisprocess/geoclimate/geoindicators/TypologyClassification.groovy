@@ -530,7 +530,6 @@ IProcess applyRandomForestClassif() {
         outputs outputTableName: String
         run { String explicativeVariablesTableName, String pathAndFileName, String idName,
               String prefixName, JdbcDataSource datasource ->
-
             info "Apply a Random Forest model"
             //The model is not provided by the user is used
             def modelName;
