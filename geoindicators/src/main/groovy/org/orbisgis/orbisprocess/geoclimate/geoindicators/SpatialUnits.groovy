@@ -408,13 +408,9 @@ IProcess spatialJoin() {
             datasource.getSpatialTable(sourceTable).the_geom.createSpatialIndex()
             datasource."$targetTable".the_geom.createSpatialIndex()
 
-            def sourceColumns = sourceSpatialTable.getColumnsTypes().findAll {
-                it.value.toLowerCase() != 'geometry'
-            }.collect {"a."+it.key}
-
             if (pointOnSurface){
                 datasource """    DROP TABLE IF EXISTS $outputTableName;
-                                CREATE TABLE $outputTableName AS SELECT ${sourceColumns.join(",")}, b.$idColumnTarget 
+                                CREATE TABLE $outputTableName AS SELECT a.*, b.$idColumnTarget 
                                         FROM $sourceTable a, $targetTable b 
                                         WHERE   ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_SOURCE) && st_force2d(b.$GEOMETRIC_COLUMN_TARGET) AND 
                                                 ST_INTERSECTS(ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_SOURCE), st_force2d(b.$GEOMETRIC_COLUMN_TARGET))"""
@@ -423,7 +419,7 @@ IProcess spatialJoin() {
                 if (nbRelations != null) {
                     datasource """  DROP TABLE IF EXISTS $outputTableName;
                                     CREATE TABLE $outputTableName 
-                                            AS SELECT   ${sourceColumns.join(",")}, 
+                                            AS SELECT   a.*, 
                                                         (SELECT b.$idColumnTarget 
                                                             FROM $targetTable b 
                                                             WHERE a.$GEOMETRIC_COLUMN_SOURCE && b.$GEOMETRIC_COLUMN_TARGET AND 
@@ -434,6 +430,9 @@ IProcess spatialJoin() {
                                                         DESC LIMIT $nbRelations) AS $idColumnTarget 
                                             FROM $sourceTable a"""
                 } else {
+                    def sourceColumns = sourceSpatialTable.getColumnsTypes().findAll {
+                        it.value.toLowerCase() != 'geometry'
+                    }.collect {"a."+it.key}
                     datasource """  DROP TABLE IF EXISTS $outputTableName;
                                     CREATE TABLE $outputTableName 
                                             AS SELECT   ${sourceColumns.join(",")}, b.$idColumnTarget,

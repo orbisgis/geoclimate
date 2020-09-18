@@ -186,11 +186,11 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 buildingTable: buildingTableName, roadTable: roadTableName,
                 railTable: railTableName, vegetationTable: vegetationTableName,
                 hydrographicTable: hydrographicTableName, indicatorUse: ["LCZ"],
-                mapOfWeights: mapOfWeights)
+                mapOfWeights: mapOfWeights,lczRandomForest: true )
 
 
         assertTrue(datasource.getTable(geodindicators.results.outputTableBuildingIndicators).rowCount>0)
-        assertNull(geodindicators.results.outputTableBlockIndicators)
+        assertNotNull(geodindicators.results.outputTableBlockIndicators)
         assertTrue(datasource.getTable(geodindicators.results.outputTableRsuIndicators).rowCount>0)
         assertTrue(datasource.getTable(geodindicators.results.outputTableRsuLcz).rowCount>0)
 
@@ -475,7 +475,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 "parameters":
                         [
                          "indicatorUse": ["TEB"],
-                         "svfSimplified": false,
+                         "svfSimplified": true,
                          "prefixName": "",
                          "mapOfWeights":
                                  ["sky_view_factor": 1,
@@ -580,65 +580,6 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 FROM $outputTableStats AS a, $outputTable b WHERE a.id_rsu=b.id_rsu GROUP BY b.id_rsu"""
 
         datasource.save("stats_rsu", './target/stats_rsu.shp')
-
-    }
-
-    @Test
-    void osmGridLczFromTestFiles() {
-        String urlBuilding = new File(getClass().getResource("BUILDING.geojson").toURI()).absolutePath
-        String urlRoad= new File(getClass().getResource("ROAD.geojson").toURI()).absolutePath
-        String urlRail = new File(getClass().getResource("RAIL.geojson").toURI()).absolutePath
-        String urlVeget = new File(getClass().getResource("VEGET.geojson").toURI()).absolutePath
-        String urlHydro = new File(getClass().getResource("HYDRO.geojson").toURI()).absolutePath
-        String urlZone = new File(getClass().getResource("ZONE.geojson").toURI()).absolutePath
-
-        boolean saveResults = true
-        String directory ="./target/osm_processchain_lcz"
-
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
-
-        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osmchain_lcz;AUTO_SERVER=TRUE")
-
-        String zoneTableName="zone"
-        String buildingTableName="building"
-        String roadTableName="road"
-        String railTableName="rails"
-        String vegetationTableName="veget"
-        String hydrographicTableName="hydro"
-
-        datasource.load(urlBuilding, buildingTableName, true)
-        datasource.load(urlRoad, roadTableName, true)
-        datasource.load(urlRail, railTableName, true)
-        datasource.load(urlVeget, vegetationTableName, true)
-        datasource.load(urlHydro, hydrographicTableName, true)
-        datasource.load(urlZone, zoneTableName, true)
-
-        def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
-                            "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                            "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
-
-        IProcess geodindicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
-        assertTrue geodindicators.execute(datasource: datasource, zoneTable: zoneTableName,
-                buildingTable: buildingTableName, roadTable: roadTableName,
-                railTable: railTableName, vegetationTable: vegetationTableName,
-                hydrographicTable: hydrographicTableName, indicatorUse: ["LCZ"],
-                mapOfWeights: mapOfWeights)
-
-
-        assertTrue(datasource.getTable(geodindicators.results.outputTableBuildingIndicators).rowCount>0)
-        assertNull(geodindicators.results.outputTableBlockIndicators)
-        assertTrue(datasource.getTable(geodindicators.results.outputTableRsuIndicators).rowCount>0)
-        assertTrue(datasource.getTable(geodindicators.results.outputTableRsuLcz).rowCount>0)
-
-        Geometry  geom = datasource.getSpatialTable(zoneTableName).getExtent("THE_GEOM")
-        //Calcul grille
-        def regular = Geoindicators.SpatialUnits.regularGrid();
-
-        //Process distribution
-        Geoindicators.GenericIndicators.distributionCharacterization();
-
 
     }
 }
