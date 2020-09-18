@@ -542,7 +542,7 @@ IProcess applyRandomForestClassif() {
                 inputModelFile = new File(System.getProperty("user.home") + File.separator + ".geoclimate" + File.separator + modelName + ".model")
                 // The model doesn't exist on the local folder we download it
                 if (!inputModelFile.exists()) {
-                    FileUtils.copyURLToFile(new URL(modelURL, inputModelFile))
+                    FileUtils.copyURLToFile(new URL(modelURL), inputModelFile)
                     if (!inputModelFile.exists()) {
                         error "Cannot find any model file to apply the classification tree"
                         return null
