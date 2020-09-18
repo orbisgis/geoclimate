@@ -3,6 +3,7 @@ package org.orbisgis.orbisprocess.geoclimate.osm
 import groovy.json.JsonOutput
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.locationtech.jts.geom.Geometry
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
@@ -185,11 +186,11 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 buildingTable: buildingTableName, roadTable: roadTableName,
                 railTable: railTableName, vegetationTable: vegetationTableName,
                 hydrographicTable: hydrographicTableName, indicatorUse: ["LCZ"],
-                mapOfWeights: mapOfWeights)
+                mapOfWeights: mapOfWeights,lczRandomForest: true )
 
 
         assertTrue(datasource.getTable(geodindicators.results.outputTableBuildingIndicators).rowCount>0)
-        assertNull(geodindicators.results.outputTableBlockIndicators)
+        assertNotNull(geodindicators.results.outputTableBlockIndicators)
         assertTrue(datasource.getTable(geodindicators.results.outputTableRsuIndicators).rowCount>0)
         assertTrue(datasource.getTable(geodindicators.results.outputTableRsuLcz).rowCount>0)
 
@@ -289,7 +290,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
-    @Disabled
+    //@Disabled
     @Test
     void testOSMWorkflowFromPlaceName() {
         String directory ="./target/geoclimate_chain"
@@ -303,7 +304,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["Saint Jean La Poterie"]],
+                        "osm" : ["Redon"]],
                 "output" :[
                         "folder" : "$directory"]
         ]
@@ -376,7 +377,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
-    @Disabled
+    //@Disabled
     @Test
     void testOSMLCZ() {
         String directory ="./target/geoclimate_chain"
@@ -390,7 +391,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 "delete" :true
             ],
             "input" : [
-                "osm" : ["romainville"]],
+                "osm" : ["redon"]],
             "output" :[
                 "folder" : "$directory"],
             "parameters":
@@ -454,7 +455,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
-    @Disabled
+    //@Disabled
     @Test
     void testOSMTEB() {
         String directory ="./target/geoclimate_chain"
@@ -468,13 +469,13 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["vannes"]],
+                        "osm" : ["NOVES"]],
                 "output" :[
                         "folder" : "$directory"],
                 "parameters":
-                        ["distance" : 0,
+                        [
                          "indicatorUse": ["TEB"],
-                         "svfSimplified": false,
+                         "svfSimplified": true,
                          "prefixName": "",
                          "mapOfWeights":
                                  ["sky_view_factor": 1,

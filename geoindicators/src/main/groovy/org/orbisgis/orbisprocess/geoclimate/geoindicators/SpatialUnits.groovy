@@ -6,6 +6,7 @@ import org.h2gis.functions.spatial.create.ST_MakeGrid
 import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.Geometry
 import org.orbisgis.orbisdata.datamanager.api.dataset.DataBaseType
+import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
@@ -403,7 +404,8 @@ IProcess spatialJoin() {
             // The name of the outputTableName is constructed (the prefix name is not added since it is already contained
             // in the inputLowerScaleTableName object
             def outputTableName = postfix "${sourceTable}_${targetTable}", "join"
-            datasource."$sourceTable".the_geom.createSpatialIndex()
+            ISpatialTable sourceSpatialTable = datasource.getSpatialTable(sourceTable)
+            datasource.getSpatialTable(sourceTable).the_geom.createSpatialIndex()
             datasource."$targetTable".the_geom.createSpatialIndex()
 
             if (pointOnSurface){
@@ -428,9 +430,12 @@ IProcess spatialJoin() {
                                                         DESC LIMIT $nbRelations) AS $idColumnTarget 
                                             FROM $sourceTable a"""
                 } else {
+                    def sourceColumns = sourceSpatialTable.getColumnsTypes().findAll {
+                        it.value.toLowerCase() != 'geometry'
+                    }.collect {"a."+it.key}
                     datasource """  DROP TABLE IF EXISTS $outputTableName;
                                     CREATE TABLE $outputTableName 
-                                            AS SELECT   a.*, b.$idColumnTarget,
+                                            AS SELECT   ${sourceColumns.join(",")}, b.$idColumnTarget,
                                                         ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$GEOMETRIC_COLUMN_SOURCE)), 
                                                         st_force2d(st_makevalid(b.$GEOMETRIC_COLUMN_TARGET)))) AS AREA
                                             FROM    $sourceTable a, $targetTable b
