@@ -216,11 +216,13 @@ class SpatialUnitsTests {
         def gridP = Geoindicators.SpatialUnits.createGrid()
         def wktReader = new WKTReader()
         def box = wktReader.read('POLYGON((-50 -50, 50 -50, 50 50, -50 50, -50 -50))')
+        box.setSRID(4326)
         assert gridP.execute([geometry: box, deltaX: 10, deltaY: 10, tableName: "grid", datasource: h2GIS])
         def outputTable = gridP.results.outputTableName
-        assert h2GIS."$outputTable"
+        assert h2GIS.getSpatialTable(outputTable)
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
         assert 100 == countRows.numberOfRows
+        assert 4326 == h2GIS.getSpatialTable(outputTable).srid
     }
 
     @EnabledIfSystemProperty(named = "test.postgis", matches = "true")
@@ -232,7 +234,7 @@ class SpatialUnitsTests {
         def box = wktReader.read('POLYGON((-50 -50, 50 -50, 50 50, -50 50, -50 -50))')
         assert gridP.execute([geometry: box, deltaX: 10, deltaY: 10, tableName: "grid", datasource: postGIS])
         def outputTable = gridP.results.outputTableName
-        assert postGIS."$outputTable"
+        assert postGIS.getSpatialTable(outputTable)
         def countRows = postGIS.firstRow "select count(*) as numberOfRows from $outputTable"
         assert 100 == countRows.numberOfRows
     }

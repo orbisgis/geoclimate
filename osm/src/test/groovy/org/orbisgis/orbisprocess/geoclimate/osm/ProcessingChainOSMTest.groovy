@@ -592,7 +592,6 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         String urlHydro = new File(getClass().getResource("HYDRO.geojson").toURI()).absolutePath
         String urlZone = new File(getClass().getResource("ZONE.geojson").toURI()).absolutePath
 
-        boolean saveResults = true
         String directory = "./target/osm_processchain_lcz"
 
         File dirFile = new File(directory)
@@ -624,17 +623,60 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 buildingTable: buildingTableName, roadTable: roadTableName,
                 railTable: railTableName, vegetationTable: vegetationTableName,
                 hydrographicTable: hydrographicTableName, indicatorUse: ["LCZ"],
-                mapOfWeights: mapOfWeights)
+                mapOfWeights: mapOfWeights,svfSimplified:true)
 
         assertTrue(datasource.getTable(geoIndicators.results.outputTableBuildingIndicators).rowCount > 0)
         assertNull(geoIndicators.results.outputTableBlockIndicators)
         assertTrue(datasource.getTable(geoIndicators.results.outputTableRsuIndicators).rowCount > 0)
         assertTrue(datasource.getTable(geoIndicators.results.outputTableRsuLcz).rowCount > 0)
 
+        // Apply grid process on local geometry of the zone
+        datasource.execute("DROP TABLE IF EXISTS grid_lcz")
         def geometry = datasource.getSpatialTable(zoneTableName).getExtent('the_geom')
+        def sourceTable = geoIndicators.results.outputTableRsuLcz
+        geometry.setSRID(datasource.getSpatialTable(sourceTable).srid)
         def gridProcess = Geoindicators.SpatialUnits.createGrid()
-        assert gridProcess.execute(geometry: geometry, deltaX: 1, deltaY: 1, tableName: 'grid_lcz', datasource: datasource)
-        def outputTable = gridProcess.results.outputTableName
-        assert datasource."$outputTable"
+        assert gridProcess.execute(geometry: geometry, deltaX: 100, deltaY: 100, tableName: 'grid_lcz', datasource: datasource)
+        def targetTable = gridProcess.results.outputTableName
+        assert datasource.getSpatialTable(targetTable)
+
+        // Define Spatial join process
+        /**
+        def spatialJoinProcess = Geoindicators.SpatialUnits.spatialJoin()
+        assert spatialJoinProcess.execute(sourceTable: sourceTable, targetTable: targetTable, idColumnTarget: 'id',
+                                          prefixName: 'spatialJoin', pointOnSurface: false, nbRelations: null, datasource: datasource)
+        */
+        def idColumnTarget = "id"
+        def outputTableName = "grid_rsu_lcz"
+
+        datasource."$sourceTable".the_geom.createSpatialIndex()
+        datasource."$targetTable".the_geom.createSpatialIndex()
+        datasource """  DROP TABLE IF EXISTS $outputTableName;
+                                    CREATE TABLE $outputTableName 
+                                            AS SELECT   ST_INTERSECTION(st_force2d(st_makevalid(a.the_geom)), 
+                                                        st_force2d(st_makevalid(b.the_geom))) as the_geom, a.lcz1, a.lcz2, b.$idColumnTarget,
+                                                        ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.the_geom)), 
+                                                        st_force2d(st_makevalid(b.the_geom)))) AS AREA
+                                            FROM    $sourceTable a, $targetTable b
+                                            WHERE   a.the_geom && b.the_geom AND 
+                                                    ST_INTERSECTS(st_force2d(a.the_geom), st_force2d(b.the_geom));"""
+
+        // Pivot table
+        def colName1 = "lcz1"
+        def queryValues = "SELECT DISTINCT $colName1 AS val FROM $outputTableName"
+        def list = datasource.rows(queryValues)
+
+        def outputTableGridRsuLcz = "rsu_lcz_gridded"
+        datasource.execute("DROP TABLE IF EXISTS $outputTableGridRsuLcz;")
+        def query = "CREATE TABLE $outputTableGridRsuLcz AS (SELECT "
+
+        list.each {query += "CASE WHEN $colName1=$it.val THEN SUM(st_area(the_geom)) ELSE 0 END AS ${"lcz_"+it.val} , "}
+        def l = query.length()
+        def operations = query[0..l-4]
+        operations += " FROM $outputTableName GROUP BY $colName1);"
+        datasource.execute(operations)
+
+        datasource.getSpatialTable(outputTableName).save("./target"+File.separator+"$outputTableGridRsuLcz"+".geojson")
+        datasource.getSpatialTable(targetTable).save("./target"+File.separator+"grid.geojson")
     }
 }

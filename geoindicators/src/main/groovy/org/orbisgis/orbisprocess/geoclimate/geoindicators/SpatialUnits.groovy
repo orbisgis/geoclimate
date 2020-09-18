@@ -459,24 +459,24 @@ IProcess spatialJoin() {
  * */
 IProcess createGrid() {
     return create {
-        title "Creating a regular grid in meters"
-        id "regularGrid"
+        title "Creating a continuous cartesian grid"
+        id "createGrid"
         inputs geometry: Geometry, deltaX: double, deltaY: double, tableName: String, datasource: JdbcDataSource
         outputs outputTableName: String
 
         run { geometry, deltaX, deltaY, tableName, datasource ->
             if (datasource.hasTable(tableName)) {
                 info "Table $tableName already exists"
-                return null
+                //return null
             }
             if (datasource instanceof H2GIS) {
-                info "Creating a grid with H2GIS"
+                info "Creating grid with H2GIS"
                 datasource """CREATE TABLE $tableName AS SELECT * FROM 
-                                     ST_MakeGrid('$geometry'::geometry, $deltaX, $deltaY);
+                                     ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()})  , $deltaX, $deltaY);
                            """
             }
             else if (datasource instanceof POSTGIS) {
-                info "Creating a grid with POSTGIS"
+                info "Creating grid with POSTGIS"
                     PreparedStatement preparedStatement = null
                     Connection outputConnection = datasource.getConnection()
                     try {
