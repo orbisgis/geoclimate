@@ -87,7 +87,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     }
 
     @Test
-    void CreateUnitsOfAnalysisTest(){
+    void createUnitsOfAnalysisTest(){
         H2GIS h2GIS = H2GIS.open("./target/processingchainscales;AUTO_SERVER=TRUE")
         String sqlString = new File(getClass().getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
@@ -215,14 +215,61 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     }
 
     @Test //Integration tests
-    @Disabled
+   @Disabled
     void testBDTopoConfigurationFile() {
         def configFile = getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput.json").toURI()
         //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()
         //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_dboutput.json").toURI()
         //configFile =getClass().getResource("config/bdtopo_workflow_dbinput_dboutput.json").toURI()
         IProcess process = BDTopo_V2.workflow
-        assertTrue(process.execute(configurationFile:configFile))
+        process.execute(configurationFile:"/home/ebocher/applications/geoclimate/bdtopo_workflow_dbinput_outputfolder_erwan.json")
+    }
+
+    @Test
+    void workflowWrongmapOfWeights() {
+        String directory ="./target/bdtopo_workflow"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def bdTopoParameters = [
+                "description" :"Example of configuration file to run the BDTopo workflow and store the results in a folder",
+                "geoclimatedb" : [
+                        "path" : "${dirFile.absolutePath+File.separator+"bdtopo_workflow_db;AUTO_SERVER=TRUE"}",
+                        "delete" :true
+                ],
+                "input" : [
+                        "folder": ["path" :".../processingChain",
+                                   "id_zones":["56350"]]],
+                "output" :[
+                        "database" :
+                                ["user" : "sa",
+                                 "password":"sa",
+                                 "url": "jdbc:h2://${dirFile.absolutePath+File.separator+"geoclimate_chain_db_output;AUTO_SERVER=TRUE"}",
+                                 "tables": ["building_indicators":"building_indicators",
+                                            "block_indicators":"block_indicators",
+                                            "rsu_indicators":"rsu_indicators",
+                                            "rsu_lcz":"rsu_lcz",
+                                            "zones":"zones" ]]],
+                "parameters":
+                        ["distance" : 0,
+                         "indicatorUse": ["LCZ", "TEB", "URBAN_TYPOLOGY"],
+                         "svfSimplified": true,
+                         "prefixName": "",
+                         "mapOfWeights":
+                                 ["sky_view_factor": 1,
+                                  "aspect_ratio": 1,
+                                  "building_surface_fraction": 1,
+                                  "impervious_surface_fraction" : 1,
+                                  "pervious_surface_fraction": 1,
+                                  "height_of_roughness_elements": 1,
+                                  "terrain_roughness_class": 1  ],
+                         "hLevMin": 3,
+                         "hLevMax": 15,
+                         "hThresholdLev2": 10
+                        ]
+        ]
+        IProcess process = BDTopo_V2.workflow
+        assertFalse(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
     }
 
     @Disabled
@@ -241,6 +288,54 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                 "input" : [
                         "folder": ["path" :".../processingChain",
                             "id_zones":["-", "-"]]],
+                "output" :[
+                        "database" :
+                                ["user" : "sa",
+                                 "password":"sa",
+                                 "url": "jdbc:h2://${dirFile.absolutePath+File.separator+"geoclimate_chain_db_output;AUTO_SERVER=TRUE"}",
+                                 "tables": ["building_indicators":"building_indicators",
+                                            "block_indicators":"block_indicators",
+                                            "rsu_indicators":"rsu_indicators",
+                                            "rsu_lcz":"rsu_lcz",
+                                            "zones":"zones" ]]],
+                "parameters":
+                        ["distance" : 0,
+                         "indicatorUse": ["LCZ", "TEB", "URBAN_TYPOLOGY"],
+                         "svfSimplified": true,
+                         "prefixName": "",
+                         "mapOfWeights":
+                                 ["sky_view_factor": 1,
+                                  "aspect_ratio": 1,
+                                  "building_surface_fraction": 1,
+                                  "impervious_surface_fraction" : 1,
+                                  "pervious_surface_fraction": 1,
+                                  "height_of_roughness_elements": 1,
+                                  "terrain_roughness_class": 1  ],
+                         "hLevMin": 3,
+                         "hLevMax": 15,
+                         "hThresholdLev2": 10
+                        ]
+        ]
+        IProcess process = BDTopo_V2.workflow
+        assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
+    }
+
+    @Disabled
+    @Test
+    void workflowDataBaseToFolder() {
+        String directory ="./target/bdtopo_workflow"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def bdTopoParameters = [
+                "description" :"Example of configuration file to run the BDTopo workflow and store the results in a folder",
+                "geoclimatedb" : [
+                        "path" : "${dirFile.absolutePath+File.separator+"bdtopo_workflow_db;AUTO_SERVER=TRUE"}",
+                        "delete" :true
+                ],
+                "input" : [
+                        "folder": ["path" :".../processingChain",
+                                   "id_zones":["-", "-"]]],
                 "output" :[
                         "database" :
                                 ["user" : "sa",

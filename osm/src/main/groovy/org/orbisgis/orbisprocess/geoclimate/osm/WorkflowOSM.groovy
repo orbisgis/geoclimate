@@ -180,6 +180,9 @@ IProcess workflow() {
                                                     "impervious"]
                         //Get processing parameters
                         def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
+                        if(!processing_parameters){
+                            return
+                        }
                         def outputSRID = output.get("srid")
                         def outputDataBase = output.get("database")
                         def outputFolder = output.get("folder")
@@ -991,9 +994,16 @@ def extractProcessingParameters(def processing_parameters){
         if(prefixNameP && prefixNameP in String){
             defaultParameters.prefixName = prefixNameP
         }
+
         def mapOfWeightsP = processing_parameters.mapOfWeights
         if(mapOfWeightsP && mapOfWeightsP in Map){
-            defaultParameters.mapOfWeights = mapOfWeightsP
+            def defaultmapOfWeights = defaultParameters.mapOfWeights
+            if((defaultmapOfWeights+mapOfWeightsP).size()!=defaultmapOfWeights.size()){
+                error "The number of mapOfWeights parameters must contain exactly the parameters ${defaultmapOfWeights.keySet().join(",")}"
+                return
+            }else{
+                defaultParameters.mapOfWeights = mapOfWeightsP
+            }
         }
 
         def hLevMinP =  processing_parameters.hLevMin

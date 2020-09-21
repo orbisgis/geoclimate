@@ -196,6 +196,9 @@ IProcess workflow() {
                                                          "impervious"]
                             //Get processing parameters
                             def processing_parameters = extractProcessingParameters(parameters.parameters)
+                            if(!processing_parameters){
+                                return
+                            }
                             def outputDataBase = output.database
                             def outputFolder = output.folder				
                             def outputSRID = output.get("srid")
@@ -321,6 +324,9 @@ IProcess workflow() {
                                                          "impervious"]
                             //Get processing parameters
                             def processing_parameters = extractProcessingParameters(parameters.parameters)
+                            if(!processing_parameters){
+                                return
+                            }
                             def outputSRID = output.get("srid")
                             def outputDataBase = output.database
                             def outputFolder = output.folder
@@ -376,7 +382,7 @@ IProcess workflow() {
                                     }
                                     def iris_ge_location = inputTableNames.iris_ge
                                     if (iris_ge_location) {
-                                        output_datasource.eachRow("select distinct insee_com from $iris_ge_locationge where $codes group by insee_com ;") { row ->
+                                        output_datasource.eachRow("select distinct insee_com from $iris_ge_location where $codes group by insee_com ;") { row ->
                                             id_zones << row.insee_com
                                         }
                                         for (id_zone in id_zones) {
@@ -410,7 +416,7 @@ IProcess workflow() {
                                     return null
                                 }
                                 if (file_outputFolder.canWrite()) {
-                                    def codes = inputDataBase.id_zones
+                                    def codes = inputDataBase.id_zones*.trim()
                                     if (codes && codes in Collection) {
                                         def inputTableNames = inputDataBase.tables
                                         def h2gis_datasource = H2GIS.open(h2gis_properties)
@@ -436,7 +442,7 @@ IProcess workflow() {
                                         allowedOutputTableNames.size()
                                 if (allowedOutputTableNames && !notSameTableNames) {
                                     def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
-                                    def codes = inputDataBase.id_zones
+                                    def codes = inputDataBase.id_zones*.trim()
                                     if (codes && codes in Collection) {
                                         def inputTableNames = inputDataBase.tables
                                         def h2gis_datasource = H2GIS.open(h2gis_properties)
@@ -464,7 +470,7 @@ IProcess workflow() {
                                         }
                                         def iris_ge_location = inputTableNames.iris_ge
                                         if (iris_ge_location) {
-                                            output_datasource.eachRow("select distinct insee_com from $iris_ge_locationge where $codes group by insee_com ;") { row ->
+                                            output_datasource.eachRow("select distinct insee_com from $iris_ge_location where $codes group by insee_com ;") { row ->
                                                 id_zones << row.insee_com
                                             }
                                             for (id_zone in id_zones) {
@@ -833,9 +839,16 @@ def extractProcessingParameters(def processing_parameters){
         if(prefixNameP && prefixNameP in String){
             defaultParameters.prefixName = prefixNameP
         }
+
         def mapOfWeightsP = processing_parameters.mapOfWeights
         if(mapOfWeightsP && mapOfWeightsP in Map){
+            def defaultmapOfWeights = defaultParameters.mapOfWeights
+            if((defaultmapOfWeights+mapOfWeightsP).size()!=defaultmapOfWeights.size()){
+                error "The number of mapOfWeights parameters must contain exactly the parameters ${defaultmapOfWeights.keySet().join(",")}"
+                return
+            }else{
             defaultParameters.mapOfWeights = mapOfWeightsP
+            }
         }
 
         def hLevMinP =  processing_parameters.hLevMin
