@@ -3,11 +3,6 @@ package org.orbisgis.orbisprocess.geoclimate.osm
 import groovy.json.JsonOutput
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-<<<<<<< HEAD
-import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
-=======
-import org.locationtech.jts.geom.Geometry
->>>>>>> e15aab5998eaf721161bc6605c97f85210991ace
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
