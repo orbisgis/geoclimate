@@ -630,53 +630,56 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue(datasource.getTable(geoIndicators.results.outputTableRsuIndicators).rowCount > 0)
         assertTrue(datasource.getTable(geoIndicators.results.outputTableRsuLcz).rowCount > 0)
 
-        // Apply grid process on local geometry of the zone
-        datasource.execute("DROP TABLE IF EXISTS grid_lcz")
+        // Apply grid process on local geometry of the rsu_lcz zone
+        datasource.execute("DROP TABLE IF EXISTS gridEnv")
         def geometry = datasource.getSpatialTable(zoneTableName).getExtent('the_geom')
-        def sourceTable = geoIndicators.results.outputTableRsuLcz
-        geometry.setSRID(datasource.getSpatialTable(sourceTable).srid)
+        def sourceTableName = geoIndicators.results.outputTableRsuLcz
+        geometry.setSRID(datasource.getSpatialTable(sourceTableName).srid)
         def gridProcess = Geoindicators.SpatialUnits.createGrid()
-        assert gridProcess.execute(geometry: geometry, deltaX: 100, deltaY: 100, tableName: 'grid_lcz', datasource: datasource)
-        def targetTable = gridProcess.results.outputTableName
-        assert datasource.getSpatialTable(targetTable)
+        assert gridProcess.execute(geometry: geometry, deltaX: 100, deltaY: 100, tableName: 'gridEnv', datasource: datasource)
+        def targetTableName = gridProcess.results.outputTableName
+        assert datasource.getSpatialTable(targetTableName)
 
-        // Define Spatial join process
-        /**
-        def spatialJoinProcess = Geoindicators.SpatialUnits.spatialJoin()
-        assert spatialJoinProcess.execute(sourceTable: sourceTable, targetTable: targetTable, idColumnTarget: 'id',
-                                          prefixName: 'spatialJoin', pointOnSurface: false, nbRelations: null, datasource: datasource)
-        */
+        // Make Spatial Join between grid and rsu_lcz tables
         def idColumnTarget = "id"
-        def outputTableName = "grid_rsu_lcz"
+        def spatialJoinTable = "gridSpatialJoin"
+        datasource."$sourceTableName".the_geom.createSpatialIndex()
+        datasource."$targetTableName".the_geom.createSpatialIndex()
 
-        datasource."$sourceTable".the_geom.createSpatialIndex()
-        datasource."$targetTable".the_geom.createSpatialIndex()
-        datasource """  DROP TABLE IF EXISTS $outputTableName;
-                                    CREATE TABLE $outputTableName 
-                                            AS SELECT   ST_INTERSECTION(st_force2d(st_makevalid(a.the_geom)), 
-                                                        st_force2d(st_makevalid(b.the_geom))) as the_geom, a.lcz1, a.lcz2, b.$idColumnTarget,
-                                                        ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.the_geom)), 
-                                                        st_force2d(st_makevalid(b.the_geom)))) AS AREA
-                                            FROM    $sourceTable a, $targetTable b
-                                            WHERE   a.the_geom && b.the_geom AND 
-                                                    ST_INTERSECTS(st_force2d(a.the_geom), st_force2d(b.the_geom));"""
+        def spatialJoin = """  DROP TABLE IF EXISTS $spatialJoinTable;
+                               CREATE TABLE $spatialJoinTable 
+                               AS SELECT   b.$idColumnTarget, a.lcz1,
+                                           ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.the_geom)), 
+                                           st_force2d(st_makevalid(b.the_geom)))) AS AREA
+                               FROM    $sourceTableName a, $targetTableName b
+                               WHERE   a.the_geom && b.the_geom AND 
+                                       ST_INTERSECTS(st_force2d(a.the_geom), st_force2d(b.the_geom));"""
+        datasource.execute(spatialJoin)
 
-        // Pivot table
-        def colName1 = "lcz1"
-        def queryValues = "SELECT DISTINCT $colName1 AS val FROM $outputTableName"
+        // Save lcz1 values
+        def lczColumn = "lcz1"
+        def queryValues = "SELECT DISTINCT $lczColumn AS val FROM $spatialJoinTable"
+
+        // Make pivot on gridRsuLcz table
         def list = datasource.rows(queryValues)
+        def gridRsuLczTable = "gridRsuLcz"
+        datasource.execute("DROP TABLE IF EXISTS $gridRsuLczTable;")
+        def query = "CREATE TABLE $gridRsuLczTable AS SELECT $idColumnTarget"
+        list.each {query += ", SUM(lcz_${it.val}) AS lcz_${it.val}"}
+        query += " FROM ( SELECT $idColumnTarget"
+        list.each {query += ", CASE WHEN $lczColumn=$it.val THEN SUM(area) ELSE 0 END AS lcz_${it.val}"}
+        query += " FROM $spatialJoinTable GROUP BY $idColumnTarget, $lczColumn) GROUP BY $idColumnTarget;"
+        datasource.execute(query)
 
-        def outputTableGridRsuLcz = "rsu_lcz_gridded"
-        datasource.execute("DROP TABLE IF EXISTS $outputTableGridRsuLcz;")
-        def query = "CREATE TABLE $outputTableGridRsuLcz AS (SELECT "
+        // Join tables
+        def gridLczAreaTable = "gridLczArea"
+        def qjoin = "DROP TABLE IF EXISTS $gridLczAreaTable; CREATE TABLE $gridLczAreaTable AS SELECT b.$idColumnTarget, b.the_geom"
+        list.each {qjoin += ", NVL(lcz_${it.val}, 0) AS lcz_${it.val}"}
+        qjoin += " FROM $targetTableName b LEFT JOIN $gridRsuLczTable a ON (a.$idColumnTarget = b.$idColumnTarget);"
+        datasource.execute(qjoin)
 
-        list.each {query += "CASE WHEN $colName1=$it.val THEN SUM(st_area(the_geom)) ELSE 0 END AS ${"lcz_"+it.val} , "}
-        def l = query.length()
-        def operations = query[0..l-4]
-        operations += " FROM $outputTableName GROUP BY $colName1);"
-        datasource.execute(operations)
-
-        datasource.getSpatialTable(outputTableName).save("./target"+File.separator+"$outputTableGridRsuLcz"+".geojson")
-        datasource.getSpatialTable(targetTable).save("./target"+File.separator+"grid.geojson")
+        // Save tables
+        datasource.getTable(gridLczAreaTable).save("./target"+File.separator+"$gridLczAreaTable"+".geojson")
+        datasource.getSpatialTable(targetTableName).save("./target"+File.separator+"$targetTableName"+".geojson")
     }
 }

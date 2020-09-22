@@ -447,15 +447,18 @@ IProcess spatialJoin() {
 }
 
 /**
- * This process is used to generate a continuous grid.
+ * This process is used to generate a continuous cartesian grid
+ * on which indicators have to be aggregated.
  *
  * @param geometry A geometry that defines either Point, Line or Polygon
- * @param deltaX The horizontal spatial step of a cell in the grid
- * @param deltaY The vertical spatial step of a cell in the grid
+ * @param deltaX The horizontal spatial step of a cell in meter
+ * @param deltaY The vertical spatial step of a cell in meter
  * @param tableName A Table that contains the geometry of the grid
  * @param datasource A connexion to a database (H2GIS, POSTGIS, ...) where are stored the input Table and in which
  *        the resulting database will be stored
- * @param outputTableName The name of the created table
+ * @return outputTableName The name of the created table
+ *
+ * @author Emmanuel Renault
  * */
 IProcess createGrid() {
     return create {
