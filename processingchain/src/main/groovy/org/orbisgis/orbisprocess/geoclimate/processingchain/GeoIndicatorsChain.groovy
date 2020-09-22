@@ -1023,8 +1023,7 @@ IProcess computeAllGeoIndicators() {
             def COLUMN_ID_RSU = "id_rsu"
             def GEOMETRIC_COLUMN = "the_geom"
 
-            if (!lczRandomForest || (lczRandomForest && lczRfModelPath)) {
-                // If the randomForest should be used, need to calculate all indicators
+                 // If the randomForest should be used, need to calculate all indicators
                 if (indicatorUse*.toUpperCase().contains("LCZ") && lczRandomForest) {
                     indicatorUse = ["URBAN_TYPOLOGY", "LCZ"]
                 }
@@ -1184,10 +1183,7 @@ IProcess computeAllGeoIndicators() {
                         outputTableRsuIndicators     : computeRSUIndicators.getResults().outputTableName,
                         outputTableRsuLcz            : rsuLcz,
                         outputTableZone              : zoneTable]
-            }
-            else{
-                error "You should pass the 'lczRfModelPath' argument if you select the randomForest algorithm"
-            }
+
         }
     }
 }
