@@ -1027,8 +1027,8 @@ IProcess zonalArea() {
 
             // Join tables
             def outputTableName = "zonalArea"
-            def qjoin = """DROP TABLE IF EXISTS "$outputTableName"; 
-                           CREATE TABLE "$outputTableName" AS SELECT b."$ID_FIELD", b."$GEOMETRIC_FIELD" """
+            def qjoin = """DROP TABLE IF EXISTS $outputTableName; 
+                           CREATE TABLE $outputTableName AS SELECT b.$ID_FIELD, b.$GEOMETRIC_FIELD"""
             values.each {qjoin += ", NVL(lcz_${it.val}, 0) AS lcz_${it.val}"}
             qjoin += " FROM $targetTable b LEFT JOIN $pivotTable a ON (a.$ID_FIELD = b.$ID_FIELD);"
             datasource.execute(qjoin)
