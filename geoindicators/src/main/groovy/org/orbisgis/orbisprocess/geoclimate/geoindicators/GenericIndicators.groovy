@@ -961,7 +961,7 @@ IProcess gatherScales() {
         }
     }
 }
-vcxw
+
 /**
  * This process is used to compute zonal area on a specific variable from a lower scale (for
  * example the LCZs variables within a Reference Spatial Unit)
