@@ -635,7 +635,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         def sourceTableName = geoIndicators.results.outputTableRsuLcz
         geometry.setSRID(datasource.getSpatialTable(sourceTableName).srid)
         def gridProcess = Geoindicators.SpatialUnits.createGrid()
-        assert gridProcess.execute(geometry: geometry, deltaX: 100, deltaY: 100, tableName: 'gridEnv', datasource: datasource)
+        assert gridProcess.execute(geometry: geometry, deltaX: 100, deltaY: 100, gridTableName: 'gridEnv', datasource: datasource)
         def targetTableName = gridProcess.results.outputTableName
         assert datasource.getSpatialTable(targetTableName)
 
