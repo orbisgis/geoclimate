@@ -1003,25 +1003,25 @@ IProcess zonalArea() {
             def spatialJoinTable = "gridSpatialJoin"
             def spatialJoin = """DROP TABLE IF EXISTS $spatialJoinTable;
                                  CREATE TABLE $spatialJoinTable 
-                                 AS SELECT   b.$ID_FIELD, a.$INDICATOR_FIELD,
-                                             ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$GEOMETRIC_FIELD)), 
-                                             st_force2d(st_makevalid(b.$GEOMETRIC_FIELD)))) AS area
-                                 FROM    $sourceTable a, $targetTable b
-                                 WHERE   a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD AND 
-                                         ST_INTERSECTS(st_force2d(a.$GEOMETRIC_FIELD), st_force2d(b.$GEOMETRIC_FIELD));"""
+                                 AS SELECT b.$ID_FIELD, a.$INDICATOR_FIELD,
+                                           ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$GEOMETRIC_FIELD)), 
+                                           st_force2d(st_makevalid(b.$GEOMETRIC_FIELD)))) AS area
+                                 FROM $sourceTable a, $targetTable b
+                                 WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD AND 
+                                       ST_INTERSECTS(st_force2d(a.$GEOMETRIC_FIELD), st_force2d(b.$GEOMETRIC_FIELD));"""
             datasource.execute(spatialJoin)
 
             // Save indicator values
             def qIndicator = "SELECT DISTINCT $INDICATOR_FIELD AS val FROM $spatialJoinTable"
-            def values = datasource.rows(qIndicator)
+            def listValues = datasource.rows(qIndicator)
 
             // Pivot table
             def pivotTable = "tmpZonalArea"
             datasource.execute("DROP TABLE IF EXISTS $pivotTable;")
             def query = "CREATE TABLE $pivotTable AS SELECT $ID_FIELD"
-            values.each {query += ", SUM(lcz_${it.val}) AS lcz_${it.val}"}
-            query += " FROM ( SELECT $ID_FIELD"
-            values.each {query += ", CASE WHEN $INDICATOR_FIELD=${it.val} THEN SUM(area) ELSE 0 END AS lcz_${it.val}"}
+            listValues.each {query += ", SUM(lcz_${it.val}) AS lcz_${it.val}"}
+            query += " FROM (SELECT $ID_FIELD"
+            listValues.each {query += ", CASE WHEN $INDICATOR_FIELD=${it.val} THEN SUM(area) ELSE 0 END AS lcz_${it.val}"}
             query += " FROM $spatialJoinTable GROUP BY $ID_FIELD, $INDICATOR_FIELD) GROUP BY $ID_FIELD;"
             datasource.execute(query)
 
@@ -1029,7 +1029,7 @@ IProcess zonalArea() {
             def outputTableName = "zonalArea"
             def qjoin = """DROP TABLE IF EXISTS $outputTableName; 
                            CREATE TABLE $outputTableName AS SELECT b.$ID_FIELD, b.$GEOMETRIC_FIELD"""
-            values.each {qjoin += ", NVL(lcz_${it.val}, 0) AS lcz_${it.val}"}
+            listValues.each {qjoin += ", NVL(lcz_${it.val}, 0) AS lcz_${it.val}"}
             qjoin += " FROM $targetTable b LEFT JOIN $pivotTable a ON (a.$ID_FIELD = b.$ID_FIELD);"
             datasource.execute(qjoin)
 
