@@ -493,15 +493,19 @@ class GenericIndicatorsTests {
 
     @Test
     void zonalAreaTest() {
-
+        def indicatorTableName = "zonal_area_building_test"
+        def indicatorName = "height_wall"
         def query = """
-                    DROP TABLE IF EXISTS indicatorTableNameTest;
-                    CREATE TABLE indicatorTableNameTest AS SELECT * FROM rsu_test_lcz_indics;
+                    DROP TABLE IF EXISTS "$indicatorTableName";
+                    CREATE TABLE "$indicatorTableName" AS SELECT $indicatorName, the_geom FROM building_test;
                     """
         h2GIS.execute(query)
-
-        def geometry = h2GIS.getSpatialTable("indicatorTableNameTest").getExtend('the_geom')
-        geometry.setSRID(h2GIS.getSpatialTable("indicatorTableNameTest").srid)
-
+        def zonalAreaProcess = Geoindicators.GenericIndicators.zonalArea()
+        zonalAreaProcess.execute(
+                [indicatorTableName: indicatorTableName,
+                 indicatorName: indicatorName,
+                 prefixName: "agg",
+                 datasource: h2GIS])
+        assert h2GIS."$indicatorTableName"
     }
 }

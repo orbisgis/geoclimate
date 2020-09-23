@@ -976,9 +976,9 @@ IProcess zonalArea() {
     return create {
         title "Statistics on zonal area for a given indicator"
         id "zonalArea"
-        inputs indicatorTableName: String, indicatorName: String, datasource: JdbcDataSource
+        inputs indicatorTableName: String, indicatorName: String, prefixName: String, datasource: JdbcDataSource
         outputs outputTableName: String
-        run { indicatorTableName, indicatorName, datasource ->
+        run { indicatorTableName, indicatorName, prefixName, datasource ->
 
             def ID_FIELD = "id"
             def GEOMETRIC_FIELD = "the_geom"
@@ -1044,6 +1044,7 @@ IProcess zonalArea() {
             qDrop = qDrop[0..-3]+";"
             datasource.execute(qDrop)
 
+            outputTableName = prefixName+outputTableName
             info "The zonal area table have been created"
             [outputTableName: outputTableName]
         }
