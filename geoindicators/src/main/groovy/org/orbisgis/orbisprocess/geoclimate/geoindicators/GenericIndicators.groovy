@@ -987,7 +987,7 @@ IProcess zonalArea() {
             def Y_SIZE = 1000D
 
             def sourceTable = datasource.getSpatialTable(indicatorTableName)
-            def geometry = datasource.sourceTable.getExtent(GEOMETRIC_FIELD)
+            def geometry = sourceTable.getExtent(GEOMETRIC_FIELD)
             geometry.setSRID(sourceTable.srid)
             def gridProcess = Geoindicators.SpatialUnits.createGrid()
             gridProcess.execute([geometry: geometry,
