@@ -987,19 +987,18 @@ IProcess zonalArea() {
             def Y_SIZE = 1000D
 
             def sourceTable = datasource.getSpatialTable(indicatorTableName)
+            def geometry = datasource.sourceTable.getExtent(GEOMETRIC_FIELD)
+            geometry.setSRID(sourceTable.srid)
             def gridProcess = Geoindicators.SpatialUnits.createGrid()
-            def targetTable = gridProcess.results.outputTableName
-
-            def geometry = datasource.getSpatialTable(indicatorTableName).getExtent(GEOMETRIC_FIELD)
-            geometry.setSRID(datasource.getSpatialTable(indicatorTableName).srid)
             gridProcess.execute([geometry: geometry,
                                  deltaX: X_SIZE,
                                  deltaY: Y_SIZE,
                                  gridTableName: "grid",
                                  datasource: datasource])
+            def targetTable = gridProcess.results.outputTableName
 
-            datasource."$sourceTable".the_geom.createSpatialIndex()
-            datasource."$targetTable".the_geom.createSpatialIndex()
+            datasource.sourceTable.the_geom.createSpatialIndex()
+            datasource.targetTable.the_geom.createSpatialIndex()
 
             def spatialJoinTable = "gridSpatialJoin"
             def spatialJoin = """  

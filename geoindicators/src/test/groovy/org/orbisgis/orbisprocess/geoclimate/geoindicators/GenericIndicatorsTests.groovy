@@ -490,4 +490,18 @@ class GenericIndicatorsTests {
         def finalColBuild = h2GIS."$gatheredScales2".columns.collect{ it.toLowerCase() }
         assertEquals colBuild.sort(), finalColBuild.sort()
     }
+
+    @Test
+    void zonalAreaTest() {
+
+        def query = """
+                    DROP TABLE IF EXISTS indicatorTableNameTest;
+                    CREATE TABLE indicatorTableNameTest AS SELECT * FROM rsu_test_lcz_indics;
+                    """
+        h2GIS.execute(query)
+
+        def geometry = h2GIS.getSpatialTable("indicatorTableNameTest").getExtend('the_geom')
+        geometry.setSRID(h2GIS.getSpatialTable("indicatorTableNameTest").srid)
+
+    }
 }
