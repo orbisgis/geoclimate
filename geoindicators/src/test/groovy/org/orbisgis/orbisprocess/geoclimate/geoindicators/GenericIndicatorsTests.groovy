@@ -495,10 +495,8 @@ class GenericIndicatorsTests {
     void zonalAreaTest() {
         def indicatorTableName = "zonal_area_building_test"
         def indicatorName = "height_wall"
-        def query = """
-                    DROP TABLE IF EXISTS "$indicatorTableName";
-                    CREATE TABLE "$indicatorTableName" AS SELECT $indicatorName, the_geom FROM building_test;
-                    """
+        def query = """DROP TABLE IF EXISTS $indicatorTableName;
+                       CREATE TABLE $indicatorTableName AS SELECT $indicatorName, the_geom FROM building_test;"""
         h2GIS.execute(query)
         def zonalAreaProcess = Geoindicators.GenericIndicators.zonalArea()
         zonalAreaProcess.execute(

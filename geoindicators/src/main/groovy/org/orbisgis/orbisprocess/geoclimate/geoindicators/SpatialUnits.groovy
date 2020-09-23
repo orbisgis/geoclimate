@@ -469,27 +469,26 @@ IProcess createGrid() {
     return create {
         title "Creating a continuous cartesian grid"
         id "createGrid"
-        inputs geometry: Geometry, deltaX: double, deltaY: double, tableName: String, datasource: JdbcDataSource
+        inputs geometry: Geometry, deltaX: double, deltaY: double, gridTableName: String, datasource: JdbcDataSource
         outputs outputTableName: String
 
-        run { geometry, deltaX, deltaY, tableName, datasource ->
-            if (datasource.hasTable(tableName)) {
-                info "Table $tableName already exists"
+        run { geometry, deltaX, deltaY, gridTableName, datasource ->
+            if (datasource.hasTable(gridTableName)) {
+                info "Table $gridTableName already exists"
                 //return null
             }
             if (datasource instanceof H2GIS) {
                 info "Creating grid with H2GIS"
-                datasource """CREATE TABLE $tableName AS SELECT * FROM 
-                                     ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()})  , $deltaX, $deltaY);
-                           """
+                datasource """CREATE TABLE $gridTableName AS SELECT * FROM 
+                                     ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()})  , $deltaX, $deltaY);"""
             }
             else if (datasource instanceof POSTGIS) {
                 info "Creating grid with POSTGIS"
                     PreparedStatement preparedStatement = null
                     Connection outputConnection = datasource.getConnection()
                     try {
-                        def createTable = "CREATE TABLE $tableName(THE_GEOM GEOMETRY(POLYGON), ID INT, ID_COL INT, ID_ROW INT);"
-                        def insertTable = "INSERT INTO $tableName VALUES (?, ?, ?, ?);"
+                        def createTable = "CREATE TABLE $gridTableName(THE_GEOM GEOMETRY(POLYGON), ID INT, ID_COL INT, ID_ROW INT);"
+                        def insertTable = "INSERT INTO $gridTableName VALUES (?, ?, ?, ?);"
                         datasource.execute(createTable)
                         preparedStatement = outputConnection.prepareStatement(insertTable)
                         def result = ST_MakeGrid.createGrid(outputConnection, ValueGeometry.getFromGeometry(geometry), deltaX, deltaY)
@@ -522,8 +521,8 @@ IProcess createGrid() {
                         }
                     }
             }
-            info "The grid '$tableName' has been created"
-            [outputTableName: tableName]
+            info "The grid '$gridTableName' has been created"
+            [outputTableName: gridTableName]
          }
     }
 }
