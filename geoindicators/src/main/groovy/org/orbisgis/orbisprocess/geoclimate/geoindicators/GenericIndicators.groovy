@@ -1021,10 +1021,13 @@ IProcess zonalArea() {
             def pivotTable = "tmpZonalArea"
             datasource.execute("DROP TABLE IF EXISTS $pivotTable;")
             def query = "CREATE TABLE $pivotTable AS SELECT $ID_FIELD"
-            listValues.each {query += ", SUM($INDICATOR_FIELD"+"_"+"${it.val}) AS $INDICATOR_FIELD"+"_"+"${it.val}"}
-            query += " FROM (SELECT $ID_FIELD"
-            listValues.each {query += ", CASE WHEN $INDICATOR_FIELD=${it.val} THEN SUM(area) ELSE 0 END AS $INDICATOR_FIELD"+"_"+"${it.val}"}
-            query += " FROM $spatialJoinTable GROUP BY $ID_FIELD, $INDICATOR_FIELD) GROUP BY $ID_FIELD;"
+            listValues.each {query += ", SUM($INDICATOR_FIELD"+"_"+"$it.val)"+
+                                       " AS $INDICATOR_FIELD"+"_"+"$it.val"}
+            query += " FROM ( SELECT $ID_FIELD"
+            listValues.each {query += ", CASE WHEN $INDICATOR_FIELD=${it.val} THEN SUM(area) ELSE 0 END"+
+                                      " AS $INDICATOR_FIELD"+"_"+"$it.val"}
+            query += " FROM $spatialJoinTable GROUP BY $ID_FIELD, $INDICATOR_FIELD )"+
+                     " GROUP BY $ID_FIELD;"
             datasource.execute(query)
 
             // Join tables
@@ -1033,8 +1036,10 @@ IProcess zonalArea() {
                         DROP TABLE IF EXISTS $outputTableName; 
                         CREATE TABLE $outputTableName AS SELECT b.$ID_FIELD, b.$GEOMETRIC_FIELD
                         """
-            listValues.each {qjoin += ", NVL($INDICATOR_FIELD"+"_"+"${it.val}, 0) AS $INDICATOR_FIELD"+"_"+"${it.val}"}
-            qjoin += " FROM $targetTable b LEFT JOIN $pivotTable a ON (a.$ID_FIELD = b.$ID_FIELD);"
+            listValues.each {qjoin += ", NVL($INDICATOR_FIELD"+"_"+"${it.val}, 0)"+
+                                      " AS $INDICATOR_FIELD"+"_"+"${it.val}"}
+            qjoin += " FROM $targetTable b"+
+                     " LEFT JOIN $pivotTable a ON (a.$ID_FIELD = b.$ID_FIELD);"
             datasource.execute(qjoin)
 
             // Drop intermediate tables

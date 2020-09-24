@@ -502,8 +502,8 @@ class GenericIndicatorsTests {
         def value1 = h2GIS.firstRow("SELECT height_wall FROM building_test")[indicatorName]
         def value2 = h2GIS.firstRow("SELECT $indicatorName FROM $indicatorTableName")[indicatorName]
         def value3 = h2GIS.firstRow("SELECT the_geom FROM $indicatorTableName")['the_geom'].toString()
-        assert value1==8F
-        assert value2==8F
+        assert value1==8
+        assert value2==8
         assertEquals('POLYGON ((4 4, 10 4, 10 30, 4 30, 4 4))', value3)
 
         def zonalAreaProcess = Geoindicators.GenericIndicators.zonalArea()
