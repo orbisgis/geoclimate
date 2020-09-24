@@ -1001,14 +1001,16 @@ IProcess zonalArea() {
             datasource."$targetTable".the_geom.createSpatialIndex()
 
             def spatialJoinTable = "gridSpatialJoin"
-            def spatialJoin = """DROP TABLE IF EXISTS $spatialJoinTable;
-                                 CREATE TABLE $spatialJoinTable 
-                                 AS SELECT b.$ID_FIELD, a.$INDICATOR_FIELD,
-                                           ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$GEOMETRIC_FIELD)), 
-                                           st_force2d(st_makevalid(b.$GEOMETRIC_FIELD)))) AS area
-                                 FROM $sourceTable a, $targetTable b
-                                 WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD AND 
-                                       ST_INTERSECTS(st_force2d(a.$GEOMETRIC_FIELD), st_force2d(b.$GEOMETRIC_FIELD));"""
+            def spatialJoin = """
+                              DROP TABLE IF EXISTS $spatialJoinTable;
+                              CREATE TABLE $spatialJoinTable 
+                              AS SELECT b.$ID_FIELD, a.$INDICATOR_FIELD,
+                                        ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$GEOMETRIC_FIELD)), 
+                                        st_force2d(st_makevalid(b.$GEOMETRIC_FIELD)))) AS area
+                              FROM $sourceTable a, $targetTable b
+                              WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD AND 
+                              ST_INTERSECTS(st_force2d(a.$GEOMETRIC_FIELD), st_force2d(b.$GEOMETRIC_FIELD));
+                              """
             datasource.execute(spatialJoin)
 
             // Save indicator values
@@ -1027,8 +1029,10 @@ IProcess zonalArea() {
 
             // Join tables
             def outputTableName = "zonalArea"
-            def qjoin = """DROP TABLE IF EXISTS $outputTableName; 
-                           CREATE TABLE $outputTableName AS SELECT b.$ID_FIELD, b.$GEOMETRIC_FIELD"""
+            def qjoin = """
+                        DROP TABLE IF EXISTS $outputTableName; 
+                        CREATE TABLE $outputTableName AS SELECT b.$ID_FIELD, b.$GEOMETRIC_FIELD
+                        """
             listValues.each {qjoin += ", NVL(lcz_${it.val}, 0) AS lcz_${it.val}"}
             qjoin += " FROM $targetTable b LEFT JOIN $pivotTable a ON (a.$ID_FIELD = b.$ID_FIELD);"
             datasource.execute(qjoin)
