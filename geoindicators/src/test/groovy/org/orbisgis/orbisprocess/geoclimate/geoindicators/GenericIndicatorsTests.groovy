@@ -496,7 +496,9 @@ class GenericIndicatorsTests {
         def indicatorTableName = "zonal_area_building_test"
         def indicatorName = "height_wall"
         def query = """DROP TABLE IF EXISTS $indicatorTableName;
-                       CREATE TABLE $indicatorTableName AS SELECT $indicatorName, the_geom FROM building_test;"""
+                       CREATE TABLE $indicatorTableName 
+                       AS SELECT $indicatorName, the_geom 
+                       FROM building_test;"""
         h2GIS.execute(query)
 
         def value1 = h2GIS.firstRow("SELECT height_wall FROM building_test")[indicatorName]
