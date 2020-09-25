@@ -374,8 +374,10 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                  hLevMin : 3, hLevMax: 15, hThresholdLev2: 10]
         H2GIS h2GISDatabase = loadFiles(inseeCode, dbSuffixName)
         def outputFolder = "./target/bd_topo_workflow_srid"
-        FileUtilities.deleteFiles(outputFolder, true)
         File dirFile = new File(outputFolder)
+        if(dirFile.exists()){
+        FileUtilities.deleteFiles(dirFile, true)
+        }
         dirFile.mkdir()
         def tablesToSave = ["building_indicators",
                             "block_indicators",
