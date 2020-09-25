@@ -1,23 +1,30 @@
 package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 
 import groovy.json.JsonOutput
+import org.h2gis.utilities.FileUtilities
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
+import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-
 import static org.junit.jupiter.api.Assertions.*
 
 class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 
+    def static postgis_dbProperties = [databaseName: 'orbisgis_db',
+                               user        : 'orbisgis',
+                               password    : 'orbisgis',
+                               url         : 'jdbc:postgresql://localhost:5432/'
+    ]
+    static POSTGIS postGIS;
+
+
     private static communeToTest = "12174"
 
-    private static Logger logger = LoggerFactory.getLogger(ProcessingChainBDTopoTest.class)
     private static def h2db = "./target/myh2gisbdtopodb"
     private static def bdtopoFoldName = "sample_$communeToTest"
     private static def listTables = ["IRIS_GE", "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL", "BATI_REMARQUABLE",
@@ -29,6 +36,23 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                      "ROAD_ABSTRACT_CROSSING", "ROAD_BD_TOPO_CROSSING", "ROAD_ABSTRACT_TYPE",
                                      "ROAD_BD_TOPO_TYPE", "VEGET_ABSTRACT_PARAMETERS", "VEGET_ABSTRACT_TYPE",
                                      "VEGET_BD_TOPO_TYPE"]
+
+    @BeforeAll
+    static void beforeAll(){
+        postGIS = POSTGIS.open(postgis_dbProperties)
+        System.setProperty("test.postgis", Boolean.toString(postGIS != null))
+    }
+
+    /**
+     * Return the path of the data sample
+     * @return
+     */
+    private String getDataFolderPath(){
+        if( new File(getClass().getResource(bdtopoFoldName).toURI()).isDirectory()){
+                return new File(getClass().getResource(bdtopoFoldName).toURI()).absolutePath
+        }
+        return null;
+    }
 
     private def loadFiles(String inseeCode, String dbSuffixName){
         H2GIS h2GISDatabase = H2GIS.open(h2db+dbSuffixName+";AUTO_SERVER=TRUE", "sa", "")
@@ -215,14 +239,14 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     }
 
     @Test //Integration tests
-   @Disabled
+    @Disabled
     void testBDTopoConfigurationFile() {
         def configFile = getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput.json").toURI()
         //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()
         //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_dboutput.json").toURI()
         //configFile =getClass().getResource("config/bdtopo_workflow_dbinput_dboutput.json").toURI()
         IProcess process = BDTopo_V2.workflow
-        process.execute(configurationFile:"/home/ebocher/applications/geoclimate/bdtopo_workflow_dbinput_outputfolder_erwan.json")
+        process.execute(configurationFile:configFile)
     }
 
     @Test
@@ -320,61 +344,12 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
     }
 
-    @Disabled
-    @Test
-    void workflowDataBaseToFolder() {
-        String directory ="./target/bdtopo_workflow"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
-        def bdTopoParameters = [
-                "description" :"Example of configuration file to run the BDTopo workflow and store the results in a folder",
-                "geoclimatedb" : [
-                        "path" : "${dirFile.absolutePath+File.separator+"bdtopo_workflow_db;AUTO_SERVER=TRUE"}",
-                        "delete" :true
-                ],
-                "input" : [
-                        "folder": ["path" :".../processingChain",
-                                   "id_zones":["-", "-"]]],
-                "output" :[
-                        "database" :
-                                ["user" : "sa",
-                                 "password":"sa",
-                                 "url": "jdbc:h2://${dirFile.absolutePath+File.separator+"geoclimate_chain_db_output;AUTO_SERVER=TRUE"}",
-                                 "tables": ["building_indicators":"building_indicators",
-                                            "block_indicators":"block_indicators",
-                                            "rsu_indicators":"rsu_indicators",
-                                            "rsu_lcz":"rsu_lcz",
-                                            "zones":"zones" ]]],
-                "parameters":
-                        ["distance" : 0,
-                         "indicatorUse": ["LCZ", "TEB", "URBAN_TYPOLOGY"],
-                         "svfSimplified": true,
-                         "prefixName": "",
-                         "mapOfWeights":
-                                 ["sky_view_factor": 1,
-                                  "aspect_ratio": 1,
-                                  "building_surface_fraction": 1,
-                                  "impervious_surface_fraction" : 1,
-                                  "pervious_surface_fraction": 1,
-                                  "height_of_roughness_elements": 1,
-                                  "terrain_roughness_class": 1  ],
-                         "hLevMin": 3,
-                         "hLevMax": 15,
-                         "hThresholdLev2": 10
-                        ]
-        ]
-        IProcess process = BDTopo_V2.workflow
-        assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
-    }
-
-
     @Test
     void runBDTopoWorkflow(){
         def dbSuffixName = "_workflow"
         def inseeCode = communeToTest
         def defaultParameters = [distance: 1000,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
-                                 svfSimplified:false, prefixName: "",
+                                 svfSimplified:true, prefixName: "",
                                  mapOfWeights : ["sky_view_factor" : 2, "aspect_ratio": 1, "building_surface_fraction": 4,
                                                  "impervious_surface_fraction" : 0, "pervious_surface_fraction": 0,
                                                  "height_of_roughness_elements": 3, "terrain_roughness_length": 1],
@@ -387,6 +362,108 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         checkSpatialTable(h2GISDatabase, "rsu_lcz")
     }
 
+    @Test
+    void runBDTopoWorkflowWithSRID(){
+        def dbSuffixName = "_workflow"
+        def inseeCode = communeToTest
+        def defaultParameters = [distance: 1000,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+                                 svfSimplified:true, prefixName: "",
+                                 mapOfWeights : ["sky_view_factor" : 2, "aspect_ratio": 1, "building_surface_fraction": 4,
+                                                 "impervious_surface_fraction" : 0, "pervious_surface_fraction": 0,
+                                                 "height_of_roughness_elements": 3, "terrain_roughness_length": 1],
+                                 hLevMin : 3, hLevMax: 15, hThresholdLev2: 10]
+        H2GIS h2GISDatabase = loadFiles(inseeCode, dbSuffixName)
+        def outputFolder = "./target/bd_topo_workflow_srid"
+        FileUtilities.deleteFiles(outputFolder, true)
+        File dirFile = new File(outputFolder)
+        dirFile.mkdir()
+        def tablesToSave = ["building_indicators",
+                            "block_indicators",
+                            "rsu_indicators",
+                            "rsu_lcz",
+                            "zones",
+                            "building",
+                            "road",
+                            "rail" ,
+                            "water",
+                            "vegetation",
+                            "impervious"]
+        def process = new WorkflowBDTopo_V2().bdtopo_processing(h2GISDatabase, defaultParameters, inseeCode, dirFile, tablesToSave, null, null, 4326);
+        checkSpatialTable(h2GISDatabase, "block_indicators")
+        checkSpatialTable(h2GISDatabase, "building_indicators")
+        checkSpatialTable(h2GISDatabase, "rsu_indicators")
+        checkSpatialTable(h2GISDatabase, "rsu_lcz")
+        def geoFiles = []
+        def  folder = new File("./target/bd_topo_workflow_srid/bdtopo_v2_12174")
+        folder.eachFileRecurse groovy.io.FileType.FILES,  { file ->
+            if (file.name.toLowerCase().endsWith(".geojson")) {
+                geoFiles << file.getAbsolutePath()
+            }
+        }
+        geoFiles.eachWithIndex { geoFile , index->
+            def tableName = h2GISDatabase.load(geoFile, true)
+            assertEquals(4326, h2GISDatabase.getSpatialTable(tableName).srid)
+        }
+    }
+
+    @EnabledIfSystemProperty(named = "test.postgis", matches = "true")
+    @Test
+    void workflowPostGIS() {
+        def outputTables =["building_indicators":"building_indicators",
+                           "block_indicators":"block_indicators",
+                           "rsu_indicators":"rsu_indicators",
+                           "rsu_lcz":"rsu_lcz",
+                           "zones":"zones" ]
+        //Drop all output tables if exist
+        postGIS.execute("DROP TABLE IF EXISTS ${outputTables.values().join(",")};");
+        String directory ="./target/bdtopo_workflow_postgis"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        String dataFolder = getDataFolderPath()
+        def bdTopoParameters = [
+                "description" :"Example of configuration file to run the BDTopo workflow and store the results in a folder",
+                "geoclimatedb" : [
+                        "path" : "${dirFile.absolutePath+File.separator+"bdtopo_workflow_db;AUTO_SERVER=TRUE"}",
+                        "delete" :true
+                ],
+                "input" : [
+                        "folder": ["path" :dataFolder,
+                                   "id_zones":[communeToTest]]],
+                "output" :[
+                        "database" :
+                                ["user" : postgis_dbProperties.user,
+                                 "password":postgis_dbProperties.password,
+                                 "url": postgis_dbProperties.url+postgis_dbProperties.databaseName,
+                                 "tables": outputTables]],
+                "parameters":
+                        ["distance" : 0,
+                         "indicatorUse": ["TEB"],
+                         "svfSimplified": true,
+                         "prefixName": "",
+                         "hLevMin": 3,
+                         "hLevMax": 15,
+                         "hThresholdLev2": 10
+                        ]
+        ]
+        IProcess process = BDTopo_V2.workflow
+        assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
+        //Check if the tables exist and contains at least one row
+        outputTables.values().each {it->
+            def spatialTable = postGIS.getSpatialTable(i)
+            assertNotNull(spatialTable)
+            assertTrue(spatialTable.getRowCount()>0)
+        }
+
+    }
+
+
+    /**
+     * Check if the table exist and contains at least one row
+     * @param datasource
+     * @param tableName
+     * @return
+     */
     private static def checkSpatialTable(JdbcDataSource datasource, def tableName){
         assertTrue(datasource.hasTable(tableName))
         assertTrue(datasource.getSpatialTable(tableName).getRowCount()>0)
