@@ -111,7 +111,7 @@ IProcess saveTablesAsFiles() {
                 if (tableName) {
                     def fileToSave = dirFile.absolutePath + File.separator + tableName +
                             (datasource."$tableName".spatial ? ".geojson" : ".csv")
-                    datasource.save(tableName, fileToSave)
+                    datasource.save(tableName, fileToSave, true)
                     info "The table $tableName has been saved in file $fileToSave"
                 }
             }

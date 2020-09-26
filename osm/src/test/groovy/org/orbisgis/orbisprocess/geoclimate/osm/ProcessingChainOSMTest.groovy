@@ -641,7 +641,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         def rsu = Geoindicators.SpatialUnits.createRSU()
         assertTrue rsu.execute([inputTableName: outputTableGeoms, prefixName: "rsu", datasource: datasource])
         def outputTable = rsu.results.outputTableName
-        assertTrue datasource.save(outputTable,'./target/rsu.shp')
+        assertTrue datasource.save(outputTable,'./target/rsu.shp', true)
 
         def  p =  Geoindicators.RsuIndicators.smallestCommunGeometry()
         assertTrue p.execute([
@@ -659,7 +659,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 round(sum(CASE WHEN a.building=1 THEN a.area ELSE 0 END),1) AS building_sum,
                 FROM $outputTableStats AS a, $outputTable b WHERE a.id_rsu=b.id_rsu GROUP BY b.id_rsu"""
 
-        datasource.save("stats_rsu", './target/stats_rsu.shp')
+        datasource.save("stats_rsu", './target/stats_rsu.shp', true)
 
     }
 }

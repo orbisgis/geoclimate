@@ -24,7 +24,7 @@ class OSMGISLayersTests {
                 zoneToExtract: "Plessis-l'Évêque"])
         process.getResults().each {it ->
             if(it.value!=null){
-                h2GIS.getTable(it.value).save("./target/${it.value}.shp")
+                h2GIS.getTable(it.value).save("./target/${it.value}.shp", true)
             }
         }
     }
