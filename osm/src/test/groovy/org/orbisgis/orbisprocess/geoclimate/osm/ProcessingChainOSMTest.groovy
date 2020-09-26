@@ -42,7 +42,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                              prefixName        : prefixName])) {
             def saveTables = Geoindicators.DataUtils.saveTablesAsFiles()
 
-            saveTables.execute( [inputTableNames: process.getResults().values()
+            saveTables.execute( [inputTableNames: process.getResults().values(), delete:true
                                  , directory: directory, datasource: h2GIS])
 
             if (createRSU([datasource    : h2GIS,

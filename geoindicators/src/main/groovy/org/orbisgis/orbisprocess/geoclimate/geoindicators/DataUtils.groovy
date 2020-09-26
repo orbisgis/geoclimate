@@ -91,9 +91,9 @@ IProcess saveTablesAsFiles() {
     return create {
         title "Utility process to save tables in geojson or csv files"
         id "saveTablesAsFiles"
-        inputs inputTableNames: String[], directory: String, datasource: JdbcDataSource
+        inputs inputTableNames: String[], delete: false,directory: String, datasource: JdbcDataSource
         outputs directory: String
-        run { inputTableNames, directory, datasource ->
+        run { inputTableNames, delete, directory, datasource ->
             if (directory == null) {
                 error "The directory to save the data cannot be null"
                 return
@@ -111,8 +111,11 @@ IProcess saveTablesAsFiles() {
                 if (tableName) {
                     def fileToSave = dirFile.absolutePath + File.separator + tableName +
                             (datasource."$tableName".spatial ? ".geojson" : ".csv")
-                    datasource.save(tableName, fileToSave, true)
-                    info "The table $tableName has been saved in file $fileToSave"
+                    def table = datasource.getTable(tableName)
+                    if (table) {
+                        table.save(fileToSave, delete)
+                        info "The table $tableName has been saved in file $fileToSave"
+                    }
                 }
             }
             [directory: directory]

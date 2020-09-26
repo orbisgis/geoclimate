@@ -48,7 +48,7 @@ class ChainProcessAbstractTest {
         if (saveResults) {
             logger.info("Saving spatial units")
             IProcess saveTables = Geoindicators.DataUtils.saveTablesAsFiles()
-            saveTables.execute([inputTableNames: spatialUnits.getResults().values()
+            saveTables.execute([inputTableNames: spatialUnits.getResults().values(), delete:true
                                 , directory    : directory, datasource: datasource])
         }
 
