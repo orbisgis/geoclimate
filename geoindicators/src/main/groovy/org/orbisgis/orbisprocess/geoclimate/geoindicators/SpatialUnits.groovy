@@ -48,7 +48,7 @@ IProcess createRSU() {
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
 
-            def epsg = datasource."$inputTableName".srid
+            def epsg = datasource.getSpatialTable(inputTableName).srid
 
             if (area <= 0) {
                 error "The area value to filter the RSU must be greater to 0"
@@ -56,7 +56,7 @@ IProcess createRSU() {
             }
 
             if (inputZoneTableName) {
-                datasource."$inputTableName".the_geom.createSpatialIndex()
+                datasource.getSpatialTable(inputTableName).the_geom.createSpatialIndex()
                 datasource """
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName AS 

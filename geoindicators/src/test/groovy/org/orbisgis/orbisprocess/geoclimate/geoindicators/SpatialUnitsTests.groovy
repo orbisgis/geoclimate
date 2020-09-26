@@ -78,7 +78,7 @@ class SpatialUnitsTests {
         def rsu = Geoindicators.SpatialUnits.createRSU()
         assert rsu([inputTableName: outputTableGeoms, prefixName: "rsu", datasource: h2GIS])
         def outputTable = rsu.results.outputTableName
-        assert h2GIS.save(outputTable,'./target/rsu.shp')
+        assert h2GIS.getSpatialTable(outputTable).save('./target/rsu.shp',true)
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
 
         assert 246 == countRows.numberOfRows
@@ -203,7 +203,7 @@ class SpatialUnitsTests {
         def rsu = Geoindicators.SpatialUnits.createRSU()
         assert rsu.execute([inputTableName: outputTableGeoms, prefixName: "rsu", datasource: h2GIS])
         def outputTable = rsu.results.outputTableName
-        assert h2GIS.save(outputTable,'./target/rsu.shp')
+        assert h2GIS.getSpatialTable(outputTable).save('./target/rsu.shp', true)
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
 
         assert 246 == countRows.numberOfRows

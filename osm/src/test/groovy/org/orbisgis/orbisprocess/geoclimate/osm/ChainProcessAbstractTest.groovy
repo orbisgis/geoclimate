@@ -48,7 +48,7 @@ class ChainProcessAbstractTest {
         if (saveResults) {
             logger.info("Saving spatial units")
             IProcess saveTables = Geoindicators.DataUtils.saveTablesAsFiles()
-            saveTables.execute([inputTableNames: spatialUnits.getResults().values()
+            saveTables.execute([inputTableNames: spatialUnits.getResults().values(), delete:true
                                 , directory    : directory, datasource: datasource])
         }
 
@@ -72,7 +72,7 @@ class ChainProcessAbstractTest {
         assertTrue(datasource.getSpatialTable(buildingIndicators).srid>0)
         if (saveResults) {
             logger.info("Saving building indicators")
-            datasource.save(buildingIndicators, directory + File.separator + "${buildingIndicators}.geojson")
+            datasource.getSpatialTable(buildingIndicators).save(directory + File.separator + "${buildingIndicators}.geojson", true)
         }
 
         //Check we have the same number of buildings
@@ -90,7 +90,7 @@ class ChainProcessAbstractTest {
             String blockIndicators = computeBlockIndicators.getResults().outputTableName
             if (saveResults) {
                 logger.info("Saving block indicators")
-                datasource.save(blockIndicators, directory + File.separator + "${blockIndicators}.geojson")
+                datasource.getSpatialTable(blockIndicators).save(directory + File.separator + "${blockIndicators}.geojson", true)
             }
             //Check if we have the same number of blocks
             def countRelationBlocks = datasource.firstRow("select count(*) as count from ${relationBlocks}".toString())
@@ -113,7 +113,7 @@ class ChainProcessAbstractTest {
         String rsuIndicators = computeRSUIndicators.getResults().outputTableName
         if (saveResults) {
             logger.info("Saving RSU indicators")
-            datasource.save(rsuIndicators, directory + File.separator + "${rsuIndicators}.geojson")
+            datasource.getSpatialTable(rsuIndicators).save(directory + File.separator + "${rsuIndicators}.geojson", true)
         }
 
         //Check if we have the same number of RSU

@@ -18,6 +18,7 @@ import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
 import org.orbisgis.orbisanalysis.osm.OSMTools
 
+import java.sql.Connection
 import java.sql.SQLException
 
 @BaseScript OSM_Utils osm_utils
@@ -180,6 +181,9 @@ IProcess workflow() {
                                                     "impervious"]
                         //Get processing parameters
                         def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
+                        if(!processing_parameters){
+                            return
+                        }
                         def outputSRID = output.get("srid")
                         def outputDataBase = output.get("database")
                         def outputFolder = output.get("folder")
@@ -347,10 +351,13 @@ IProcess osm_processing() {
                     def zoneTableName = zoneTableNames.outputZoneTable
                     def zoneEnvelopeTableName = zoneTableNames.outputZoneEnvelopeTable
                     def srid = h2gis_datasource.getSpatialTable(zoneTableName).srid
-                    if(outputSRID || outputSRID==srid){
-                        outputSRID=0
+                    def reproject =false
+                    if(outputSRID){
+                        if(outputSRID!=srid){
+                            reproject = true
+                        }
                     }else{
-                        outputSRID=0
+                        outputSRID =srid
                     }
                     //Prepare OSM extraction
                     def query = "[maxsize:1073741824]" + Utilities.buildOSMQuery(zoneTableNames.envelope, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
@@ -373,8 +380,6 @@ IProcess osm_processing() {
                                 if (estimateHeight) {
                                     def buildingEstimateTableName = format.results.outputEstimateTableName
                                 }
-
-
                                 format = OSM.formatRoadLayer
                                 format.execute([
                                         datasource                : h2gis_datasource,
@@ -443,10 +448,10 @@ IProcess osm_processing() {
                                 results.put("vegetationTableName", vegetationTableName)
                                 results.put("imperviousTableName", imperviousTableName)
                                 if (outputFolder && geoIndicatorsComputed && ouputTableFiles) {
-                                    saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID)
+                                    saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject)
                                 }
                                 if (output_datasource && geoIndicatorsComputed) {
-                                    saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone,srid, outputSRID)
+                                    saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone,srid, outputSRID,reproject)
                                 }
                             }
                         } else {
@@ -991,9 +996,16 @@ def extractProcessingParameters(def processing_parameters){
         if(prefixNameP && prefixNameP in String){
             defaultParameters.prefixName = prefixNameP
         }
+
         def mapOfWeightsP = processing_parameters.mapOfWeights
         if(mapOfWeightsP && mapOfWeightsP in Map){
-            defaultParameters.mapOfWeights = mapOfWeightsP
+            def defaultmapOfWeights = defaultParameters.mapOfWeights
+            if((defaultmapOfWeights+mapOfWeightsP).size()!=defaultmapOfWeights.size()){
+                error "The number of mapOfWeights parameters must contain exactly the parameters ${defaultmapOfWeights.keySet().join(",")}"
+                return
+            }else{
+                defaultParameters.mapOfWeights = mapOfWeightsP
+            }
         }
 
         def hLevMinP =  processing_parameters.hLevMin
@@ -1028,9 +1040,10 @@ def extractProcessingParameters(def processing_parameters){
  * @param results a list of tables computed by geoclimate
  * @param ouputFolder the ouput folder
  * @param outputSRID srid code to reproject the result
+ * @param reproject  true if the file must reprojected
  * @return
  */
-def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFiles, def ouputFolder, def subFolderName, def outputSRID){
+def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFiles, def ouputFolder, def subFolderName, def outputSRID, def reproject){
     //Create a subfolder to store each results
     def folderName = id_zone in Map?id_zone.join("_"):id_zone
     def subFolder = new File(ouputFolder.getAbsolutePath()+File.separator+subFolderName+folderName)
@@ -1040,39 +1053,39 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
     outputFiles.each{
         //Save indicators
         if(it.equals("building_indicators")){
-            saveTableAsGeojson(results.outputTableBuildingIndicators, "${subFolder.getAbsolutePath()+File.separator+"building_indicators"}.geojson",h2gis_datasource,outputSRID)
+            saveTableAsGeojson(results.outputTableBuildingIndicators, "${subFolder.getAbsolutePath()+File.separator+"building_indicators"}.geojson",h2gis_datasource,outputSRID, reproject)
         }
         else if(it.equals("block_indicators")){
-            saveTableAsGeojson(results.outputTableBlockIndicators, "${subFolder.getAbsolutePath()+File.separator+"block_indicators"}.geojson",h2gis_datasource,outputSRID)
-        }subFolder
+            saveTableAsGeojson(results.outputTableBlockIndicators, "${subFolder.getAbsolutePath()+File.separator+"block_indicators"}.geojson",h2gis_datasource,outputSRID,reproject)
+        }
         else  if(it.equals("rsu_indicators")){
-            saveTableAsGeojson(results.outputTableRsuIndicators, "${subFolder.getAbsolutePath()+File.separator+"rsu_indicators"}.geojson",h2gis_datasource,outputSRID)
+            saveTableAsGeojson(results.outputTableRsuIndicators, "${subFolder.getAbsolutePath()+File.separator+"rsu_indicators"}.geojson",h2gis_datasource,outputSRID,reproject)
         }
         else  if(it.equals("rsu_lcz")){
-            saveTableAsGeojson(results.outputTableRsuLcz,  "${subFolder.getAbsolutePath()+File.separator+"rsu_lcz"}.geojson",h2gis_datasource,outputSRID)
+            saveTableAsGeojson(results.outputTableRsuLcz,  "${subFolder.getAbsolutePath()+File.separator+"rsu_lcz"}.geojson",h2gis_datasource,outputSRID,reproject)
         }
         else  if(it.equals("zones")){
-            saveTableAsGeojson(results.outputTableZone,  "${subFolder.getAbsolutePath()+File.separator+"zones"}.geojson",h2gis_datasource,outputSRID)
+            saveTableAsGeojson(results.outputTableZone,  "${subFolder.getAbsolutePath()+File.separator+"zones"}.geojson",h2gis_datasource,outputSRID,reproject)
         }
 
         //Save input GIS tables
         else  if(it.equals("building")){
-            saveTableAsGeojson(results.buildingTableName, "${subFolder.getAbsolutePath()+File.separator+"building"}.geojson", h2gis_datasource,outputSRID)
+            saveTableAsGeojson(results.buildingTableName, "${subFolder.getAbsolutePath()+File.separator+"building"}.geojson", h2gis_datasource,outputSRID,reproject)
         }
         else if(it.equals("road")){
-            saveTableAsGeojson(results.roadTableName,  "${subFolder.getAbsolutePath()+File.separator+"road"}.geojson",h2gis_datasource,outputSRID)
+            saveTableAsGeojson(results.roadTableName,  "${subFolder.getAbsolutePath()+File.separator+"road"}.geojson",h2gis_datasource,outputSRID,reproject)
         }
         else if(it.equals("rail")){
-            saveTableAsGeojson(results.railTableName,  "${subFolder.getAbsolutePath()+File.separator+"rail"}.geojson",h2gis_datasource,outputSRID)
+            saveTableAsGeojson(results.railTableName,  "${subFolder.getAbsolutePath()+File.separator+"rail"}.geojson",h2gis_datasource,outputSRID,reproject)
         }
         if(it.equals("water")){
-            saveTableAsGeojson(results.hydrographicTableName, "${subFolder.getAbsolutePath()+File.separator+"water"}.geojson", h2gis_datasource,outputSRID)
+            saveTableAsGeojson(results.hydrographicTableName, "${subFolder.getAbsolutePath()+File.separator+"water"}.geojson", h2gis_datasource,outputSRID,reproject)
         }
         else if(it.equals("vegetation")){
-            saveTableAsGeojson(results.vegetationTableName,  "${subFolder.getAbsolutePath()+File.separator+"vegetation"}.geojson",h2gis_datasource,outputSRID)
+            saveTableAsGeojson(results.vegetationTableName,  "${subFolder.getAbsolutePath()+File.separator+"vegetation"}.geojson",h2gis_datasource,outputSRID,reproject)
         }
         else if(it.equals("impervious")){
-            saveTableAsGeojson(results.imperviousTableName, "${subFolder.getAbsolutePath()+File.separator+"impervious"}.geojson", h2gis_datasource,outputSRID)
+            saveTableAsGeojson(results.imperviousTableName, "${subFolder.getAbsolutePath()+File.separator+"impervious"}.geojson", h2gis_datasource,outputSRID,reproject)
         }
     }
 }
@@ -1083,13 +1096,14 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
  * @param filePath path to save the table
  * @param h2gis_datasource connection to the database
  * @param outputSRID srid code to reproject the outputTable.
+ * @param reproject true if the file must be reprojected
  */
-def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource,def outputSRID){
+def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource,def outputSRID, def reproject){
     if(outputTable && h2gis_datasource.hasTable(outputTable)){
-        if(outputSRID==0){
+        if(!reproject){
         h2gis_datasource.save(outputTable, filePath)
         }else{
-            h2gis_datasource.getSpatialTable(outputTable).reproject(outputSRID).save(outputTable, filePath)
+            h2gis_datasource.getSpatialTable(outputTable).reproject(outputSRID.toInteger()).save(filePath)
         }
         info "${outputTable} has been saved in ${filePath}."
     }
@@ -1462,46 +1476,49 @@ id_impervious serial, ID_SOURCE VARCHAR);
  * @param outputSRID srid code to reproject the data
  * @return
  */
-def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_datasource, def outputTableNames, def h2gis_tables, def id_zone,def inputSRID, def outputSRID){
+def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_datasource, def outputTableNames, def h2gis_tables, def id_zone,def inputSRID, def outputSRID, def reproject){
+    Connection con = output_datasource.getConnection()
+    con.setAutoCommit(true);
     //Export building indicators
     indicatorTableBatchExportTable(output_datasource, outputTableNames.building_indicators,id_zone,h2gis_datasource, h2gis_tables.outputTableBuildingIndicators
-            , "WHERE ID_RSU IS NOT NULL", inputSRID, outputSRID)
+            , "WHERE ID_RSU IS NOT NULL", inputSRID, outputSRID,reproject)
 
     //Export block indicators
-     indicatorTableBatchExportTable(output_datasource, outputTableNames.block_indicators,id_zone, h2gis_datasource, h2gis_tables.outputTableBlockIndicators
-            , "WHERE ID_RSU IS NOT NULL", inputSRID, outputSRID)
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.block_indicators,id_zone, h2gis_datasource, h2gis_tables.outputTableBlockIndicators
+            , "WHERE ID_RSU IS NOT NULL", inputSRID, outputSRID,reproject)
 
     //Export rsu indicators
     indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_indicators,id_zone, h2gis_datasource, h2gis_tables.outputTableRsuIndicators
-            , "",inputSRID, outputSRID)
+            , "",inputSRID, outputSRID,reproject)
 
     //Export rsu lcz
     indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_lcz,id_zone,h2gis_datasource, h2gis_tables.outputTableRsuLcz
-            , "",inputSRID,outputSRID)
+            , "",inputSRID,outputSRID,reproject)
 
     //Export zone
     abstractModelTableBatchExportTable(output_datasource, outputTableNames.zones,id_zone, h2gis_datasource, h2gis_tables.outputTableZone
-            , "",inputSRID,outputSRID)
+            , "",inputSRID,outputSRID,reproject)
 
     //Export building
     abstractModelTableBatchExportTable(output_datasource, outputTableNames.building,id_zone, h2gis_datasource, h2gis_tables.buildingTableName
-            , "",inputSRID,outputSRID)
+            , "",inputSRID,outputSRID,reproject)
 
     //Export road
     abstractModelTableBatchExportTable(output_datasource, outputTableNames.road, id_zone,h2gis_datasource, h2gis_tables.roadTableName
-            , "", inputSRID,outputSRID)
+            , "", inputSRID,outputSRID,reproject)
     //Export rail
     abstractModelTableBatchExportTable(output_datasource, outputTableNames.rail,id_zone, h2gis_datasource, h2gis_tables.railTableName
-            , "",inputSRID,outputSRID)
+            , "",inputSRID,outputSRID,reproject)
     //Export vegetation
     abstractModelTableBatchExportTable(output_datasource, outputTableNames.vegetation,id_zone, h2gis_datasource, h2gis_tables.vegetationTableName
-            , "",inputSRID,outputSRID)
+            , "",inputSRID,outputSRID,reproject)
     //Export water
     abstractModelTableBatchExportTable(output_datasource, outputTableNames.water,id_zone, h2gis_datasource, h2gis_tables.hydrographicTableName
-            , "",inputSRID,outputSRID)
+            , "",inputSRID,outputSRID,reproject)
     //Export impervious
     abstractModelTableBatchExportTable(output_datasource, outputTableNames.impervious, id_zone,h2gis_datasource, h2gis_tables.imperviousTableName
-            , "",inputSRID,outputSRID)
+            , "",inputSRID,outputSRID,reproject)
+    con.setAutoCommit(false)
 }
 
 
@@ -1517,7 +1534,7 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
  * @param outputSRID srid code used to reproject the output table
  * @return
  */
-def abstractModelTableBatchExportTable(def output_datasource, def output_table, def id_zone, def h2gis_datasource, h2gis_table_to_save, def filter,def inputSRID,def outputSRID){
+def abstractModelTableBatchExportTable(def output_datasource, def output_table, def id_zone, def h2gis_datasource, h2gis_table_to_save, def filter,def inputSRID,def outputSRID, def reproject){
     if(output_table) {
         if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
             if (output_datasource.hasTable(output_table)) {
@@ -1582,26 +1599,33 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
                     }
                 }
             }else {
+                def tmpTable =null
                 info "Start to export the table $h2gis_table_to_save into the table $output_table"
                 if (filter) {
-                    if(outputSRID==0){
-                        h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().save(output_datasource, output_table, true);
+                    if(!reproject){
+                        tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().save(output_datasource, output_table, true);
                     }
                     else{
-                        h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true);
+                        tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true);
                     }
+                    if(tmpTable){
                     //Workarround to update the SRID on resulset
                     output_datasource.execute"""ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);"""
+                    }
                 } else {
-                    if(outputSRID==0){
-                        h2gis_datasource.getTable(h2gis_table_to_save).save(output_datasource, output_table, true);
+                    if(!reproject){
+                        tmpTable =h2gis_datasource.getTable(h2gis_table_to_save).save(output_datasource, output_table, true);
                    }else{
-                        h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(outputSRID).save(output_datasource, output_table, true);
+                        tmpTable = h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(outputSRID).save(output_datasource, output_table, true);
                     }
                 }
-                output_datasource.execute("UPDATE $output_table SET id_zone= ?", id_zone);
-                output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".","_")}_id_zone  ON $output_table (ID_ZONE)""")
-                info "The table $h2gis_table_to_save has been exported into the table $output_table"
+                if(tmpTable) {
+                    output_datasource.execute("UPDATE $output_table SET id_zone= ?", id_zone);
+                    output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""")
+                    info "The table $h2gis_table_to_save has been exported into the table $output_table"
+                }else{
+                    warn  "The table $h2gis_table_to_save hasn't been exported into the table $output_table"
+                }
             }
         }
     }
@@ -1619,7 +1643,7 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
  * @param outputSRID srid code used to reproject the output table
  * @return
  */
-def indicatorTableBatchExportTable(def output_datasource, def output_table, def id_zone, def h2gis_datasource, h2gis_table_to_save, def filter, def inputSRID, def outputSRID){
+def indicatorTableBatchExportTable(def output_datasource, def output_table, def id_zone, def h2gis_datasource, h2gis_table_to_save, def filter, def inputSRID, def outputSRID, def reproject){
     if(h2gis_table_to_save) {
         if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
             if (output_datasource.hasTable(output_table)) {
@@ -1685,28 +1709,36 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                     }
                 }
                 } else {
+                    def tmpTable = null
                     info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
                     if (filter) {
-                        if (outputSRID == 0) {
-                            h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().save(output_datasource, output_table, true);
+                        if (!reproject) {
+                            tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().save(output_datasource, output_table, true);
                         } else {
-                            h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true);
+                            tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true);
                         }
-                        //Workarround to update the SRID on resulset
-                        output_datasource.execute"""ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);"""
+                        if(tmpTable) {
+                            //Workarround to update the SRID on resulset
+                            output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);"""
+                        }
                     } else {
-                        if (outputSRID == 0) {
-                            h2gis_datasource.getSpatialTable(h2gis_table_to_save).save(output_datasource, output_table, true);
+                        if (!reproject) {
+                            tmpTable = h2gis_datasource.getSpatialTable(h2gis_table_to_save).save(output_datasource, output_table, true);
                         } else {
-                            h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(outputSRID).save(output_datasource, output_table, true);
+                            tmpTable = h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(outputSRID).save(output_datasource, output_table, true);
                         }
                     }
+                    if(tmpTable){
                     if(!output_datasource.getTable(output_table).hasColumn("id_zone")) {
                         output_datasource.execute("ALTER TABLE $output_table ADD COLUMN id_zone VARCHAR");
                     }
                     output_datasource.execute("UPDATE $output_table SET id_zone= ?", id_zone);
                     output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""")
                     info "The table $h2gis_table_to_save has been exported into the table $output_table"
+                    }
+                    else{
+                        warn "The table $h2gis_table_to_save hasn't been exported into the table $output_table"
+                    }
                 }
         }
     }

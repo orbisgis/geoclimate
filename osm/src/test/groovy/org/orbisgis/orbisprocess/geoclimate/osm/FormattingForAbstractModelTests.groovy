@@ -36,7 +36,7 @@ class FormattingForAbstractModelTests {
                 inputTableName: extractData.results.buildingTableName,
                 epsg: epsg,
                 jsonFilename: null])
-        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated.shp")
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated.shp", true)
         assertEquals 1040, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count==0
@@ -66,7 +66,7 @@ class FormattingForAbstractModelTests {
                 inputTableName: extractData.results.roadTableName,
                 epsg: epsg,
                 jsonFilename: null])
-        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_formated.shp")
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_formated.shp", true)
         assertEquals 197, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH is null").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH<=0").count==0
@@ -80,7 +80,7 @@ class FormattingForAbstractModelTests {
                 epsg: epsg,
                 jsonFilename: null])
 
-        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_rails_formated.shp")
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_rails_formated.shp", true)
         assertEquals 41, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where CROSSING IS NOT NULL").count==8
 
@@ -93,7 +93,7 @@ class FormattingForAbstractModelTests {
                 epsg: epsg,
                 jsonFilename: null
         ])
-        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_vegetation_formated.shp")
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_vegetation_formated.shp", true)
         assertEquals 140, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where type is null").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_CLASS is null").count==0
@@ -105,7 +105,7 @@ class FormattingForAbstractModelTests {
                 datasource : h2GIS,
                 inputTableName: extractData.results.hydroTableName,
                 epsg: epsg])
-        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_hydro_formated.shp")
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_hydro_formated.shp", true)
         assertEquals 10, h2GIS.getTable(format.results.outputTableName).rowCount
 
         //Impervious surfaces
@@ -114,7 +114,7 @@ class FormattingForAbstractModelTests {
                 datasource : h2GIS,
                 inputTableName: extractData.results.imperviousTableName,
                 epsg: epsg])
-        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_formated.shp")
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_formated.shp", true)
         assertEquals 43, h2GIS.getTable(format.results.outputTableName).rowCount
 
 
@@ -145,10 +145,10 @@ class FormattingForAbstractModelTests {
         if(extractData.results.zoneTableName!=null) {
             //Zone
             def epsg = h2GIS.getSpatialTable(extractData.results.zoneTableName).srid
-            h2GIS.getTable(extractData.results.zoneTableName).save("./target/osm_zone_${formatedPlaceName}.geojson")
+            h2GIS.getTable(extractData.results.zoneTableName).save("./target/osm_zone_${formatedPlaceName}.geojson", true)
 
             //Zone envelope
-            h2GIS.getTable(extractData.results.zoneEnvelopeTableName).save("./target/osm_zone_envelope_${formatedPlaceName}.geojson")
+            h2GIS.getTable(extractData.results.zoneEnvelopeTableName).save("./target/osm_zone_envelope_${formatedPlaceName}.geojson", true)
 
 
             //Buildings
@@ -158,7 +158,7 @@ class FormattingForAbstractModelTests {
                     inputTableName: extractData.results.buildingTableName,
                     inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
                     epsg: epsg])
-            h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_${formatedPlaceName}.geojson")
+            h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_${formatedPlaceName}.geojson", true)
             assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count==0
             assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count==0
             assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL is null").count==0
@@ -174,7 +174,7 @@ class FormattingForAbstractModelTests {
                     inputTableName: extractData.results.roadTableName,
                     inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
                     epsg: epsg])
-            h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_${formatedPlaceName}.geojson")
+            h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_${formatedPlaceName}.geojson", true)
             assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where width is null or width <= 0").count==0
 
             //Rails
@@ -184,7 +184,7 @@ class FormattingForAbstractModelTests {
                     inputTableName: extractData.results.railTableName,
                     inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
                     epsg: epsg])
-            h2GIS.getTable(format.results.outputTableName).save("./target/osm_rails_${formatedPlaceName}.geojson")
+            h2GIS.getTable(format.results.outputTableName).save("./target/osm_rails_${formatedPlaceName}.geojson", true)
 
 
             //Vegetation
@@ -194,7 +194,7 @@ class FormattingForAbstractModelTests {
                     inputTableName: extractData.results.vegetationTableName,
                     inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
                     epsg: epsg])
-            h2GIS.getTable(format.results.outputTableName).save("./target/osm_vegetation_${formatedPlaceName}.geojson")
+            h2GIS.getTable(format.results.outputTableName).save("./target/osm_vegetation_${formatedPlaceName}.geojson", true)
 
 
             //Hydrography
@@ -204,7 +204,7 @@ class FormattingForAbstractModelTests {
                     inputTableName: extractData.results.hydroTableName,
                     inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
                     epsg: epsg])
-            h2GIS.getTable(format.results.outputTableName).save("./target/osm_hydro_${formatedPlaceName}.geojson")
+            h2GIS.getTable(format.results.outputTableName).save("./target/osm_hydro_${formatedPlaceName}.geojson", true)
 
             //Impervious
             format = OSM.formatImperviousLayer
@@ -213,7 +213,7 @@ class FormattingForAbstractModelTests {
                     inputTableName: extractData.results.imperviousTableName,
                     inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
                     epsg: epsg])
-            h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_${formatedPlaceName}.geojson")
+            h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_${formatedPlaceName}.geojson", true)
         }else {
             assertTrue(false)
         }
@@ -298,7 +298,7 @@ class FormattingForAbstractModelTests {
                 epsg          : epsg,
                 jsonFilename  : null,
                 estimateHeight : true])
-        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated.shp")
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated.shp", true)
         assertEquals 1040, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count == 0
