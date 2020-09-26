@@ -440,7 +440,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                  "tables": outputTables]],
                 "parameters":
                         ["distance" : 0,
-                         "indicatorUse": ["TEB"],
+                         "indicatorUse": ["LCZ", "URBAN_TYPOLOGY"],
                          "svfSimplified": true,
                          "prefixName": "",
                          "hLevMin": 3,
@@ -452,7 +452,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
         //Check if the tables exist and contains at least one row
         outputTables.values().each {it->
-            def spatialTable = postGIS.getSpatialTable(i)
+            def spatialTable = postGIS.getSpatialTable(it)
             assertNotNull(spatialTable)
             assertTrue(spatialTable.getRowCount()>0)
         }
