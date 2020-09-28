@@ -1026,14 +1026,18 @@ IProcess zonalArea() {
             }
             query += " FROM (SELECT $ID_FIELD"
             if (FDType) {
-                listValues.each { query += ", CASE WHEN $INDICATOR_FIELD="+
-                                           "${it.val.toString().replace('_','.')}" }
+                listValues.each {
+                    query += ", CASE WHEN $INDICATOR_FIELD=${it.val.toString().replace('_','.')}"+
+                            " THEN SUM(area) ELSE 0 END"+
+                            " AS $INDICATOR_FIELD"+"_"+"${it.val}"
+                }
             } else {
-                listValues.each { query += ", CASE WHEN $INDICATOR_FIELD="+
-                                           "${it.val}" }
+                listValues.each {
+                    query += ", CASE WHEN $INDICATOR_FIELD=${it.val}"+
+                             " THEN SUM(area) ELSE 0 END"+
+                             " AS $INDICATOR_FIELD"+"_"+"${it.val}"
+                }
             }
-            query += " THEN SUM(area) ELSE 0 END"+
-                     " AS $INDICATOR_FIELD"+"_"+"${it.val}"
             query += """
                      FROM $spatialJoinTable
                      GROUP BY $ID_FIELD, $INDICATOR_FIELD)
