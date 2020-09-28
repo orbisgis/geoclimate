@@ -1009,6 +1009,7 @@ IProcess zonalArea() {
                              AS val FROM $spatialJoinTable
                              """
             def listValues = datasource.rows(qIndicator)
+            def FDType = listValues[0][0] instanceof Float || Double
 
             // Creation of the pivot table which contains for each cell id,
             // the total area corresponding to the aggregation of all indicators of same values
@@ -1019,14 +1020,27 @@ IProcess zonalArea() {
                         AS SELECT $ID_FIELD
                         """
             listValues.each {
-                query += ", SUM($INDICATOR_FIELD"+"_"+"${it.val.toString().replace(".","_")})"+
-                         " AS $INDICATOR_FIELD"+"_"+"${it.val.toString().replace(".","_")}"
+                if (FDType) {
+                    query += ", SUM($INDICATOR_FIELD"+"_"+"${it.val.toString().replace(".", "_")})"+
+                            " AS $INDICATOR_FIELD"+"_"+"${it.val.toString().replace(".", "_")}"
+                } else {
+                    query += ", SUM($INDICATOR_FIELD"+"_"+"${it.val})"+
+                            " AS $INDICATOR_FIELD"+"_"+"${it.val}"
+                }
             }
             query += " FROM (SELECT $ID_FIELD"
-            listValues.each {
-                query += ", CASE WHEN $INDICATOR_FIELD="+"${it.val}"+
-                         " THEN SUM(area) ELSE 0 END"+
-                         " AS $INDICATOR_FIELD"+"_"+"${it.val.toString().replace(".","_")}"
+            if (FDType) {
+                listValues.each {
+                    query += ", CASE WHEN $INDICATOR_FIELD=" + "${it.val}" +
+                            " THEN SUM(area) ELSE 0 END" +
+                            " AS $INDICATOR_FIELD" + "_" + "${it.val.toString().replace(".", "_")}"
+                }
+            } else {
+                listValues.each {
+                    query += ", CASE WHEN $INDICATOR_FIELD=" + "${it.val}" +
+                            " THEN SUM(area) ELSE 0 END" +
+                            " AS $INDICATOR_FIELD" + "_" + "${it.val}"
+                }
             }
             query += """
                      FROM $spatialJoinTable
@@ -1043,9 +1057,17 @@ IProcess zonalArea() {
                         CREATE TABLE $outputTableName
                         AS SELECT b.$ID_FIELD, b.$GEOMETRIC_FIELD
                         """
-            listValues.each {
-                qjoin += " , NVL($INDICATOR_FIELD"+"_"+"${it.val.toString().replace(".", "_")}, 0)"+
-                         " AS $INDICATOR_FIELD"+"_"+"${it.val.toString().replace(".", "_")}"}
+            if (FDType) {
+                listValues.each {
+                    qjoin += " , NVL($INDICATOR_FIELD"+"_"+"${it.val.toString().replace(".", "_")}, 0)"+
+                            " AS $INDICATOR_FIELD"+"_"+"${it.val.toString().replace(".", "_")}"
+                }
+            } else {
+                listValues.each {
+                    qjoin += " , NVL($INDICATOR_FIELD"+"_"+"${it.val}, 0)"+
+                            " AS $INDICATOR_FIELD"+"_"+"${it.val}"
+                }
+            }
             qjoin += """
                      FROM $targetTable b
                      LEFT JOIN $pivotTable a
