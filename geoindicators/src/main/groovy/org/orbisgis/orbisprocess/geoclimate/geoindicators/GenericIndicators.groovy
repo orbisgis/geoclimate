@@ -1021,22 +1021,25 @@ IProcess zonalArea() {
                         AS SELECT $ID_FIELD
                         """
             listValues.each {
-                query += ", SUM($INDICATOR_FIELD"+"_"+"${it.val})"+
-                         " AS $INDICATOR_FIELD"+"_"+"${it.val}"
-            }
+                query += """
+                         , SUM($INDICATOR_FIELD${"_"}${it.val})
+                         AS $INDICATOR_FIELD${"_"}${it.val}
+                         """}
             query += " FROM (SELECT $ID_FIELD"
             if (FDType) {
                 listValues.each {
-                    query += ", CASE WHEN $INDICATOR_FIELD=${it.val.toString().replace('_','.')}"+
-                            " THEN SUM(area) ELSE 0 END"+
-                            " AS $INDICATOR_FIELD"+"_"+"${it.val}"
-                }
+                    query += """
+                             , CASE WHEN $INDICATOR_FIELD=${it.val.toString().replace('_','.')}
+                             THEN SUM(area) ELSE 0 END
+                             AS $INDICATOR_FIELD${"_"}${it.val}
+                             """}
             } else {
                 listValues.each {
-                    query += ", CASE WHEN $INDICATOR_FIELD=${it.val}"+
-                             " THEN SUM(area) ELSE 0 END"+
-                             " AS $INDICATOR_FIELD"+"_"+"${it.val}"
-                }
+                    query += """
+                             , CASE WHEN $INDICATOR_FIELD=${it.val}
+                             THEN SUM(area) ELSE 0 END
+                             AS $INDICATOR_FIELD${"_"}${it.val}
+                             """}
             }
             query += """
                      FROM $spatialJoinTable
@@ -1054,9 +1057,10 @@ IProcess zonalArea() {
                         AS SELECT b.$ID_FIELD, b.$GEOMETRIC_FIELD
                         """
             listValues.each {
-                qjoin += " , NVL($INDICATOR_FIELD"+"_"+"${it.val}, 0)"+
-                         " AS $INDICATOR_FIELD"+"_"+"${it.val}"
-            }
+                qjoin += """
+                         , NVL($INDICATOR_FIELD${"_"}${it.val}, 0)
+                         AS $INDICATOR_FIELD${"_"}${it.val}
+                         """}
             qjoin += """
                      FROM $targetTable b
                      LEFT JOIN $pivotTable a
