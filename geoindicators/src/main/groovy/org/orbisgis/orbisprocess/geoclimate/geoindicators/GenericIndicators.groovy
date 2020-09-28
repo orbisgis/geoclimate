@@ -1019,11 +1019,13 @@ IProcess zonalArea() {
                         CREATE TABLE $pivotTable
                         AS SELECT $ID_FIELD
                         """
-            listValues.each {
-                if (FDType) {
+            if (FDType) {
+                listValues.each {
                     query += ", SUM($INDICATOR_FIELD"+"_"+"${it.val.toString().replace(".", "_")})"+
                             " AS $INDICATOR_FIELD"+"_"+"${it.val.toString().replace(".", "_")}"
-                } else {
+                }
+            } else {
+                listValues.each {
                     query += ", SUM($INDICATOR_FIELD"+"_"+"${it.val})"+
                             " AS $INDICATOR_FIELD"+"_"+"${it.val}"
                 }
