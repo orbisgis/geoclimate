@@ -1010,9 +1010,8 @@ IProcess zonalArea() {
                              """
             def listValues = datasource.rows(qIndicator)
             def FDType = listValues[0][0] instanceof Float || Double
-            if (FDType) {
-                listValues.each { it.val = it.val.toString().replace(".", "_") }
-            }
+            if (FDType) { listValues.each { it.val = it.val.toString().replace(".", "_")} }
+
             // Creation of the pivot table which contains for each cell id,
             // the total area corresponding to the aggregation of all indicators of same values
             def pivotTable = "tmpZonalArea"
