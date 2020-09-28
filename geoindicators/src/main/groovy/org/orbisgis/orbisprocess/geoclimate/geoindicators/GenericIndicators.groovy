@@ -1038,15 +1038,19 @@ IProcess zonalArea() {
             // Creation of a table which is built from
             // the union of the grid and pivot tables based on the same cell 'id'
             def outputTableName = "zonalArea"
-            def qjoin = "DROP TABLE IF EXISTS $outputTableName;"+
-                        "CREATE TABLE $outputTableName "+
-                        "AS SELECT b.$ID_FIELD, b.$GEOMETRIC_FIELD"
+            def qjoin = """
+                        DROP TABLE IF EXISTS $outputTableName;
+                        CREATE TABLE $outputTableName
+                        AS SELECT b.$ID_FIELD, b.$GEOMETRIC_FIELD
+                        """
             listValues.each {
                 qjoin += " , NVL($INDICATOR_FIELD"+"_"+"${it.val.toString().replace(".", "_")}, 0)"+
                          " AS $INDICATOR_FIELD"+"_"+"${it.val.toString().replace(".", "_")}"}
-            qjoin += " FROM $targetTable b"+
-                     " LEFT JOIN $pivotTable a"+
-                     " ON (a.$ID_FIELD = b.$ID_FIELD);"
+            qjoin += """
+                     FROM $targetTable b
+                     LEFT JOIN $pivotTable a
+                     ON (a.$ID_FIELD = b.$ID_FIELD);
+                     """
             datasource.execute(qjoin)
 
             // Drop intermediate tables created during process
