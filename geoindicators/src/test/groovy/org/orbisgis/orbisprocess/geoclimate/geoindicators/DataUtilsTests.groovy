@@ -70,6 +70,7 @@ class DataUtilsTests {
         assert p([
                 inputTableNames : ["tablea","tablegeom"],
                 directory       : directory,
+                delete       : true,
                 datasource      : h2GIS])
 
         assert 1 == h2GIS.table(h2GIS.load(directory+File.separator+"tablegeom.geojson", true)).rowCount

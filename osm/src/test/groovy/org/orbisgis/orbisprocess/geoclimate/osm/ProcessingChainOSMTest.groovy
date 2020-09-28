@@ -41,7 +41,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                              prefixName        : prefixName])) {
             def saveTables = Geoindicators.DataUtils.saveTablesAsFiles()
 
-            saveTables.execute( [inputTableNames: process.getResults().values()
+            saveTables.execute( [inputTableNames: process.getResults().values(), delete:true
                                  , directory: directory, datasource: h2GIS])
 
             if (createRSU([datasource    : h2GIS,
@@ -186,13 +186,10 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 railTable: railTableName, vegetationTable: vegetationTableName,
                 hydrographicTable: hydrographicTableName, indicatorUse: ["LCZ"],
                 mapOfWeights: mapOfWeights,lczRandomForest: true )
-
-
         assertTrue(datasource.getTable(geodindicators.results.outputTableBuildingIndicators).rowCount>0)
         assertNotNull(geodindicators.results.outputTableBlockIndicators)
         assertTrue(datasource.getTable(geodindicators.results.outputTableRsuIndicators).rowCount>0)
         assertTrue(datasource.getTable(geodindicators.results.outputTableRsuLcz).rowCount>0)
-
     }
 
     @Disabled
@@ -289,7 +286,51 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
-    //@Disabled
+    @Test
+    void testOSMWorkflowFromPlaceNameWithSrid() {
+        String directory ="./target/geoclimate_chain"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
+                "geoclimatedb" : [
+                        "path" : "${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete" :true
+                ],
+                "input" : [
+                        "osm" : ["romainville"]],
+                "output" :[
+                        "folder" : "${directory}",
+                        "srid":"4326"],
+                "parameters":
+                        ["distance" : 0,
+                         "indicatorUse": ["LCZ"],
+                         "svfSimplified": true,
+                         "prefixName": "",
+                         "hLevMin": 3,
+                         "hLevMax": 15,
+                         "hThresholdLev2": 10
+                        ]
+        ]
+        IProcess process = OSM.workflow
+        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        //Test the SRID of all output files
+        def geoFiles = []
+        def  folder = new File("./target/geoclimate_chain/osm_romainville")
+        folder.eachFileRecurse groovy.io.FileType.FILES,  { file ->
+            if (file.name.toLowerCase().endsWith(".geojson")) {
+                geoFiles << file.getAbsolutePath()
+            }
+        }
+        H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
+        geoFiles.eachWithIndex { geoFile , index->
+            def tableName = h2gis.load(geoFile, true)
+            assertEquals(4326, h2gis.getSpatialTable(tableName).srid)
+        }
+    }
+
+    @Disabled
     @Test
     void testOSMWorkflowFromPlaceName() {
         String directory ="./target/geoclimate_chain"
@@ -309,6 +350,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         ]
         IProcess process = OSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+
     }
 
     @Disabled
@@ -376,7 +418,46 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
-    //@Disabled
+    @Test
+    void workflowWrongMapOfWeights() {
+        String directory ="./target/bdtopo_workflow"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
+                "geoclimatedb" : [
+                        "path" : "${dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE"}",
+                        "delete" :true
+                ],
+                "input" : [
+                        "osm" : ["LE PONTET"]],
+                "output" :[
+                        "folder" : "$directory"],
+                "parameters":
+                        ["distance" : 100,
+                         "indicatorUse": ["LCZ"],
+                         "svfSimplified": true,
+                         "prefixName": "",
+                         "mapOfWeights":
+                                 ["sky_view_factor": 1,
+                                  "aspect_ratio": 1,
+                                  "building_surface_fraction": 1,
+                                  "impervious_surface_fraction" : 1,
+                                  "pervious_surface_fraction": 1,
+                                  "height_of_roughness_elements": 1,
+                                  "terrain_roughness_length": 1 ,
+                                  "terrain_roughness_class": 1 ],
+                         "hLevMin": 3,
+                         "hLevMax": 15,
+                         "hThresholdLev2": 10
+                        ]
+        ]
+        IProcess process = OSM.workflow
+        assertFalse(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+    }
+
+    @Disabled
     @Test
     void testOSMLCZ() {
         String directory ="./target/geoclimate_chain"
@@ -390,13 +471,13 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 "delete" :true
             ],
             "input" : [
-                "osm" : ["redon"]],
+                "osm" : ["LE PONTET"]],
             "output" :[
                 "folder" : "$directory"],
             "parameters":
-            ["distance" : 1000,
+            ["distance" : 100,
                 "indicatorUse": ["LCZ"],
-                "svfSimplified": false,
+                "svfSimplified": true,
                 "prefixName": "",
                 "mapOfWeights":
                 ["sky_view_factor": 1,
@@ -454,7 +535,6 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
-    //@Disabled
     @Test
     void testOSMTEB() {
         String directory ="./target/geoclimate_chain"
@@ -560,7 +640,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         def rsu = Geoindicators.SpatialUnits.createRSU()
         assertTrue rsu.execute([inputTableName: outputTableGeoms, prefixName: "rsu", datasource: datasource])
         def outputTable = rsu.results.outputTableName
-        assertTrue datasource.save(outputTable,'./target/rsu.shp')
+        assertTrue datasource.save(outputTable,'./target/rsu.shp', true)
 
         def  p =  Geoindicators.RsuIndicators.smallestCommunGeometry()
         assertTrue p.execute([
@@ -578,7 +658,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 round(sum(CASE WHEN a.building=1 THEN a.area ELSE 0 END),1) AS building_sum,
                 FROM $outputTableStats AS a, $outputTable b WHERE a.id_rsu=b.id_rsu GROUP BY b.id_rsu"""
 
-        datasource.save("stats_rsu", './target/stats_rsu.shp')
+        datasource.save("stats_rsu", './target/stats_rsu.shp', true)
 
     }
 
