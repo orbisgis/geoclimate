@@ -966,8 +966,13 @@ IProcess gatherScales() {
  * This process is used to compute zonal area on a specific variable from a lower scale (for
  * example the LCZs variables within a Reference Spatial Unit)
  *
+ * @param gridTableName the name of the grid table applied to the geometry of the zone
+ * @param gridId the ID of the grid
  * @param indicatorTableName the table of the upper scale where the information have to be aggregated to (e.g. RSU)
  * @param indicatorName the name of the table attribute used as indicator information
+ * @param prefixName String used as prefix to name the output table
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ *        the resulting database will be stored
  * @return A database table name.
  *
  * @author Emmanuel Renault
