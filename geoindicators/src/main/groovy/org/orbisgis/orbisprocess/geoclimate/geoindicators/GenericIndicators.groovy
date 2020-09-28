@@ -976,26 +976,16 @@ IProcess zonalArea() {
     return create {
         title "Statistics on zonal area for a given indicator"
         id "zonalArea"
-        inputs indicatorTableName: String, indicatorName: String, prefixName: String, datasource: JdbcDataSource
+        inputs gridTableName: String, gridId: String, indicatorTableName: String, indicatorName: String,
+                prefixName: String, datasource: JdbcDataSource
         outputs outputTableName: String
-        run { indicatorTableName, indicatorName, prefixName, datasource ->
+        run { gridTableName, gridId, indicatorTableName, indicatorName, prefixName, datasource ->
 
-            def ID_FIELD = "id"
+            def ID_FIELD = gridId
             def GEOMETRIC_FIELD = "the_geom"
             def INDICATOR_FIELD = indicatorName
-            def X_SIZE = 1000D
-            def Y_SIZE = 1000D
-
             def sourceTable = indicatorTableName
-            def geometry = datasource.getSpatialTable(sourceTable).getExtent(GEOMETRIC_FIELD)
-            geometry.setSRID(datasource.getSpatialTable(sourceTable).srid)
-            def gridProcess = Geoindicators.SpatialUnits.createGrid()
-            gridProcess.execute([geometry: geometry,
-                                 deltaX: X_SIZE,
-                                 deltaY: Y_SIZE,
-                                 gridTableName: "grid",
-                                 datasource: datasource])
-            def targetTable = gridProcess.results.outputTableName
+            def targetTable = gridTableName
 
             datasource."$sourceTable".the_geom.createSpatialIndex()
             datasource."$targetTable".the_geom.createSpatialIndex()
@@ -1014,50 +1004,53 @@ IProcess zonalArea() {
             datasource.execute(spatialJoin)
 
             // Creation of a list which contains all indicators of distinct values
-            def qIndicator = """SELECT DISTINCT $INDICATOR_FIELD 
-                                AS val FROM $spatialJoinTable"""
+            def qIndicator = """
+                             SELECT DISTINCT $INDICATOR_FIELD 
+                             AS val FROM $spatialJoinTable
+                             """
             def listValues = datasource.rows(qIndicator)
 
             // Creation of the pivot table which contains for each cell id,
             // the total area corresponding to the aggregation of all indicators of same values
             def pivotTable = "tmpZonalArea"
             def query = """
-                        DROP TABLE IF EXISTS $pivotTable; 
-                        CREATE TABLE $pivotTable 
+                        DROP TABLE IF EXISTS $pivotTable;
+                        CREATE TABLE $pivotTable
                         AS SELECT $ID_FIELD
                         """
-            listValues.each {query += ", SUM($INDICATOR_FIELD"+"_"+"$it.val)"+
-                                      " AS $INDICATOR_FIELD"+"_"+"$it.val"}
-            query += " FROM ( SELECT $ID_FIELD"
-            listValues.each {query += ", CASE WHEN $INDICATOR_FIELD=${it.val}"+
-                                      " THEN SUM(area) ELSE 0 END"+
-                                      " AS $INDICATOR_FIELD"+"_"+"$it.val"}
-            query += " FROM $spatialJoinTable"
-                     " GROUP BY $ID_FIELD, $INDICATOR_FIELD )"+
-                     " GROUP BY $ID_FIELD;"
+            listValues.each {
+                query += ", SUM($INDICATOR_FIELD"+"_"+"${it.val.toString().replace(".","_")})"+
+                         " AS $INDICATOR_FIELD"+"_"+"${it.val.toString().replace(".","_")}"
+            }
+            query += " FROM (SELECT $ID_FIELD"
+            listValues.each {
+                query += ", CASE WHEN $INDICATOR_FIELD="+"${it.val}"+
+                         " THEN SUM(area) ELSE 0 END"+
+                         " AS $INDICATOR_FIELD"+"_"+"${it.val.toString().replace(".","_")}"
+            }
+            query += """
+                     FROM $spatialJoinTable
+                     GROUP BY $ID_FIELD, $INDICATOR_FIELD)
+                     GROUP BY $ID_FIELD;
+                     """
             datasource.execute(query)
 
             // Creation of a table which is built from
             // the union of the grid and pivot tables based on the same cell 'id'
             def outputTableName = "zonalArea"
-            def qjoin = """
-                        DROP TABLE IF EXISTS $outputTableName; 
-                        CREATE TABLE $outputTableName
-                        AS SELECT b.$ID_FIELD, b.$GEOMETRIC_FIELD
-                        """
-            listValues.each {qjoin += ", NVL($INDICATOR_FIELD"+"_"+"${it.val}, 0)" +
-                                      " AS $INDICATOR_FIELD"+"_"+"${it.val}"}
+            def qjoin = "DROP TABLE IF EXISTS $outputTableName;"+
+                        "CREATE TABLE $outputTableName "+
+                        "AS SELECT b.$ID_FIELD, b.$GEOMETRIC_FIELD"
+            listValues.each {
+                qjoin += " , NVL($INDICATOR_FIELD"+"_"+"${it.val.toString().replace(".", "_")}, 0)"+
+                         " AS $INDICATOR_FIELD"+"_"+"${it.val.toString().replace(".", "_")}"}
             qjoin += " FROM $targetTable b"+
                      " LEFT JOIN $pivotTable a"+
                      " ON (a.$ID_FIELD = b.$ID_FIELD);"
             datasource.execute(qjoin)
 
             // Drop intermediate tables created during process
-            def dropTables = ["$spatialJoinTable", "$pivotTable"]
-            def qDrop = "DROP TABLE IF EXISTS "
-            dropTables.each {qDrop += it+", "}
-            qDrop = qDrop[0..-3]+";"
-            datasource.execute(qDrop)
+            datasource.execute("DROP TABLE IF EXISTS $spatialJoinTable, $pivotTable")
 
             outputTableName = prefixName+outputTableName
             info "The zonal area table have been created"

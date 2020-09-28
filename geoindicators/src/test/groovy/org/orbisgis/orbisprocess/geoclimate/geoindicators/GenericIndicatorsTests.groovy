@@ -504,13 +504,25 @@ class GenericIndicatorsTests {
         def value1 = h2GIS.firstRow("SELECT height_wall FROM building_test")[indicatorName]
         def value2 = h2GIS.firstRow("SELECT $indicatorName FROM $indicatorTableName")[indicatorName]
         def value3 = h2GIS.firstRow("SELECT the_geom FROM $indicatorTableName")['the_geom'].toString()
-        assert value1==8
-        assert value2==8
+        assert value1==8F
+        assert value2==8F
         assertEquals('POLYGON ((4 4, 10 4, 10 30, 4 30, 4 4))', value3)
+
+        def geometry = h2GIS.getSpatialTable(indicatorTableName).getExtent("the_geom")
+        geometry.setSRID(h2GIS.getSpatialTable(indicatorTableName).srid)
+        def gridProcess = Geoindicators.SpatialUnits.createGrid()
+        gridProcess.execute([geometry: geometry,
+                             deltaX: 1000D,
+                             deltaY: 1000D,
+                             gridTableName: "grid",
+                             datasource: h2GIS])
+        def targetTableName = gridProcess.results.outputTableName
 
         def zonalAreaProcess = Geoindicators.GenericIndicators.zonalArea()
         zonalAreaProcess.execute(
-                [indicatorTableName: indicatorTableName,
+                [gridTableName: targetTableName,
+                 gridId: "id",
+                 indicatorTableName: indicatorTableName,
                  indicatorName: indicatorName,
                  prefixName: "agg",
                  datasource: h2GIS])
