@@ -473,14 +473,16 @@ IProcess createGrid() {
         outputs outputTableName: String
 
         run { geometry, deltaX, deltaY, gridTableName, datasource ->
-            if (datasource.hasTable(gridTableName)) {
+            if (gridTableName) {
                 info "Table $gridTableName already exists"
-                //return null
             }
             if (datasource instanceof H2GIS) {
                 info "Creating grid with H2GIS"
-                datasource """CREATE TABLE $gridTableName AS SELECT * FROM 
-                                     ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()})  , $deltaX, $deltaY);"""
+                datasource """
+                                  CREATE TABLE $gridTableName 
+                                  AS SELECT * FROM 
+                                  ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY);
+                                  """
             }
             else if (datasource instanceof POSTGIS) {
                 info "Creating grid with POSTGIS"
@@ -521,7 +523,7 @@ IProcess createGrid() {
                         }
                     }
             }
-            info "The grid '$gridTableName' has been created"
+            info "The grid named '$gridTableName' has been created"
             [outputTableName: gridTableName]
          }
     }

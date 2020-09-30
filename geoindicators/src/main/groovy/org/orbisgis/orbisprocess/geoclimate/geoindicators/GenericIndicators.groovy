@@ -961,7 +961,6 @@ IProcess gatherScales() {
         }
     }
 }
-
 /**
  * This process is used to compute zonal area on a specific variable from a lower scale (for
  * example the LCZs variables within a Reference Spatial Unit)
@@ -986,11 +985,11 @@ IProcess zonalArea() {
         outputs outputTableName: String
         run { gridTableName, gridId, indicatorTableName, indicatorName, prefixName, datasource ->
 
-            def ID_FIELD = gridId
-            def GEOMETRIC_FIELD = "the_geom"
-            def INDICATOR_FIELD = indicatorName
             def sourceTable = indicatorTableName
             def targetTable = gridTableName
+            def ID_FIELD = gridId
+            def GEOMETRIC_FIELD = datasource."$targetTable".the_geom.name
+            def INDICATOR_FIELD = indicatorName
 
             datasource."$sourceTable".the_geom.createSpatialIndex()
             datasource."$targetTable".the_geom.createSpatialIndex()
@@ -1014,8 +1013,8 @@ IProcess zonalArea() {
                              AS val FROM $spatialJoinTable
                              """
             def listValues = datasource.rows(qIndicator)
-            def FDType = listValues[0][0] instanceof Float || Double
-            if (FDType) { listValues.each { it.val = it.val.toString().replace(".", "_")} }
+            def isFloatDoubleType = listValues[0][0] instanceof Float || Double
+            if (isFloatDoubleType) { listValues.each {it.val = it.val.toString().replace(".", "_")} }
 
             // Creation of the pivot table which contains for each cell id,
             // the total area corresponding to the aggregation of all indicators of same values
@@ -1031,7 +1030,7 @@ IProcess zonalArea() {
                          AS $INDICATOR_FIELD${"_"}${it.val}
                          """}
             query += " FROM (SELECT $ID_FIELD"
-            if (FDType) {
+            if (isFloatDoubleType) {
                 listValues.each {
                     query += """
                              , CASE WHEN $INDICATOR_FIELD=${it.val.toString().replace('_','.')}
@@ -1076,7 +1075,7 @@ IProcess zonalArea() {
             // Drop intermediate tables created during process
             datasource.execute("DROP TABLE IF EXISTS $spatialJoinTable, $pivotTable")
 
-            outputTableName = prefixName+outputTableName
+            outputTableName = prefix prefixName, outputTableName
             info "The zonal area table have been created"
             [outputTableName: outputTableName]
         }
