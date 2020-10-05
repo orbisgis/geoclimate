@@ -120,7 +120,7 @@ class FormattingForAbstractModelTests {
 
     }
 
-    //@Disabled
+    @Disabled
     @Test //enable it to test data extraction from the overpass api
     void extractCreateFormatGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
