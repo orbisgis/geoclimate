@@ -185,6 +185,9 @@ IProcess workflow() {
                             return
                         }
                         def outputSRID = output.get("srid")
+                        if(outputSRID && outputSRID.isInteger()){
+                            outputSRID = outputSRID.toInteger()
+                        }
                         def outputDataBase = output.get("database")
                         def outputFolder = output.get("folder")
                         if (outputDataBase && outputFolder) {

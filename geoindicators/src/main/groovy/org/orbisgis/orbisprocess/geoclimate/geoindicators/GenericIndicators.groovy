@@ -1,6 +1,7 @@
 package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
+import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
 import org.orbisgis.orbisdata.datamanager.jdbc.*
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.*
@@ -801,7 +802,7 @@ IProcess gatherScales() {
     return create {
         title "Proportion of a certain type within a given object"
         id "typeProportion"
-        inputs  buildingTable: String, blockTable: "", rsuTable: String,
+        inputs buildingTable: String, blockTable: "", rsuTable: String,
                 targetedScale: "RSU", operationsToApply: ["AVG", "STD"], prefixName: String,
                 datasource: JdbcDataSource
         outputs outputTableName: String
@@ -815,7 +816,7 @@ IProcess gatherScales() {
 
             info """ Executing the gathering of scales (to building or to RSU scale)"""
 
-            if((targetedScale.toUpperCase() == "RSU") || (targetedScale.toUpperCase() == "BUILDING")){
+            if ((targetedScale.toUpperCase() == "RSU") || (targetedScale.toUpperCase() == "BUILDING")) {
                 // Temporary tables that will be deleted at the end of the process
                 def finalScaleTableName = postfix "final_before_join"
                 def scale1ScaleFin = postfix "scale1_scale_fin"
@@ -833,25 +834,25 @@ IProcess gatherScales() {
                 // Calculate average and variance at RSU scale from each indicator of the building scale
                 def inputVarAndOperationsBuild = [:]
                 def buildIndicators = datasource.getTable(buildingTable).getColumns()
-                for (col in buildIndicators){
-                    if (!BUILD_COL_TO_REMOVE.contains(col)){
+                for (col in buildIndicators) {
+                    if (!BUILD_COL_TO_REMOVE.contains(col)) {
                         inputVarAndOperationsBuild[col] = operationsToApply
                     }
                 }
                 // Calculate building indicators averaged at RSU scale
                 def calcBuildStat = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
-                calcBuildStat.execute([	inputLowerScaleTableName: buildingTable,
-                                           inputUpperScaleTableName: rsuTable,
-                                           inputIdUp: "id_rsu", inputIdLow: "id_build",
-                                           inputVarAndOperations: inputVarAndOperationsBuild,
-                                           prefixName: "bu", datasource: datasource])
+                calcBuildStat.execute([inputLowerScaleTableName: buildingTable,
+                                       inputUpperScaleTableName: rsuTable,
+                                       inputIdUp               : "id_rsu", inputIdLow: "id_build",
+                                       inputVarAndOperations   : inputVarAndOperationsBuild,
+                                       prefixName              : "bu", datasource: datasource])
                 def buildIndicRsuScale = calcBuildStat.results.outputTableName
 
                 // To avoid crashes of the join due to column duplicate, need to prefix some names
                 def buildRsuCol2Rename = datasource.getTable(buildIndicRsuScale).getColumns()
                 def listBuildRsuRename = []
-                for (col in buildRsuCol2Rename){
-                    if(col != "ID_BUILD" && col != "ID_BLOCK" && col != "ID_RSU" && col != "THE_GEOM"){
+                for (col in buildRsuCol2Rename) {
+                    if (col != "ID_BUILD" && col != "ID_BLOCK" && col != "ID_RSU" && col != "THE_GEOM") {
                         listBuildRsuRename.add("a.$col AS build_$col")
                     }
                 }
@@ -953,10 +954,140 @@ IProcess gatherScales() {
                                 ON a.$idBlockForMerge = b.$idBlockForMerge;"""
 
                 [outputTableName: outputTableName]
-            }
-            else{
+            } else {
                 error """ The 'targetedScale' parameter should either be 'RSU' or 'BUILDING' """
             }
         }
     }
+}
+
+
+    /**
+     * This process is used to compute aggregate the area of a specific variable to a upper scale from a lower scale (for
+     * example the LCZs variables within a Reference Spatial Unit)
+     *
+     * @param upperTableName the name of the upper scale table
+     * @param upperColumnId unique identifier for the upper scale table
+     * @param lowerTableName the table of the lower scale to be aggregated
+     * @param lowerColumName the name of the column to be aggregated
+     * @param prefixName String used as prefix to name the output table
+     * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+     *        the resulting database will be stored
+     * @return A database table name.
+     *
+     * @author Emmanuel Renault, CNRS, 2020
+     * @author Erwan Bocher, CNRS, 2020
+     */
+    IProcess upperScaleAreaStatistics() {
+        return create {
+            title "Statistics on zonal area for a given indicator"
+            id "upperScaleStatisticArea"
+            inputs upperTableName: String, upperColumnId: String, lowerTableName: String, lowerColumName: String,
+                    prefixName: String, datasource: JdbcDataSource
+            outputs outputTableName: String
+            run { upperTableName, upperColumnId, lowerTableName, lowerColumName, prefixName, datasource ->
+
+                ISpatialTable upperTable = datasource.getSpatialTable(upperTableName)
+                def upperGeometryColumn = upperTable.getGeometricColumns().first()
+                if(!upperGeometryColumn) {
+                    error "The upper scale table must contain a geometry column"
+                    return
+                }
+                ISpatialTable lowerTable = datasource.getSpatialTable(lowerTableName)
+                def lowerGeometryColumn = lowerTable.getGeometricColumns().first()
+                if(!lowerGeometryColumn) {
+                    error "The lower scale table must contain a geometry column"
+                    return
+                }
+                upperTable."$upperGeometryColumn".createSpatialIndex()
+                upperTable."$upperColumnId".createIndex()
+                lowerTable."$lowerGeometryColumn".createSpatialIndex()
+
+                def spatialJoinTable = "gridSpatialJoin"
+                def spatialJoin = """
+                              DROP TABLE IF EXISTS $spatialJoinTable;
+                              CREATE TABLE $spatialJoinTable 
+                              AS SELECT b.$upperColumnId, a.$lowerColumName,
+                                        ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$lowerGeometryColumn)), 
+                                        st_force2d(st_makevalid(b.$upperGeometryColumn)))) AS area
+                              FROM $lowerTableName a, $upperTableName b
+                              WHERE a.$lowerGeometryColumn && b.$upperGeometryColumn AND 
+                              ST_INTERSECTS(st_force2d(a.$lowerGeometryColumn), st_force2d(b.$upperGeometryColumn));
+                              """
+                datasource.execute(spatialJoin)
+                datasource "CREATE INDEX ON $spatialJoinTable USING BTREE($lowerColumName)"
+                datasource "CREATE INDEX ON $spatialJoinTable USING BTREE($upperColumnId)"
+
+                // Creation of a list which contains all indicators of distinct values
+                def qIndicator = """
+                             SELECT DISTINCT $lowerColumName 
+                             AS val FROM $spatialJoinTable
+                             """
+                def listValues = datasource.rows(qIndicator)
+
+                // Creation of the pivot table which contains for each upper geometry
+                def pivotTable = "tmpZonalArea"
+                def query = """
+                        DROP TABLE IF EXISTS $pivotTable;
+                        CREATE TABLE $pivotTable
+                        AS SELECT $upperColumnId
+                        """
+                listValues.each {
+                    def aliasColumn = "${lowerColumName}_${it.val.toString().replace('.','_')}"
+                    query += """
+                         , SUM($aliasColumn)
+                         AS $aliasColumn
+                         """
+                }
+                query += " FROM (SELECT $upperColumnId"
+
+                listValues.each {
+                    def aliasColumn = "${lowerColumName}_${it.val.toString().replace('.','_')}"
+                    query += """
+                             , CASE WHEN $lowerColumName=${it.val}
+                             THEN SUM(area) ELSE 0 END
+                             AS $aliasColumn
+                             """
+                    }
+
+                query += """
+                     FROM $spatialJoinTable
+                     GROUP BY $upperColumnId, $lowerColumName)
+                     GROUP BY $upperColumnId;
+                     """
+                datasource.execute(query)
+
+                //Build indexes
+                datasource "CREATE INDEX ON $pivotTable USING BTREE($upperColumnId)"
+
+                // Creation of a table which is built from
+                // the union of the grid and pivot tables based on the same cell 'id'
+                def outputTableName = prefix prefixName, "upper_scale_statistics_area"
+                def qjoin = """
+                        DROP TABLE IF EXISTS $outputTableName;
+                        CREATE TABLE $outputTableName
+                        AS SELECT b.$upperColumnId, b.$upperGeometryColumn
+                        """
+                listValues.each {
+                    def aliasColumn = "${lowerColumName}_${it.val.toString().replace('.','_')}"
+
+                    qjoin += """
+                         , NVL($aliasColumn, 0)
+                         AS $aliasColumn
+                         """
+                }
+                qjoin += """
+                     FROM $upperTableName b
+                     LEFT JOIN $pivotTable a
+                     ON (a.$upperColumnId = b.$upperColumnId);
+                     """
+                datasource.execute(qjoin)
+
+                // Drop intermediate tables created during process
+                datasource.execute("DROP TABLE IF EXISTS $spatialJoinTable, $pivotTable")
+
+                info "The zonal area table have been created"
+                [outputTableName: outputTableName]
+            }
+        }
 }

@@ -9,7 +9,6 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
 import smile.base.cart.SplitRule
 import smile.classification.RandomForest
 import smile.data.formula.Formula
-import smile.data.type.DataType
 import smile.data.vector.IntVector
 import smile.validation.Accuracy
 import smile.validation.Validation

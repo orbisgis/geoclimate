@@ -3,9 +3,11 @@ package org.orbisgis.orbisprocess.geoclimate.geoindicators
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertFalse
+import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS.open
 
@@ -489,5 +491,60 @@ class GenericIndicatorsTests {
         def gatheredScales2 = applyGatherScales2.results.outputTableName
         def finalColBuild = h2GIS."$gatheredScales2".columns.collect{ it.toLowerCase() }
         assertEquals colBuild.sort(), finalColBuild.sort()
+    }
+
+    @Test
+    void upperScaleAreaStatisticsTest() {
+        def indicatorTableName = "rsu_test"
+        def indicatorName = "rsu_area"
+        def geometryColumnName = "the_geom"
+
+        def geometry = h2GIS.getSpatialTable(indicatorTableName).getExtent(geometryColumnName)
+        geometry.setSRID(h2GIS.getSpatialTable(indicatorTableName).srid)
+        def gridProcess = Geoindicators.SpatialUnits.createGrid()
+        gridProcess.execute([geometry: geometry,
+                             deltaX: 1000D,
+                             deltaY: 1000D,
+                             datasource: h2GIS])
+
+        def targetTableName = gridProcess.results.outputTableName
+        assertEquals(4, h2GIS.getSpatialTable(targetTableName).getRowCount())
+
+        def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics()
+        upperScaleAreaStatistics.execute(
+                [upperTableName: targetTableName,
+                 upperColumnId: "id",
+                 lowerTableName: indicatorTableName,
+                 lowerColumName: indicatorName,
+                 prefixName: "agg",
+                 datasource: h2GIS])
+
+        def upperScaleTableResult = upperScaleAreaStatistics.results.outputTableName
+        ISpatialTable upperStats = h2GIS.getSpatialTable(upperScaleTableResult)
+        assertNotNull(upperStats)
+
+        def nb_indicators = h2GIS.rows "SELECT distinct ${indicatorName} AS nb FROM $indicatorTableName"
+        def columns = upperStats.getColumns()
+        columns.remove("ID")
+        columns.remove("THE_GEOM")
+        assertEquals(nb_indicators.size(), columns.size())
+
+        def query ="drop table if exists babeth_zone; create table babeth_zone as select id,"
+        columns.each {
+            query+= "SUM($it) + "
+        }
+        query = query[0..-4]
+        query+=" as sum_indic from ${upperScaleTableResult} group by ID"
+        h2GIS.execute query
+
+        def values= h2GIS.firstRow "select count(*) as nb from babeth_zone where sum_indic=0"
+        assertEquals(2, values.NB)
+
+        values= h2GIS.firstRow "select sum_indic as nb from babeth_zone where id=3"
+        assertEquals(110000, values.NB)
+
+        values= h2GIS.firstRow "select sum_indic as nb from babeth_zone where id=0"
+        assertEquals(7575, values.NB)
+
     }
 }

@@ -452,31 +452,31 @@ IProcess spatialJoin() {
 }
 
 /**
- * This process is used to generate a regular grid.
+ * This process is used to generate a grid.
  *
  * @param geometry A geometry that defines either Point, Line or Polygon
- * @param deltaX An integer that represents the spatial horizontal step of a cell in the mesh
- * @param deltaY An integer that represents the spatial vertical step of a cell in the mesh
- * @param outputTable A Table that contains the geometry of the regular grid
+ * @param deltaX A double value that represents the spatial horizontal step of a cell in the grid
+ * @param deltaY A double value that represents the spatial vertical step of a cell in the grid
+ * @param prefixName A prefix used to name the output table
  * @param datasource A connexion to a database (H2GIS, POSTGIS, ...) where are stored the input Table and in which
  *        the resulting database will be stored
  * @param outputTableName The name of the created table
  * */
-IProcess regularGrid() {
+IProcess createGrid() {
     return create {
-        title "Creating a regular grid in meters"
-        id "regularGrid"
-        inputs geometry: Geometry, deltaX: double, deltaY: double, tableName: String, datasource: JdbcDataSource
+        title "Creating a grid in meters"
+        id "createGrid"
+        inputs geometry: Geometry, deltaX: double, deltaY: double, prefixName: "", datasource: JdbcDataSource
         outputs outputTableName: String
+        run { geometry, deltaX, deltaY, prefixName, datasource ->
 
-        run { geometry, deltaX, deltaY, tableName, datasource ->
-            if (datasource.hasTable(tableName)) {
-                info "Table $tableName already exists"
-                return null
-            }
+            def BASE_NAME = "grid"
+            // The name of the outputTableName is constructed
+            def outputTableName = prefix prefixName, BASE_NAME
+
             if (datasource instanceof H2GIS) {
                 info "Creating a regular grid with H2GIS"
-                datasource """CREATE TABLE $tableName AS SELECT * FROM 
+                datasource """CREATE TABLE $outputTableName AS SELECT * FROM 
                                      ST_MakeGrid('$geometry'::geometry, $deltaX, $deltaY);
                            """
             }
@@ -485,8 +485,8 @@ IProcess regularGrid() {
                     PreparedStatement preparedStatement = null
                     Connection outputConnection = datasource.getConnection()
                     try {
-                        def createTable = "CREATE TABLE $tableName(THE_GEOM GEOMETRY(POLYGON), ID INT, ID_COL INT, ID_ROW INT);"
-                        def insertTable = "INSERT INTO $tableName VALUES (?, ?, ?, ?);"
+                        def createTable = "CREATE TABLE $outputTableName(THE_GEOM GEOMETRY(POLYGON), ID INT, ID_COL INT, ID_ROW INT);"
+                        def insertTable = "INSERT INTO $outputTableName VALUES (?, ?, ?, ?);"
                         datasource.execute(createTable)
                         preparedStatement = outputConnection.prepareStatement(insertTable)
                         def result = ST_MakeGrid.createGrid(outputConnection, ValueGeometry.getFromGeometry(geometry), deltaX, deltaY)
@@ -519,8 +519,8 @@ IProcess regularGrid() {
                         }
                     }
             }
-            info "The grid $tableName has been created"
-            [outputTableName: tableName]
+            info "The grid $outputTableName has been created"
+            [outputTableName: outputTableName]
          }
     }
 }

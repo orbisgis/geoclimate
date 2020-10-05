@@ -203,6 +203,9 @@ IProcess workflow() {
                             def outputDataBase = output.database
                             def outputFolder = output.folder				
                             def outputSRID = output.get("srid")
+                            if(outputSRID && outputSRID.isInteger()){
+                                outputSRID = outputSRID.toInteger()
+                            }
                             if (outputDataBase && outputFolder) {
                                 def outputFolderProperties = outputFolderProperties(outputFolder)
                                 //Check if we can write in the output folder
@@ -329,7 +332,7 @@ IProcess workflow() {
                                 return
                             }
                             def outputSRID = output.get("srid")
-                            if(outputSRID.isInteger()){
+                            if(outputSRID && outputSRID.isInteger()){
                                 outputSRID = outputSRID.toInteger()
                             }
                             def outputDataBase = output.database
