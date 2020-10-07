@@ -383,15 +383,13 @@ class GeoIndicatorsChainTest {
         boolean lczRandomForest = true
         def prefixName = ""
         def ind_i = ["LCZ"]
-        def modelPath = "../models/LCZ_OSM_RF_1_0.model"
 
         IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
                 hydrographicTable: inputTableNames.hydrographicTable, indicatorUse: ind_i,
-                svfSimplified: svfSimplified, prefixName: prefixName, lczRandomForest: lczRandomForest,
-                lczRfModelPath: modelPath)
+                svfSimplified: svfSimplified, prefixName: prefixName, lczRandomForest: lczRandomForest)
 
         def expectListRsuTempo = listColBasic + listColCommon
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()

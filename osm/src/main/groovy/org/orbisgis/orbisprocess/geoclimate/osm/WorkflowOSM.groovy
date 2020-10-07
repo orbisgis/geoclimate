@@ -438,7 +438,7 @@ IProcess osm_processing() {
                                             indicatorUse:["URBAN_TYPOLOGY"],
                                             svfSimplified: true, prefixName: processing_parameters.prefixName,
                                             mapOfWeights: processing_parameters.mapOfWeights,
-                                            lczRandomForest: processing_parameters.lczRandomForest)) {
+                                            lczRandomForest: false)) {
                                         error "Cannot build the geoindicators for the zone $id_zone to estimate the building height"
                                         geoIndicatorsComputed = false
                                     } else {
@@ -447,7 +447,7 @@ IProcess osm_processing() {
                                     }
                                     //Let's go to select the building's id that must be processed to fix the height
                                     if(geoIndicatorsComputed){
-                                        info "Extracting the building to estimate their height for the ${id_zone}"
+                                        info "Extracting the building having no height information for the ${id_zone} and estimate it"
                                         def results = geoIndicators.results;
 
                                         //Select indicators we need at building scales
@@ -463,8 +463,6 @@ IProcess osm_processing() {
 
                                         info "Collect building indicators to estimate the height for the ${id_zone}"
 
-                                        h2gis_datasource.getSpatialTable(buildingEstimateWithIndicators).save("/tmp/limited_building.geojson.gz", true)
-
                                         def applygatherScales = Geoindicators.GenericIndicators.gatherScales()
                                         applygatherScales.execute([
                                                 buildingTable    : buildingEstimateWithIndicators,
@@ -476,16 +474,32 @@ IProcess osm_processing() {
                                                 datasource       : h2gis_datasource])
                                         def gatheredScales = applygatherScales.results.outputTableName
 
-                                        h2gis_datasource.getSpatialTable(gatheredScales).save("/tmp/limited_indicators.geojson", true)
-
                                         info "Start estimating the building height for the ${id_zone}"
 
                                         //Apply RF model
+                                        def applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
+                                        applyRF.execute([
+                                                explicativeVariablesTableName: gatheredScales,
+                                                pathAndFileName              : "BUILDING_HEIGHT_OSM_RF_1_0.model",
+                                                idName                       : "id_build",
+                                                prefixName                   : processing_parameters.prefixName,
+                                                datasource                   : h2gis_datasource])
 
                                         //Update the abstract building table
-
                                         info "Replace the input building table by the estimated height for the ${id_zone}"
+                                        def buildEstimatedHeight = applyRF.results.outputTableName
 
+                                        h2gis_datasource.getTable(buildEstimatedHeight).id_build.createIndex()
+
+                                        def newEstimatedHeigthWithIndicators = "NEW_BUILDING_INDICATORS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+
+                                        h2gis_datasource.execute """DROP TABLE IF EXISTS $newEstimatedHeigthWithIndicators;
+                                           CREATE TABLE $buildingEstimateWithIndicators as SELECT a.the_geom, b.the_geom from $buildingIndicatorsTableName 
+                                            a left join $newEstimatedHeigthWithIndicators b on a.id_build=b.id_build where b.ESTIMATED = true;"""
+
+                                        h2gis_datasource.getSpatialTable(buildingIndicatorsTableName).save("/tmp/building_input.geojson", true)
+
+                                        h2gis_datasource.getSpatialTable(newEstimatedHeigthWithIndicators).save("/tmp/new_building_height.geojson", true)
 
                                         //Re-run geoindicators chain with the config parameters
 

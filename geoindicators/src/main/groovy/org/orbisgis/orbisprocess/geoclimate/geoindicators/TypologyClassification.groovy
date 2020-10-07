@@ -539,36 +539,35 @@ IProcess applyRandomForestModel() {
     return create {
         title "Apply a Random Forest classification"
         id "applyRandomForestModel"
-        inputs explicativeVariablesTableName: String, pathAndFileName: "", idName: String,
+        inputs explicativeVariablesTableName: String, pathAndFileName: String, idName: String,
                 prefixName: String, datasource: JdbcDataSource
         outputs outputTableName: String
         run { String explicativeVariablesTableName, String pathAndFileName, String idName,
               String prefixName, JdbcDataSource datasource ->
             info "Apply a Random Forest model"
-            //The model is not provided by the user is used
             def modelName;
-            File inputModelFile;
-            if (!pathAndFileName) {
-                //We look for the default model
-                //Default model name
-                modelName = "LCZ_OSM_RF_1_0"
+            File inputModelFile = new File(pathAndFileName)
+            modelName = FilenameUtils.getBaseName(pathAndFileName)
+            if (!inputModelFile.exists()) {
+                //We try to find this model in geoclimate
                 def modelURL = "https://github.com/orbisgis/geoclimate/raw/master/models/${modelName}.model"
-                inputModelFile = new File(System.getProperty("user.home") + File.separator + ".geoclimate" + File.separator + modelName + ".model")
+                def localInputModelFile = new File(System.getProperty("user.home") + File.separator + ".geoclimate" + File.separator + modelName + ".model")
                 // The model doesn't exist on the local folder we download it
-                if (!inputModelFile.exists()) {
-                    FileUtils.copyURLToFile(new URL(modelURL), inputModelFile)
-                    if (!inputModelFile.exists()) {
+                if (!localInputModelFile.exists()) {
+                    FileUtils.copyURLToFile(new URL(modelURL), localInputModelFile)
+                    if (!localInputModelFile.exists()) {
                         error "Cannot find any model file to apply the classification tree"
                         return null
                     }
                 }
+                inputModelFile=localInputModelFile;
             } else {
-                inputModelFile = new File(pathAndFileName);
-                if (!inputModelFile.exists()) {
-                    error "Cannot find any model file to apply the classification tree"
-                    return null
-                } else {
+                if(FilenameUtils.isExtension(pathAndFileName, "model")){
                     modelName = FilenameUtils.getBaseName(pathAndFileName)
+                }
+                else{
+                    error "The extension of the model file must be .model"
+                    return null
                 }
             }
             def fileInputStream = new FileInputStream(inputModelFile)
@@ -594,8 +593,16 @@ IProcess applyRandomForestModel() {
             def explicativeVariablesTable = datasource."$explicativeVariablesTableName"
 
             // Read the table containing the explicative variables as a DataFrame
-            def df = DataFrame.of(explicativeVariablesTable)
+            def dfNofactorized = DataFrame.of(explicativeVariablesTable)
 
+            def df = dfNofactorized
+            def columnTypes = df.getColumnsTypes()
+            // Identify columns being string (thus needed to be factorized)
+            columnTypes.each{colName, colType ->
+                if(colType == "String"){
+                    df = df.factorize(colName)
+                }
+            }
             // Remove the id for the application of the randomForest
             def df_var = df.drop(idName.toUpperCase())
 

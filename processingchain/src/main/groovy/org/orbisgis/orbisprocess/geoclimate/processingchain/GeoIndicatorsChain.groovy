@@ -1011,12 +1011,11 @@ IProcess computeAllGeoIndicators() {
                 mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
-                lczRandomForest: false, lczRfModelPath: ""
+                lczRandomForest: false
         outputs outputTableBuildingIndicators: String, outputTableBlockIndicators: String,
                 outputTableRsuIndicators: String, outputTableRsuLcz: String, outputTableZone: String
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable, imperviousTable,
-              surface_vegetation, surface_hydro, distance, indicatorUse, svfSimplified, prefixName, mapOfWeights, lczRandomForest,
-              lczRfModelPath ->
+              surface_vegetation, surface_hydro, distance, indicatorUse, svfSimplified, prefixName, mapOfWeights, lczRandomForest->
             info "Start computing the geoindicators..."
             // Temporary tables are created
             def lczIndicTable = postfix "LCZ_INDIC_TABLE"
@@ -1119,7 +1118,7 @@ IProcess computeAllGeoIndicators() {
                     def applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
                     applyRF.execute([
                             explicativeVariablesTableName: gatheredScales,
-                            pathAndFileName              : lczRfModelPath,
+                            pathAndFileName              : "LCZ_OSM_RF_1_0.model",
                             idName                       : COLUMN_ID_RSU,
                             prefixName                   : prefixName,
                             datasource                   : datasource])
