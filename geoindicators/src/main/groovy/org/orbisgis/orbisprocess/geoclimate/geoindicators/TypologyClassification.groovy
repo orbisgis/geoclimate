@@ -7,7 +7,8 @@ import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import smile.base.cart.SplitRule
-import smile.classification.RandomForest
+import smile.classification.RandomForest as RandomForestClassification
+import smile.regression.RandomForest as RandomForestRegression
 import smile.data.formula.Formula
 import smile.data.vector.IntVector
 import smile.validation.Accuracy
@@ -398,12 +399,11 @@ IProcess identifyLczType() {
 }
 
 /**
- * This process is used to create a classification model based on a RandomForest algorithm.
+ * This process is used to create a random Forest model for regression or classification purpose.
  * The training dataset and the variables to use for the training may be gathered in a
- * same table. All parameters of the randomForest algorithm have default values but may be
- * modified. The resulting model is returned and may also be saved into a file.
+ * same table. The resulting model is returned and may also be saved into a file.
  *
- * Note that the algorithm is based on the Smile library (cf. https://github.com/haifengl/smile)
+ * Note that the algorithms are based on the Smile library (cf. https://github.com/haifengl/smile)
  *
  * @param trainingTableName The name of the training table where are stored ONLY the explicative variables
  * and the one to model
@@ -416,7 +416,7 @@ IProcess identifyLczType() {
  * @param mtry The number of input variables to be used to determine the decision
  * at a node of the tree. p/3 seems to give generally good performance,
  * where p is the number of variables
- * @param rule Decision tree split rule (The function to measure the quality of a split. Supported rules
+ * @param rule Decision tree split rule FOR CLASSIFICATION ONLY (The function to measure the quality of a split. Supported rules
  * are “gini” for the Gini impurity and “entropy” for the information gain)
  * @param maxDepth The maximum depth of the tree.
  * @param maxNodes The maximum number of leaf nodes in the tree.
@@ -424,22 +424,23 @@ IProcess identifyLczType() {
  * not split, setting nodeSize = 5 generally gives good results.
  * @param subsample The sampling rate for training tree. 1.0 means sampling with replacement. < 1.0 means
  * sampling without replacement.
+ * @param classif Boolean to specify whether the randomForest is a classification or a regression
  * @param datasource A connection to a database
  *
  * @return RfModel A randomForest model (see smile library for further information about the object)
  *
  * @author Jérémy Bernard
  */
-IProcess createRandomForestClassif() {
+IProcess createRandomForestModel() {
     return create {
         title "Create a Random Forest model"
-        id "createRandomForestClassif"
+        id "createRandomForest"
         inputs trainingTableName: String, varToModel: String, explicativeVariables: [], save: boolean, pathAndFileName: String, ntrees: int,
                 mtry: int, rule: "GINI", maxDepth: int, maxNodes: int, nodeSize: int, subsample: double,
-                datasource: JdbcDataSource
-        outputs RfModel: RandomForest
+                datasource: JdbcDataSource, classif: true
+        outputs RfModel: RandomForestRegression
         run { String trainingTableName, String varToModel, explicativeVariables, save, pathAndFileName, ntrees, mtry, rule, maxDepth,
-              maxNodes, nodeSize, subsample, JdbcDataSource datasource ->
+              maxNodes, nodeSize, subsample, JdbcDataSource datasource, classif ->
 
             def splitRule
             if (rule) {
@@ -476,10 +477,24 @@ IProcess createRandomForestClassif() {
                 df = DataFrame.of(tabFin)
             }
             def formula = Formula.lhs(varToModel)
-            def dfFactorized = df.factorize(varToModel);
+            def columnTypes = df.getColumnsTypes()
+            def dfFactorized = df
+            // Identify columns being string (thus needed to be factorized)
+            columnTypes.each{colName, colType ->
+                if(colType == "String"){
+                    dfFactorized = dfFactorized.factorize(colName)
+                }
+            }
             dfFactorized = dfFactorized.omitNullRows()
             // Create the randomForest
-            def model = RandomForest.fit(formula, dfFactorized, ntrees, mtry, splitRule, maxDepth, maxNodes, nodeSize, subsample)
+            def model
+            if(classif){
+                model = RandomForestClassification.fit(formula, dfFactorized, ntrees, mtry, splitRule, maxDepth, maxNodes, nodeSize, subsample)
+            }
+            else{
+                model = RandomForestRegression.fit(formula, dfFactorized, ntrees, mtry, maxDepth, maxNodes, nodeSize, subsample)
+            }
+
 
             // Calculate the prediction using the same sample in order to identify what is the
             // data rate that has been well classified
@@ -520,10 +535,10 @@ IProcess createRandomForestClassif() {
  *
  * @author Jérémy Bernard
  */
-IProcess applyRandomForestClassif() {
+IProcess applyRandomForestModel() {
     return create {
         title "Apply a Random Forest classification"
-        id "applyRandomForestClassif"
+        id "applyRandomForestModel"
         inputs explicativeVariablesTableName: String, pathAndFileName: "", idName: String,
                 prefixName: String, datasource: JdbcDataSource
         outputs outputTableName: String
