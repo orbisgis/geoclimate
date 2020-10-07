@@ -13,7 +13,7 @@ import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
  *
  * @param indicatorUse The use defined for the indicator. Depending on this use, only a part of the indicators could
  * be calculated (default is all indicators : ["LCZ", "URBAN_TYPOLOGY", "TEB"])
- * 
+ *
  * @return
  */
 IProcess computeBuildingsIndicators() {
@@ -399,43 +399,43 @@ IProcess computeRSUIndicators() {
                 buildingAreaTypeAndComposition  : ["industrial": ["industrial"]],
                 floorAreaTypeAndComposition     : ["residential": ["residential"]],
                 urbanTypoSurfFraction           : ["vegetation_fraction_urb"                 : ["high_vegetation_fraction",
-                                                                                           "low_vegetation_fraction",
-                                                                                           "high_vegetation_low_vegetation_fraction",
-                                                                                           "high_vegetation_road_fraction",
-                                                                                           "high_vegetation_impervious_fraction",
-                                                                                           "high_vegetation_water_fraction",
-                                                                                           "high_vegetation_building_fraction"],
-                                             "low_vegetation_fraction_urb"                  : ["low_vegetation_fraction"],
-                                             "high_vegetation_impervious_fraction_urb"  : ["high_vegetation_road_fraction",
-                                                                                           "high_vegetation_impervious_fraction"],
-                                             "high_vegetation_pervious_fraction_urb"    : ["high_vegetation_fraction",
-                                                                                           "high_vegetation_low_vegetation_fraction",
-                                                                                           "high_vegetation_water_fraction"],
-                                             "road_fraction_urb"                        : ["road_fraction",
-                                                                                           "high_vegetation_road_fraction"],
-                                             "impervious_fraction_urb"                  : ["road_fraction",
-                                                                                           "high_vegetation_road_fraction",
-                                                                                           "impervious_fraction",
-                                                                                           "high_vegetation_impervious_fraction"]],
+                                                                                                "low_vegetation_fraction",
+                                                                                                "high_vegetation_low_vegetation_fraction",
+                                                                                                "high_vegetation_road_fraction",
+                                                                                                "high_vegetation_impervious_fraction",
+                                                                                                "high_vegetation_water_fraction",
+                                                                                                "high_vegetation_building_fraction"],
+                                                   "low_vegetation_fraction_urb"                  : ["low_vegetation_fraction"],
+                                                   "high_vegetation_impervious_fraction_urb"  : ["high_vegetation_road_fraction",
+                                                                                                 "high_vegetation_impervious_fraction"],
+                                                   "high_vegetation_pervious_fraction_urb"    : ["high_vegetation_fraction",
+                                                                                                 "high_vegetation_low_vegetation_fraction",
+                                                                                                 "high_vegetation_water_fraction"],
+                                                   "road_fraction_urb"                        : ["road_fraction",
+                                                                                                 "high_vegetation_road_fraction"],
+                                                   "impervious_fraction_urb"                  : ["road_fraction",
+                                                                                                 "high_vegetation_road_fraction",
+                                                                                                 "impervious_fraction",
+                                                                                                 "high_vegetation_impervious_fraction"]],
                 lczSurfFraction             : ["building_fraction_lcz"                  : ["building_fraction",
                                                                                            "high_vegetation_building_fraction"],
-                                              "pervious_fraction_lcz"                   : ["high_vegetation_fraction",
-                                                                                           "low_vegetation_fraction",
-                                                                                           "water_fraction",
-                                                                                           "high_vegetation_low_vegetation_fraction",
-                                                                                           "high_vegetation_water_fraction"],
-                                              "high_vegetation_fraction_lcz"            : ["high_vegetation_fraction",
-                                                                                           "high_vegetation_low_vegetation_fraction",
-                                                                                           "high_vegetation_road_fraction",
-                                                                                           "high_vegetation_impervious_fraction",
-                                                                                           "high_vegetation_water_fraction",
-                                                                                           "high_vegetation_building_fraction"],
-                                              "low_vegetation_fraction_lcz"             : ["low_vegetation_fraction"],
-                                              "impervious_fraction_lcz"                 : ["impervious_fraction",
+                                               "pervious_fraction_lcz"                   : ["high_vegetation_fraction",
+                                                                                            "low_vegetation_fraction",
+                                                                                            "water_fraction",
+                                                                                            "high_vegetation_low_vegetation_fraction",
+                                                                                            "high_vegetation_water_fraction"],
+                                               "high_vegetation_fraction_lcz"            : ["high_vegetation_fraction",
+                                                                                            "high_vegetation_low_vegetation_fraction",
+                                                                                            "high_vegetation_road_fraction",
+                                                                                            "high_vegetation_impervious_fraction",
+                                                                                            "high_vegetation_water_fraction",
+                                                                                            "high_vegetation_building_fraction"],
+                                               "low_vegetation_fraction_lcz"             : ["low_vegetation_fraction"],
+                                               "impervious_fraction_lcz"                 : ["impervious_fraction",
                                                                                             "road_fraction",
                                                                                             "high_vegetation_impervious_fraction",
                                                                                             "high_vegetation_road_fraction"],
-                                              "water_fraction_lcz"                      : ["water_fraction",
+                                               "water_fraction_lcz"                      : ["water_fraction",
                                                                                             "high_vegetation_water_fraction"]],
                 buildingFractions          : ["high_vegetation_building_fraction","building_fraction"]
         outputs outputTableName: String
@@ -552,14 +552,14 @@ IProcess computeRSUIndicators() {
             if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY") || indicatorUse*.toUpperCase().contains("LCZ")) {
                 def computeTypeProportion = Geoindicators.GenericIndicators.typeProportion()
                 if (!computeTypeProportion([
-                                            inputTableName                  : buildingTable,
-                                            idField                     : columnIdRsu,
-                                            inputUpperTableName         : rsuTable,
-                                            typeFieldName               : "type",
-                                            areaTypeAndComposition      : buildingAreaTypeAndComposition,
-                                            floorAreaTypeAndComposition : floorAreaTypeAndComposition,
-                                            prefixName                  : temporaryPrefName,
-                                            datasource                  : datasource])) {
+                        inputTableName                  : buildingTable,
+                        idField                     : columnIdRsu,
+                        inputUpperTableName         : rsuTable,
+                        typeFieldName               : "type",
+                        areaTypeAndComposition      : buildingAreaTypeAndComposition,
+                        floorAreaTypeAndComposition : floorAreaTypeAndComposition,
+                        prefixName                  : temporaryPrefName,
+                        datasource                  : datasource])) {
                     info "Cannot compute the building type proportion of the RSU"
                     return
                 }
@@ -1023,166 +1023,166 @@ IProcess computeAllGeoIndicators() {
             def COLUMN_ID_RSU = "id_rsu"
             def GEOMETRIC_COLUMN = "the_geom"
 
-                 // If the randomForest should be used, need to calculate all indicators
-                if (indicatorUse*.toUpperCase().contains("LCZ") && lczRandomForest) {
-                    indicatorUse = ["URBAN_TYPOLOGY", "LCZ"]
-                }
+            // If the randomForest should be used, need to calculate all indicators
+            if (indicatorUse*.toUpperCase().contains("LCZ") && lczRandomForest) {
+                indicatorUse = ["URBAN_TYPOLOGY", "LCZ"]
+            }
 
-                //Check data before computing indicators
-                if (!zoneTable && !buildingTable && !roadTable) {
-                    error "To compute the geoindicators the zone, building and road tables must not be null or empty"
+            //Check data before computing indicators
+            if (!zoneTable && !buildingTable && !roadTable) {
+                error "To compute the geoindicators the zone, building and road tables must not be null or empty"
+                return null
+            }
+
+            // Output Lcz table name is set to null in case LCZ indicators are not calculated
+            def rsuLcz = null
+            def rsuLczWithoutGeom = "rsu_lcz_without_geom"
+
+            //Create spatial units and relations : building, block, rsu
+            IProcess spatialUnits = createUnitsOfAnalysis()
+            if (!spatialUnits.execute([datasource       : datasource, zoneTable: zoneTable,
+                                       buildingTable    : buildingTable, roadTable: roadTable,
+                                       railTable        : railTable, vegetationTable: vegetationTable,
+                                       hydrographicTable: hydrographicTable, surface_vegetation: surface_vegetation,
+                                       surface_hydro    : surface_hydro, distance: distance,
+                                       prefixName       : prefixName,
+                                       indicatorUse     : indicatorUse])) {
+                error "Cannot create the spatial units"
+                return null
+            }
+            def relationBuildings = spatialUnits.getResults().outputTableBuildingName
+            def relationBlocks = spatialUnits.getResults().outputTableBlockName
+            def relationRSU = spatialUnits.getResults().outputTableRsuName
+
+
+            //Compute building indicators
+            def computeBuildingsIndicators = computeBuildingsIndicators()
+            if (!computeBuildingsIndicators.execute([datasource            : datasource,
+                                                     inputBuildingTableName: relationBuildings,
+                                                     inputRoadTableName    : roadTable,
+                                                     indicatorUse          : indicatorUse,
+                                                     prefixName            : prefixName])) {
+                error "Cannot compute the building indicators"
+                return null
+            }
+
+            def buildingIndicators = computeBuildingsIndicators.results.outputTableName
+
+            //Compute block indicators
+            def blockIndicators = null
+            if ((indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) ||
+                    (indicatorUse*.toUpperCase().contains("LCZ") && lczRandomForest)) {
+                def computeBlockIndicators = computeBlockIndicators()
+                if (!computeBlockIndicators.execute([datasource            : datasource,
+                                                     inputBuildingTableName: buildingIndicators,
+                                                     inputBlockTableName   : relationBlocks,
+                                                     prefixName            : prefixName])) {
+                    error "Cannot compute the block indicators"
                     return null
                 }
+                blockIndicators = computeBlockIndicators.results.outputTableName
+            }
 
-                // Output Lcz table name is set to null in case LCZ indicators are not calculated
-                def rsuLcz = null
-                def rsuLczWithoutGeom = "rsu_lcz_without_geom"
+            //Compute RSU indicators
+            def rsuIndicators = null
+            def computeRSUIndicators = computeRSUIndicators()
+            if (!computeRSUIndicators.execute([datasource       : datasource,
+                                               buildingTable    : buildingIndicators,
+                                               rsuTable         : relationRSU,
+                                               vegetationTable  : vegetationTable,
+                                               roadTable        : roadTable,
+                                               hydrographicTable: hydrographicTable,
+                                               imperviousTable  : imperviousTable,
+                                               indicatorUse     : indicatorUse,
+                                               svfSimplified    : svfSimplified,
+                                               prefixName       : prefixName])) {
+                error "Cannot compute the RSU indicators"
+                return null
+            }
+            rsuIndicators = computeRSUIndicators.results.outputTableName
+            info "All geoindicators have been computed"
 
-                //Create spatial units and relations : building, block, rsu
-                IProcess spatialUnits = createUnitsOfAnalysis()
-                if (!spatialUnits.execute([datasource       : datasource, zoneTable: zoneTable,
-                                           buildingTable    : buildingTable, roadTable: roadTable,
-                                           railTable        : railTable, vegetationTable: vegetationTable,
-                                           hydrographicTable: hydrographicTable, surface_vegetation: surface_vegetation,
-                                           surface_hydro    : surface_hydro, distance: distance,
-                                           prefixName       : prefixName,
-                                           indicatorUse     : indicatorUse])) {
-                    error "Cannot create the spatial units"
-                    return null
-                }
-                def relationBuildings = spatialUnits.getResults().outputTableBuildingName
-                def relationBlocks = spatialUnits.getResults().outputTableBlockName
-                def relationRSU = spatialUnits.getResults().outputTableRsuName
+            // If the LCZ indicators should be calculated, we only affect a LCZ class to each RSU
+            if (indicatorUse.contains("LCZ")) {
+                if (lczRandomForest) {
+                    def applygatherScales = Geoindicators.GenericIndicators.gatherScales()
+                    applygatherScales.execute([
+                            buildingTable    : buildingIndicators,
+                            blockTable       : blockIndicators,
+                            rsuTable         : rsuIndicators,
+                            targetedScale    : "RSU",
+                            operationsToApply: ["AVG", "STD"],
+                            prefixName       : prefixName,
+                            datasource       : datasource])
+                    def gatheredScales = applygatherScales.results.outputTableName
 
-
-                //Compute building indicators
-                def computeBuildingsIndicators = computeBuildingsIndicators()
-                if (!computeBuildingsIndicators.execute([datasource            : datasource,
-                                                         inputBuildingTableName: relationBuildings,
-                                                         inputRoadTableName    : roadTable,
-                                                         indicatorUse          : indicatorUse,
-                                                         prefixName            : prefixName])) {
-                    error "Cannot compute the building indicators"
-                    return null
-                }
-
-                def buildingIndicators = computeBuildingsIndicators.results.outputTableName
-
-                //Compute block indicators
-                def blockIndicators = null
-                if ((indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) ||
-                        (indicatorUse*.toUpperCase().contains("LCZ") && lczRandomForest)) {
-                    def computeBlockIndicators = computeBlockIndicators()
-                    if (!computeBlockIndicators.execute([datasource            : datasource,
-                                                         inputBuildingTableName: buildingIndicators,
-                                                         inputBlockTableName   : relationBlocks,
-                                                         prefixName            : prefixName])) {
-                        error "Cannot compute the block indicators"
-                        return null
-                    }
-                    blockIndicators = computeBlockIndicators.results.outputTableName
-                }
-
-                //Compute RSU indicators
-                def rsuIndicators = null
-                def computeRSUIndicators = computeRSUIndicators()
-                if (!computeRSUIndicators.execute([datasource       : datasource,
-                                                   buildingTable    : buildingIndicators,
-                                                   rsuTable         : relationRSU,
-                                                   vegetationTable  : vegetationTable,
-                                                   roadTable        : roadTable,
-                                                   hydrographicTable: hydrographicTable,
-                                                   imperviousTable  : imperviousTable,
-                                                   indicatorUse     : indicatorUse,
-                                                   svfSimplified    : svfSimplified,
-                                                   prefixName       : prefixName])) {
-                    error "Cannot compute the RSU indicators"
-                    return null
-                }
-                rsuIndicators = computeRSUIndicators.results.outputTableName
-                info "All geoindicators have been computed"
-
-                // If the LCZ indicators should be calculated, we only affect a LCZ class to each RSU
-                if (indicatorUse.contains("LCZ")) {
-                    if (lczRandomForest) {
-                        def applygatherScales = Geoindicators.GenericIndicators.gatherScales()
-                        applygatherScales.execute([
-                                buildingTable    : buildingIndicators,
-                                blockTable       : blockIndicators,
-                                rsuTable         : rsuIndicators,
-                                targetedScale    : "RSU",
-                                operationsToApply: ["AVG", "STD"],
-                                prefixName       : prefixName,
-                                datasource       : datasource])
-                        def gatheredScales = applygatherScales.results.outputTableName
-
-                        def applyRF = Geoindicators.TypologyClassification.applyRandomForestClassif()
-                        applyRF.execute([
-                                explicativeVariablesTableName: gatheredScales,
-                                pathAndFileName              : lczRfModelPath,
-                                idName                       : COLUMN_ID_RSU,
-                                prefixName                   : prefixName,
-                                datasource                   : datasource])
-                        rsuLczWithoutGeom = applyRF.results.outputTableName
-                        datasource.execute """  ALTER TABLE $rsuLczWithoutGeom RENAME COLUMN LCZ TO LCZ1;"""
-                        datasource."$rsuLczWithoutGeom".reload()
-                        datasource."$rsuLczWithoutGeom"."$COLUMN_ID_RSU".createIndex()
-                        datasource."$relationRSU"."$COLUMN_ID_RSU".createIndex()
-                        rsuLcz = prefix(prefixName, "rsu_lcz")
-                        datasource.execute """  DROP TABLE IF EXISTS $rsuLcz;
+                    def applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
+                    applyRF.execute([
+                            explicativeVariablesTableName: gatheredScales,
+                            pathAndFileName              : lczRfModelPath,
+                            idName                       : COLUMN_ID_RSU,
+                            prefixName                   : prefixName,
+                            datasource                   : datasource])
+                    rsuLczWithoutGeom = applyRF.results.outputTableName
+                    datasource.execute """  ALTER TABLE $rsuLczWithoutGeom RENAME COLUMN LCZ TO LCZ1;"""
+                    datasource."$rsuLczWithoutGeom".reload()
+                    datasource."$rsuLczWithoutGeom"."$COLUMN_ID_RSU".createIndex()
+                    datasource."$relationRSU"."$COLUMN_ID_RSU".createIndex()
+                    rsuLcz = prefix(prefixName, "rsu_lcz")
+                    datasource.execute """  DROP TABLE IF EXISTS $rsuLcz;
                                             CREATE TABLE $rsuLcz
                                                     AS SELECT a.*, b.the_geom
                                                     FROM $rsuLczWithoutGeom a RIGHT JOIN $relationRSU b
                                                     ON a.$COLUMN_ID_RSU = b.$COLUMN_ID_RSU"""
-                    }
-                    else {
-                        def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"              : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
-                                             "BUILDING_FRACTION_LCZ"             : "BUILDING_SURFACE_FRACTION",
-                                             "ASPECT_RATIO"                      : "ASPECT_RATIO",
-                                             "GROUND_SKY_VIEW_FACTOR"            : "SKY_VIEW_FACTOR",
-                                             "PERVIOUS_FRACTION_LCZ"             : "PERVIOUS_SURFACE_FRACTION",
-                                             "IMPERVIOUS_FRACTION_LCZ"           : "IMPERVIOUS_SURFACE_FRACTION",
-                                             "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH": "TERRAIN_ROUGHNESS_LENGTH"]
+                }
+                else {
+                    def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"              : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
+                                         "BUILDING_FRACTION_LCZ"             : "BUILDING_SURFACE_FRACTION",
+                                         "ASPECT_RATIO"                      : "ASPECT_RATIO",
+                                         "GROUND_SKY_VIEW_FACTOR"            : "SKY_VIEW_FACTOR",
+                                         "PERVIOUS_FRACTION_LCZ"             : "PERVIOUS_SURFACE_FRACTION",
+                                         "IMPERVIOUS_FRACTION_LCZ"           : "IMPERVIOUS_SURFACE_FRACTION",
+                                         "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH": "TERRAIN_ROUGHNESS_LENGTH"]
 
-                        // Get into a new table the ID, geometry column and the 7 indicators defined by Stewart and Oke (2012)
-                        // for LCZ classification (rename the indicators with the real names)
-                        def queryReplaceNames = ""
-                        lczIndicNames.each { oldIndic, newIndic ->
-                            queryReplaceNames += "ALTER TABLE $lczIndicTable ALTER COLUMN $oldIndic RENAME TO $newIndic;"
-                        }
-                        datasource.execute """DROP TABLE IF EXISTS $lczIndicTable;
+                    // Get into a new table the ID, geometry column and the 7 indicators defined by Stewart and Oke (2012)
+                    // for LCZ classification (rename the indicators with the real names)
+                    def queryReplaceNames = ""
+                    lczIndicNames.each { oldIndic, newIndic ->
+                        queryReplaceNames += "ALTER TABLE $lczIndicTable ALTER COLUMN $oldIndic RENAME TO $newIndic;"
+                    }
+                    datasource.execute """DROP TABLE IF EXISTS $lczIndicTable;
                                 CREATE TABLE $lczIndicTable 
                                         AS SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, ${lczIndicNames.keySet().join(",")} 
                                         FROM ${computeRSUIndicators.results.outputTableName};
                                 $queryReplaceNames"""
 
-                        datasource."$lczIndicTable".reload()
+                    datasource."$lczIndicTable".reload()
 
-                        // The classification algorithm is called
-                        def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
-                        if (!classifyLCZ([rsuLczIndicators : lczIndicTable,
-                                          rsuAllIndicators : computeRSUIndicators.results.outputTableName,
-                                          normalisationType: "AVG",
-                                          mapOfWeights     : mapOfWeights,
-                                          prefixName       : prefixName,
-                                          datasource       : datasource,
-                                          prefixName       : prefixName])) {
-                            info "Cannot compute the LCZ classification."
-                            return
-                        }
-                        rsuLcz = classifyLCZ.results.outputTableName
-                        datasource.execute "DROP TABLE IF EXISTS $lczIndicTable"
+                    // The classification algorithm is called
+                    def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
+                    if (!classifyLCZ([rsuLczIndicators : lczIndicTable,
+                                      rsuAllIndicators : computeRSUIndicators.results.outputTableName,
+                                      normalisationType: "AVG",
+                                      mapOfWeights     : mapOfWeights,
+                                      prefixName       : prefixName,
+                                      datasource       : datasource,
+                                      prefixName       : prefixName])) {
+                        info "Cannot compute the LCZ classification."
+                        return
                     }
+                    rsuLcz = classifyLCZ.results.outputTableName
+                    datasource.execute "DROP TABLE IF EXISTS $lczIndicTable"
                 }
+            }
 
-                datasource.execute "DROP TABLE IF EXISTS $rsuLczWithoutGeom;"
+            datasource.execute "DROP TABLE IF EXISTS $rsuLczWithoutGeom;"
 
 
-                return [outputTableBuildingIndicators: computeBuildingsIndicators.getResults().outputTableName,
-                        outputTableBlockIndicators   : blockIndicators,
-                        outputTableRsuIndicators     : computeRSUIndicators.getResults().outputTableName,
-                        outputTableRsuLcz            : rsuLcz,
-                        outputTableZone              : zoneTable]
+            return [outputTableBuildingIndicators: computeBuildingsIndicators.getResults().outputTableName,
+                    outputTableBlockIndicators   : blockIndicators,
+                    outputTableRsuIndicators     : computeRSUIndicators.getResults().outputTableName,
+                    outputTableRsuLcz            : rsuLcz,
+                    outputTableZone              : zoneTable]
 
         }
     }
