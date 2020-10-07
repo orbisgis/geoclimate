@@ -506,10 +506,10 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
                 "geoclimatedb" : [
                         "path" : "${dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE"}",
-                        "delete" :true
+                        "delete" :false
                 ],
                 "input" : [
-                        "osm" : ["pont de veyle "]],
+                        "osm" : ["pont-de-veyle "]],
                 "output" :[
                         "folder" : "$directory"],
                 "parameters":

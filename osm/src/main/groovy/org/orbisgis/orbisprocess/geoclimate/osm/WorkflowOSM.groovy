@@ -342,6 +342,7 @@ IProcess osm_processing() {
         outputs outputMessage: String
         run { h2gis_datasource, processing_parameters, id_zones, outputFolder, ouputTableFiles, output_datasource, outputTableNames, outputSRID ->
 
+            // Temporary tables
             int nbAreas = id_zones.size();
             info "$nbAreas osm areas will be processed"
             def geoIndicatorsComputed = false
@@ -454,12 +455,17 @@ IProcess osm_processing() {
                                         def buildingIndicatorsTableName = results.outputTableBuildingIndicators;
                                         h2gis_datasource.getTable(buildingEstimateTableName).id_build.createIndex()
                                         h2gis_datasource.getTable(buildingIndicatorsTableName).id_build.createIndex()
+                                        h2gis_datasource.getTable(buildingIndicatorsTableName).id_rsu.createIndex()
 
                                         def buildingEstimateWithIndicators = "ESTIMATED_BUILDING_INDICATORS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
 
                                         h2gis_datasource.execute """DROP TABLE IF EXISTS $buildingEstimateWithIndicators;
-                                           CREATE TABLE $buildingEstimateWithIndicators as SELECT a.* from $buildingIndicatorsTableName 
-                                            a left join $buildingEstimateTableName b on a.id_build=b.id_build where b.ESTIMATED = true;"""
+                                           CREATE TABLE $buildingEstimateWithIndicators 
+                                                    AS SELECT a.*
+                                                    FROM $buildingIndicatorsTableName a 
+                                                        LEFT JOIN $buildingEstimateTableName b 
+                                                        ON a.id_build=b.id_build
+                                                    WHERE b.ESTIMATED = true AND a.ID_RSU IS NOT NULL;"""
 
                                         info "Collect building indicators to estimate the height for the ${id_zone}"
 
