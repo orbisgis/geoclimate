@@ -393,7 +393,7 @@ class TypologyClassificationTests {
 
         if(new File(directory).exists()){
             // Read the training data
-            h2GIS """ CALL GEOJSONREAD('${directory+File.separator+training_data_name+".geojson"}', 'tempo')"""
+            h2GIS """ CALL GEOJSONREAD('${directory+File.separator+training_data_name+".geojson.gz"}', 'tempo')"""
             // Remove unnecessary column
             h2GIS "ALTER TABLE tempo DROP COLUMN the_geom;"
             //Reload the table due to the schema modification
