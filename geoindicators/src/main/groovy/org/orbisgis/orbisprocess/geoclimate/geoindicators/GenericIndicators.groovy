@@ -831,7 +831,7 @@ IProcess gatherScales() {
                 def idbuildForMerge
                 def idBlockForMerge
 
-                // Calculate average and variance at RSU scale from each indicator of the building scale
+                // Add operations to compute at RSU scale to each indicator of the building scale
                 def inputVarAndOperationsBuild = [:]
                 def buildIndicators = datasource.getTable(buildingTable).getColumns()
                 for (col in buildIndicators) {
