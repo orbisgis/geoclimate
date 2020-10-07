@@ -900,8 +900,7 @@ IProcess createUnitsOfAnalysis() {
 
             // Create the RSU
             def prepareRSUData = Geoindicators.SpatialUnits.prepareRSUData()
-            def createRSU = Geoindicators.SpatialUnits.createRSU()
-            if (!prepareRSUData([datasource        : datasource,
+           if (!prepareRSUData([datasource        : datasource,
                                  zoneTable         : zoneTable,
                                  roadTable         : roadTable,
                                  railTable         : railTable,
@@ -915,6 +914,7 @@ IProcess createUnitsOfAnalysis() {
             }
             def rsuDataPrepared = prepareRSUData.results.outputTableName
 
+            def createRSU = Geoindicators.SpatialUnits.createRSU()
             if (!createRSU([datasource        : datasource,
                             inputTableName    : rsuDataPrepared,
                             prefixName        : prefixName,

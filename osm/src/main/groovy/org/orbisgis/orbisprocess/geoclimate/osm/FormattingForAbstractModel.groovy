@@ -41,14 +41,14 @@ IProcess formatBuildingLayer() {
                 datasource """
                     DROP TABLE if exists ${outputEstimateTableName};
                     CREATE TABLE ${outputEstimateTableName} (
-                        id_build serial,
+                        id_build INTEGER,
                         ID_SOURCE VARCHAR,
                         estimated boolean)
                 """
             }
             datasource """ 
                 DROP TABLE if exists ${outputTableName};
-                CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id_build serial, ID_SOURCE VARCHAR, 
+                CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id_build INTEGER, ID_SOURCE VARCHAR, 
                     HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT, NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER);
             """
             if (inputTableName) {
@@ -69,6 +69,7 @@ IProcess formatBuildingLayer() {
                     } else {
                         queryMapper += " , case when st_isvalid(a.the_geom) then a.the_geom else st_makevalid(st_force2D(a.the_geom)) end as the_geom FROM $inputTableName as a where st_area(a.the_geom)>1"
                     }
+                    def id_build=1;
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             String height = row.height
@@ -103,7 +104,7 @@ IProcess formatBuildingLayer() {
                                             stmt.addBatch """
                                                 INSERT INTO ${outputTableName} values(
                                                     ST_GEOMFROMTEXT('${subGeom}',$epsg), 
-                                                    null, 
+                                                    $id_build, 
                                                     '${row.id}',
                                                     ${formatedHeight.heightWall},
                                                     ${formatedHeight.heightRoof},
@@ -115,11 +116,12 @@ IProcess formatBuildingLayer() {
                                             if (estimateHeight) {
                                                 stmt.addBatch """
                                                 INSERT INTO ${outputEstimateTableName} values(
-                                                    null, 
+                                                    $id_build, 
                                                     '${row.id}',
                                                     ${formatedHeight.estimated})
                                                 """.toString()
                                             }
+                                            id_build++
                                         }
                                     }
                                 }

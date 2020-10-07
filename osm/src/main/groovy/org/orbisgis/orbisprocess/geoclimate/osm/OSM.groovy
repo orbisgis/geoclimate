@@ -30,7 +30,7 @@ class OSM  {
         createGISLayers  = osmGISLayers.createGISLayers()
         extractAndCreateGISLayers  = osmGISLayers.extractAndCreateGISLayers()
         buildGeoclimateLayers  = prepareOSM.buildGeoclimateLayers()
-        workflow  = workflowOSM.workflow();
+        workflow  = workflowOSM.workflow()
     }
 
 }

@@ -495,6 +495,46 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
+    //@Disabled
+    @Test
+    void testOSMEstimatedHeight() {
+        String directory ="./target/geoclimate_chain_estimated_height"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
+                "geoclimatedb" : [
+                        "path" : "${dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE"}",
+                        "delete" :true
+                ],
+                "input" : [
+                        "osm" : ["Saint Jean La Poterie"]],
+                "output" :[
+                        "folder" : "$directory"],
+                "parameters":
+                        ["distance" : 0,
+                         "indicatorUse": ["LCZ"],
+                         "svfSimplified": true,
+                         "prefixName": "",
+                         "mapOfWeights":
+                                 ["sky_view_factor": 1,
+                                  "aspect_ratio": 1,
+                                  "building_surface_fraction": 1,
+                                  "impervious_surface_fraction" : 1,
+                                  "pervious_surface_fraction": 1,
+                                  "height_of_roughness_elements": 1,
+                                  "terrain_roughness_length": 1  ],
+                         "hLevMin": 3,
+                         "hLevMax": 15,
+                         "hThresholdLev2": 10,
+                         "estimateHeight":true
+                        ]
+        ]
+        IProcess process = OSM.workflow
+        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+    }
+
 
     @Disabled
     @Test
@@ -605,7 +645,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         def prefixName = ""
         def svfSimplified = false
 
-        H2GIS datasource = H2GIS.open("/home/ebocher/Autres/codes/geoclimate/geoindicators/target/rsuindicatorsdb;AUTO_SERVER=TRUE")
+        H2GIS datasource = H2GIS.open("./target/rsuindicatorsdb;AUTO_SERVER=TRUE")
 
         //Extract and transform OSM data
         def zoneToExtract = "Rennes"

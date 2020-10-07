@@ -136,7 +136,6 @@ IProcess workflow() {
                 info parameters.get("description")
                 def input = parameters.get("input")
                 def output = parameters.get("output")
-                def estimateHeight = parameters.get("estimateHeight")
                 //Default H2GIS database properties
                 def databaseName = postfix System.getProperty("java.io.tmpdir") + File.separator + "osm"
                 def h2gis_properties = ["databaseName": databaseName, "user": "sa", "password": ""]
@@ -380,9 +379,8 @@ IProcess osm_processing() {
                                         epsg                      : srid,
                                         estimateHeight            : estimateHeight])
                                 def buildingTableName = format.results.outputTableName
-                                if (estimateHeight) {
-                                    def buildingEstimateTableName = format.results.outputEstimateTableName
-                                }
+                                def buildingEstimateTableName = format.results.outputEstimateTableName
+
                                 format = OSM.formatRoadLayer
                                 format.execute([
                                         datasource                : h2gis_datasource,
@@ -427,34 +425,105 @@ IProcess osm_processing() {
 
                                 info "OSM GIS layers formated"
 
-                                //Build the indicators
-                                IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
-                                if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
-                                        buildingTable: buildingTableName, roadTable: roadTableName,
-                                        railTable: railTableName, vegetationTable: vegetationTableName,
-                                        hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
-                                        indicatorUse: processing_parameters.indicatorUse,
-                                        svfSimplified: processing_parameters.svfSimplified, prefixName: processing_parameters.prefixName,
-                                        mapOfWeights: processing_parameters.mapOfWeights,
-                                        lczRandomForest : processing_parameters.lczRandomForest)) {
-                                    error "Cannot build the geoindicators for the zone $id_zone"
-                                    geoIndicatorsComputed = false
-                                } else {
-                                    geoIndicatorsComputed = true
-                                    info "${id_zone} has been processed"
+                                //If the config file contains the parameter estimateHeight then
+                                //the indicatorUse must be updated
+
+                                if (estimateHeight) {
+                                    //First pass to compute all indicators that will be used to estimate the height
+                                    IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
+                                    if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
+                                            buildingTable: buildingTableName, roadTable: roadTableName,
+                                            railTable: railTableName, vegetationTable: vegetationTableName,
+                                            hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
+                                            indicatorUse:["URBAN_TYPOLOGY"],
+                                            svfSimplified: true, prefixName: processing_parameters.prefixName,
+                                            mapOfWeights: processing_parameters.mapOfWeights,
+                                            lczRandomForest: processing_parameters.lczRandomForest)) {
+                                        error "Cannot build the geoindicators for the zone $id_zone to estimate the building height"
+                                        geoIndicatorsComputed = false
+                                    } else {
+                                        geoIndicatorsComputed = true
+                                        info "The whole indicators for the ${id_zone} has been processed to estimate the building height"
+                                    }
+                                    //Let's go to select the building's id that must be processed to fix the height
+                                    if(geoIndicatorsComputed){
+                                        info "Extracting the building to estimate their height for the ${id_zone}"
+                                        def results = geoIndicators.results;
+
+                                        //Select indicators we need at building scales
+                                        def buildingIndicatorsTableName = results.outputTableBuildingIndicators;
+                                        h2gis_datasource.getTable(buildingEstimateTableName).id_build.createIndex()
+                                        h2gis_datasource.getTable(buildingIndicatorsTableName).id_build.createIndex()
+
+                                        def buildingEstimateWithIndicators = "ESTIMATED_BUILDING_INDICATORS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+
+                                        h2gis_datasource.execute """DROP TABLE IF EXISTS $buildingEstimateWithIndicators;
+                                           CREATE TABLE $buildingEstimateWithIndicators as SELECT a.* from $buildingIndicatorsTableName 
+                                            a left join $buildingEstimateTableName b on a.id_build=b.id_build where b.ESTIMATED = true;"""
+
+                                        info "Collect building indicators to estimate the height for the ${id_zone}"
+
+                                        h2gis_datasource.getSpatialTable(buildingEstimateWithIndicators).save("/tmp/limited_building.geojson.gz", true)
+
+                                        def applygatherScales = Geoindicators.GenericIndicators.gatherScales()
+                                        applygatherScales.execute([
+                                                buildingTable    : buildingEstimateWithIndicators,
+                                                blockTable       : results.outputTableBlockIndicators,
+                                                rsuTable         : results.outputTableRsuIndicators,
+                                                targetedScale    : "BUILDING",
+                                                operationsToApply: ["AVG", "STD"],
+                                                prefixName       : processing_parameters.prefixName,
+                                                datasource       : h2gis_datasource])
+                                        def gatheredScales = applygatherScales.results.outputTableName
+
+                                        h2gis_datasource.getSpatialTable(gatheredScales).save("/tmp/limited_indicators.geojson", true)
+
+                                        info "Start estimating the building height for the ${id_zone}"
+
+                                        //Apply RF model
+
+                                        //Update the abstract building table
+
+                                        info "Replace the input building table by the estimated height for the ${id_zone}"
+
+
+                                        //Re-run geoindicators chain with the config parameters
+
+                                        info "Re-compute the whole geoindicators for the ${id_zone}"
+
+                                    }
+
                                 }
-                                def results = geoIndicators.getResults()
-                                results.put("buildingTableName", buildingTableName)
-                                results.put("roadTableName", roadTableName)
-                                results.put("railTableName", railTableName)
-                                results.put("hydrographicTableName", hydrographicTableName)
-                                results.put("vegetationTableName", vegetationTableName)
-                                results.put("imperviousTableName", imperviousTableName)
-                                if (outputFolder && geoIndicatorsComputed && ouputTableFiles) {
-                                    saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject)
-                                }
-                                if (output_datasource && geoIndicatorsComputed) {
-                                    saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone,srid, outputSRID,reproject)
+                                else {
+                                    //Compute the indicators
+                                    IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
+                                    if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
+                                            buildingTable: buildingTableName, roadTable: roadTableName,
+                                            railTable: railTableName, vegetationTable: vegetationTableName,
+                                            hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
+                                            indicatorUse: processing_parameters.indicatorUse,
+                                            svfSimplified: processing_parameters.svfSimplified, prefixName: processing_parameters.prefixName,
+                                            mapOfWeights: processing_parameters.mapOfWeights,
+                                            lczRandomForest: processing_parameters.lczRandomForest)) {
+                                        error "Cannot build the geoindicators for the zone $id_zone"
+                                        geoIndicatorsComputed = false
+                                    } else {
+                                        geoIndicatorsComputed = true
+                                        info "${id_zone} has been processed"
+                                    }
+                                    def results = geoIndicators.getResults()
+                                    results.put("buildingTableName", buildingTableName)
+                                    results.put("roadTableName", roadTableName)
+                                    results.put("railTableName", railTableName)
+                                    results.put("hydrographicTableName", hydrographicTableName)
+                                    results.put("vegetationTableName", vegetationTableName)
+                                    results.put("imperviousTableName", imperviousTableName)
+                                    if (outputFolder && geoIndicatorsComputed && ouputTableFiles) {
+                                        saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject)
+                                    }
+                                    if (output_datasource && geoIndicatorsComputed) {
+                                        saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone, srid, outputSRID, reproject)
+                                    }
                                 }
                             }
                         } else {
@@ -980,7 +1049,8 @@ def extractProcessingParameters(def processing_parameters){
                                              "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                              "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
                              hLevMin : 3, hLevMax: 15, hThresholdLev2: 10,
-                             lczRandomForest :true]
+                             lczRandomForest :true,
+                             estimateHeight:false]
     if(processing_parameters){
         def distanceP =  processing_parameters.distance
         if(distanceP && distanceP in Number){
@@ -1026,6 +1096,11 @@ def extractProcessingParameters(def processing_parameters){
         def lczRandomForest = processing_parameters.lczRandomForest
         if(lczRandomForest && lczRandomForest in Boolean){
             defaultParameters.lczRandomForest = lczRandomForest
+        }
+
+        def estimateHeight = processing_parameters.estimateHeight
+        if(estimateHeight && estimateHeight in Boolean){
+            defaultParameters.estimateHeight = estimateHeight
         }
 
         return defaultParameters
