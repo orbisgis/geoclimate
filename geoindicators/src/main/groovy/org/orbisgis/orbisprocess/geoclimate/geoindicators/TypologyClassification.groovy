@@ -612,7 +612,6 @@ IProcess applyRandomForestModel() {
             df=df.merge(IntVector.of(var2model, prediction))
 
             //TODO change this after SMILE answer's
-            Map factorizedValues = model.trees.get(0).tree.response.measure.value2level
             // Keep only the id and the value of the classification
             df = df.select(idName.toUpperCase(), var2model.toUpperCase())
             String tableName = TableLocation.parse(outputTableName, datasource.getDataBaseType() == DataBaseType.H2GIS).toString(datasource.getDataBaseType() == DataBaseType.H2GIS);
@@ -633,7 +632,7 @@ IProcess applyRandomForestModel() {
                         def id = df.getString(0)
                         def lczValue = df.getInt(1)
                         preparedStatement.setObject( 1, id);
-                        preparedStatement.setObject( 2, factorizedValues.get(lczValue));
+                        preparedStatement.setObject( 2, lczValue);
                         preparedStatement.addBatch();
                         batch_size++;
                         if (batch_size >= batchSize) {

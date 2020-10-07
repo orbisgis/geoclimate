@@ -500,8 +500,8 @@ IProcess osm_processing() {
                                         def newEstimatedHeigthWithIndicators = "NEW_BUILDING_INDICATORS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
 
                                         h2gis_datasource.execute """DROP TABLE IF EXISTS $newEstimatedHeigthWithIndicators;
-                                           CREATE TABLE $buildingEstimateWithIndicators as SELECT a.the_geom, b.the_geom from $buildingIndicatorsTableName 
-                                            a left join $newEstimatedHeigthWithIndicators b on a.id_build=b.id_build where b.ESTIMATED = true;"""
+                                           CREATE TABLE $newEstimatedHeigthWithIndicators as SELECT a.the_geom, b.* from $buildingIndicatorsTableName 
+                                            a left join $buildEstimatedHeight b on a.id_build=b.id_build;"""
 
                                         h2gis_datasource.getSpatialTable(buildingIndicatorsTableName).save("/tmp/building_input.geojson", true)
 
