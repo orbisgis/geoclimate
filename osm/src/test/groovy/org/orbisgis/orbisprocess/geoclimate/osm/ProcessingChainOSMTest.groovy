@@ -515,20 +515,21 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 "parameters":
                         ["distance" : 0,
                          "indicatorUse": ["LCZ"],
-                         "svfSimplified": true,
+                         "svfSimplified": false,
                          "prefixName": "",
                          "mapOfWeights":
-                                 ["sky_view_factor": 1,
-                                  "aspect_ratio": 1,
-                                  "building_surface_fraction": 1,
-                                  "impervious_surface_fraction" : 1,
-                                  "pervious_surface_fraction": 1,
-                                  "height_of_roughness_elements": 1,
-                                  "terrain_roughness_length": 1  ],
+                                 ["sky_view_factor"                : 4,
+                                  "aspect_ratio"                   : 3,
+                                  "building_surface_fraction"      : 8,
+                                  "impervious_surface_fraction"    : 0,
+                                  "pervious_surface_fraction"      : 0,
+                                  "height_of_roughness_elements"   : 6,
+                                  "terrain_roughness_length"       : 0.5],
                          "hLevMin": 3,
                          "hLevMax": 15,
                          "hThresholdLev2": 10,
-                         "estimateHeight":true
+                         "estimateHeight":true,
+                         "lczRandomForest":false
                         ]
         ]
         IProcess process = OSM.workflow

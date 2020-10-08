@@ -2,7 +2,6 @@ package org.orbisgis.orbisprocess.geoclimate.osm
 
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
-import org.h2.tools.DeleteDbFiles
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.GeographyUtilities
 import org.locationtech.jts.geom.Geometry
@@ -468,8 +467,6 @@ IProcess osm_processing() {
                                                         ON a.id_build=b.id_build
                                                     WHERE b.ESTIMATED = true AND a.ID_RSU IS NOT NULL;"""
 
-                                        h2gis_datasource.getSpatialTable(estimated_building_with_indicators).save("/tmp/${estimated_building_with_indicators}.geojson", true)
-
                                         info "Collect building indicators to estimate the height for the ${id_zone}"
 
                                         def applygatherScales = Geoindicators.GenericIndicators.gatherScales()
@@ -503,13 +500,14 @@ IProcess osm_processing() {
                                         def newEstimatedHeigthWithIndicators = "NEW_BUILDING_INDICATORS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
 
                                         h2gis_datasource.execute """DROP TABLE IF EXISTS $newEstimatedHeigthWithIndicators;
-                                           CREATE TABLE $newEstimatedHeigthWithIndicators as (SELECT a.THE_GEOM, a.ID_BUILD,a.ID_SOURCE,
+                                           CREATE TABLE $newEstimatedHeigthWithIndicators as 
+                                            (SELECT  a.* from $buildingTableName 
+                                            a LEFT JOIN $buildEstimatedHeight b on a.id_build=b.id_build where b.id_build is null) 
+                                            union 
+                                            (SELECT a.THE_GEOM, a.ID_BUILD,a.ID_SOURCE,
                                             0 AS HEIGHT_WALL , b.HEIGHT_ROOF, 0 as NB_LEV, a.TYPE,a.MAIN_USE, a.ZINDEX,
                                               from $buildingTableName 
-                                            a inner join $buildEstimatedHeight b on a.id_build=b.id_build) union (SELECT  a.* from $buildingTableName 
-                                            a left join $buildEstimatedHeight b on a.id_build=b.id_build where b.id_build is null);"""
-
-                                        h2gis_datasource.getSpatialTable(newEstimatedHeigthWithIndicators).save("/tmp/${newEstimatedHeigthWithIndicators}.geojson", true)
+                                            a RIGHT JOIN $buildEstimatedHeight b on a.id_build=b.id_build where b.id_build is null) ;"""
 
                                         //We must format only estimated buildings
                                         //Apply format on the new abstract table
