@@ -181,7 +181,7 @@ class TypologyClassificationTests {
         //Reload the table due to the schema modification
         trainingTable.reload()
 
-        def pmed =  Geoindicators.TypologyClassification.createRandomForestClassif()
+        def pmed =  Geoindicators.TypologyClassification.createRandomForestModel()
         assert pmed.execute([
                 trainingTableName   : trainingTableName,
                 varToModel          : var2model,
@@ -360,7 +360,7 @@ class TypologyClassificationTests {
         h2GIS "CREATE TABLE inputDataTable AS SELECT * FROM $trainingTableName LIMIT 3000;"
 
 
-        def pmed =  Geoindicators.TypologyClassification.applyRandomForestClassif()
+        def pmed =  Geoindicators.TypologyClassification.applyRandomForestModel()
         assert pmed.execute([
                 explicativeVariablesTableName   : "inputDataTable",
                 pathAndFileName                 : savePath,
@@ -379,61 +379,64 @@ class TypologyClassificationTests {
     @Test
     void tempoCreateRandomForestClassifTest() {
         // Specify the model and training datat appropriate to the right use
-        def model_name = "LCZ_OSM_RF_1_0"
-        def training_data_name = "cd"
+        def model_name = "BUILDINGHEIGHT_OSM_RF_1_0"
+        def training_data_name = "TRAINING_DATA_BUILDINGHEIGHT_OSM_RF_1_0"
         // Name of the variable to model
-        def var2model = "LCZ"
+        def var2model = "HEIGHT_ROOF"
+        def var2ModelFinal = "HEIGHT_ROOF"
+        // Whether the RF is a classif or a regression
+        def classif = false
 
         // Information about where to find the training dataset for the test
         def trainingTableName = "training_table"
-        String directory =".../geoclimate/models/"
+        String directory ="/home/decide/Code/Intel/geoclimate/models"
         def savePath = directory+File.separator+model_name+".model"
 
         if(new File(directory).exists()){
-        // Read the training data
-        h2GIS """ CALL GEOJSONREAD('${directory+File.separator+training_data_name+".gz"}', 'tempo')"""
-        // Remove unnecessary column
-        h2GIS "ALTER TABLE tempo DROP COLUMN the_geom;"
-        //Reload the table due to the schema modification
-        h2GIS.getTable("tempo").reload()
+            // Read the training data
+            h2GIS """ CALL GEOJSONREAD('${directory+File.separator+training_data_name+".geojson.gz"}', 'tempo')"""
+            // Remove unnecessary column
+            h2GIS "ALTER TABLE tempo DROP COLUMN the_geom;"
+            //Reload the table due to the schema modification
+            h2GIS.getTable("tempo").reload()
 
-        def columns = h2GIS.getTable("tempo").getColumns()
-        columns = columns.minus(var2model)
+            def columns = h2GIS.getTable("tempo").getColumns()
+            columns = columns.minus(var2model)
 
-        h2GIS """   DROP TABLE IF EXISTS $trainingTableName;
+            h2GIS """   DROP TABLE IF EXISTS $trainingTableName;
                     CREATE TABLE $trainingTableName
-                            AS SELECT $var2model::int AS LCZ, ${columns.join(",")}
+                            AS SELECT $var2model::int AS $var2ModelFinal, ${columns.join(",")}
                             FROM tempo"""
 
-        assert h2GIS."$trainingTableName"
+            assert h2GIS."$trainingTableName"
 
-        def pmed =  Geoindicators.TypologyClassification.createRandomForestClassif()
-        assert pmed.execute([
-                trainingTableName   : trainingTableName,
-                varToModel          : var2model,
-                save                : true,
-                pathAndFileName     : savePath,
-                ntrees              : 100,
-                mtry                : 20,
-                rule                : "GINI",
-                maxDepth            : 20,
-                maxNodes            : 600,
-                nodeSize            : 3,
-                subsample           : 1.0,
-                datasource          : h2GIS])
-        def model = pmed.results.RfModel
-        assert model
-        assert model instanceof DataFrameClassifier
+            def pmed =  Geoindicators.TypologyClassification.createRandomForestModel()
+            assert pmed.execute([
+                    trainingTableName   : trainingTableName,
+                    varToModel          : var2model,
+                    save                : true,
+                    pathAndFileName     : savePath,
+                    ntrees              : 100,
+                    mtry                : 20,
+                    rule                : "GINI",
+                    maxDepth            : 20,
+                    maxNodes            : 600,
+                    nodeSize            : 3,
+                    subsample           : 1.0,
+                    datasource          : h2GIS,
+                    classif             : classif])
+            def model = pmed.results.RfModel
+            assert model
 
-        // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
-        def df = DataFrame.of(h2GIS."$trainingTableName")
-        df = df.factorize(var2model)
-        df = df.omitNullRows()
-        def vector = df.apply(var2model)
-        def truth = vector.toIntArray()
-        def prediction = Validation.test(model, df)
-        def accuracy = Accuracy.of(truth, prediction)
-        assertEquals 0.725, accuracy.round(3), 1.5
+            // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
+            def df = DataFrame.of(h2GIS."$trainingTableName")
+            df = df.factorize(var2model)
+            df = df.omitNullRows()
+            def vector = df.apply(var2model)
+            def truth = vector.toIntArray()
+            def prediction = Validation.test(model, df)
+            def accuracy = Accuracy.of(truth, prediction)
+            assertEquals 0.725, accuracy.round(3), 1.5
         }
         else{
             println("The model has not been create because the output directory doesn't exist")
