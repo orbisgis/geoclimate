@@ -660,4 +660,104 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         datasource.save("stats_rsu", './target/stats_rsu.shp', true)
 
     }
+
+    @Test
+    void osmGridFromTestFiles() {
+        String urlBuilding = new File(getClass().getResource("BUILDING.geojson").toURI()).absolutePath
+        String urlRoad = new File(getClass().getResource("ROAD.geojson").toURI()).absolutePath
+        String urlRail = new File(getClass().getResource("RAIL.geojson").toURI()).absolutePath
+        String urlVeget = new File(getClass().getResource("VEGET.geojson").toURI()).absolutePath
+        String urlHydro = new File(getClass().getResource("HYDRO.geojson").toURI()).absolutePath
+        String urlZone = new File(getClass().getResource("ZONE.geojson").toURI()).absolutePath
+
+        String directory = "./target/osm_processchain_lcz"
+
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+
+        H2GIS datasource = H2GIS.open(dirFile.absolutePath + File.separator + "osmchain_lcz;AUTO_SERVER=TRUE")
+
+        String zoneTableName = "zone"
+        String buildingTableName = "building"
+        String roadTableName = "road"
+        String railTableName = "rails"
+        String vegetationTableName = "veget"
+        String hydrographicTableName = "hydro"
+
+        datasource.load(urlBuilding, buildingTableName, true)
+        datasource.load(urlRoad, roadTableName, true)
+        datasource.load(urlRail, railTableName, true)
+        datasource.load(urlVeget, vegetationTableName, true)
+        datasource.load(urlHydro, hydrographicTableName, true)
+        datasource.load(urlZone, zoneTableName, true)
+
+        def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                            "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                            "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
+
+        IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
+        assertTrue geoIndicators.execute(datasource: datasource, zoneTable: zoneTableName,
+                buildingTable: buildingTableName, roadTable: roadTableName,
+                railTable: railTableName, vegetationTable: vegetationTableName,
+                hydrographicTable: hydrographicTableName, indicatorUse: ["LCZ"],
+                mapOfWeights: mapOfWeights,svfSimplified:true)
+
+        assertTrue(datasource.getTable(geoIndicators.results.outputTableBuildingIndicators).rowCount > 0)
+        assertNull(geoIndicators.results.outputTableBlockIndicators)
+        assertTrue(datasource.getTable(geoIndicators.results.outputTableRsuIndicators).rowCount > 0)
+        assertTrue(datasource.getTable(geoIndicators.results.outputTableRsuLcz).rowCount > 0)
+
+        // Apply grid process on local geometry of the rsu_lcz zone
+        datasource.execute("DROP TABLE IF EXISTS gridEnv")
+        def geometry = datasource.getSpatialTable(zoneTableName).getExtent('the_geom')
+        def sourceTableName = geoIndicators.results.outputTableRsuLcz
+        geometry.setSRID(datasource.getSpatialTable(sourceTableName).srid)
+        def gridProcess = Geoindicators.SpatialUnits.createGrid()
+        assert gridProcess.execute(geometry: geometry, deltaX: 100, deltaY: 100, gridTableName: 'gridEnv', datasource: datasource)
+        def targetTableName = gridProcess.results.outputTableName
+        assert datasource.getSpatialTable(targetTableName)
+
+        // Make Spatial Join between grid and rsu_lcz tables
+        def idColumnTarget = "id"
+        def spatialJoinTable = "gridSpatialJoin"
+        datasource."$sourceTableName".the_geom.createSpatialIndex()
+        datasource."$targetTableName".the_geom.createSpatialIndex()
+
+        def spatialJoin = """  DROP TABLE IF EXISTS $spatialJoinTable;
+                               CREATE TABLE $spatialJoinTable 
+                               AS SELECT   b.$idColumnTarget, a.lcz1,
+                                           ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.the_geom)), 
+                                           st_force2d(st_makevalid(b.the_geom)))) AS AREA
+                               FROM    $sourceTableName a, $targetTableName b
+                               WHERE   a.the_geom && b.the_geom AND 
+                                       ST_INTERSECTS(st_force2d(a.the_geom), st_force2d(b.the_geom));"""
+        datasource.execute(spatialJoin)
+
+        // Save lcz1 values
+        def lczColumn = "lcz1"
+        def queryValues = "SELECT DISTINCT $lczColumn AS val FROM $spatialJoinTable"
+
+        // Make pivot on gridRsuLcz table
+        def list = datasource.rows(queryValues)
+        def gridRsuLczTable = "gridRsuLcz"
+        datasource.execute("DROP TABLE IF EXISTS $gridRsuLczTable;")
+        def query = "CREATE TABLE $gridRsuLczTable AS SELECT $idColumnTarget"
+        list.each {query += ", SUM(lcz_${it.val}) AS lcz_${it.val}"}
+        query += " FROM ( SELECT $idColumnTarget"
+        list.each {query += ", CASE WHEN $lczColumn=$it.val THEN SUM(area) ELSE 0 END AS lcz_${it.val}"}
+        query += " FROM $spatialJoinTable GROUP BY $idColumnTarget, $lczColumn) GROUP BY $idColumnTarget;"
+        datasource.execute(query)
+
+        // Join tables
+        def gridLczAreaTable = "gridLczArea"
+        def qjoin = "DROP TABLE IF EXISTS $gridLczAreaTable; CREATE TABLE $gridLczAreaTable AS SELECT b.$idColumnTarget, b.the_geom"
+        list.each {qjoin += ", NVL(lcz_${it.val}, 0) AS lcz_${it.val}"}
+        qjoin += " FROM $targetTableName b LEFT JOIN $gridRsuLczTable a ON (a.$idColumnTarget = b.$idColumnTarget);"
+        datasource.execute(qjoin)
+
+        // Save tables
+        datasource.getTable(gridLczAreaTable).save("./target"+File.separator+"$gridLczAreaTable"+".geojson")
+        datasource.getSpatialTable(targetTableName).save("./target"+File.separator+"$targetTableName"+".geojson")
+    }
 }

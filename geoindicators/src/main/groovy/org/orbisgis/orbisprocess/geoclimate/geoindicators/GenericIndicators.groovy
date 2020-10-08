@@ -3,6 +3,7 @@ package org.orbisgis.orbisprocess.geoclimate.geoindicators
 import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
 import org.orbisgis.orbisdata.datamanager.jdbc.*
+import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.*
 
@@ -961,6 +962,7 @@ IProcess gatherScales() {
     }
 }
 
+<<<<<<< HEAD
 
     /**
      * This process is used to compute aggregate the area of a specific variable to a upper scale from a lower scale (for
@@ -1090,4 +1092,108 @@ IProcess gatherScales() {
                 [outputTableName: outputTableName]
             }
         }
+=======
+/**
+ * This process is used to compute zonal area on a specific variable from a lower scale (for
+ * example the LCZs variables within a Reference Spatial Unit)
+ *
+ * @param indicatorTableName the table of the upper scale where the information have to be aggregated to (e.g. RSU)
+ * @param indicatorName the name of the table attribute used as indicator information
+ * @return A database table name.
+ *
+ * @author Emmanuel Renault
+ */
+IProcess zonalArea() {
+    return create {
+        title "Statistics on zonal area for a given indicator"
+        id "zonalArea"
+        inputs indicatorTableName: String, indicatorName: String, prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { indicatorTableName, indicatorName, prefixName, datasource ->
+
+            def ID_FIELD = "id"
+            def GEOMETRIC_FIELD = "the_geom"
+            def INDICATOR_FIELD = indicatorName
+            def X_SIZE = 1000D
+            def Y_SIZE = 1000D
+
+            def sourceTable = indicatorTableName
+            def geometry = datasource.getSpatialTable(sourceTable).getExtent(GEOMETRIC_FIELD)
+            geometry.setSRID(datasource.getSpatialTable(sourceTable).srid)
+            def gridProcess = Geoindicators.SpatialUnits.createGrid()
+            gridProcess.execute([geometry: geometry,
+                                 deltaX: X_SIZE,
+                                 deltaY: Y_SIZE,
+                                 gridTableName: "grid",
+                                 datasource: datasource])
+            def targetTable = gridProcess.results.outputTableName
+
+            datasource."$sourceTable".the_geom.createSpatialIndex()
+            datasource."$targetTable".the_geom.createSpatialIndex()
+
+            def spatialJoinTable = "gridSpatialJoin"
+            def spatialJoin = """
+                              DROP TABLE IF EXISTS $spatialJoinTable;
+                              CREATE TABLE $spatialJoinTable 
+                              AS SELECT b.$ID_FIELD, a.$INDICATOR_FIELD,
+                                        ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$GEOMETRIC_FIELD)), 
+                                        st_force2d(st_makevalid(b.$GEOMETRIC_FIELD)))) AS area
+                              FROM $sourceTable a, $targetTable b
+                              WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD AND 
+                              ST_INTERSECTS(st_force2d(a.$GEOMETRIC_FIELD), st_force2d(b.$GEOMETRIC_FIELD));
+                              """
+            datasource.execute(spatialJoin)
+
+            // Creation of a list which contains all indicators of distinct values
+            def qIndicator = """SELECT DISTINCT $INDICATOR_FIELD 
+                                AS val FROM $spatialJoinTable"""
+            def listValues = datasource.rows(qIndicator)
+
+            // Creation of the pivot table which contains for each cell id,
+            // the total area corresponding to the aggregation of all indicators of same values
+            def pivotTable = "tmpZonalArea"
+            def query = """
+                        DROP TABLE IF EXISTS $pivotTable; 
+                        CREATE TABLE $pivotTable 
+                        AS SELECT $ID_FIELD
+                        """
+            listValues.each {query += ", SUM($INDICATOR_FIELD"+"_"+"$it.val)"+
+                                      " AS $INDICATOR_FIELD"+"_"+"$it.val"}
+            query += " FROM ( SELECT $ID_FIELD"
+            listValues.each {query += ", CASE WHEN $INDICATOR_FIELD=${it.val}"+
+                                      " THEN SUM(area) ELSE 0 END"+
+                                      " AS $INDICATOR_FIELD"+"_"+"$it.val"}
+            query += " FROM $spatialJoinTable"
+                     " GROUP BY $ID_FIELD, $INDICATOR_FIELD )"+
+                     " GROUP BY $ID_FIELD;"
+            datasource.execute(query)
+
+            // Creation of a table which is built from
+            // the union of the grid and pivot tables based on the same cell 'id'
+            def outputTableName = "zonalArea"
+            def qjoin = """
+                        DROP TABLE IF EXISTS $outputTableName; 
+                        CREATE TABLE $outputTableName
+                        AS SELECT b.$ID_FIELD, b.$GEOMETRIC_FIELD
+                        """
+            listValues.each {qjoin += ", NVL($INDICATOR_FIELD"+"_"+"${it.val}, 0)" +
+                                      " AS $INDICATOR_FIELD"+"_"+"${it.val}"}
+            qjoin += " FROM $targetTable b"+
+                     " LEFT JOIN $pivotTable a"+
+                     " ON (a.$ID_FIELD = b.$ID_FIELD);"
+            datasource.execute(qjoin)
+
+            // Drop intermediate tables created during process
+            def dropTables = ["$spatialJoinTable", "$pivotTable"]
+            def qDrop = "DROP TABLE IF EXISTS "
+            dropTables.each {qDrop += it+", "}
+            qDrop = qDrop[0..-3]+";"
+            datasource.execute(qDrop)
+
+            outputTableName = prefixName+outputTableName
+            info "The zonal area table have been created"
+            [outputTableName: outputTableName]
+        }
+    }
+>>>>>>> 9d28581dba600a060a5e8dc7a57eed06e8ffcaca
 }

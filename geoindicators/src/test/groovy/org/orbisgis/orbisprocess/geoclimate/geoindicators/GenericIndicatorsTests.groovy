@@ -494,6 +494,7 @@ class GenericIndicatorsTests {
     }
 
     @Test
+<<<<<<< HEAD
     void upperScaleAreaStatisticsTest() {
         def indicatorTableName = "rsu_test"
         def indicatorName = "rsu_area"
@@ -546,5 +547,30 @@ class GenericIndicatorsTests {
         values= h2GIS.firstRow "select sum_indic as nb from babeth_zone where id=0"
         assertEquals(7575, values.NB)
 
+=======
+    void zonalAreaTest() {
+        def indicatorTableName = "zonal_area_building_test"
+        def indicatorName = "height_wall"
+        def query = """DROP TABLE IF EXISTS $indicatorTableName;
+                       CREATE TABLE $indicatorTableName 
+                       AS SELECT $indicatorName, the_geom 
+                       FROM building_test;"""
+        h2GIS.execute(query)
+
+        def value1 = h2GIS.firstRow("SELECT height_wall FROM building_test")[indicatorName]
+        def value2 = h2GIS.firstRow("SELECT $indicatorName FROM $indicatorTableName")[indicatorName]
+        def value3 = h2GIS.firstRow("SELECT the_geom FROM $indicatorTableName")['the_geom'].toString()
+        assert value1==8
+        assert value2==8
+        assertEquals('POLYGON ((4 4, 10 4, 10 30, 4 30, 4 4))', value3)
+
+        def zonalAreaProcess = Geoindicators.GenericIndicators.zonalArea()
+        zonalAreaProcess.execute(
+                [indicatorTableName: indicatorTableName,
+                 indicatorName: indicatorName,
+                 prefixName: "agg",
+                 datasource: h2GIS])
+        assert h2GIS."$indicatorTableName"
+>>>>>>> 9d28581dba600a060a5e8dc7a57eed06e8ffcaca
     }
 }
