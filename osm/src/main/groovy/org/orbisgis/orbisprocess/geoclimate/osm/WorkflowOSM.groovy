@@ -2,6 +2,7 @@ package org.orbisgis.orbisprocess.geoclimate.osm
 
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
+import org.h2.tools.DeleteDbFiles
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.GeographyUtilities
 import org.locationtech.jts.geom.Geometry
@@ -457,21 +458,23 @@ IProcess osm_processing() {
                                         h2gis_datasource.getTable(buildingIndicatorsTableName).id_build.createIndex()
                                         h2gis_datasource.getTable(buildingIndicatorsTableName).id_rsu.createIndex()
 
-                                        def buildingEstimateWithIndicators = "ESTIMATED_BUILDING_INDICATORS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+                                        def estimated_building_with_indicators = "ESTIMATED_BUILDING_INDICATORS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
 
-                                        h2gis_datasource.execute """DROP TABLE IF EXISTS $buildingEstimateWithIndicators;
-                                           CREATE TABLE $buildingEstimateWithIndicators 
+                                        h2gis_datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators;
+                                           CREATE TABLE $estimated_building_with_indicators 
                                                     AS SELECT a.*
                                                     FROM $buildingIndicatorsTableName a 
-                                                        LEFT JOIN $buildingEstimateTableName b 
+                                                        RIGHT JOIN $buildingEstimateTableName b 
                                                         ON a.id_build=b.id_build
                                                     WHERE b.ESTIMATED = true AND a.ID_RSU IS NOT NULL;"""
+
+                                        h2gis_datasource.getSpatialTable(estimated_building_with_indicators).save("/tmp/${estimated_building_with_indicators}.geojson", true)
 
                                         info "Collect building indicators to estimate the height for the ${id_zone}"
 
                                         def applygatherScales = Geoindicators.GenericIndicators.gatherScales()
                                         applygatherScales.execute([
-                                                buildingTable    : buildingEstimateWithIndicators,
+                                                buildingTable    : estimated_building_with_indicators,
                                                 blockTable       : results.outputTableBlockIndicators,
                                                 rsuTable         : results.outputTableRsuIndicators,
                                                 targetedScale    : "BUILDING",
@@ -500,19 +503,60 @@ IProcess osm_processing() {
                                         def newEstimatedHeigthWithIndicators = "NEW_BUILDING_INDICATORS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
 
                                         h2gis_datasource.execute """DROP TABLE IF EXISTS $newEstimatedHeigthWithIndicators;
-                                           CREATE TABLE $newEstimatedHeigthWithIndicators as SELECT a.the_geom, b.* from $buildingIndicatorsTableName 
-                                            a left join $buildEstimatedHeight b on a.id_build=b.id_build;"""
+                                           CREATE TABLE $newEstimatedHeigthWithIndicators as (SELECT a.THE_GEOM, a.ID_BUILD,a.ID_SOURCE,
+                                            0 AS HEIGHT_WALL , b.HEIGHT_ROOF, 0 as NB_LEV, a.TYPE,a.MAIN_USE, a.ZINDEX,
+                                              from $buildingTableName 
+                                            a inner join $buildEstimatedHeight b on a.id_build=b.id_build) union (SELECT  a.* from $buildingTableName 
+                                            a left join $buildEstimatedHeight b on a.id_build=b.id_build where b.id_build is null);"""
 
-                                        h2gis_datasource.getSpatialTable(buildingIndicatorsTableName).save("/tmp/building_input.geojson", true)
+                                        h2gis_datasource.getSpatialTable(newEstimatedHeigthWithIndicators).save("/tmp/${newEstimatedHeigthWithIndicators}.geojson", true)
 
-                                        h2gis_datasource.getSpatialTable(newEstimatedHeigthWithIndicators).save("/tmp/new_building_height.geojson", true)
+                                        //We must format only estimated buildings
+                                        //Apply format on the new abstract table
+                                        IProcess formatEstimatedBuilding = OSM.formatEstimatedBuilding
+                                        formatEstimatedBuilding.execute([
+                                                datasource                : h2gis_datasource,
+                                                inputTableName            : newEstimatedHeigthWithIndicators,
+                                                epsg                      : srid])
+                                        def newbuildingTableName = formatEstimatedBuilding.results.outputTableName
 
-                                        //Re-run geoindicators chain with the config parameters
+                                        //Drop tables
+                                        h2gis_datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators,
+                                        $newEstimatedHeigthWithIndicators, $buildEstimatedHeight,
+                                        $gatheredScales, $buildingTableName, ${results.outputTableBlockIndicators},
+                                        ${results.outputTableRsuIndicators},${results.outputTableRsuIndicators}"""
 
+                                        //Re-compute geoindicators chain with the config parameters
+                                        geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
+                                        if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
+                                                buildingTable: newbuildingTableName, roadTable: roadTableName,
+                                                railTable: railTableName, vegetationTable: vegetationTableName,
+                                                hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
+                                                indicatorUse: processing_parameters.indicatorUse,
+                                                svfSimplified: processing_parameters.svfSimplified, prefixName: processing_parameters.prefixName,
+                                                mapOfWeights: processing_parameters.mapOfWeights,
+                                                lczRandomForest: processing_parameters.lczRandomForest)) {
+                                            error "Cannot build the geoindicators for the zone $id_zone"
+                                            geoIndicatorsComputed = false
+                                        } else {
+                                            geoIndicatorsComputed = true
+                                            info "${id_zone} has been processed"
+                                        }
+                                        results = geoIndicators.getResults()
+                                        results.put("buildingTableName", buildingTableName)
+                                        results.put("roadTableName", roadTableName)
+                                        results.put("railTableName", railTableName)
+                                        results.put("hydrographicTableName", hydrographicTableName)
+                                        results.put("vegetationTableName", vegetationTableName)
+                                        results.put("imperviousTableName", imperviousTableName)
+                                        if (outputFolder && geoIndicatorsComputed && ouputTableFiles) {
+                                            saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject)
+                                        }
+                                        if (output_datasource && geoIndicatorsComputed) {
+                                            saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone, srid, outputSRID, reproject)
+                                        }
                                         info "Re-compute the whole geoindicators for the ${id_zone}"
-
                                     }
-
                                 }
                                 else {
                                     //Compute the indicators

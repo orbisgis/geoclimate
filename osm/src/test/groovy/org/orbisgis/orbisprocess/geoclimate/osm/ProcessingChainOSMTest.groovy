@@ -109,7 +109,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osm_chain_db;AUTO_SERVER=TRUE")
 
         //Extract and transform OSM data
-        def zoneToExtract = "Plessis-l'Évêque"
+        def zoneToExtract = "Pont de veyle"
 
         IProcess prepareOSMData = OSM.buildGeoclimateLayers
 
@@ -298,7 +298,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["romainville"]],
+                        "osm" : ["Pont de veyle"]],
                 "output" :[
                         "folder" : "${directory}",
                         "srid":"4326"],
@@ -343,7 +343,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["Redon"]],
+                        "osm" : ["Pont de veyle"]],
                 "output" :[
                         "folder" : "$directory"]
         ]
@@ -430,7 +430,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["LE PONTET"]],
+                        "osm" : ["Pont de veyle"]],
                 "output" :[
                         "folder" : "$directory"],
                 "parameters":
@@ -470,7 +470,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 "delete" :true
             ],
             "input" : [
-                "osm" : ["LE PONTET"]],
+                "osm" : ["Pont de veyle"]],
             "output" :[
                 "folder" : "$directory"],
             "parameters":
@@ -509,7 +509,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "osm" : ["pont-de-veyle "]],
+                        "osm" : ["Pont de veyle"]],
                 "output" :[
                         "folder" : "$directory"],
                 "parameters":
@@ -550,7 +550,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["romainville"]],
+                        "osm" : ["Pont de veyle"]],
                 "output" :[
                         "folder" : "$directory"],
                 "parameters":
@@ -587,7 +587,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["NOVES"]],
+                        "osm" : ["Pont de veyle"]],
                 "output" :[
                         "folder" : "$directory"],
                 "parameters":
