@@ -128,7 +128,8 @@ INSERT INTO rsu_test_all_indics_for_lcz VALUES  (1, 0.3, 4, 0.5, 0.5, 0.05, 30, 
                                                 (14, 0.83, 0.36, 0.21, 0, 0, 6.44, 0.58, 0, 0, 0, 0, null),
                                                 (15, 0.701, 1.38, 0.156, 0, 0, 21.95, 3, 0, 0, 0, 0, null),
                                                 (16, 0.820, 0.56, 0.22, 0, 0, 5.28, 0.726, 0, 0, 0, 0, null),
-                                                (17, 0.0, 0.0, 0.0, 0.019, 0.056, 0.0, 0.0, 0.056, 0, 0, 0, null);
+                                                (17, 0.0, 0.0, 0.0, 0.019, 0.056, 0.0, 0.0, 0.056, 0, 0, 0, null),
+                                                (18, 1, 0, 0, 0, 0.999, 0.0, 0.0, 0.999, 0, 0.999, 0, 0);
 
 CREATE TABLE rsu_test_lcz_indics
     AS SELECT id_rsu, sky_view_factor, aspect_ratio, BUILDING_FRACTION_LCZ AS building_surface_fraction,
