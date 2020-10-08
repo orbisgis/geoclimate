@@ -501,13 +501,11 @@ IProcess osm_processing() {
 
                                         h2gis_datasource.execute """DROP TABLE IF EXISTS $newEstimatedHeigthWithIndicators;
                                            CREATE TABLE $newEstimatedHeigthWithIndicators as 
-                                            (SELECT  a.* from $buildingTableName 
-                                            a LEFT JOIN $buildEstimatedHeight b on a.id_build=b.id_build where b.id_build is null) 
-                                            union 
-                                            (SELECT a.THE_GEOM, a.ID_BUILD,a.ID_SOURCE,
-                                            0 AS HEIGHT_WALL , b.HEIGHT_ROOF, 0 as NB_LEV, a.TYPE,a.MAIN_USE, a.ZINDEX,
-                                              from $buildingTableName 
-                                            a RIGHT JOIN $buildEstimatedHeight b on a.id_build=b.id_build where b.id_build is null) ;"""
+                                            SELECT  a.THE_GEOM, a.ID_BUILD,a.ID_SOURCE,
+                                        CASE WHEN b.HEIGHT_ROOF IS NULL THEN a.HEIGHT_WALL ELSE 0 END AS HEIGHT_WALL ,
+                                                COALESCE(b.HEIGHT_ROOF, a.HEIGHT_ROOF) AS HEIGHT_ROOF,
+                                                CASE WHEN b.HEIGHT_ROOF IS NULL THEN a.NB_LEV ELSE 0 END AS NB_LEV, a.TYPE,a.MAIN_USE, a.ZINDEX from $buildingTableName
+                                        a LEFT JOIN $buildEstimatedHeight b on a.id_build=b.id_build"""
 
                                         //We must format only estimated buildings
                                         //Apply format on the new abstract table
@@ -533,7 +531,7 @@ IProcess osm_processing() {
                                                 indicatorUse: processing_parameters.indicatorUse,
                                                 svfSimplified: processing_parameters.svfSimplified, prefixName: processing_parameters.prefixName,
                                                 mapOfWeights: processing_parameters.mapOfWeights,
-                                                lczRandomForest: processing_parameters.lczRandomForest)) {
+                                                lczRandomForest: false)) {
                                             error "Cannot build the geoindicators for the zone $id_zone"
                                             geoIndicatorsComputed = false
                                         } else {
@@ -1111,7 +1109,7 @@ def extractProcessingParameters(def processing_parameters){
                                              "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                              "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
                              hLevMin : 3, hLevMax: 15, hThresholdLev2: 10,
-                             lczRandomForest :true,
+                             lczRandomForest :false,
                              estimateHeight:false]
     if(processing_parameters){
         def distanceP =  processing_parameters.distance
@@ -1155,10 +1153,11 @@ def extractProcessingParameters(def processing_parameters){
         if(hThresholdLev2P && hThresholdLev2P in Integer){
             defaultParameters.hThresholdLev2 = hThresholdLev2P
         }
+        /*Disable lczRandomForest
         def lczRandomForest = processing_parameters.lczRandomForest
         if(lczRandomForest && lczRandomForest in Boolean){
             defaultParameters.lczRandomForest = lczRandomForest
-        }
+        }*/
 
         def estimateHeight = processing_parameters.estimateHeight
         if(estimateHeight && estimateHeight in Boolean){

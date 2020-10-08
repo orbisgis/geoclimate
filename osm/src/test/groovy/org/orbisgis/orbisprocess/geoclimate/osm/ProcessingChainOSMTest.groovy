@@ -143,6 +143,8 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
 
     }
 
+
+    @Disabled
     @Test
     void osmLczFromTestFiles() {
         String urlBuilding = new File(getClass().getResource("BUILDING.geojson").toURI()).absolutePath
@@ -184,7 +186,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 buildingTable: buildingTableName, roadTable: roadTableName,
                 railTable: railTableName, vegetationTable: vegetationTableName,
                 hydrographicTable: hydrographicTableName, indicatorUse: ["LCZ"],
-                mapOfWeights: mapOfWeights,lczRandomForest: true )
+                mapOfWeights: mapOfWeights,lczRandomForest: false )
         assertTrue(datasource.getTable(geodindicators.results.outputTableBuildingIndicators).rowCount>0)
         assertNotNull(geodindicators.results.outputTableBlockIndicators)
         assertTrue(datasource.getTable(geodindicators.results.outputTableRsuIndicators).rowCount>0)
@@ -495,7 +497,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
-    //@Disabled
+    @Disabled
     @Test
     void testOSMEstimatedHeight() {
         String directory ="./target/geoclimate_chain_estimated_height"
@@ -509,7 +511,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "osm" : ["Pont de veyle"]],
+                        "osm" : ["Redon"]],
                 "output" :[
                         "folder" : "$directory"],
                 "parameters":
@@ -528,8 +530,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                          "hLevMin": 3,
                          "hLevMax": 15,
                          "hThresholdLev2": 10,
-                         "estimateHeight":true,
-                         "lczRandomForest":false
+                         "estimateHeight":true
                         ]
         ]
         IProcess process = OSM.workflow
