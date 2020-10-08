@@ -187,7 +187,7 @@ IProcess identifyLczType() {
                                         AS SELECT   $ID_FIELD_RSU,
                                                     CASE WHEN IMPERVIOUS_FRACTION_LCZ>PERVIOUS_FRACTION_LCZ AND IMPERVIOUS_FRACTION_LCZ>0.05
                                                             THEN 105
-                                                            ELSE CASE WHEN ALL_VEGETATION<WATER_FRACTION_LCZ
+                                                            ELSE CASE WHEN ALL_VEGETATION<WATER_FRACTION_LCZ OR WATER_FRACTION_LCZ > 0.5
                                                                     THEN 107
                                                                     ELSE CASE WHEN HIGH_ALL_VEGETATION IS NULL OR HIGH_ALL_VEGETATION<0.05
                                                                             THEN 104
