@@ -404,8 +404,8 @@ IProcess buildingDirectionDistribution() {
             }
             */
                 // The temporary tables are deleted
-                datasource "DROP TABLE IF EXISTS $build_min_rec, $build_dir360, $build_dir180, " +
-                        "$build_dir_dist;"
+                /*datasource "DROP TABLE IF EXISTS $build_min_rec, $build_dir360, $build_dir180, " +
+                        "$build_dir_dist;"*/
 
                 [outputTableName: outputTableName]
             }
@@ -494,7 +494,7 @@ IProcess distributionCharacterization() {
                                 CREATE TABLE $distribTableNameNoNull 
                                     AS SELECT * 
                                     FROM $distribTableName 
-                                    WHERE ${distribColumns.join(" IS NOT NULL AND ")}"""
+                                    WHERE ${distribColumns.join(" IS NOT NULL AND ")} IS NOT NULL"""
 
                 if (distribIndicator.contains("equality") && !distribIndicator.contains("uniqueness")) {
                     def queryCreateTable = """CREATE TABLE $outputTableMissingSomeObjects($inputId integer, 
