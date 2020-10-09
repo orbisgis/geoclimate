@@ -152,7 +152,8 @@ IProcess workflow() {
                     }
                     def h2gis_name= geoclimatedb.get("name")
                     if(h2gis_name){
-                        databaseName=h2gis_name
+                        def dbName = h2gis_name.split(";")
+                        databaseName=dbName[0]
                     }
                     databasePath =  databaseFolder + File.separator + databaseName
                     def delete_h2gis_db = geoclimatedb.get("delete")
