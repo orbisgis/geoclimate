@@ -499,7 +499,12 @@ class GenericIndicatorsTests {
 
     @Test
     void upperScaleAreaStatisticsTest() {
-        def indicatorTableName = "rsu_test"
+        h2GIS.execute """DROP TABLE IF EXISTS rsu_test_limited;
+                        CREATE TABLE rsu_test_limited
+                            AS SELECT * FROM rsu_test
+                            WHERE ID_RSU < 18;"""
+
+        def indicatorTableName = "rsu_test_limited"
         def indicatorName = "rsu_area"
         def geometryColumnName = "the_geom"
 

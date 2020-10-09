@@ -404,8 +404,8 @@ IProcess buildingDirectionDistribution() {
             }
             */
                 // The temporary tables are deleted
-                /*datasource "DROP TABLE IF EXISTS $build_min_rec, $build_dir360, $build_dir180, " +
-                        "$build_dir_dist;"*/
+                datasource "DROP TABLE IF EXISTS $build_min_rec, $build_dir360, $build_dir180, " +
+                        "$build_dir_dist;"
 
                 [outputTableName: outputTableName]
             }
