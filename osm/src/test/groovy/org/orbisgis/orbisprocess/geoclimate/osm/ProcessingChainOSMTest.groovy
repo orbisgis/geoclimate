@@ -514,20 +514,20 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
         def osm_parmeters = [
-                "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
+                "description" :"Example of configuration file to run the OSM workflow and store the results in a folder",
                 "geoclimatedb" : [
                         "folder" : "${dirFile.absolutePath}",
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["PONT DE VEYLE"]],
+                        "osm" : ["REDON"]],
                 "output" :[
                         "folder" : "$directory"],
                 "parameters":
                         ["distance" : 0,
                          "indicatorUse": ["LCZ"],
-                         "svfSimplified": true,
+                         "svfSimplified": false,
                          "prefixName": "",
                          "mapOfWeights":
                                  ["sky_view_factor"                : 4,

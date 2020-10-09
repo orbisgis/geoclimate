@@ -11,7 +11,8 @@
         "parking_place"
     ],
     "leisure": ["pitch"],
-    "railway": ["platform"]
+    "railway": ["platform"],
+    "landuse": ["railway"]
   },
   "columns": [
     "highway",
@@ -19,6 +20,7 @@
     "amenity",
     "area",
     "leisure",
-    "parking"
+    "parking",
+    "landuse"
   ]
 }
