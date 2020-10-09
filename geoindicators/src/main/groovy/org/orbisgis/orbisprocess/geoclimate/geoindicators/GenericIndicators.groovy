@@ -4,7 +4,6 @@ import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
 import org.orbisgis.orbisdata.datamanager.jdbc.*
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.commons.printer.Ascii
 
 @BaseScript Geoindicators geoindicators
 
