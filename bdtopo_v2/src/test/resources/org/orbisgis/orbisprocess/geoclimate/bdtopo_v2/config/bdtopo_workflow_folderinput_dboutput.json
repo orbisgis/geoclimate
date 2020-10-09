@@ -2,7 +2,8 @@
     "description" :"Example of configuration file to run the geoclimate chain using data\n from a folder and saved the results in a database",
 
     "geoclimatedb" : {
-        "path" : "/tmp/.../geoclimate_db;AUTO_SERVER=TRUE",
+        "folder" : "/tmp/",
+        "name": "geoclimate_db;AUTO_SERVER=TRUE",
         "delete" :true
     },
     "input" : {

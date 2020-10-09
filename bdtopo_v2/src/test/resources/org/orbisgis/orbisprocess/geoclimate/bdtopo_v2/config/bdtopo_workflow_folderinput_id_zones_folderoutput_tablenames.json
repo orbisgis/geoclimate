@@ -1,7 +1,8 @@
 {
     "description" :"Example of configuration file with an input folder and a list of id_zones",
     "geoclimatedb" : {
-        "path" : "/tmp/.../geoclimate_db;AUTO_SERVER=TRUE",
+        "folder" : "/tmp/",
+        "name": "geoclimate_db;AUTO_SERVER=TRUE",
         "delete" :true
     },
     "input" : {

@@ -1,7 +1,8 @@
 {
     "description" :"Example of configuration file to run the OSM workflow with an output folder",
     "geoclimatedb" : {
-        "path" : "/tmp/.../geoclimate_db;AUTO_SERVER=TRUE",
+        "folder" : "/tmp/",
+        "name": "geoclimate_db;AUTO_SERVER=TRUE",
         "delete" :true
     },
     "input" : {
