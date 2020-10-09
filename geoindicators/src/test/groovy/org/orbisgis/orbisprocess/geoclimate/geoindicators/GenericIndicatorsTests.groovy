@@ -257,7 +257,8 @@ class GenericIndicatorsTests {
                 DROP TABLE IF EXISTS distrib_test,test_DISTRIBUTION_REPARTITION;
                 CREATE TABLE distrib_test(id integer, col1 double, col2 double, col3 double, col4 double);
                 INSERT INTO distrib_test VALUES (1, 25, 25, 25, 25), (2, 10, 20, 40, 20), 
-                                                (3, 0, 0, 60, 40), (4, 0, 0, 0, 100);
+                                                (3, 0, 0, 60, 40), (4, 0, 0, 0, 100),
+                                                (5, null, 0, 0, 100);
         """
 
 
@@ -281,7 +282,10 @@ class GenericIndicatorsTests {
         assert "COL3"   == h2GIS.firstRow("SELECT * FROM $resultTab WHERE id = 2").EXTREMUM_COL
         assert "COL4"   == h2GIS.firstRow("SELECT * FROM $resultTab WHERE id = 4").EXTREMUM_COL
         assert "COL4"   == h2GIS.firstRow("SELECT * FROM $resultTab WHERE id = 3").EXTREMUM_COL2
-        assert 60   == h2GIS.firstRow("SELECT * FROM $resultTab WHERE id = 3").EXTREMUM_VAL
+        assert 60       == h2GIS.firstRow("SELECT * FROM $resultTab WHERE id = 3").EXTREMUM_VAL
+        assert "unknown"== h2GIS.firstRow("SELECT * FROM $resultTab WHERE id = 5").EXTREMUM_COL
+        assert -1       == h2GIS.firstRow("SELECT * FROM $resultTab WHERE id = 5").EQUALITY_VALUE
+        assert -1       == h2GIS.firstRow("SELECT * FROM $resultTab WHERE id = 5").UNIQUENESS_VALUE
     }
 
     @Test
