@@ -16,6 +16,7 @@ class OSM  {
     public static def createGISLayers
     public static def extractAndCreateGISLayers
     public static def buildGeoclimateLayers
+    public static def formatEstimatedBuilding
     static {
         def formattingForAbstractModel = new FormattingForAbstractModel()
         def osmGISLayers = new OSMGISLayers()
@@ -27,10 +28,11 @@ class OSM  {
         formatRailsLayer= formattingForAbstractModel.formatRailsLayer()
         formatHydroLayer= formattingForAbstractModel.formatHydroLayer()
         formatImperviousLayer= formattingForAbstractModel.formatImperviousLayer()
+        formatEstimatedBuilding = formattingForAbstractModel.formatEstimatedBuilding()
         createGISLayers  = osmGISLayers.createGISLayers()
         extractAndCreateGISLayers  = osmGISLayers.extractAndCreateGISLayers()
         buildGeoclimateLayers  = prepareOSM.buildGeoclimateLayers()
-        workflow  = workflowOSM.workflow();
+        workflow  = workflowOSM.workflow()
     }
 
 }

@@ -1,7 +1,8 @@
 {
     "description" :"Example of configuration file to load data from a database and save the result into the same database",
     "geoclimatedb" : {
-        "path" : "/tmp/.../geoclimate_db;AUTO_SERVER=TRUE",
+        "folder" : "/tmp/",
+        "name": "geoclimate_db;AUTO_SERVER=TRUE",
         "delete" :true
     },
     "input" : {
