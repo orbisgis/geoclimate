@@ -3,7 +3,7 @@ package org.orbisgis.orbisprocess.geoclimate.geoindicators
 import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.*
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisdata.processmanager.process.*
+
 
 import static java.lang.Math.*
 
@@ -123,11 +123,11 @@ IProcess groundSkyViewFactor() {
             // Temporary table names
             def rsuDiff = postfix "rsuDiff"
             def rsuDiffTot = postfix "rsuDiffTot"
+            def multiptsRSU = postfix "multiptsRSU"
             def multiptsRSUtot = postfix "multiptsRSUtot"
             def ptsRSUtot = postfix "ptsRSUtot"
             def pts_order = postfix "pts_order"
             def svfPts = postfix "svfPts"
-            def rsuDensPts = postfix "rsuDensPts"
             def pts_RANG = postfix "pts_RANG"
 
             // The name of the outputTableName is constructed
@@ -144,28 +144,29 @@ IProcess groundSkyViewFactor() {
 
             // Create the geometries of buildings and RSU holes included within each RSU
             datasource """
-                DROP TABLE IF EXISTS $rsuDiff, $multiptsRSUtot, $rsuDiffTot,$pts_RANG,$pts_order,$ptsRSUtot, $svfPts, $outputTableName;
+                DROP TABLE IF EXISTS $rsuDiff, $multiptsRSU, $multiptsRSUtot, $rsuDiffTot,$pts_RANG,$pts_order,$ptsRSUtot, $svfPts, $outputTableName;
                 CREATE TABLE $rsuDiff 
-                AS (SELECT  st_difference(a.$GEOMETRIC_COLUMN_RSU, st_makevalid(ST_ACCUM(b.$GEOMETRIC_COLUMN_BU)))
-                            AS the_geom, a.$ID_COLUMN_RSU
+                AS (SELECT  CASE WHEN   st_difference(a.$GEOMETRIC_COLUMN_RSU, st_makevalid(ST_ACCUM(b.$GEOMETRIC_COLUMN_BU)))='POLYGON EMPTY'
+                            THEN        ST_EXTERIORRING(ST_NORMALIZE(a.$GEOMETRIC_COLUMN_RSU))
+                            ELSE        st_difference(a.$GEOMETRIC_COLUMN_RSU, st_makevalid(ST_ACCUM(b.$GEOMETRIC_COLUMN_BU)))
+                            END         AS the_geom, a.$ID_COLUMN_RSU
                 FROM        $rsuTable a, $correlationBuildingTable b 
                 WHERE       a.$GEOMETRIC_COLUMN_RSU && b.$GEOMETRIC_COLUMN_BU AND ST_INTERSECTS(a.$GEOMETRIC_COLUMN_RSU, 
                             b.$GEOMETRIC_COLUMN_BU)
                 GROUP BY    a.$ID_COLUMN_RSU);
-        """
-
+            """
             datasource """
                 CREATE INDEX ON $rsuDiff USING BTREE($ID_COLUMN_RSU);
                 CREATE TABLE $rsuDiffTot AS 
                 SELECT b.$ID_COLUMN_RSU, case when a.$ID_COLUMN_RSU is null then b.the_geom else a.the_geom end as the_geom 
                 FROM $rsuTable as b left join $rsuDiff as a on a.$ID_COLUMN_RSU=b.$ID_COLUMN_RSU;
-        """
+            """
 
             // The points used for the SVF calculation are regularly selected within each RSU. The points are
             // located outside buildings (and RSU holes) and the size of the grid mesh used to sample each RSU
             // (based on the building density + 10%) - if the building density exceeds 90%,
             // the LCZ 7 building density is then set to 90%)
-            datasource """CREATE TABLE $multiptsRSUtot AS SELECT $ID_COLUMN_RSU, THE_GEOM 
+            datasource """CREATE TABLE $multiptsRSU AS SELECT $ID_COLUMN_RSU, THE_GEOM 
                     FROM  
                     ST_EXPLODE('(SELECT $ID_COLUMN_RSU,
                                 case when LEAST(TRUNC($pointDensity*c.rsu_area_free),100)=0 
@@ -176,10 +177,17 @@ IProcess groundSkyViewFactor() {
                                             AS rsu_area_free, $ID_COLUMN_RSU
                                 FROM        st_explode(''(select * from $rsuDiffTot)'')  where st_area(the_geom)>0) as c)');"""
 
-            // A random sample of points (of size corresponding to the point density defined by $pointDensity)
-            // is drawn in order to have the same density of point in each RSU.
-            datasource."$multiptsRSUtot".the_geom.createSpatialIndex()
+            // Need to identify specific points for buildings being RSU (slightly away from the wall on each facade)
+            datasource """  CREATE TABLE $multiptsRSUtot
+                                AS SELECT $ID_COLUMN_RSU, THE_GEOM
+                                FROM    ST_EXPLODE('(SELECT $ID_COLUMN_RSU, ST_LocateAlong(THE_GEOM, 0.5, 0.01) AS THE_GEOM 
+                                            FROM $rsuDiffTot
+                                            WHERE ST_DIMENSION(THE_GEOM)=1)')
+                            UNION 
+                                SELECT $ID_COLUMN_RSU, THE_GEOM
+                                FROM $multiptsRSU"""
 
+            datasource."$multiptsRSUtot".the_geom.createSpatialIndex()
             // The SVF calculation is performed at point scale
             datasource """
                 CREATE TABLE $svfPts 
@@ -190,7 +198,6 @@ IProcess groundSkyViewFactor() {
                 WHERE       ST_EXPAND(a.the_geom, $rayLength) && b.$GEOMETRIC_COLUMN_BU AND 
                             ST_DWITHIN(b.$GEOMETRIC_COLUMN_BU, a.the_geom, $rayLength) 
                 GROUP BY    a.the_geom"""
-
             datasource."$svfPts"."$ID_COLUMN_RSU".createIndex()
 
             // The result of the SVF calculation is averaged at RSU scale
@@ -207,7 +214,7 @@ IProcess groundSkyViewFactor() {
             info "SVF calculation time: ${tObis / 1000} s"
 
             // The temporary tables are deleted
-            datasource "DROP TABLE IF EXISTS $rsuDiff, $ptsRSUtot, $rsuDiffTot,$pts_order,$multiptsRSUtot, $svfPts"
+            datasource "DROP TABLE IF EXISTS $rsuDiff, $ptsRSUtot, $multiptsRSU, $rsuDiffTot,$pts_order,$multiptsRSUtot, $svfPts"
 
             [outputTableName: outputTableName]
         }

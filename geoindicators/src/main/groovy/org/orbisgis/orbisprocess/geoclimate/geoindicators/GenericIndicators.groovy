@@ -4,7 +4,6 @@ import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
 import org.orbisgis.orbisdata.datamanager.jdbc.*
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisdata.processmanager.process.*
 
 @BaseScript Geoindicators geoindicators
 
@@ -488,6 +487,14 @@ IProcess distributionCharacterization() {
 
                 // Create temporary tables
                 def outputTableMissingSomeObjects = postfix "output_table_missing_some_objects"
+                def distribTableNameNoNull = postfix "distrib_table_name_no_null"
+
+                // Delete rows having null values
+                datasource """  DROP TABLE IF EXISTS $distribTableNameNoNull;
+                                CREATE TABLE $distribTableNameNoNull 
+                                    AS SELECT * 
+                                    FROM $distribTableName 
+                                    WHERE ${distribColumns.join(" IS NOT NULL AND ")} IS NOT NULL"""
 
                 if (distribIndicator.contains("equality") && !distribIndicator.contains("uniqueness")) {
                     def queryCreateTable = """CREATE TABLE $outputTableMissingSomeObjects($inputId integer, 
@@ -506,7 +513,7 @@ IProcess distributionCharacterization() {
                     datasource queryCreateTable
                     // Will insert values by batch of 1000 in the table
                     datasource.withBatch(1000) { stmt ->
-                        datasource.eachRow("SELECT * FROM $distribTableName") { row ->
+                        datasource.eachRow("SELECT * FROM $distribTableNameNoNull") { row ->
                             def rowMap = row.toRowResult()
                             def id_rsu = rowMap."$inputId"
                             rowMap.remove(inputId.toUpperCase())
@@ -544,7 +551,7 @@ IProcess distributionCharacterization() {
                     datasource queryCreateTable
                     // Will insert values by batch of 1000 in the table
                     datasource.withBatch(1000) { stmt ->
-                        datasource.eachRow("SELECT * FROM $distribTableName") { row ->
+                        datasource.eachRow("SELECT * FROM $distribTableNameNoNull") { row ->
                             def rowMap = row.toRowResult()
                             def id_rsu = rowMap."$inputId"
                             rowMap.remove(inputId.toUpperCase())
@@ -583,7 +590,7 @@ IProcess distributionCharacterization() {
 
                     // Will insert values by batch of 1000 in the table
                     datasource.withBatch(1000) { stmt ->
-                        datasource.eachRow("SELECT * FROM $distribTableName") { row ->
+                        datasource.eachRow("SELECT * FROM $distribTableNameNoNull") { row ->
                             def rowMap = row.toRowResult()
                             def id_rsu = rowMap."$inputId"
                             rowMap.remove(inputId)

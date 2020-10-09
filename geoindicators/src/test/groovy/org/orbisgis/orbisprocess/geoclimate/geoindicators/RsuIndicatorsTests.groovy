@@ -57,7 +57,7 @@ class RsuIndicatorsTests {
     void groundSkyViewFactorTest() {
         // Only the first 1 first created buildings are selected for the tests
         h2GIS "DROP TABLE IF EXISTS tempo_build, rsu_free_external_facade_density; CREATE TABLE tempo_build AS SELECT * " +
-                "FROM building_test WHERE id_build > 8 AND id_build < 27"
+                "FROM building_test WHERE id_build > 8 AND id_build < 27 OR id_build = 37"
         // The geometry of the buildings are useful for the calculation, then they are inserted inside
         // the build/rsu correlation table
         h2GIS "DROP TABLE IF EXISTS corr_tempo; CREATE TABLE corr_tempo AS SELECT a.*, b.the_geom, b.height_wall " +
@@ -74,7 +74,10 @@ class RsuIndicatorsTests {
                 datasource                  : h2GIS])
         assertEquals 0.54, h2GIS.firstRow("SELECT * FROM test_rsu_ground_sky_view_factor " +
                 "WHERE id_rsu = 8").ground_sky_view_factor, 0.05
-        assert 1 == h2GIS.firstRow("SELECT * FROM test_rsu_ground_sky_view_factor WHERE id_rsu = 1").ground_sky_view_factor
+        // For RSU having no buildings in and around them
+        assertEquals 1, h2GIS.firstRow("SELECT * FROM test_rsu_ground_sky_view_factor WHERE id_rsu = 1").ground_sky_view_factor
+        // For buildings that are RSU...
+        assertEquals 0.5, h2GIS.firstRow("SELECT * FROM test_rsu_ground_sky_view_factor WHERE id_rsu = 18").ground_sky_view_factor, 0.03
     }
 
     @Test
