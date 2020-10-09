@@ -153,8 +153,6 @@ IProcess identifyLczType() {
                                             "LCZ8": 8,
                                             "LCZ9": 9]
 
-
-
                 // I. Rural LCZ types are classified according to a "manual" decision tree
                 datasource."$rsuAllIndicators".BUILDING_FRACTION_LCZ.createIndex()
                 datasource."$rsuAllIndicators".ASPECT_RATIO.createIndex()

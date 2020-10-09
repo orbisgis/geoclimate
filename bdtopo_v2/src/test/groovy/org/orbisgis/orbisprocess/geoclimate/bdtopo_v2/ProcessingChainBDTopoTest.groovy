@@ -239,7 +239,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     }
 
     @Test //Integration tests
-    //@Disabled
+    @Disabled
     void testBDTopoConfigurationFile() {
         def configFile = getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput.json").toURI()
         //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()
@@ -250,7 +250,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     }
 
     @Test
-    void workflowWrongmapOfWeights() {
+    void workflowWrongMapOfWeights() {
         String directory ="./target/bdtopo_workflow"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -258,7 +258,8 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         def bdTopoParameters = [
                 "description" :"Example of configuration file to run the BDTopo workflow and store the results in a folder",
                 "geoclimatedb" : [
-                        "path" : "${dirFile.absolutePath+File.separator+"bdtopo_workflow_db;AUTO_SERVER=TRUE"}",
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "bdtopo_workflow_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" : [
@@ -306,7 +307,8 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         def bdTopoParameters = [
                 "description" :"Example of configuration file to run the BDTopo workflow and store the results in a folder",
                 "geoclimatedb" : [
-                        "path" : "${dirFile.absolutePath+File.separator+"bdtopo_workflow_db;AUTO_SERVER=TRUE"}",
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "bdtopo_workflow_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" : [
@@ -426,7 +428,8 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         def bdTopoParameters = [
                 "description" :"Example of configuration file to run the BDTopo workflow and store the results in a folder",
                 "geoclimatedb" : [
-                        "path" : "${dirFile.absolutePath+File.separator+"bdtopo_workflow_db;AUTO_SERVER=TRUE"}",
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "bdtopo_workflow_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" : [

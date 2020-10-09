@@ -2,6 +2,7 @@ package org.orbisgis.orbisprocess.geoclimate.osm
 
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
+import org.h2.tools.DeleteDbFiles
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.GeographyUtilities
 import org.locationtech.jts.geom.Geometry
@@ -37,7 +38,8 @@ import java.sql.SQLException
  *  *
  *  * [OPTIONAL ENTRY] "geoclimatedb" : { // Local H2GIS database used to run the processes
  *  *                                    // A default db is build when this entry is not specified
- *  *         "path" : "/tmp/geoclimate_db;AUTO_SERVER=TRUE",
+ *  *         "folder" : "/tmp/", //The folder to store the database
+ *  *         "name" : "geoclimate_db;AUTO_SERVER=TRUE" // A name for the database
  *  *         "delete" :false
  *  *     },
  *  * [REQUIRED]   "input" : {
@@ -137,12 +139,22 @@ IProcess workflow() {
                 def input = parameters.get("input")
                 def output = parameters.get("output")
                 //Default H2GIS database properties
-                def databaseName = postfix System.getProperty("java.io.tmpdir") + File.separator + "osm"
-                def h2gis_properties = ["databaseName": databaseName, "user": "sa", "password": ""]
+                def databaseFolder = System.getProperty("java.io.tmpdir")
+                def databaseName = "osm"
+                def databasePath = postfix databaseFolder + File.separator + databaseName
+                def h2gis_properties = ["databaseName": databasePath, "user": "sa", "password": ""]
                 def delete_h2gis = true
                 def geoclimatedb = parameters.get("geoclimatedb")
                 if (geoclimatedb) {
-                    def h2gis_path = geoclimatedb.get("path")
+                    def h2gis_folder = geoclimatedb.get("folder")
+                    if(h2gis_folder){
+                        databaseFolder=h2gis_folder
+                    }
+                    def h2gis_name= geoclimatedb.get("name")
+                    if(h2gis_name){
+                        databaseName=h2gis_name
+                    }
+                    databasePath =  databaseFolder + File.separator + databaseName
                     def delete_h2gis_db = geoclimatedb.get("delete")
                     if (delete_h2gis_db == null) {
                         delete_h2gis = true
@@ -154,8 +166,8 @@ IProcess workflow() {
                     } else if (delete_h2gis_db instanceof Boolean) {
                         delete_h2gis = delete_h2gis_db
                     }
-                    if (h2gis_path) {
-                        h2gis_properties = ["databaseName": h2gis_path, "user": "sa", "password": ""]
+                    if(databasePath){
+                        h2gis_properties = ["databaseName": databasePath, "user": "sa", "password": ""]
                     }
                 }
 
@@ -224,8 +236,15 @@ IProcess workflow() {
                                     return null
                                 }
                                 if (delete_h2gis) {
-                                    h2gis_datasource.execute("DROP ALL OBJECTS DELETE FILES")
-                                    info "The local H2GIS database has been deleted"
+                                    def localCon = h2gis_datasource.getConnection()
+                                    if(localCon){
+                                        localCon.close()
+                                        DeleteDbFiles.execute(databaseFolder, databaseName, true)
+                                        info "The local H2GIS database : ${databasePath} has been deleted"
+                                    }
+                                    else{
+                                        error "Cannot delete the local H2GIS database : ${databasePath} "
+                                    }
                                 }
                             } else {
                                 error "Cannot find any OSM filters"
@@ -252,8 +271,15 @@ IProcess workflow() {
                                     }
                                     //Delete database
                                     if (delete_h2gis) {
-                                        h2gis_datasource.execute("DROP ALL OBJECTS DELETE FILES")
-                                        info "The local H2GIS database has been deleted"
+                                        def localCon = h2gis_datasource.getConnection()
+                                        if(localCon){
+                                            localCon.close()
+                                            DeleteDbFiles.execute(databaseFolder, databaseName, true)
+                                            info "The local H2GIS database : ${databasePath} has been deleted"
+                                        }
+                                        else{
+                                            error "Cannot delete the local H2GIS database : ${databasePath} "
+                                        }
                                         return [outputMessage: "The ${osmFilters.join(",")} have been processed"]
                                     }
                                 } else {
@@ -285,8 +311,15 @@ IProcess workflow() {
                                         return null
                                     }
                                     if (delete_h2gis) {
-                                        h2gis_datasource.execute("DROP ALL OBJECTS DELETE FILES")
-                                        info "The local H2GIS database has been deleted"
+                                        def localCon = h2gis_datasource.getConnection()
+                                        if(localCon){
+                                            localCon.close()
+                                            DeleteDbFiles.execute(databaseFolder, databaseName, true)
+                                            info "The local H2GIS database : ${databasePath} has been deleted"
+                                        }
+                                        else{
+                                            error "Cannot delete the local H2GIS database : ${databasePath} "
+                                        }
                                     }
                                 } else {
                                     error "Cannot load the files from the folder $inputFolder"

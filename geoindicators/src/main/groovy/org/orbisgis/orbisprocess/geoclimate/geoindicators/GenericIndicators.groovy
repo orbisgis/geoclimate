@@ -581,7 +581,6 @@ IProcess distributionCharacterization() {
 
                     datasource queryCreateTable
 
-
                     // Will insert values by batch of 1000 in the table
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow("SELECT * FROM $distribTableName") { row ->
