@@ -27,7 +27,7 @@ class FormattingForAbstractModelTests {
         assertEquals 44, h2GIS.getTable(extractData.results.railTableName).rowCount
         assertEquals 135, h2GIS.getTable(extractData.results.vegetationTableName).rowCount
         assertEquals 10, h2GIS.getTable(extractData.results.hydroTableName).rowCount
-        assertEquals 43, h2GIS.getTable(extractData.results.imperviousTableName).rowCount
+        assertEquals 44, h2GIS.getTable(extractData.results.imperviousTableName).rowCount
 
         //Buildings
         IProcess format = OSM.formatBuildingLayer
@@ -115,7 +115,7 @@ class FormattingForAbstractModelTests {
                 inputTableName: extractData.results.imperviousTableName,
                 epsg: epsg])
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_formated.shp", true)
-        assertEquals 43, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertEquals 44, h2GIS.getTable(format.results.outputTableName).rowCount
 
     }
 
@@ -287,7 +287,7 @@ class FormattingForAbstractModelTests {
         assertEquals 44, h2GIS.getTable(extractData.results.railTableName).rowCount
         assertEquals 135, h2GIS.getTable(extractData.results.vegetationTableName).rowCount
         assertEquals 10, h2GIS.getTable(extractData.results.hydroTableName).rowCount
-        assertEquals 43, h2GIS.getTable(extractData.results.imperviousTableName).rowCount
+        assertEquals 44, h2GIS.getTable(extractData.results.imperviousTableName).rowCount
 
         //Buildings with estimation state
         IProcess format = OSM.formatBuildingLayer

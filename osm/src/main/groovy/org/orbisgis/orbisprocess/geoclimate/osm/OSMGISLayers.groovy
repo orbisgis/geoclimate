@@ -160,7 +160,8 @@ IProcess createGISLayers() {
                 def tags = parametersMap.get("tags")
                 def columnsToKeep = parametersMap.get("columns")
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
-                    outputBuildingTableName = transform.results.outputTableName
+                    outputBuildingTableName = postfix("OSM_BUILDING")
+                    datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputBuildingTableName")
                     info "Building layer created"
                 }
 
@@ -172,7 +173,8 @@ IProcess createGISLayers() {
                 tags = parametersMap.get("tags")
                 columnsToKeep = parametersMap.get("columns")
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
-                    outputRoadTableName = transform.results.outputTableName
+                    outputRoadTableName = postfix("OSM_ROAD")
+                    datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputRoadTableName")
                     info "Road layer created"
                 }
 
@@ -184,7 +186,8 @@ IProcess createGISLayers() {
                 tags = parametersMap.get("tags")
                 columnsToKeep = parametersMap.get("columns")
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
-                    outputRailTableName = transform.results.outputTableName
+                    outputRailTableName = postfix("OSM_RAIL")
+                    datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputRailTableName")
                     info "Rail layer created"
                 }
                 //Create vegetation layer
@@ -195,7 +198,8 @@ IProcess createGISLayers() {
                 transform = OSMTools.Transform.toPolygons()
                 info "Create the vegetation layer"
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
-                    outputVegetationTableName = transform.results.outputTableName
+                    outputVegetationTableName = postfix("OSM_VEGETATION")
+                    datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputVegetationTableName")
                     info "Vegetation layer created"
                 }
 
@@ -206,7 +210,8 @@ IProcess createGISLayers() {
                 transform = OSMTools.Transform.toPolygons()
                 info "Create the water layer"
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags)) {
-                    outputHydroTableName = transform.results.outputTableName
+                    outputHydroTableName = postfix("OSM_WATER")
+                    datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputHydroTableName")
                     info "Water layer created"
                 }
 
@@ -218,7 +223,8 @@ IProcess createGISLayers() {
                 transform = OSMTools.Transform.toPolygons()
                 info "Create the impervious layer"
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
-                    outputImperviousTableName = transform.results.outputTableName
+                    outputImperviousTableName = postfix("OSM_IMPERVIOUS")
+                    datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputImperviousTableName")
                     info "impervious layer created"
                 }
                 //Drop the OSM tables
