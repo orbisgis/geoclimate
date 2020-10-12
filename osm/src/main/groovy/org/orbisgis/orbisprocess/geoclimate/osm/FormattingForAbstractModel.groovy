@@ -41,14 +41,14 @@ IProcess formatBuildingLayer() {
                 datasource """
                     DROP TABLE if exists ${outputEstimateTableName};
                     CREATE TABLE ${outputEstimateTableName} (
-                        id_build serial,
+                        id_build INTEGER,
                         ID_SOURCE VARCHAR,
                         estimated boolean)
                 """
             }
             datasource """ 
                 DROP TABLE if exists ${outputTableName};
-                CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id_build serial, ID_SOURCE VARCHAR, 
+                CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id_build INTEGER, ID_SOURCE VARCHAR, 
                     HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT, NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER);
             """
             if (inputTableName) {
@@ -69,6 +69,7 @@ IProcess formatBuildingLayer() {
                     } else {
                         queryMapper += " , case when st_isvalid(a.the_geom) then a.the_geom else st_makevalid(st_force2D(a.the_geom)) end as the_geom FROM $inputTableName as a where st_area(a.the_geom)>1"
                     }
+                    def id_build=1;
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             String height = row.height
@@ -103,7 +104,7 @@ IProcess formatBuildingLayer() {
                                             stmt.addBatch """
                                                 INSERT INTO ${outputTableName} values(
                                                     ST_GEOMFROMTEXT('${subGeom}',$epsg), 
-                                                    null, 
+                                                    $id_build, 
                                                     '${row.id}',
                                                     ${formatedHeight.heightWall},
                                                     ${formatedHeight.heightRoof},
@@ -115,11 +116,12 @@ IProcess formatBuildingLayer() {
                                             if (estimateHeight) {
                                                 stmt.addBatch """
                                                 INSERT INTO ${outputEstimateTableName} values(
-                                                    null, 
+                                                    $id_build, 
                                                     '${row.id}',
                                                     ${formatedHeight.estimated})
                                                 """.toString()
                                             }
+                                            id_build++
                                         }
                                     }
                                 }
@@ -575,7 +577,7 @@ static float getHeightWall(height, r_height) {
  * @param hThresholdLev2 value
  * @return a map with the new values
  */
-/*  TODO : when all the values are already available, it mmight happen that this control modify them. For example, a tower of 32 levels is 92 meters high.
+/*  TODO : when all the values are already available, it might happen that this control modify them. For example, a tower of 32 levels is 92 meters high.
      The control will put the value of heightRoof to 96 whereas it was 92. Do we accept it or are the real values considered as more reliable then the theoretical ones ?
  */
 static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels, def h_lev_min,
@@ -607,7 +609,7 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
     if(nbLevels==0) {
         nbLevels = 1
         if (nbLevFromType == 1 || (nbLevFromType == 2 && heightWall > hThresholdLev2)) {
-            nbLevels = heightWall / h_lev_min
+            nbLevels = Math.floor(heightWall / h_lev_min)
         }
     }
 
@@ -624,7 +626,7 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
     def tmpHmax=  nbLevels*h_lev_max
     if(nbLevFromType==1 || nbLevFromType==2 && heightWall> hThresholdLev2){
         if(tmpHmax<heightWall){
-            nbLevels = heightWall/h_lev_max
+            nbLevels = Math.floor(heightWall/h_lev_max)
     }
     }
     return [heightWall:heightWall, heightRoof:heightRoof, nbLevels:nbLevels, estimated:estimated]
@@ -806,3 +808,75 @@ static Map parametersMapping(def file, def altResourceStream) {
     return jsonSlurper.parse(paramStream)
 
 }
+
+/**
+ * This process is used to re-format the building table when the estimated height RF is used.
+ * It must be used to update the nb level according the estimated height roof value
+ *
+ * @param datasource A connexion to a DB containing the raw buildings table
+ * @param inputTableName The name of the raw buildings table in the DB
+ * @param hLevMin Minimum building level height
+ * @param hLevMax Maximum building level height
+ * @param hThresholdLev2 Threshold on the building height, used to determine the number of levels *
+ * @param jsonFilename Name of the json formatted file containing the filtering parameters
+ * @return outputTableName The name of the final buildings table
+ */
+IProcess formatEstimatedBuilding() {
+    return create {
+        title "Transform OSM buildings table into a table that matches the constraints of the GeoClimate input model"
+        id "formatBuildingLayer"
+        inputs datasource: JdbcDataSource, inputTableName: String, epsg: int,  h_lev_min: 3, h_lev_max: 15, hThresholdLev2: 10,jsonFilename: ""
+        outputs outputTableName: String
+        run { JdbcDataSource datasource, inputTableName,epsg, h_lev_min, h_lev_max, hThresholdLev2,jsonFilename ->
+            def outputTableName = postfix "INPUT_BUILDING"
+            info 'Re-formating building layer'
+            outputTableName = "INPUT_BUILDING_REFORMATED_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+            def outputEstimateTableName = ""
+            datasource """ 
+                DROP TABLE if exists ${outputTableName};
+                CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id_build INTEGER, ID_SOURCE VARCHAR, 
+                    HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT, NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER);
+            """
+            if (inputTableName) {
+                def paramsDefaultFile = this.class.getResourceAsStream("buildingParams.json")
+                def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
+                def typeAndLevel = parametersMap.level
+                def queryMapper = "SELECT "
+                def inputSpatialTable = datasource."$inputTableName"
+                if (inputSpatialTable.rowCount > 0) {
+                    def columnNames = inputSpatialTable.columns
+                    queryMapper += " ${columnNames.join(",")} FROM $inputTableName"
+
+                    datasource.withBatch(1000) { stmt ->
+                        datasource.eachRow(queryMapper) { row ->
+                            def heightRoof = row.height_roof
+                            def heightWall = heightRoof
+                            def type = row.type
+                            def nbLevelsFromType = typeAndLevel[type]
+
+                            def formatedHeight = formatHeightsAndNbLevels(heightWall, heightRoof, 0, h_lev_min,
+                                    h_lev_max, hThresholdLev2, nbLevelsFromType == null ? 0 : nbLevelsFromType)
+
+                            stmt.addBatch """
+                                                INSERT INTO ${outputTableName} values(
+                                                    ST_GEOMFROMTEXT('${row.the_geom}',$epsg), 
+                                                    ${row.id_build}, 
+                                                    '${row.id_source}',
+                                                    ${formatedHeight.heightWall},
+                                                    ${formatedHeight.heightRoof},
+                                                    ${formatedHeight.nbLevels},
+                                                    '${type}',
+                                                    '${row.main_use}',
+                                                    ${row.zindex})
+                                            """.toString()
+
+                        }
+                    }
+                }
+            }
+            info 'Re-formating building finishes'
+            [outputTableName: outputTableName]
+        }
+    }
+}
+

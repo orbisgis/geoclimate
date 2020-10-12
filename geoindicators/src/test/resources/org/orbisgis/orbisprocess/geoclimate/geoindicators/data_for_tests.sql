@@ -66,7 +66,8 @@ INSERT INTO building_test VALUES (1, 1, 1, 0, 'POLYGON((4 4, 10 4, 10 30, 4 30, 
  (33, 8, null,  0, 'POLYGON((35 -145, 45 -145, 45 -110, 35 -110, 35 -145))'::GEOMETRY, 12, 12, null, null, null, null, null, null, 'residential'),
  (34, 8, null,  0, 'POLYGON((20 -145, 35 -145, 35 -140, 15 -130, 20 -145))'::GEOMETRY, 12, 15, null, null, null, null, null, null, 'residential'),
  (35, null, null,  0, 'POLYGON((-31 10, -29 10, -29 20, -31 20, -31 10))'::GEOMETRY, 20, 20, null, null, null, null, null, null, 'residential'),
- (36, null, null,  0, st_translate('POLYGON((1200 1200, 1300 1200, 1300 1300, 1200 1300, 1200 1200))'::GEOMETRY, 300, 300), 20, 20, null, null, null, null, null, null, 'residential');
+ (36, null, null,  0, st_translate('POLYGON((1200 1200, 1300 1200, 1300 1300, 1200 1300, 1200 1200))'::GEOMETRY, 300, 300), 20, 20, null, null, null, null, null, null, 'residential'),
+ (37, null, 18,  0, 'POLYGON((10000 10000, 10100 10000, 10100 10100, 10000 10100, 10000 10000))'::GEOMETRY, 20, 20, null, null, null, null, null, null, 'residential');
 
 INSERT INTO block_test VALUES (1, 'POLYGON((4 4, 10 4, 10 30, 4 30, 4 4))'::GEOMETRY),
  (2, 'POLYGON((12 4, 20 4, 20 9, 12 9, 12 4))'::GEOMETRY),
@@ -94,12 +95,13 @@ INSERT INTO rsu_test VALUES (1, 'POLYGON((0 0, 50 0, 50 40, 0 40, 0 0))'::GEOMET
  (14, 'POLYGON((0 100, 50 100, 50 150, 0 150, 0 100))'::GEOMETRY, 2500, 0, 0),
  (15, 'POLYGON((0 99, 50 99, 50 100, 0 100, 0 99))'::GEOMETRY, 50, 0, 0),
  (16, 'POLYGON((0 -150, 50 -150, 50 -100, 0 -100, 0 -150))'::GEOMETRY, 2500, 0, 0),
- (17, st_translate('POLYGON((1200 1200, 1300 1200, 1300 1300, 1200 1300, 1200 1200))'::GEOMETRY, 300, 300), 10000, 1.0, null);
+ (17, st_translate('POLYGON((1200 1200, 1300 1200, 1300 1300, 1200 1300, 1200 1200))'::GEOMETRY, 300, 300), 10000, 1.0, null),
+ (18, 'POLYGON((10000 10000, 10100 10000, 10100 10100, 10000 10100, 10000 10000))'::GEOMETRY, null, null, null);
 INSERT INTO rsu_build_corr VALUES (1, 1, 10.178217821), (1, 2, 10.178217821), (1, 3, 10.178217821), (1, 4, 10.178217821),
  (1, 5, 10.178217821), (2, 6, 18), (3, 7, 3), (1, 8, 10.178217821), (4, 9, null), (4, 10, null), (5, 11, null), (5, 12, null),
  (6, 13, null), (6, 14, null), (7, 15, null), (7, 16, null), (8, 17, null), (8, 18, null), (9, 19, null), (9, 20, null),
  (10, 21, null), (10, 22, null), (11, 23, null), (11, 24, null), (12, 25, null), (12, 26, null), (13, 27, null),
- (13, 28, null), (3, 29, null);
+ (13, 28, null), (3, 29, null), (18, 37, null);
 INSERT INTO road_test VALUES (1, 'LINESTRING(120 60, 120 -10)'::GEOMETRY, 10, 0, null),
 (2, 'LINESTRING (86 19, 170 20)'::GEOMETRY, 5, 0, null), (3, 'LINESTRING (93 53, 149 54, 145 -5)'::GEOMETRY, 5, 0, null),
 (4, 'LINESTRING (85 60, 85 -1, 155 1, 148 54, 92 50, 96 -12, 119 -11, 117 -4, 78 -5)'::GEOMETRY, 10, 0, null),
@@ -128,7 +130,8 @@ INSERT INTO rsu_test_all_indics_for_lcz VALUES  (1, 0.3, 4, 0.5, 0.5, 0.05, 30, 
                                                 (14, 0.83, 0.36, 0.21, 0, 0, 6.44, 0.58, 0, 0, 0, 0, null),
                                                 (15, 0.701, 1.38, 0.156, 0, 0, 21.95, 3, 0, 0, 0, 0, null),
                                                 (16, 0.820, 0.56, 0.22, 0, 0, 5.28, 0.726, 0, 0, 0, 0, null),
-                                                (17, 0.0, 0.0, 0.0, 0.019, 0.056, 0.0, 0.0, 0.056, 0, 0, 0, null);
+                                                (17, 0.0, 0.0, 0.0, 0.019, 0.056, 0.0, 0.0, 0.056, 0, 0, 0, null),
+                                                (18, 1, 0, 0, 0, 0.999, 0.0, 0.0, 0.999, 0, 0.999, 0, 0);
 
 CREATE TABLE rsu_test_lcz_indics
     AS SELECT id_rsu, sky_view_factor, aspect_ratio, BUILDING_FRACTION_LCZ AS building_surface_fraction,

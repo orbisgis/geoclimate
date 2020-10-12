@@ -34,6 +34,9 @@
         "meadow": {
             "landuse": [
                 "meadow"
+            ],
+            "wetland": [
+                "wet_meadow"
             ]
         },
         "forest": {
@@ -146,6 +149,11 @@
             "crop": [
                 "sugar_cane"
             ]
+        },
+        "marsh": {
+            "wetland": [
+                "marsh"
+            ]
         }
     },
     "class" :{
@@ -165,6 +173,7 @@
         "vineyard": "low",
         "banana_plants": "high",
         "sugar_cane": "low",
-        "garden": "low"
+        "garden": "low",
+        "marsh": "low"
     }
 }

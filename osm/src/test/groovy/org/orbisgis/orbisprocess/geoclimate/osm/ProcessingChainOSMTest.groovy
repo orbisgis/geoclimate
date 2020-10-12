@@ -47,7 +47,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                             inputTableName: prepareRSUData.results.outputTableName,
                             inputZoneTableName :process.getResults().outputZone,
                             prefixName    : prefixName])) {
-                h2GIS.getTable(createRSU.results.outputTableName).save(dirFile.absolutePath+File.separator+"${prefixName}.geojson")
+                h2GIS.getTable(createRSU.results.outputTableName).save(dirFile.absolutePath+File.separator+"${prefixName}.geojson", true)
             }
         }
     }
@@ -109,7 +109,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osm_chain_db;AUTO_SERVER=TRUE")
 
         //Extract and transform OSM data
-        def zoneToExtract = "Plessis-l'Évêque"
+        def zoneToExtract = "Pont de veyle"
 
         IProcess prepareOSMData = OSM.buildGeoclimateLayers
 
@@ -143,6 +143,8 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
 
     }
 
+
+    @Disabled
     @Test
     void osmLczFromTestFiles() {
         String urlBuilding = new File(getClass().getResource("BUILDING.geojson").toURI()).absolutePath
@@ -184,7 +186,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 buildingTable: buildingTableName, roadTable: roadTableName,
                 railTable: railTableName, vegetationTable: vegetationTableName,
                 hydrographicTable: hydrographicTableName, indicatorUse: ["LCZ"],
-                mapOfWeights: mapOfWeights,lczRandomForest: true )
+                mapOfWeights: mapOfWeights,lczRandomForest: false )
         assertTrue(datasource.getTable(geodindicators.results.outputTableBuildingIndicators).rowCount>0)
         assertNotNull(geodindicators.results.outputTableBlockIndicators)
         assertTrue(datasource.getTable(geodindicators.results.outputTableRsuIndicators).rowCount>0)
@@ -201,7 +203,8 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
                 "geoclimatedb" : [
-                        "path" : "${dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE"}",
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" : [
@@ -248,7 +251,8 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
                 "geoclimatedb" : [
-                        "path" : "${dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE"}",
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" : [
@@ -294,11 +298,12 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
                 "geoclimatedb" : [
-                        "path" : "${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["romainville"]],
+                        "osm" : ["Pont-de-veyle"]],
                 "output" :[
                         "folder" : "${directory}",
                         "srid":"4326"],
@@ -316,7 +321,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
         //Test the SRID of all output files
         def geoFiles = []
-        def  folder = new File("./target/geoclimate_chain/osm_romainville")
+        def  folder = new File("./target/geoclimate_chain/osm_Pont-de-veyle")
         folder.eachFileRecurse groovy.io.FileType.FILES,  { file ->
             if (file.name.toLowerCase().endsWith(".geojson")) {
                 geoFiles << file.getAbsolutePath()
@@ -339,11 +344,12 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
                 "geoclimatedb" : [
-                        "path" : "${dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE"}",
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["Redon"]],
+                        "osm" : ["Pont de veyle"]],
                 "output" :[
                         "folder" : "$directory"]
         ]
@@ -362,8 +368,9 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
                 "geoclimatedb" : [
-                        "path" : "${dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE"}",
-                        "delete" :"false"
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete" :true
                 ],
                 "input" : [
                         "osm" : [[38.89557963573336,-77.03930318355559,38.89944983078282,-77.03364372253417]]],
@@ -384,7 +391,8 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
                 "geoclimatedb" : [
-                        "path" : "${dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE"}",
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" : [
@@ -405,7 +413,8 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
                 "geoclimatedb" : [
-                        "path" : "${dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE"}",
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" : [
@@ -426,11 +435,12 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
                 "geoclimatedb" : [
-                        "path" : "${dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE"}",
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["LE PONTET"]],
+                        "osm" : ["Pont de veyle"]],
                 "output" :[
                         "folder" : "$directory"],
                 "parameters":
@@ -466,11 +476,12 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         def osm_parmeters = [
             "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
             "geoclimatedb" : [
-                "path" : "${dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE"}",
-                "delete" :true
+                    "folder" : "${dirFile.absolutePath}",
+                    "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                    "delete" :true
             ],
             "input" : [
-                "osm" : ["LE PONTET"]],
+                "osm" : ["Pont de veyle"]],
             "output" :[
                 "folder" : "$directory"],
             "parameters":
@@ -495,6 +506,47 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
+    @Disabled
+    @Test
+    void testOSMEstimatedHeight() {
+        String directory ="./target/geoclimate_chain_estimated_height"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "description" :"Example of configuration file to run the OSM workflow and store the results in a folder",
+                "geoclimatedb" : [
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete" :true
+                ],
+                "input" : [
+                        "osm" : ["REDON"]],
+                "output" :[
+                        "folder" : "$directory"],
+                "parameters":
+                        ["distance" : 0,
+                         "indicatorUse": ["LCZ"],
+                         "svfSimplified": false,
+                         "prefixName": "",
+                         "mapOfWeights":
+                                 ["sky_view_factor"                : 4,
+                                  "aspect_ratio"                   : 3,
+                                  "building_surface_fraction"      : 8,
+                                  "impervious_surface_fraction"    : 0,
+                                  "pervious_surface_fraction"      : 0,
+                                  "height_of_roughness_elements"   : 6,
+                                  "terrain_roughness_length"       : 0.5],
+                         "hLevMin": 3,
+                         "hLevMax": 15,
+                         "hThresholdLev2": 10,
+                         "estimateHeight":true
+                        ]
+        ]
+        IProcess process = OSM.workflow
+        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+    }
+
 
     @Disabled
     @Test
@@ -506,11 +558,12 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
                 "geoclimatedb" : [
-                        "path" : "${dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE"}",
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["romainville"]],
+                        "osm" : ["Pont de veyle"]],
                 "output" :[
                         "folder" : "$directory"],
                 "parameters":
@@ -543,11 +596,12 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
                 "geoclimatedb" : [
-                        "path" : "${dirFile.absolutePath+File.separator+"geoclimate_chain_db;AUTO_SERVER=TRUE"}",
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["NOVES"]],
+                        "osm" : ["Pont de veyle"]],
                 "output" :[
                         "folder" : "$directory"],
                 "parameters":
@@ -605,7 +659,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         def prefixName = ""
         def svfSimplified = false
 
-        H2GIS datasource = H2GIS.open("/home/ebocher/Autres/codes/geoclimate/geoindicators/target/rsuindicatorsdb;AUTO_SERVER=TRUE")
+        H2GIS datasource = H2GIS.open("./target/rsuindicatorsdb;AUTO_SERVER=TRUE")
 
         //Extract and transform OSM data
         def zoneToExtract = "Rennes"
