@@ -11,6 +11,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS.open
 
+import org.orbisgis.commons.printer.Ascii
+
 class GenericIndicatorsTests {
 
     private static def h2GIS
@@ -495,6 +497,37 @@ class GenericIndicatorsTests {
         def gatheredScales2 = applyGatherScales2.results.outputTableName
         def finalColBuild = h2GIS."$gatheredScales2".columns.collect{ it.toLowerCase() }
         assertEquals colBuild.sort(), finalColBuild.sort()
+    }
+
+    @Test
+    void gatherScalesTest2() {
+        h2GIS """
+                DROP TABLE IF EXISTS tempo_block, tempo_build, tempo_rsu; 
+                CREATE TABLE tempo_build (id_build int, id_block int, id_rsu int, the_geom geometry, height_roof float);
+                CREATE TABLE tempo_block (id_block int, id_rsu int, the_geom geometry, area float);
+                CREATE TABLE tempo_rsu (id_rsu int, the_geom geometry, area double);
+
+                INSERT INTO tempo_build VALUES  (1, 1, 1, 'POLYGON((1 1, 1 2, 2 2, 2 1, 1 1))'::GEOMETRY, 3),
+                                                (2, 2, null, 'POLYGON((-10 -10, -10 -8, -8 -8, -8 -10, -10 -10))'::GEOMETRY, 5);
+                INSERT INTO tempo_block VALUES  (1, 1, 'POLYGON((1 1, 1 2, 2 2, 2 1, 1 1))'::GEOMETRY, 1),
+                                                (2, null, 'POLYGON((-10 -10, -10 -8, -8 -8, -8 -10, -10 -10))'::GEOMETRY, 2);  
+                INSERT INTO tempo_rsu VALUES  (1, 'POLYGON((0 0, 10 0, 10 10, 0 10, 0 0))'::GEOMETRY, 100),
+                                                (2, 'POLYGON((0 10, 0 20, 10 20, 10 10, 0 10))'::GEOMETRY, 100);  
+                                                   """
+
+        // Test 1
+        def applyGatherScales1 = Geoindicators.GenericIndicators.gatherScales()
+        applyGatherScales1.execute([
+                buildingTable    : "tempo_build",
+                blockTable       : "tempo_block",
+                rsuTable         : "tempo_rsu",
+                targetedScale    : "BUILDING",
+                operationsToApply: ["AVG", "STD"],
+                prefixName       : "test",
+                datasource       : h2GIS])
+        def gatheredScales1 = applyGatherScales1.results.outputTableName
+        // The building eing in no rsu should not be in the resulting table
+        assertEquals h2GIS.firstRow("""SELECT COUNT(*) AS nb FROM $gatheredScales1""").nb, 1
     }
 
     @Test

@@ -925,7 +925,7 @@ IProcess gatherScales() {
                     datasource.execute """ DROP TABLE IF EXISTS $finalScaleTableName;
                                 CREATE TABLE $finalScaleTableName 
                                     AS SELECT ${listRsuRename.join(', ')}, ${listBuildRename.join(', ')} 
-                                    FROM $rsuTable a RIGHT JOIN $buildingTable b
+                                    FROM $rsuTable a LEFT JOIN $buildingTable b
                                     ON a.id_rsu = b.id_rsu;"""
 
                     // To avoid crashes of the join due to column duplicate, need to prefix some names
@@ -950,7 +950,8 @@ IProcess gatherScales() {
                             CREATE TABLE $scale1ScaleFin 
                                 AS SELECT ${listBuildRsuRename.join(', ')}, b.*
                                 FROM $buildIndicRsuScale a RIGHT JOIN $finalScaleTableName b
-                                ON a.$idbuildForMerge = b.$idbuildForMerge;"""
+                                ON a.$idbuildForMerge = b.$idbuildForMerge
+                                WHERE b.$idbuildForMerge IS NOT NULL;"""
                 datasource.getTable(blockIndicFinalScale)."$idBlockForMerge".createIndex()
                 datasource.getTable(scale1ScaleFin)."$idBlockForMerge".createIndex()
                 datasource.execute """ DROP TABLE IF EXISTS $outputTableName;
