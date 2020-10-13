@@ -900,7 +900,7 @@ IProcess createUnitsOfAnalysis() {
 
             // Create the RSU
             def prepareRSUData = Geoindicators.SpatialUnits.prepareRSUData()
-           if (!prepareRSUData([datasource        : datasource,
+            if (!prepareRSUData([datasource        : datasource,
                                  zoneTable         : zoneTable,
                                  roadTable         : roadTable,
                                  railTable         : railTable,
@@ -989,6 +989,8 @@ IProcess createUnitsOfAnalysis() {
         }
     }
 }
+
+
 /**
  * Compute all geoindicators at the 3 scales :
  * building, block and RSU
@@ -1011,9 +1013,12 @@ IProcess computeAllGeoIndicators() {
                 mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
-                lczRandomForest: false, lczModelName: "LCZ_OSM_RF_1_0.model", urbanTypoModelName: "URBAN_TYPO_OSM_RF_1_0.model"
+                lczRandomForest: false, lczModelName: "LCZ_OSM_RF_1_0.model",
+                urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_1_0.model"
         outputs outputTableBuildingIndicators: String, outputTableBlockIndicators: String,
-                outputTableRsuIndicators: String, outputTableRsuLcz: String, outputTableZone: String
+                outputTableRsuIndicators: String, outputTableRsuLcz: String, outputTableZone: String,
+                outputTableRsuUrbanTypoArea: String, outputTableRsuUrbanTypoFloorArea: String,
+                outputTableBuildingUrbanTypo: String
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable, imperviousTable,
               surface_vegetation, surface_hydro, distance, indicatorUse, svfSimplified, prefixName, mapOfWeights,
               lczRandomForest, lczModelName, urbanTypoModelName ->
@@ -1021,7 +1026,7 @@ IProcess computeAllGeoIndicators() {
             // Temporary (and output tables) are created
             def lczIndicTable = postfix "LCZ_INDIC_TABLE"
             def baseNameUrbanTypoRsu = prefix prefixName, "URBAN_TYPO_RSU_"
-            def urbanTypoBuilding = null
+            def urbanTypoBuilding
             def distribNotPercent = "DISTRIB_NOT_PERCENT"
 
 
@@ -1142,8 +1147,7 @@ IProcess computeAllGeoIndicators() {
                                                     AS SELECT a.*, b.the_geom
                                                     FROM $rsuLczWithoutGeom a RIGHT JOIN $relationRSU b
                                                     ON a.$COLUMN_ID_RSU = b.$COLUMN_ID_RSU"""
-                }
-                else {
+                } else {
                     def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"              : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
                                          "BUILDING_FRACTION_LCZ"             : "BUILDING_SURFACE_FRACTION",
                                          "ASPECT_RATIO"                      : "ASPECT_RATIO",
@@ -1181,90 +1185,90 @@ IProcess computeAllGeoIndicators() {
                     rsuLcz = classifyLCZ.results.outputTableName
                     datasource.execute "DROP TABLE IF EXISTS $lczIndicTable"
                 }
-                // If the URBAN_TYPOLOGY indicators should be calculated, we only affect a URBAN typo class
-                // to each building and then to each RSU
-                if (indicatorUse.contains("URBAN_TYPOLOGY")) {
-                    def applygatherScales = Geoindicators.GenericIndicators.gatherScales()
-                    applygatherScales.execute([
-                            buildingTable    : buildingIndicators,
-                            blockTable       : blockIndicators,
-                            rsuTable         : rsuIndicators,
-                            targetedScale    : "BUILDING",
-                            operationsToApply: ["AVG", "STD"],
-                            prefixName       : prefixName,
-                            datasource       : datasource])
-                    def gatheredScales = applygatherScales.results.outputTableName
+            }
+            // If the URBAN_TYPOLOGY indicators should be calculated, we only affect a URBAN typo class
+            // to each building and then to each RSU
+            if (indicatorUse.contains("URBAN_TYPOLOGY")) {
+                def applygatherScales = Geoindicators.GenericIndicators.gatherScales()
+                applygatherScales.execute([
+                        buildingTable    : buildingIndicators,
+                        blockTable       : blockIndicators,
+                        rsuTable         : rsuIndicators,
+                        targetedScale    : "BUILDING",
+                        operationsToApply: ["AVG", "STD"],
+                        prefixName       : prefixName,
+                        datasource       : datasource])
+                def gatheredScales = applygatherScales.results.outputTableName
 
-                    def applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
-                    applyRF.execute([
-                            explicativeVariablesTableName: gatheredScales,
-                            pathAndFileName              : urbanTypoModelName,
-                            idName                       : COLUMN_ID_BUILD,
-                            prefixName                   : prefixName,
-                            datasource                   : datasource])
-                    def urbanTypoBuild = applyRF.results.outputTableName
+                def applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
+                applyRF.execute([
+                        explicativeVariablesTableName: gatheredScales,
+                        pathAndFileName              : urbanTypoModelName,
+                        idName                       : COLUMN_ID_BUILD,
+                        prefixName                   : prefixName,
+                        datasource                   : datasource])
+                def urbanTypoBuild = applyRF.results.outputTableName
 
-                    // Creation of a list which contains all types of the urban typology
-                    def queryDistinct = """SELECT DISTINCT I_TYPO AS I_TYPO FROM $urbanTypoBuild"""
-                    def mapTypos = datasource.rows(queryDistinct)
-                    def listTypos = []
-                    mapTypos.each{
-                        listTypos.add(it.i_typo)
-                    }
-
-                            // Join the geometry field to the building typology table
-                    urbanTypoBuilding = prefix  prefixName, "URBAN_TYPO_BUILDING"
-                    datasource."$urbanTypoBuild"."$COLUMN_ID_BUILD".createIndex()
-                    datasource."$buildingIndicators"."$COLUMN_ID_BUILD".createIndex()
-                    datasource """  DROP TABLE IF EXISTS $urbanTypoBuilding;
-                                    CREATE TABLE $urbanTypoBuilding
-                                        AS SELECT   a.$COLUMN_ID_BUILD, a.THE_GEOM,
-                                                    COALESCE(b.I_TYPO, 'unknown') AS I_TYPO
-                                        FROM $buildingIndicators a LEFT JOIN $urbanTypoBuild b
-                                        ON a.$COLUMN_ID_BUILD = b.$COLUMN_ID_BUILD"""
-
-                    // Create a distribution table (for each RSU, contains the % area OR floor area of each urban typo)
-                    def queryCasewhen = [:]
-                    def listTypos =
-                    def querySum = ""
-                    queryCasewhen["AREA"]=""
-                    queryCasewhen["FLOOR_AREA"]=""
-                    queryCasewhen.keySet().each{ind ->
-                        listTypos.each{typoCol ->
-                            queryCasewhen[ind] += """SUM(CASEWHEN(a.I_TYPO='$typoCol', b.AREA, 0) AS $typoCol,"""
-                            querySum = querySum + "COALESCE(b.${typoCol}/(b.${typoCol.join("+b.")}), 0) AS $typoCol"
-                        }
-                        // Calculates the distribution per RSU
-                        datasource.execute """  DROP TABLE IF EXISTS $distribNotPercent;
-                                                CREATE TABLE $distribNotPercent
-                                                    AS SELECT   b.$COLUMN_ID_RSU,
-                                                                ${queryCasewhen[0..-2]} 
-                                                    FROM $urbanTypoBuild a RIGHT JOIN $buildingIndicators b
-                                                    ON a.$COLUMN_ID_BUILD = b.$COLUMN_ID_BUILD
-                                                    GROUP BY b.$COLUMN_ID_RSU"""
-                        // Calculates the frequency by RSU
-                        datasource."$distribNotPercent"."$COLUMN_ID_RSU".createIndex()
-                        datasource.execute """  DROP TABLE IF EXISTS ${baseNameUrbanTypoRsu}_$ind;
-                                                CREATE TABLE ${baseNameUrbanTypoRsu}_$ind
-                                                    AS SELECT   a.$COLUMN_ID_RSU, a.the_geom,
-                                                                $querySum 
-                                                    FROM $rsuIndicators a LEFT JOIN $distribNotPercent b
-                                                    ON a.$COLUMN_ID_RSU = b.$COLUMN_ID_RSU"""
-                    }
-
-                    // Drop temporary tables
-                    datasource """DROP TABLE IF EXIST $urbanTypoBuild, $gatheredScales, $distribNotPercent"""
+                // Creation of a list which contains all types of the urban typology
+                def queryDistinct = """SELECT DISTINCT I_TYPO AS I_TYPO FROM $urbanTypoBuild"""
+                def mapTypos = datasource.rows(queryDistinct)
+                def listTypos = []
+                mapTypos.each{
+                    listTypos.add(it.i_typo)
                 }
-                else{
-                    urbanTypoBuilding = null
-                    urbanTypoFloorArea = null
-                    urbanTypoBuilding = null
+
+                        // Join the geometry field to the building typology table
+                urbanTypoBuilding = prefix  prefixName, "URBAN_TYPO_BUILDING"
+                datasource."$urbanTypoBuild"."$COLUMN_ID_BUILD".createIndex()
+                datasource."$buildingIndicators"."$COLUMN_ID_BUILD".createIndex()
+                datasource """  DROP TABLE IF EXISTS $urbanTypoBuilding;
+                                CREATE TABLE $urbanTypoBuilding
+                                    AS SELECT   a.$COLUMN_ID_BUILD, a.THE_GEOM,
+                                                COALESCE(b.I_TYPO, 'unknown') AS I_TYPO
+                                    FROM $buildingIndicators a LEFT JOIN $urbanTypoBuild b
+                                    ON a.$COLUMN_ID_BUILD = b.$COLUMN_ID_BUILD"""
+
+                // Create a distribution table (for each RSU, contains the % area OR floor area of each urban typo)
+                def queryCasewhen = [:]
+                def listTypos =
+                def querySum = ""
+                queryCasewhen["AREA"]=""
+                queryCasewhen["FLOOR_AREA"]=""
+                queryCasewhen.keySet().each{ind ->
+                    listTypos.each{typoCol ->
+                        queryCasewhen[ind] += """SUM(CASEWHEN(a.I_TYPO='$typoCol', b.AREA, 0) AS $typoCol,"""
+                        querySum = querySum + "COALESCE(b.${typoCol}/(b.${typoCol.join("+b.")}), 0) AS $typoCol"
+                    }
+                    // Calculates the distribution per RSU
+                    datasource.execute """  DROP TABLE IF EXISTS $distribNotPercent;
+                                            CREATE TABLE $distribNotPercent
+                                                AS SELECT   b.$COLUMN_ID_RSU,
+                                                            ${queryCasewhen[0..-2]} 
+                                                FROM $urbanTypoBuild a RIGHT JOIN $buildingIndicators b
+                                                ON a.$COLUMN_ID_BUILD = b.$COLUMN_ID_BUILD
+                                                GROUP BY b.$COLUMN_ID_RSU"""
+                    // Calculates the frequency by RSU
+                    datasource."$distribNotPercent"."$COLUMN_ID_RSU".createIndex()
+                    datasource.execute """  DROP TABLE IF EXISTS ${baseNameUrbanTypoRsu}_$ind;
+                                            CREATE TABLE ${baseNameUrbanTypoRsu}_$ind
+                                                AS SELECT   a.$COLUMN_ID_RSU, a.the_geom,
+                                                            $querySum 
+                                                FROM $rsuIndicators a LEFT JOIN $distribNotPercent b
+                                                ON a.$COLUMN_ID_RSU = b.$COLUMN_ID_RSU"""
                 }
+
+                // Drop temporary tables
+                datasource """DROP TABLE IF EXIST $urbanTypoBuild, $gatheredScales, $distribNotPercent"""
+            }
+            else{
+                urbanTypoArea = null
+                urbanTypoFloorArea = null
+                urbanTypoBuilding = null
             }
 
             datasource.execute "DROP TABLE IF EXISTS $rsuLczWithoutGeom;"
 
-            return [outputTableBuildingIndicators: computeBuildingsIndicators.getResults().outputTableName,
+            return [outputTableBuildingIndicators   : computeBuildingsIndicators.getResults().outputTableName,
                     outputTableBlockIndicators      : blockIndicators,
                     outputTableRsuIndicators        : computeRSUIndicators.getResults().outputTableName,
                     outputTableRsuLcz               : rsuLcz,
@@ -1272,7 +1276,6 @@ IProcess computeAllGeoIndicators() {
                     outputTableRsuUrbanTypoArea     : urbanTypoArea,
                     outputTableRsuUrbanTypoFloorArea: urbanTypoFloorArea,
                     outputTableBuildingUrbanTypo    : urbanTypoBuilding]
-
         }
     }
 }

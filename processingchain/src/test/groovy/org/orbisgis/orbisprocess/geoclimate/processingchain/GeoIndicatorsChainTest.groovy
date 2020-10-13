@@ -174,6 +174,11 @@ class GeoIndicatorsChainTest {
         if (ind_i.contains("URBAN_TYPOLOGY")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
             assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
+            assertEquals(11, datasource."$GeoIndicatorsCompute_i.results.outputTableRsuUrbanTypoArea".getColumnCount())
+            assertEquals(11, datasource."$GeoIndicatorsCompute_i.results.outputTableRsuUrbanTypoFloorArea".getColumnCount())
+            def dfBuild = DataFrame.of(datasource."$GeoIndicatorsCompute_i.results.outputTableBuildingUrbanTypo")
+            dfBuild = dfBuild.drop("ID_RSU")
+            assertEquals dfBuild.nrows(), dfBuild.omitNullRows().nrows()
         }
         def expectListRsuTempo = listColBasic + listColCommon
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
