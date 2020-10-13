@@ -476,14 +476,14 @@ IProcess createRandomForestModel() {
             }
             def formula = Formula.lhs(varToModel)
             def columnTypes = df.getColumnsTypes()
-            def dfFactorized = df
+            def dfFactorized = df.omitNullRows()
+
             // Identify columns being string (thus needed to be factorized)
             columnTypes.each{colName, colType ->
                 if(colType == "String"){
                     dfFactorized = dfFactorized.factorize(colName)
                 }
             }
-            dfFactorized = dfFactorized.omitNullRows()
             // Create the randomForest
             def model
             if(classif){

@@ -379,13 +379,13 @@ class TypologyClassificationTests {
     @Test
     void tempoCreateRandomForestClassifTest() {
         // Specify the model and training datat appropriate to the right use
-        def model_name = "BUILDINGHEIGHT_OSM_RF_1_0"
-        def training_data_name = "TRAINING_DATA_BUILDINGHEIGHT_OSM_RF_1_0"
+        def model_name = "URBAN_TYPOLOGY_BDTOPO_V2_RF_1_0"
+        def training_data_name = "TRAINING_DATA_URBAN_TYPOLOGY_BDTOPO_V2_RF_1_0"
         // Name of the variable to model
-        def var2model = "HEIGHT_ROOF"
-        def var2ModelFinal = "HEIGHT_ROOF"
+        def var2model = "I_TYPO"
+        def var2ModelFinal = "URBAN_TYPOLOGY"
         // Whether the RF is a classif or a regression
-        def classif = false
+        def classif = true
 
         // Information about where to find the training dataset for the test
         def trainingTableName = "training_table"
@@ -405,7 +405,7 @@ class TypologyClassificationTests {
 
             h2GIS """   DROP TABLE IF EXISTS $trainingTableName;
                     CREATE TABLE $trainingTableName
-                            AS SELECT $var2model::int AS $var2ModelFinal, ${columns.join(",")}
+                            AS SELECT $var2model AS $var2ModelFinal, ${columns.join(",")}
                             FROM tempo"""
 
             assert h2GIS."$trainingTableName"
@@ -413,15 +413,15 @@ class TypologyClassificationTests {
             def pmed =  Geoindicators.TypologyClassification.createRandomForestModel()
             assert pmed.execute([
                     trainingTableName   : trainingTableName,
-                    varToModel          : var2model,
+                    varToModel          : var2ModelFinal,
                     save                : true,
                     pathAndFileName     : savePath,
-                    ntrees              : 100,
-                    mtry                : 20,
+                    ntrees              : 500,
+                    mtry                : 15,
                     rule                : "GINI",
                     maxDepth            : 20,
-                    maxNodes            : 600,
-                    nodeSize            : 3,
+                    maxNodes            : 400,
+                    nodeSize            : 1,
                     subsample           : 1.0,
                     datasource          : h2GIS,
                     classif             : classif])
