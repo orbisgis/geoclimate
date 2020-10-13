@@ -183,6 +183,16 @@ IProcess formatRoadLayer() {
 
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
+                            def processRow = true
+                            def road_access = row.'access'
+                            def road_service = row.'service'
+                            if(road_service && road_service=="parking_aisle"){
+                                processRow = false;
+                            }
+                            if(road_access && road_access=="permissive"){
+                                processRow = false;
+                            }
+                            if(processRow){
                             def width = getWidth(row.'width')
                             String type = getTypeValue(row, columnNames, mappingForRoadType)
                             if (!type) {
@@ -216,6 +226,7 @@ IProcess formatRoadLayer() {
                                         ${zIndex})
                                 """.toString()
                                 }
+                            }
                             }
                         }
                     }

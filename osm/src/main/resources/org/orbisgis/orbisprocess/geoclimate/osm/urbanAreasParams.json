@@ -1,0 +1,29 @@
+{"tags" : {
+    "landuse":["commercial", "residential", "retail", "industrial"]
+
+},
+    "columns":[ "landuse"
+    ],
+    "type": {
+        "commercial": {
+            "landuse": [
+                "commercial"
+            ]
+        },
+        "residential": {
+            "landuse": [
+                "residential"
+            ]
+        },
+        "retail": {
+            "landuse": [
+                "retail"
+            ]
+        },
+        "industrial": {
+            "landuse": [
+                "industrial"
+            ]
+        }
+    }
+}

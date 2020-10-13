@@ -23,18 +23,18 @@ import org.orbisgis.orbisanalysis.osm.utils.OSMElement
   * or a bounding box specified as a JTS envelope
   * @param distance in meters to expand the envelope of the query box. Default is 0
   * @return The name of the resulting GIS tables : buildingTableName, roadTableName,
-  * railTableName, vegetationTableName, hydroTableName, zoneTableName, zoneEnvelopeTableName.
+  * railTableName, vegetationTableName, hydroTableName, zoneTableName, zoneEnvelopeTableName and urbanAreasTableName.
   * Note that the GIS tables are projected in a local utm projection
  */
 IProcess extractAndCreateGISLayers() {
     return create {
         title "Create GIS layer from the OSM data model"
         id "extractAndCreateGISLayers"
-        inputs datasource: JdbcDataSource, zoneToExtract: Object, distance: 0
+        inputs datasource: JdbcDataSource, zoneToExtract: Object, distance: 0, downloadAllOSMData : true
         outputs buildingTableName: String, roadTableName: String, railTableName: String,
-                vegetationTableName: String, hydroTableName: String, zoneTableName: String,
+                vegetationTableName: String, hydroTableName: String, urbanAreasTableName: String, zoneTableName: String,
                 zoneEnvelopeTableName: String
-        run { datasource, zoneToExtract, distance ->
+        run { datasource, zoneToExtract, distance,downloadAllOSMData ->
             if (datasource == null) {
                 error('The datasource cannot be null')
                 return null
@@ -92,7 +92,18 @@ IProcess extractAndCreateGISLayers() {
                 datasource.execute("""INSERT INTO ${outputZoneEnvelopeTable} 
                     VALUES (ST_GEOMFROMTEXT(?,?), ?);""", ST_Transform.ST_Transform(con, tmpGeomEnv, epsg).toString(), epsg, zoneToExtract.toString())
 
+                //Prepare OSM extraction
                 def query = "[maxsize:1073741824]" + Utilities.buildOSMQuery(envelope, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+
+                if(downloadAllOSMData){
+                    //Create a custom OSM query to download all requiered data. It will take more time and resources
+                    //because much more OSM elements will be returned
+                    def  keysValues = ["building", "railway", "amenity",
+                                       "leisure", "highway", "natural",
+                                       "landuse", "landcover",
+                                       "vegetation","waterway"]
+                    query =  "[maxsize:1073741824]"+ Utilities.buildOSMQueryWithAllData(envelope, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+                }
 
                 def extract = OSMTools.Loader.extract()
                 if (extract.execute(overpassQuery: query)) {
@@ -104,6 +115,7 @@ IProcess extractAndCreateGISLayers() {
                          vegetationTableName  : createGISLayerProcess.getResults().vegetationTableName,
                          hydroTableName       : createGISLayerProcess.getResults().hydroTableName,
                          imperviousTableName  : createGISLayerProcess.getResults().imperviousTableName,
+                         urbanAreasTableName : createGISLayerProcess.getResults().urbanAreasTableName,
                          zoneTableName        : outputZoneTable,
                          zoneEnvelopeTableName: outputZoneEnvelopeTable]
                     } else {
@@ -136,7 +148,7 @@ IProcess createGISLayers() {
         id "createGISLayers"
         inputs datasource: JdbcDataSource, osmFilePath: String, epsg: -1
         outputs buildingTableName: String, roadTableName: String, railTableName: String,
-                vegetationTableName: String, hydroTableName: String, imperviousTableName: String
+                vegetationTableName: String, hydroTableName: String, imperviousTableName: String, urbanAreasTableName :String
         run { datasource, osmFilePath, epsg ->
             if (epsg <= -1) {
                 error "Invalid epsg code $epsg"
@@ -152,6 +164,7 @@ IProcess createGISLayers() {
                 def outputVegetationTableName = null
                 def outputHydroTableName = null
                 def outputImperviousTableName = null
+                def outputUrbanAreasTableName = null
                 //Create building layer
                 def transform = OSMTools.Transform.toPolygons()
                 info "Create the building layer"
@@ -227,12 +240,26 @@ IProcess createGISLayers() {
                     datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputImperviousTableName")
                     info "impervious layer created"
                 }
+
+                //Create urban areas layer
+                paramsDefaultFile = this.class.getResourceAsStream("urbanAreasParams.json")
+                parametersMap = readJSONParameters(paramsDefaultFile)
+                tags = parametersMap.get("tags")
+                columnsToKeep = parametersMap.get("columns")
+                transform = OSMTools.Transform.toPolygons()
+                info "Create the urban areas layer"
+                if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
+                    outputUrbanAreasTableName = postfix("OSM_URBAN_AREAS")
+                    datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputUrbanAreasTableName")
+                    info "urban areas layer created"
+                }
+
                 //Drop the OSM tables
                 Utilities.dropOSMTables(prefix, datasource)
 
                 [buildingTableName  : outputBuildingTableName, roadTableName: outputRoadTableName, railTableName: outputRailTableName,
                  vegetationTableName: outputVegetationTableName, hydroTableName: outputHydroTableName,
-                 imperviousTableName: outputImperviousTableName]
+                 imperviousTableName: outputImperviousTableName,  urbanAreasTableName: outputUrbanAreasTableName]
             }
         }
     }
