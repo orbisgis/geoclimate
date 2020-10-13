@@ -1230,7 +1230,6 @@ IProcess computeAllGeoIndicators() {
 
                 // Create a distribution table (for each RSU, contains the % area OR floor area of each urban typo)
                 def queryCasewhen = [:]
-                def listTypos =
                 def querySum = ""
                 queryCasewhen["AREA"]=""
                 queryCasewhen["FLOOR_AREA"]=""

@@ -161,13 +161,14 @@ class GeoIndicatorsChainTest {
                             "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
 
         def ind_i = ["URBAN_TYPOLOGY"]
+        def modelPath = "/home/decide/Code/Intel/geoclimate/models/URBAN_TYPOLOGY_BDTOPO_V2_RF_1_0.model"
         IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
                 hydrographicTable: inputTableNames.hydrographicTable, indicatorUse: ind_i,
                 svfSimplified: svfSimplified, prefixName: prefixName,
-                mapOfWeights: mapOfWeights)
+                mapOfWeights: mapOfWeights, urbanTypoModelName: modelPath)
 
         checkRSUIndicators(datasource,GeoIndicatorsCompute_i.results.outputTableRsuIndicators, false)
 
