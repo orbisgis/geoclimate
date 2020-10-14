@@ -21,7 +21,7 @@ class OSMGISLayersTests {
         IProcess process = OSM.extractAndCreateGISLayers
         process.execute([
                 datasource : h2GIS,
-                zoneToExtract: "Redon"])
+                zoneToExtract: "Vannes"])
         process.getResults().each {it ->
             if(it.value!=null){
                 h2GIS.getTable(it.value).save("./target/${it.value}.shp", true)
@@ -55,5 +55,8 @@ class OSMGISLayersTests {
 
         //h2GIS.getTable(process.results.imperviousTableName).save("./target/osm_hydro.shp")
         assertEquals 44, h2GIS.getTable(process.results.imperviousTableName).rowCount
+
+        //h2GIS.getTable(process.results.imperviousTableName).save("./target/osm_hydro.shp")
+        assertEquals 6, h2GIS.getTable(process.results.urbanAreasTableName).rowCount
     }
 }
