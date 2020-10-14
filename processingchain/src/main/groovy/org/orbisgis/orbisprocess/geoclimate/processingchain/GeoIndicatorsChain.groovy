@@ -1117,6 +1117,7 @@ IProcess computeAllGeoIndicators() {
 
             // If the LCZ indicators should be calculated, we only affect a LCZ class to each RSU
             if (indicatorUse.contains("LCZ")) {
+                info """ The LCZ classification is performed """
                 if (lczRandomForest) {
                     def applygatherScales = Geoindicators.GenericIndicators.gatherScales()
                     applygatherScales.execute([
@@ -1189,6 +1190,7 @@ IProcess computeAllGeoIndicators() {
             // If the URBAN_TYPOLOGY indicators should be calculated, we only affect a URBAN typo class
             // to each building and then to each RSU
             if (indicatorUse.contains("URBAN_TYPOLOGY")) {
+                info """ The URBAN TYPOLOGY classification is performed """
                 def applygatherScales = Geoindicators.GenericIndicators.gatherScales()
                 applygatherScales.execute([
                         buildingTable    : buildingIndicators,
@@ -1214,42 +1216,45 @@ IProcess computeAllGeoIndicators() {
                 def mapTypos = datasource.rows(queryDistinct)
                 def listTypos = []
                 mapTypos.each{
-                    listTypos.add(it.i_typo)
+                    listTypos.add(it.I_TYPO)
                 }
 
-                        // Join the geometry field to the building typology table
+                // Join the geometry field to the building typology table
                 urbanTypoBuilding = prefix  prefixName, "URBAN_TYPO_BUILDING"
                 datasource."$urbanTypoBuild"."$COLUMN_ID_BUILD".createIndex()
                 datasource."$buildingIndicators"."$COLUMN_ID_BUILD".createIndex()
                 datasource """  DROP TABLE IF EXISTS $urbanTypoBuilding;
                                 CREATE TABLE $urbanTypoBuilding
-                                    AS SELECT   a.$COLUMN_ID_BUILD, a.THE_GEOM,
-                                                COALESCE(b.I_TYPO, 'unknown') AS I_TYPO
+                                    AS SELECT   a.$COLUMN_ID_BUILD, a.$COLUMN_ID_RSU, a.THE_GEOM,
+                                                COALESCE(b.I_TYPO, 0) AS I_TYPO
                                     FROM $buildingIndicators a LEFT JOIN $urbanTypoBuild b
-                                    ON a.$COLUMN_ID_BUILD = b.$COLUMN_ID_BUILD"""
+                                    ON a.$COLUMN_ID_BUILD = b.$COLUMN_ID_BUILD
+                                    WHERE a.$COLUMN_ID_RSU IS NOT NULL"""
 
                 // Create a distribution table (for each RSU, contains the % area OR floor area of each urban typo)
                 def queryCasewhen = [:]
-                def querySum = ""
                 queryCasewhen["AREA"]=""
                 queryCasewhen["FLOOR_AREA"]=""
                 queryCasewhen.keySet().each{ind ->
+                    def querySum = ""
                     listTypos.each{typoCol ->
-                        queryCasewhen[ind] += """SUM(CASEWHEN(a.I_TYPO='$typoCol', b.AREA, 0) AS $typoCol,"""
-                        querySum = querySum + "COALESCE(b.${typoCol}/(b.${typoCol.join("+b.")}), 0) AS $typoCol"
+                        queryCasewhen[ind] += """ SUM(CASE WHEN a.I_TYPO=$typoCol THEN b.$ind ELSE 0 END) AS VAL$typoCol,"""
+                        querySum = querySum + " COALESCE(b.VAL${typoCol}/(b.VAL${listTypos.join("+b.VAL")}), 0) AS VAL$typoCol, "
                     }
                     // Calculates the distribution per RSU
                     datasource.execute """  DROP TABLE IF EXISTS $distribNotPercent;
                                             CREATE TABLE $distribNotPercent
                                                 AS SELECT   b.$COLUMN_ID_RSU,
-                                                            ${queryCasewhen[0..-2]} 
+                                                            ${queryCasewhen[ind][0..-2]} 
                                                 FROM $urbanTypoBuild a RIGHT JOIN $buildingIndicators b
                                                 ON a.$COLUMN_ID_BUILD = b.$COLUMN_ID_BUILD
-                                                GROUP BY b.$COLUMN_ID_RSU"""
+                                                WHERE b.$COLUMN_ID_RSU IS NOT NULL 
+                                                GROUP BY b.$COLUMN_ID_RSU
+                                                """
                     // Calculates the frequency by RSU
                     datasource."$distribNotPercent"."$COLUMN_ID_RSU".createIndex()
-                    datasource.execute """  DROP TABLE IF EXISTS ${baseNameUrbanTypoRsu}_$ind;
-                                            CREATE TABLE ${baseNameUrbanTypoRsu}_$ind
+                    datasource.execute """  DROP TABLE IF EXISTS ${baseNameUrbanTypoRsu}$ind;
+                                            CREATE TABLE ${baseNameUrbanTypoRsu}$ind
                                                 AS SELECT   a.$COLUMN_ID_RSU, a.the_geom,
                                                             $querySum 
                                                 FROM $rsuIndicators a LEFT JOIN $distribNotPercent b
@@ -1257,7 +1262,7 @@ IProcess computeAllGeoIndicators() {
                 }
 
                 // Drop temporary tables
-                datasource """DROP TABLE IF EXIST $urbanTypoBuild, $gatheredScales, $distribNotPercent"""
+                datasource """DROP TABLE IF EXISTS $urbanTypoBuild, $gatheredScales, $distribNotPercent"""
             }
             else{
                 urbanTypoArea = null

@@ -370,7 +370,7 @@ class TypologyClassificationTests {
         def predicted = pmed.results.outputTableName
 
         // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
-        def nb_null = h2GIS.firstRow("SELECT COUNT(*) AS count FROM $predicted WHERE I_TYPO='ba'")
+        def nb_null = h2GIS.firstRow("SELECT COUNT(*) AS count FROM $predicted WHERE I_TYPO=1")
         assertEquals(nb_null.COUNT, 0)
     }
 
@@ -405,7 +405,7 @@ class TypologyClassificationTests {
 
             h2GIS """   DROP TABLE IF EXISTS $trainingTableName;
                     CREATE TABLE $trainingTableName
-                            AS SELECT $var2model AS $var2ModelFinal, ${columns.join(",")}
+                            AS SELECT CAST($var2model AS INTEGER) AS $var2ModelFinal, ${columns.join(",")}
                             FROM tempo"""
 
             assert h2GIS."$trainingTableName"

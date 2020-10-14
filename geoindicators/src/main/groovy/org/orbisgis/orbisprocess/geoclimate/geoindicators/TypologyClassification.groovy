@@ -605,7 +605,6 @@ IProcess applyRandomForestModel() {
             def df_var = df.drop(idName.toUpperCase())
 
             int[] prediction = Validation.test(model, df_var)
-            prediction = Arrays.toString(prediction)
             // We need to add the remove the initial predicted variable in order to not have duplicated...
             df=df.drop(var2model)
             df=df.merge(IntVector.of(var2model, prediction))
@@ -620,7 +619,7 @@ IProcess applyRandomForestModel() {
                 try {
                     Statement outputconnectionStatement = outputconnection.createStatement();
                     outputconnectionStatement.execute("DROP TABLE IF EXISTS " + tableName);
-                    def create_table_ = "CREATE TABLE ${tableName} (${idName.toUpperCase()} VARCHAR, ${var2model.toUpperCase()} INT)" ;
+                    def create_table_ = "CREATE TABLE ${tableName} (${idName.toUpperCase()} INTEGER, ${var2model.toUpperCase()} INT)" ;
                     def insertTable = "INSERT INTO ${tableName}  VALUES(?,?)";
                     outputconnection.setAutoCommit(false);
                     outputconnectionStatement.execute(create_table_.toString());
