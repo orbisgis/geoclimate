@@ -180,7 +180,7 @@ IProcess workflow() {
                     if(!downloadAllOSMData){
                         downloadAllOSMData = true
                     }else if(!downloadAllOSMData in Boolean){
-                        error "The all paramater must be a boolean value"
+                        error "The all parameter must be a boolean value"
                         return null
                     }
 
@@ -213,6 +213,13 @@ IProcess workflow() {
                         }
                         def outputDataBase = output.get("database")
                         def outputFolder = output.get("folder")
+                        def deleteOutputData = output.get("delete")
+                        if(!deleteOutputData){
+                            deleteOutputData = true
+                        }else if(!deleteOutputData in Boolean){
+                            error "The delete parameter must be a boolean value"
+                            return null
+                        }
                         if (outputDataBase && outputFolder) {
                             def outputFolderProperties = outputFolderProperties(outputFolder)
                             //Check if we can write in the output folder
@@ -244,7 +251,7 @@ IProcess workflow() {
                                 if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
                                         processing_parameters: processing_parameters,
                                         id_zones: osmFilters, outputFolder: file_outputFolder, ouputTableFiles: outputFolderProperties.tables,
-                                        output_datasource: output_datasource, outputTableNames: finalOutputTables, outputSRID :outputSRID, downloadAllOSMData:downloadAllOSMData)) {
+                                        output_datasource: output_datasource, outputTableNames: finalOutputTables, outputSRID :outputSRID, downloadAllOSMData:downloadAllOSMData, deleteOutputData: deleteOutputData)) {
                                     return null
                                 }
                                 if (delete_h2gis) {
@@ -278,7 +285,7 @@ IProcess workflow() {
                                     if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
                                             processing_parameters: processing_parameters,
                                             id_zones: osmFilters, outputFolder: file_outputFolder, ouputTableFiles: outputFolderProperties.tables,
-                                            output_datasource: null, outputTableNames: null, outputSRID :outputSRID)) {
+                                            output_datasource: null, outputTableNames: null, outputSRID :outputSRID, downloadAllOSMData:downloadAllOSMData, deleteOutputData: deleteOutputData)) {
                                         return null
                                     }
                                     //Delete database
@@ -319,7 +326,7 @@ IProcess workflow() {
                                     if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
                                             processing_parameters: processing_parameters,
                                             id_zones: osmFilters, outputFolder: null, ouputTableFiles: null,
-                                            output_datasource: output_datasource, outputTableNames: finalOutputTables,outputSRID :outputSRID)) {
+                                            output_datasource: output_datasource, outputTableNames: finalOutputTables,outputSRID :outputSRID,downloadAllOSMData:downloadAllOSMData, deleteOutputData: deleteOutputData)) {
                                         return null
                                     }
                                     if (delete_h2gis) {
@@ -383,9 +390,9 @@ IProcess osm_processing() {
         title "Build OSM data and compute the geoindicators"
         id "osm_processing"
         inputs h2gis_datasource: JdbcDataSource, processing_parameters: Map, id_zones: Map,
-                outputFolder: "", ouputTableFiles: "", output_datasource: "", outputTableNames: "", outputSRID : String, downloadAllOSMData : true
+                outputFolder: "", ouputTableFiles: "", output_datasource: "", outputTableNames: "", outputSRID : String, downloadAllOSMData : true,deleteOutputData:true
         outputs outputMessage: String
-        run { h2gis_datasource, processing_parameters, id_zones, outputFolder, ouputTableFiles, output_datasource, outputTableNames, outputSRID, downloadAllOSMData ->
+        run { h2gis_datasource, processing_parameters, id_zones, outputFolder, ouputTableFiles, output_datasource, outputTableNames, outputSRID, downloadAllOSMData,deleteOutputData ->
 
             // Temporary tables
             int nbAreas = id_zones.size();
@@ -615,7 +622,7 @@ IProcess osm_processing() {
                                         results.put("imperviousTableName", imperviousTableName)
                                         results.put("urbanAreasTableName", urbanAreasTable)
                                         if (outputFolder && geoIndicatorsComputed && ouputTableFiles) {
-                                            saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject)
+                                            saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject, deleteOutputData)
                                         }
                                         if (output_datasource && geoIndicatorsComputed) {
                                             saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone, srid, outputSRID, reproject)
@@ -649,7 +656,7 @@ IProcess osm_processing() {
                                     results.put("imperviousTableName", imperviousTableName)
                                     results.put("urbanAreasTableName", urbanAreasTable)
                                     if (outputFolder && geoIndicatorsComputed && ouputTableFiles) {
-                                        saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject)
+                                        saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject, deleteOutputData)
                                     }
                                     if (output_datasource && geoIndicatorsComputed) {
                                         saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone, srid, outputSRID, reproject)
@@ -1149,7 +1156,7 @@ def extractProcessingParameters(def processing_parameters){
  * @param reproject  true if the file must reprojected
  * @return
  */
-def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFiles, def ouputFolder, def subFolderName, def outputSRID, def reproject){
+def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFiles, def ouputFolder, def subFolderName, def outputSRID, def reproject, def deleteOutputData){
     //Create a subfolder to store each results
     def folderName = id_zone in Map?id_zone.join("_"):id_zone
     def subFolder = new File(ouputFolder.getAbsolutePath()+File.separator+subFolderName+folderName)
@@ -1159,42 +1166,42 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
     outputFiles.each{
         //Save indicators
         if(it.equals("building_indicators")){
-            saveTableAsGeojson(results.outputTableBuildingIndicators, "${subFolder.getAbsolutePath()+File.separator+"building_indicators"}.geojson",h2gis_datasource,outputSRID, reproject)
+            saveTableAsGeojson(results.outputTableBuildingIndicators, "${subFolder.getAbsolutePath()+File.separator+"building_indicators"}.geojson",h2gis_datasource,outputSRID, reproject, deleteOutputData)
         }
         else if(it.equals("block_indicators")){
-            saveTableAsGeojson(results.outputTableBlockIndicators, "${subFolder.getAbsolutePath()+File.separator+"block_indicators"}.geojson",h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.outputTableBlockIndicators, "${subFolder.getAbsolutePath()+File.separator+"block_indicators"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else  if(it.equals("rsu_indicators")){
-            saveTableAsGeojson(results.outputTableRsuIndicators, "${subFolder.getAbsolutePath()+File.separator+"rsu_indicators"}.geojson",h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.outputTableRsuIndicators, "${subFolder.getAbsolutePath()+File.separator+"rsu_indicators"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else  if(it.equals("rsu_lcz")){
-            saveTableAsGeojson(results.outputTableRsuLcz,  "${subFolder.getAbsolutePath()+File.separator+"rsu_lcz"}.geojson",h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.outputTableRsuLcz,  "${subFolder.getAbsolutePath()+File.separator+"rsu_lcz"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else  if(it.equals("zones")){
-            saveTableAsGeojson(results.outputTableZone,  "${subFolder.getAbsolutePath()+File.separator+"zones"}.geojson",h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.outputTableZone,  "${subFolder.getAbsolutePath()+File.separator+"zones"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
 
         //Save input GIS tables
         else  if(it.equals("building")){
-            saveTableAsGeojson(results.buildingTableName, "${subFolder.getAbsolutePath()+File.separator+"building"}.geojson", h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.buildingTableName, "${subFolder.getAbsolutePath()+File.separator+"building"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else if(it.equals("road")){
-            saveTableAsGeojson(results.roadTableName,  "${subFolder.getAbsolutePath()+File.separator+"road"}.geojson",h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.roadTableName,  "${subFolder.getAbsolutePath()+File.separator+"road"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else if(it.equals("rail")){
-            saveTableAsGeojson(results.railTableName,  "${subFolder.getAbsolutePath()+File.separator+"rail"}.geojson",h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.railTableName,  "${subFolder.getAbsolutePath()+File.separator+"rail"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         if(it.equals("water")){
-            saveTableAsGeojson(results.hydrographicTableName, "${subFolder.getAbsolutePath()+File.separator+"water"}.geojson", h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.hydrographicTableName, "${subFolder.getAbsolutePath()+File.separator+"water"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else if(it.equals("vegetation")){
-            saveTableAsGeojson(results.vegetationTableName,  "${subFolder.getAbsolutePath()+File.separator+"vegetation"}.geojson",h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.vegetationTableName,  "${subFolder.getAbsolutePath()+File.separator+"vegetation"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else if(it.equals("impervious")){
-            saveTableAsGeojson(results.imperviousTableName, "${subFolder.getAbsolutePath()+File.separator+"impervious"}.geojson", h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.imperviousTableName, "${subFolder.getAbsolutePath()+File.separator+"impervious"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else if(it.equals("urban_areas")){
-            saveTableAsGeojson(results.urbanAreasTableName, "${subFolder.getAbsolutePath()+File.separator+"urban_areas"}.geojson", h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.urbanAreasTableName, "${subFolder.getAbsolutePath()+File.separator+"urban_areas"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
     }
 }
@@ -1206,13 +1213,14 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
  * @param h2gis_datasource connection to the database
  * @param outputSRID srid code to reproject the outputTable.
  * @param reproject true if the file must be reprojected
+ * @param deleteOutputData true to delete the file if exists
  */
-def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource,def outputSRID, def reproject){
+def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource,def outputSRID, def reproject, def deleteOutputData){
     if(outputTable && h2gis_datasource.hasTable(outputTable)){
         if(!reproject){
         h2gis_datasource.save(outputTable, filePath)
         }else{
-            h2gis_datasource.getSpatialTable(outputTable).reproject(outputSRID.toInteger()).save(filePath)
+            h2gis_datasource.getSpatialTable(outputTable).reproject(outputSRID.toInteger()).save(filePath, deleteOutputData)
         }
         info "${outputTable} has been saved in ${filePath}."
     }
