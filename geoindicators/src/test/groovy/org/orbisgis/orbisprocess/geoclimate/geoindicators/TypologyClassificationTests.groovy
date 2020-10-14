@@ -370,7 +370,7 @@ class TypologyClassificationTests {
         def predicted = pmed.results.outputTableName
 
         // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
-        def nb_null = h2GIS.firstRow("SELECT COUNT(*) AS count FROM $predicted WHERE URBAN_TYPOLOGY='ba'")
+        def nb_null = h2GIS.firstRow("SELECT COUNT(*) AS count FROM $predicted WHERE I_TYPO='ba'")
         assertEquals(nb_null.COUNT, 0)
     }
 
@@ -383,7 +383,7 @@ class TypologyClassificationTests {
         def training_data_name = "TRAINING_DATA_URBAN_TYPOLOGY_BDTOPO_V2_RF_1_0"
         // Name of the variable to model
         def var2model = "I_TYPO"
-        def var2ModelFinal = "URBAN_TYPOLOGY"
+        def var2ModelFinal = "I_TYPO"
         // Whether the RF is a classif or a regression
         def classif = true
 

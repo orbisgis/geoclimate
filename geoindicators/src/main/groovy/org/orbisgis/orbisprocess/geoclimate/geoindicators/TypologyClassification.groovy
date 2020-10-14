@@ -605,6 +605,7 @@ IProcess applyRandomForestModel() {
             def df_var = df.drop(idName.toUpperCase())
 
             int[] prediction = Validation.test(model, df_var)
+            prediction = Arrays.toString(prediction)
             // We need to add the remove the initial predicted variable in order to not have duplicated...
             df=df.drop(var2model)
             df=df.merge(IntVector.of(var2model, prediction))
