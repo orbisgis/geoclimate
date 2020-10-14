@@ -136,7 +136,7 @@ IProcess formatBuildingLayer() {
                         def buildinType= "BUILDING_TYPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
 
                         datasource.execute"""create table $buildinType as SELECT max(b.type) as type, max(b.main_use) as main_use, a.id_build FROM $outputTableName a, $urbanAreasTableName b 
-                        WHERE ST_POINTONSURFACE(a.the_geom) && b.the_geom and st_intersects(ST_POINTONSURFACE(a.the_geom), b.the_geom) AND  a.TYPE ='building' group by a..id_build""";
+                        WHERE ST_POINTONSURFACE(a.the_geom) && b.the_geom and st_intersects(ST_POINTONSURFACE(a.the_geom), b.the_geom) AND  a.TYPE ='building' group by a.id_build""";
 
                         datasource.getTable(buildinType).id_build.createIndex()
 
@@ -146,14 +146,14 @@ IProcess formatBuildingLayer() {
                                            CREATE TABLE $newBuildingWithType as
                                             SELECT  a.THE_GEOM, a.ID_BUILD,a.ID_SOURCE,
                                             a.HEIGHT_WALL,
-                                                COALESCE(b.HEIGHT_ROOF, a.HEIGHT_ROOF) AS HEIGHT_ROOF,
+                                            a.HEIGHT_ROOF,
                                                a.NB_LEV, 
                                                COALESCE(b.TYPE, a.TYPE) AS TYPE ,
                                                COALESCE(b.MAIN_USE, a.MAIN_USE) AS MAIN_USE
                                                , a.ZINDEX from $outputTableName
                                         a LEFT JOIN $buildinType b on a.id_build=b.id_build"""
 
-                        datasource.execute """DROP TABLE IF EXISTS $buildinType""";
+                        datasource.execute """DROP TABLE IF EXISTS $buildinType, $outputTableName""";
 
                         datasource.execute """ALTER TABLE $newBuildingWithType RENAME TO $outputTableName""";
                     }
@@ -932,7 +932,7 @@ IProcess formatEstimatedBuilding() {
                 info('urban areas transformation starts')
                 def outputTableName = "INPUT_URBAN_AREAS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
                 datasource.execute """Drop table if exists $outputTableName;
-                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_urban serial, ID_SOURCE VARCHAR, TYPE VARCHAR);"""
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_urban serial, ID_SOURCE VARCHAR, TYPE VARCHAR, MAIN_USE VARCHAR);"""
 
                 if (inputTableName != null) {
                     def paramsDefaultFile = this.class.getResourceAsStream("urbanAreasParams.json")
@@ -959,7 +959,7 @@ IProcess formatEstimatedBuilding() {
                                 for (int i = 0; i < geom.getNumGeometries(); i++) {
                                     Geometry subGeom = geom.getGeometryN(i)
                                     if (subGeom instanceof Polygon) {
-                                        stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), null, '${row.id}', '${type}')"
+                                        stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), null, '${row.id}', '${type}','${type}')"
                                     }
                                 }
                             }

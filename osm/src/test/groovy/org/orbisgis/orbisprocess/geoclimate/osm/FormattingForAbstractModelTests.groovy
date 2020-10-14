@@ -64,6 +64,14 @@ class FormattingForAbstractModelTests {
                 epsg: epsg,
                 urbanAreasTableName: urbanAreas])
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated_type.shp", true)
+        def rows = h2GIS.rows("select type from ${format.results.outputTableName} where id_build=158 or id_build=982")
+        assertEquals(2, rows.size())
+        assertTrue( rows.type==['residential','residential'])
+
+        rows = h2GIS.rows("select type from ${format.results.outputTableName} where id_build=881 or id_build=484 or id_build=610")
+        assertEquals(3, rows.size())
+        assertTrue( rows.type==['industrial','industrial','industrial'])
+
 
         //Roads
         format = OSM.formatRoadLayer
