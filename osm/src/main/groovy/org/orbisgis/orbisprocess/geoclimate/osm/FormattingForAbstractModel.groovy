@@ -132,6 +132,7 @@ IProcess formatBuildingLayer() {
                     if(urbanAreasTableName){
                         datasource."$outputTableName".the_geom.createSpatialIndex()
                         datasource."$outputTableName".id_build.createIndex()
+                        datasource."$outputTableName".type.createIndex()
                         datasource."$urbanAreasTableName".the_geom.createSpatialIndex()
                         def buildinType= "BUILDING_TYPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
 
@@ -929,7 +930,7 @@ IProcess formatEstimatedBuilding() {
             inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, jsonFilename: ""
             outputs outputTableName: String
             run { datasource, inputTableName, inputZoneEnvelopeTableName, epsg, jsonFilename->
-                info('urban areas transformation starts')
+                info('Urban areas transformation starts')
                 def outputTableName = "INPUT_URBAN_AREAS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
                 datasource.execute """Drop table if exists $outputTableName;
                     CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_urban serial, ID_SOURCE VARCHAR, TYPE VARCHAR, MAIN_USE VARCHAR);"""

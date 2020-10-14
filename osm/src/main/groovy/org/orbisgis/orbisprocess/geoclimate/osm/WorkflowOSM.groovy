@@ -613,7 +613,7 @@ IProcess osm_processing() {
                                         results.put("hydrographicTableName", hydrographicTableName)
                                         results.put("vegetationTableName", vegetationTableName)
                                         results.put("imperviousTableName", imperviousTableName)
-                                        results.put("urbanAreasTable", urbanAreasTable)
+                                        results.put("urbanAreasTableName", urbanAreasTable)
                                         if (outputFolder && geoIndicatorsComputed && ouputTableFiles) {
                                             saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject)
                                         }
