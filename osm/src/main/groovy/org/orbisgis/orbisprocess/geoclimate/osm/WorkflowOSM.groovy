@@ -200,7 +200,8 @@ IProcess workflow() {
                                                     "rail",
                                                     "water",
                                                     "vegetation",
-                                                    "impervious"]
+                                                    "impervious",
+                                                    "urban_areas"]
                         //Get processing parameters
                         def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
                         if(!processing_parameters){
@@ -426,14 +427,26 @@ IProcess osm_processing() {
                             def gisLayersResults = createGISLayerProcess.getResults()
                             if (zoneTableName != null) {
                                 info "Formating OSM GIS layers"
+
+                                //Format urban areas
+                                IProcess format = OSM.formatUrbanAreas
+                                format.execute([
+                                        datasource                : h2gis_datasource,
+                                        inputTableName            : gisLayersResults.urbanAreasTableName,
+                                        inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                        epsg                      : srid])
+                                def urbanAreasTable = format.results.outputTableName
+
                                 def estimateHeight = processing_parameters."estimateHeight"
-                                IProcess format = OSM.formatBuildingLayer
+                                format = OSM.formatBuildingLayer
                                 format.execute([
                                         datasource                : h2gis_datasource,
                                         inputTableName            : gisLayersResults.buildingTableName,
                                         inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                                         epsg                      : srid,
-                                        estimateHeight            : estimateHeight])
+                                        estimateHeight            : estimateHeight,
+                                        urbanAreasTableName : urbanAreasTable ])
+
                                 def buildingTableName = format.results.outputTableName
                                 def buildingEstimateTableName = format.results.outputEstimateTableName
 
@@ -470,7 +483,6 @@ IProcess osm_processing() {
                                         epsg                      : srid])
                                 def hydrographicTableName = format.results.outputTableName
 
-                                //TODO : to be used in the geoindicators chains
                                 format = OSM.formatImperviousLayer
                                 format.execute([
                                         datasource                : h2gis_datasource,
@@ -478,6 +490,7 @@ IProcess osm_processing() {
                                         inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                                         epsg                      : srid])
                                 def imperviousTableName = format.results.outputTableName
+
 
                                 info "OSM GIS layers formated"
 
@@ -600,6 +613,7 @@ IProcess osm_processing() {
                                         results.put("hydrographicTableName", hydrographicTableName)
                                         results.put("vegetationTableName", vegetationTableName)
                                         results.put("imperviousTableName", imperviousTableName)
+                                        results.put("urbanAreasTable", urbanAreasTable)
                                         if (outputFolder && geoIndicatorsComputed && ouputTableFiles) {
                                             saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject)
                                         }
@@ -633,6 +647,7 @@ IProcess osm_processing() {
                                     results.put("hydrographicTableName", hydrographicTableName)
                                     results.put("vegetationTableName", vegetationTableName)
                                     results.put("imperviousTableName", imperviousTableName)
+                                    results.put("urbanAreasTableName", urbanAreasTable)
                                     if (outputFolder && geoIndicatorsComputed && ouputTableFiles) {
                                         saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject)
                                     }
@@ -885,7 +900,8 @@ def outputFolderProperties(def outputFolder){
                         "rail" ,
                         "water",
                         "vegetation",
-                        "impervious"]
+                        "impervious",
+                        "urban_areas"]
     if(outputFolder in Map){
         def outputPath = outputFolder.get("path")
         def outputTables = outputFolder.get("tables")
@@ -1177,6 +1193,9 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
         else if(it.equals("impervious")){
             saveTableAsGeojson(results.imperviousTableName, "${subFolder.getAbsolutePath()+File.separator+"impervious"}.geojson", h2gis_datasource,outputSRID,reproject)
         }
+        else if(it.equals("urban_areas")){
+            saveTableAsGeojson(results.urbanAreasTableName, "${subFolder.getAbsolutePath()+File.separator+"urban_areas"}.geojson", h2gis_datasource,outputSRID,reproject)
+        }
     }
 }
 
@@ -1219,6 +1238,7 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
     def output_water = outputTableNames.water
     def output_vegetation = outputTableNames.vegetation
     def output_impervious = outputTableNames.impervious
+    def output_urban_areas = outputTableNames.urban_areas
 
 
     if (output_block_indicators && !output_datasource.hasTable(output_block_indicators)){
@@ -1539,7 +1559,7 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
 
     if (output_impervious && !output_datasource.hasTable(output_impervious)){
         output_datasource.execute """CREATE TABLE $output_impervious  (THE_GEOM GEOMETRY(POLYGON, $srid), 
-id_impervious serial, ID_SOURCE VARCHAR);
+        id_impervious serial, ID_SOURCE VARCHAR);
         CREATE INDEX IF NOT EXISTS idx_${output_impervious}_id_source ON $output_impervious (ID_SOURCE);"""
     }
     else if (output_impervious){
@@ -1551,6 +1571,22 @@ id_impervious serial, ID_SOURCE VARCHAR);
         //Test if we can write in the database
         output_datasource.execute """INSERT INTO $output_impervious (ID_SOURCE) VALUES('geoclimate');
         DELETE from $output_impervious WHERE ID_SOURCE= 'geoclimate';"""
+    }
+
+    if (output_urban_areas && !output_datasource.hasTable(output_urban_areas)){
+        output_datasource.execute """CREATE TABLE $output_urban_areas  (THE_GEOM GEOMETRY(POLYGON, $srid), 
+        id_urban serial, ID_SOURCE VARCHAR, TYPE VARCHAR, MAIN_USE VARCHAR);
+        CREATE INDEX IF NOT EXISTS idx_${output_urban_areas}_id_source ON $output_urban_areas (ID_SOURCE);"""
+    }
+    else if (output_urban_areas){
+        def outputTableSRID = output_datasource.getSpatialTable(output_urban_areas).srid
+        if(outputTableSRID!=srid){
+            error "The SRID of the output table ($outputTableSRID) $output_urban_areas is different than the srid of the result table ($srid)"
+            return null
+        }
+        //Test if we can write in the database
+        output_datasource.execute """INSERT INTO $output_urban_areas (ID_SOURCE) VALUES('geoclimate');
+        DELETE from $output_urban_areas WHERE ID_SOURCE= 'geoclimate';"""
     }
 
     return true
@@ -1608,6 +1644,11 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
     //Export impervious
     abstractModelTableBatchExportTable(output_datasource, outputTableNames.impervious, id_zone,h2gis_datasource, h2gis_tables.imperviousTableName
             , "",inputSRID,outputSRID,reproject)
+
+    //Export urban areas table
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.urban_areas, id_zone,h2gis_datasource, h2gis_tables.urbanAreasTableName
+            , "",inputSRID,outputSRID,reproject)
+
     con.setAutoCommit(false)
 }
 
