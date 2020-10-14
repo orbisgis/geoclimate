@@ -15,7 +15,7 @@
                 "residential"
             ]
         },
-        "retail": {
+        "commercial": {
             "landuse": [
                 "retail"
             ]

@@ -28,6 +28,7 @@ class FormattingForAbstractModelTests {
         assertEquals 135, h2GIS.getTable(extractData.results.vegetationTableName).rowCount
         assertEquals 10, h2GIS.getTable(extractData.results.hydroTableName).rowCount
         assertEquals 44, h2GIS.getTable(extractData.results.imperviousTableName).rowCount
+        assertEquals 6, h2GIS.getTable(extractData.results.urbanAreasTableName).rowCount
 
         //Buildings
         IProcess format = OSM.formatBuildingLayer
@@ -45,19 +46,24 @@ class FormattingForAbstractModelTests {
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF is null").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0").count==0
 
-        //Check value for  specific features
-        //TODO: to be fixed
-        /*def res =  h2GIS.firstRow("select type,  nb_lev, height_wall, height_roof from ${format.results.outputTableName} where ID_SOURCE='w122539595'")
-        assertEquals("church", res.type)
-        assertEquals(0, res.nb_lev)
-        assertEquals(3, res.height_wall)
-        assertEquals(3, res.height_roof)
+        //Format urban areas
+        format = OSM.formatUrbanAreas
+        format.execute([
+                datasource : h2GIS,
+                inputTableName:  extractData.results.urbanAreasTableName,
+                epsg: epsg])
+        def urbanAreas = format.results.outputTableName
+        assertNotNull h2GIS.getTable(urbanAreas).save("./target/osm_urban_areas.shp", true)
 
-        res =  h2GIS.firstRow("select type,  nb_lev, height_wall, height_roof from ${format.results.outputTableName} where ID_SOURCE='w122535997'")
-        assertEquals("building", res.type)
-        assertEquals(1, res.nb_lev)
-        assertEquals(6, res.height_wall)
-        assertEquals(6, res.height_roof)*/
+
+        //Improve building type
+        format = OSM.formatBuildingLayer
+        format.execute([
+                datasource : h2GIS,
+                inputTableName: extractData.results.buildingTableName,
+                epsg: epsg,
+                urbanAreasTableName: urbanAreas])
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated_type.shp", true)
 
         //Roads
         format = OSM.formatRoadLayer
@@ -67,7 +73,7 @@ class FormattingForAbstractModelTests {
                 epsg: epsg,
                 jsonFilename: null])
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_formated.shp", true)
-        assertEquals 197, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertEquals 144, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH is null").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH<=0").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where CROSSING IS NOT NULL").count==7
