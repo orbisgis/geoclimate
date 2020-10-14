@@ -1084,7 +1084,9 @@ def extractProcessingParameters(def processing_parameters){
                                              "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
                              hLevMin : 3, hLevMax: 15, hThresholdLev2: 10,
                              lczRandomForest :false,
-                             estimateHeight:false]
+                             estimateHeight:false,
+                             lczModelName: "LCZ_OSM_RF_1_0.model",
+                             urbanTypoModelName: "URBAN_TYPOLOGY_OSM_RF_1_0.model"]
     if(processing_parameters){
         def distanceP =  processing_parameters.distance
         if(distanceP && distanceP in Number){

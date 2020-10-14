@@ -476,14 +476,14 @@ IProcess createRandomForestModel() {
             }
             def formula = Formula.lhs(varToModel)
             def columnTypes = df.getColumnsTypes()
-            def dfFactorized = df
+            def dfFactorized = df.omitNullRows()
+
             // Identify columns being string (thus needed to be factorized)
             columnTypes.each{colName, colType ->
                 if(colType == "String"){
                     dfFactorized = dfFactorized.factorize(colName)
                 }
             }
-            dfFactorized = dfFactorized.omitNullRows()
             // Create the randomForest
             def model
             if(classif){
@@ -619,7 +619,7 @@ IProcess applyRandomForestModel() {
                 try {
                     Statement outputconnectionStatement = outputconnection.createStatement();
                     outputconnectionStatement.execute("DROP TABLE IF EXISTS " + tableName);
-                    def create_table_ = "CREATE TABLE ${tableName} (${idName.toUpperCase()} VARCHAR, ${var2model.toUpperCase()} INT)" ;
+                    def create_table_ = "CREATE TABLE ${tableName} (${idName.toUpperCase()} INTEGER, ${var2model.toUpperCase()} INT)" ;
                     def insertTable = "INSERT INTO ${tableName}  VALUES(?,?)";
                     outputconnection.setAutoCommit(false);
                     outputconnectionStatement.execute(create_table_.toString());

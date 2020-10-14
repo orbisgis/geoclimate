@@ -161,19 +161,53 @@ class GeoIndicatorsChainTest {
                             "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
 
         def ind_i = ["URBAN_TYPOLOGY"]
+        def modelPath = "URBAN_TYPOLOGY_BDTOPO_V2_RF_1_0.model"
         IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
                 hydrographicTable: inputTableNames.hydrographicTable, indicatorUse: ind_i,
                 svfSimplified: svfSimplified, prefixName: prefixName,
-                mapOfWeights: mapOfWeights)
+                mapOfWeights: mapOfWeights, urbanTypoModelName: modelPath)
 
         checkRSUIndicators(datasource,GeoIndicatorsCompute_i.results.outputTableRsuIndicators, false)
 
         if (ind_i.contains("URBAN_TYPOLOGY")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
             assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
+            // Check that the sum of proportion (or building area) for each RSU is equal to 1
+            def urbanTypoArea = datasource."$GeoIndicatorsCompute_i.results.outputTableRsuUrbanTypoArea"
+            def colUrbanTypoArea = urbanTypoArea.getColumns()
+            colUrbanTypoArea = colUrbanTypoArea.minus("ID_RSU")
+            colUrbanTypoArea = colUrbanTypoArea.minus("THE_GEOM")
+            def countSumAreaEqual1 = datasource.firstRow("""SELECT COUNT(*) AS NB 
+                                                                    FROM ${GeoIndicatorsCompute_i.results.outputTableRsuUrbanTypoArea}
+                                                                    WHERE ${colUrbanTypoArea.join("+")}>0.99 AND ${colUrbanTypoArea.join("+")}<1.01""")
+            def countSumAreaRemove0 = datasource.firstRow("""SELECT COUNT(*) AS NB 
+                                                                    FROM ${GeoIndicatorsCompute_i.results.outputTableRsuUrbanTypoFloorArea}
+                                                                    WHERE ${colUrbanTypoArea.join("+")}>0""")
+            assertEquals countSumAreaRemove0.NB, countSumAreaEqual1.NB
+
+            // Check that the sum of proportion (or building floor area) for each RSU is equal to 1
+            def urbanTypoFloorArea = datasource."$GeoIndicatorsCompute_i.results.outputTableRsuUrbanTypoFloorArea"
+            def colUrbanTypoFloorArea = urbanTypoFloorArea.getColumns()
+            colUrbanTypoFloorArea = colUrbanTypoFloorArea.minus("ID_RSU")
+            colUrbanTypoFloorArea = colUrbanTypoFloorArea.minus("THE_GEOM")
+            def countSumFloorAreaEqual1 = datasource.firstRow("""SELECT COUNT(*) AS NB 
+                                                                    FROM ${GeoIndicatorsCompute_i.results.outputTableRsuUrbanTypoFloorArea}
+                                                                    WHERE ${colUrbanTypoFloorArea.join("+")}>0.99 AND ${colUrbanTypoFloorArea.join("+")}<1.01""")
+            def countSumFloorAreaRemove0 = datasource.firstRow("""SELECT COUNT(*) AS NB 
+                                                                    FROM ${GeoIndicatorsCompute_i.results.outputTableRsuUrbanTypoFloorArea}
+                                                                    WHERE ${colUrbanTypoFloorArea.join("+")}>0""")
+            assertEquals countSumFloorAreaRemove0.NB, countSumFloorAreaEqual1.NB
+
+            // Check that all buildings being in the zone have a value different than 0 (0 being no value)
+            def dfBuild = DataFrame.of(datasource."$GeoIndicatorsCompute_i.results.outputTableBuildingUrbanTypo")
+            def nbNull = datasource.firstRow("""SELECT COUNT(*) AS NB 
+                                                            FROM ${GeoIndicatorsCompute_i.results.outputTableBuildingUrbanTypo}
+                                                            WHERE I_TYPO = 0""")
+            assertTrue dfBuild.nrows()>0
+            assertEquals 0, nbNull.NB
         }
         def expectListRsuTempo = listColBasic + listColCommon
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
