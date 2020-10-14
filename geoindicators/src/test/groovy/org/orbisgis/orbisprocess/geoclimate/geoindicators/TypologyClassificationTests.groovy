@@ -338,14 +338,14 @@ class TypologyClassificationTests {
     void applyRandomForestClassif() {
         // Information about where to find the training dataset for the test
         def trainingTableName = "training_table"
-        def trainingURL = "/home/decide/Code/Intel/geoclimate/models/TRAINING_DATA_URBAN_TYPOLOGY_BDTOPO_V2_RF_1_0.geojson.gz"
-        def savePath = "/home/decide/Code/Intel/geoclimate/models/URBAN_TYPOLOGY_BDTOPO_V2_RF_1_0.model"
+        def trainingURL = "../models/TRAINING_DATA_LCZ_OSM_RF_1_0.gz"
+        def savePath = "../models/LCZ_OSM_RF_1_0.model"
         def ID = "ID_RSU"
 
         h2GIS """ drop table if exists $trainingTableName; CALL GEOJSONREAD('${trainingURL}', '$trainingTableName');"""
 
         // Columns useless for the classification
-        def colsToRemove = ["THE_GEOM", "I_TYPO"]
+        def colsToRemove = ["THE_GEOM", "LCZ"]
 
         // Remove unnecessary column
         h2GIS "ALTER TABLE $trainingTableName DROP COLUMN ${colsToRemove.join(",")};"
@@ -370,7 +370,7 @@ class TypologyClassificationTests {
         def predicted = pmed.results.outputTableName
 
         // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
-        def nb_null = h2GIS.firstRow("SELECT COUNT(*) AS count FROM $predicted WHERE I_TYPO=1")
+        def nb_null = h2GIS.firstRow("SELECT COUNT(*) AS count FROM $predicted WHERE LCZ=1")
         assertEquals(nb_null.COUNT, 0)
     }
 
