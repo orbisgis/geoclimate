@@ -205,7 +205,7 @@ class GeoIndicatorsChainTest {
             def dfBuild = DataFrame.of(datasource."$GeoIndicatorsCompute_i.results.outputTableBuildingUrbanTypo")
             def nbNull = datasource.firstRow("""SELECT COUNT(*) AS NB 
                                                             FROM ${GeoIndicatorsCompute_i.results.outputTableBuildingUrbanTypo}
-                                                            WHERE I_TYPO = 0""")
+                                                            WHERE I_TYPO = 'unknown'""")
             assertTrue dfBuild.nrows()>0
             assertEquals 0, nbNull.NB
         }

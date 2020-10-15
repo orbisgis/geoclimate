@@ -1252,7 +1252,7 @@ IProcess computeAllGeoIndicators() {
                 queryCasewhen.keySet().each{ind ->
                     def querySum = ""
                     listTypos.each{typoCol ->
-                        queryCasewhen[ind] += """ SUM(CASE WHEN a.I_TYPO=$typoCol THEN b.$ind ELSE 0 END) AS TYPO_$typoCol,"""
+                        queryCasewhen[ind] += """ SUM(CASE WHEN a.I_TYPO='$typoCol' THEN b.$ind ELSE 0 END) AS TYPO_$typoCol,"""
                         querySum = querySum + " COALESCE(b.TYPO_${typoCol}/(b.TYPO_${listTypos.join("+b.TYPO_")}), 0) AS TYPO_$typoCol, "
                     }
                     // Calculates the distribution per RSU
