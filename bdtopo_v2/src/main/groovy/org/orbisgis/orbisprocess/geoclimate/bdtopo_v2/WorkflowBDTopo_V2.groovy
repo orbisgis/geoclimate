@@ -634,7 +634,11 @@ def outputFolderProperties(def outputFolder){
                         "rail" ,
                         "water",
                         "vegetation",
-                        "impervious"]
+                        "impervious",
+                        "rsu_urban_typo_area",
+                        "rsu_urban_typo_floor_area",
+                        "building_urban_typo"]
+
     if(outputFolder in Map){
         def outputPath = outputFolder.path
         def outputTables = outputFolder.tables
@@ -1121,6 +1125,12 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
         }
         else if(it.equals("impervious")){
             saveTableAsGeojson(results.imperviousTableName, "${subFolder.getAbsolutePath()+File.separator+"impervious"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        }else if(it.equals("rsu_urban_typo_area")){
+            saveTableAsGeojson(results.outputTableRsuUrbanTypoArea, "${subFolder.getAbsolutePath()+File.separator+"rsu_urban_typo_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        }else if(it.equals("rsu_urban_typo_floor_area")){
+            saveTableAsGeojson(results.outputTableRsuUrbanTypoFloorArea, "${subFolder.getAbsolutePath()+File.separator+"rsu_urban_typo_floor_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        }else if(it.equals("building_urban_typo")){
+            saveTableAsGeojson(results.outputTableBuildingUrbanTypo, "${subFolder.getAbsolutePath()+File.separator+"building_urban_typo"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
     }
 }
@@ -1136,7 +1146,7 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
 def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource,def outputSRID, def reproject, def deleteOutputData){
     if(outputTable && h2gis_datasource.hasTable(outputTable)){
         if(!reproject){
-            h2gis_datasource.save(outputTable, filePath)
+            h2gis_datasource.save(outputTable, filePath, deleteOutputData)
         }else{
             h2gis_datasource.getSpatialTable(outputTable).reproject(outputSRID.toInteger()).save(filePath,deleteOutputData)
         }
