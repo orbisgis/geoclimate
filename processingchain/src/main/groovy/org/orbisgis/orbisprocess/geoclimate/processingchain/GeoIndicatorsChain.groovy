@@ -1192,7 +1192,8 @@ IProcess computeAllGeoIndicators() {
             }
             // If the URBAN_TYPOLOGY indicators should be calculated, we only affect a URBAN typo class
             // to each building and then to each RSU
-            if (indicatorUse.contains("URBAN_TYPOLOGY")) {
+            //if (indicatorUse.contains("URBAN_TYPOLOGY")) {
+            if (false) {
                 info """ The URBAN TYPOLOGY classification is performed """
                 def applygatherScales = Geoindicators.GenericIndicators.gatherScales()
                 applygatherScales.execute([
