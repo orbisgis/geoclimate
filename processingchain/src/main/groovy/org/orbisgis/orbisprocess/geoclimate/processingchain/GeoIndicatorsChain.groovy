@@ -1233,7 +1233,7 @@ IProcess computeAllGeoIndicators() {
                     queryCaseWhenReplace += "CASE WHEN b.I_TYPO=$ini THEN '$fin' ELSE "
                     endCaseWhen += " END"
                 }
-                queryCaseWhenReplace = queryCaseWhenReplace + " 0 " + endCaseWhen
+                queryCaseWhenReplace = queryCaseWhenReplace + " 'unknown' " + endCaseWhen
                 urbanTypoBuilding = prefix  prefixName, "URBAN_TYPO_BUILDING"
                 datasource."$urbanTypoBuild"."$COLUMN_ID_BUILD".createIndex()
                 datasource."$buildingIndicators"."$COLUMN_ID_BUILD".createIndex()
