@@ -76,7 +76,7 @@ import java.sql.SQLException
  *  *             "impervious_surface_fraction" : 1,
  *  *             "pervious_surface_fraction": 1,
  *  *             "height_of_roughness_elements": 1,
- *  *             "terrain_roughness_length": 1},
+ *  *             "terrain_roughness_class": 1},
  *  *         "hLevMin": 3,
  *  *         "hLevMax": 15,
  *  *         "hThresho2": 10
@@ -770,7 +770,7 @@ IProcess GeoIndicators() {
                 distance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified: false, prefixName: "",
                 mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                               "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
+                               "height_of_roughness_elements": 1, "terrain_roughness_class": 1]
         outputs outputTableBuildingIndicators: String, outputTableBlockIndicators: String,
                 outputTableRsuIndicators: String, outputTableRsuLcz: String, outputTableZone: String
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
@@ -851,7 +851,7 @@ IProcess GeoIndicators() {
                                      "GROUND_SKY_VIEW_FACTOR"            : "SKY_VIEW_FACTOR",
                                      "PERVIOUS_FRACTION_LCZ"             : "PERVIOUS_SURFACE_FRACTION",
                                      "IMPERVIOUS_FRACTION_LCZ"           : "IMPERVIOUS_SURFACE_FRACTION",
-                                     "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH": "TERRAIN_ROUGHNESS_LENGTH"]
+                                     "EFFECTIVE_TERRAIN_ROUGHNESS_CLASS" : "TERRAIN_ROUGHNESS_CLASS"]
 
                 // Get into a new table the ID, geometry column and the 7 indicators defined by Stewart and Oke (2012)
                 // for LCZ classification (rename the indicators with the real names)
@@ -1081,7 +1081,7 @@ def extractProcessingParameters(def processing_parameters){
                              svfSimplified:false, prefixName: "",
                              mapOfWeights : ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                              "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                                             "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
+                                             "height_of_roughness_elements": 1, "terrain_roughness_class": 1],
                              hLevMin : 3, hLevMax: 15, hThresholdLev2: 10,
                              lczRandomForest :false,
                              estimateHeight:false,
