@@ -464,6 +464,7 @@ IProcess distributionCharacterization() {
             def EXTREMUM_COL2 = "EXTREMUM_COL2"
             def EXTREMUM_VAL = "EXTREMUM_VAL"
             def BASENAME = "DISTRIBUTION_REPARTITION"
+            def GEOMETRY_FIELD = "THE_GEOM"
 
             info "Executing equality and uniqueness indicators"
 
@@ -471,9 +472,13 @@ IProcess distributionCharacterization() {
                 // The name of the outputTableName is constructed
                 def outputTableName = prefix prefixName, BASENAME
 
+                // Get all columns from the distribution table and remove the geometry column if exists
+                def allColumns = datasource."$distribTableName".columns
+                if(allColumns.contains(GEOMETRY_FIELD)){
+                    allColumns -= GEOMETRY_FIELD
+                }
                 // Get the distribution columns and the number of columns
-                def distribColumns = datasource."$distribTableName".columns
-                distribColumns -= inputId.toUpperCase()
+                def distribColumns = allColumns.minus(inputId.toUpperCase())
                 def nbDistCol = distribColumns.size
 
                 def idxExtrem = nbDistCol - 1
@@ -489,10 +494,10 @@ IProcess distributionCharacterization() {
                 def outputTableMissingSomeObjects = postfix "output_table_missing_some_objects"
                 def distribTableNameNoNull = postfix "distrib_table_name_no_null"
 
-                // Delete rows having null values
+                // Delete rows having null values (and remove the geometry field if exists)
                 datasource """  DROP TABLE IF EXISTS $distribTableNameNoNull;
                                 CREATE TABLE $distribTableNameNoNull 
-                                    AS SELECT * 
+                                    AS SELECT ${allColumns.join(",")} 
                                     FROM $distribTableName 
                                     WHERE ${distribColumns.join(" IS NOT NULL AND ")} IS NOT NULL"""
 
