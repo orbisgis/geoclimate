@@ -851,7 +851,7 @@ IProcess GeoIndicators() {
                                      "GROUND_SKY_VIEW_FACTOR"            : "SKY_VIEW_FACTOR",
                                      "PERVIOUS_FRACTION_LCZ"             : "PERVIOUS_SURFACE_FRACTION",
                                      "IMPERVIOUS_FRACTION_LCZ"           : "IMPERVIOUS_SURFACE_FRACTION",
-                                     "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH" : "TERRAIN_ROUGHNESS_LENGTH"]
+                                     "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH": "TERRAIN_ROUGHNESS_LENGTH"]
 
                 // Get into a new table the ID, geometry column and the 7 indicators defined by Stewart and Oke (2012)
                 // for LCZ classification (rename the indicators with the real names)
@@ -1423,7 +1423,7 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
 	ASPECT_RATIO DOUBLE PRECISION,
 	GROUND_SKY_VIEW_FACTOR DOUBLE PRECISION,
 	EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH DOUBLE PRECISION,
-	EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH INTEGER,
+	EFFECTIVE_TERRAIN_ROUGHNESS_CLASS INTEGER,
 	BUILDING_DIRECTION_EQUALITY DOUBLE PRECISION,
 	BUILDING_DIRECTION_UNIQUENESS DOUBLE PRECISION,
 	MAIN_BUILDING_DIRECTION VARCHAR,
