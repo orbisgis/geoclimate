@@ -1220,7 +1220,7 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
 def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource,def outputSRID, def reproject, def deleteOutputData){
     if(outputTable && h2gis_datasource.hasTable(outputTable)){
         if(!reproject){
-        h2gis_datasource.save(outputTable, filePath)
+        h2gis_datasource.save(outputTable, filePath,deleteOutputData)
         }else{
             h2gis_datasource.getSpatialTable(outputTable).reproject(outputSRID.toInteger()).save(filePath, deleteOutputData)
         }
