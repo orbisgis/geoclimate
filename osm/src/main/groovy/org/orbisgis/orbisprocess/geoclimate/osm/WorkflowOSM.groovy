@@ -46,7 +46,8 @@ import java.sql.SQLException
  *  *            "osm" : ["filter"] // OSM filter to extract the data. Can be a place name supported by nominatim
  *                                  // e.g "osm" : ["oran", "plourivo"]
  *                                  // or bbox expressed as "osm" : [[38.89557963573336,-77.03930318355559,38.89944983078282,-77.03364372253417]]
- *  *             }
+ *  *           "all":true //optional value if the user wants to download a limited set of data. Default is true to download all OSM elements
+ *              }
  *  *             ,
  *  *  [OPTIONAL ENTRY]  "output" :{ //If not ouput is set the results are keep in the local database
  *  *             "srid" : //optional value to reproject the data
@@ -84,6 +85,7 @@ import java.sql.SQLException
  *  The parameters entry tag contains all geoclimate chain parameters.
  *  When a parameter is not specificied a default value is set.
  *
+ * - distance The integer value to expand the envelope of zone when recovering the data
  * - distance The integer value to expand the envelope of zone when recovering the data
  * (some objects may be badly truncated if they are not within the envelope)
  * - indicatorUse List of geoindicator types to compute (default ["LCZ", "URBAN_TYPOLOGY", "TEB"]
@@ -174,6 +176,14 @@ IProcess workflow() {
 
                 if (input) {
                     def osmFilters = input.get("osm")
+                    def downloadAllOSMData = input.get("all")
+                    if(!downloadAllOSMData){
+                        downloadAllOSMData = true
+                    }else if(!downloadAllOSMData in Boolean){
+                        error "The all parameter must be a boolean value"
+                        return null
+                    }
+
                     if (!osmFilters) {
                         error "Please set at least one OSM filter. e.g osm : ['A place name']"
                         return null
@@ -190,7 +200,8 @@ IProcess workflow() {
                                                     "rail",
                                                     "water",
                                                     "vegetation",
-                                                    "impervious"]
+                                                    "impervious",
+                                                    "urban_areas"]
                         //Get processing parameters
                         def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
                         if(!processing_parameters){
@@ -202,6 +213,13 @@ IProcess workflow() {
                         }
                         def outputDataBase = output.get("database")
                         def outputFolder = output.get("folder")
+                        def deleteOutputData = output.get("delete")
+                        if(!deleteOutputData){
+                            deleteOutputData = true
+                        }else if(!deleteOutputData in Boolean){
+                            error "The delete parameter must be a boolean value"
+                            return null
+                        }
                         if (outputDataBase && outputFolder) {
                             def outputFolderProperties = outputFolderProperties(outputFolder)
                             //Check if we can write in the output folder
@@ -233,7 +251,7 @@ IProcess workflow() {
                                 if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
                                         processing_parameters: processing_parameters,
                                         id_zones: osmFilters, outputFolder: file_outputFolder, ouputTableFiles: outputFolderProperties.tables,
-                                        output_datasource: output_datasource, outputTableNames: finalOutputTables, outputSRID :outputSRID)) {
+                                        output_datasource: output_datasource, outputTableNames: finalOutputTables, outputSRID :outputSRID, downloadAllOSMData:downloadAllOSMData, deleteOutputData: deleteOutputData)) {
                                     return null
                                 }
                                 if (delete_h2gis) {
@@ -267,7 +285,7 @@ IProcess workflow() {
                                     if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
                                             processing_parameters: processing_parameters,
                                             id_zones: osmFilters, outputFolder: file_outputFolder, ouputTableFiles: outputFolderProperties.tables,
-                                            output_datasource: null, outputTableNames: null, outputSRID :outputSRID)) {
+                                            output_datasource: null, outputTableNames: null, outputSRID :outputSRID, downloadAllOSMData:downloadAllOSMData, deleteOutputData: deleteOutputData)) {
                                         return null
                                     }
                                     //Delete database
@@ -308,7 +326,7 @@ IProcess workflow() {
                                     if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
                                             processing_parameters: processing_parameters,
                                             id_zones: osmFilters, outputFolder: null, ouputTableFiles: null,
-                                            output_datasource: output_datasource, outputTableNames: finalOutputTables,outputSRID :outputSRID)) {
+                                            output_datasource: output_datasource, outputTableNames: finalOutputTables,outputSRID :outputSRID,downloadAllOSMData:downloadAllOSMData, deleteOutputData: deleteOutputData)) {
                                         return null
                                     }
                                     if (delete_h2gis) {
@@ -372,9 +390,9 @@ IProcess osm_processing() {
         title "Build OSM data and compute the geoindicators"
         id "osm_processing"
         inputs h2gis_datasource: JdbcDataSource, processing_parameters: Map, id_zones: Map,
-                outputFolder: "", ouputTableFiles: "", output_datasource: "", outputTableNames: "", outputSRID : String
+                outputFolder: "", ouputTableFiles: "", output_datasource: "", outputTableNames: "", outputSRID : String, downloadAllOSMData : true,deleteOutputData:true
         outputs outputMessage: String
-        run { h2gis_datasource, processing_parameters, id_zones, outputFolder, ouputTableFiles, output_datasource, outputTableNames, outputSRID ->
+        run { h2gis_datasource, processing_parameters, id_zones, outputFolder, ouputTableFiles, output_datasource, outputTableNames, outputSRID, downloadAllOSMData,deleteOutputData ->
 
             // Temporary tables
             int nbAreas = id_zones.size();
@@ -398,6 +416,17 @@ IProcess osm_processing() {
                     }
                     //Prepare OSM extraction
                     def query = "[maxsize:1073741824]" + Utilities.buildOSMQuery(zoneTableNames.envelope, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+
+                    if(downloadAllOSMData){
+                        //Create a custom OSM query to download all requiered data. It will take more time and resources
+                        //because much more OSM elements will be returned
+                        def  keysValues = ["building", "railway", "amenity",
+                                           "leisure", "highway", "natural",
+                                           "landuse", "landcover",
+                                           "vegetation","waterway"]
+                        query =  "[maxsize:1073741824]"+ Utilities.buildOSMQueryWithAllData(zoneTableNames.envelope, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+                    }
+
                     def extract = OSMTools.Loader.extract()
                     if (extract.execute(overpassQuery: query)) {
                         IProcess createGISLayerProcess = OSM.createGISLayers
@@ -405,14 +434,26 @@ IProcess osm_processing() {
                             def gisLayersResults = createGISLayerProcess.getResults()
                             if (zoneTableName != null) {
                                 info "Formating OSM GIS layers"
+
+                                //Format urban areas
+                                IProcess format = OSM.formatUrbanAreas
+                                format.execute([
+                                        datasource                : h2gis_datasource,
+                                        inputTableName            : gisLayersResults.urbanAreasTableName,
+                                        inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                        epsg                      : srid])
+                                def urbanAreasTable = format.results.outputTableName
+
                                 def estimateHeight = processing_parameters."estimateHeight"
-                                IProcess format = OSM.formatBuildingLayer
+                                format = OSM.formatBuildingLayer
                                 format.execute([
                                         datasource                : h2gis_datasource,
                                         inputTableName            : gisLayersResults.buildingTableName,
                                         inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                                         epsg                      : srid,
-                                        estimateHeight            : estimateHeight])
+                                        estimateHeight            : estimateHeight,
+                                        urbanAreasTableName : urbanAreasTable ])
+
                                 def buildingTableName = format.results.outputTableName
                                 def buildingEstimateTableName = format.results.outputEstimateTableName
 
@@ -449,7 +490,6 @@ IProcess osm_processing() {
                                         epsg                      : srid])
                                 def hydrographicTableName = format.results.outputTableName
 
-                                //TODO : to be used in the geoindicators chains
                                 format = OSM.formatImperviousLayer
                                 format.execute([
                                         datasource                : h2gis_datasource,
@@ -457,6 +497,7 @@ IProcess osm_processing() {
                                         inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                                         epsg                      : srid])
                                 def imperviousTableName = format.results.outputTableName
+
 
                                 info "OSM GIS layers formated"
 
@@ -579,8 +620,9 @@ IProcess osm_processing() {
                                         results.put("hydrographicTableName", hydrographicTableName)
                                         results.put("vegetationTableName", vegetationTableName)
                                         results.put("imperviousTableName", imperviousTableName)
+                                        results.put("urbanAreasTableName", urbanAreasTable)
                                         if (outputFolder && geoIndicatorsComputed && ouputTableFiles) {
-                                            saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject)
+                                            saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject, deleteOutputData)
                                         }
                                         if (output_datasource && geoIndicatorsComputed) {
                                             saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone, srid, outputSRID, reproject)
@@ -612,8 +654,9 @@ IProcess osm_processing() {
                                     results.put("hydrographicTableName", hydrographicTableName)
                                     results.put("vegetationTableName", vegetationTableName)
                                     results.put("imperviousTableName", imperviousTableName)
+                                    results.put("urbanAreasTableName", urbanAreasTable)
                                     if (outputFolder && geoIndicatorsComputed && ouputTableFiles) {
-                                        saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject)
+                                        saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject, deleteOutputData)
                                     }
                                     if (output_datasource && geoIndicatorsComputed) {
                                         saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone, srid, outputSRID, reproject)
@@ -864,7 +907,8 @@ def outputFolderProperties(def outputFolder){
                         "rail" ,
                         "water",
                         "vegetation",
-                        "impervious"]
+                        "impervious",
+                        "urban_areas"]
     if(outputFolder in Map){
         def outputPath = outputFolder.get("path")
         def outputTables = outputFolder.get("tables")
@@ -910,110 +954,6 @@ def createDatasource(def database_properties){
 
     }else{
         error "The output database url cannot be null or empty"
-    }
-}
-
-
-/**
- * Load the required tables stored in a database
- *
- * @param inputDatasource database where the tables are
- * @return true is succeed, false otherwise
- */
-def loadDataFromDatasource(def input_database_properties, def code, def distance, def inputTableNames,  H2GIS h2gis_datasource) {
-    def asValues = inputTableNames.every { it.key in ["iris_ge", "bati_indifferencie", "bati_industriel", "bati_remarquable", "route",
-                                                      "troncon_voie_ferree", "surface_eau", "zone_vegetation", "terrain_sport", "construction_surfacique", "" +
-                                                              "surface_route", "surface_activite"] && it.value }
-    def notSameTableNames = inputTableNames.groupBy { it.value }.size()!=inputTableNames.size()
-
-    if (asValues && !notSameTableNames) {
-        def iris_ge_location = inputTableNames.iris_ge
-        input_database_properties =updateDriverURL(input_database_properties)
-        String inputTableName = "(SELECT THE_GEOM, INSEE_COM FROM $iris_ge_location WHERE insee_com=''$code'')"
-        String outputTableName = "IRIS_GE"
-        info "Loading in the H2GIS database $outputTableName"
-        h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
-        def count = h2gis_datasource.getTable(outputTableName).rowCount
-        if (count > 0) {
-            //Compute the envelope of the extracted area to extract the thematic tables
-            def geomToExtract = h2gis_datasource.firstRow("SELECT ST_EXPAND(ST_UNION(ST_ACCUM(the_geom)), 1000) AS THE_GEOM FROM $outputTableName").THE_GEOM
-            int srid = geomToExtract.getSRID()
-
-            //Extract bati_indifferencie
-            inputTableName = "(SELECT ID, THE_GEOM, HAUTEUR FROM ${inputTableNames.bati_indifferencie}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
-            outputTableName = "BATI_INDIFFERENCIE"
-            info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
-
-            //Extract bati_industriel
-            inputTableName = "(SELECT ID, THE_GEOM, NATURE, HAUTEUR FROM ${inputTableNames.bati_industriel}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
-            outputTableName = "BATI_INDUSTRIEL"
-            info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
-
-            //Extract bati_remarquable
-            inputTableName = "(SELECT ID, THE_GEOM, NATURE, HAUTEUR FROM ${inputTableNames.bati_remarquable}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
-            outputTableName = "BATI_REMARQUABLE"
-            info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
-
-            //Extract route
-            inputTableName = "(SELECT ID, THE_GEOM, NATURE, LARGEUR, POS_SOL, FRANCHISST FROM ${inputTableNames.route}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
-            outputTableName = "ROUTE"
-            info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
-
-            //Extract troncon_voie_ferree
-            inputTableName = "(SELECT ID, THE_GEOM, NATURE, LARGEUR, POS_SOL, FRANCHISST FROM ${inputTableNames.troncon_voie_ferree}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
-            outputTableName = "TRONCON_VOIE_FERREE"
-            info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
-
-            //Extract surface_eau
-            inputTableName = "(SELECT ID, THE_GEOM FROM ${inputTableNames.surface_eau}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
-            outputTableName = "SURFACE_EAU"
-            info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
-
-            //Extract zone_vegetation
-            inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.zone_vegetation}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
-            outputTableName = "ZONE_VEGETATION"
-            info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
-
-            //Extract terrain_sport
-            inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.terrain_sport}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY) AND NATURE=''Piste de sport'')"
-            outputTableName = "TERRAIN_SPORT"
-            info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
-
-            //Extract construction_surfacique
-            inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.construction_surfacique}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY) AND (NATURE=''Barrage'' OR NATURE=''Ecluse'' OR NATURE=''Escalier''))"
-            outputTableName = "CONSTRUCTION_SURFACIQUE"
-            info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
-
-            //Extract surface_route
-            inputTableName = "(SELECT ID, THE_GEOM  FROM ${inputTableNames.surface_route}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
-            outputTableName = "SURFACE_ROUTE"
-            info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
-
-            //Extract surface_activite
-            inputTableName = "(SELECT ID, THE_GEOM, CATEGORIE  FROM ${inputTableNames.surface_activite}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY) AND (CATEGORIE=''Administratif'' OR CATEGORIE=''Enseignement'' OR CATEGORIE=''Santé''))"
-            outputTableName = "SURFACE_ACTIVITE"
-            info "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.load(input_database_properties, inputTableName, outputTableName, true)
-
-            return true
-
-        } else {
-            error "Cannot find any commune with the insee code : $code"
-            return null
-        }
-    } else {
-        error "All table names must be specified in the configuration file."
-        return null
     }
 }
 
@@ -1137,14 +1077,16 @@ def findIDZones(def h2gis_datasource, def id_zones){
  * @return a filled map of parameters
  */
 def extractProcessingParameters(def processing_parameters){
-    def defaultParameters = [distance: 1000,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+    def defaultParameters = [distance: 0,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
                              svfSimplified:false, prefixName: "",
                              mapOfWeights : ["sky_view_factor" : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                              "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                              "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
                              hLevMin : 3, hLevMax: 15, hThresholdLev2: 10,
                              lczRandomForest :false,
-                             estimateHeight:false]
+                             estimateHeight:false,
+                             lczModelName: "LCZ_OSM_RF_1_0.model",
+                             urbanTypoModelName: "URBAN_TYPOLOGY_OSM_RF_1_0.model"]
     if(processing_parameters){
         def distanceP =  processing_parameters.distance
         if(distanceP && distanceP in Number){
@@ -1216,7 +1158,7 @@ def extractProcessingParameters(def processing_parameters){
  * @param reproject  true if the file must reprojected
  * @return
  */
-def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFiles, def ouputFolder, def subFolderName, def outputSRID, def reproject){
+def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFiles, def ouputFolder, def subFolderName, def outputSRID, def reproject, def deleteOutputData){
     //Create a subfolder to store each results
     def folderName = id_zone in Map?id_zone.join("_"):id_zone
     def subFolder = new File(ouputFolder.getAbsolutePath()+File.separator+subFolderName+folderName)
@@ -1226,39 +1168,42 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
     outputFiles.each{
         //Save indicators
         if(it.equals("building_indicators")){
-            saveTableAsGeojson(results.outputTableBuildingIndicators, "${subFolder.getAbsolutePath()+File.separator+"building_indicators"}.geojson",h2gis_datasource,outputSRID, reproject)
+            saveTableAsGeojson(results.outputTableBuildingIndicators, "${subFolder.getAbsolutePath()+File.separator+"building_indicators"}.geojson",h2gis_datasource,outputSRID, reproject, deleteOutputData)
         }
         else if(it.equals("block_indicators")){
-            saveTableAsGeojson(results.outputTableBlockIndicators, "${subFolder.getAbsolutePath()+File.separator+"block_indicators"}.geojson",h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.outputTableBlockIndicators, "${subFolder.getAbsolutePath()+File.separator+"block_indicators"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else  if(it.equals("rsu_indicators")){
-            saveTableAsGeojson(results.outputTableRsuIndicators, "${subFolder.getAbsolutePath()+File.separator+"rsu_indicators"}.geojson",h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.outputTableRsuIndicators, "${subFolder.getAbsolutePath()+File.separator+"rsu_indicators"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else  if(it.equals("rsu_lcz")){
-            saveTableAsGeojson(results.outputTableRsuLcz,  "${subFolder.getAbsolutePath()+File.separator+"rsu_lcz"}.geojson",h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.outputTableRsuLcz,  "${subFolder.getAbsolutePath()+File.separator+"rsu_lcz"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else  if(it.equals("zones")){
-            saveTableAsGeojson(results.outputTableZone,  "${subFolder.getAbsolutePath()+File.separator+"zones"}.geojson",h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.outputTableZone,  "${subFolder.getAbsolutePath()+File.separator+"zones"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
 
         //Save input GIS tables
         else  if(it.equals("building")){
-            saveTableAsGeojson(results.buildingTableName, "${subFolder.getAbsolutePath()+File.separator+"building"}.geojson", h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.buildingTableName, "${subFolder.getAbsolutePath()+File.separator+"building"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else if(it.equals("road")){
-            saveTableAsGeojson(results.roadTableName,  "${subFolder.getAbsolutePath()+File.separator+"road"}.geojson",h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.roadTableName,  "${subFolder.getAbsolutePath()+File.separator+"road"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else if(it.equals("rail")){
-            saveTableAsGeojson(results.railTableName,  "${subFolder.getAbsolutePath()+File.separator+"rail"}.geojson",h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.railTableName,  "${subFolder.getAbsolutePath()+File.separator+"rail"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         if(it.equals("water")){
-            saveTableAsGeojson(results.hydrographicTableName, "${subFolder.getAbsolutePath()+File.separator+"water"}.geojson", h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.hydrographicTableName, "${subFolder.getAbsolutePath()+File.separator+"water"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else if(it.equals("vegetation")){
-            saveTableAsGeojson(results.vegetationTableName,  "${subFolder.getAbsolutePath()+File.separator+"vegetation"}.geojson",h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.vegetationTableName,  "${subFolder.getAbsolutePath()+File.separator+"vegetation"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else if(it.equals("impervious")){
-            saveTableAsGeojson(results.imperviousTableName, "${subFolder.getAbsolutePath()+File.separator+"impervious"}.geojson", h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.imperviousTableName, "${subFolder.getAbsolutePath()+File.separator+"impervious"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        }
+        else if(it.equals("urban_areas")){
+            saveTableAsGeojson(results.urbanAreasTableName, "${subFolder.getAbsolutePath()+File.separator+"urban_areas"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
     }
 }
@@ -1270,13 +1215,14 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
  * @param h2gis_datasource connection to the database
  * @param outputSRID srid code to reproject the outputTable.
  * @param reproject true if the file must be reprojected
+ * @param deleteOutputData true to delete the file if exists
  */
-def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource,def outputSRID, def reproject){
+def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource,def outputSRID, def reproject, def deleteOutputData){
     if(outputTable && h2gis_datasource.hasTable(outputTable)){
         if(!reproject){
-        h2gis_datasource.save(outputTable, filePath)
+        h2gis_datasource.save(outputTable, filePath,deleteOutputData)
         }else{
-            h2gis_datasource.getSpatialTable(outputTable).reproject(outputSRID.toInteger()).save(filePath)
+            h2gis_datasource.getSpatialTable(outputTable).reproject(outputSRID.toInteger()).save(filePath, deleteOutputData)
         }
         info "${outputTable} has been saved in ${filePath}."
     }
@@ -1302,6 +1248,7 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
     def output_water = outputTableNames.water
     def output_vegetation = outputTableNames.vegetation
     def output_impervious = outputTableNames.impervious
+    def output_urban_areas = outputTableNames.urban_areas
 
 
     if (output_block_indicators && !output_datasource.hasTable(output_block_indicators)){
@@ -1622,7 +1569,7 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
 
     if (output_impervious && !output_datasource.hasTable(output_impervious)){
         output_datasource.execute """CREATE TABLE $output_impervious  (THE_GEOM GEOMETRY(POLYGON, $srid), 
-id_impervious serial, ID_SOURCE VARCHAR);
+        id_impervious serial, ID_SOURCE VARCHAR);
         CREATE INDEX IF NOT EXISTS idx_${output_impervious}_id_source ON $output_impervious (ID_SOURCE);"""
     }
     else if (output_impervious){
@@ -1634,6 +1581,22 @@ id_impervious serial, ID_SOURCE VARCHAR);
         //Test if we can write in the database
         output_datasource.execute """INSERT INTO $output_impervious (ID_SOURCE) VALUES('geoclimate');
         DELETE from $output_impervious WHERE ID_SOURCE= 'geoclimate';"""
+    }
+
+    if (output_urban_areas && !output_datasource.hasTable(output_urban_areas)){
+        output_datasource.execute """CREATE TABLE $output_urban_areas  (THE_GEOM GEOMETRY(POLYGON, $srid), 
+        id_urban serial, ID_SOURCE VARCHAR, TYPE VARCHAR, MAIN_USE VARCHAR);
+        CREATE INDEX IF NOT EXISTS idx_${output_urban_areas}_id_source ON $output_urban_areas (ID_SOURCE);"""
+    }
+    else if (output_urban_areas){
+        def outputTableSRID = output_datasource.getSpatialTable(output_urban_areas).srid
+        if(outputTableSRID!=srid){
+            error "The SRID of the output table ($outputTableSRID) $output_urban_areas is different than the srid of the result table ($srid)"
+            return null
+        }
+        //Test if we can write in the database
+        output_datasource.execute """INSERT INTO $output_urban_areas (ID_SOURCE) VALUES('geoclimate');
+        DELETE from $output_urban_areas WHERE ID_SOURCE= 'geoclimate';"""
     }
 
     return true
@@ -1691,6 +1654,11 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
     //Export impervious
     abstractModelTableBatchExportTable(output_datasource, outputTableNames.impervious, id_zone,h2gis_datasource, h2gis_tables.imperviousTableName
             , "",inputSRID,outputSRID,reproject)
+
+    //Export urban areas table
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.urban_areas, id_zone,h2gis_datasource, h2gis_tables.urbanAreasTableName
+            , "",inputSRID,outputSRID,reproject)
+
     con.setAutoCommit(false)
 }
 
@@ -1994,6 +1962,7 @@ def prepareTableOutput(def h2gis_table_to_save, def filter, def inputSRID,def h2
         }
     }
 }
+
 
 /**
  * Parse a json file to a Map

@@ -215,7 +215,14 @@ IProcess workflow() {
                                 return
                             }
                             def outputDataBase = output.database
-                            def outputFolder = output.folder				
+                            def outputFolder = output.folder
+                            def deleteOutputData = output.get("delete")
+                            if(!deleteOutputData){
+                                deleteOutputData = true
+                            }else if(!deleteOutputData in Boolean){
+                                error "The delete parameter must be a boolean value"
+                                return null
+                            }
                             def outputSRID = output.get("srid")
                             if(outputSRID && outputSRID.isInteger()){
                                 outputSRID = outputSRID.toInteger()
@@ -627,7 +634,11 @@ def outputFolderProperties(def outputFolder){
                         "rail" ,
                         "water",
                         "vegetation",
-                        "impervious"]
+                        "impervious",
+                        "rsu_urban_typo_area",
+                        "rsu_urban_typo_floor_area",
+                        "building_urban_typo"]
+
     if(outputFolder in Map){
         def outputPath = outputFolder.path
         def outputTables = outputFolder.tables
@@ -911,7 +922,9 @@ def extractProcessingParameters(def processing_parameters){
                                              "height_of_roughness_elements"   : 6,
                                              "terrain_roughness_length"       : 0.5],
                              hLevMin : 3, hLevMax: 15, hThresholdLev2: 10,
-                             lczRandomForest :false]
+                             lczRandomForest :false,
+                             lczModelName: "LCZ_BDTOPO_V2_RF_1_0.model",
+                             urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_1_0.model"]
     if(processing_parameters){
         def distanceP =  processing_parameters.distance
         if(distanceP && distanceP in Number){
@@ -974,9 +987,10 @@ def extractProcessingParameters(def processing_parameters){
  * @param outputFiles the name of the tables that will be saved
  * @param output_datasource a connexion to a database to save the results
  * @param outputTableNames the name of the tables in the output_datasource to save the results
+ * @param deleteOutputData true to delete the ouput files if exist
  * @return
  */
-def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zones, def outputFolder, def outputFiles, def output_datasource, def outputTableNames, def outputSRID){
+def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zones, def outputFolder, def outputFiles, def output_datasource, def outputTableNames, def outputSRID, def deleteOutputData=true){
     def  srid =  h2gis_datasource.getSpatialTable("IRIS_GE").srid
 
     if(!(id_zones in Collection)){
@@ -1047,7 +1061,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
             results.put("vegetationTableName", vegetationTableName)
             results.put("imperviousTableName", imperviousTableName)
             if(outputFolder && geoIndicatorsComputed && outputFiles) {
-                saveOutputFiles(h2gis_datasource, id_zone, results, outputFiles, outputFolder, "bdtopo_v2_",outputSRID, reproject)
+                saveOutputFiles(h2gis_datasource, id_zone, results, outputFiles, outputFolder, "bdtopo_v2_",outputSRID, reproject, deleteOutputData)
             }
             if(output_datasource && geoIndicatorsComputed){
                 saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone,srid, outputSRID,reproject)
@@ -1065,9 +1079,10 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
  * @param results a list of tables computed by geoclimate
  * @param ouputFolder the ouput folder
  * @param outputSRID srid code to reproject the result
+ * @param deleteOutputData true to delete the file if exists
  * @return
  */
-def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFiles, def ouputFolder, def subFolderName,def outputSRID, def reproject){
+def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFiles, def ouputFolder, def subFolderName,def outputSRID, def reproject, def deleteOutputData){
     //Create a subfolder to store each results
     def folderName = id_zone in Map?id_zone.join("_"):id_zone
     def subFolder = new File(ouputFolder.getAbsolutePath()+File.separator+subFolderName+folderName)
@@ -1077,39 +1092,45 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
     outputFiles.each{
         //Save indicators
         if(it.equals("building_indicators")){
-            saveTableAsGeojson(results.outputTableBuildingIndicators, "${subFolder.getAbsolutePath()+File.separator+"building_indicators"}.geojson",h2gis_datasource,outputSRID, reproject)
+            saveTableAsGeojson(results.outputTableBuildingIndicators, "${subFolder.getAbsolutePath()+File.separator+"building_indicators"}.geojson",h2gis_datasource,outputSRID, reproject,deleteOutputData)
         }
         else if(it.equals("block_indicators")){
-            saveTableAsGeojson(results.outputTableBlockIndicators, "${subFolder.getAbsolutePath()+File.separator+"block_indicators"}.geojson",h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.outputTableBlockIndicators, "${subFolder.getAbsolutePath()+File.separator+"block_indicators"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }subFolder
         else if(it.equals("rsu_indicators")){
-            saveTableAsGeojson(results.outputTableRsuIndicators, "${subFolder.getAbsolutePath()+File.separator+"rsu_indicators"}.geojson",h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.outputTableRsuIndicators, "${subFolder.getAbsolutePath()+File.separator+"rsu_indicators"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else if(it.equals("rsu_lcz")){
-            saveTableAsGeojson(results.outputTableRsuLcz,  "${subFolder.getAbsolutePath()+File.separator+"rsu_lcz"}.geojson",h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.outputTableRsuLcz,  "${subFolder.getAbsolutePath()+File.separator+"rsu_lcz"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else if(it.equals("zones")){
-            saveTableAsGeojson(results.outputTableZone,  "${subFolder.getAbsolutePath()+File.separator+"zones"}.geojson",h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.outputTableZone,  "${subFolder.getAbsolutePath()+File.separator+"zones"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
 
         //Save input GIS tables
         else  if(it.equals("building")){
-            saveTableAsGeojson(results.buildingTableName, "${subFolder.getAbsolutePath()+File.separator+"building"}.geojson", h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.buildingTableName, "${subFolder.getAbsolutePath()+File.separator+"building"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else if(it.equals("road")){
-            saveTableAsGeojson(results.roadTableName,  "${subFolder.getAbsolutePath()+File.separator+"road"}.geojson",h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.roadTableName,  "${subFolder.getAbsolutePath()+File.separator+"road"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else if(it.equals("rail")){
-            saveTableAsGeojson(results.railTableName,  "${subFolder.getAbsolutePath()+File.separator+"rail"}.geojson",h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.railTableName,  "${subFolder.getAbsolutePath()+File.separator+"rail"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         if(it.equals("water")){
-            saveTableAsGeojson(results.hydrographicTableName, "${subFolder.getAbsolutePath()+File.separator+"water"}.geojson", h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.hydrographicTableName, "${subFolder.getAbsolutePath()+File.separator+"water"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else if(it.equals("vegetation")){
-            saveTableAsGeojson(results.vegetationTableName,  "${subFolder.getAbsolutePath()+File.separator+"vegetation"}.geojson",h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.vegetationTableName,  "${subFolder.getAbsolutePath()+File.separator+"vegetation"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else if(it.equals("impervious")){
-            saveTableAsGeojson(results.imperviousTableName, "${subFolder.getAbsolutePath()+File.separator+"impervious"}.geojson", h2gis_datasource,outputSRID,reproject)
+            saveTableAsGeojson(results.imperviousTableName, "${subFolder.getAbsolutePath()+File.separator+"impervious"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        }else if(it.equals("rsu_urban_typo_area")){
+            saveTableAsGeojson(results.outputTableRsuUrbanTypoArea, "${subFolder.getAbsolutePath()+File.separator+"rsu_urban_typo_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        }else if(it.equals("rsu_urban_typo_floor_area")){
+            saveTableAsGeojson(results.outputTableRsuUrbanTypoFloorArea, "${subFolder.getAbsolutePath()+File.separator+"rsu_urban_typo_floor_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        }else if(it.equals("building_urban_typo")){
+            saveTableAsGeojson(results.outputTableBuildingUrbanTypo, "${subFolder.getAbsolutePath()+File.separator+"building_urban_typo"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
     }
 }
@@ -1120,13 +1141,14 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
  * @param filePath path to save the table
  * @param h2gis_datasource connection to the database
  * @param outputSRID srid code to reproject the outputTable.
+ * @param  deleteOutputData true to delete the file if exists
  */
-def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource,def outputSRID, def reproject){
+def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource,def outputSRID, def reproject, def deleteOutputData){
     if(outputTable && h2gis_datasource.hasTable(outputTable)){
         if(!reproject){
-            h2gis_datasource.save(outputTable, filePath)
+            h2gis_datasource.save(outputTable, filePath, deleteOutputData)
         }else{
-            h2gis_datasource.getSpatialTable(outputTable).reproject(outputSRID.toInteger()).save(filePath)
+            h2gis_datasource.getSpatialTable(outputTable).reproject(outputSRID.toInteger()).save(filePath,deleteOutputData)
         }
         info "${outputTable} has been saved in ${filePath}."
     }

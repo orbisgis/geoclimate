@@ -800,6 +800,7 @@ IProcess typeProportion() {
  * @param floorAreaTypeAndComposition (ONLY FOR BUILDING OBJECTS) Types that should be calculated and objects included in this type
  * (e.g. for building table could be: ["residential": ["residential", "detached"]])
  * @param prefixName String use as prefix to name the output table
+ * @param removeNull If true, remove buildings having no RSU value (null value for id_rsu) (default true)
  *
  * @return A database table name.
  *
@@ -811,10 +812,10 @@ IProcess gatherScales() {
         id "typeProportion"
         inputs buildingTable: String, blockTable: "", rsuTable: String,
                 targetedScale: "RSU", operationsToApply: ["AVG", "STD"], prefixName: String,
-                datasource: JdbcDataSource
+                datasource: JdbcDataSource, removeNull: true
         outputs outputTableName: String
         run { buildingTable, blockTable, rsuTable, targetedScale, operationsToApply,
-              prefixName, datasource ->
+              prefixName, datasource, removeNull ->
 
             // List of columns to remove from the analysis in building and block tables
             def BLOCK_COL_TO_REMOVE = ["THE_GEOM", "ID_RSU", "ID_BLOCK", "MAIN_BUILDING_DIRECTION"]
@@ -926,7 +927,7 @@ IProcess gatherScales() {
                     datasource.execute """ DROP TABLE IF EXISTS $finalScaleTableName;
                                 CREATE TABLE $finalScaleTableName 
                                     AS SELECT ${listRsuRename.join(', ')}, ${listBuildRename.join(', ')} 
-                                    FROM $rsuTable a RIGHT JOIN $buildingTable b
+                                    FROM $rsuTable a LEFT JOIN $buildingTable b
                                     ON a.id_rsu = b.id_rsu;"""
 
                     // To avoid crashes of the join due to column duplicate, need to prefix some names
@@ -947,11 +948,16 @@ IProcess gatherScales() {
                 // Note that in order to avoid crashes of the join due to column duplicate, indicators have been prefixed
                 datasource.getTable(buildIndicRsuScale).id_rsu.createIndex()
                 datasource.getTable(finalScaleTableName).id_rsu.createIndex()
+                def queryRemoveNull = ""
+                if(removeNull){
+                    queryRemoveNull += " WHERE b.$idbuildForMerge IS NOT NULL"
+                }
                 datasource.execute """ DROP TABLE IF EXISTS $scale1ScaleFin;
                             CREATE TABLE $scale1ScaleFin 
                                 AS SELECT ${listBuildRsuRename.join(', ')}, b.*
                                 FROM $buildIndicRsuScale a RIGHT JOIN $finalScaleTableName b
-                                ON a.$idbuildForMerge = b.$idbuildForMerge;"""
+                                ON a.$idbuildForMerge = b.$idbuildForMerge 
+                                $queryRemoveNull;"""
                 datasource.getTable(blockIndicFinalScale)."$idBlockForMerge".createIndex()
                 datasource.getTable(scale1ScaleFin)."$idBlockForMerge".createIndex()
                 datasource.execute """ DROP TABLE IF EXISTS $outputTableName;
