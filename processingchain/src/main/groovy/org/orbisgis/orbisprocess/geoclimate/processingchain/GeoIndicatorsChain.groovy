@@ -1033,6 +1033,8 @@ IProcess computeAllGeoIndicators() {
             def COLUMN_ID_RSU = "id_rsu"
             def COLUMN_ID_BUILD = "id_build"
             def GEOMETRIC_COLUMN = "the_geom"
+            def CORRESPONDENCE_TAB_URB_TYPO = ["ba": 1,"bgh": 2,"icif": 3,"icio": 4,"id": 5,"local": 6,"pcif": 7,
+                                               "pcio": 8,"pd": 9,"psc": 10]
 
             // If the randomForest should be used, need to calculate all indicators
             if (indicatorUse*.toUpperCase().contains("LCZ") && lczRandomForest) {
@@ -1211,22 +1213,34 @@ IProcess computeAllGeoIndicators() {
                         datasource                   : datasource])
                 def urbanTypoBuild = applyRF.results.outputTableName
 
-                // Creation of a list which contains all types of the urban typology
+                // Creation of a list which contains all types of the urban typology (in their string version)
+                def urbTypoCorrespondenceTabInverted = [:]
+                CORRESPONDENCE_TAB_URB_TYPO.each{fin, ini->
+                    urbTypoCorrespondenceTabInverted[ini]=fin
+                }
+                datasource."$urbanTypoBuild".I_TYPO.createIndex()
                 def queryDistinct = """SELECT DISTINCT I_TYPO AS I_TYPO FROM $urbanTypoBuild"""
                 def mapTypos = datasource.rows(queryDistinct)
                 def listTypos = []
                 mapTypos.each{
-                    listTypos.add(it.I_TYPO)
+                    listTypos.add(urbTypoCorrespondenceTabInverted[it.I_TYPO])
                 }
 
-                // Join the geometry field to the building typology table
+                // Join the geometry field to the building typology table and replace integer by string values
+                def queryCaseWhenReplace = ""
+                def endCaseWhen = ""
+                urbTypoCorrespondenceTabInverted.each{ini, fin ->
+                    queryCaseWhenReplace += "CASE WHEN b.I_TYPO=$ini THEN '$fin' ELSE "
+                    endCaseWhen += " END"
+                }
+                queryCaseWhenReplace = queryCaseWhenReplace + " 0 " + endCaseWhen
                 urbanTypoBuilding = prefix  prefixName, "URBAN_TYPO_BUILDING"
                 datasource."$urbanTypoBuild"."$COLUMN_ID_BUILD".createIndex()
                 datasource."$buildingIndicators"."$COLUMN_ID_BUILD".createIndex()
                 datasource """  DROP TABLE IF EXISTS $urbanTypoBuilding;
                                 CREATE TABLE $urbanTypoBuilding
                                     AS SELECT   a.$COLUMN_ID_BUILD, a.$COLUMN_ID_RSU, a.THE_GEOM,
-                                                COALESCE(b.I_TYPO, 0) AS I_TYPO
+                                                $queryCaseWhenReplace AS I_TYPO
                                     FROM $buildingIndicators a LEFT JOIN $urbanTypoBuild b
                                     ON a.$COLUMN_ID_BUILD = b.$COLUMN_ID_BUILD
                                     WHERE a.$COLUMN_ID_RSU IS NOT NULL"""
