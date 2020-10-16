@@ -1033,6 +1033,9 @@ IProcess computeAllGeoIndicators() {
             def COLUMN_ID_RSU = "id_rsu"
             def COLUMN_ID_BUILD = "id_build"
             def GEOMETRIC_COLUMN = "the_geom"
+            def CORRESPONDENCE_TAB_URB_TYPO = ["ba": 1,"bgh": 2,"icif": 3,"icio": 4,"id": 5,"local": 6,"pcif": 7,
+                                               "pcio": 8,"pd": 9,"psc": 10]
+            def nameColTypoMaj = "TYPO_MAJ"
 
             // If the randomForest should be used, need to calculate all indicators
             if (indicatorUse*.toUpperCase().contains("LCZ") && lczRandomForest) {
@@ -1212,22 +1215,34 @@ IProcess computeAllGeoIndicators() {
                         datasource                   : datasource])
                 def urbanTypoBuild = applyRF.results.outputTableName
 
-                // Creation of a list which contains all types of the urban typology
+                // Creation of a list which contains all types of the urban typology (in their string version)
+                def urbTypoCorrespondenceTabInverted = [:]
+                CORRESPONDENCE_TAB_URB_TYPO.each{fin, ini->
+                    urbTypoCorrespondenceTabInverted[ini]=fin
+                }
+                datasource."$urbanTypoBuild".I_TYPO.createIndex()
                 def queryDistinct = """SELECT DISTINCT I_TYPO AS I_TYPO FROM $urbanTypoBuild"""
                 def mapTypos = datasource.rows(queryDistinct)
                 def listTypos = []
                 mapTypos.each{
-                    listTypos.add(it.I_TYPO)
+                    listTypos.add(urbTypoCorrespondenceTabInverted[it.I_TYPO])
                 }
 
-                // Join the geometry field to the building typology table
+                // Join the geometry field to the building typology table and replace integer by string values
+                def queryCaseWhenReplace = ""
+                def endCaseWhen = ""
+                urbTypoCorrespondenceTabInverted.each{ini, fin ->
+                    queryCaseWhenReplace += "CASE WHEN b.I_TYPO=$ini THEN '$fin' ELSE "
+                    endCaseWhen += " END"
+                }
+                queryCaseWhenReplace = queryCaseWhenReplace + " 'unknown' " + endCaseWhen
                 urbanTypoBuilding = prefix  prefixName, "URBAN_TYPO_BUILDING"
                 datasource."$urbanTypoBuild"."$COLUMN_ID_BUILD".createIndex()
                 datasource."$buildingIndicators"."$COLUMN_ID_BUILD".createIndex()
                 datasource """  DROP TABLE IF EXISTS $urbanTypoBuilding;
                                 CREATE TABLE $urbanTypoBuilding
                                     AS SELECT   a.$COLUMN_ID_BUILD, a.$COLUMN_ID_RSU, a.THE_GEOM,
-                                                COALESCE(b.I_TYPO, 0) AS I_TYPO
+                                                $queryCaseWhenReplace AS I_TYPO
                                     FROM $buildingIndicators a LEFT JOIN $urbanTypoBuild b
                                     ON a.$COLUMN_ID_BUILD = b.$COLUMN_ID_BUILD
                                     WHERE a.$COLUMN_ID_RSU IS NOT NULL"""
@@ -1239,31 +1254,65 @@ IProcess computeAllGeoIndicators() {
                 queryCasewhen.keySet().each{ind ->
                     def querySum = ""
                     listTypos.each{typoCol ->
-                        queryCasewhen[ind] += """ SUM(CASE WHEN a.I_TYPO=$typoCol THEN b.$ind ELSE 0 END) AS VAL$typoCol,"""
-                        querySum = querySum + " COALESCE(b.VAL${typoCol}/(b.VAL${listTypos.join("+b.VAL")}), 0) AS VAL$typoCol, "
+                        queryCasewhen[ind] += """ SUM(CASE WHEN a.I_TYPO='$typoCol' THEN b.$ind ELSE 0 END) AS TYPO_$typoCol,"""
+                        querySum = querySum + " COALESCE(b.TYPO_${typoCol}/(b.TYPO_${listTypos.join("+b.TYPO_")}), 0) AS TYPO_$typoCol,"
                     }
                     // Calculates the distribution per RSU
+                    datasource."$buildingIndicators"."$COLUMN_ID_RSU".createIndex()
+                    datasource."$urbanTypoBuilding"."$COLUMN_ID_BUILD".createIndex()
                     datasource.execute """  DROP TABLE IF EXISTS $distribNotPercent;
                                             CREATE TABLE $distribNotPercent
                                                 AS SELECT   b.$COLUMN_ID_RSU,
                                                             ${queryCasewhen[ind][0..-2]} 
-                                                FROM $urbanTypoBuild a RIGHT JOIN $buildingIndicators b
+                                                FROM $urbanTypoBuilding a RIGHT JOIN $buildingIndicators b
                                                 ON a.$COLUMN_ID_BUILD = b.$COLUMN_ID_BUILD
                                                 WHERE b.$COLUMN_ID_RSU IS NOT NULL 
                                                 GROUP BY b.$COLUMN_ID_RSU
                                                 """
                     // Calculates the frequency by RSU
                     datasource."$distribNotPercent"."$COLUMN_ID_RSU".createIndex()
-                    datasource.execute """  DROP TABLE IF EXISTS ${baseNameUrbanTypoRsu}$ind;
-                                            CREATE TABLE ${baseNameUrbanTypoRsu}$ind
+                    datasource."$rsuIndicators"."$COLUMN_ID_RSU".createIndex()
+                    datasource.execute """  DROP TABLE IF EXISTS TEMPO_DISTRIB;
+                                            CREATE TABLE TEMPO_DISTRIB
                                                 AS SELECT   a.$COLUMN_ID_RSU, a.the_geom,
-                                                            $querySum 
+                                                            ${querySum[0..-2]} 
                                                 FROM $rsuIndicators a LEFT JOIN $distribNotPercent b
                                                 ON a.$COLUMN_ID_RSU = b.$COLUMN_ID_RSU"""
+
+                    // Characterize the distribution to identify the most frequent type within a RSU
+                    def computeDistribChar = Geoindicators.GenericIndicators.distributionCharacterization()
+                    computeDistribChar([distribTableName: "TEMPO_DISTRIB",
+                                        inputId         : COLUMN_ID_RSU,
+                                        initialTable    : "TEMPO_DISTRIB",
+                                        distribIndicator: ["uniqueness"],
+                                        extremum        : "GREATEST",
+                                        keep2ndCol      : false,
+                                        keepColVal      : false,
+                                        prefixName      : "${prefixName}$ind",
+                                        datasource      : datasource])
+                    def resultsDistrib = computeDistribChar.results.outputTableName
+
+                    // Join main typo table with distribution table and replace typo by null when it has been set
+                    // while there is no building in the RSU
+                    datasource."$resultsDistrib"."$COLUMN_ID_RSU".createIndex()
+                    datasource.tempo_distrib."$COLUMN_ID_RSU".createIndex()
+                    datasource """  DROP TABLE IF EXISTS $baseNameUrbanTypoRsu$ind;
+                                    CREATE TABLE $baseNameUrbanTypoRsu$ind
+                                        AS SELECT   a.*, 
+                                                    CASE WHEN   b.UNIQUENESS_VALUE=0 AND 
+                                                                GREATEST(a.TYPO_${listTypos.join(", a.TYPO_")})=0
+                                                    THEN        NULL
+                                                    ELSE        b.UNIQUENESS_VALUE END AS UNIQUENESS_VALUE,
+                                                    CASE WHEN   b.UNIQUENESS_VALUE=0 AND 
+                                                                GREATEST(a.TYPO_${listTypos.join(", a.TYPO_")})=0
+                                                    THEN        NULL
+                                                    ELSE        b.EXTREMUM_COL END AS $nameColTypoMaj
+                                        FROM    TEMPO_DISTRIB a LEFT JOIN $resultsDistrib b
+                                        ON a.$COLUMN_ID_RSU=b.$COLUMN_ID_RSU"""
                 }
 
                 // Drop temporary tables
-                datasource """DROP TABLE IF EXISTS $urbanTypoBuild, $gatheredScales, $distribNotPercent"""
+                datasource """DROP TABLE IF EXISTS $urbanTypoBuild, $gatheredScales, $distribNotPercent, TEMPO_DISTRIB"""
             }
             else{
                 urbanTypoArea = null
