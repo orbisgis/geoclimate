@@ -371,7 +371,11 @@ IProcess workflow() {
                                                          "rail",
                                                          "water",
                                                          "vegetation",
-                                                         "impervious"]
+                                                         "impervious",
+                                                         "urban_areas",
+                                                         "rsu_urban_typo_area",
+                                                         "rsu_urban_typo_floor_area",
+                                                         "building_urban_typo"]
                             //Get processing parameters
                             def processing_parameters = extractProcessingParameters(parameters.parameters)
                             if(!processing_parameters){
@@ -516,6 +520,11 @@ IProcess workflow() {
                                 }
                             } else if (outputDataBase) {
                                 def outputTableNames = outputDataBase.tables
+                                if(!outputTableNames){
+                                    error "You must set at least one table name to export in the database.\n" +
+                                            "Available tables key names are : ${geoclimatetTableNames.join(",")}"
+                                    return
+                                }
                                 def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
                                 def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size() !=
                                         allowedOutputTableNames.size()
@@ -1177,6 +1186,9 @@ static def createOutputTables(def output_datasource, def outputTableNames, def s
     def output_water = outputTableNames.water
     def output_vegetation = outputTableNames.vegetation
     def output_impervious = outputTableNames.impervious
+    def output_rsu_urban_typo_area = outputTableNames.rsu_urban_typo_area
+    def output_rsu_urban_typo_floor_area = outputTableNames.rsu_urban_typo_floor_area
+    def output_building_urban_typo= outputTableNames.building_urban_typo
 
     if (output_block_indicators && !output_datasource.hasTable(output_block_indicators)){
         output_datasource """
@@ -1193,7 +1205,7 @@ static def createOutputTables(def output_datasource, def outputTableNames, def s
                     STD_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION,
                     ID_ZONE VARCHAR
                 );
-                CREATE INDEX IF NOT EXISTS idx_${output_block_indicators}_id_zone ON $output_block_indicators (ID_ZONE);
+                CREATE INDEX IF NOT EXISTS idx_${output_block_indicators.replaceAll(".", "_")}_id_zone ON $output_block_indicators (ID_ZONE);
         """
     }
     else if (output_block_indicators){
@@ -1240,7 +1252,7 @@ static def createOutputTables(def output_datasource, def outputTableNames, def s
                         ROAD_DISTANCE DOUBLE PRECISION,
                         LIKELIHOOD_LARGE_BUILDING DOUBLE PRECISION
                 );
-                CREATE INDEX IF NOT EXISTS idx_${output_building_indicators}_id_zone  ON $output_building_indicators (ID_ZONE);
+                CREATE INDEX IF NOT EXISTS idx_${output_building_indicators.replaceAll(".", "_")}_id_zone  ON $output_building_indicators (ID_ZONE);
         """
     }
     else if (output_building_indicators){
@@ -1362,7 +1374,7 @@ static def createOutputTables(def output_datasource, def outputTableNames, def s
 	MAIN_BUILDING_DIRECTION VARCHAR,
     ID_ZONE VARCHAR
     );    
-        CREATE INDEX IF NOT EXISTS idx_${output_rsu_indicators}_id_zone ON $output_rsu_indicators (ID_ZONE);
+        CREATE INDEX IF NOT EXISTS idx_${output_rsu_indicators.replaceAll(".", "_")}_id_zone ON $output_rsu_indicators (ID_ZONE);
         """
     } else if (output_rsu_indicators){
         def outputTableSRID = output_datasource.getSpatialTable(output_rsu_indicators).srid
@@ -1388,7 +1400,7 @@ static def createOutputTables(def output_datasource, def outputTableNames, def s
                         MIN_DISTANCE DOUBLE PRECISION,
                         PSS DOUBLE PRECISION
                 );
-                CREATE INDEX IF NOT EXISTS idx_${output_rsu_lcz}_id_zone ON $output_rsu_lcz (ID_ZONE);
+                CREATE INDEX IF NOT EXISTS idx_${output_rsu_lcz.replaceAll(".", "_")}_id_zone ON $output_rsu_lcz (ID_ZONE);
         """
     }else if (output_rsu_lcz){
         def outputTableSRID = output_datasource.getSpatialTable(output_rsu_lcz).srid
@@ -1406,7 +1418,7 @@ static def createOutputTables(def output_datasource, def outputTableNames, def s
     if (output_zones && !output_datasource.hasTable(output_zones)){
         output_datasource """
                 CREATE TABLE $output_zones(ID_ZONE VARCHAR, THE_GEOM GEOMETRY(GEOMETRY,$srid));
-                CREATE INDEX IF NOT EXISTS idx_${output_zones}_id_zone ON $output_zones (ID_ZONE);
+                CREATE INDEX IF NOT EXISTS idx_${output_zones.replaceAll(".", "_")}_id_zone ON $output_zones (ID_ZONE);
         """
     }else if (output_zones){
         def outputTableSRID = output_datasource.getSpatialTable(output_zones).srid
@@ -1425,7 +1437,7 @@ static def createOutputTables(def output_datasource, def outputTableNames, def s
         output_datasource """
                 CREATE TABLE $output_building (THE_GEOM GEOMETRY(POLYGON, $srid), id_build serial, ID_SOURCE VARCHAR, 
                     HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT, NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER);
-                CREATE INDEX IF NOT EXISTS idx_${output_building}_id_source ON $output_building (ID_SOURCE);
+                CREATE INDEX IF NOT EXISTS idx_${output_building.replaceAll(".", "_")}_id_source ON $output_building (ID_SOURCE);
         """
     }
     else if (output_building){
@@ -1446,7 +1458,7 @@ static def createOutputTables(def output_datasource, def outputTableNames, def s
                 CREATE TABLE $output_road  (THE_GEOM GEOMETRY(GEOMETRY, $srid), id_road serial, ID_SOURCE VARCHAR, 
                         WIDTH FLOAT, TYPE VARCHAR, CROSSING VARCHAR(30), SURFACE VARCHAR, SIDEWALK VARCHAR, 
                         ZINDEX INTEGER);
-                CREATE INDEX IF NOT EXISTS idx_${output_road}_id_source ON $output_road (ID_SOURCE);
+                CREATE INDEX IF NOT EXISTS idx_${output_road.replaceAll(".", "_")}_id_source ON $output_road (ID_SOURCE);
         """
     }
     else if (output_road){
@@ -1466,7 +1478,7 @@ static def createOutputTables(def output_datasource, def outputTableNames, def s
         output_datasource """
                 CREATE TABLE $output_rail  (THE_GEOM GEOMETRY(GEOMETRY, $srid), id_rail serial,ID_SOURCE VARCHAR, 
                         TYPE VARCHAR,CROSSING VARCHAR(30), ZINDEX INTEGER);
-                CREATE INDEX IF NOT EXISTS idx_${output_rail}_id_source ON $output_rail (ID_SOURCE);
+                CREATE INDEX IF NOT EXISTS idx_${output_rail.replaceAll(".", "_")}_id_source ON $output_rail (ID_SOURCE);
         """
     }
     else if (output_rail){
@@ -1485,7 +1497,7 @@ static def createOutputTables(def output_datasource, def outputTableNames, def s
     if (output_water && !output_datasource.hasTable(output_water)){
         output_datasource """
                 CREATE TABLE $output_water  (THE_GEOM GEOMETRY(POLYGON, $srid), id_hydro serial, ID_SOURCE VARCHAR);
-                CREATE INDEX IF NOT EXISTS idx_${output_water}_id_source ON $output_water (ID_SOURCE);
+                CREATE INDEX IF NOT EXISTS idx_${output_water.replaceAll(".", "_")}_id_source ON $output_water (ID_SOURCE);
         """
     }
     else if (output_water){
@@ -1505,7 +1517,7 @@ static def createOutputTables(def output_datasource, def outputTableNames, def s
         output_datasource """
                 CREATE TABLE $output_vegetation  (THE_GEOM GEOMETRY(POLYGON, $srid), id_veget serial, 
                         ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4));
-                CREATE INDEX IF NOT EXISTS idx_${output_vegetation}_id_source ON $output_vegetation (ID_SOURCE);
+                CREATE INDEX IF NOT EXISTS idx_${output_vegetation.replaceAll(".", "_")}_id_source ON $output_vegetation (ID_SOURCE);
         """
     }
     else if (output_vegetation){
@@ -1524,7 +1536,7 @@ static def createOutputTables(def output_datasource, def outputTableNames, def s
     if (output_impervious && !output_datasource.hasTable(output_impervious)){
         output_datasource """
                 CREATE TABLE $output_impervious  (THE_GEOM GEOMETRY(POLYGON, $srid), id_impervious serial, ID_SOURCE VARCHAR);
-                CREATE INDEX IF NOT EXISTS idx_${output_impervious}_id_source ON $output_impervious (ID_SOURCE);
+                CREATE INDEX IF NOT EXISTS idx_${output_impervious.replaceAll(".", "_")}_id_source ON $output_impervious (ID_SOURCE);
         """
     }
     else if (output_impervious){
@@ -1539,6 +1551,82 @@ static def createOutputTables(def output_datasource, def outputTableNames, def s
                 DELETE from $output_impervious WHERE ID_SOURCE= 'geoclimate';
         """
     }
+
+    if (output_rsu_urban_typo_area && !output_datasource.hasTable(output_rsu_urban_typo_area)){
+        output_datasource.execute """CREATE TABLE $output_rsu_urban_typo_area (
+        ID_RSU INTEGER, THE_GEOM GEOMETRY(GEOMETRY,$srid),
+        TYPO_BA DOUBLE PRECISION,
+        TYPO_ICIO DOUBLE PRECISION,VOLUME DOUBLE PRECISION,
+        TYPO_ID DOUBLE PRECISION,
+        TYPO_LOCAL DOUBLE PRECISION,
+        TYPO_PCIO DOUBLE PRECISION,
+        TYPO_PD VARCHAR,
+        TYPO_PSC DOUBLE PRECISION, NET_COMPACTNESS DOUBLE PRECISION,
+        UNIQUENESS_VALUE DOUBLE PRECISION,
+        TYPO_MAJ VARCHAR,
+        ID_ZONE VARCHAR
+        );
+         CREATE INDEX IF NOT EXISTS idx_${output_rsu_urban_typo_area.replaceAll(".", "_")}_id_zone ON $output_rsu_urban_typo_area (ID_ZONE);"""
+    }
+    else if (output_rsu_urban_typo_area){
+        def outputTableSRID = output_datasource.getSpatialTable(output_rsu_urban_typo_area).srid
+        if(outputTableSRID!=srid){
+            error "The SRID of the output table ($outputTableSRID) $output_rsu_urban_typo_area is different than the srid of the result table ($srid)"
+            return null
+        }
+        //Test if we can write in the database
+        output_datasource.execute """INSERT INTO $output_rsu_urban_typo_area (ID_ZONE) VALUES('geoclimate');
+        DELETE from $output_rsu_urban_typo_area WHERE ID_ZONE= 'geoclimate';"""
+    }
+
+    if (output_rsu_urban_typo_floor_area && !output_datasource.hasTable(output_rsu_urban_typo_floor_area)){
+        output_datasource.execute """CREATE TABLE $output_rsu_urban_typo_floor_area (
+        ID_RSU INTEGER, THE_GEOM GEOMETRY(GEOMETRY,$srid),
+        TYPO_BA DOUBLE PRECISION,
+        TYPO_ICIO DOUBLE PRECISION,VOLUME DOUBLE PRECISION,
+        TYPO_ID DOUBLE PRECISION,
+        TYPO_LOCAL DOUBLE PRECISION,
+        TYPO_PCIO DOUBLE PRECISION,
+        TYPO_PD VARCHAR,
+        TYPO_PSC DOUBLE PRECISION, NET_COMPACTNESS DOUBLE PRECISION,
+        UNIQUENESS_VALUE DOUBLE PRECISION,
+        TYPO_MAJ VARCHAR,
+        ID_ZONE VARCHAR
+        );
+         CREATE INDEX IF NOT EXISTS idx_${output_rsu_urban_typo_floor_area.replaceAll(".", "_")}_id_zone ON $output_rsu_urban_typo_floor_area (ID_ZONE);"""
+    }
+    else if (output_rsu_urban_typo_floor_area){
+        def outputTableSRID = output_datasource.getSpatialTable(output_rsu_urban_typo_floor_area).srid
+        if(outputTableSRID!=srid){
+            error "The SRID of the output table ($outputTableSRID) $output_rsu_urban_typo_floor_area is different than the srid of the result table ($srid)"
+            return null
+        }
+        //Test if we can write in the database
+        output_datasource.execute """INSERT INTO $output_rsu_urban_typo_floor_area (ID_ZONE) VALUES('geoclimate');
+        DELETE from $output_rsu_urban_typo_floor_area WHERE ID_ZONE= 'geoclimate';"""
+    }
+
+    if (output_building_urban_typo && !output_datasource.hasTable(output_building_urban_typo)){
+        output_datasource.execute """CREATE TABLE $output_building_urban_typo (
+        ID_BUILD INTEGER,
+        ID_RSU INTEGER, THE_GEOM GEOMETRY(GEOMETRY,$srid),
+        I_TYPO VARCHAR,
+        ID_ZONE VARCHAR
+        );
+        CREATE INDEX IF NOT EXISTS idx_${output_building_urban_typo.replaceAll(".", "_")}_id_zone ON $output_building_urban_typo (ID_ZONE);"""
+    }
+    else if (output_building_urban_typo){
+        def outputTableSRID = output_datasource.getSpatialTable(output_building_urban_typo).srid
+        if(outputTableSRID!=srid){
+            error "The SRID of the output table ($outputTableSRID) $output_building_urban_typo is different than the srid of the result table ($srid)"
+            return null
+        }
+        //Test if we can write in the database
+        output_datasource.execute """INSERT INTO $output_building_urban_typo (ID_ZONE) VALUES('geoclimate');
+        DELETE from $output_building_urban_typo WHERE ID_ZONE= 'geoclimate';"""
+    }
+
+
     return true
 }
 
@@ -1571,6 +1659,18 @@ def saveTablesInDatabase(def output_datasource, def h2gis_datasource, def output
     //Export rsu lcz
     indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_lcz, id_zone, h2gis_datasource, h2gis_tables.outputTableRsuLcz
             ,  "",  inputSRID, outputSRID,reproject)
+
+    //Export rsu_urban_typo_area
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_urban_typo_area,id_zone,h2gis_datasource, h2gis_tables.outputTableRsuUrbanTypoArea
+            , "",inputSRID,outputSRID,reproject)
+
+    //Export rsu_urban_typo_floor_area
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_urban_typo_floor_area,id_zone,h2gis_datasource, h2gis_tables.outputTableRsuUrbanTypoFloorArea
+            , "",inputSRID,outputSRID,reproject)
+
+    //Export building_urban_typo
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.building_urban_typo,id_zone,h2gis_datasource, h2gis_tables.outputTableBuildingUrbanTypo
+            , "",inputSRID,outputSRID,reproject)
 
     //Export zone
     abstractModelTableBatchExportTable(output_datasource, outputTableNames.zones, id_zone, h2gis_datasource, h2gis_tables.outputTableZone

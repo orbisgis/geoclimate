@@ -1305,7 +1305,7 @@ IProcess computeAllGeoIndicators() {
                                                     CASE WHEN   b.UNIQUENESS_VALUE=0 AND 
                                                                 GREATEST(a.TYPO_${listTypos.join(", a.TYPO_")})=0
                                                     THEN        NULL
-                                                    ELSE        LOWER(b.EXTREMUM_COL) END AS $nameColTypoMaj
+                                                    ELSE        LOWER(LEFT(b.EXTREMUM_COL, -5)) END AS $nameColTypoMaj
                                         FROM    TEMPO_DISTRIB a LEFT JOIN $resultsDistrib b
                                         ON a.$COLUMN_ID_RSU=b.$COLUMN_ID_RSU"""
                 }
