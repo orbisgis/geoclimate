@@ -208,7 +208,11 @@ IProcess workflow() {
                                                          "rail",
                                                          "water",
                                                          "vegetation",
-                                                         "impervious"]
+                                                         "impervious",
+                                                         "urban_areas",
+                                                         "rsu_urban_typo_area",
+                                                         "rsu_urban_typo_floor_area",
+                                                         "building_urban_typo"]
                             //Get processing parameters
                             def processing_parameters = extractProcessingParameters(parameters.parameters)
                             if(!processing_parameters){
@@ -1034,7 +1038,6 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
             def imperviousTableName = prepareBDTopoData.results.outputImpervious
 
             info "BDTOPO V2 GIS layers formated"
-
 
             //Build the indicators
             IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()

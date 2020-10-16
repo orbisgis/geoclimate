@@ -1192,8 +1192,7 @@ IProcess computeAllGeoIndicators() {
             }
             // If the URBAN_TYPOLOGY indicators should be calculated, we only affect a URBAN typo class
             // to each building and then to each RSU
-            //if (indicatorUse.contains("URBAN_TYPOLOGY")) {
-            if (false) {
+            if (indicatorUse.contains("URBAN_TYPOLOGY")) {
                 info """ The URBAN TYPOLOGY classification is performed """
                 def applygatherScales = Geoindicators.GenericIndicators.gatherScales()
                 applygatherScales.execute([
@@ -1306,7 +1305,7 @@ IProcess computeAllGeoIndicators() {
                                                     CASE WHEN   b.UNIQUENESS_VALUE=0 AND 
                                                                 GREATEST(a.TYPO_${listTypos.join(", a.TYPO_")})=0
                                                     THEN        NULL
-                                                    ELSE        b.EXTREMUM_COL END AS $nameColTypoMaj
+                                                    ELSE        LOWER(b.EXTREMUM_COL) END AS $nameColTypoMaj
                                         FROM    TEMPO_DISTRIB a LEFT JOIN $resultsDistrib b
                                         ON a.$COLUMN_ID_RSU=b.$COLUMN_ID_RSU"""
                 }

@@ -201,7 +201,10 @@ IProcess workflow() {
                                                     "water",
                                                     "vegetation",
                                                     "impervious",
-                                                    "urban_areas"]
+                                                    "urban_areas",
+                                                    "rsu_urban_typo_area",
+                                                    "rsu_urban_typo_floor_area",
+                                                    "building_urban_typo"]
                         //Get processing parameters
                         def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
                         if(!processing_parameters){
