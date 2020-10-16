@@ -600,6 +600,7 @@ IProcess distributionCharacterization() {
                             def id_rsu = rowMap."$inputId"
                             rowMap.remove(inputId)
                             def sortedMap = rowMap.sort { it.value }
+
                             def queryInsert = """INSERT INTO $outputTableMissingSomeObjects 
                                                 VALUES ($id_rsu, ${getEquality(sortedMap, nbDistCol)},
                                                         ${getUniqueness(sortedMap, idxExtrem, idxExtrem_1)},
@@ -654,10 +655,10 @@ IProcess distributionCharacterization() {
  * @param idxExtrem_1 when the row is sorted by ascending values, id of the second extremum value to get
  * @return A double : the value of the UNIQUENESS indicator for this RSU
  */
-static double getUniqueness(def myMap, def idxExtrem, def idxExtrem_1) {
+static Double getUniqueness(def myMap, def idxExtrem, def idxExtrem_1) {
     def extrem = myMap.values()[idxExtrem]
     def extrem_1 = myMap.values()[idxExtrem_1]
-    return extrem+extrem_1 > 0 ? Math.abs(extrem-extrem_1)/(extrem+extrem_1) : 0
+    return extrem+extrem_1 > 0 ? Math.abs(extrem-extrem_1)/(extrem+extrem_1) : null
 }
 
 /**
@@ -666,14 +667,14 @@ static double getUniqueness(def myMap, def idxExtrem, def idxExtrem_1) {
  * @param nbDistCol the number of columns of the distribution
  * @return A double : the value of the EQUALITY indicator for this RSU
  */
-static double getEquality(def myMap, def nbDistCol) {
+static Double getEquality(def myMap, def nbDistCol) {
     def sum = myMap.values().sum()
     def equality = 0
     myMap.values().each{it ->
         equality += Math.min(it, sum/nbDistCol)
     }
 
-    return equality/sum
+    return sum == 0 ? null : equality/sum
 }
 
 /**
