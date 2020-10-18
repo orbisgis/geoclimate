@@ -1214,6 +1214,12 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
         }
         else if(it.equals("urban_areas")){
             saveTableAsGeojson(results.urbanAreasTableName, "${subFolder.getAbsolutePath()+File.separator+"urban_areas"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        }else if(it.equals("rsu_urban_typo_area")){
+            saveTableAsGeojson(results.outputTableRsuUrbanTypoArea, "${subFolder.getAbsolutePath()+File.separator+"rsu_urban_typo_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        }else if(it.equals("rsu_urban_typo_floor_area")){
+            saveTableAsGeojson(results.outputTableRsuUrbanTypoFloorArea, "${subFolder.getAbsolutePath()+File.separator+"rsu_urban_typo_floor_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        }else if(it.equals("building_urban_typo")){
+            saveTableAsGeojson(results.outputTableBuildingUrbanTypo, "${subFolder.getAbsolutePath()+File.separator+"building_urban_typo"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
     }
 }
@@ -1885,6 +1891,7 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
  * @return
  */
 def indicatorTableBatchExportTable(def output_datasource, def output_table, def id_zone, def h2gis_datasource, h2gis_table_to_save, def filter, def inputSRID, def outputSRID, def reproject){
+    if(output_table){
     if(h2gis_table_to_save) {
         if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
             if (output_datasource.hasTable(output_table)) {
@@ -1982,6 +1989,7 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                     }
                 }
         }
+    }
     }
 }
 

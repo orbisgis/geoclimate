@@ -1118,7 +1118,6 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
         else if(it.equals("zones")){
             saveTableAsGeojson(results.outputTableZone,  "${subFolder.getAbsolutePath()+File.separator+"zones"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
-
         //Save input GIS tables
         else  if(it.equals("building")){
             saveTableAsGeojson(results.buildingTableName, "${subFolder.getAbsolutePath()+File.separator+"building"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
@@ -1821,103 +1820,105 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
  * @return
  */
 def indicatorTableBatchExportTable(def output_datasource, def output_table, def id_zone, def h2gis_datasource, h2gis_table_to_save, def filter, def inputSRID, def outputSRID,def reproject){
-    if(h2gis_table_to_save) {
-        if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
-            if (output_datasource.hasTable(output_table)) {
-                output_datasource.execute("DELETE FROM $output_table WHERE id_zone=?", id_zone.toString());
-                //If the table exists we populate it with the last result
-                info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
-                int BATCH_MAX_SIZE = 1000;
-                ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource)
-                if (inputRes) {
-                    def outputColumns  = output_datasource.getTable(output_table).getColumnsTypes();
-                    def outputconnection = output_datasource.getConnection()
-                    try {
-                        def inputColumns = inputRes.getColumnsTypes();
-                        //We check if the number of columns is not the same
-                        //If there is more columns in the input table we alter the output table
-                        def outPutColumnsNames = outputColumns.keySet()
-                        int columnsCount = outPutColumnsNames.size();
-                        def diffCols = inputColumns.keySet().findAll { e ->  !outPutColumnsNames*.toLowerCase().contains( e.toLowerCase() ) }
-                        def alterTable = ""
-                        if(diffCols){
-                            inputColumns.each { entry ->
-                                if (diffCols.contains(entry.key)){
-                                    alterTable += "ALTER TABLE $output_table ADD COLUMN $entry.key ${entry.value.equalsIgnoreCase("double")?"DOUBLE PRECISION":entry.value};"
-                                    outputColumns.put(entry.key, entry.value)
-                                }
-                            }
-                            output_datasource.execute(alterTable)
-                        }
-                        def finalOutputColumns = outputColumns.keySet();
-
-                        def insertTable = "INSERT INTO $output_table (${finalOutputColumns.join(",")}) VALUES("
-
-                        def flatList =  outputColumns.inject([]) { result, iter ->
-                            result+= ":${iter.key.toLowerCase()}"
-                        }.join(",")
-                        insertTable+= flatList
-                        insertTable+=")";
-                        //Collect all values
-                        def ouputValues = finalOutputColumns.collectEntries {[it.toLowerCase(), null]}
-                        ouputValues.put("id_zone", id_zone)
-                        outputconnection.setAutoCommit(false);
-                        output_datasource.withBatch(BATCH_MAX_SIZE, insertTable) { ps ->
-                            inputRes.eachRow{ row ->
-                                //Fill the value
-                                inputColumns.keySet().each{columnName ->
-                                    def inputValue = row.getObject(columnName)
-                                    if(inputValue){
-                                        ouputValues.put(columnName.toLowerCase(), inputValue)
-                                    }else{
-                                        ouputValues.put(columnName.toLowerCase(), null)
+    if(output_table){
+        if(h2gis_table_to_save) {
+            if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
+                if (output_datasource.hasTable(output_table)) {
+                    output_datasource.execute("DELETE FROM $output_table WHERE id_zone=?", id_zone.toString());
+                    //If the table exists we populate it with the last result
+                    info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
+                    int BATCH_MAX_SIZE = 1000;
+                    ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource)
+                    if (inputRes) {
+                        def outputColumns  = output_datasource.getTable(output_table).getColumnsTypes();
+                        def outputconnection = output_datasource.getConnection()
+                        try {
+                            def inputColumns = inputRes.getColumnsTypes();
+                            //We check if the number of columns is not the same
+                            //If there is more columns in the input table we alter the output table
+                            def outPutColumnsNames = outputColumns.keySet()
+                            int columnsCount = outPutColumnsNames.size();
+                            def diffCols = inputColumns.keySet().findAll { e ->  !outPutColumnsNames*.toLowerCase().contains( e.toLowerCase() ) }
+                            def alterTable = ""
+                            if(diffCols){
+                                inputColumns.each { entry ->
+                                    if (diffCols.contains(entry.key)){
+                                        alterTable += "ALTER TABLE $output_table ADD COLUMN $entry.key ${entry.value.equalsIgnoreCase("double")?"DOUBLE PRECISION":entry.value};"
+                                        outputColumns.put(entry.key, entry.value)
                                     }
                                 }
-                                ps.addBatch(ouputValues)
+                                output_datasource.execute(alterTable)
                             }
-                        }
+                            def finalOutputColumns = outputColumns.keySet();
 
-                    } catch (SQLException e) {
-                        error("Cannot save the table $output_table.\n", e);
-                        return false;
-                    } finally {
-                        info "The table $h2gis_table_to_save has been exported into the table $output_table"
-                    }
-                }
-            } else {
-                def tmpTable =null
-                info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
-                if (filter) {
-                    if (!reproject) {
-                        tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().save(output_datasource, output_table, true);
-                        if (tmpTable) {
-                            //Workaround to update the SRID on resulset
-                            output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);"""
-                        }
-                    } else {
-                        tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true);
-                        if (tmpTable) {
-                            //Workaround to update the SRID on resulset
-                            output_datasource.execute"""ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);"""
+                            def insertTable = "INSERT INTO $output_table (${finalOutputColumns.join(",")}) VALUES("
+
+                            def flatList =  outputColumns.inject([]) { result, iter ->
+                                result+= ":${iter.key.toLowerCase()}"
+                            }.join(",")
+                            insertTable+= flatList
+                            insertTable+=")";
+                            //Collect all values
+                            def ouputValues = finalOutputColumns.collectEntries {[it.toLowerCase(), null]}
+                            ouputValues.put("id_zone", id_zone)
+                            outputconnection.setAutoCommit(false);
+                            output_datasource.withBatch(BATCH_MAX_SIZE, insertTable) { ps ->
+                                inputRes.eachRow{ row ->
+                                    //Fill the value
+                                    inputColumns.keySet().each{columnName ->
+                                        def inputValue = row.getObject(columnName)
+                                        if(inputValue){
+                                            ouputValues.put(columnName.toLowerCase(), inputValue)
+                                        }else{
+                                            ouputValues.put(columnName.toLowerCase(), null)
+                                        }
+                                    }
+                                    ps.addBatch(ouputValues)
+                                }
+                            }
+
+                        } catch (SQLException e) {
+                            error("Cannot save the table $output_table.\n", e);
+                            return false;
+                        } finally {
+                            info "The table $h2gis_table_to_save has been exported into the table $output_table"
                         }
                     }
                 } else {
-                    if (!reproject) {
-                        tmpTable =  h2gis_datasource.getSpatialTable(h2gis_table_to_save).save(output_datasource, output_table, true);
+                    def tmpTable =null
+                    info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
+                    if (filter) {
+                        if (!reproject) {
+                            tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().save(output_datasource, output_table, true);
+                            if (tmpTable) {
+                                //Workaround to update the SRID on resulset
+                                output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);"""
+                            }
+                        } else {
+                            tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true);
+                            if (tmpTable) {
+                                //Workaround to update the SRID on resulset
+                                output_datasource.execute"""ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);"""
+                            }
+                        }
                     } else {
-                        tmpTable =   h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(outputSRID).save(output_datasource, output_table, true);
+                        if (!reproject) {
+                            tmpTable =  h2gis_datasource.getSpatialTable(h2gis_table_to_save).save(output_datasource, output_table, true);
+                        } else {
+                            tmpTable =   h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(outputSRID).save(output_datasource, output_table, true);
+                        }
                     }
-                }
-                if (tmpTable){
-                    if(!output_datasource.getTable(output_table).hasColumn("id_zone")) {
-                        output_datasource.execute("ALTER TABLE $output_table ADD COLUMN id_zone VARCHAR");
+                    if (tmpTable){
+                        if(!output_datasource.getTable(output_table).hasColumn("id_zone")) {
+                            output_datasource.execute("ALTER TABLE $output_table ADD COLUMN id_zone VARCHAR");
+                        }
+                        output_datasource.execute("UPDATE $output_table SET id_zone= ?", id_zone);
+                        output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""")
+                        info "The table $h2gis_table_to_save has been exported into the table $output_table"
                     }
-                    output_datasource.execute("UPDATE $output_table SET id_zone= ?", id_zone);
-                    output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""")
-                    info "The table $h2gis_table_to_save has been exported into the table $output_table"
-                }
-                else{
-                    warn "The table $h2gis_table_to_save hasn't been exported into the table $output_table"
+                    else{
+                        warn "The table $h2gis_table_to_save hasn't been exported into the table $output_table"
+                    }
                 }
             }
         }
