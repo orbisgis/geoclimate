@@ -1303,7 +1303,7 @@ IProcess computeAllGeoIndicators() {
                                                     ELSE        b.UNIQUENESS_VALUE END AS UNIQUENESS_VALUE,
                                                     CASE WHEN   b.UNIQUENESS_VALUE=-1
                                                     THEN        NULL
-                                                    ELSE        LOWER(b.EXTREMUM_COL) END AS $nameColTypoMaj
+                                                    ELSE        LOWER(SUBSTRING(b.EXTREMUM_COL FROM 6)) END AS $nameColTypoMaj
                                         FROM    TEMPO_DISTRIB a LEFT JOIN $resultsDistrib b
                                         ON a.$COLUMN_ID_RSU=b.$COLUMN_ID_RSU"""
                 }
