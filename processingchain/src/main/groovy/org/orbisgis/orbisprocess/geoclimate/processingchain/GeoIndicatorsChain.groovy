@@ -1298,12 +1298,10 @@ IProcess computeAllGeoIndicators() {
                     datasource """  DROP TABLE IF EXISTS $baseNameUrbanTypoRsu$ind;
                                     CREATE TABLE $baseNameUrbanTypoRsu$ind
                                         AS SELECT   a.*, 
-                                                    CASE WHEN   b.UNIQUENESS_VALUE=0 AND 
-                                                                GREATEST(a.TYPO_${listTypos.join(", a.TYPO_")})=0
+                                                    CASE WHEN   b.UNIQUENESS_VALUE=-1
                                                     THEN        NULL
                                                     ELSE        b.UNIQUENESS_VALUE END AS UNIQUENESS_VALUE,
-                                                    CASE WHEN   b.UNIQUENESS_VALUE=0 AND 
-                                                                GREATEST(a.TYPO_${listTypos.join(", a.TYPO_")})=0
+                                                    CASE WHEN   b.UNIQUENESS_VALUE=-1
                                                     THEN        NULL
                                                     ELSE        LOWER(b.EXTREMUM_COL) END AS $nameColTypoMaj
                                         FROM    TEMPO_DISTRIB a LEFT JOIN $resultsDistrib b

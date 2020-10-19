@@ -11,8 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS.open
 
-import org.orbisgis.commons.printer.Ascii
-
 class GenericIndicatorsTests {
 
     private static def h2GIS
