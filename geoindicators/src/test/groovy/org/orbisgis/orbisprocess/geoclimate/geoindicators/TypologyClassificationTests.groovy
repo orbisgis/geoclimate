@@ -379,8 +379,8 @@ class TypologyClassificationTests {
     @Test
     void tempoCreateRandomForestClassifTest() {
         // Specify the model and training datat appropriate to the right use
-        def model_name = "URBAN_TYPOLOGY_BDTOPO_V2_RF_1_0"
-        def training_data_name = "TRAINING_DATA_URBAN_TYPOLOGY_BDTOPO_V2_RF_1_0"
+        def model_name = "URBAN_TYPOLOGY_OSM_RF_1_0"
+        def training_data_name = "TRAINING_DATA_URBAN_TYPOLOGY_OSM_RF_1_0"
         // Name of the variable to model
         def var2model = "I_TYPO"
         def var2ModelFinal = "I_TYPO"
@@ -409,7 +409,6 @@ class TypologyClassificationTests {
                             FROM tempo"""
 
             assert h2GIS."$trainingTableName"
-
             def pmed =  Geoindicators.TypologyClassification.createRandomForestModel()
             assert pmed.execute([
                     trainingTableName   : trainingTableName,
@@ -417,9 +416,9 @@ class TypologyClassificationTests {
                     save                : true,
                     pathAndFileName     : savePath,
                     ntrees              : 500,
-                    mtry                : 15,
+                    mtry                : 9,
                     rule                : "GINI",
-                    maxDepth            : 20,
+                    maxDepth            : 80,
                     maxNodes            : 400,
                     nodeSize            : 1,
                     subsample           : 1.0,
