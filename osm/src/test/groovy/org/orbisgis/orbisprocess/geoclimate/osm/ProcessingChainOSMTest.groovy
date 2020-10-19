@@ -289,9 +289,10 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
+    @Disabled
     @Test
     void testOSMWorkflowFromPlaceNameWithSrid() {
-        String directory ="./target/geoclimate_chain"
+        String directory ="./target/geoclimate_chain_srid"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
@@ -300,7 +301,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 "geoclimatedb" : [
                         "folder" : "${dirFile.absolutePath}",
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
-                        "delete" :true
+                        "delete" :false
                 ],
                 "input" : [
                         "osm" : ["Pont-de-veyle"]],
@@ -321,7 +322,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
         //Test the SRID of all output files
         def geoFiles = []
-        def  folder = new File("./target/geoclimate_chain/osm_Pont-de-veyle")
+        def  folder = new File("${directory+File.separator}osm_Pont-de-veyle")
         folder.eachFileRecurse groovy.io.FileType.FILES,  { file ->
             if (file.name.toLowerCase().endsWith(".geojson")) {
                 geoFiles << file.getAbsolutePath()
@@ -521,7 +522,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["REDON"]],
+                        "osm" : ["Vannes"]],
                 "output" :[
                         "folder" : "$directory"],
                 "parameters":
