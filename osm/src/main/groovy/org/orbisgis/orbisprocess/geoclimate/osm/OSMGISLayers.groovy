@@ -238,7 +238,7 @@ IProcess createGISLayers() {
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
                     outputImperviousTableName = postfix("OSM_IMPERVIOUS")
                     datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputImperviousTableName")
-                    info "impervious layer created"
+                    info "Impervious layer created"
                 }
 
                 //Create urban areas layer
@@ -251,7 +251,7 @@ IProcess createGISLayers() {
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
                     outputUrbanAreasTableName = postfix("OSM_URBAN_AREAS")
                     datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputUrbanAreasTableName")
-                    info "urban areas layer created"
+                    info "Urban areas layer created"
                 }
 
                 //Drop the OSM tables
