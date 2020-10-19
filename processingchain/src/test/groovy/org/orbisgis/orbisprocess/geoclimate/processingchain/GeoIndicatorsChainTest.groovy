@@ -1,6 +1,5 @@
 package org.orbisgis.orbisprocess.geoclimate.processingchain
 
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
@@ -149,7 +148,6 @@ class GeoIndicatorsChainTest {
 
     }
 
-    @Disabled
     @Test
     void GeoIndicatorsTest2() {
         File directory = new File("./target/geoindicators_workflow")
