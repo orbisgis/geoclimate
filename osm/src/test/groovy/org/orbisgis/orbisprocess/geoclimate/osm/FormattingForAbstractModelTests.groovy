@@ -142,7 +142,7 @@ class FormattingForAbstractModelTests {
         def zoneToExtract ="École Lycée Joliot-Curie,Rennes"
         zoneToExtract = "New York"
         zoneToExtract = "Québec, Québec (Agglomération), Capitale-Nationale, Québec, Canada"
-        zoneToExtract = "Paimpol"
+        zoneToExtract = "Vannes"
         //zoneToExtract = "Londres, Grand Londres, Angleterre, Royaume-Uni"
         //zoneToExtract="Cliscouet, Vannes"
         //zoneToExtract="rezé"
@@ -227,6 +227,15 @@ class FormattingForAbstractModelTests {
                     inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
                     epsg: epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_${formatedPlaceName}.geojson", true)
+
+            //Urban Areas
+            format = OSM.formatUrbanAreas
+            format.execute([
+                    datasource : h2GIS,
+                    inputTableName: extractData.results.urbanAreasTableName,
+                    inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
+                    epsg: epsg])
+            h2GIS.getTable(format.results.outputTableName).save("./target/osm_urban_areas_${formatedPlaceName}.geojson", true)
         }else {
             assertTrue(false)
         }
