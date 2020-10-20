@@ -11,6 +11,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS.open
 
+import org.orbisgis.commons.printer.Ascii
+
 class GenericIndicatorsTests {
 
     private static def h2GIS
@@ -258,7 +260,7 @@ class GenericIndicatorsTests {
                 CREATE TABLE distrib_test(id integer, col1 double, col2 double, col3 double, col4 double);
                 INSERT INTO distrib_test VALUES (1, 25, 25, 25, 25), (2, 10, 20, 40, 20), 
                                                 (3, 0, 0, 60, 40), (4, 0, 0, 0, 100),
-                                                (5, null, 0, 0, 100), (6, 0, 0, 0, 0);
+                                                (5, null, 0, 0, 100);
         """
 
 
@@ -286,8 +288,6 @@ class GenericIndicatorsTests {
         assert "unknown"== h2GIS.firstRow("SELECT * FROM $resultTab WHERE id = 5").EXTREMUM_COL
         assert -1       == h2GIS.firstRow("SELECT * FROM $resultTab WHERE id = 5").EQUALITY_VALUE
         assert -1       == h2GIS.firstRow("SELECT * FROM $resultTab WHERE id = 5").UNIQUENESS_VALUE
-        assert -1     == h2GIS.firstRow("SELECT * FROM $resultTab WHERE id = 6").UNIQUENESS_VALUE
-        assert -1     == h2GIS.firstRow("SELECT * FROM $resultTab WHERE id = 6").EQUALITY_VALUE
     }
 
     @Test
@@ -299,8 +299,7 @@ class GenericIndicatorsTests {
                 DROP TABLE IF EXISTS distrib_test,test_DISTRIBUTION_REPARTITION;
                 CREATE TABLE distrib_test(id integer, col1 double, col2 double, col3 double, col4 double);
                 INSERT INTO distrib_test VALUES (1, 25, 25, 25, 25), (2, 10, 20, 40, 20), 
-                                                (3, 0, 0, 60, 40), (4, 0, 0, 0, 100), 
-                                                (5, 0, 0, 0, 0);
+                                                (3, 0, 0, 60, 40), (4, 0, 0, 0, 100);
         """
 
 
@@ -317,9 +316,8 @@ class GenericIndicatorsTests {
         assert 0        == h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION WHERE id = 1")["UNIQUENESS_VALUE"]
         assertEquals 1.0/3, h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION " +
                 "WHERE id = 2")["UNIQUENESS_VALUE"], 0.0001
-        assert -1        == h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION WHERE id = 4")["UNIQUENESS_VALUE"]
+        assert 0        == h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION WHERE id = 4")["UNIQUENESS_VALUE"]
         assert "COL1"   == h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION WHERE id = 2")["EXTREMUM_COL"]
-        assert -1       == h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION WHERE id = 5").UNIQUENESS_VALUE
     }
 
     @Test
