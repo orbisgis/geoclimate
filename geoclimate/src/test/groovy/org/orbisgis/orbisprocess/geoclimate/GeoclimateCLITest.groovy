@@ -36,7 +36,7 @@ class GeoclimateCLITest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def osm_parmeters = [
+        def osm_parameters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
                 "geoclimatedb" : [
                         "folder" : "${dirFile.absolutePath}",
@@ -56,7 +56,7 @@ class GeoclimateCLITest {
                                 "hThresholdLev2": 10
                         ]
         ]
-        def configFile = createOSMConfigFile(osm_parmeters)
+        def configFile = createOSMConfigFile(osm_parameters)
         Geoclimate app = new Geoclimate();
         CommandLine cmd = new CommandLine(app);
         StringWriter sw = new StringWriter();
