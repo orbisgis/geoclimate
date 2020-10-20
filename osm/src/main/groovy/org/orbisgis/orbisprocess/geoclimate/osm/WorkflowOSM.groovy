@@ -4,6 +4,7 @@ import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.h2.tools.DeleteDbFiles
 import org.h2gis.functions.spatial.crs.ST_Transform
+import org.h2gis.utilities.FileUtilities
 import org.h2gis.utilities.GeographyUtilities
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.MultiPolygon
@@ -126,7 +127,11 @@ IProcess workflow() {
             if (configurationFile) {
                 configFile = new File(configurationFile)
                 if (!configFile.isFile()) {
-                    error "Parameters file not found"
+                    error "The configuration file doesn't exist"
+                    return null
+                }
+                if(!FileUtilities.isExtensionWellFormated(configFile, "json")){
+                    error "The configuration file must be a json file"
                     return null
                 }
             } else {
