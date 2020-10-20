@@ -211,13 +211,13 @@ class SpatialUnitsTests {
 
     @EnabledIfSystemProperty(named = "test.h2gis", matches = "true")
     @Test
+<<<<<<< HEAD
     void regularGridTestH2GIS() {
         def gridP = Geoindicators.SpatialUnits.createGrid()
         def wktReader = new WKTReader()
         def box = wktReader.read('POLYGON((-180 -80, 180 -80, 180 80, -180 80, -180 -80))')
-        assert gridP.execute([geometry: box, deltaX: 1, deltaY: 1, datasource: h2GIS])
-    }
-
+        assert gridP.execute([geometry: box, deltaX: 1, deltaY: 1,  datasource: h2GIS])
+=======
     void gridTestH2GIS() {
         h2GIS.execute("DROP TABLE IF EXISTS grid")
         def gridP = Geoindicators.SpatialUnits.createGrid()
@@ -225,7 +225,7 @@ class SpatialUnitsTests {
         def box = wktReader.read('POLYGON((-50 -50, 50 -50, 50 50, -50 50, -50 -50))')
         box.setSRID(4326)
         assert gridP.execute([geometry: box, deltaX: 10, deltaY: 10, tableName: "grid", datasource: h2GIS])
-
+>>>>>>> 9d28581dba600a060a5e8dc7a57eed06e8ffcaca
         def outputTable = gridP.results.outputTableName
         assert h2GIS.getSpatialTable(outputTable)
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
@@ -239,10 +239,13 @@ class SpatialUnitsTests {
         postGIS.execute("DROP TABLE IF EXISTS grid")
         def gridP = Geoindicators.SpatialUnits.createGrid()
         def wktReader = new WKTReader()
-
+<<<<<<< HEAD
         def box = wktReader.read('POLYGON((-5 -5, 5 -5, 5 5, -5 5, -5 -5))')
         assert gridP.execute([geometry: box, deltaX: 1, deltaY: 1,  datasource: postGIS])
-
+=======
+        def box = wktReader.read('POLYGON((-50 -50, 50 -50, 50 50, -50 50, -50 -50))')
+        assert gridP.execute([geometry: box, deltaX: 10, deltaY: 10, tableName: "grid", datasource: postGIS])
+>>>>>>> 9d28581dba600a060a5e8dc7a57eed06e8ffcaca
         def outputTable = gridP.results.outputTableName
         assert postGIS.getSpatialTable(outputTable)
         def countRows = postGIS.firstRow "select count(*) as numberOfRows from $outputTable"

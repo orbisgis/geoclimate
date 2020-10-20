@@ -17,7 +17,7 @@ import org.orbisgis.orbisdata.processmanager.process.*
  * @return
  */
 IProcess joinTables() {
-    return create {
+    create {
         title "Utility process to join tables in one"
         id "joinTables"
         inputs inputTableNamesWithId: Map, outputTableName: String, datasource: JdbcDataSource,
