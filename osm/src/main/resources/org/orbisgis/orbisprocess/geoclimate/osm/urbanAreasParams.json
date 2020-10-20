@@ -7,13 +7,17 @@
     "type": {
         "commercial": {
             "landuse": [
-                "commercial",
-                "retail"
+                "commercial"
             ]
         },
         "residential": {
             "landuse": [
                 "residential"
+            ]
+        },
+        "commercial": {
+            "landuse": [
+                "retail"
             ]
         },
         "industrial": {

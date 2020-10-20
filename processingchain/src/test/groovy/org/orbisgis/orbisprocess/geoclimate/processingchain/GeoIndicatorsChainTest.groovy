@@ -1,5 +1,6 @@
 package org.orbisgis.orbisprocess.geoclimate.processingchain
 
+
 import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
@@ -177,7 +178,8 @@ class GeoIndicatorsChainTest {
             // Check that the sum of proportion (or building area) for each RSU is equal to 1
             def urbanTypoArea = datasource."$GeoIndicatorsCompute_i.results.outputTableRsuUrbanTypoArea"
             def colUrbanTypoArea = urbanTypoArea.getColumns()
-            colUrbanTypoArea = colUrbanTypoArea.minus(["ID_RSU", "THE_GEOM", "TYPO_MAJ", "UNIQUENESS_VALUE"])
+            colUrbanTypoArea = colUrbanTypoArea.minus("ID_RSU")
+            colUrbanTypoArea = colUrbanTypoArea.minus("THE_GEOM")
             def countSumAreaEqual1 = datasource.firstRow("""SELECT COUNT(*) AS NB 
                                                                     FROM ${GeoIndicatorsCompute_i.results.outputTableRsuUrbanTypoArea}
                                                                     WHERE ${colUrbanTypoArea.join("+")}>0.99 AND ${colUrbanTypoArea.join("+")}<1.01""")
@@ -189,7 +191,8 @@ class GeoIndicatorsChainTest {
             // Check that the sum of proportion (or building floor area) for each RSU is equal to 1
             def urbanTypoFloorArea = datasource."$GeoIndicatorsCompute_i.results.outputTableRsuUrbanTypoFloorArea"
             def colUrbanTypoFloorArea = urbanTypoFloorArea.getColumns()
-            colUrbanTypoFloorArea = colUrbanTypoFloorArea.minus(["ID_RSU", "THE_GEOM", "TYPO_MAJ", "UNIQUENESS_VALUE"])
+            colUrbanTypoFloorArea = colUrbanTypoFloorArea.minus("ID_RSU")
+            colUrbanTypoFloorArea = colUrbanTypoFloorArea.minus("THE_GEOM")
             def countSumFloorAreaEqual1 = datasource.firstRow("""SELECT COUNT(*) AS NB 
                                                                     FROM ${GeoIndicatorsCompute_i.results.outputTableRsuUrbanTypoFloorArea}
                                                                     WHERE ${colUrbanTypoFloorArea.join("+")}>0.99 AND ${colUrbanTypoFloorArea.join("+")}<1.01""")
@@ -202,7 +205,7 @@ class GeoIndicatorsChainTest {
             def dfBuild = DataFrame.of(datasource."$GeoIndicatorsCompute_i.results.outputTableBuildingUrbanTypo")
             def nbNull = datasource.firstRow("""SELECT COUNT(*) AS NB 
                                                             FROM ${GeoIndicatorsCompute_i.results.outputTableBuildingUrbanTypo}
-                                                            WHERE I_TYPO = 'unknown'""")
+                                                            WHERE I_TYPO = 0""")
             assertTrue dfBuild.nrows()>0
             assertEquals 0, nbNull.NB
         }
