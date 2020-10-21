@@ -111,10 +111,10 @@ class TypologyClassificationTests {
                     assert row.LCZ_EQUALITY_VALUE < 1
                 }
                 else if(row.id_rsu == 8){
-                    assert 104 == row.LCZ1
+                    assert 0 == row.LCZ1
                 }
                 else if(row.id_rsu == 9){
-                    assert 104 == row.LCZ1
+                    assert 105 == row.LCZ1
                 }
                 else if(row.id_rsu == 10){
                     assert 101 == row.LCZ1

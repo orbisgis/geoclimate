@@ -183,7 +183,9 @@ IProcess identifyLczType() {
                 datasource """DROP TABLE IF EXISTS $classifiedRuralLCZ;
                                 CREATE TABLE $classifiedRuralLCZ
                                         AS SELECT   $ID_FIELD_RSU,
-                                                    CASE WHEN IMPERVIOUS_FRACTION_LCZ>PERVIOUS_FRACTION_LCZ AND IMPERVIOUS_FRACTION_LCZ>0.05
+                                                CASE WHEN IMPERVIOUS_FRACTION_LCZ+PERVIOUS_FRACTION_LCZ<0.5 
+                                                    THEN 0
+                                                    ELSE CASE WHEN IMPERVIOUS_FRACTION_LCZ>WATER_FRACTION_LCZ AND IMPERVIOUS_FRACTION_LCZ>ALL_VEGETATION
                                                             THEN 105
                                                             ELSE CASE WHEN ALL_VEGETATION<WATER_FRACTION_LCZ OR WATER_FRACTION_LCZ > 0.5
                                                                     THEN 107
@@ -191,7 +193,7 @@ IProcess identifyLczType() {
                                                                             THEN 104
                                                                             ELSE CASE WHEN HIGH_ALL_VEGETATION<0.75
                                                                                     THEN 102
-                                                                                    ELSE 101 END END END END AS LCZ1,
+                                                                                    ELSE 101 END END END END END AS LCZ1,
                                                     null AS LCZ2, null AS min_distance, null AS LCZ_UNIQUENESS_VALUE, null AS LCZ_EQUALITY_VALUE
                                         FROM $ruralLCZ"""
                 // II. Urban LCZ types are classified
