@@ -54,8 +54,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Geoclimate'
-copyright = '2020, Bocher E.,Bernard J.'
-author = 'Bocher E.,Bernard J.'
+copyright = '2020,Bernard J., Bocher E.,Le Saux E., Petit G., Palominos S. '
+author = 'Bernard J., Bocher E.,Le Saux E., Petit G., Palominos S.'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
