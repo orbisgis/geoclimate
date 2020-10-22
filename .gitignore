@@ -18,3 +18,5 @@ site.xml
 
 dataForTests
 lczDebug.json
+docs/build
+docs/venv
