@@ -3,6 +3,7 @@ package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.h2.tools.DeleteDbFiles
+import org.h2gis.utilities.FileUtilities
 import org.orbisgis.orbisdata.datamanager.api.dataset.ITable
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.jdbc.io.IOMethods
@@ -134,8 +135,12 @@ IProcess workflow() {
             if (configurationFile) {
                 configFile = new File(configurationFile)
                 if (!configFile.isFile()) {
-                    error "Parameters file not found"
+                    error "The configuration file doesn't exist"
                     return
+                }
+                if(!FileUtilities.isExtensionWellFormated(configFile, "json")){
+                    error "The configuration file must be a json file"
+                    return null
                 }
             } else {
                 error "The file parameters cannot be null or empty"
