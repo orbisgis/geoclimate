@@ -9,6 +9,7 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
 import smile.base.cart.SplitRule
 import smile.classification.RandomForest as RandomForestClassification
 import smile.data.type.DataType
+import smile.data.vector.DoubleVector
 import smile.regression.RandomForest as RandomForestRegression
 import smile.data.formula.Formula
 import smile.data.vector.IntVector
@@ -618,7 +619,16 @@ IProcess applyRandomForestModel() {
             def prediction = Validation.test(model, df_var)
             // We need to add the remove the initial predicted variable in order to not have duplicated...
             df=df.drop(var2model)
-            df=df.merge(IntVector.of(var2model, prediction))
+            def sqlType
+            if(DataType.isDouble(df.schema().field(var2model).type)){
+                df=df.merge(DoubleVector.of(var2model, prediction))
+                sqlType = "DOUBLE PRECISION"
+            }
+            else{
+                df=df.merge(IntVector.of(var2model, prediction))
+                sqlType = "INT"
+            }
+
 
             //TODO change this after SMILE answer's
             // Keep only the id and the value of the classification
@@ -630,7 +640,7 @@ IProcess applyRandomForestModel() {
                 try {
                     Statement outputconnectionStatement = outputconnection.createStatement();
                     outputconnectionStatement.execute("DROP TABLE IF EXISTS " + tableName);
-                    def create_table_ = "CREATE TABLE ${tableName} (${idName.toUpperCase()} INTEGER, ${var2model.toUpperCase()} INT)" ;
+                    def create_table_ = "CREATE TABLE ${tableName} (${idName.toUpperCase()} INTEGER, ${var2model.toUpperCase()} $sqlType)" ;
                     def insertTable = "INSERT INTO ${tableName}  VALUES(?,?)";
                     outputconnection.setAutoCommit(false);
                     outputconnectionStatement.execute(create_table_.toString());
@@ -639,7 +649,7 @@ IProcess applyRandomForestModel() {
                     int batchSize = 1000;
                     while (df.next()) {
                         def id = df.getString(0)
-                        def lczValue = df.getInt(1)
+                        def lczValue = df.get(1)
                         preparedStatement.setObject( 1, id);
                         preparedStatement.setObject( 2, lczValue);
                         preparedStatement.addBatch();
