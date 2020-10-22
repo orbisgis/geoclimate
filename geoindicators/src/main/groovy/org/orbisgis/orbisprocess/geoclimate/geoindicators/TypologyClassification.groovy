@@ -649,9 +649,9 @@ IProcess applyRandomForestModel() {
                     int batchSize = 1000;
                     while (df.next()) {
                         def id = df.getString(0)
-                        def lczValue = df.get(1)
+                        def predictedValue = df.get(1)
                         preparedStatement.setObject( 1, id);
-                        preparedStatement.setObject( 2, lczValue);
+                        preparedStatement.setObject( 2, predictedValue);
                         preparedStatement.addBatch();
                         batch_size++;
                         if (batch_size >= batchSize) {
