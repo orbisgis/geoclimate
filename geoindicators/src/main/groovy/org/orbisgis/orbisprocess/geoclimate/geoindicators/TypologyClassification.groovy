@@ -8,10 +8,12 @@ import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import smile.base.cart.SplitRule
 import smile.classification.RandomForest as RandomForestClassification
+import smile.data.type.DataType
 import smile.regression.RandomForest as RandomForestRegression
 import smile.data.formula.Formula
 import smile.data.vector.IntVector
 import smile.validation.Accuracy
+import smile.validation.RMSE
 import smile.validation.Validation
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
@@ -496,10 +498,19 @@ IProcess createRandomForestModel() {
 
             // Calculate the prediction using the same sample in order to identify what is the
             // data rate that has been well classified
-            int[] prediction = Validation.test(model, dfFactorized)
-            int[] truth = dfFactorized.apply(varToModel).toIntArray()
-            def accuracy = Accuracy.of(truth, prediction)
-            info "The percentage of the data that have been well classified is : ${accuracy * 100}%"
+            def prediction = Validation.test(model, dfFactorized)
+            def truth
+            if(DataType.isDouble(dfFactorized.schema().field(varToModel).type)){
+                truth = dfFactorized.apply(varToModel).toDoubleArray()
+                def rmse = RMSE.of(truth, prediction)
+                info "The root mean square error is : ${rmse}"
+            }
+            else{
+                truth = dfFactorized.apply(varToModel).toIntArray()
+                def accuracy = Accuracy.of(truth, prediction)
+                info "The percentage of the data that have been well classified is : ${accuracy * 100}%"
+            }
+
             try {
                 if (save) {
                     def zOut = new GZIPOutputStream(new FileOutputStream(pathAndFileName))
@@ -604,7 +615,7 @@ IProcess applyRandomForestModel() {
             // Remove the id for the application of the randomForest
             def df_var = df.drop(idName.toUpperCase())
 
-            int[] prediction = Validation.test(model, df_var)
+            def prediction = Validation.test(model, df_var)
             // We need to add the remove the initial predicted variable in order to not have duplicated...
             df=df.drop(var2model)
             df=df.merge(IntVector.of(var2model, prediction))
