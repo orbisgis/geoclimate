@@ -500,9 +500,6 @@ class GenericIndicatorsTests {
     }
 
     @Test
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
     void gatherScalesTest2() {
         h2GIS """
                 DROP TABLE IF EXISTS tempo_block, tempo_build, tempo_rsu; 
@@ -534,7 +531,6 @@ class GenericIndicatorsTests {
     }
 
     @Test
->>>>>>> 2b8958d17c41e4bded22e8bd11aa4c4ba413df9e
     void upperScaleAreaStatisticsTest() {
         h2GIS.execute """DROP TABLE IF EXISTS rsu_test_limited;
                         CREATE TABLE rsu_test_limited
@@ -548,9 +544,9 @@ class GenericIndicatorsTests {
         def geometry = h2GIS.getSpatialTable(indicatorTableName).getExtent(geometryColumnName)
         geometry.setSRID(h2GIS.getSpatialTable(indicatorTableName).srid)
         def gridProcess = Geoindicators.SpatialUnits.createGrid()
-        gridProcess.execute([geometry: geometry,
-                             deltaX: 1000D,
-                             deltaY: 1000D,
+        gridProcess.execute([geometry  : geometry,
+                             deltaX    : 1000D,
+                             deltaY    : 1000D,
                              datasource: h2GIS])
 
         def targetTableName = gridProcess.results.outputTableName
@@ -559,11 +555,11 @@ class GenericIndicatorsTests {
         def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics()
         upperScaleAreaStatistics.execute(
                 [upperTableName: targetTableName,
-                 upperColumnId: "id",
+                 upperColumnId : "id",
                  lowerTableName: indicatorTableName,
                  lowerColumName: indicatorName,
-                 prefixName: "agg",
-                 datasource: h2GIS])
+                 prefixName    : "agg",
+                 datasource    : h2GIS])
 
         def upperScaleTableResult = upperScaleAreaStatistics.results.outputTableName
         ISpatialTable upperStats = h2GIS.getSpatialTable(upperScaleTableResult)
@@ -575,24 +571,25 @@ class GenericIndicatorsTests {
         columns.remove("THE_GEOM")
         assertEquals(nb_indicators.size(), columns.size())
 
-        def query ="drop table if exists babeth_zone; create table babeth_zone as select id,"
+        def query = "drop table if exists babeth_zone; create table babeth_zone as select id,"
         columns.each {
-            query+= "SUM($it) + "
+            query += "SUM($it) + "
         }
         query = query[0..-4]
-        query+=" as sum_indic from ${upperScaleTableResult} group by ID"
+        query += " as sum_indic from ${upperScaleTableResult} group by ID"
         h2GIS.execute query
 
-        def values= h2GIS.firstRow "select count(*) as nb from babeth_zone where sum_indic=0"
+        def values = h2GIS.firstRow "select count(*) as nb from babeth_zone where sum_indic=0"
         assertEquals(2, values.NB)
 
-        values= h2GIS.firstRow "select sum_indic as nb from babeth_zone where id=3"
+        values = h2GIS.firstRow "select sum_indic as nb from babeth_zone where id=3"
         assertEquals(110000, values.NB)
 
-        values= h2GIS.firstRow "select sum_indic as nb from babeth_zone where id=0"
+        values = h2GIS.firstRow "select sum_indic as nb from babeth_zone where id=0"
         assertEquals(7575, values.NB)
+    }
 
-=======
+    @Test
     void zonalAreaTest() {
         def indicatorTableName = "zonal_area_building_test"
         def indicatorName = "height_wall"
@@ -616,6 +613,5 @@ class GenericIndicatorsTests {
                  prefixName: "agg",
                  datasource: h2GIS])
         assert h2GIS."$indicatorTableName"
->>>>>>> 9d28581dba600a060a5e8dc7a57eed06e8ffcaca
     }
 }
