@@ -112,9 +112,10 @@ class TypologyClassificationTests {
                 }
                 else if(row.id_rsu == 8){
                     assert 104 == row.LCZ1
+                    assert -1 == row.min_distance
                 }
                 else if(row.id_rsu == 9){
-                    assert 104 == row.LCZ1
+                    assert 107 == row.LCZ1
                 }
                 else if(row.id_rsu == 10){
                     assert 101 == row.LCZ1
