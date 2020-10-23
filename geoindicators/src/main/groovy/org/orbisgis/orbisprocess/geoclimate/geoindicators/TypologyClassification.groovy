@@ -13,6 +13,7 @@ import smile.data.vector.DoubleVector
 import smile.regression.RandomForest as RandomForestRegression
 import smile.data.formula.Formula
 import smile.data.vector.IntVector
+import smile.regression.RegressionTree
 import smile.validation.Accuracy
 import smile.validation.RMSE
 import smile.validation.Validation
@@ -585,18 +586,29 @@ IProcess applyRandomForestModel() {
             def outputTableName = prefix prefixName, modelName.toLowerCase();
             // Load the RandomForest model
             def xs = new XStream()
-            /*// Check if all the model explicative variables are in the 'explicativeVariablesTableName'
-           if(!trainingTable.hasColumn(varToModel, String)){
-               error "The training table should have a String column name $varToModel"
-               return
-           }*/
+
             // Load the model and recover the name of the variable to model
             def gzipInputStream = new GZIPInputStream(fileInputStream)
             def model = xs.fromXML(gzipInputStream)
-            def var2model = model.formula.toString().split("~")[0][0..-2]
+            def varType
+            def var2model
+            def tree = model.trees[0]
+            if(tree instanceof RegressionTree){
+                def response = tree.response
+                varType = response.type
+                var2model = response.name
+            }else{
+                def response = tree.tree.response
+                varType = response.type
+                var2model = response.name
+            }
 
+            def isDouble = false
+            if(DataType.isDouble(varType)){
+                isDouble=true
+            }
             // We need to add the name of the predicted variable in order to use the model
-            datasource.execute """ALTER TABLE $explicativeVariablesTableName ADD COLUMN $var2model INTEGER DEFAULT 0"""
+            datasource.execute """ALTER TABLE $explicativeVariablesTableName ADD COLUMN $var2model ${isDouble?"DOUBLE PRECISION":"INTEGER"} DEFAULT 0"""
             datasource."$explicativeVariablesTableName".reload()
 
             // The table containing explicative variables is recovered
@@ -618,19 +630,11 @@ IProcess applyRandomForestModel() {
 
             def prediction = Validation.test(model, df_var)
             // We need to add the remove the initial predicted variable in order to not have duplicated...
-            df=df.drop(var2model)
-            def sqlType
-            if(DataType.isDouble(df.schema().field(var2model).type)){
-                df=df.merge(DoubleVector.of(var2model, prediction))
-                sqlType = "DOUBLE PRECISION"
-            }
-            else{
-                df=df.merge(IntVector.of(var2model, prediction))
-                sqlType = "INT"
-            }
+                df=df.drop(var2model)
+                df=df.merge(isDouble?DoubleVector.of(var2model, prediction):IntVector.of(var2model, prediction))
 
 
-            //TODO change this after SMILE answer's
+                //TODO change this after SMILE answer's
             // Keep only the id and the value of the classification
             df = df.select(idName.toUpperCase(), var2model.toUpperCase())
             String tableName = TableLocation.parse(outputTableName, datasource.getDataBaseType() == DataBaseType.H2GIS).toString(datasource.getDataBaseType() == DataBaseType.H2GIS);
@@ -640,7 +644,7 @@ IProcess applyRandomForestModel() {
                 try {
                     Statement outputconnectionStatement = outputconnection.createStatement();
                     outputconnectionStatement.execute("DROP TABLE IF EXISTS " + tableName);
-                    def create_table_ = "CREATE TABLE ${tableName} (${idName.toUpperCase()} INTEGER, ${var2model.toUpperCase()} $sqlType)" ;
+                    def create_table_ = "CREATE TABLE ${tableName} (${idName.toUpperCase()} INTEGER, ${var2model.toUpperCase()} ${isDouble?"DOUBLE PRECISION":"INTEGER"})" ;
                     def insertTable = "INSERT INTO ${tableName}  VALUES(?,?)";
                     outputconnection.setAutoCommit(false);
                     outputconnectionStatement.execute(create_table_.toString());
@@ -649,7 +653,7 @@ IProcess applyRandomForestModel() {
                     int batchSize = 1000;
                     while (df.next()) {
                         def id = df.getString(0)
-                        def predictedValue = df.get(1)
+                        def predictedValue = df.getObject(1)
                         preparedStatement.setObject( 1, id);
                         preparedStatement.setObject( 2, predictedValue);
                         preparedStatement.addBatch();
@@ -664,7 +668,7 @@ IProcess applyRandomForestModel() {
                         preparedStatement.executeBatch();
                     }
                 } catch (SQLException e) {
-                    LOGGER.error("Cannot save the dataframe.\n", e);
+                    error("Cannot save the dataframe.\n", e);
                     return null;
                 } finally {
                     outputconnection.setAutoCommit(true);
@@ -673,7 +677,7 @@ IProcess applyRandomForestModel() {
                     }
                 }
             } catch (SQLException e) {
-                LOGGER.error("Cannot save the dataframe.\n", e);
+                error("Cannot save the dataframe.\n", e);
                 return null;
             }
             [outputTableName: tableName]
