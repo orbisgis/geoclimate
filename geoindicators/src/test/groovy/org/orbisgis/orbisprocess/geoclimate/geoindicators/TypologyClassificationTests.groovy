@@ -395,7 +395,15 @@ class TypologyClassificationTests {
 
         if(new File(directory).exists()){
             // Read the training data
-            h2GIS """ CALL GEOJSONREAD('${directory+File.separator+training_data_name+".geojson.gz"}', 'tempo')"""
+            h2GIS """ CALL GEOJSONREAD('${directory+File.separator+training_data_name+".geojson.gz"}', 'tempo0')"""
+
+            // Select only specific data
+            h2GIS """   DROP TABLE IF EXISTS tempo;
+                        CREATE TABLE tempo
+                            AS SELECT * 
+                            FROM tempo0
+                            WHERE NOT (I_TYPO=1 AND BUILD_TYPE='residential')"""
+
             // Remove unnecessary column
             h2GIS "ALTER TABLE tempo DROP COLUMN the_geom;"
             //Reload the table due to the schema modification
