@@ -380,7 +380,7 @@ class TypologyClassificationTests {
     @Test
     void tempoCreateRandomForestClassifTest() {
         // Specify the model and training datat appropriate to the right use
-        def model_name = "URBAN_TYPOLOGY_OSM_RF_1_0"
+        def model_name = "URBAN_TYPOLOGY_OSM_RF_2_0"
         def training_data_name = "TRAINING_DATA_URBAN_TYPOLOGY_OSM_RF_2_0"
         // Name of the variable to model
         def var2model = "I_TYPO"
@@ -395,14 +395,7 @@ class TypologyClassificationTests {
 
         if(new File(directory).exists()){
             // Read the training data
-            h2GIS """ CALL GEOJSONREAD('${directory+File.separator+training_data_name+".geojson.gz"}', 'tempo0')"""
-
-            // Select only specific data
-            h2GIS """   DROP TABLE IF EXISTS tempo;
-                        CREATE TABLE tempo
-                            AS SELECT * 
-                            FROM tempo0
-                            WHERE NOT (I_TYPO=1 AND BUILD_TYPE='residential')"""
+            h2GIS """ CALL GEOJSONREAD('${directory+File.separator+training_data_name+".geojson.gz"}', 'tempo')"""
 
             // Remove unnecessary column
             h2GIS "ALTER TABLE tempo DROP COLUMN the_geom;"
