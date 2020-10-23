@@ -480,7 +480,7 @@ class TypologyClassificationTests {
                         CREATE TABLE tempo
                             AS SELECT * 
                             FROM tempo0
-                            WHERE NOT (I_TYPO=1 AND BUILD_TYPE='residential') and"""
+                             """
 
             // Remove unnecessary column
             h2GIS "ALTER TABLE tempo DROP COLUMN the_geom;"
