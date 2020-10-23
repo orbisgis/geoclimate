@@ -648,7 +648,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
     @Disabled
     void testOSMConfigurationFile() {
         def configFile = getClass().getResource("config/osm_workflow_placename_folderoutput.json").toURI()
-        configFile =getClass().getResource("config/osm_workflow_envelope_folderoutput.json").toURI()
+        //configFile =getClass().getResource("config/osm_workflow_envelope_folderoutput.json").toURI()
         IProcess process = OSM.workflow
         assertTrue(process.execute(configurationFile: configFile))
     }

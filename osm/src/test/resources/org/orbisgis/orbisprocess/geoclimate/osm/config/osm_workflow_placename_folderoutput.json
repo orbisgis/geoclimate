@@ -1,29 +1,19 @@
 {
     "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
     "geoclimatedb" : {
-        "folder" : "/tmp/",
+        "folder" : "/tmp",
         "name": "geoclimate_db;AUTO_SERVER=TRUE",
-        "delete" :true
+        "delete" :false
     },
     "input" : {
-        "osm" : ["kerfot", "plouezec"]},
+        "osm" : ["nantes"]},
     "output" :{
-     "folder" : "/tmp/..."},
+        "folder" : "/home/decide/Bureau/Nantes"},
     "parameters":
     {"distance" : 1000,
-        "indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+        "indicatorUse": ["LCZ"],
         "svfSimplified": false,
-        "prefixName": "",
-        "mapOfWeights":
-        {"sky_view_factor": 1,
-            "aspect_ratio": 1,
-            "building_surface_fraction": 1,
-            "impervious_surface_fraction" : 1,
-            "pervious_surface_fraction": 1,
-            "height_of_roughness_elements": 1,
-            "terrain_roughness_class": 1,
-            "lczRandomForest": false},
-        "hLevMin": 3,
+        "prefixName": "","hLevMin": 3,
         "hLevMax": 15,
         "hThresholdLev2": 10,
         "estimateHeight" : true
