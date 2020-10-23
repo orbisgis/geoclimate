@@ -461,6 +461,7 @@ IProcess spatialJoin() {
  * @param datasource A connexion to a database (H2GIS, POSTGIS, ...) where are stored the input Table and in which
  *        the resulting database will be stored
  * @param outputTableName The name of the created table
+ * @author Emmanuel Renault, CNRS
  * */
 IProcess createGrid() {
     return create {
@@ -477,7 +478,7 @@ IProcess createGrid() {
             if (datasource instanceof H2GIS) {
                 info "Creating a regular grid with H2GIS"
                 datasource """CREATE TABLE $outputTableName AS SELECT * FROM 
-                                     ST_MakeGrid('$geometry'::geometry, $deltaX, $deltaY);
+                                     ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY);
                            """
             }
             else if (datasource instanceof POSTGIS) {
