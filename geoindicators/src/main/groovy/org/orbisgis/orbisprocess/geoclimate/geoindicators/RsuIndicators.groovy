@@ -263,7 +263,7 @@ IProcess aspectRatio() {
                 CREATE TABLE $outputTableName AS 
                     SELECT CASE WHEN $rsuBuildingDensityColumn = 1 
                         THEN null 
-                        ELSE $rsuFreeExternalFacadeDensityColumn/(1-$rsuBuildingDensityColumn) END 
+                        ELSE 0.5 * ($rsuFreeExternalFacadeDensityColumn/(1-$rsuBuildingDensityColumn)) END 
                     AS $BASE_NAME, $COLUMN_ID_RSU FROM $rsuTable"""
 
             [outputTableName: outputTableName]
