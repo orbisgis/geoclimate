@@ -953,7 +953,7 @@ def extractProcessingParameters(def processing_parameters){
     def defaultParameters = [distance: 0,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
                              svfSimplified:false, prefixName: "",
                              mapOfWeights :  ["sky_view_factor"                : 4,
-                                              "aspect_ratio"                   : 3,
+                                              "aspect_ratio"                   : 0,
                                               "building_surface_fraction"      : 8,
                                               "impervious_surface_fraction"    : 0,
                                               "pervious_surface_fraction"      : 0,
