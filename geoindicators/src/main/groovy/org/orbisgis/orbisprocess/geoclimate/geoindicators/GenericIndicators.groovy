@@ -977,7 +977,7 @@ IProcess gatherScales() {
 
 
     /**
-     * This process is used to compute aggregate the area of a specific variable to a upper scale from a lower scale (for
+     * This process is used to aggregate the area of a specific variable to a upper scale from a lower scale (for
      * example the LCZs variables within a Reference Spatial Unit)
      *
      * @param upperTableName the name of the upper scale table

@@ -480,7 +480,7 @@ IProcess createGrid() {
             if (datasource instanceof H2GIS) {
                 info "Creating grid with H2GIS"
                 datasource """CREATE TABLE $gridTableName AS SELECT * FROM 
-                                     ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()})  , $deltaX, $deltaY);"""
+                                     ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY);"""
             }
             else if (datasource instanceof POSTGIS) {
                 info "Creating grid with POSTGIS"
