@@ -60,7 +60,7 @@ class TypologyClassificationTests {
         assert 8 == results[2]["LCZ1"]
         assert results[2]["min_distance"] > 0
         assert results[2]["PSS"] < 1
-        assert 102 == results[3]["LCZ1"]
+        assert 107 == results[3]["LCZ1"]
         assert !results[3]["LCZ2"]
         assert !results[3]["min_distance"]
         assert !results[3]["PSS"]
@@ -68,7 +68,7 @@ class TypologyClassificationTests {
         assert 101 == results[5]["LCZ1"]
         assert 104 == results[6]["LCZ1"]
         assert 105 == results[7]["LCZ1"]
-        assert 107 == results[18]["LCZ1"]
+        assert 101 == results[18]["LCZ1"]
 
         h2GIS """
                 DROP TABLE IF EXISTS buff_rsu_test_lcz_indics, buff_rsu_test_all_indics_for_lcz;
@@ -115,7 +115,7 @@ class TypologyClassificationTests {
                     assert -1 == row.min_distance
                 }
                 else if(row.id_rsu == 9){
-                    assert 104 == row.LCZ1
+                    assert 105 == row.LCZ1
                 }
                 else if(row.id_rsu == 10){
                     assert 101 == row.LCZ1
