@@ -226,7 +226,7 @@ IProcess prepareRSUData() {
                 if (roadTable && datasource.hasTable(roadTable)) {
                     if (datasource."$roadTable") {
                         info "Preparing road..."
-                        queryCreateOutputTable += [road_tmp: "(SELECT ST_FORCE2D(THE_GEOM) AS THE_GEOM FROM $roadTable where zindex=0 or crossing = 'bridge')"]
+                        queryCreateOutputTable += [road_tmp: "(SELECT ST_FORCE2D(THE_GEOM) AS THE_GEOM FROM $roadTable where (zindex=0 or crossing = 'bridge') and type!='service')"]
                     }
                 }
 

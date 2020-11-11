@@ -1319,8 +1319,8 @@ return create {
             datasource """DROP TABLE IF EXISTS $tmp_point_polygonize;
                 CREATE TABLE $tmp_point_polygonize as  select  EXPLOD_ID as id, st_pointonsurface(st_force2D(the_geom)) as the_geom ,
                 st_area(the_geom) as area , id_rsu
-                 from st_explode ('(select st_polygonize(st_union(
-                st_precisionreducer(st_node(st_accum(st_force2d(a.the_geom))), 3))) as the_geom, id_rsu from $tmp_tables as a group by id_rsu)')"""
+                 from st_explode ('(select st_polygonize(st_union(st_force2d(
+                st_precisionreducer(st_node(st_accum(st_force2d(a.the_geom))), 3)))) as the_geom, id_rsu from $tmp_tables as a group by id_rsu)')"""
 
             //Create indexes
             datasource."$tmp_point_polygonize".the_geom.createSpatialIndex()
