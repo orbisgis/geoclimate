@@ -23,7 +23,7 @@ class FormattingForAbstractModelTests {
                 epsg :epsg])
 
         assertEquals 1038, h2GIS.getTable(extractData.results.buildingTableName).rowCount
-        assertEquals 198, h2GIS.getTable(extractData.results.roadTableName).rowCount
+        assertEquals 211, h2GIS.getTable(extractData.results.roadTableName).rowCount
         assertEquals 44, h2GIS.getTable(extractData.results.railTableName).rowCount
         assertEquals 135, h2GIS.getTable(extractData.results.vegetationTableName).rowCount
         assertEquals 10, h2GIS.getTable(extractData.results.hydroTableName).rowCount
@@ -81,7 +81,7 @@ class FormattingForAbstractModelTests {
                 epsg: epsg,
                 jsonFilename: null])
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_formated.shp", true)
-        assertEquals 144, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertEquals 157, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH is null").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH<=0").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where CROSSING IS NOT NULL").count==7
@@ -306,7 +306,7 @@ class FormattingForAbstractModelTests {
                 epsg       : epsg])
 
         assertEquals 1038, h2GIS.getTable(extractData.results.buildingTableName).rowCount
-        assertEquals 198, h2GIS.getTable(extractData.results.roadTableName).rowCount
+        assertEquals 211, h2GIS.getTable(extractData.results.roadTableName).rowCount
         assertEquals 44, h2GIS.getTable(extractData.results.railTableName).rowCount
         assertEquals 135, h2GIS.getTable(extractData.results.vegetationTableName).rowCount
         assertEquals 10, h2GIS.getTable(extractData.results.hydroTableName).rowCount
