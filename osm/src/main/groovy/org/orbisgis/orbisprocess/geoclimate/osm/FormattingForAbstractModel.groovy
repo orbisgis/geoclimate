@@ -65,6 +65,7 @@ IProcess formatBuildingLayer() {
                     queryMapper += columnsMapper(columnNames, columnToMap)
                     if (inputZoneEnvelopeTableName) {
                         inputSpatialTable.the_geom.createSpatialIndex()
+                        datasource."$inputZoneEnvelopeTableName".the_geom.createSpatialIndex()
                         queryMapper += " , case when st_isvalid(a.the_geom) then a.the_geom else st_makevalid(st_force2D(a.the_geom)) end  as the_geom FROM $inputTableName as a,  $inputZoneEnvelopeTableName as b WHERE a.the_geom && b.the_geom and st_intersects(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) and st_area(a.the_geom)>1"
                     } else {
                         queryMapper += " , case when st_isvalid(a.the_geom) then a.the_geom else st_makevalid(st_force2D(a.the_geom)) end as the_geom FROM $inputTableName as a where st_area(a.the_geom)>1"
