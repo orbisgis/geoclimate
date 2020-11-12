@@ -60,7 +60,7 @@ IProcess createRSU() {
                 datasource """
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName AS 
-                        SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(a.the_geom, $epsg) AS the_geom
+                        SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(ST_FORCE2D(ST_MAKEVALID(a.the_geom)), $epsg) AS the_geom
                         FROM ST_EXPLODE('(
                                 SELECT ST_POLYGONIZE(ST_UNION(ST_PRECISIONREDUCER(ST_NODE(ST_ACCUM(ST_FORCE2D(the_geom))), 3))) AS the_geom 
                                 FROM $inputTableName)') AS a,
@@ -72,7 +72,7 @@ IProcess createRSU() {
                 datasource """
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName AS 
-                        SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(ST_FORCE2D(the_geom), $epsg) AS the_geom 
+                        SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(ST_FORCE2D(ST_MAKEVALID(the_geom)), $epsg) AS the_geom 
                         FROM ST_EXPLODE('(
                                 SELECT ST_POLYGONIZE(ST_UNION(ST_PRECISIONREDUCER(ST_NODE(ST_ACCUM(ST_FORCE2D(the_geom))), 3))) AS the_geom 
                                 FROM $inputTableName)') where st_area(the_geom) > $area"""
@@ -345,12 +345,11 @@ IProcess createBlocks() {
         WHERE A.id_build=B.NODE_ID GROUP BY B.CONNECTED_COMPONENT;"""
             }
 
-
             //Create the blocks
             info "Creating the block table..."
             datasource """DROP TABLE IF EXISTS $outputTableName; 
         CREATE TABLE $outputTableName ($columnIdName SERIAL, THE_GEOM GEOMETRY) 
-        AS (SELECT null, THE_GEOM FROM $subGraphBlocks) UNION ALL (SELECT null, a.the_geom FROM $inputTableName a 
+        AS (SELECT null, st_force2d(ST_MAKEVALID(THE_GEOM)) as the_geom FROM $subGraphBlocks) UNION ALL (SELECT null, st_force2d(a.the_geom) as the_geom FROM $inputTableName a 
         LEFT JOIN $subGraphTableNodes b ON a.id_build = b.NODE_ID WHERE b.NODE_ID IS NULL);"""
 
             // Temporary tables are deleted
@@ -412,8 +411,8 @@ IProcess spatialJoin() {
                 datasource """    DROP TABLE IF EXISTS $outputTableName;
                                 CREATE TABLE $outputTableName AS SELECT a.*, b.$idColumnTarget 
                                         FROM $sourceTable a, $targetTable b 
-                                        WHERE   ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_SOURCE) && st_force2d(b.$GEOMETRIC_COLUMN_TARGET) AND 
-                                                ST_INTERSECTS(ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_SOURCE), st_force2d(b.$GEOMETRIC_COLUMN_TARGET))"""
+                                        WHERE   ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_SOURCE) && b.$GEOMETRIC_COLUMN_TARGET AND 
+                                                ST_INTERSECTS(ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_SOURCE), b.$GEOMETRIC_COLUMN_TARGET)"""
                 }
             else {
                 if (nbRelations != null) {
@@ -423,10 +422,10 @@ IProcess spatialJoin() {
                                                         (SELECT b.$idColumnTarget 
                                                             FROM $targetTable b 
                                                             WHERE a.$GEOMETRIC_COLUMN_SOURCE && b.$GEOMETRIC_COLUMN_TARGET AND 
-                                                                 ST_INTERSECTS(st_force2d(a.$GEOMETRIC_COLUMN_SOURCE), 
-                                                                                            st_force2d(b.$GEOMETRIC_COLUMN_TARGET)) 
-                                                        ORDER BY ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$GEOMETRIC_COLUMN_SOURCE)),
-                                                                                         st_force2d(st_makevalid(b.$GEOMETRIC_COLUMN_TARGET))))
+                                                                 ST_INTERSECTS(a.$GEOMETRIC_COLUMN_SOURCE, 
+                                                                                            b.$GEOMETRIC_COLUMN_TARGET) 
+                                                        ORDER BY ST_AREA(ST_INTERSECTION(a.$GEOMETRIC_COLUMN_SOURCE,
+                                                                                         b.$GEOMETRIC_COLUMN_TARGET))
                                                         DESC LIMIT $nbRelations) AS $idColumnTarget 
                                             FROM $sourceTable a"""
                 } else {
@@ -436,11 +435,11 @@ IProcess spatialJoin() {
                     datasource """  DROP TABLE IF EXISTS $outputTableName;
                                     CREATE TABLE $outputTableName 
                                             AS SELECT   ${sourceColumns.join(",")}, b.$idColumnTarget,
-                                                        ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$GEOMETRIC_COLUMN_SOURCE)), 
-                                                        st_force2d(st_makevalid(b.$GEOMETRIC_COLUMN_TARGET)))) AS AREA
+                                                        ST_AREA(ST_INTERSECTION(a.$GEOMETRIC_COLUMN_SOURCE, 
+                                                        b.$GEOMETRIC_COLUMN_TARGET)) AS AREA
                                             FROM    $sourceTable a, $targetTable b
                                             WHERE   a.$GEOMETRIC_COLUMN_SOURCE && b.$GEOMETRIC_COLUMN_TARGET AND 
-                                                    ST_INTERSECTS(st_force2d(a.$GEOMETRIC_COLUMN_SOURCE), st_force2d(b.$GEOMETRIC_COLUMN_TARGET));"""
+                                                    ST_INTERSECTS(a.$GEOMETRIC_COLUMN_SOURCE, b.$GEOMETRIC_COLUMN_TARGET);"""
                 }
             }
 
