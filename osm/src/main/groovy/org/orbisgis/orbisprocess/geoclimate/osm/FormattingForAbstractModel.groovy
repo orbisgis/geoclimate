@@ -383,7 +383,7 @@ IProcess formatVegetationLayer() {
                     queryMapper += columnsMapper(columnNames, columnToMap)
                     if (inputZoneEnvelopeTableName) {
                         inputSpatialTable.the_geom.createSpatialIndex()
-                        queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(st_force2D(a.the_geom)) end, b.the_geom) then st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom)) else st_makevalid(a.the_geom) end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
+                        queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(st_force2D(a.the_geom)) end, b.the_geom) then st_intersection(st_makevalid(st_force2D(a.the_geom)), st_makevalid(b.the_geom)) else st_makevalid(a.the_geom) end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
                     } else {
                         queryMapper += ", st_makevalid(st_force2D(a.the_geom)) the_geom FROM $inputTableName  as a"
                     }
