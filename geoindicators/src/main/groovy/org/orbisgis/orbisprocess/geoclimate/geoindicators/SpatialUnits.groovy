@@ -226,17 +226,16 @@ IProcess prepareRSUData() {
                 if (roadTable && datasource.hasTable(roadTable)) {
                     if (datasource."$roadTable") {
                         info "Preparing road..."
-                        queryCreateOutputTable += [road_tmp: "(SELECT THE_GEOM FROM $roadTable where (zindex=0 or crossing = 'bridge') and type!='service')"]
+                        queryCreateOutputTable += [road_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $roadTable where (zindex=0 or crossing = 'bridge') and type!='service')"]
                     }
                 }
 
                 if (railTable && datasource.hasTable(railTable) && !datasource."$railTable".isEmpty()) {
                     if (datasource."$railTable") {
                         info "Preparing rail..."
-                        queryCreateOutputTable += [rail_tmp: "(SELECT THE_GEOM FROM $railTable where zindex=0 or crossing = 'bridge')"]
+                        queryCreateOutputTable += [rail_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $railTable where zindex=0 or crossing = 'bridge')"]
                     }
                 }
-
                 // The input table that contains the geometries to be transformed as RSU
                 info "Grouping all tables..."
                 if (queryCreateOutputTable) {
@@ -424,8 +423,8 @@ IProcess spatialJoin() {
                                                             WHERE a.$GEOMETRIC_COLUMN_SOURCE && b.$GEOMETRIC_COLUMN_TARGET AND 
                                                                  ST_INTERSECTS(a.$GEOMETRIC_COLUMN_SOURCE, 
                                                                                             b.$GEOMETRIC_COLUMN_TARGET) 
-                                                        ORDER BY ST_AREA(ST_INTERSECTION(a.$GEOMETRIC_COLUMN_SOURCE,
-                                                                                         b.$GEOMETRIC_COLUMN_TARGET))
+                                                        ORDER BY ST_AREA(ST_INTERSECTION(st_makevalid(a.$GEOMETRIC_COLUMN_SOURCE),
+                                                                                         st_makevalid(b.$GEOMETRIC_COLUMN_TARGET)))
                                                         DESC LIMIT $nbRelations) AS $idColumnTarget 
                                             FROM $sourceTable a"""
                 } else {

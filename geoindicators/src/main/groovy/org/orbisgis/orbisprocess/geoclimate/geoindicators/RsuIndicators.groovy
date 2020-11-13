@@ -342,8 +342,8 @@ IProcess projectedFacadeAreaDistribution() {
                     CREATE TABLE $buildingIntersection( the_geom GEOMETRY, id_build_a INTEGER, id_build_b INTEGER, z_max DOUBLE, z_min DOUBLE) AS 
                         SELECT ST_CollectionExtract(t.the_geom,2), t.id_build_a , t.id_build_b , t.z_max , t.z_min 
                         FROM (
-                            SELECT ST_INTERSECTION(a.$GEOMETRIC_COLUMN_BU, 
-                                b.$GEOMETRIC_COLUMN_BU) AS the_geom, 
+                            SELECT ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_COLUMN_BU), 
+                                ST_MAKEVALID(b.$GEOMETRIC_COLUMN_BU)) AS the_geom, 
                                 a.$ID_COLUMN_BU AS id_build_a, 
                                 b.$ID_COLUMN_BU AS id_build_b, 
                                 GREATEST(a.$HEIGHT_WALL,b.$HEIGHT_WALL) AS z_max, 
