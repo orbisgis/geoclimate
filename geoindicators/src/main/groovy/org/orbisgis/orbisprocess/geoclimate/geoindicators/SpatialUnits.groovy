@@ -434,8 +434,8 @@ IProcess spatialJoin() {
                     datasource """  DROP TABLE IF EXISTS $outputTableName;
                                     CREATE TABLE $outputTableName 
                                             AS SELECT   ${sourceColumns.join(",")}, b.$idColumnTarget,
-                                                        ST_AREA(ST_INTERSECTION(ST_PRECISIONREDUCER(a.$GEOMETRIC_COLUMN_SOURCE), 
-                                                        ST_PRECISIONREDUCER(b.$GEOMETRIC_COLUMN_TARGET))) AS AREA
+                                                        ST_AREA(ST_INTERSECTION(ST_PRECISIONREDUCER(a.$GEOMETRIC_COLUMN_SOURCE, 3), 
+                                                        ST_PRECISIONREDUCER(b.$GEOMETRIC_COLUMN_TARGET,3))) AS AREA
                                             FROM    $sourceTable a, $targetTable b
                                             WHERE   a.$GEOMETRIC_COLUMN_SOURCE && b.$GEOMETRIC_COLUMN_TARGET AND 
                                                     ST_INTERSECTS(a.$GEOMETRIC_COLUMN_SOURCE, b.$GEOMETRIC_COLUMN_TARGET);"""
