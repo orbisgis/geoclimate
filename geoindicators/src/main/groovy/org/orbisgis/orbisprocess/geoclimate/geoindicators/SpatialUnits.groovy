@@ -473,6 +473,9 @@ IProcess createGrid() {
         outputs outputTableName: String
         run { geometry, deltaX, deltaY, gridTableName, datasource ->
 
+            def BASENAME = "grid"
+            gridTableName = prefix prefixName, BASENAME
+
             if (datasource.hasTable(gridTableName)) {
                 datasource """DROP TABLE IF EXISTS $gridTableName"""
             }
