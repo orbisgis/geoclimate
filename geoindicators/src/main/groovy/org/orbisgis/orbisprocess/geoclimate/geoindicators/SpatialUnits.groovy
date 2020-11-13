@@ -477,7 +477,7 @@ IProcess createGrid() {
             gridTableName = prefix prefixName, BASENAME
 
             if (datasource.hasTable(gridTableName)) {
-                datasource """DROP TABLE IF EXISTS $gridTableName"""
+                datasource """DROP TABLE IF EXISTS $gridTableName;"""
             }
             if (datasource instanceof H2GIS) {
                 info "Creating grid with H2GIS"
