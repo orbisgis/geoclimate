@@ -7,7 +7,6 @@ import org.locationtech.jts.geom.Polygon
 import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 
 @BaseScript OSM_Utils osm_utils
 
@@ -66,9 +65,10 @@ IProcess formatBuildingLayer() {
                     if (inputZoneEnvelopeTableName) {
                         inputSpatialTable.the_geom.createSpatialIndex()
                         datasource."$inputZoneEnvelopeTableName".the_geom.createSpatialIndex()
-                        queryMapper += " , case when st_isvalid(a.the_geom) then a.the_geom else st_makevalid(st_force2D(a.the_geom)) end  as the_geom FROM $inputTableName as a,  $inputZoneEnvelopeTableName as b WHERE a.the_geom && b.the_geom and st_intersects(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) and st_area(a.the_geom)>1"
+                        queryMapper += " , case when st_isvalid(a.the_geom) then st_force2D(a.the_geom) else st_force2D(st_makevalid(a.the_geom)) end  as the_geom FROM $inputTableName as a,  $inputZoneEnvelopeTableName as b WHERE a.the_geom && b.the_geom and st_intersects(CASE WHEN ST_ISVALID(a.the_geom) THEN st_force2D(a.the_geom) " +
+                                "else st_force2D(st_makevalid(a.the_geom)) end, b.the_geom) and st_area(a.the_geom)>1"
                     } else {
-                        queryMapper += " , case when st_isvalid(a.the_geom) then a.the_geom else st_makevalid(st_force2D(a.the_geom)) end as the_geom FROM $inputTableName as a where st_area(a.the_geom)>1"
+                        queryMapper += " , case when st_isvalid(a.the_geom) then st_force2D(a.the_geom) else st_force2D(st_makevalid(a.the_geom)) end as the_geom FROM $inputTableName as a where st_area(a.the_geom)>1"
                     }
                     def id_build=1;
                     datasource.withBatch(1000) { stmt ->
@@ -207,9 +207,19 @@ IProcess formatRoadLayer() {
                     queryMapper += columnsMapper(columnNames, columnToMap)
                     if (inputZoneEnvelopeTableName) {
                         inputSpatialTable.the_geom.createSpatialIndex()
-                        queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) then st_intersection(st_force2D(a.the_geom), b.the_geom) else a.the_geom end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
+                        queryMapper += ", CASE WHEN st_overlaps(" +
+                                "CASE WHEN ST_ISVALID(a.the_geom) THEN st_force2D(a.the_geom) " +
+                                "ELSE st_force2D(st_makevalid(a.the_geom)) " +
+                                "END, b.the_geom) " +
+                                "THEN st_force2D(st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom))) " +
+                                "ELSE st_force2D(st_makevalid(a.the_geom)) " +
+                                "END AS the_geom " +
+                                "FROM " +
+                                "$inputTableName AS a, $inputZoneEnvelopeTableName AS b " +
+                                "WHERE " +
+                                "a.the_geom && b.the_geom "
                     } else {
-                        queryMapper += ", a.the_geom FROM $inputTableName  as a"
+                        queryMapper += ", st_force2D(st_makevalid(a.the_geom)) as the_geom FROM $inputTableName  as a"
                     }
 
                     datasource.withBatch(1000) { stmt ->
@@ -305,9 +315,19 @@ IProcess formatRailsLayer() {
                     queryMapper += columnsMapper(columnNames, columnToMap)
                     if (inputZoneEnvelopeTableName) {
                         inputSpatialTable.the_geom.createSpatialIndex()
-                        queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) then st_intersection(st_force2D(a.the_geom), b.the_geom) else a.the_geom end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
+                        queryMapper += ", CASE WHEN st_overlaps(" +
+                                "CASE WHEN ST_ISVALID(a.the_geom) THEN st_force2D(a.the_geom) " +
+                                "ELSE st_force2D(st_makevalid(a.the_geom)) " +
+                                "END, b.the_geom) " +
+                                "THEN st_force2D(st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom))) " +
+                                "ELSE st_force2D(st_makevalid(a.the_geom)) " +
+                                "END AS the_geom " +
+                                "FROM " +
+                                "$inputTableName AS a, $inputZoneEnvelopeTableName AS b " +
+                                "WHERE " +
+                                "a.the_geom && b.the_geom "
                     } else {
-                        queryMapper += ", a.the_geom FROM $inputTableName  as a"
+                        queryMapper += ", st_force2D(st_makevalid(a.the_geom)) as the_geom FROM $inputTableName  as a"
 
                     }
                     datasource.withBatch(1000) { stmt ->
@@ -384,9 +404,19 @@ IProcess formatVegetationLayer() {
                     queryMapper += columnsMapper(columnNames, columnToMap)
                     if (inputZoneEnvelopeTableName) {
                         inputSpatialTable.the_geom.createSpatialIndex()
-                        queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(st_force2D(a.the_geom)) end, b.the_geom) then st_intersection(st_makevalid(st_force2D(a.the_geom)), st_makevalid(b.the_geom)) else st_makevalid(a.the_geom) end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
+                        queryMapper += ", CASE WHEN st_overlaps(" +
+                                "CASE WHEN ST_ISVALID(a.the_geom) THEN st_force2D(a.the_geom) " +
+                                "ELSE st_force2D(st_makevalid(a.the_geom)) " +
+                                "END, b.the_geom) " +
+                                "THEN st_force2D(st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom))) " +
+                                "ELSE st_force2D(st_makevalid(a.the_geom)) " +
+                                "END AS the_geom " +
+                                "FROM " +
+                                "$inputTableName AS a, $inputZoneEnvelopeTableName AS b " +
+                                "WHERE " +
+                                "a.the_geom && b.the_geom "
                     } else {
-                        queryMapper += ", st_makevalid(st_force2D(a.the_geom)) the_geom FROM $inputTableName  as a"
+                        queryMapper += ", st_force2D(st_makevalid(a.the_geom)) as the_geom FROM $inputTableName  as a"
                     }
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
@@ -443,9 +473,19 @@ IProcess formatHydroLayer() {
                     inputSpatialTable.the_geom.createSpatialIndex()
                     String query
                     if (inputZoneEnvelopeTableName) {
-                        query = "select id, CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(st_force2D(a.the_geom)) end, b.the_geom) then st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom)) else st_makevalid(a.the_geom) end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
+                        query = "select id , CASE WHEN st_overlaps(" +
+                                "CASE WHEN ST_ISVALID(a.the_geom) THEN st_force2D(a.the_geom) " +
+                                "ELSE st_force2D(st_makevalid(a.the_geom)) " +
+                                "END, b.the_geom) " +
+                                "THEN st_force2D(st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom))) " +
+                                "ELSE st_force2D(st_makevalid(a.the_geom)) " +
+                                "END AS the_geom " +
+                                "FROM " +
+                                "$inputTableName AS a, $inputZoneEnvelopeTableName AS b " +
+                                "WHERE " +
+                                "a.the_geom && b.the_geom "
                     } else {
-                        query = "select id,  st_makevalid(st_force2D(a.the_geom)) as the_geom FROM $inputTableName  as a"
+                        query = "select id,  st_force2D(st_makevalid(a.the_geom)) as the_geom FROM $inputTableName  as a"
 
                     }
                     datasource.withBatch(1000) { stmt ->
@@ -498,9 +538,19 @@ IProcess formatImperviousLayer() {
                     columnNames.remove("THE_GEOM")
                     queryMapper += columnsMapper(columnNames, columnToMap)
                     if (inputZoneEnvelopeTableName) {
-                        queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(st_force2D(a.the_geom)) end, b.the_geom) then st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom)) else st_makevalid(a.the_geom) end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
+                        queryMapper += ", CASE WHEN st_overlaps(" +
+                                "CASE WHEN ST_ISVALID(a.the_geom) THEN st_force2D(a.the_geom) " +
+                                "ELSE st_force2D(st_makevalid(a.the_geom)) " +
+                                "END, b.the_geom) " +
+                                "THEN st_force2D(st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom))) " +
+                                "ELSE st_force2D(st_makevalid(a.the_geom)) " +
+                                "END AS the_geom " +
+                                "FROM " +
+                                "$inputTableName AS a, $inputZoneEnvelopeTableName AS b " +
+                                "WHERE " +
+                                "a.the_geom && b.the_geom "
                     } else {
-                        queryMapper += ", st_makevalid(st_force2D(a.the_geom)) as the_geom FROM $inputTableName  as a"
+                        queryMapper += ", st_force2D(st_makevalid(a.the_geom)) as the_geom FROM $inputTableName  as a"
                     }
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
@@ -949,9 +999,19 @@ IProcess formatEstimatedBuilding() {
                         queryMapper += columnsMapper(columnNames, columnToMap)
                         if (inputZoneEnvelopeTableName) {
                             inputSpatialTable.the_geom.createSpatialIndex()
-                            queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(st_force2D(a.the_geom)) end, b.the_geom) then st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom)) else st_makevalid(a.the_geom) end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
+                            queryMapper += ", CASE WHEN st_overlaps(" +
+                                    "CASE WHEN ST_ISVALID(a.the_geom) THEN st_force2D(a.the_geom) " +
+                                    "ELSE st_force2D(st_makevalid(a.the_geom)) " +
+                                    "END, b.the_geom) " +
+                                    "THEN st_force2D(st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom))) " +
+                                    "ELSE st_force2D(st_makevalid(a.the_geom)) " +
+                                    "END AS the_geom " +
+                                    "FROM " +
+                                    "$inputTableName AS a, $inputZoneEnvelopeTableName AS b " +
+                                    "WHERE " +
+                                    "a.the_geom && b.the_geom "
                         } else {
-                            queryMapper += ",  st_makevalid(st_force2D(a.the_geom)) as the_geom FROM $inputTableName  as a"
+                            queryMapper += ",  st_force2D(st_makevalid(a.the_geom)) as the_geom FROM $inputTableName  as a"
 
                         }
                         datasource.withBatch(1000) { stmt ->
