@@ -37,7 +37,7 @@ IProcess createRSU() {
     return create {
         title "Create reference spatial units (RSU)"
         id "createRSU"
-        inputs inputTableName: String, inputZoneTableName: "", prefixName: "", datasource: JdbcDataSource, area: 0.1d
+        inputs inputTableName: String, inputZoneTableName: "", prefixName: "", datasource: JdbcDataSource, area: 1d
         outputs outputTableName: String, outputIdRsu: String
         run { inputTableName, inputZoneTableName, prefixName, datasource, area ->
 
@@ -60,9 +60,9 @@ IProcess createRSU() {
                 datasource """
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName AS 
-                        SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(ST_FORCE2D(ST_MAKEVALID(a.the_geom)), $epsg) AS the_geom
+                        SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(a.the_geom, $epsg) AS the_geom
                         FROM ST_EXPLODE('(
-                                SELECT ST_POLYGONIZE(ST_UNION(ST_PRECISIONREDUCER(ST_NODE(ST_ACCUM(ST_FORCE2D(the_geom))), 3))) AS the_geom 
+                                SELECT ST_POLYGONIZE(ST_UNION(ST_PRECISIONREDUCER(ST_NODE(ST_ACCUM(the_geom)), 3))) AS the_geom 
                                 FROM $inputTableName)') AS a,
                             $inputZoneTableName AS b
                         WHERE a.the_geom && b.the_geom 
@@ -72,9 +72,9 @@ IProcess createRSU() {
                 datasource """
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName AS 
-                        SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(ST_FORCE2D(ST_MAKEVALID(the_geom)), $epsg) AS the_geom 
+                        SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(ST_FORCE2D(the_geom), $epsg) AS the_geom 
                         FROM ST_EXPLODE('(
-                                SELECT ST_POLYGONIZE(ST_UNION(ST_PRECISIONREDUCER(ST_NODE(ST_ACCUM(ST_FORCE2D(the_geom))), 3))) AS the_geom 
+                                SELECT ST_POLYGONIZE(ST_UNION(ST_PRECISIONREDUCER(ST_NODE(ST_ACCUM(the_geom)), 3))) AS the_geom 
                                 FROM $inputTableName)') where st_area(the_geom) > $area"""
             }
 
@@ -169,7 +169,7 @@ IProcess prepareRSUData() {
                                 "$vegetation_unified AS a, $zoneTable AS b WHERE a.the_geom && b.the_geom " +
                                 "AND ST_INTERSECTS(a.the_geom, b.the_geom)"
 
-                        queryCreateOutputTable += [vegetation_tmp: "(SELECT ST_FORCE2D(THE_GEOM) AS THE_GEOM FROM $vegetation_tmp)"]
+                        queryCreateOutputTable += [vegetation_tmp: "(SELECT THE_GEOM AS THE_GEOM FROM $vegetation_tmp)"]
                         dropTableList.addAll([vegetation_indice,
                                               vegetation_unified,
                                               vegetation_tmp])
@@ -216,7 +216,7 @@ IProcess prepareRSUData() {
                                 " AS THE_GEOM FROM $hydrographic_unified AS a, $zoneTable AS b " +
                                 "WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)"
 
-                        queryCreateOutputTable += [hydrographic_tmp: "(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $hydrographic_tmp)"]
+                        queryCreateOutputTable += [hydrographic_tmp: "(SELECT THE_GEOM FROM $hydrographic_tmp)"]
                         dropTableList.addAll([hydrographic_indice,
                                               hydrographic_unified,
                                               hydrographic_tmp])
@@ -226,14 +226,14 @@ IProcess prepareRSUData() {
                 if (roadTable && datasource.hasTable(roadTable)) {
                     if (datasource."$roadTable") {
                         info "Preparing road..."
-                        queryCreateOutputTable += [road_tmp: "(SELECT ST_FORCE2D(THE_GEOM) AS THE_GEOM FROM $roadTable where (zindex=0 or crossing = 'bridge') and type!='service')"]
+                        queryCreateOutputTable += [road_tmp: "(SELECT THE_GEOM FROM $roadTable where (zindex=0 or crossing = 'bridge') and type!='service')"]
                     }
                 }
 
                 if (railTable && datasource.hasTable(railTable) && !datasource."$railTable".isEmpty()) {
                     if (datasource."$railTable") {
                         info "Preparing rail..."
-                        queryCreateOutputTable += [rail_tmp: "(SELECT ST_FORCE2D(THE_GEOM) AS THE_GEOM FROM $railTable where zindex=0 or crossing = 'bridge')"]
+                        queryCreateOutputTable += [rail_tmp: "(SELECT THE_GEOM FROM $railTable where zindex=0 or crossing = 'bridge')"]
                     }
                 }
 
