@@ -169,7 +169,7 @@ IProcess prepareRSUData() {
                                 "$vegetation_unified AS a, $zoneTable AS b WHERE a.the_geom && b.the_geom " +
                                 "AND ST_INTERSECTS(a.the_geom, b.the_geom)"
 
-                        queryCreateOutputTable += [vegetation_tmp: "(SELECT THE_GEOM AS THE_GEOM FROM $vegetation_tmp)"]
+                        queryCreateOutputTable += [vegetation_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) AS THE_GEOM FROM $vegetation_tmp)"]
                         dropTableList.addAll([vegetation_indice,
                                               vegetation_unified,
                                               vegetation_tmp])
@@ -216,7 +216,7 @@ IProcess prepareRSUData() {
                                 " AS THE_GEOM FROM $hydrographic_unified AS a, $zoneTable AS b " +
                                 "WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)"
 
-                        queryCreateOutputTable += [hydrographic_tmp: "(SELECT THE_GEOM FROM $hydrographic_tmp)"]
+                        queryCreateOutputTable += [hydrographic_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) as the_geom FROM $hydrographic_tmp)"]
                         dropTableList.addAll([hydrographic_indice,
                                               hydrographic_unified,
                                               hydrographic_tmp])
@@ -244,7 +244,7 @@ IProcess prepareRSUData() {
                         DROP TABLE if exists $outputTableName;
                         CREATE TABLE $outputTableName(the_geom GEOMETRY) AS 
                             (
-                                SELECT st_setsrid(ST_ToMultiLine(THE_GEOM),$epsg) 
+                                SELECT st_setsrid(ST_ToMultiLine(THE_GEOM),$epsg) as the_geom
                                 FROM $zoneTable) 
                             UNION ${queryCreateOutputTable.values().join(' union ')};
                         DROP TABLE IF EXISTS ${queryCreateOutputTable.keySet().join(' , ')}
