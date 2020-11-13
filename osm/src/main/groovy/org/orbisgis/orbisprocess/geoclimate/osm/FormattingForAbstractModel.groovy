@@ -65,10 +65,10 @@ IProcess formatBuildingLayer() {
                     if (inputZoneEnvelopeTableName) {
                         inputSpatialTable.the_geom.createSpatialIndex()
                         datasource."$inputZoneEnvelopeTableName".the_geom.createSpatialIndex()
-                        queryMapper += " , case when st_isvalid(a.the_geom) then st_force2D(a.the_geom) else st_force2D(st_makevalid(a.the_geom)) end  as the_geom FROM $inputTableName as a,  $inputZoneEnvelopeTableName as b WHERE a.the_geom && b.the_geom and st_intersects(CASE WHEN ST_ISVALID(a.the_geom) THEN st_force2D(a.the_geom) " +
+                        queryMapper += " , st_force2D(st_makevalid(a.the_geom)) as the_geom FROM $inputTableName as a,  $inputZoneEnvelopeTableName as b WHERE a.the_geom && b.the_geom and st_intersects(CASE WHEN ST_ISVALID(a.the_geom) THEN st_force2D(a.the_geom) " +
                                 "else st_force2D(st_makevalid(a.the_geom)) end, b.the_geom) and st_area(a.the_geom)>1"
                     } else {
-                        queryMapper += " , case when st_isvalid(a.the_geom) then st_force2D(a.the_geom) else st_force2D(st_makevalid(a.the_geom)) end as the_geom FROM $inputTableName as a where st_area(a.the_geom)>1"
+                        queryMapper += " , st_force2D(st_makevalid(a.the_geom)) as the_geom FROM $inputTableName as a where st_area(a.the_geom)>1"
                     }
                     def id_build=1;
                     datasource.withBatch(1000) { stmt ->
@@ -207,10 +207,7 @@ IProcess formatRoadLayer() {
                     queryMapper += columnsMapper(columnNames, columnToMap)
                     if (inputZoneEnvelopeTableName) {
                         inputSpatialTable.the_geom.createSpatialIndex()
-                        queryMapper += ", CASE WHEN st_overlaps(" +
-                                "CASE WHEN ST_ISVALID(a.the_geom) THEN st_force2D(a.the_geom) " +
-                                "ELSE st_force2D(st_makevalid(a.the_geom)) " +
-                                "END, b.the_geom) " +
+                        queryMapper += ", CASE WHEN st_overlaps(st_force2D(a.the_geom), b.the_geom) " +
                                 "THEN st_force2D(st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom))) " +
                                 "ELSE st_force2D(st_makevalid(a.the_geom)) " +
                                 "END AS the_geom " +
@@ -315,10 +312,7 @@ IProcess formatRailsLayer() {
                     queryMapper += columnsMapper(columnNames, columnToMap)
                     if (inputZoneEnvelopeTableName) {
                         inputSpatialTable.the_geom.createSpatialIndex()
-                        queryMapper += ", CASE WHEN st_overlaps(" +
-                                "CASE WHEN ST_ISVALID(a.the_geom) THEN st_force2D(a.the_geom) " +
-                                "ELSE st_force2D(st_makevalid(a.the_geom)) " +
-                                "END, b.the_geom) " +
+                        queryMapper += ", CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
                                 "THEN st_force2D(st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom))) " +
                                 "ELSE st_force2D(st_makevalid(a.the_geom)) " +
                                 "END AS the_geom " +
@@ -404,11 +398,8 @@ IProcess formatVegetationLayer() {
                     queryMapper += columnsMapper(columnNames, columnToMap)
                     if (inputZoneEnvelopeTableName) {
                         inputSpatialTable.the_geom.createSpatialIndex()
-                        queryMapper += ", CASE WHEN st_overlaps(" +
-                                "CASE WHEN ST_ISVALID(a.the_geom) THEN st_force2D(a.the_geom) " +
-                                "ELSE st_force2D(st_makevalid(a.the_geom)) " +
-                                "END, b.the_geom) " +
-                                "THEN st_force2D(st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom))) " +
+                        queryMapper += ", CASE WHEN st_overlaps(st_makevalid(a.the_geom), b.the_geom) " +
+                                "THEN st_force2D(st_intersection(st_makevalid(a.the_geom), st_makevalid(b.the_geom))) " +
                                 "ELSE st_force2D(st_makevalid(a.the_geom)) " +
                                 "END AS the_geom " +
                                 "FROM " +
@@ -473,11 +464,8 @@ IProcess formatHydroLayer() {
                     inputSpatialTable.the_geom.createSpatialIndex()
                     String query
                     if (inputZoneEnvelopeTableName) {
-                        query = "select id , CASE WHEN st_overlaps(" +
-                                "CASE WHEN ST_ISVALID(a.the_geom) THEN st_force2D(a.the_geom) " +
-                                "ELSE st_force2D(st_makevalid(a.the_geom)) " +
-                                "END, b.the_geom) " +
-                                "THEN st_force2D(st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom))) " +
+                        query = "select id , CASE WHEN st_overlaps(st_makevalid(a.the_geom), b.the_geom) " +
+                                "THEN st_force2D(st_intersection(st_makevalid(a.the_geom), st_makevalid(b.the_geom))) " +
                                 "ELSE st_force2D(st_makevalid(a.the_geom)) " +
                                 "END AS the_geom " +
                                 "FROM " +
@@ -538,11 +526,8 @@ IProcess formatImperviousLayer() {
                     columnNames.remove("THE_GEOM")
                     queryMapper += columnsMapper(columnNames, columnToMap)
                     if (inputZoneEnvelopeTableName) {
-                        queryMapper += ", CASE WHEN st_overlaps(" +
-                                "CASE WHEN ST_ISVALID(a.the_geom) THEN st_force2D(a.the_geom) " +
-                                "ELSE st_force2D(st_makevalid(a.the_geom)) " +
-                                "END, b.the_geom) " +
-                                "THEN st_force2D(st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom))) " +
+                        queryMapper += ", CASE WHEN st_overlaps(st_makevalid(a.the_geom), b.the_geom) " +
+                                "THEN st_force2D(st_intersection(st_makevalid(a.the_geom), st_makevalid(b.the_geom))) " +
                                 "ELSE st_force2D(st_makevalid(a.the_geom)) " +
                                 "END AS the_geom " +
                                 "FROM " +
@@ -999,11 +984,8 @@ IProcess formatEstimatedBuilding() {
                         queryMapper += columnsMapper(columnNames, columnToMap)
                         if (inputZoneEnvelopeTableName) {
                             inputSpatialTable.the_geom.createSpatialIndex()
-                            queryMapper += ", CASE WHEN st_overlaps(" +
-                                    "CASE WHEN ST_ISVALID(a.the_geom) THEN st_force2D(a.the_geom) " +
-                                    "ELSE st_force2D(st_makevalid(a.the_geom)) " +
-                                    "END, b.the_geom) " +
-                                    "THEN st_force2D(st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom))) " +
+                            queryMapper += ", CASE WHEN st_overlaps(st_makevalid(a.the_geom), b.the_geom) " +
+                                    "THEN st_force2D(st_intersection(st_makevalid(a.the_geom), st_makevalid(b.the_geom))) " +
                                     "ELSE st_force2D(st_makevalid(a.the_geom)) " +
                                     "END AS the_geom " +
                                     "FROM " +
