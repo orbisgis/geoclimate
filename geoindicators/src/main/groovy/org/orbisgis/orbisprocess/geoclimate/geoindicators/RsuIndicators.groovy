@@ -342,8 +342,8 @@ IProcess projectedFacadeAreaDistribution() {
                     CREATE TABLE $buildingIntersection( the_geom GEOMETRY, id_build_a INTEGER, id_build_b INTEGER, z_max DOUBLE, z_min DOUBLE) AS 
                         SELECT ST_CollectionExtract(t.the_geom,2), t.id_build_a , t.id_build_b , t.z_max , t.z_min 
                         FROM (
-                            SELECT ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_COLUMN_BU), 
-                                ST_MAKEVALID(b.$GEOMETRIC_COLUMN_BU)) AS the_geom, 
+                            SELECT ST_INTERSECTION(a.$GEOMETRIC_COLUMN_BU, 
+                                b.$GEOMETRIC_COLUMN_BU) AS the_geom, 
                                 a.$ID_COLUMN_BU AS id_build_a, 
                                 b.$ID_COLUMN_BU AS id_build_b, 
                                 GREATEST(a.$HEIGHT_WALL,b.$HEIGHT_WALL) AS z_max, 
@@ -409,7 +409,7 @@ IProcess projectedFacadeAreaDistribution() {
                 // Intersections between free facades and rsu geometries are calculated
                 datasource """ DROP TABLE IF EXISTS $buildingFreeExpl; 
                     CREATE TABLE $buildingFreeExpl(id_rsu INTEGER, the_geom GEOMETRY, $namesAndType) AS 
-                    (SELECT a.$ID_COLUMN_RSU, ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_COLUMN_RSU), ST_TOMULTILINE(b.the_geom)), 
+                    (SELECT a.$ID_COLUMN_RSU, ST_INTERSECTION(a.$GEOMETRIC_COLUMN_RSU, ST_TOMULTILINE(b.the_geom)), 
                     ${onlyNamesB} FROM $rsuTable a, $buildingLayer b 
                     WHERE a.$GEOMETRIC_COLUMN_RSU && b.the_geom 
                     AND ST_INTERSECTS(a.$GEOMETRIC_COLUMN_RSU, b.the_geom))"""
@@ -1251,14 +1251,14 @@ return create {
                 def high_vegetation_tmp = postfix "high_vegetation_zindex0"
                 def high_vegetation_rsu_tmp = postfix "high_vegetation_zindex0"
                 datasource """DROP TABLE IF EXISTS $low_vegetation_tmp, $low_vegetation_rsu_tmp;
-                CREATE TABLE $low_vegetation_rsu_tmp as select st_union(st_accum(ST_FORCE2d(a.the_geom))) as the_geom,  b.id_rsu FROM 
+                CREATE TABLE $low_vegetation_rsu_tmp as select st_union(st_accum(a.the_geom)) as the_geom,  b.id_rsu FROM 
                     $vegetationTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='low' group by b.id_rsu;
                 CREATE INDEX ON $low_vegetation_rsu_tmp(id_rsu);
                 CREATE TABLE $low_vegetation_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.id_rsu FROM 
                         $low_vegetation_rsu_tmp AS a, $rsuTable AS b WHERE a.id_rsu=b.id_rsu group by b.id_rsu;
                         DROP TABLE IF EXISTS $high_vegetation_tmp,$high_vegetation_rsu_tmp;
-                CREATE TABLE $high_vegetation_rsu_tmp as select st_union(st_accum(ST_FORCE2d(a.the_geom))) as the_geom,  b.id_rsu FROM 
+                CREATE TABLE $high_vegetation_rsu_tmp as select st_union(st_accum(a.the_geom)) as the_geom,  b.id_rsu FROM 
                     $vegetationTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='high' group by b.id_rsu;
                 CREATE INDEX ON $high_vegetation_rsu_tmp(id_rsu);
@@ -1274,7 +1274,7 @@ return create {
                 datasource."$waterTable".the_geom.createSpatialIndex()
                 def water_tmp = postfix "water_zindex0"
                 datasource """DROP TABLE IF EXISTS $water_tmp;
-                CREATE TABLE $water_tmp AS SELECT ST_CollectionExtract(st_intersection(ST_FORCE2d(a.the_geom), b.the_geom),3) AS the_geom, b.id_rsu FROM 
+                CREATE TABLE $water_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.id_rsu FROM 
                         $waterTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom)"""
                 tablesToMerge += ["$water_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $water_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
@@ -1285,7 +1285,7 @@ return create {
                 datasource."$imperviousTable".the_geom.createSpatialIndex()
                 def impervious_tmp = postfix "impervious_zindex0"
                 datasource """DROP TABLE IF EXISTS $impervious_tmp;
-                CREATE TABLE $impervious_tmp AS SELECT ST_CollectionExtract(st_intersection(st_force2d(a.the_geom), b.the_geom),3) AS the_geom, b.id_rsu FROM 
+                CREATE TABLE $impervious_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.id_rsu FROM 
                         $imperviousTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom)"""
                 tablesToMerge += ["$impervious_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $impervious_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
@@ -1296,7 +1296,7 @@ return create {
                 datasource."$buildingTable".the_geom.createSpatialIndex()
                 def building_tmp = postfix "building_zindex0"
                 datasource """DROP TABLE IF EXISTS $building_tmp;
-                CREATE TABLE $building_tmp AS SELECT ST_CollectionExtract(st_intersection(st_force2d(a.the_geom), b.the_geom),3) AS the_geom, b.id_rsu FROM 
+                CREATE TABLE $building_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.id_rsu FROM 
                         $buildingTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.zindex=0"""
                 tablesToMerge += ["$building_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $building_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
