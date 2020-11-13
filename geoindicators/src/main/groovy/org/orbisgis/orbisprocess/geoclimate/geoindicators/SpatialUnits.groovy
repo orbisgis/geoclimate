@@ -452,11 +452,11 @@ IProcess spatialJoin() {
 }
 
 /**
- * This process is used to generate a grid.
+ * This process is used to generate a regular grid
  *
- * @param geometry A geometry that defines either Point, Line or Polygon
- * @param deltaX A double value that represents the spatial horizontal step of a cell in the grid
- * @param deltaY A double value that represents the spatial vertical step of a cell in the grid
+ * @param geometry The geometry defined as bounding box coordinates (e.g. POLYGON)
+ * @param deltaX  The spatial horizontal resolution in meter
+ * @param deltaY  The spatial vertical resolution in meter
  * @param prefixName A prefix used to name the output table
  * @param datasource A connexion to a database (H2GIS, POSTGIS, ...) where are stored the input Table and in which
  *        the resulting database will be stored
@@ -466,61 +466,61 @@ IProcess spatialJoin() {
  * */
 IProcess createGrid() {
     return create {
-        title "Creating a continuous cartesian grid in meter"
+        title "Creating a regular cartesian grid in meter"
         id "createGrid"
-        inputs geometry: Geometry, deltaX: double, deltaY: double, gridTableName: String, datasource: JdbcDataSource
+        inputs geometry: Geometry, deltaX: double, deltaY: double,
+                gridTableName: String, datasource: JdbcDataSource
         outputs outputTableName: String
-
         run { geometry, deltaX, deltaY, gridTableName, datasource ->
 
             if (datasource.hasTable(gridTableName)) {
-                info "Table $gridTableName already exists"
-                //return null
+                datasource """DROP TABLE IF EXISTS $gridTableName"""
             }
             if (datasource instanceof H2GIS) {
                 info "Creating grid with H2GIS"
-                datasource """CREATE TABLE $gridTableName AS SELECT * FROM 
-                                     ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY);"""
+                datasource"""
+                    CREATE TABLE $gridTableName 
+                    AS SELECT * FROM ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY);
+                    """
             }
             else if (datasource instanceof POSTGIS) {
                 info "Creating grid with POSTGIS"
-                    PreparedStatement preparedStatement = null
-                    Connection outputConnection = datasource.getConnection()
-                    try {
-                        def createTable = "CREATE TABLE $gridTableName(THE_GEOM GEOMETRY(POLYGON), ID INT, ID_COL INT, ID_ROW INT);"
-                        def insertTable = "INSERT INTO $gridTableName VALUES (?, ?, ?, ?);"
+                PreparedStatement preparedStatement = null
+                Connection outputConnection = datasource.getConnection()
+                try {
+                    def createTable = "CREATE TABLE $gridTableName(THE_GEOM GEOMETRY(POLYGON), ID INT, ID_COL INT, ID_ROW INT);"
+                    def insertTable = "INSERT INTO $gridTableName VALUES (?, ?, ?, ?);"
+                    datasource.execute(createTable)
 
-                        datasource.execute(createTable)
-                        preparedStatement = outputConnection.prepareStatement(insertTable)
-                        def result = ST_MakeGrid.createGrid(outputConnection, ValueGeometry.getFromGeometry(geometry), deltaX, deltaY)
+                    preparedStatement = outputConnection.prepareStatement(insertTable)
+                    def result = ST_MakeGrid.createGrid(outputConnection, ValueGeometry.getFromGeometry(geometry), deltaX, deltaY)
+                    long batch_size = 0
+                    int batchSize = 1000
 
-                        long batch_size = 0
-                        int batchSize = 1000
-
-                        while (result.next()) {
-                            preparedStatement.setObject( 1, result.getObject(1))
-                            preparedStatement.setObject( 2, result.getInt(2))
-                            preparedStatement.setObject( 3, result.getInt(3))
-                            preparedStatement.setObject( 4, result.getInt(4))
-                            preparedStatement.addBatch()
-                            batch_size++
-                            if (batch_size >= batchSize) {
-                                preparedStatement.executeBatch()
-                                preparedStatement.clearBatch()
-                                batchSize = 0;
-                            }
-                        }
-                        if (batch_size > 0) {
+                    while (result.next()) {
+                        preparedStatement.setObject( 1, result.getObject(1))
+                        preparedStatement.setObject( 2, result.getInt(2))
+                        preparedStatement.setObject( 3, result.getInt(3))
+                        preparedStatement.setObject( 4, result.getInt(4))
+                        preparedStatement.addBatch()
+                        batch_size++
+                        if (batch_size >= batchSize) {
                             preparedStatement.executeBatch()
-                        }
-                    } catch (SQLException e) {
-                        error("Cannot create the grid with the parameters.\n", e)
-                        return null
-                    } finally {
-                        if (preparedStatement != null) {
-                            preparedStatement.close()
+                            preparedStatement.clearBatch()
+                            batchSize = 0;
                         }
                     }
+                    if (batch_size > 0) {
+                        preparedStatement.executeBatch()
+                    }
+                } catch (SQLException e) {
+                    error("Cannot create the grid with the parameters.\n", e)
+                    return null
+                } finally {
+                    if (preparedStatement != null) {
+                        preparedStatement.close()
+                    }
+                }
             }
             info "The grid '$gridTableName' has been created"
             [outputTableName: gridTableName]
