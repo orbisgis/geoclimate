@@ -1133,27 +1133,28 @@ IProcess extendedFreeFacadeFraction() {
 
             // The facade area of buildings being entirely included in the RSU buffer is calculated
             datasource."$extRsuTable"."$GEOMETRIC_FIELD".createSpatialIndex()
+            datasource."$extRsuTable"."$ID_FIELD_RSU".createIndex()
             datasource."$buildingTable"."$GEOMETRIC_FIELD".createSpatialIndex()
 
-            datasource "DROP TABLE IF EXISTS $inclBu; CREATE TABLE $inclBu AS SELECT " +
-                    "COALESCE(SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$HEIGHT_WALL), 0) AS FAC_AREA," +
-                    "b.$ID_FIELD_RSU FROM $buildingTable a, $extRsuTable b WHERE ST_COVERS(b.$GEOMETRIC_FIELD," +
-                    "a.$GEOMETRIC_FIELD) GROUP BY b.$ID_FIELD_RSU;"
+            datasource """DROP TABLE IF EXISTS $inclBu; CREATE TABLE $inclBu AS SELECT 
+                    COALESCE(SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$HEIGHT_WALL), 0) AS FAC_AREA,
+                    b.$ID_FIELD_RSU FROM $buildingTable a, $extRsuTable b WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD and ST_COVERS(b.$GEOMETRIC_FIELD,
+                    a.$GEOMETRIC_FIELD) GROUP BY b.$ID_FIELD_RSU;"""
 
             // All RSU are feeded with default value
             datasource."$inclBu"."$ID_FIELD_RSU".createIndex()
             datasource."$rsuTable"."$ID_FIELD_RSU".createIndex()
 
             datasource "DROP TABLE IF EXISTS $fullInclBu; CREATE TABLE $fullInclBu AS SELECT " +
-                    "COALESCE(a.FAC_AREA, 0) AS FAC_AREA, b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD " +
-                    "FROM $inclBu a RIGHT JOIN $rsuTable b ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU;"
+                    "COALESCE(a.FAC_AREA, 0) AS FAC_AREA, b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD, st_area(b.$GEOMETRIC_FIELD) as rsu_buff_area " +
+                    "FROM $inclBu a RIGHT JOIN $extRsuTable b ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU;"
 
             // The facade area of buildings being partially included in the RSU buffer is calculated
             datasource "DROP TABLE IF EXISTS $notIncBu; CREATE TABLE $notIncBu AS SELECT " +
                     "COALESCE(SUM(ST_LENGTH(ST_INTERSECTION(ST_TOMULTILINE(a.$GEOMETRIC_FIELD)," +
                     " b.$GEOMETRIC_FIELD))*a.$HEIGHT_WALL), 0) " +
                     "AS FAC_AREA, b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD FROM $buildingTable a, $extRsuTable b " +
-                    "WHERE ST_OVERLAPS(b.$GEOMETRIC_FIELD, a.$GEOMETRIC_FIELD) GROUP BY b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD;"
+                    "WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD and ST_OVERLAPS(b.$GEOMETRIC_FIELD, a.$GEOMETRIC_FIELD) GROUP BY b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD;"
 
             // The facade fraction is calculated
             datasource."$notIncBu"."$ID_FIELD_RSU".createIndex()
@@ -1161,8 +1162,8 @@ IProcess extendedFreeFacadeFraction() {
 
             datasource "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
                     "SELECT COALESCE((a.FAC_AREA + b.FAC_AREA) /" +
-                    "(a.FAC_AREA + b.FAC_AREA + ST_AREA(ST_BUFFER(a.$GEOMETRIC_FIELD, $buffDist, 'quad_segs=2')))," +
-                    " a.FAC_AREA / (a.FAC_AREA  + ST_AREA(ST_BUFFER(a.$GEOMETRIC_FIELD, $buffDist, 'quad_segs=2'))))" +
+                    "(a.FAC_AREA + b.FAC_AREA + a.rsu_buff_area)," +
+                    " a.FAC_AREA / (a.FAC_AREA  + a.rsu_buff_area))" +
                     "AS $BASE_NAME, " +
                     "a.$ID_FIELD_RSU, a.$GEOMETRIC_FIELD FROM $fullInclBu a LEFT JOIN $notIncBu b " +
                     "ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU;"
