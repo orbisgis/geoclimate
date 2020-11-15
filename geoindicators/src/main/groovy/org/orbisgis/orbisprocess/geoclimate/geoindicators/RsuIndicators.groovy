@@ -409,7 +409,7 @@ IProcess projectedFacadeAreaDistribution() {
                 // Intersections between free facades and rsu geometries are calculated
                 datasource """ DROP TABLE IF EXISTS $buildingFreeExpl; 
                     CREATE TABLE $buildingFreeExpl(id_rsu INTEGER, the_geom GEOMETRY, $namesAndType) AS 
-                    (SELECT a.$ID_COLUMN_RSU, ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_COLUMN_RSU), ST_TOMULTILINE(b.the_geom)), 
+                    (SELECT a.$ID_COLUMN_RSU, ST_INTERSECTION(a.$GEOMETRIC_COLUMN_RSU, ST_TOMULTILINE(b.the_geom)), 
                     ${onlyNamesB} FROM $rsuTable a, $buildingLayer b 
                     WHERE a.$GEOMETRIC_COLUMN_RSU && b.the_geom 
                     AND ST_INTERSECTS(a.$GEOMETRIC_COLUMN_RSU, b.the_geom))"""
@@ -1133,27 +1133,28 @@ IProcess extendedFreeFacadeFraction() {
 
             // The facade area of buildings being entirely included in the RSU buffer is calculated
             datasource."$extRsuTable"."$GEOMETRIC_FIELD".createSpatialIndex()
+            datasource."$extRsuTable"."$ID_FIELD_RSU".createIndex()
             datasource."$buildingTable"."$GEOMETRIC_FIELD".createSpatialIndex()
 
-            datasource "DROP TABLE IF EXISTS $inclBu; CREATE TABLE $inclBu AS SELECT " +
-                    "COALESCE(SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$HEIGHT_WALL), 0) AS FAC_AREA," +
-                    "b.$ID_FIELD_RSU FROM $buildingTable a, $extRsuTable b WHERE ST_COVERS(b.$GEOMETRIC_FIELD," +
-                    "a.$GEOMETRIC_FIELD) GROUP BY b.$ID_FIELD_RSU;"
+            datasource """DROP TABLE IF EXISTS $inclBu; CREATE TABLE $inclBu AS SELECT 
+                    COALESCE(SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$HEIGHT_WALL), 0) AS FAC_AREA,
+                    b.$ID_FIELD_RSU FROM $buildingTable a, $extRsuTable b WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD and ST_COVERS(b.$GEOMETRIC_FIELD,
+                    a.$GEOMETRIC_FIELD) GROUP BY b.$ID_FIELD_RSU;"""
 
             // All RSU are feeded with default value
             datasource."$inclBu"."$ID_FIELD_RSU".createIndex()
             datasource."$rsuTable"."$ID_FIELD_RSU".createIndex()
 
             datasource "DROP TABLE IF EXISTS $fullInclBu; CREATE TABLE $fullInclBu AS SELECT " +
-                    "COALESCE(a.FAC_AREA, 0) AS FAC_AREA, b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD " +
-                    "FROM $inclBu a RIGHT JOIN $rsuTable b ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU;"
+                    "COALESCE(a.FAC_AREA, 0) AS FAC_AREA, b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD, st_area(b.$GEOMETRIC_FIELD) as rsu_buff_area " +
+                    "FROM $inclBu a RIGHT JOIN $extRsuTable b ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU;"
 
             // The facade area of buildings being partially included in the RSU buffer is calculated
             datasource "DROP TABLE IF EXISTS $notIncBu; CREATE TABLE $notIncBu AS SELECT " +
                     "COALESCE(SUM(ST_LENGTH(ST_INTERSECTION(ST_TOMULTILINE(a.$GEOMETRIC_FIELD)," +
                     " b.$GEOMETRIC_FIELD))*a.$HEIGHT_WALL), 0) " +
                     "AS FAC_AREA, b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD FROM $buildingTable a, $extRsuTable b " +
-                    "WHERE ST_OVERLAPS(b.$GEOMETRIC_FIELD, a.$GEOMETRIC_FIELD) GROUP BY b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD;"
+                    "WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD and ST_OVERLAPS(b.$GEOMETRIC_FIELD, a.$GEOMETRIC_FIELD) GROUP BY b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD;"
 
             // The facade fraction is calculated
             datasource."$notIncBu"."$ID_FIELD_RSU".createIndex()
@@ -1161,8 +1162,8 @@ IProcess extendedFreeFacadeFraction() {
 
             datasource "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
                     "SELECT COALESCE((a.FAC_AREA + b.FAC_AREA) /" +
-                    "(a.FAC_AREA + b.FAC_AREA + ST_AREA(ST_BUFFER(a.$GEOMETRIC_FIELD, $buffDist, 'quad_segs=2')))," +
-                    " a.FAC_AREA / (a.FAC_AREA  + ST_AREA(ST_BUFFER(a.$GEOMETRIC_FIELD, $buffDist, 'quad_segs=2'))))" +
+                    "(a.FAC_AREA + b.FAC_AREA + a.rsu_buff_area)," +
+                    " a.FAC_AREA / (a.FAC_AREA  + a.rsu_buff_area))" +
                     "AS $BASE_NAME, " +
                     "a.$ID_FIELD_RSU, a.$GEOMETRIC_FIELD FROM $fullInclBu a LEFT JOIN $notIncBu b " +
                     "ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU;"
@@ -1251,14 +1252,14 @@ return create {
                 def high_vegetation_tmp = postfix "high_vegetation_zindex0"
                 def high_vegetation_rsu_tmp = postfix "high_vegetation_zindex0"
                 datasource """DROP TABLE IF EXISTS $low_vegetation_tmp, $low_vegetation_rsu_tmp;
-                CREATE TABLE $low_vegetation_rsu_tmp as select st_union(st_accum(ST_FORCE2d(a.the_geom))) as the_geom,  b.id_rsu FROM 
+                CREATE TABLE $low_vegetation_rsu_tmp as select st_union(st_accum(a.the_geom)) as the_geom,  b.id_rsu FROM 
                     $vegetationTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='low' group by b.id_rsu;
                 CREATE INDEX ON $low_vegetation_rsu_tmp(id_rsu);
                 CREATE TABLE $low_vegetation_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.id_rsu FROM 
                         $low_vegetation_rsu_tmp AS a, $rsuTable AS b WHERE a.id_rsu=b.id_rsu group by b.id_rsu;
                         DROP TABLE IF EXISTS $high_vegetation_tmp,$high_vegetation_rsu_tmp;
-                CREATE TABLE $high_vegetation_rsu_tmp as select st_union(st_accum(ST_FORCE2d(a.the_geom))) as the_geom,  b.id_rsu FROM 
+                CREATE TABLE $high_vegetation_rsu_tmp as select st_union(st_accum(a.the_geom)) as the_geom,  b.id_rsu FROM 
                     $vegetationTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='high' group by b.id_rsu;
                 CREATE INDEX ON $high_vegetation_rsu_tmp(id_rsu);
@@ -1274,7 +1275,7 @@ return create {
                 datasource."$waterTable".the_geom.createSpatialIndex()
                 def water_tmp = postfix "water_zindex0"
                 datasource """DROP TABLE IF EXISTS $water_tmp;
-                CREATE TABLE $water_tmp AS SELECT ST_CollectionExtract(st_intersection(ST_FORCE2d(a.the_geom), b.the_geom),3) AS the_geom, b.id_rsu FROM 
+                CREATE TABLE $water_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.id_rsu FROM 
                         $waterTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom)"""
                 tablesToMerge += ["$water_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $water_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
@@ -1285,7 +1286,7 @@ return create {
                 datasource."$imperviousTable".the_geom.createSpatialIndex()
                 def impervious_tmp = postfix "impervious_zindex0"
                 datasource """DROP TABLE IF EXISTS $impervious_tmp;
-                CREATE TABLE $impervious_tmp AS SELECT ST_CollectionExtract(st_intersection(st_force2d(a.the_geom), b.the_geom),3) AS the_geom, b.id_rsu FROM 
+                CREATE TABLE $impervious_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.id_rsu FROM 
                         $imperviousTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom)"""
                 tablesToMerge += ["$impervious_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $impervious_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
@@ -1296,7 +1297,7 @@ return create {
                 datasource."$buildingTable".the_geom.createSpatialIndex()
                 def building_tmp = postfix "building_zindex0"
                 datasource """DROP TABLE IF EXISTS $building_tmp;
-                CREATE TABLE $building_tmp AS SELECT ST_CollectionExtract(st_intersection(st_force2d(a.the_geom), b.the_geom),3) AS the_geom, b.id_rsu FROM 
+                CREATE TABLE $building_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.id_rsu FROM 
                         $buildingTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.zindex=0"""
                 tablesToMerge += ["$building_tmp": "select ST_ToMultiLine(the_geom) as the_geom, id_rsu from $building_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]

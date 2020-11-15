@@ -1,11 +1,8 @@
 package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 
 import static org.junit.jupiter.api.Assertions.*
 
@@ -63,17 +60,13 @@ class InputDataFormattingTest {
 
         def processFormatting = BDTopo_V2.formatInputData
         assertTrue processFormatting.execute([datasource: h2GISDatabase,
-                         inputBuilding: resultsImport.outputBuildingName, inputRoad: resultsImport.outputRoadName,
-                         inputRail: resultsImport.outputRailName, inputHydro: resultsImport.outputHydroName,
-                         inputVeget: resultsImport.outputVegetName, inputImpervious: resultsImport.outputImperviousName,
-                         inputZone: resultsImport.outputZoneName, //inputZoneNeighbors: resultsImport.outputZoneNeighborsName,
-
-                         hLevMin: 3, hLevMax: 15, hThresholdLev2: 10, idZone: communeToTest, expand: 1000,
-
-                         buildingAbstractUseType: 'BUILDING_ABSTRACT_USE_TYPE', buildingAbstractParameters: 'BUILDING_ABSTRACT_PARAMETERS',
-                         roadAbstractType: 'ROAD_ABSTRACT_TYPE', roadAbstractParameters: 'ROAD_ABSTRACT_PARAMETERS', roadAbstractCrossing: 'ROAD_ABSTRACT_CROSSING',
-                         railAbstractType: 'RAIL_ABSTRACT_TYPE', railAbstractCrossing: 'RAIL_ABSTRACT_CROSSING',
-                         vegetAbstractType: 'VEGET_ABSTRACT_TYPE', vegetAbstractParameters: 'VEGET_ABSTRACT_PARAMETERS'])
+                                              inputBuilding: resultsImport.outputBuildingName, inputRoad: resultsImport.outputRoadName,
+                                              inputRail: resultsImport.outputRailName, inputHydro: resultsImport.outputHydroName,
+                                              inputVeget: resultsImport.outputVegetName, inputImpervious: resultsImport.outputImperviousName,
+                                              inputZone: resultsImport.outputZoneName, //inputZoneNeighbors: resultsImport.outputZoneNeighborsName,
+                                              hLevMin: 3, hLevMax: 15, hThresholdLev2: 10, idZone: communeToTest, expand: 1000,
+                                              buildingAbstractParameters: 'BUILDING_ABSTRACT_PARAMETERS', roadAbstractParameters: 'ROAD_ABSTRACT_PARAMETERS',
+                                              vegetAbstractParameters: 'VEGET_ABSTRACT_PARAMETERS'])
         processFormatting.results.each {
             entry -> assertNotNull h2GISDatabase.getTable(entry.getValue())
         }
@@ -239,131 +232,6 @@ class InputDataFormattingTest {
         // ... with the building (INDIF) 'BINDIF0010' which main part is in Gwened (abcde)
         assertEquals('abcde', h2GISDatabase.firstRow("SELECT ID_ZONE FROM BUILDING " +
                 "WHERE ID_SOURCE='BINDIF0010';")["ID_ZONE"])
-        
-
-        // ------------------
-        // Check if the BUILDING_STATS_ZONE table has the correct number of columns and rows
-        tableName = processFormatting.results.outputBuildingStatZone
-        assertNotNull(tableName)
-        table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(16, table.columnCount)
-        assertEquals(1, table.rowCount)
-        // Check if the column types are correct
-        assertEquals('VARCHAR', table.columnType('ID_ZONE'))
-        assertEquals('BIGINT', table.columnType('NB_BUILD'))
-        assertEquals('BIGINT', table.columnType('NOT_VALID'))
-        assertEquals('BIGINT', table.columnType('IS_EMPTY'))
-        assertEquals('BIGINT', table.columnType('IS_EQUALS'))
-        assertEquals('BIGINT', table.columnType('OVERLAP'))
-        assertEquals('BIGINT', table.columnType('FC_H_ZERO'))
-        assertEquals('BIGINT', table.columnType('FC_H_NULL'))
-        assertEquals('BIGINT', table.columnType('FC_H_RANGE'))
-        assertEquals('BIGINT', table.columnType('H_NULL'))
-        assertEquals('BIGINT', table.columnType('H_RANGE'))
-        assertEquals('BIGINT', table.columnType('H_ROOF_MIN_WALL'))
-        assertEquals('BIGINT', table.columnType('LEV_NULL'))
-        assertEquals('BIGINT', table.columnType('LEV_RANGE'))
-        assertEquals('BIGINT', table.columnType('NO_TYPE'))
-        assertEquals('BIGINT', table.columnType('TYPE_RANGE'))
-        // For each rows, check if the fields contains the expected values
-        table.eachRow { row ->
-            assertNotNull(row.ID_ZONE)
-            assertNotEquals('', row.ID_ZONE)
-            assertEquals(communeToTest, row.ID_ZONE)
-            assertNotNull(row.NB_BUILD)
-            assertNotEquals('', row.NB_BUILD)
-            assertNotNull(row.NOT_VALID)
-            assertNotEquals('', row.NOT_VALID)
-            assertNotNull(row.IS_EMPTY)
-            assertNotEquals('', row.IS_EMPTY)
-            assertNotNull(row.IS_EQUALS)
-            assertNotEquals('', row.IS_EQUALS)
-            assertNotNull(row.OVERLAP)
-            assertNotEquals('', row.OVERLAP)
-            assertNotNull(row.FC_H_ZERO)
-            assertNotEquals('', row.FC_H_ZERO)
-            assertNotNull(row.FC_H_NULL)
-            assertNotEquals('', row.FC_H_NULL)
-            assertNotNull(row.FC_H_RANGE)
-            assertNotEquals('', row.FC_H_RANGE)
-            assertNotNull(row.H_NULL)
-            assertNotEquals('', row.H_NULL)
-            assertNotNull(row.H_RANGE)
-            assertNotEquals('', row.H_RANGE)
-            assertNotNull(row.H_ROOF_MIN_WALL)
-            assertNotEquals('', row.H_ROOF_MIN_WALL)
-            assertNotNull(row.LEV_NULL)
-            assertNotEquals('', row.LEV_NULL)
-            assertNotNull(row.LEV_RANGE)
-            assertNotEquals('', row.LEV_RANGE)
-            assertNotNull(row.NO_TYPE)
-            assertNotEquals('', row.NO_TYPE)
-            assertNotNull(row.TYPE_RANGE)
-            assertNotEquals('', row.TYPE_RANGE)
-        }
-
-        // ------------------
-        // Check if the BUILDING_STATS_EXT_ZONE table has the correct number of columns and rows
-        tableName = processFormatting.results.outputBuildingStatZoneBuff
-        assertNotNull(tableName)
-        table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(16, table.columnCount)
-        assertEquals(1, table.rowCount)
-        // Check if the column types are correct
-        assertEquals('VARCHAR', table.columnType('ID_ZONE'))
-        assertEquals('BIGINT', table.columnType('NB_BUILD'))
-        assertEquals('BIGINT', table.columnType('NOT_VALID'))
-        assertEquals('BIGINT', table.columnType('IS_EMPTY'))
-        assertEquals('BIGINT', table.columnType('IS_EQUALS'))
-        assertEquals('BIGINT', table.columnType('OVERLAP'))
-        assertEquals('BIGINT', table.columnType('FC_H_ZERO'))
-        assertEquals('BIGINT', table.columnType('FC_H_NULL'))
-        assertEquals('BIGINT', table.columnType('FC_H_RANGE'))
-        assertEquals('BIGINT', table.columnType('H_NULL'))
-        assertEquals('BIGINT', table.columnType('H_RANGE'))
-        assertEquals('BIGINT', table.columnType('H_ROOF_MIN_WALL'))
-        assertEquals('BIGINT', table.columnType('LEV_NULL'))
-        assertEquals('BIGINT', table.columnType('LEV_RANGE'))
-        assertEquals('BIGINT', table.columnType('NO_TYPE'))
-        assertEquals('BIGINT', table.columnType('TYPE_RANGE'))
-        // For each rows, check if the fields contains the expected values
-        table.eachRow { row ->
-            assertNotNull(row.ID_ZONE)
-            assertNotEquals('', row.ID_ZONE)
-            assertEquals(communeToTest, row.ID_ZONE)
-            assertNotNull(row.NB_BUILD)
-            assertNotEquals('', row.NB_BUILD)
-            assertNotNull(row.NOT_VALID)
-            assertNotEquals('', row.NOT_VALID)
-            assertNotNull(row.IS_EMPTY)
-            assertNotEquals('', row.IS_EMPTY)
-            assertNotNull(row.IS_EQUALS)
-            assertNotEquals('', row.IS_EQUALS)
-            assertNotNull(row.OVERLAP)
-            assertNotEquals('', row.OVERLAP)
-            assertNotNull(row.FC_H_ZERO)
-            assertNotEquals('', row.FC_H_ZERO)
-            assertNotNull(row.FC_H_NULL)
-            assertNotEquals('', row.FC_H_NULL)
-            assertNotNull(row.FC_H_RANGE)
-            assertNotEquals('', row.FC_H_RANGE)
-            assertNotNull(row.H_NULL)
-            assertNotEquals('', row.H_NULL)
-            assertNotNull(row.H_RANGE)
-            assertNotEquals('', row.H_RANGE)
-            assertNotNull(row.H_ROOF_MIN_WALL)
-            assertNotEquals('', row.H_ROOF_MIN_WALL)
-            assertNotNull(row.LEV_NULL)
-            assertNotEquals('', row.LEV_NULL)
-            assertNotNull(row.LEV_RANGE)
-            assertNotEquals('', row.LEV_RANGE)
-            assertNotNull(row.NO_TYPE)
-            assertNotEquals('', row.NO_TYPE)
-            assertNotNull(row.TYPE_RANGE)
-            assertNotEquals('', row.TYPE_RANGE)
-        }
 
         // -----------------------------------------------------------------------------------
         // For ROADS
@@ -459,112 +327,6 @@ class InputDataFormattingTest {
                 "WHERE ID_SOURCE='ROUTE0010';")["TOTAL"])
         
 
-        // ------------------
-        // Check if the ROAD_STATS_ZONE table has the correct number of columns and rows
-        tableName = processFormatting.results.outputRoadStatZone
-        assertNotNull(tableName)
-        table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(13, table.columnCount)
-        assertEquals(1, table.rowCount)
-        // Check if the column types are correct
-        assertEquals('VARCHAR', table.columnType('ID_ZONE'))
-        assertEquals('BIGINT', table.columnType('NB_ROAD'))
-        assertEquals('BIGINT', table.columnType('NOT_VALID'))
-        assertEquals('BIGINT', table.columnType('IS_EMPTY'))
-        assertEquals('BIGINT', table.columnType('IS_EQUALS'))
-        assertEquals('BIGINT', table.columnType('OVERLAP'))
-        assertEquals('BIGINT', table.columnType('FC_W_ZERO'))
-        assertEquals('BIGINT', table.columnType('FC_W_NULL'))
-        assertEquals('BIGINT', table.columnType('FC_W_RANGE'))
-        assertEquals('BIGINT', table.columnType('W_NULL'))
-        assertEquals('BIGINT', table.columnType('W_RANGE'))
-        assertEquals('BIGINT', table.columnType('NO_TYPE'))
-        assertEquals('BIGINT', table.columnType('TYPE_RANGE'))
-        // For each rows, check if the fields contains the expected values
-        table.eachRow { row ->
-            assertNotNull(row.ID_ZONE)
-            assertNotEquals('', row.ID_ZONE)
-            assertEquals(communeToTest, row.ID_ZONE)
-            assertNotNull(row.NB_ROAD)
-            assertNotEquals('', row.NB_ROAD)
-            assertNotNull(row.NOT_VALID)
-            assertNotEquals('', row.NOT_VALID)
-            assertNotNull(row.IS_EMPTY)
-            assertNotEquals('', row.IS_EMPTY)
-            assertNotNull(row.IS_EQUALS)
-            assertNotEquals('', row.IS_EQUALS)
-            assertNotNull(row.OVERLAP)
-            assertNotEquals('', row.OVERLAP)
-            assertNotNull(row.FC_W_ZERO)
-            assertNotEquals('', row.FC_W_ZERO)
-            assertNotNull(row.FC_W_NULL)
-            assertNotEquals('', row.FC_W_NULL)
-            assertNotNull(row.FC_W_RANGE)
-            assertNotEquals('', row.FC_W_RANGE)
-            assertNotNull(row.W_NULL)
-            assertNotEquals('', row.W_NULL)
-            assertNotNull(row.W_RANGE)
-            assertNotEquals('', row.W_RANGE)
-            assertNotNull(row.NO_TYPE)
-            assertNotEquals('', row.NO_TYPE)
-            assertNotNull(row.TYPE_RANGE)
-            assertNotEquals('', row.TYPE_RANGE)
-        }
-
-        // ------------------
-        // Check if the ROAD_STATS_EXT_ZONE table has the correct number of columns and rows
-        tableName = processFormatting.results.outputRoadStatZoneBuff
-        assertNotNull(tableName)
-        table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(13, table.columnCount)
-        assertEquals(1, table.rowCount)
-        // Check if the column types are correct
-        assertEquals('VARCHAR', table.columnType('ID_ZONE'))
-        assertEquals('BIGINT', table.columnType('NB_ROAD'))
-        assertEquals('BIGINT', table.columnType('NOT_VALID'))
-        assertEquals('BIGINT', table.columnType('IS_EMPTY'))
-        assertEquals('BIGINT', table.columnType('IS_EQUALS'))
-        assertEquals('BIGINT', table.columnType('OVERLAP'))
-        assertEquals('BIGINT', table.columnType('FC_W_ZERO'))
-        assertEquals('BIGINT', table.columnType('FC_W_NULL'))
-        assertEquals('BIGINT', table.columnType('FC_W_RANGE'))
-        assertEquals('BIGINT', table.columnType('W_NULL'))
-        assertEquals('BIGINT', table.columnType('W_RANGE'))
-        assertEquals('BIGINT', table.columnType('NO_TYPE'))
-        assertEquals('BIGINT', table.columnType('TYPE_RANGE'))
-        // For each rows, check if the fields contains the expected values
-        table.eachRow { row ->
-            assertNotNull(row.ID_ZONE)
-            assertNotEquals('', row.ID_ZONE)
-            assertEquals(communeToTest, row.ID_ZONE)
-            assertNotNull(row.NB_ROAD)
-            assertNotEquals('', row.NB_ROAD)
-            assertNotNull(row.NOT_VALID)
-            assertNotEquals('', row.NOT_VALID)
-            assertNotNull(row.IS_EMPTY)
-            assertNotEquals('', row.IS_EMPTY)
-            assertNotNull(row.IS_EQUALS)
-            assertNotEquals('', row.IS_EQUALS)
-            assertNotNull(row.OVERLAP)
-            assertNotEquals('', row.OVERLAP)
-            assertNotNull(row.FC_W_ZERO)
-            assertNotEquals('', row.FC_W_ZERO)
-            assertNotNull(row.FC_W_NULL)
-            assertNotEquals('', row.FC_W_NULL)
-            assertNotNull(row.FC_W_RANGE)
-            assertNotEquals('', row.FC_W_RANGE)
-            assertNotNull(row.W_NULL)
-            assertNotEquals('', row.W_NULL)
-            assertNotNull(row.W_RANGE)
-            assertNotEquals('', row.W_RANGE)
-            assertNotNull(row.NO_TYPE)
-            assertNotEquals('', row.NO_TYPE)
-            assertNotNull(row.TYPE_RANGE)
-            assertNotEquals('', row.TYPE_RANGE)
-        }
-
         // -----------------------------------------------------------------------------------
         // For RAILS
         // -----------------------------------------------------------------------------------
@@ -619,45 +381,7 @@ class InputDataFormattingTest {
         // ... with the rail 'RAIL0004' which is not intersecting the zone --> so expected 0
         assertEquals(0, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM RAIL " +
                 "WHERE ID_SOURCE='RAIL0004';")["TOTAL"])
-        
 
-        // ------------------
-        // Check if the RAIL_STATS_ZONE table has the correct number of columns and rows
-        tableName = processFormatting.results.outputRailStatZone
-        assertNotNull(tableName)
-        table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(8, table.columnCount)
-        assertEquals(1, table.rowCount)
-        // Check if the column types are correct
-        assertEquals('VARCHAR', table.columnType('ID_ZONE'))
-        assertEquals('BIGINT', table.columnType('NB_RAIL'))
-        assertEquals('BIGINT', table.columnType('NOT_VALID'))
-        assertEquals('BIGINT', table.columnType('IS_EMPTY'))
-        assertEquals('BIGINT', table.columnType('IS_EQUALS'))
-        assertEquals('BIGINT', table.columnType('OVERLAP'))
-        assertEquals('BIGINT', table.columnType('NO_TYPE'))
-        assertEquals('BIGINT', table.columnType('TYPE_RANGE'))
-        // For each rows, check if the fields contains the expected values
-        table.eachRow { row ->
-            assertNotNull(row.ID_ZONE)
-            assertNotEquals('', row.ID_ZONE)
-            assertEquals(communeToTest, row.ID_ZONE)
-            assertNotNull(row.NB_RAIL)
-            assertNotEquals('', row.NB_RAIL)
-            assertNotNull(row.NOT_VALID)
-            assertNotEquals('', row.NOT_VALID)
-            assertNotNull(row.IS_EMPTY)
-            assertNotEquals('', row.IS_EMPTY)
-            assertNotNull(row.IS_EQUALS)
-            assertNotEquals('', row.IS_EQUALS)
-            assertNotNull(row.OVERLAP)
-            assertNotEquals('', row.OVERLAP)
-            assertNotNull(row.NO_TYPE)
-            assertNotEquals('', row.NO_TYPE)
-            assertNotNull(row.TYPE_RANGE)
-            assertNotEquals('', row.TYPE_RANGE)
-        }
 
         // -----------------------------------------------------------------------------------
         // For HYDROGRAPHIC AREAS
@@ -697,71 +421,6 @@ class InputDataFormattingTest {
         assertEquals(0, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM HYDRO " +
                 "WHERE ID_SOURCE='SURFEAU0003';")["TOTAL"])
 
-
-
-        // ------------------
-        // Check if the HYDRO_STATS_ZONE table has the correct number of columns and rows
-        tableName = processFormatting.results.outputHydroStatZone
-        assertNotNull(tableName)
-        table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(6, table.columnCount)
-        assertEquals(1, table.rowCount)
-        // Check if the column types are correct
-        assertEquals('VARCHAR', table.columnType('ID_ZONE'))
-        assertEquals('BIGINT', table.columnType('NB_HYDRO'))
-        assertEquals('BIGINT', table.columnType('NOT_VALID'))
-        assertEquals('BIGINT', table.columnType('IS_EMPTY'))
-        assertEquals('BIGINT', table.columnType('IS_EQUALS'))
-        assertEquals('BIGINT', table.columnType('OVERLAP'))
-        // For each rows, check if the fields contains the expected values
-        table.eachRow { row ->
-            assertNotNull(row.ID_ZONE)
-            assertNotEquals('', row.ID_ZONE)
-            assertEquals(communeToTest, row.ID_ZONE)
-            assertNotNull(row.NB_HYDRO)
-            assertNotEquals('', row.NB_HYDRO)
-            assertNotNull(row.NOT_VALID)
-            assertNotEquals('', row.NOT_VALID)
-            assertNotNull(row.IS_EMPTY)
-            assertNotEquals('', row.IS_EMPTY)
-            assertNotNull(row.IS_EQUALS)
-            assertNotEquals('', row.IS_EQUALS)
-            assertNotNull(row.OVERLAP)
-            assertNotEquals('', row.OVERLAP)
-        }
-
-        // ------------------
-        // Check if the HYDRO_STATS_EXT_ZONE table has the correct number of columns and rows
-        tableName = processFormatting.results.outputHydroStatZoneExt
-        assertNotNull(tableName)
-        table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(6, table.columnCount)
-        assertEquals(1, table.rowCount)
-        // Check if the column types are correct
-        assertEquals('VARCHAR', table.columnType('ID_ZONE'))
-        assertEquals('BIGINT', table.columnType('NB_HYDRO'))
-        assertEquals('BIGINT', table.columnType('NOT_VALID'))
-        assertEquals('BIGINT', table.columnType('IS_EMPTY'))
-        assertEquals('BIGINT', table.columnType('IS_EQUALS'))
-        assertEquals('BIGINT', table.columnType('OVERLAP'))
-        // For each rows, check if the fields contains the expected values
-        table.eachRow { row ->
-            assertNotNull(row.ID_ZONE)
-            assertNotEquals('', row.ID_ZONE)
-            assertEquals(communeToTest, row.ID_ZONE)
-            assertNotNull(row.NB_HYDRO)
-            assertNotEquals('', row.NB_HYDRO)
-            assertNotNull(row.NOT_VALID)
-            assertNotEquals('', row.NOT_VALID)
-            assertNotNull(row.IS_EMPTY)
-            assertNotEquals('', row.IS_EMPTY)
-            assertNotNull(row.IS_EQUALS)
-            assertNotEquals('', row.IS_EQUALS)
-            assertNotNull(row.OVERLAP)
-            assertNotEquals('', row.OVERLAP)
-        }
 
         // -----------------------------------------------------------------------------------
         // For VEGETATION AREAS
@@ -830,83 +489,6 @@ class InputDataFormattingTest {
         // ... with the veget area 'VEGET0008' which is outside the extended zone --> so expected 0
         assertEquals(0, h2GISDatabase.firstRow("SELECT COUNT(*) as TOTAL FROM VEGET " +
                 "WHERE ID_SOURCE='VEGET0008';")["TOTAL"])
-        
-
-        // ------------------
-        // Check if the VEGET_STATS_ZONE table has the correct number of columns and rows
-        tableName = processFormatting.results.outputVegetStatZone
-        assertNotNull(tableName)
-        table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(8, table.columnCount)
-        assertEquals(1, table.rowCount)
-        // Check if the column types are correct
-        assertEquals('VARCHAR', table.columnType('ID_ZONE'))
-        assertEquals('BIGINT', table.columnType('NB_VEGET'))
-        assertEquals('BIGINT', table.columnType('NOT_VALID'))
-        assertEquals('BIGINT', table.columnType('IS_EMPTY'))
-        assertEquals('BIGINT', table.columnType('IS_EQUALS'))
-        assertEquals('BIGINT', table.columnType('OVERLAP'))
-        assertEquals('BIGINT', table.columnType('NO_TYPE'))
-        assertEquals('BIGINT', table.columnType('TYPE_RANGE'))
-        // For each rows, check if the fields contains the expected values
-        table.eachRow { row ->
-            assertNotNull(row.ID_ZONE)
-            assertNotEquals('', row.ID_ZONE)
-            assertEquals(communeToTest, row.ID_ZONE)
-            assertNotNull(row.NB_VEGET)
-            assertNotEquals('', row.NB_VEGET)
-            assertNotNull(row.NOT_VALID)
-            assertNotEquals('', row.NOT_VALID)
-            assertNotNull(row.IS_EMPTY)
-            assertNotEquals('', row.IS_EMPTY)
-            assertNotNull(row.IS_EQUALS)
-            assertNotEquals('', row.IS_EQUALS)
-            assertNotNull(row.OVERLAP)
-            assertNotEquals('', row.OVERLAP)
-            assertNotNull(row.NO_TYPE)
-            assertNotEquals('', row.NO_TYPE)
-            assertNotNull(row.TYPE_RANGE)
-            assertNotEquals('', row.TYPE_RANGE)
-        }
-
-        // ------------------
-        // Check if the VEGET_STATS_ZONE table has the correct number of columns and rows
-        tableName = processFormatting.results.outputVegetStatZoneExt
-        assertNotNull(tableName)
-        table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(8, table.columnCount)
-        assertEquals(1, table.rowCount)
-        // Check if the column types are correct
-        assertEquals('VARCHAR', table.columnType('ID_ZONE'))
-        assertEquals('BIGINT', table.columnType('NB_VEGET'))
-        assertEquals('BIGINT', table.columnType('NOT_VALID'))
-        assertEquals('BIGINT', table.columnType('IS_EMPTY'))
-        assertEquals('BIGINT', table.columnType('IS_EQUALS'))
-        assertEquals('BIGINT', table.columnType('OVERLAP'))
-        assertEquals('BIGINT', table.columnType('NO_TYPE'))
-        assertEquals('BIGINT', table.columnType('TYPE_RANGE'))
-        // For each rows, check if the fields contains the expected values
-        table.eachRow { row ->
-            assertNotNull(row.ID_ZONE)
-            assertNotEquals('', row.ID_ZONE)
-            assertEquals(communeToTest, row.ID_ZONE)
-            assertNotNull(row.NB_VEGET)
-            assertNotEquals('', row.NB_VEGET)
-            assertNotNull(row.NOT_VALID)
-            assertNotEquals('', row.NOT_VALID)
-            assertNotNull(row.IS_EMPTY)
-            assertNotEquals('', row.IS_EMPTY)
-            assertNotNull(row.IS_EQUALS)
-            assertNotEquals('', row.IS_EQUALS)
-            assertNotNull(row.OVERLAP)
-            assertNotEquals('', row.OVERLAP)
-            assertNotNull(row.NO_TYPE)
-            assertNotEquals('', row.NO_TYPE)
-            assertNotNull(row.TYPE_RANGE)
-            assertNotEquals('', row.TYPE_RANGE)
-        }
 
         // -----------------------------------------------------------------------------------
         // For IMPERVIOUS AREAS

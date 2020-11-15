@@ -103,10 +103,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                     hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
         ])
         process.getResults().each {entry ->
-            if(entry.key == 'outputStats') {
-                entry.value.each{tab -> assertNotNull(h2GISDatabase.getTable(tab))}
-            }
-            else{assertNotNull(h2GISDatabase.getTable(entry.getValue()))}
+            assertNotNull(h2GISDatabase.getTable(entry.getValue()))
         }
     }
 
@@ -172,13 +169,13 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                             "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
-
+        def svfSimplified = true
         IProcess geodindicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
         assertTrue geodindicators.execute(datasource: datasource, zoneTable: abstractTables.outputZone,
                 buildingTable: abstractTables.outputBuilding, roadTable: abstractTables.outputRoad,
                 railTable: abstractTables.outputRail, vegetationTable: abstractTables.outputVeget,
                 hydrographicTable: abstractTables.outputHydro, indicatorUse: ["LCZ"],
-                mapOfWeights: mapOfWeights)
+                mapOfWeights: mapOfWeights, svfSimplified:svfSimplified)
 
         assertTrue(datasource.getTable(geodindicators.results.outputTableBuildingIndicators).rowCount>0)
         assertNull(geodindicators.results.outputTableBlockIndicators)
@@ -206,7 +203,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 
         boolean saveResults = true
         def prefixName = ""
-        def svfSimplified = false
+        def svfSimplified = true //Fast test
         def indicatorUse = ["TEB", "URBAN_TYPOLOGY", "LCZ"]
         String directory ="./target/bdtopo_processchain_lcz"
 

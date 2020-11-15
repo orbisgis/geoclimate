@@ -96,7 +96,7 @@ IProcess importPreprocess() {
               rail_bd_topo_type, rail_abstract_type, rail_bd_topo_crossing, rail_abstract_crossing,
               veget_bd_topo_type, veget_abstract_type ->
 
-            info('Executing the importPreprocess.sql script')
+            info('Import the BD Topo data')
             def tmpIris = postfix 'TMP_IRIS_'
             def zone = 'ZONE'
             def zoneBuffer = postfix 'ZONE_BUFFER_'
@@ -216,9 +216,9 @@ IProcess importPreprocess() {
                      VEGET_BD_TOPO_TYPE                : veget_bd_topo_type, VEGET_ABSTRACT_TYPE: veget_abstract_type
                     ])
             if (!success) {
-                error("Error occurred on the execution of the importPreprocess.sql script")
+                error("Error occurred when importing the BD Topo data")
             } else {
-                info('The importPreprocess.sql script has been executed')
+                info('The  BD Topo data have been imported')
                 [outputBuildingName: input_building, outputRoadName: input_road, outputRailName: input_rail,
                  outputHydroName   : input_hydro, outputVegetName: input_veget, outputImperviousName: input_impervious,
                  outputZoneName    : zone

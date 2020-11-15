@@ -162,8 +162,8 @@ IProcess neighborsProperties() {
             }
             query += """$ID_FIELD FROM (
                 SELECT 
-                    ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_FIELD),
-                    ST_MAKEVALID(b.$GEOMETRIC_FIELD)) AS the_geom,
+                    ST_INTERSECTION(st_makevalid(a.$GEOMETRIC_FIELD),
+                    st_makevalid(b.$GEOMETRIC_FIELD)) AS the_geom,
                     a.$ID_FIELD, 
                     ST_PERIMETER(a.$GEOMETRIC_FIELD) + ST_PERIMETER(ST_HOLES(a.$GEOMETRIC_FIELD)) AS perimeter, 
                     a.$HEIGHT_WALL AS a_height_wall, 
