@@ -469,9 +469,9 @@ IProcess createGrid() {
         title "Creating a regular cartesian grid in meter"
         id "createGrid"
         inputs geometry: Geometry, deltaX: double, deltaY: double,
-                gridTableName: String, datasource: JdbcDataSource
+                gridTableName: String, prefixName: "", datasource: JdbcDataSource
         outputs outputTableName: String
-        run { geometry, deltaX, deltaY, gridTableName, datasource ->
+        run { geometry, deltaX, deltaY, gridTableName, prefixName, datasource ->
 
             def BASENAME = "grid"
             gridTableName = prefix prefixName, BASENAME
