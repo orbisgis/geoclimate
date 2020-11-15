@@ -469,12 +469,12 @@ IProcess createGrid() {
         title "Creating a regular cartesian grid in meter"
         id "createGrid"
         inputs geometry: Geometry, deltaX: double, deltaY: double,
-                gridTableName: String, prefixName: "", datasource: JdbcDataSource
+                prefixName: "", datasource: JdbcDataSource
         outputs outputTableName: String
-        run { geometry, deltaX, deltaY, gridTableName, prefixName, datasource ->
+        run { geometry, deltaX, deltaY, prefixName, datasource ->
 
             def BASENAME = "grid"
-            gridTableName = prefix prefixName, BASENAME
+            def gridTableName = prefix prefixName, BASENAME
 
             if (datasource.hasTable(gridTableName)) {
                 datasource """DROP TABLE IF EXISTS $gridTableName;"""
