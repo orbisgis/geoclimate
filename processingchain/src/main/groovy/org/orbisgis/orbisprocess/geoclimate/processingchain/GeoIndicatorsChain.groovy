@@ -1014,7 +1014,7 @@ IProcess computeAllGeoIndicators() {
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
                 lczRandomForest: false, lczModelName: "LCZ_OSM_RF_1_0.model",
-                urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_1_0.model"
+                urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_0.model"
         outputs outputTableBuildingIndicators: String, outputTableBlockIndicators: String,
                 outputTableRsuIndicators: String, outputTableRsuLcz: String, outputTableZone: String,
                 outputTableRsuUrbanTypoArea: String, outputTableRsuUrbanTypoFloorArea: String,

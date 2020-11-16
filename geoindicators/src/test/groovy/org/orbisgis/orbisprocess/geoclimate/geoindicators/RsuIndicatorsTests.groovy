@@ -90,7 +90,7 @@ class RsuIndicatorsTests {
         h2GIS.eachRow("SELECT * FROM test_rsu_aspect_ratio WHERE id_rsu = 1"){
             row -> concat+= row.aspect_ratio
         }
-        assertEquals(1.344, concat, 0.001)
+        assertEquals(0.672, concat, 0.001)
     }
 
     @Test

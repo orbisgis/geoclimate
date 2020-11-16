@@ -37,7 +37,7 @@ IProcess createRSU() {
     return create {
         title "Create reference spatial units (RSU)"
         id "createRSU"
-        inputs inputTableName: String, inputZoneTableName: "", prefixName: "", datasource: JdbcDataSource, area: 0.1d
+        inputs inputTableName: String, inputZoneTableName: "", prefixName: "", datasource: JdbcDataSource, area: 1d
         outputs outputTableName: String, outputIdRsu: String
         run { inputTableName, inputZoneTableName, prefixName, datasource, area ->
 
@@ -62,7 +62,7 @@ IProcess createRSU() {
                     CREATE TABLE $outputTableName AS 
                         SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(a.the_geom, $epsg) AS the_geom
                         FROM ST_EXPLODE('(
-                                SELECT ST_POLYGONIZE(ST_UNION(ST_PRECISIONREDUCER(ST_NODE(ST_ACCUM(ST_FORCE2D(the_geom))), 3))) AS the_geom 
+                                SELECT ST_POLYGONIZE(ST_UNION(ST_PRECISIONREDUCER(ST_NODE(ST_ACCUM(the_geom)), 3))) AS the_geom 
                                 FROM $inputTableName)') AS a,
                             $inputZoneTableName AS b
                         WHERE a.the_geom && b.the_geom 
@@ -74,7 +74,7 @@ IProcess createRSU() {
                     CREATE TABLE $outputTableName AS 
                         SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(ST_FORCE2D(the_geom), $epsg) AS the_geom 
                         FROM ST_EXPLODE('(
-                                SELECT ST_POLYGONIZE(ST_UNION(ST_PRECISIONREDUCER(ST_NODE(ST_ACCUM(ST_FORCE2D(the_geom))), 3))) AS the_geom 
+                                SELECT ST_POLYGONIZE(ST_UNION(ST_PRECISIONREDUCER(ST_NODE(ST_ACCUM(the_geom)), 3))) AS the_geom 
                                 FROM $inputTableName)') where st_area(the_geom) > $area"""
             }
 
@@ -169,7 +169,7 @@ IProcess prepareRSUData() {
                                 "$vegetation_unified AS a, $zoneTable AS b WHERE a.the_geom && b.the_geom " +
                                 "AND ST_INTERSECTS(a.the_geom, b.the_geom)"
 
-                        queryCreateOutputTable += [vegetation_tmp: "(SELECT ST_FORCE2D(THE_GEOM) AS THE_GEOM FROM $vegetation_tmp)"]
+                        queryCreateOutputTable += [vegetation_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) AS THE_GEOM FROM $vegetation_tmp)"]
                         dropTableList.addAll([vegetation_indice,
                                               vegetation_unified,
                                               vegetation_tmp])
@@ -216,7 +216,7 @@ IProcess prepareRSUData() {
                                 " AS THE_GEOM FROM $hydrographic_unified AS a, $zoneTable AS b " +
                                 "WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)"
 
-                        queryCreateOutputTable += [hydrographic_tmp: "(SELECT st_force2d(THE_GEOM) as THE_GEOM FROM $hydrographic_tmp)"]
+                        queryCreateOutputTable += [hydrographic_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) as the_geom FROM $hydrographic_tmp)"]
                         dropTableList.addAll([hydrographic_indice,
                                               hydrographic_unified,
                                               hydrographic_tmp])
@@ -226,17 +226,16 @@ IProcess prepareRSUData() {
                 if (roadTable && datasource.hasTable(roadTable)) {
                     if (datasource."$roadTable") {
                         info "Preparing road..."
-                        queryCreateOutputTable += [road_tmp: "(SELECT ST_FORCE2D(THE_GEOM) AS THE_GEOM FROM $roadTable where zindex=0 or crossing = 'bridge')"]
+                        queryCreateOutputTable += [road_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $roadTable where (zindex=0 or crossing = 'bridge') and type!='service')"]
                     }
                 }
 
                 if (railTable && datasource.hasTable(railTable) && !datasource."$railTable".isEmpty()) {
                     if (datasource."$railTable") {
                         info "Preparing rail..."
-                        queryCreateOutputTable += [rail_tmp: "(SELECT ST_FORCE2D(THE_GEOM) AS THE_GEOM FROM $railTable where zindex=0 or crossing = 'bridge')"]
+                        queryCreateOutputTable += [rail_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $railTable where zindex=0 or crossing = 'bridge')"]
                     }
                 }
-
                 // The input table that contains the geometries to be transformed as RSU
                 info "Grouping all tables..."
                 if (queryCreateOutputTable) {
@@ -244,7 +243,7 @@ IProcess prepareRSUData() {
                         DROP TABLE if exists $outputTableName;
                         CREATE TABLE $outputTableName(the_geom GEOMETRY) AS 
                             (
-                                SELECT st_setsrid(ST_ToMultiLine(THE_GEOM),$epsg) 
+                                SELECT st_setsrid(ST_ToMultiLine(THE_GEOM),$epsg) as the_geom
                                 FROM $zoneTable) 
                             UNION ${queryCreateOutputTable.values().join(' union ')};
                         DROP TABLE IF EXISTS ${queryCreateOutputTable.keySet().join(' , ')}
@@ -345,12 +344,11 @@ IProcess createBlocks() {
         WHERE A.id_build=B.NODE_ID GROUP BY B.CONNECTED_COMPONENT;"""
             }
 
-
             //Create the blocks
             info "Creating the block table..."
             datasource """DROP TABLE IF EXISTS $outputTableName; 
         CREATE TABLE $outputTableName ($columnIdName SERIAL, THE_GEOM GEOMETRY) 
-        AS (SELECT null, THE_GEOM FROM $subGraphBlocks) UNION ALL (SELECT null, a.the_geom FROM $inputTableName a 
+        AS (SELECT null, st_force2d(ST_MAKEVALID(THE_GEOM)) as the_geom FROM $subGraphBlocks) UNION ALL (SELECT null, st_force2d(ST_MAKEVALID(a.the_geom)) as the_geom FROM $inputTableName a 
         LEFT JOIN $subGraphTableNodes b ON a.id_build = b.NODE_ID WHERE b.NODE_ID IS NULL);"""
 
             // Temporary tables are deleted
@@ -412,8 +410,8 @@ IProcess spatialJoin() {
                 datasource """    DROP TABLE IF EXISTS $outputTableName;
                                 CREATE TABLE $outputTableName AS SELECT a.*, b.$idColumnTarget 
                                         FROM $sourceTable a, $targetTable b 
-                                        WHERE   ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_SOURCE) && st_force2d(b.$GEOMETRIC_COLUMN_TARGET) AND 
-                                                ST_INTERSECTS(ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_SOURCE), st_force2d(b.$GEOMETRIC_COLUMN_TARGET))"""
+                                        WHERE   ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_SOURCE) && b.$GEOMETRIC_COLUMN_TARGET AND 
+                                                ST_INTERSECTS(ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_SOURCE), b.$GEOMETRIC_COLUMN_TARGET)"""
                 }
             else {
                 if (nbRelations != null) {
@@ -423,10 +421,10 @@ IProcess spatialJoin() {
                                                         (SELECT b.$idColumnTarget 
                                                             FROM $targetTable b 
                                                             WHERE a.$GEOMETRIC_COLUMN_SOURCE && b.$GEOMETRIC_COLUMN_TARGET AND 
-                                                                 ST_INTERSECTS(st_force2d(a.$GEOMETRIC_COLUMN_SOURCE), 
-                                                                                            st_force2d(b.$GEOMETRIC_COLUMN_TARGET)) 
-                                                        ORDER BY ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$GEOMETRIC_COLUMN_SOURCE)),
-                                                                                         st_force2d(st_makevalid(b.$GEOMETRIC_COLUMN_TARGET))))
+                                                                 ST_INTERSECTS(a.$GEOMETRIC_COLUMN_SOURCE, 
+                                                                                            b.$GEOMETRIC_COLUMN_TARGET) 
+                                                        ORDER BY ST_AREA(ST_INTERSECTION(ST_PRECISIONREDUCER(a.$GEOMETRIC_COLUMN_SOURCE, 3),
+                                                                                         ST_PRECISIONREDUCER(b.$GEOMETRIC_COLUMN_TARGET,3)))
                                                         DESC LIMIT $nbRelations) AS $idColumnTarget 
                                             FROM $sourceTable a"""
                 } else {
@@ -436,11 +434,11 @@ IProcess spatialJoin() {
                     datasource """  DROP TABLE IF EXISTS $outputTableName;
                                     CREATE TABLE $outputTableName 
                                             AS SELECT   ${sourceColumns.join(",")}, b.$idColumnTarget,
-                                                        ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$GEOMETRIC_COLUMN_SOURCE)), 
-                                                        st_force2d(st_makevalid(b.$GEOMETRIC_COLUMN_TARGET)))) AS AREA
+                                                        ST_AREA(ST_INTERSECTION(ST_PRECISIONREDUCER(a.$GEOMETRIC_COLUMN_SOURCE, 3), 
+                                                        ST_PRECISIONREDUCER(b.$GEOMETRIC_COLUMN_TARGET,3))) AS AREA
                                             FROM    $sourceTable a, $targetTable b
                                             WHERE   a.$GEOMETRIC_COLUMN_SOURCE && b.$GEOMETRIC_COLUMN_TARGET AND 
-                                                    ST_INTERSECTS(st_force2d(a.$GEOMETRIC_COLUMN_SOURCE), st_force2d(b.$GEOMETRIC_COLUMN_TARGET));"""
+                                                    ST_INTERSECTS(a.$GEOMETRIC_COLUMN_SOURCE, b.$GEOMETRIC_COLUMN_TARGET);"""
                 }
             }
 
@@ -460,9 +458,14 @@ IProcess spatialJoin() {
  * @param prefixName A prefix used to name the output table
  * @param datasource A connexion to a database (H2GIS, POSTGIS, ...) where are stored the input Table and in which
  *        the resulting database will be stored
+<<<<<<< HEAD
  * @return outputTableName The name of the created table
  *
  * @author Emmanuel Renault, CNRS, 2020
+=======
+ * @param outputTableName The name of the created table
+ * @author Emmanuel Renault, CNRS
+>>>>>>> e04930d576c4ce986be0a38bc9c45137695103fc
  * */
 IProcess createGrid() {
     return create {
@@ -480,11 +483,18 @@ IProcess createGrid() {
                 datasource """DROP TABLE IF EXISTS $gridTableName;"""
             }
             if (datasource instanceof H2GIS) {
+<<<<<<< HEAD
                 info "Creating grid with H2GIS"
                 datasource"""
                     CREATE TABLE $gridTableName 
                     AS SELECT * FROM ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY);
                     """
+=======
+                info "Creating a regular grid with H2GIS"
+                datasource """CREATE TABLE $outputTableName AS SELECT * FROM 
+                                     ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY);
+                           """
+>>>>>>> e04930d576c4ce986be0a38bc9c45137695103fc
             }
             else if (datasource instanceof POSTGIS) {
                 info "Creating grid with POSTGIS"

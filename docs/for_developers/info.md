@@ -22,7 +22,6 @@ To use the current snapshot add the following lines in the `pom`
 
 ## Integrate Geoclimate in your project
 
-on explique comment intégrer Geoclimate dans son propre projet maven (lien avec la partie architecture)
 
 
 

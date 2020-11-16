@@ -929,7 +929,7 @@ def extractProcessingParameters(def processing_parameters){
                              hLevMin : 3, hLevMax: 15, hThresholdLev2: 10,
                              lczRandomForest :false,
                              lczModelName: "LCZ_BDTOPO_V2_RF_1_0.model",
-                             urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_1_0.model"]
+                             urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_0.model"]
     if(processing_parameters){
         def distanceP =  processing_parameters.distance
         if(distanceP && distanceP in Number){

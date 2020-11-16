@@ -161,7 +161,7 @@ class GeoIndicatorsChainTest {
                             "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
 
         def ind_i = ["URBAN_TYPOLOGY"]
-        def modelPath = "URBAN_TYPOLOGY_BDTOPO_V2_RF_1_0.model"
+        def modelPath = "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_0.model"
         IProcess GeoIndicatorsCompute_i = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,

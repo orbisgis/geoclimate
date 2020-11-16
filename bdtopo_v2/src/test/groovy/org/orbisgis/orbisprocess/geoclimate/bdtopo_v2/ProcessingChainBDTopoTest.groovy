@@ -103,10 +103,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                     hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
         ])
         process.getResults().each {entry ->
-            if(entry.key == 'outputStats') {
-                entry.value.each{tab -> assertNotNull(h2GISDatabase.getTable(tab))}
-            }
-            else{assertNotNull(h2GISDatabase.getTable(entry.getValue()))}
+            assertNotNull(h2GISDatabase.getTable(entry.getValue()))
         }
     }
 
@@ -119,13 +116,13 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         // Only the first 6 first created buildings are selected since any new created building may alter the results
         h2GIS.execute("DROP TABLE IF EXISTS tempo_build, tempo_road, tempo_zone, tempo_veget, tempo_hydro; " +
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 9; CREATE TABLE " +
-                "tempo_road AS SELECT id_road, the_geom, zindex, crossing FROM road_test WHERE id_road < 5 OR id_road > 6;" +
+                "tempo_road AS SELECT id_road, the_geom, zindex, crossing, type FROM road_test WHERE id_road < 5 OR id_road > 6;" +
                 "CREATE TABLE tempo_zone AS SELECT * FROM zone_test;" +
                 "CREATE TABLE tempo_veget AS SELECT id_veget, the_geom FROM veget_test WHERE id_veget < 4;" +
                 "CREATE TABLE tempo_hydro AS SELECT id_hydro, the_geom FROM hydro_test WHERE id_hydro < 2;")
         IProcess pm =  ProcessingChain.GeoIndicatorsChain.createUnitsOfAnalysis()
         pm.execute([datasource          : h2GIS,        zoneTable               : "tempo_zone",     roadTable           : "tempo_road",
-                    railTable           : "tempo_road", vegetationTable         : "tempo_veget",    hydrographicTable   : "tempo_hydro",
+                    railTable           : "", vegetationTable         : "tempo_veget",    hydrographicTable   : "tempo_hydro",
                     surface_vegetation  : null,         surface_hydro           : null,             buildingTable       : "tempo_build",
                     distance            : 0.0,          prefixName              : "test",           indicatorUse        :["LCZ",
                                                                                                                           "URBAN_TYPOLOGY",
@@ -172,13 +169,13 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                             "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
-
+        def svfSimplified = true
         IProcess geodindicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
         assertTrue geodindicators.execute(datasource: datasource, zoneTable: abstractTables.outputZone,
                 buildingTable: abstractTables.outputBuilding, roadTable: abstractTables.outputRoad,
                 railTable: abstractTables.outputRail, vegetationTable: abstractTables.outputVeget,
                 hydrographicTable: abstractTables.outputHydro, indicatorUse: ["LCZ"],
-                mapOfWeights: mapOfWeights)
+                mapOfWeights: mapOfWeights, svfSimplified:svfSimplified)
 
         assertTrue(datasource.getTable(geodindicators.results.outputTableBuildingIndicators).rowCount>0)
         assertNull(geodindicators.results.outputTableBlockIndicators)
@@ -206,7 +203,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 
         boolean saveResults = true
         def prefixName = ""
-        def svfSimplified = false
+        def svfSimplified = true //Fast test
         def indicatorUse = ["TEB", "URBAN_TYPOLOGY", "LCZ"]
         String directory ="./target/bdtopo_processchain_lcz"
 

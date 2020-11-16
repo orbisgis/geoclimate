@@ -566,7 +566,7 @@ IProcess osm_processing() {
                                         def applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
                                         applyRF.execute([
                                                 explicativeVariablesTableName: gatheredScales,
-                                                pathAndFileName              : "BUILDING_HEIGHT_OSM_RF_1_0.model",
+                                                pathAndFileName              : "BUILDING_HEIGHT_OSM_RF_2_0.model",
                                                 idName                       : "id_build",
                                                 prefixName                   : processing_parameters.prefixName,
                                                 datasource                   : h2gis_datasource])
@@ -953,7 +953,7 @@ def extractProcessingParameters(def processing_parameters){
                              lczRandomForest :false,
                              estimateHeight:false,
                              lczModelName: "LCZ_OSM_RF_1_0.model",
-                             urbanTypoModelName: "URBAN_TYPOLOGY_OSM_RF_1_0.model"]
+                             urbanTypoModelName: "URBAN_TYPOLOGY_OSM_RF_2_0.model"]
     if(processing_parameters){
         def distanceP =  processing_parameters.distance
         if(distanceP && distanceP in Number){

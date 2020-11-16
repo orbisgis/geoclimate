@@ -41,7 +41,6 @@ import org.orbisgis.orbisdata.processmanager.process.ProcessMapper
  * @return outputVeget Table name in which the (ready to be used in the GeoIndicators part) vegetation areas are stored
  * @return outputImpervious Table name in which the (ready to be used in the GeoIndicators part) impervious areas are stored
  * @return outputZone Table name in which the (ready to be used in the GeoIndicators part) zone is stored
- * @return outputStats List that stores the name of the statistic tables for each layer at different scales
  *
  */
 IProcess prepareData() {
@@ -67,13 +66,13 @@ IProcess prepareData() {
                 hLevMin: 3,
                 hLevMax: 15,
                 hThresholdLev2: 10
-        outputs outputBuilding: String, outputRoad: String, outputRail: String, outputHydro: String, outputVeget: String, outputImpervious: String, outputZone: String, outputStats: String[]
+        outputs outputBuilding: String, outputRoad: String, outputRail: String, outputHydro: String, outputVeget: String, outputImpervious: String, outputZone: String
         run { datasource, distBuffer, expand, idZone, tableIrisName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName, tableRoadName, tableRailName,
               tableHydroName, tableVegetName, tableImperviousSportName, tableImperviousBuildSurfName, tableImperviousRoadSurfName, tableImperviousActivSurfName,
               hLevMin, hLevMax, hThresholdLev2 ->
 
             if (!datasource) {
-                error "Cannot create the database to store the BD Topo data"
+                error "The database to store the BD Topo data doesn't exist"
                 return
             }
 
@@ -142,14 +141,8 @@ IProcess prepareData() {
                                       inputZone                 : preprocessTables.outputZoneName,
                                       //inputZoneNeighbors: preprocessTables.outputZoneNeighborsName,
                                       hLevMin                   : hLevMin, hLevMax: hLevMax, hThresholdLev2: hThresholdLev2, idZone: idZone,
-                                      buildingAbstractUseType   : abstractTables.outputBuildingAbstractUseType,
                                       buildingAbstractParameters: abstractTables.outputBuildingAbstractParameters,
-                                      roadAbstractType          : abstractTables.outputRoadAbstractType,
                                       roadAbstractParameters    : abstractTables.outputRoadAbstractParameters,
-                                      roadAbstractCrossing      : abstractTables.outputRoadAbstractCrossing,
-                                      railAbstractType          : abstractTables.outputRailAbstractType,
-                                      railAbstractCrossing      : abstractTables.outputRailAbstractCrossing,
-                                      vegetAbstractType         : abstractTables.outputVegetAbstractType,
                                       vegetAbstractParameters   : abstractTables.outputVegetAbstractParameters])) {
                 info "Cannot format data and compute statistics."
                 return
@@ -165,23 +158,8 @@ IProcess prepareData() {
             def finalImpervious = inputDataFormatting.results.outputImpervious
             def finalZone = inputDataFormatting.results.outputZone
 
-            def finalOutputBuildingStatZone = inputDataFormatting.results.outputBuildingStatZone
-            def finalOutputBuildingStatZoneBuff = inputDataFormatting.results.outputBuildingStatZoneBuff
-            def finalOutputRoadStatZone = inputDataFormatting.results.outputRoadStatZone
-            def finalOutputRoadStatZoneBuff = inputDataFormatting.results.outputRoadStatZoneBuff
-            def finalOutputRailStatZone = inputDataFormatting.results.outputRailStatZone
-            def finalOutputHydroStatZone = inputDataFormatting.results.outputHydroStatZone
-            def finalOutputHydroStatZoneExt = inputDataFormatting.results.outputHydroStatZoneExt
-            def finalOutputVegetStatZone = inputDataFormatting.results.outputVegetStatZone
-            def finalOutputVegetStatZoneExt = inputDataFormatting.results.outputVegetStatZoneExt
-
             [outputBuilding: finalBuildings, outputRoad: finalRoads, outputRail: finalRails, outputHydro: finalHydro,
-             outputVeget   : finalVeget, outputImpervious: finalImpervious, outputZone: finalZone,
-             outputStats   : [finalOutputBuildingStatZone, finalOutputBuildingStatZoneBuff,
-                              finalOutputRoadStatZone, finalOutputRoadStatZoneBuff,
-                              finalOutputRailStatZone,
-                              finalOutputHydroStatZone, finalOutputHydroStatZoneExt,
-                              finalOutputVegetStatZone, finalOutputVegetStatZoneExt]]
+             outputVeget   : finalVeget, outputImpervious: finalImpervious, outputZone: finalZone]
 
         }
     }

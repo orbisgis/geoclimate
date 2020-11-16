@@ -1,12 +1,8 @@
 package org.orbisgis.orbisprocess.geoclimate.osm
 
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
-import org.orbisgis.orbisdata.processmanager.process.ProcessManager
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
-import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators as GI
 import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
-import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain as PC
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 

@@ -9,7 +9,7 @@
       "secondary_link",
       "tertiary_link",
       "junction","service",
-      "road","track"
+      "road","track","living_street", "pedestrian"
     ],"junction": ["roundabout",
       "circular","jughandle","filter","yes"
     ]
@@ -124,13 +124,11 @@
         },
         "footway": {
             "highway": [
-                "footway",
-                "pedestrian"
+                "footway"
             ]
         },
         "highway": {
             "highway": [
-                "service",
                 "road",
                 "raceway",
                 "escape"
@@ -207,7 +205,17 @@
             "highway": [
                 "unclassified"
             ]
-        }
+        },
+       "pedestrian": {
+        "highway": [
+          "pedestrian"
+        ]
+       },
+         "service": {
+           "highway": [
+             "service"
+           ]
+         }
     },
     "width" :
      {
@@ -226,8 +234,10 @@
         "steps": 1,
         "highway_link": 8,
         "roundabout": 4,
-        "ferry": 0
-    },
+        "ferry": 0,
+        "pedestrian": 3,
+        "service": 3
+     },
   "crossing":{"bridge" :
   ["yes", "aqueduct", "cantilever", "covered", "low_water_crossing", "movable", "trestle",
     "viaduct"]}
