@@ -215,7 +215,7 @@ class SpatialUnitsTests {
         h2GIS.execute("DROP TABLE IF EXISTS grid")
         def gridP = Geoindicators.SpatialUnits.createGrid()
         def wktReader = new WKTReader()
-        def box = wktReader.read('POLYGON((-50 -50, 50 -50, 50 50, -50 50, -50 -50))')
+        def box = wktReader.read('POLYGON((-5 -5, 5 -5, 5 5, -5 5, -5 -5))')
         box.setSRID(4326)
         assert gridP.execute([geometry: box, deltaX: 10, deltaY: 10, tableName: "grid", datasource: h2GIS])
 
