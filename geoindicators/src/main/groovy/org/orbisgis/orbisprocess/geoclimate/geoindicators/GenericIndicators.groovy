@@ -1094,7 +1094,7 @@ IProcess upperScaleAreaStatistics() {
             datasource.execute(qjoin)
 
             // Drop intermediate tables created during process
-            datasource"""DROP TABLE IF EXISTS $spatialJoinTable, $pivotTable;"""
+            datasource "DROP TABLE IF EXISTS $spatialJoinTable, $pivotTable;"
 
             info "The table '$outputTableName' has been created"
             [outputTableName: outputTableName]
