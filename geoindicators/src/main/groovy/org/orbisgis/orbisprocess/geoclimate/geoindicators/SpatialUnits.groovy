@@ -458,14 +458,9 @@ IProcess spatialJoin() {
  * @param prefixName A prefix used to name the output table
  * @param datasource A connexion to a database (H2GIS, POSTGIS, ...) where are stored the input Table and in which
  *        the resulting database will be stored
-<<<<<<< HEAD
  * @return outputTableName The name of the created table
  *
  * @author Emmanuel Renault, CNRS, 2020
-=======
- * @param outputTableName The name of the created table
- * @author Emmanuel Renault, CNRS
->>>>>>> e04930d576c4ce986be0a38bc9c45137695103fc
  * */
 IProcess createGrid() {
     return create {
@@ -478,23 +473,14 @@ IProcess createGrid() {
 
             def BASENAME = "grid"
             def gridTableName = prefix prefixName, BASENAME
+            datasource "DROP TABLE IF EXISTS $gridTableName;"
 
-            if (datasource.hasTable(gridTableName)) {
-                datasource """DROP TABLE IF EXISTS $gridTableName;"""
-            }
             if (datasource instanceof H2GIS) {
-<<<<<<< HEAD
                 info "Creating grid with H2GIS"
                 datasource"""
                     CREATE TABLE $gridTableName 
                     AS SELECT * FROM ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY);
                     """
-=======
-                info "Creating a regular grid with H2GIS"
-                datasource """CREATE TABLE $outputTableName AS SELECT * FROM 
-                                     ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY);
-                           """
->>>>>>> e04930d576c4ce986be0a38bc9c45137695103fc
             }
             else if (datasource instanceof POSTGIS) {
                 info "Creating grid with POSTGIS"
