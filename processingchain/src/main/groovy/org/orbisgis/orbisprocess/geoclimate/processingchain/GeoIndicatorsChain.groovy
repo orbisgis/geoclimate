@@ -1169,7 +1169,7 @@ IProcess computeAllGeoIndicators() {
                     datasource.execute """DROP TABLE IF EXISTS $lczIndicTable;
                                 CREATE TABLE $lczIndicTable 
                                         AS SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, ${lczIndicNames.keySet().join(",")} 
-                                        FROM ${computeRSUIndicators.results.outputTableName};
+                                        FROM ${rsuIndicators};
                                 $queryReplaceNames"""
 
                     datasource."$lczIndicTable".reload()
@@ -1177,7 +1177,7 @@ IProcess computeAllGeoIndicators() {
                     // The classification algorithm is called
                     def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
                     if (!classifyLCZ([rsuLczIndicators : lczIndicTable,
-                                      rsuAllIndicators : computeRSUIndicators.results.outputTableName,
+                                      rsuAllIndicators : rsuIndicators,
                                       normalisationType: "AVG",
                                       mapOfWeights     : mapOfWeights,
                                       prefixName       : prefixName,
@@ -1192,7 +1192,7 @@ IProcess computeAllGeoIndicators() {
             }
             // If the URBAN_TYPOLOGY indicators should be calculated, we only affect a URBAN typo class
             // to each building and then to each RSU
-            if (indicatorUse.contains("URBAN_TYPOLOGY")) {
+            if (indicatorUse.contains("URBAN_TYPOLOGY") && urbanTypoModelName) {
                 info """ The URBAN TYPOLOGY classification is performed """
                 def applygatherScales = Geoindicators.GenericIndicators.gatherScales()
                 applygatherScales.execute([
@@ -1319,9 +1319,9 @@ IProcess computeAllGeoIndicators() {
 
             datasource.execute "DROP TABLE IF EXISTS $rsuLczWithoutGeom;"
 
-            return [outputTableBuildingIndicators   : computeBuildingsIndicators.getResults().outputTableName,
+            return [outputTableBuildingIndicators   : buildingIndicators,
                     outputTableBlockIndicators      : blockIndicators,
-                    outputTableRsuIndicators        : computeRSUIndicators.getResults().outputTableName,
+                    outputTableRsuIndicators        : rsuIndicators,
                     outputTableRsuLcz               : rsuLcz,
                     outputTableZone                 : zoneTable,
                     outputTableRsuUrbanTypoArea     : urbanTypoArea,

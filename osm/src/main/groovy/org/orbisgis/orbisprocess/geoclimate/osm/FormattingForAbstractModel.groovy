@@ -907,7 +907,7 @@ IProcess formatEstimatedBuilding() {
             datasource """ 
                 DROP TABLE if exists ${outputTableName};
                 CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id_build INTEGER, ID_SOURCE VARCHAR, 
-                    HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT, NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER);
+                    HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT, NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER, ID_BLOCK INTEGER, ID_RSU INTEGER);
             """
             if (inputTableName) {
                 def paramsDefaultFile = this.class.getResourceAsStream("buildingParams.json")
@@ -939,7 +939,8 @@ IProcess formatEstimatedBuilding() {
                                                     ${formatedHeight.nbLevels},
                                                     '${type}',
                                                     '${row.main_use}',
-                                                    ${row.zindex})
+                                                    ${row.zindex},
+                                                    ${row.id_block},${row.id_rsu})
                                             """.toString()
 
                         }
