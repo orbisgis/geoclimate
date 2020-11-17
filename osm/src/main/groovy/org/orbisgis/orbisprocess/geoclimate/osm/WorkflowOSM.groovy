@@ -1042,6 +1042,9 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
     if(!subFolder.exists()){
         subFolder.mkdir()
     }
+    else{
+        FileUtilities.deleteFiles(subFolder)
+    }
     outputFiles.each{
         //Save indicators
         if(it.equals("building_indicators")){
