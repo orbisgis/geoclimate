@@ -16,7 +16,7 @@ import org.orbisgis.orbisdata.processmanager.process.ProcessMapper
  *
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...), in which the data to process will be stored
  * @param distBuffer The distance (exprimed in meter) used to compute the buffer area around the ZONE
- * @param expand The distance (exprimed in meter) used to compute the extended area around the ZONE
+ * @param distance The distance (exprimed in meter) used to compute the extended area around the ZONE
  * @param idZone The Zone id
  * @param tableIrisName The table name in which the IRIS are stored
  * @param tableBuildIndifName The table name in which the undifferentiated ("Indifférencié" in french) buildings are stored
@@ -49,7 +49,7 @@ IProcess prepareData() {
         id "prepareData"
         inputs datasource: JdbcDataSource,
                 distBuffer: 500,
-                expand: 1000,
+                distance: 1000,
                 idZone: String,
                 tableIrisName: String,
                 tableBuildIndifName: String,
@@ -63,13 +63,14 @@ IProcess prepareData() {
                 tableImperviousBuildSurfName: String,
                 tableImperviousRoadSurfName: String,
                 tableImperviousActivSurfName: String,
+                tablePiste_AerodromeName: String,
                 hLevMin: 3,
                 hLevMax: 15,
                 hThresholdLev2: 10
         outputs outputBuilding: String, outputRoad: String, outputRail: String, outputHydro: String, outputVeget: String, outputImpervious: String, outputZone: String
-        run { datasource, distBuffer, expand, idZone, tableIrisName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName, tableRoadName, tableRailName,
+        run { datasource, distBuffer, distance, idZone, tableIrisName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName, tableRoadName, tableRailName,
               tableHydroName, tableVegetName, tableImperviousSportName, tableImperviousBuildSurfName, tableImperviousRoadSurfName, tableImperviousActivSurfName,
-              hLevMin, hLevMax, hThresholdLev2 ->
+              tablePiste_AerodromeName, hLevMin, hLevMax, hThresholdLev2 ->
 
             if (!datasource) {
                 error "The database to store the BD Topo data doesn't exist"
@@ -111,7 +112,8 @@ IProcess prepareData() {
                                    tableImperviousBuildSurfName: tableImperviousBuildSurfName,
                                    tableImperviousRoadSurfName : tableImperviousRoadSurfName,
                                    tableImperviousActivSurfName: tableImperviousActivSurfName,
-                                   distBuffer                  : distBuffer, expand: expand, idZone: idZone,
+                                   tablePiste_AerodromeName: tablePiste_AerodromeName,
+                                   distBuffer                  : distBuffer, distance: distance, idZone: idZone,
                                    building_bd_topo_use_type   : initTables.outputBuildingBDTopoUseType,
                                    building_abstract_use_type  : abstractTables.outputBuildingAbstractUseType,
                                    road_bd_topo_type           : initTables.outputroadBDTopoType,
