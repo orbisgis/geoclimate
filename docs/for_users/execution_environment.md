@@ -34,6 +34,29 @@ where
 Please follow this [link](https://github.com/orbisgis/geoclimate/tree/v1.0.0-RC1/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config)
 to find various configuration files.
 
+The Geoclimate.jar is binary distribution that contains the all necessary dependencies.
+
+Up to data binary distribution is available at [here](https://jenkins.orbisgis.org/job/geoclimate-with-dependencies/lastSuccessfulBuild/artifact/geoclimate/target/Geoclimate.jar)
+
+## Proxy configuration
+
+Depending on networking environments, particularly corporate ones, you must have to deal with proxy configuration.
+
+If you Geoclimate with a Groovy script, tune the proxy just like that
+
+```java
+System.getProperties().put("proxySet", true);
+System.getProperties().put("proxyHost", "proxyUrl");
+System.getProperties().put("proxyPort", "proxyPort");
+```
+If you use the Geoclimate CLI try this :
+
+```java
+java -Djava.net.useSystemProxies=true -Dhttp.proxyHost=10.10.10.10 -Dhttp.proxyPort=8080  -jar  Geoclimate.jar -f osm_geoclimate.json
+```
+if nothing works, please contact your system administrator ;-)
+
+
 
 ## Use cases
 
