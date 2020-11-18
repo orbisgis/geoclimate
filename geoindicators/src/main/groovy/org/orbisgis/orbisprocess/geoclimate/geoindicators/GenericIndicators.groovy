@@ -993,7 +993,7 @@ IProcess gatherScales() {
  */
 IProcess upperScaleAreaStatistics() {
     return create {
-        title "Statistics on zonal area for a given indicator"
+        title "Statistics on gridded area for a given indicator"
         id "upperScaleStatisticArea"
         inputs upperTableName: String, upperColumnId: String, lowerTableName: String, lowerColumnName: String,
                 prefixName: String, datasource: JdbcDataSource
@@ -1039,7 +1039,7 @@ IProcess upperScaleAreaStatistics() {
             def listValues = datasource.rows(qIndicator)
 
             // Creation of the pivot table which contains for each upper geometry
-            def pivotTable = "tmpZonalArea"
+            def pivotTable = "pivotAreaTable"
             def query = """
                         DROP TABLE IF EXISTS $pivotTable;
                         CREATE TABLE $pivotTable
