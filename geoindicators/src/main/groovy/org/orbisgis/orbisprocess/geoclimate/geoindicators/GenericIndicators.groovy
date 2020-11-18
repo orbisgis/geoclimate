@@ -1019,42 +1019,41 @@ IProcess gatherScales() {
 
                 def spatialJoinTable = "gridSpatialJoin"
                 def spatialJoin = """
-                              DROP TABLE IF EXISTS $spatialJoinTable;
-                              CREATE TABLE $spatialJoinTable 
-                              AS SELECT b.$upperColumnId, a.$lowerColumName,
-                                        ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$lowerGeometryColumn)), 
-                                        st_force2d(st_makevalid(b.$upperGeometryColumn)))) AS area
-                              FROM $lowerTableName a, $upperTableName b
-                              WHERE a.$lowerGeometryColumn && b.$upperGeometryColumn AND 
-                              ST_INTERSECTS(st_force2d(a.$lowerGeometryColumn), st_force2d(b.$upperGeometryColumn));
-                              """
+                                  DROP TABLE IF EXISTS $spatialJoinTable;
+                                  CREATE TABLE $spatialJoinTable 
+                                  AS SELECT b.$upperColumnId, a.$lowerColumName,
+                                            ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$lowerGeometryColumn)), 
+                                            st_force2d(st_makevalid(b.$upperGeometryColumn)))) AS area
+                                  FROM $lowerTableName a, $upperTableName b
+                                  WHERE a.$lowerGeometryColumn && b.$upperGeometryColumn AND 
+                                  ST_INTERSECTS(st_force2d(a.$lowerGeometryColumn), st_force2d(b.$upperGeometryColumn));
+                                  """
                 datasource.execute(spatialJoin)
                 datasource "CREATE INDEX ON $spatialJoinTable USING BTREE($lowerColumName)"
                 datasource "CREATE INDEX ON $spatialJoinTable USING BTREE($upperColumnId)"
 
                 // Creation of a list which contains all indicators of distinct values
                 def qIndicator = """
-                             SELECT DISTINCT $lowerColumName 
-                             AS val FROM $spatialJoinTable
-                             """
+                                 SELECT DISTINCT $lowerColumName 
+                                 AS val FROM $spatialJoinTable
+                                 """
                 def listValues = datasource.rows(qIndicator)
 
                 // Creation of the pivot table which contains for each upper geometry
                 def pivotTable = "tmpZonalArea"
                 def query = """
-                        DROP TABLE IF EXISTS $pivotTable;
-                        CREATE TABLE $pivotTable
-                        AS SELECT $upperColumnId
-                        """
+                            DROP TABLE IF EXISTS $pivotTable;
+                            CREATE TABLE $pivotTable
+                            AS SELECT $upperColumnId
+                            """
                 listValues.each {
                     def aliasColumn = "${lowerColumName}_${it.val.toString().replace('.','_')}"
                     query += """
-                         , SUM($aliasColumn)
-                         AS $aliasColumn
-                         """
+                             , SUM($aliasColumn)
+                             AS $aliasColumn
+                             """
                 }
                 query += " FROM (SELECT $upperColumnId"
-
                 listValues.each {
                     def aliasColumn = "${lowerColumName}_${it.val.toString().replace('.','_')}"
                     query += """
@@ -1063,14 +1062,12 @@ IProcess gatherScales() {
                              AS $aliasColumn
                              """
                     }
-
                 query += """
-                     FROM $spatialJoinTable
-                     GROUP BY $upperColumnId, $lowerColumName)
-                     GROUP BY $upperColumnId;
-                     """
+                         FROM $spatialJoinTable
+                         GROUP BY $upperColumnId, $lowerColumName)
+                         GROUP BY $upperColumnId;
+                         """
                 datasource.execute(query)
-
                 //Build indexes
                 datasource "CREATE INDEX ON $pivotTable USING BTREE($upperColumnId)"
 
@@ -1078,28 +1075,25 @@ IProcess gatherScales() {
                 // the union of the grid and pivot tables based on the same cell 'id'
                 def outputTableName = prefix prefixName, "upper_scale_statistics_area"
                 def qjoin = """
-                        DROP TABLE IF EXISTS $outputTableName;
-                        CREATE TABLE $outputTableName
-                        AS SELECT b.$upperColumnId, b.$upperGeometryColumn
-                        """
+                            DROP TABLE IF EXISTS $outputTableName;
+                            CREATE TABLE $outputTableName
+                            AS SELECT b.$upperColumnId, b.$upperGeometryColumn
+                            """
                 listValues.each {
                     def aliasColumn = "${lowerColumName}_${it.val.toString().replace('.','_')}"
-
                     qjoin += """
-                         , NVL($aliasColumn, 0)
-                         AS $aliasColumn
-                         """
+                             , NVL($aliasColumn, 0)
+                             AS $aliasColumn
+                             """
                 }
                 qjoin += """
-                     FROM $upperTableName b
-                     LEFT JOIN $pivotTable a
-                     ON (a.$upperColumnId = b.$upperColumnId);
-                     """
+                         FROM $upperTableName b
+                         LEFT JOIN $pivotTable a
+                         ON (a.$upperColumnId = b.$upperColumnId);
+                         """
                 datasource.execute(qjoin)
-
                 // Drop intermediate tables created during process
-                datasource.execute("DROP TABLE IF EXISTS $spatialJoinTable, $pivotTable")
-
+                datasource.execute("DROP TABLE IF EXISTS $spatialJoinTable, $pivotTable;")
                 info "The zonal area table have been created"
                 [outputTableName: outputTableName]
             }
