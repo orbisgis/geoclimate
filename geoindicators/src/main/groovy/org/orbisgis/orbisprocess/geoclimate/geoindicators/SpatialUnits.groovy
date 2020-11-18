@@ -510,7 +510,7 @@ IProcess createGrid() {
                             batchSize = 0;
                         }
                     }
-                    if (batch_size > 0) {
+                    if (batch_size>0) {
                         preparedStatement.executeBatch()
                     }
                 } catch (SQLException e) {
