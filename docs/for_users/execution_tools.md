@@ -92,6 +92,23 @@ The following interface should appear
 
 Once you loaded (or copy/pasted) your script, you can execute it by clicking on ![](../resources/images/for_users/groovy_console_execute.png) (or by using the shortcut `Ctrl + R`).
 
+## Proxy configuration
+
+Depending on networking environments, particularly corporate ones, you must have to deal with proxy configuration.
+
+If you Geoclimate with a Groovy script, tune the proxy just like that
+
+```java
+System.getProperties().put("proxySet", true);
+System.getProperties().put("proxyHost", "proxyUrl");
+System.getProperties().put("proxyPort", "proxyPort");
+```
+If you use the Geoclimate CLI try this :
+
+```java
+java -Djava.net.useSystemProxies=true -Dhttp.proxyHost=10.10.10.10 -Dhttp.proxyPort=8080  -jar  Geoclimate.jar -f osm_geoclimate.json
+```
+if nothing works, please contact your system administrator ;-)
 
 
 ## Use cases
