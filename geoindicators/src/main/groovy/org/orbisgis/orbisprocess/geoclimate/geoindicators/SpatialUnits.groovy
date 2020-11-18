@@ -466,7 +466,7 @@ IProcess spatialJoin() {
  * */
 IProcess createGrid() {
     return create {
-        title "Creating a regular cartesian grid in meter"
+        title"Creating a regular grid in meter"
         id "createGrid"
         inputs geometry: Geometry, deltaX: double, deltaY: double,
                 prefixName: "", datasource: JdbcDataSource
@@ -522,7 +522,7 @@ IProcess createGrid() {
                     }
                 }
             }
-            info "The grid $outputTableName has been created"
+            info "The table $outputTableName has been created"
             [outputTableName: outputTableName]
          }
     }
