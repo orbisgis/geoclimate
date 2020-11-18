@@ -34,7 +34,7 @@ where
 Please follow this [link](https://github.com/orbisgis/geoclimate/tree/v1.0.0-RC1/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config)
 to find various configuration files.
 
-The Geoclimate.jar is binary distribution that contains the all necessary dependencies.
+The Geoclimate.jar is binary distribution that contains all necessary dependencies.
 
 Up to data binary distribution is available at [here](https://jenkins.orbisgis.org/job/geoclimate-with-dependencies/lastSuccessfulBuild/artifact/geoclimate/target/Geoclimate.jar)
 
