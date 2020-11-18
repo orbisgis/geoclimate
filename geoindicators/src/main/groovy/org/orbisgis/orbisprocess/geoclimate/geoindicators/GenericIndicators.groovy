@@ -975,22 +975,23 @@ IProcess gatherScales() {
 }
 
 
+
 /**
- * This process is used to aggregate the area of a specific variable to a upper scale from a lower scale (for
- * example the LCZs variables within a Reference Spatial Unit)
- *
- * @param upperTableName the name of the upper scale table
- * @param upperColumnId unique identifier for the upper scale table
- * @param lowerTableName the table of the lower scale to be aggregated
- * @param lowerColumnName the name of the column to be aggregated
- * @param prefixName String used as prefix to name the output table
- * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
- *        the resulting database will be stored
- * @return A database table name.
- *
- * @author Emmanuel Renault, CNRS, 2020
- * @author Erwan Bocher, CNRS, 2020
- */
+* This process is used to compute aggregate the area of a specific variable to a upper scale from a lower scale (for
+* example the LCZs variables within a Reference Spatial Unit)
+*
+* @param upperTableName the name of the upper scale table
+* @param upperColumnId unique identifier for the upper scale table
+* @param lowerTableName the table of the lower scale to be aggregated
+* @param lowerColumName the name of the column to be aggregated
+* @param prefixName String used as prefix to name the output table
+* @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+*        the resulting database will be stored
+* @return A database table name.
+*
+* @author Emmanuel Renault, CNRS, 2020
+* @author Erwan Bocher, CNRS, 2020
+*/
 IProcess upperScaleAreaStatistics() {
     return create {
         title "Statistics on gridded area for a given indicator"
@@ -1092,8 +1093,8 @@ IProcess upperScaleAreaStatistics() {
                      """
             datasource.execute(qjoin)
             // Drop intermediate tables created during process
-            datasource "DROP TABLE IF EXISTS $spatialJoinTable, $pivotTable;"
-            info "The table '$outputTableName' has been created"
+            datasource.execute("DROP TABLE IF EXISTS $spatialJoinTable, $pivotTable;")
+            info "The zonal area table have been created"
             [outputTableName: outputTableName]
         }
     }
