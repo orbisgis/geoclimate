@@ -48,7 +48,7 @@ class InputDataFormattingTest {
                                           tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                           tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                           tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                          distBuffer: 500, expand: 1000, idZone: communeToTest,
+                                          distBuffer: 500, distance: 1000, idZone: communeToTest,
                                           building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
                                           road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
                                           road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
@@ -64,7 +64,7 @@ class InputDataFormattingTest {
                                               inputRail: resultsImport.outputRailName, inputHydro: resultsImport.outputHydroName,
                                               inputVeget: resultsImport.outputVegetName, inputImpervious: resultsImport.outputImperviousName,
                                               inputZone: resultsImport.outputZoneName, //inputZoneNeighbors: resultsImport.outputZoneNeighborsName,
-                                              hLevMin: 3, hLevMax: 15, hThresholdLev2: 10, idZone: communeToTest, expand: 1000,
+                                              hLevMin: 3, hLevMax: 15, hThresholdLev2: 10, idZone: communeToTest, distance: 1000,
                                               buildingAbstractParameters: 'BUILDING_ABSTRACT_PARAMETERS', roadAbstractParameters: 'ROAD_ABSTRACT_PARAMETERS',
                                               vegetAbstractParameters: 'VEGET_ABSTRACT_PARAMETERS'])
         processFormatting.results.each {
