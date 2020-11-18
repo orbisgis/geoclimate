@@ -42,7 +42,7 @@ Up to data binary distribution is available at [here](https://jenkins.orbisgis.o
 
 Depending on networking environments, particularly corporate ones, you must have to deal with proxy configuration.
 
-If you Geoclimate with a Groovy script, tune the proxy just like that
+If you run Geoclimate with a Groovy script, tune the proxy just like that
 
 ```java
 System.getProperties().put("proxySet", true);
