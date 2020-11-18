@@ -3,56 +3,36 @@
 
 ## How to execute the Geoclimate chain
 
-Environnement pour exécuter la chaîne geoclimate. 
+There are 2 ways to run the Geoclimate chain : from a Scripting Console or from the Command Line
+Interface (CLI).
 
 
-### Grab
-
-On introduit la récupération des librairies avec @grab
-
-http://docs.groovy-lang.org/latest/html/documentation/grape.html
-
-## Requirements
-
-To run the Geoclimate chain, you must have previously installed on your machine the two following free and open source applications:
-
-- Java (from [Oracle](https://www.java.com/fr/download/) or [OpenJDK](https://openjdk.java.net/)) (at the least Version 8).
-- [Groovy](https://groovy-lang.org/) version 3.0.1
-
-
-
-### SDKMan
-
-**Tips**: You can install these two apps by your own, or choose to install them directly thanks to the [SDKMan](https://sdkman.io/) app, following these instructions:
-
-#### 1. Install SDKMan
-
-Follow the instruction [here](https://sdkman.io/install)
-
-#### 2. Install Java 
-
-We advise you to install the open version of Java called OpenJDK (see https://sdkman.io/jdks#jdk.java.net). In a terminal, execute this instruction:
-
-```bash
-sdk install java x.y.z-open
-```
-
-#### 3. Install Groovy 3.0.1 
-
-In a terminal, execute this instruction (see https://sdkman.io/sdks#groovy):
-```bash
-sdk install groovy  
-```
-
-
-## Execution tools
+## Run Geoclimate from a scripting console
 
 Geoclimate can, among other things, be executed using two tools presented below:
 
 - [DBeaver](./execution_tools.md)
-- The [Groovy Console](./execution_tools.md)
+- [Groovy Console](./execution_tools.md)
 
 
+## Run Geoclimate from the CLI (prefered)
+
+The Geoclimate Command Line Interface (CLI) is a text-based user interface (UI) used to run
+ Geoclimate chain in a Terminal from a provided configuration file.
+ 
+ To run Geoclimate CLI set 
+ 
+![](../resources/images/for_users/geoclimate_cli.png)
+
+where
+
+- -w  is the name of the workflow  : OSM or bdtopo_2.2
+- -f  is the path to the workflow configuration file (json format)
+- -h  shows help information
+- -v  shows the Geoclimate version
+
+Please follow this [link](https://github.com/orbisgis/geoclimate/tree/v1.0.0-RC1/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config)
+to find various configuration files.
 
 
 ## Use cases
