@@ -1038,7 +1038,8 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
                               tableHydroName             : 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                               tableImperviousSportName   : 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                               tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                              distBuffer                 : 500, expand: processing_parameters.distance, idZone: id_zone,
+                              tablePiste_AerodromeName : 'PISTE_AERODROME',
+                              distBuffer                 : 500, distance: processing_parameters.distance, idZone: id_zone,
                               hLevMin                    : processing_parameters.hLevMin,
                               hLevMax                    : processing_parameters.hLevMax, hThresholdLev2: processing_parameters.hThresholdLev2
         ])){

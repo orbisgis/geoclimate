@@ -25,7 +25,7 @@ import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
  * @param tableImperviousRoadSurfName The table name in which the impervious road areas are stored
  * @param tableImperviousActivSurfName The table name in which the impervious activities areas are stored
  * @param distBuffer The distance (expressed in meter) used to compute the buffer area around the ZONE
- * @param expand The distance (expressed in meter) used to compute the extended area around the ZONE
+ * @param distance The distance (expressed in meter) used to compute the extended area around the ZONE
  * @param idZone The ZONE id
  * @param building_bd_topo_use_type The name of the table in which the BD Topo building's use and type are stored
  * @param building_abstract_use_type The name of the table in which the abstract building's use and type are stored
@@ -65,8 +65,9 @@ IProcess importPreprocess() {
                 tableImperviousBuildSurfName: String,
                 tableImperviousRoadSurfName: String,
                 tableImperviousActivSurfName: String,
+                tablePiste_AerodromeName:"",
                 distBuffer: 500,
-                expand: 1000,
+                distance: 1000,
                 idZone: String,
                 building_bd_topo_use_type: String,
                 building_abstract_use_type: String,
@@ -90,7 +91,7 @@ IProcess importPreprocess() {
         run { datasource, tableIrisName, tableBuildIndifName, tableBuildIndusName,
               tableBuildRemarqName, tableRoadName, tableRailName, tableHydroName, tableVegetName,
               tableImperviousSportName, tableImperviousBuildSurfName, tableImperviousRoadSurfName,
-              tableImperviousActivSurfName, distBuffer, expand, idZone,
+              tableImperviousActivSurfName, tablePiste_AerodromeName,distBuffer, distance, idZone,
               building_bd_topo_use_type, building_abstract_use_type,
               road_bd_topo_type, road_abstract_type, road_bd_topo_crossing, road_abstract_crossing,
               rail_bd_topo_type, rail_abstract_type, rail_bd_topo_crossing, rail_abstract_crossing,
@@ -115,6 +116,7 @@ IProcess importPreprocess() {
             def tmp_imperv_terrain_sport = postfix 'TMP_IMPERV_TERRAIN_SPORT_'
             def tmp_imperv_surface_activite = postfix 'TMP_IMPERV_SURFACE_ACTIVITE_'
             def input_impervious = 'INPUT_IMPERVIOUS'
+            def tmp_imperv_piste_aerodrome = postfix 'TMP_IMPERV_PISTE_AERODROME'
 
             // -------------------------------------------------------------------------------
             // Control the SRIDs from input tables
@@ -122,25 +124,27 @@ IProcess importPreprocess() {
             def list = [tableIrisName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName,
                         tableRoadName, tableRailName, tableHydroName, tableVegetName,
                         tableImperviousSportName, tableImperviousBuildSurfName,
-                        tableImperviousRoadSurfName, tableImperviousActivSurfName]
+                        tableImperviousRoadSurfName, tableImperviousActivSurfName, tablePiste_AerodromeName]
 
             // The SRID is stored and initialized to -1
             def srid = -1
 
             // For each tables in the list, we check the SRID and compare to the srid variable. If different, the process is stopped
             for (String name : list) {
-                def table = datasource.getTable(name)
-                if (table != null && !table.isEmpty()) {
-                    if (srid == -1) {
-                        srid = table.srid
-                    } else {
-                        if (srid != table.srid) {
-                            error "The process has been stopped since the table $name has a different SRID from the others"
-                            return
+                if(name) {
+                    def table = datasource.getTable(name)
+                    if (table != null && !table.isEmpty()) {
+                        if (srid == -1) {
+                            srid = table.srid
+                        } else {
+                            if (srid != table.srid) {
+                                error "The process has been stopped since the table $name has a different SRID from the others"
+                                return
+                            }
                         }
+                    } else {
+                        datasource """DROP TABLE IF EXISTS $name"""
                     }
-                } else {
-                    datasource """DROP TABLE IF EXISTS $name"""
                 }
             }
 
@@ -155,48 +159,53 @@ IProcess importPreprocess() {
 
             // If the following tables does not exists, we create corresponding empty tables
             if (!datasource.hasTable(tableBuildIndifName)) {
-                datasource.execute("CREATE TABLE $tableBuildIndifName (THE_GEOM geometry(polygon, $srid), ID varchar, HAUTEUR integer);")
+                datasource.execute("DROP TABLE IF EXISTS $tableBuildIndifName; CREATE TABLE $tableBuildIndifName (THE_GEOM geometry(polygon, $srid), ID varchar, HAUTEUR integer);")
             }
             if (!datasource.hasTable(tableBuildIndusName)) {
-                datasource.execute("CREATE TABLE $tableBuildIndusName (THE_GEOM geometry(polygon, $srid), ID varchar, HAUTEUR integer, NATURE varchar);")
+                datasource.execute("DROP TABLE IF EXISTS $tableBuildIndusName; CREATE TABLE $tableBuildIndusName (THE_GEOM geometry(polygon, $srid), ID varchar, HAUTEUR integer, NATURE varchar);")
             }
             if (!datasource.hasTable(tableBuildRemarqName)) {
-                datasource.execute("CREATE TABLE $tableBuildRemarqName (THE_GEOM geometry(polygon, $srid), ID varchar, HAUTEUR integer, NATURE varchar);")
+                datasource.execute("DROP TABLE IF EXISTS $tableBuildRemarqName;  CREATE TABLE $tableBuildRemarqName (THE_GEOM geometry(polygon, $srid), ID varchar, HAUTEUR integer, NATURE varchar);")
             }
             if (!datasource.hasTable(tableRoadName)) {
-                datasource.execute("CREATE TABLE $tableRoadName (THE_GEOM geometry(linestring, $srid), ID varchar, LARGEUR double precision, NATURE varchar, POS_SOL integer, FRANCHISST varchar);")
+                datasource.execute("DROP TABLE IF EXISTS $tableRoadName;  CREATE TABLE $tableRoadName (THE_GEOM geometry(linestring, $srid), ID varchar, LARGEUR double precision, NATURE varchar, POS_SOL integer, FRANCHISST varchar);")
             }
             if (!datasource.hasTable(tableRailName)) {
-                datasource.execute("CREATE TABLE $tableRailName (THE_GEOM geometry(linestring, $srid), ID varchar, NATURE varchar, POS_SOL integer, FRANCHISST varchar);")
+                datasource.execute("DROP TABLE IF EXISTS $tableRailName;  CREATE TABLE $tableRailName (THE_GEOM geometry(linestring, $srid), ID varchar, NATURE varchar, POS_SOL integer, FRANCHISST varchar);")
             }
             if (!datasource.hasTable(tableHydroName)) {
-                datasource.execute("CREATE TABLE $tableHydroName (THE_GEOM geometry(polygon, $srid), ID varchar);")
+                datasource.execute("DROP TABLE IF EXISTS $tableHydroName;  CREATE TABLE $tableHydroName (THE_GEOM geometry(polygon, $srid), ID varchar);")
             }
             if (!datasource.hasTable(tableVegetName)) {
-                datasource.execute("CREATE TABLE $tableVegetName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);")
+                datasource.execute("DROP TABLE IF EXISTS $tableVegetName; CREATE TABLE $tableVegetName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);")
             }
             if (!datasource.hasTable(tableImperviousSportName)) {
-                datasource.execute("CREATE TABLE $tableImperviousSportName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);")
+                datasource.execute("DROP TABLE IF EXISTS $tableImperviousSportName; CREATE TABLE $tableImperviousSportName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);")
             }
             if (!datasource.hasTable(tableImperviousBuildSurfName)) {
-                datasource.execute("CREATE TABLE $tableImperviousBuildSurfName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);")
+                datasource.execute("DROP TABLE IF EXISTS $tableImperviousBuildSurfName; CREATE TABLE $tableImperviousBuildSurfName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);")
             }
             if (!datasource.hasTable(tableImperviousRoadSurfName)) {
-                datasource.execute("CREATE TABLE $tableImperviousRoadSurfName (THE_GEOM geometry(polygon, $srid), ID varchar);")
+                datasource.execute("DROP TABLE IF EXISTS $tableImperviousRoadSurfName; CREATE TABLE $tableImperviousRoadSurfName (THE_GEOM geometry(polygon, $srid), ID varchar);")
             }
             if (!datasource.hasTable(tableImperviousActivSurfName)) {
-                datasource.execute("CREATE TABLE $tableImperviousActivSurfName (THE_GEOM geometry(polygon, $srid), ID varchar, CATEGORIE varchar);")
+                datasource.execute("DROP TABLE IF EXISTS $tableImperviousActivSurfName; CREATE TABLE $tableImperviousActivSurfName (THE_GEOM geometry(polygon, $srid), ID varchar, CATEGORIE varchar);")
+            }
+            if (!tablePiste_AerodromeName || !datasource.hasTable(tablePiste_AerodromeName)) {
+                tablePiste_AerodromeName= "PISTE_AERODROME"
+                datasource.execute("DROP TABLE IF EXISTS $tablePiste_AerodromeName; CREATE TABLE $tablePiste_AerodromeName (THE_GEOM geometry(polygon, $srid), ID varchar,  NATURE varchar);")
             }
             // -------------------------------------------------------------------------------
 
             def success = datasource.executeScript(getClass().getResourceAsStream('importPreprocess.sql'),
-                    [ID_ZONE                           : idZone, DIST_BUFFER: distBuffer, EXPAND: expand,
+                    [ID_ZONE                           : idZone, DIST_BUFFER: distBuffer, EXPAND: distance,
                      IRIS_GE                           : tableIrisName, BATI_INDIFFERENCIE: tableBuildIndifName,
                      BATI_INDUSTRIEL                   : tableBuildIndusName, BATI_REMARQUABLE: tableBuildRemarqName,
                      ROUTE                             : tableRoadName, TRONCON_VOIE_FERREE: tableRailName,
                      SURFACE_EAU                       : tableHydroName, ZONE_VEGETATION: tableVegetName,
                      TERRAIN_SPORT                     : tableImperviousSportName, CONSTRUCTION_SURFACIQUE: tableImperviousBuildSurfName,
                      SURFACE_ROUTE                     : tableImperviousRoadSurfName, SURFACE_ACTIVITE: tableImperviousActivSurfName,
+                     PISTE_AERODROME                   : tablePiste_AerodromeName,
                      TMP_IRIS                          : tmpIris,
                      ZONE                              : zone, ZONE_BUFFER: zoneBuffer, ZONE_EXTENDED: zoneExtended, ZONE_NEIGHBORS: zoneNeighbors,
                      BU_ZONE_INDIF                     : bu_zone_indif, BU_ZONE_INDUS: bu_zone_indus, BU_ZONE_REMARQ: bu_zone_remarq,
@@ -208,6 +217,7 @@ IProcess importPreprocess() {
                      TMP_IMPERV_CONSTRUCTION_SURFACIQUE: tmp_imperv_construction_surfacique, TMP_IMPERV_SURFACE_ROUTE: tmp_imperv_surface_route,
                      TMP_IMPERV_TERRAIN_SPORT          : tmp_imperv_terrain_sport, TMP_IMPERV_SURFACE_ACTIVITE: tmp_imperv_surface_activite,
                      INPUT_IMPERVIOUS                  : input_impervious,
+                     TMP_IMPERV_PISTE_AERODROME        : tmp_imperv_piste_aerodrome,
                      BUILDING_BD_TOPO_USE_TYPE         : building_bd_topo_use_type, BUILDING_ABSTRACT_USE_TYPE: building_abstract_use_type,
                      ROAD_BD_TOPO_TYPE                 : road_bd_topo_type, ROAD_ABSTRACT_TYPE: road_abstract_type,
                      ROAD_BD_TOPO_CROSSING             : road_bd_topo_crossing, ROAD_ABSTRACT_CROSSING: road_abstract_crossing,

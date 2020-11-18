@@ -1,10 +1,14 @@
-# Execution tools
+# Scripting consoles
 
 You can execute the Geoclimate chain in many ways. Below are presented two simple (and free of charge) options:
 
 - With [DBeaver](#With DBeaver)
 - With the [Groovy console](#With the Groovy Console)
 
+Don't forget that Geoclimate is developed in Groovy language and Groovy needs a Java Virtual Machine (JVM).
+It requires at least Java 8.
+
+Go to [OpenJDK](https://openjdk.java.net/).
 
 
 ## With DBeaver
@@ -29,9 +33,6 @@ In DBeaver:
 ![](../resources/images/for_users/dbeaver_install_plugins.png)
 
 
-
-
-
 ------
 
 ### Remarks
@@ -51,7 +52,6 @@ You also may have a `Security Warning` since these two "plugins" are not officia
 ![dbeaver_install_anyway](../resources/images/for_users/dbeaver_install_anyway.png)
 
 ------
-
 
 
 Once DBeaver has restarted, select the main menu `Groovy Editor`, click on `Open editor`, then you will have a Groovy Console.
@@ -74,9 +74,11 @@ Now you are ready to play with the Geoclimate chain by executing the dedicated s
 
 ## With the Groovy Console
 
+
 ### Install the Groovy console
 
-The console is included in Groovy. So if you haven't already done so, please install Groovy, reading the documentation [here](./execution_environment.md#Requirements).
+The console is included in Groovy distribution. Please check the Groovy do to install it :
+ https://groovy-lang.org/install.html
 
 ### Launch the console
 
