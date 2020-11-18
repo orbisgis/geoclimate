@@ -99,6 +99,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
+                                    tablePiste_AerodromeName : 'PISTE_AERODROME',
                                     distBuffer: 500, distance: 1000, idZone: communeToTest,
                                     hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
         ])
@@ -154,6 +155,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
+                                    tablePiste_AerodromeName : 'PISTE_AERODROME',
                                     distBuffer: 500, distance: 1000, idZone: communeToTest,
                                     hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
         ])
@@ -196,6 +198,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
+                                    tablePiste_AerodromeName : 'PISTE_AERODROME',
                                     distBuffer: 500, distance: 1000, idZone: communeToTest,
                                     hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
         ])
