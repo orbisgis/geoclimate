@@ -6,9 +6,9 @@
         "delete" :false
     },
     "input" : {
-        "osm" : ["nantes"]},
+        "osm" : ["vannes"]},
     "output" :{
-        "folder" : "/home/decide/Bureau/Nantes"},
+        "folder" : "/home/decide/Bureau/GeoclimateTests2"},
     "parameters":
     {"distance" : 1000,
         "indicatorUse": ["LCZ"],

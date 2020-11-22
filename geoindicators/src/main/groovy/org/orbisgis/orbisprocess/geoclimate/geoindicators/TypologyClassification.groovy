@@ -359,7 +359,7 @@ IProcess identifyLczType() {
                 datasource """  DROP TABLE IF EXISTS $distribLczTableInt;
                                 CREATE TABLE $distribLczTableInt
                                         AS SELECT   $ID_FIELD_RSU, $casewhenQuery1 null$parenthesis AS LCZ1,
-                                                    $casewhenQuery1 null$parenthesis AS LCZ2, 
+                                                    $casewhenQuery2 null$parenthesis AS LCZ2, 
                                                     MIN_DISTANCE, LCZ_UNIQUENESS_VALUE, LCZ_EQUALITY_VALUE 
                                         FROM $resultsDistrib"""
 
