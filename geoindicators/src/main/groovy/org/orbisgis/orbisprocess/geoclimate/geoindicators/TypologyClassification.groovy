@@ -50,7 +50,6 @@ import java.util.zip.GZIPOutputStream
  * of the map) for the LCZ classification step (default : all values to 1)
  * @param prefixName String use as prefix to name the output table
  * @param datasource A connection to a database
- * @param industrialFractionThreshold The fraction of industrial building area above which the RSU is considered as industrial type (LCZ10)
  *
  * References:
  * --> Stewart, Ian D., and Tim R. Oke. "Local climate zones for urban temperature studies." Bulletin of
@@ -68,10 +67,9 @@ IProcess identifyLczType() {
                 datasource: JdbcDataSource, normalisationType: "AVG",
                 mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                               "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
-                industrialFractionThreshold: 0.3
+                               "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
         outputs outputTableName: String
-        run { rsuLczIndicators, rsuAllIndicators, prefixName, datasource, normalisationType, mapOfWeights, industrialFractionThreshold ->
+        run { rsuLczIndicators, rsuAllIndicators, prefixName, datasource, normalisationType, mapOfWeights ->
 
             def OPS = ["AVG", "MEDIAN"]
             def ID_FIELD_RSU = "id_rsu"
@@ -99,6 +97,7 @@ IProcess identifyLczType() {
                 def normalizedValues = postfix "normalizedValues"
                 def normalizedRange = postfix "normalizedRange"
                 def distribLczTable = postfix "distribLczTable"
+                def distribLczTableWithoutLcz1 = postfix "distribLczTableWithoutLcz1"
                 def distribLczTableInt = postfix "distribLczTableInt"
                 def ruralLCZ = postfix "ruralLCZ"
                 def classifiedRuralLCZ = postfix "classifiedRuralLCZ"
@@ -109,8 +108,8 @@ IProcess identifyLczType() {
                 def mainLczTable = postfix "mainLczTable"
                 def classifiedUrbanLcz = postfix "classifiedUrbanLcz"
                 def classifiedLcz = postfix "classifiedLcz"
-                def classifiedIndustrialLcz = postfix "classifiedIndustrialLcz"
-                def ruralAndIndustrialLCZ = postfix "ruralAndIndustrialLCZ"
+                def classifiedIndustrialCommercialLcz = postfix "classifiedIndustrialLcz"
+                def ruralAndIndustrialCommercialLCZ = postfix "ruralAndIndustrialLCZ"
 
 
                 // The LCZ definitions are created in a Table of the DataBase (note that the "terrain_roughness_class"
@@ -214,33 +213,43 @@ IProcess identifyLczType() {
                                         ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU
                                         WHERE b.$ID_FIELD_RSU IS NULL;"""
 
-                // 0. Set as industrial areas having more than 'industrialFractionThreshold' % of their building surface being industrial type
+                // 0. Set as industrial areas or large low-rise (commercial) having more of industrial or commercial than residential
+                // and at least 1/3 of fraction
                 if (datasource."$urbanLCZ".columns.contains("AREA_FRACTION_INDUSTRIAL")) {
-                    datasource """DROP TABLE IF EXISTS $classifiedIndustrialLcz;
-                                CREATE TABLE $classifiedIndustrialLcz
+                    datasource """DROP TABLE IF EXISTS $classifiedIndustrialCommercialLcz;
+                                CREATE TABLE $classifiedIndustrialCommercialLcz
                                         AS SELECT   $ID_FIELD_RSU,
-                                                    10 AS LCZ1,
-                                                    null AS LCZ2, null AS min_distance, null AS LCZ_UNIQUENESS_VALUE, null AS LCZ_EQUALITY_VALUE
+                                                    CASE WHEN AREA_FRACTION_INDUSTRIAL > AREA_FRACTION_COMMERCIAL
+                                                        THEN 10 
+                                                        ELSE 8  END AS LCZ1,
+                                                    null        AS LCZ2, 
+                                                    null        AS min_distance,
+                                                    null        AS LCZ_UNIQUENESS_VALUE,
+                                                    null        AS LCZ_EQUALITY_VALUE
                                         FROM $urbanLCZ 
-                                        WHERE AREA_FRACTION_INDUSTRIAL > $industrialFractionThreshold;
-                                DROP TABLE IF EXISTS $ruralAndIndustrialLCZ;
-                                CREATE TABLE $ruralAndIndustrialLCZ
+                                        WHERE   AREA_FRACTION_INDUSTRIAL > AREA_FRACTION_COMMERCIAL AND AREA_FRACTION_INDUSTRIAL>0.33
+                                                OR AREA_FRACTION_COMMERCIAL > AREA_FRACTION_RESIDENTIAL AND AREA_FRACTION_COMMERCIAL>0.33
+                                                    AND AVG_NB_LEV_AREA_WEIGHTED < 3
+                                                    AND LOW_VEGETATION_FRACTION_LCZ+HIGH_VEGETATION_FRACTION_LCZ<0.2
+                                                    AND GROUND_SKY_VIEW_FACTOR > 0.7;
+                                DROP TABLE IF EXISTS $ruralAndIndustrialCommercialLCZ;
+                                CREATE TABLE $ruralAndIndustrialCommercialLCZ
                                             AS SELECT * 
-                                            FROM $classifiedIndustrialLcz 
+                                            FROM $classifiedIndustrialCommercialLcz 
                                         UNION ALL 
                                             SELECT *
                                             FROM $classifiedRuralLCZ"""
                 } else {
-                    datasource """ALTER TABLE $classifiedRuralLCZ RENAME TO $ruralAndIndustrialLCZ"""
+                    datasource """ALTER TABLE $classifiedRuralLCZ RENAME TO $ruralAndIndustrialCommercialLCZ"""
                 }
-                datasource."$ruralAndIndustrialLCZ"."$ID_FIELD_RSU".createIndex()
+                datasource."$ruralAndIndustrialCommercialLCZ"."$ID_FIELD_RSU".createIndex()
                 datasource."$rsuLczIndicators"."$ID_FIELD_RSU".createIndex()
 
                 datasource """DROP TABLE IF EXISTS $urbanLCZExceptIndus;
                                 CREATE TABLE $urbanLCZExceptIndus
                                         AS SELECT a.*
                                         FROM $rsuLczIndicators a
-                                        LEFT JOIN $ruralAndIndustrialLCZ b
+                                        LEFT JOIN $ruralAndIndustrialCommercialLCZ b
                                         ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU
                                         WHERE b.$ID_FIELD_RSU IS NULL;"""
 
@@ -324,12 +333,29 @@ IProcess identifyLczType() {
                                     AS SELECT   $ID_FIELD_RSU, ${queryLczDistance[0..-2]}
                                     FROM        $normalizedValues;"""
 
+                // Specific behavior for LCZ type 1 (compact high rise): we suppose it is impossible to have a LCZ1 if
+                // the mean average nb of building level in the RSU <10 (we set LCZ1 value to -9999.99 in this case)
+                def colDistribTable = datasource.getTable(distribLczTable).getColumns()
+                colDistribTable=colDistribTable.minus(["LCZ1"])
+                datasource."$distribLczTable"."$ID_FIELD_RSU".createIndex()
+                datasource."$urbanLCZ"."$ID_FIELD_RSU".createIndex()
+                datasource."$urbanLCZ".AVG_NB_LEV_AREA_WEIGHTED.createIndex()
+                datasource """  DROP TABLE IF EXISTS $distribLczTableWithoutLcz1;
+                                CREATE TABLE $distribLczTableWithoutLcz1 
+                                    AS SELECT   a.${colDistribTable.join(", a.")},
+                                                CASE WHEN b.AVG_NB_LEV_AREA_WEIGHTED < 10 
+                                                    THEN -9999.99 
+                                                    ELSE LCZ1 END AS LCZ1
+                                    FROM        $distribLczTable a 
+                                    LEFT JOIN   $urbanLCZ b
+                                        ON a.$ID_FIELD_RSU=b.$ID_FIELD_RSU;"""
+
                 // The distribution is characterized
                 datasource """DROP TABLE IF EXISTS ${prefix prefixName, 'DISTRIBUTION_REPARTITION'}"""
                 def computeDistribChar = Geoindicators.GenericIndicators.distributionCharacterization()
-                computeDistribChar([distribTableName: distribLczTable,
+                computeDistribChar([distribTableName: distribLczTableWithoutLcz1,
                                     inputId         : ID_FIELD_RSU,
-                                    initialTable    : distribLczTable,
+                                    initialTable    : distribLczTableWithoutLcz1,
                                     distribIndicator: ["equality", "uniqueness"],
                                     extremum        : "LEAST",
                                     keep2ndCol      : true,
@@ -359,7 +385,7 @@ IProcess identifyLczType() {
                 datasource """  DROP TABLE IF EXISTS $distribLczTableInt;
                                 CREATE TABLE $distribLczTableInt
                                         AS SELECT   $ID_FIELD_RSU, $casewhenQuery1 null$parenthesis AS LCZ1,
-                                                    $casewhenQuery1 null$parenthesis AS LCZ2, 
+                                                    $casewhenQuery2 null$parenthesis AS LCZ2, 
                                                     MIN_DISTANCE, LCZ_UNIQUENESS_VALUE, LCZ_EQUALITY_VALUE 
                                         FROM $resultsDistrib"""
 
@@ -368,7 +394,7 @@ IProcess identifyLczType() {
                                 CREATE TABLE $classifiedLcz 
                                         AS SELECT   * 
                                         FROM        $distribLczTableInt
-                                        UNION ALL   SELECT * FROM $ruralAndIndustrialLCZ b;"""
+                                        UNION ALL   SELECT * FROM $ruralAndIndustrialCommercialLCZ b;"""
 
                 // If the input tables contain a geometric field, we add it to the output table
                 if (datasource."$rsuAllIndicators".columns.contains(GEOMETRIC_FIELD)) {
@@ -388,13 +414,13 @@ IProcess identifyLczType() {
                 } else {
                     datasource """ALTER TABLE $classifiedLcz RENAME TO $outputTableName;"""
                 }
-
+/*
                 // Temporary tables are deleted
                 datasource """DROP TABLE IF EXISTS ${prefixName}_distribution_repartition,
                     $LCZ_classes, $normalizedValues, $normalizedRange,
                     $distribLczTable, $distribLczTableInt, $allLczTable, $pivotedTable, $mainLczTable, 
-                    $classifiedLcz, $classifiedUrbanLcz, $classifiedRuralLCZ;"""
-
+                    $classifiedLcz, $classifiedUrbanLcz, $classifiedRuralLCZ, $distribLczTableWithoutLcz1;"""
+*/
                 info "The LCZ classification has been performed."
 
                 [outputTableName: outputTableName]
