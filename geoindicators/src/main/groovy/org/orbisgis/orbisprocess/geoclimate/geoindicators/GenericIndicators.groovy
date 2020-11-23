@@ -525,7 +525,6 @@ IProcess distributionCharacterization() {
                             def sortedMap = rowMap.sort { it.value }
                             // We want to get rid of some of the values identified as -9999.99
                             while (sortedMap.values().remove(-9999.99 as double));
-                            println sortedMap.keySet()[idxExtrem]
                             def queryInsert = """INSERT INTO $outputTableMissingSomeObjects 
                                                 VALUES ($id_rsu, ${getEquality(sortedMap, nbDistCol)},
                                                         '${sortedMap.keySet()[idxExtrem]}')"""
@@ -566,7 +565,6 @@ IProcess distributionCharacterization() {
                             def sortedMap = rowMap.sort { it.value }
                             // We want to get rid of some of the values identified as -9999.99
                             while (sortedMap.values().remove(-9999.99 as double));
-                            println sortedMap.keySet()[idxExtrem]
                             def queryInsert = """INSERT INTO $outputTableMissingSomeObjects 
                                                 VALUES ($id_rsu, ${getUniqueness(sortedMap, idxExtrem, idxExtrem_1)},
                                                         '${sortedMap.keySet()[idxExtrem]}')"""
