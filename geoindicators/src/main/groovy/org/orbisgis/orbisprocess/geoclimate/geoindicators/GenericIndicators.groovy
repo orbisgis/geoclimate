@@ -523,6 +523,8 @@ IProcess distributionCharacterization() {
                             def id_rsu = rowMap."$inputId"
                             rowMap.remove(inputId.toUpperCase())
                             def sortedMap = rowMap.sort { it.value }
+                            // We want to get rid of some of the values identified as -9999.99
+                            while (sortedMap.values().remove(-9999.99 as double));
                             def queryInsert = """INSERT INTO $outputTableMissingSomeObjects 
                                                 VALUES ($id_rsu, ${getEquality(sortedMap, nbDistCol)},
                                                         '${sortedMap.keySet()[idxExtrem]}')"""
@@ -561,6 +563,8 @@ IProcess distributionCharacterization() {
                             def id_rsu = rowMap."$inputId"
                             rowMap.remove(inputId.toUpperCase())
                             def sortedMap = rowMap.sort { it.value }
+                            // We want to get rid of some of the values identified as -9999.99
+                            while (sortedMap.values().remove(-9999.99 as double));
                             def queryInsert = """INSERT INTO $outputTableMissingSomeObjects 
                                                 VALUES ($id_rsu, ${getUniqueness(sortedMap, idxExtrem, idxExtrem_1)},
                                                         '${sortedMap.keySet()[idxExtrem]}')"""
@@ -600,7 +604,8 @@ IProcess distributionCharacterization() {
                             def id_rsu = rowMap."$inputId"
                             rowMap.remove(inputId)
                             def sortedMap = rowMap.sort { it.value }
-
+                            // We want to get rid of some of the values identified as -9999.99
+                            while (sortedMap.values().remove(-9999.99 as double));
                             def queryInsert = """INSERT INTO $outputTableMissingSomeObjects 
                                                 VALUES ($id_rsu, ${getEquality(sortedMap, nbDistCol)},
                                                         ${getUniqueness(sortedMap, idxExtrem, idxExtrem_1)},
@@ -618,7 +623,7 @@ IProcess distributionCharacterization() {
                     }
                     queryCoalesce += """    COALESCE(a.$EQUALITY, -1) AS $EQUALITY,
                                             COALESCE(a.$UNIQUENESS, -1) AS $UNIQUENESS,
-                                            COALESCE(a.$EXTREMUM_COL, 'unknown') AS $EXTREMUM_COL,"""
+                                                                            COALESCE(a.$EXTREMUM_COL, 'unknown') AS $EXTREMUM_COL,"""
                 }
                 // If the second extremum col should be conserved
                 if(keep2ndCol){
