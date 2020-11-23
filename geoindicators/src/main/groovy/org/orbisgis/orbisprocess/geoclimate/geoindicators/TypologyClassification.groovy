@@ -229,7 +229,9 @@ IProcess identifyLczType() {
                                         FROM $urbanLCZ 
                                         WHERE   AREA_FRACTION_INDUSTRIAL > AREA_FRACTION_COMMERCIAL AND AREA_FRACTION_INDUSTRIAL>0.33
                                                 OR AREA_FRACTION_COMMERCIAL > AREA_FRACTION_RESIDENTIAL AND AREA_FRACTION_COMMERCIAL>0.33
-                                                    AND AVG_NB_LEV_AREA_WEIGHTED < 3;
+                                                    AND AVG_NB_LEV_AREA_WEIGHTED < 3
+                                                    AND LOW_VEGETATION_FRACTION_LCZ+HIGH_VEGETATION_FRACTION_LCZ<0.2
+                                                    AND GROUND_SKY_VIEW_FACTOR > 0.7;
                                 DROP TABLE IF EXISTS $ruralAndIndustrialCommercialLCZ;
                                 CREATE TABLE $ruralAndIndustrialCommercialLCZ
                                             AS SELECT * 

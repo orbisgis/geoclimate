@@ -3,12 +3,12 @@
     "geoclimatedb" : {
         "folder" : "/tmp",
         "name": "geoclimate_db;AUTO_SERVER=TRUE",
-        "delete" :false
+        "delete" :true
     },
     "input" : {
         "osm" : ["vannes"]},
     "output" :{
-        "folder" : "/home/decide/Bureau/GeoclimateTests2"},
+        "folder" : "/home/decide/Bureau/GeoclimateTests3"},
     "parameters":
     {"distance" : 1000,
         "indicatorUse": ["LCZ"],
