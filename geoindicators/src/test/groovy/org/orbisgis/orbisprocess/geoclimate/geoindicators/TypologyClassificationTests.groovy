@@ -71,6 +71,8 @@ class TypologyClassificationTests {
         assert 104 == results[6]["LCZ1"]
         assert 105 == results[7]["LCZ1"]
         assert 101 == results[18]["LCZ1"]
+        assert 8 == results[19]["LCZ1"]
+        assert 4 == results[20]["LCZ1"]
 
         h2GIS """
                 DROP TABLE IF EXISTS buff_rsu_test_lcz_indics, buff_rsu_test_all_indics_for_lcz;
