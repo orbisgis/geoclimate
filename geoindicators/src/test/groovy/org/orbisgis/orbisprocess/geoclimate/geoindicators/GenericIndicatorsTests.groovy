@@ -559,7 +559,7 @@ class GenericIndicatorsTests {
                 [upperTableName: targetTableName,
                  upperColumnId: "id",
                  lowerTableName: indicatorTableName,
-                 lowerColumName: indicatorName,
+                 lowerColumnName: indicatorName,
                  prefixName: "agg",
                  datasource: h2GIS])
 
