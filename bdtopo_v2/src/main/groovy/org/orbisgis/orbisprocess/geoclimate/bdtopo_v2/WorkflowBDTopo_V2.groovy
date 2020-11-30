@@ -938,6 +938,8 @@ def findIDZones(def h2gis_datasource, def id_zones){
 def extractProcessingParameters(def processing_parameters){
     def defaultParameters = [distance: 1000,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
                              svfSimplified:false, prefixName: "",
+                             surface_vegetation: 10000,
+                             surface_hydro: 2500,
                              mapOfWeights : ["sky_view_factor"                : 4,
                                              "aspect_ratio"                   : 3,
                                              "building_surface_fraction"      : 8,
@@ -946,14 +948,21 @@ def extractProcessingParameters(def processing_parameters){
                                              "height_of_roughness_elements"   : 6,
                                              "terrain_roughness_length"       : 0.5],
                              hLevMin : 3, hLevMax: 15, hThresholdLev2: 10,
-                             lczRandomForest :false,
-                             lczModelName: "LCZ_BDTOPO_V2_RF_1_0.model",
                              urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_0.model"]
     if(processing_parameters){
         def distanceP =  processing_parameters.distance
         if(distanceP && distanceP in Number){
             defaultParameters.distance = distanceP
         }
+        def surface_vegetationP =  processing_parameters.surface_vegetation
+        if(surface_vegetationP && surface_vegetationP in Number){
+            defaultParameters.surface_vegetation = surface_vegetationP
+        }
+        def surface_hydroP =  processing_parameters.surface_hydro
+        if(surface_hydroP && surface_hydroP in Number){
+            defaultParameters.surface_hydro = surface_hydroP
+        }
+
         def indicatorUseP = processing_parameters.indicatorUse
         if(indicatorUseP && indicatorUseP in List){
             defaultParameters.indicatorUse = indicatorUseP
@@ -990,10 +999,6 @@ def extractProcessingParameters(def processing_parameters){
         def hThresholdLev2P =  processing_parameters.hThresholdLev2
         if(hThresholdLev2P && hThresholdLev2P in Integer){
             defaultParameters.hThresholdLev2 = hThresholdLev2P
-        }
-        def lczRandomForest = processing_parameters.lczRandomForest
-        if(lczRandomForest && lczRandomForest in Boolean){
-            defaultParameters.lczRandomForest = lczRandomForest
         }
     }
     return defaultParameters
@@ -1059,17 +1064,17 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
             def imperviousTableName = prepareBDTopoData.results.outputImpervious
 
             info "BDTOPO V2 GIS layers formated"
-
             //Build the indicators
             IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
             if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
                     buildingTable: buildingTableName, roadTable: roadTableName,
                     railTable: railTableName, vegetationTable: vegetationTableName,
                     hydrographicTable: hydrographicTableName, imperviousTable :imperviousTableName,
+                    surface_vegetation: processing_parameters.surface_vegetation, surface_hydro: processing_parameters.surface_hydro,
                     indicatorUse: processing_parameters.indicatorUse,
                     svfSimplified: processing_parameters.svfSimplified, prefixName: processing_parameters.prefixName,
                     mapOfWeights: processing_parameters.mapOfWeights,
-                    lczRandomForest : processing_parameters.lczRandomForest)) {
+                    urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_0.model")) {
                 error "Cannot build the geoindicators for the zone $id_zone"
                 geoIndicatorsComputed = false
             } else {
