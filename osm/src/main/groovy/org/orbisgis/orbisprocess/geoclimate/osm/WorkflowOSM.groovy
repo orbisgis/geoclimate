@@ -511,6 +511,26 @@ IProcess osm_processing() {
                                         epsg                      : srid])
                                 def imperviousTableName = format.results.outputTableName
 
+                                //Sea/Land mask
+                                format = OSM.formatSeaLandMask
+                                format.execute([
+                                        datasource : h2gis_datasource,
+                                        inputTableName: gisLayersResults.coastlineTableName,
+                                        inputZoneEnvelopeTableName : zoneEnvelopeTableName,
+                                        epsg: srid])
+
+                                def seaLandMaskTableName = format.results.outputTableName
+
+                                //Sea/Land mask
+                                format = OSM.mergeWaterAndSeaLandTables
+                                format.execute([
+                                        datasource : h2gis_datasource,
+                                        inputSeaLandTableName: seaLandMaskTableName ,inputWaterTableName : hydrographicTableName,
+                                        inputZoneEnvelopeTableName : zoneEnvelopeTableName,
+                                        epsg: srid])
+
+                                hydrographicTableName = format.results.outputTableName
+
 
                                 info "OSM GIS layers formated"
 
@@ -524,6 +544,7 @@ IProcess osm_processing() {
                                             buildingTable: buildingTableName, roadTable: roadTableName,
                                             railTable: railTableName, vegetationTable: vegetationTableName,
                                             hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
+                                            surface_vegetation: processing_parameters.surface_vegetation, surface_hydro: processing_parameters.surface_hydro,
                                             indicatorUse:["URBAN_TYPOLOGY"],
                                             svfSimplified: true, prefixName: processing_parameters.prefixName,
                                             mapOfWeights: processing_parameters.mapOfWeights,
@@ -539,7 +560,6 @@ IProcess osm_processing() {
                                     if(geoIndicatorsComputed){
                                         info "Extracting the building having no height information for the ${id_zone} and estimate it"
                                         def results = geoIndicators.results;
-
                                         //Select indicators we need at building scales
                                         def buildingIndicatorsTableName = results.outputTableBuildingIndicators;
                                         h2gis_datasource.getTable(buildingEstimateTableName).id_build.createIndex()
@@ -618,6 +638,7 @@ IProcess osm_processing() {
                                                roadTable: roadTableName,
                                                 railTable: railTableName, vegetationTable: vegetationTableName,
                                                 hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
+                                                surface_vegetation: processing_parameters.surface_vegetation, surface_hydro: processing_parameters.surface_hydro,
                                                 relationBuildings : newbuildingTableName,
                                                 relationBlocks : results.outputTableBlockIndicators,relationRSU : results.outputTableRsuIndicators,
                                                 indicatorUse: processing_parameters.indicatorUse,
@@ -958,6 +979,8 @@ def findIDZones(def h2gis_datasource, def id_zones){
 def extractProcessingParameters(def processing_parameters){
     def defaultParameters = [distance: 0,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
                              svfSimplified:false, prefixName: "",
+                             surface_vegetation: 10000,
+                             surface_hydro: 2500,
                              mapOfWeights :  ["sky_view_factor"                : 4,
                                               "aspect_ratio"                   : 3,
                                               "building_surface_fraction"      : 8,
@@ -978,6 +1001,15 @@ def extractProcessingParameters(def processing_parameters){
         def indicatorUseP = processing_parameters.indicatorUse
         if(indicatorUseP && indicatorUseP in List){
             defaultParameters.indicatorUse = indicatorUseP
+        }
+
+        def surface_vegetationP =  processing_parameters.surface_vegetation
+        if(surface_vegetationP && surface_vegetationP in Number){
+            defaultParameters.surface_vegetation = surface_vegetationP
+        }
+        def surface_hydroP =  processing_parameters.surface_hydro
+        if(surface_hydroP && surface_hydroP in Number){
+            defaultParameters.surface_hydro = surface_hydroP
         }
 
         def svfSimplifiedP = processing_parameters.svfSimplified
@@ -1968,7 +2000,7 @@ IProcess computeAllGeoIndicatorsForEstimateHeight() {
                 roadTable: "", railTable: "", vegetationTable: "",
                 hydrographicTable: "", imperviousTable: "",relationBuildings : String,
                 relationBlocks : String,relationRSU : String,
-                surface_vegetation: 100000, surface_hydro: 2500,
+                surface_vegetation: 10000, surface_hydro: 2500,
                 distance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified: false, prefixName: "",
                 mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,

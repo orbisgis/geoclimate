@@ -108,7 +108,7 @@ IProcess prepareRSUData() {
         title "Prepare the abstract model to build the RSU"
         id "prepareRSUData"
         inputs zoneTable: "", roadTable: "", railTable: "",
-                vegetationTable: "", hydrographicTable: "", surface_vegetation: 100000,
+                vegetationTable: "", hydrographicTable: "", surface_vegetation: 10000,
                 surface_hydro: 2500, prefixName: "unified_abstract_model", datasource: JdbcDataSource
         outputs outputTableName: String
         run { zoneTable, roadTable, railTable, vegetationTable, hydrographicTable, surface_vegetation,

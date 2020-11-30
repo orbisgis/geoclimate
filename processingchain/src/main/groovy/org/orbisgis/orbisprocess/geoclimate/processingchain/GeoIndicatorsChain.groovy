@@ -891,7 +891,7 @@ IProcess createUnitsOfAnalysis() {
         id "createUnitsOfAnalysis"
         inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
                 roadTable: String, railTable: String, vegetationTable: String,
-                hydrographicTable: String, surface_vegetation: 100000, surface_hydro: 2500,
+                hydrographicTable: String, surface_vegetation: 10000, surface_hydro: 2500,
                 distance: double, prefixName: "", indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"]
         outputs outputTableBuildingName: String, outputTableBlockName: String, outputTableRsuName: String
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
@@ -1008,7 +1008,7 @@ IProcess computeAllGeoIndicators() {
         id "computeAllGeoIndicators"
         inputs datasource: JdbcDataSource, zoneTable: "", buildingTable: "",
                 roadTable: "", railTable: "", vegetationTable: "",
-                hydrographicTable: "", imperviousTable: "", surface_vegetation: 100000, surface_hydro: 2500,
+                hydrographicTable: "", imperviousTable: "", surface_vegetation: 10000, surface_hydro: 2500,
                 distance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified: false, prefixName: "",
                 mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
@@ -1019,7 +1019,8 @@ IProcess computeAllGeoIndicators() {
                 outputTableRsuIndicators: String, outputTableRsuLcz: String, outputTableZone: String,
                 outputTableRsuUrbanTypoArea: String, outputTableRsuUrbanTypoFloorArea: String,
                 outputTableBuildingUrbanTypo: String
-        run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable, imperviousTable,
+        run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
+              imperviousTable,
               surface_vegetation, surface_hydro, distance, indicatorUse, svfSimplified, prefixName, mapOfWeights,
               lczRandomForest, lczModelName, urbanTypoModelName ->
             info "Start computing the geoindicators..."

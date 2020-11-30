@@ -1017,4 +1017,133 @@ IProcess formatEstimatedBuilding() {
         }
     }
 
+/**
+ * This process is used to build a sea-land mask layer from the coastline and zone table
+ *
+ * @param datasource A connexion to a DB containing the raw buildings table
+ * @param inputTableName The name of the coastlines table in the DB
+ * @return outputTableName The name of the final buildings table
+ */
+IProcess formatSeaLandMask() {
+    return create {
+        title "Extract the sea/land mask"
+        id "formatSeaLandMask"
+        inputs datasource: JdbcDataSource, inputTableName: String,
+                inputZoneEnvelopeTableName: String, epsg: int
+        outputs outputTableName: String
+        run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, epsg ->
+         def outputTableName = postfix "INPUT_SEA_LAND_MASK_"
+            info 'Computing sea/land mask table'
+            datasource """ 
+                DROP TABLE if exists ${outputTableName};
+                CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id serial, TYPE VARCHAR);
+            """
+            if (inputTableName) {
+               def inputSpatialTable = datasource."$inputTableName"
+                if (inputSpatialTable.rowCount > 0) {
+                    if (inputZoneEnvelopeTableName) {
+                        inputSpatialTable.the_geom.createSpatialIndex()
+                        def mergingDataTable = "coatline_merged${UUID.randomUUID().toString().replaceAll("-", "_")}"
+                        def coastLinesIntersects = "coatline_intersect_zone${UUID.randomUUID().toString().replaceAll("-", "_")}"
+                        def islands_mark = "islands_mark_zone${UUID.randomUUID().toString().replaceAll("-", "_")}"
+                        def coastLinesIntersectsPoints = "coatline_intersect_points_zone${UUID.randomUUID().toString().replaceAll("-", "_")}"
+                        def coastLinesPoints = "coatline_points_zone${UUID.randomUUID().toString().replaceAll("-", "_")}"
+
+                        datasource.execute """DROP TABLE IF EXISTS $outputTableName, $coastLinesIntersects, 
+                        $islands_mark, $mergingDataTable,  $coastLinesIntersectsPoints, $coastLinesPoints;
+
+                        CREATE TABLE $coastLinesIntersects AS SELECT a.the_geom
+                        from $inputTableName  AS  a,  $inputZoneEnvelopeTableName  AS b WHERE
+                        a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom);     
+                        
+                        CREATE TABLE $islands_mark (the_geom GEOMETRY, ID SERIAL) AS 
+                       SELECT the_geom, NULL FROM st_explode('(  
+                       SELECT ST_LINEMERGE(st_accum(THE_GEOM)) AS the_geom, NULL FROM $coastLinesIntersects)') where  st_isclosed(the_geom)=false
+                        ;                   
+
+                        CREATE TABLE $mergingDataTable  AS
+                        SELECT  THE_GEOM FROM $coastLinesIntersects 
+                        UNION ALL
+                        SELECT st_tomultiline(the_geom)
+                        from $inputZoneEnvelopeTableName ;
+
+                        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY,ID serial, TYPE VARCHAR) AS SELECT THE_GEOM, NULL, 'land' FROM
+                        st_explode('(SELECT st_polygonize(st_union(ST_NODE(st_accum(the_geom)))) AS the_geom FROM $mergingDataTable)');                
+                        
+                        CREATE TABLE $coastLinesPoints as  SELECT ST_LocateAlong(the_geom, 0.5, -0.01) AS the_geom FROM 
+                        st_explode('(select ST_GeometryN(ST_ToMultiSegments(st_intersection(a.the_geom, b.the_geom)), 1) as the_geom from $islands_mark as a,
+                        $inputZoneEnvelopeTableName as b WHERE st_isclosed(a.the_geom) = false and a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom))');
+    
+                        CREATE TABLE $coastLinesIntersectsPoints as  SELECT the_geom FROM st_explode('$coastLinesPoints'); 
+
+                        CREATE INDEX IF NOT EXISTS ${outputTableName}_the_geom_idx ON $outputTableName USING RTREE(THE_GEOM);
+                        CREATE INDEX IF NOT EXISTS ${coastLinesIntersectsPoints}_the_geom_idx ON $coastLinesIntersectsPoints USING RTREE(THE_GEOM);
+
+                        UPDATE $outputTableName SET TYPE='sea' WHERE ID IN(SELECT DISTINCT(a.ID)
+                                FROM $outputTableName a, $coastLinesIntersectsPoints b WHERE a.THE_GEOM && b.THE_GEOM AND
+                                st_contains(a.THE_GEOM, b.THE_GEOM));                                
+                                """
+
+                        datasource.execute("drop table if exists $mergingDataTable, $coastLinesIntersects, $coastLinesIntersectsPoints, $coastLinesPoints," +
+                                "$islands_mark")
+                    }
+                }else{
+                    info "The sea/land mask table is empty"
+                }
+                }
+            info 'The sea/land mask has been computed'
+            [outputTableName: outputTableName]
+            }
+        }
+    }
+
+
+/**
+ * This process is used to merge the water and the sea-land mask layers
+ *
+ * @param datasource A connexion to a DB containing the raw buildings table
+ * @param inputSeaLandTableName The name of the sea/land table
+ * @param inputWaterTableName The name of the water table
+ * @return outputTableName The name of the final water table
+ */
+IProcess mergeWaterAndSeaLandTables() {
+    return create {
+        title "Extract the sea/land mask"
+        id "formatSeaLandMask"
+        inputs datasource: JdbcDataSource, inputSeaLandTableName: String,inputWaterTableName: String, epsg: int
+        outputs outputTableName: String
+        run { JdbcDataSource datasource, inputSeaLandTableName,inputWaterTableName, epsg ->
+            def outputTableName = postfix "INPUT_WATER_SEA_"
+            info 'Merging sea/land mask and water table'
+            datasource """ 
+                DROP TABLE if exists ${outputTableName};
+                CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id_hydro serial, id_source VARCHAR);
+            """
+            if (inputSeaLandTableName && inputWaterTableName ) {
+                if(datasource.firstRow("select count(*) as count from $inputSeaLandTableName where TYPE ='sea'").count>0){
+                def tmp_water_not_in_sea =  "WATER_NOT_IN_SEA${UUID.randomUUID().toString().replaceAll("-", "_")}"
+                //This method is used to merge the SEA mask with the water table
+                def queryMergeWater = """DROP  TABLE IF EXISTS $outputTableName, $tmp_water_not_in_sea;
+                CREATE TABLE $tmp_water_not_in_sea AS SELECT a.the_geom, a.ID_SOURCE FROM $inputWaterTableName AS a, $inputSeaLandTableName  AS b
+                WHERE b."TYPE"= 'land' AND a.the_geom && b.the_geom AND st_contains(b.THE_GEOM, st_pointonsurface(a.THE_GEOM));
+                CREATE TABLE $outputTableName(the_geom GEOMETRY, ID_HYDRO SERIAL, ID_SOURCE VARCHAR) AS SELECT the_geom, NULL, id_source FROM $tmp_water_not_in_sea UNION ALL 
+                SELECT THE_GEOM, NULL, '-1' FROM $inputSeaLandTableName  WHERE
+                "TYPE" ='sea';"""
+                //Check indexes before executing the query
+                datasource.getSpatialTable(inputWaterTableName).the_geom.createSpatialIndex()
+                datasource.getSpatialTable(inputSeaLandTableName).the_geom.createSpatialIndex()
+                datasource.execute queryMergeWater
+                datasource.execute("drop table if exists $tmp_water_not_in_sea;")
+                }
+                else{
+                    [outputTableName: inputWaterTableName]
+                }
+            }
+            info 'The sea/land and water tables have been merged'
+            [outputTableName: outputTableName]
+        }
+    }
+}
+
+
 

@@ -32,8 +32,9 @@ IProcess extractAndCreateGISLayers() {
         id "extractAndCreateGISLayers"
         inputs datasource: JdbcDataSource, zoneToExtract: Object, distance: 0, downloadAllOSMData : true
         outputs buildingTableName: String, roadTableName: String, railTableName: String,
-                vegetationTableName: String, hydroTableName: String, urbanAreasTableName: String, zoneTableName: String,
-                zoneEnvelopeTableName: String
+                vegetationTableName: String, hydroTableName: String, imperviousTableName : String,
+                urbanAreasTableName: String, zoneTableName: String,
+                zoneEnvelopeTableName: String, coastlineTableName : String
         run { datasource, zoneToExtract, distance,downloadAllOSMData ->
             if (datasource == null) {
                 error('The datasource cannot be null')
@@ -117,7 +118,8 @@ IProcess extractAndCreateGISLayers() {
                          imperviousTableName  : createGISLayerProcess.getResults().imperviousTableName,
                          urbanAreasTableName : createGISLayerProcess.getResults().urbanAreasTableName,
                          zoneTableName        : outputZoneTable,
-                         zoneEnvelopeTableName: outputZoneEnvelopeTable]
+                         zoneEnvelopeTableName: outputZoneEnvelopeTable,
+                         coastlineTableName : createGISLayerProcess.getResults().coastlineTableName]
                     } else {
                         error "Cannot load the OSM file ${extract.results.outputFilePath}"
                     }
@@ -148,7 +150,8 @@ IProcess createGISLayers() {
         id "createGISLayers"
         inputs datasource: JdbcDataSource, osmFilePath: String, epsg: -1
         outputs buildingTableName: String, roadTableName: String, railTableName: String,
-                vegetationTableName: String, hydroTableName: String, imperviousTableName: String, urbanAreasTableName :String
+                vegetationTableName: String, hydroTableName: String, imperviousTableName: String,
+                urbanAreasTableName :String, coastlineTableName : String
         run { datasource, osmFilePath, epsg ->
             if (epsg <= -1) {
                 error "Invalid epsg code $epsg"
@@ -165,6 +168,7 @@ IProcess createGISLayers() {
                 def outputHydroTableName = null
                 def outputImperviousTableName = null
                 def outputUrbanAreasTableName = null
+                def outputCoastlineTableName =null
                 //Create building layer
                 def transform = OSMTools.Transform.toPolygons()
                 info "Create the building layer"
@@ -254,12 +258,25 @@ IProcess createGISLayers() {
                     info "Urban areas layer created"
                 }
 
+                //Create coastline layer
+                transform = OSMTools.Transform.toLines()
+                info "Create the coastline layer"
+                paramsDefaultFile = this.class.getResourceAsStream("coastlineParams.json")
+                parametersMap = readJSONParameters(paramsDefaultFile)
+                tags = parametersMap.get("tags")
+                if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags)) {
+                    outputCoastlineTableName = postfix("OSM_COASTLINE")
+                    datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputCoastlineTableName")
+                    info "Coastline layer created"
+                }
+
                 //Drop the OSM tables
                 Utilities.dropOSMTables(prefix, datasource)
 
                 [buildingTableName  : outputBuildingTableName, roadTableName: outputRoadTableName, railTableName: outputRailTableName,
                  vegetationTableName: outputVegetationTableName, hydroTableName: outputHydroTableName,
-                 imperviousTableName: outputImperviousTableName,  urbanAreasTableName: outputUrbanAreasTableName]
+                 imperviousTableName: outputImperviousTableName,  urbanAreasTableName: outputUrbanAreasTableName,
+                 coastlineTableName: outputCoastlineTableName]
             }
         }
     }

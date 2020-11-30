@@ -716,7 +716,7 @@ def createDatasource(def database_properties){
 def loadDataFromDatasource(def input_database_properties, def code, def distance, def inputTableNames,  H2GIS h2gis_datasource) {
     def asValues = inputTableNames.every { it.key in ["iris_ge", "bati_indifferencie", "bati_industriel", "bati_remarquable", "route",
                                                       "troncon_voie_ferree", "surface_eau", "zone_vegetation", "terrain_sport", "construction_surfacique", "" +
-                                                              "surface_route", "surface_activite"] && it.value }
+                                                              "surface_route", "surface_activite", "piste_aerodrome"] && it.value }
     def notSameTableNames = inputTableNames.groupBy { it.value }.size() != inputTableNames.size()
 
     if (asValues && !notSameTableNames) {
@@ -795,6 +795,12 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
             //Extract surface_activite
             inputTableName = "(SELECT ID, THE_GEOM, CATEGORIE  FROM ${inputTableNames.surface_activite}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY) AND (CATEGORIE=''Administratif'' OR CATEGORIE=''Enseignement'' OR CATEGORIE=''Santé''))"
             outputTableName = "SURFACE_ACTIVITE"
+            info "Loading in the H2GIS database $outputTableName"
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
+
+            //Extract PISTE_AERODROME
+            inputTableName = "(SELECT ID, THE_GEOM  FROM ${inputTableNames.piste_aerodrome}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
+            outputTableName = "PISTE_AERODROME"
             info "Loading in the H2GIS database $outputTableName"
             IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
 
