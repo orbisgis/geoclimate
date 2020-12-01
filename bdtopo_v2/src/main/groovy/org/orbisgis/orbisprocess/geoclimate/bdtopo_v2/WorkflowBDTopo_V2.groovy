@@ -940,6 +940,7 @@ def extractProcessingParameters(def processing_parameters){
                              svfSimplified:false, prefixName: "",
                              surface_vegetation: 10000,
                              surface_hydro: 2500,
+                             snappingTolerance :0.01,
                              mapOfWeights : ["sky_view_factor"                : 4,
                                              "aspect_ratio"                   : 3,
                                              "building_surface_fraction"      : 8,
@@ -953,6 +954,10 @@ def extractProcessingParameters(def processing_parameters){
         def distanceP =  processing_parameters.distance
         if(distanceP && distanceP in Number){
             defaultParameters.distance = distanceP
+        }
+        def snappingToleranceP =  processing_parameters.snappingTolerance
+        if(snappingToleranceP && snappingToleranceP in Number){
+            defaultParameters.snappingTolerance = snappingToleranceP
         }
         def surface_vegetationP =  processing_parameters.surface_vegetation
         if(surface_vegetationP && surface_vegetationP in Number){
@@ -1071,6 +1076,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
                     railTable: railTableName, vegetationTable: vegetationTableName,
                     hydrographicTable: hydrographicTableName, imperviousTable :imperviousTableName,
                     surface_vegetation: processing_parameters.surface_vegetation, surface_hydro: processing_parameters.surface_hydro,
+                    snappingTolerance : processing_parameters.snappingTolerance,
                     indicatorUse: processing_parameters.indicatorUse,
                     svfSimplified: processing_parameters.svfSimplified, prefixName: processing_parameters.prefixName,
                     mapOfWeights: processing_parameters.mapOfWeights,

@@ -18,7 +18,6 @@ import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
 import org.orbisgis.orbisanalysis.osm.OSMTools
-import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 
 import java.sql.Connection
 import java.sql.SQLException
@@ -538,8 +537,13 @@ IProcess osm_processing() {
                                         buildingTable: buildingTableName, roadTable: roadTableName,
                                         railTable: railTableName, vegetationTable: vegetationTableName,
                                         hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
+                                        buildingEstimateTableName :buildingEstimateTableName,
+                                        surface_vegetation: processing_parameters.surface_vegetation,
+                                        surface_hydro: processing_parameters.surface_hydro,
+                                        snappingTolerance : processing_parameters.snappingTolerance,
                                         indicatorUse: processing_parameters.indicatorUse,
-                                        svfSimplified: processing_parameters.svfSimplified, prefixName: processing_parameters.prefixName,
+                                        svfSimplified: processing_parameters.svfSimplified,
+                                        prefixName: processing_parameters.prefixName,
                                         mapOfWeights: processing_parameters.mapOfWeights,
                                         urbanTypoModelName: "URBAN_TYPOLOGY_OSM_RF_2_0.model",
                                         buildingHeightModelName : estimateHeight?"BUILDING_HEIGHT_OSM_RF_2_0.model":"")) {
@@ -843,6 +847,7 @@ def extractProcessingParameters(def processing_parameters){
                              svfSimplified:false, prefixName: "",
                              surface_vegetation: 10000,
                              surface_hydro: 2500,
+                             snappingTolerance :0.01,
                              mapOfWeights :  ["sky_view_factor"                : 4,
                                               "aspect_ratio"                   : 3,
                                               "building_surface_fraction"      : 8,
@@ -862,6 +867,11 @@ def extractProcessingParameters(def processing_parameters){
         def indicatorUseP = processing_parameters.indicatorUse
         if(indicatorUseP && indicatorUseP in List){
             defaultParameters.indicatorUse = indicatorUseP
+        }
+
+        def snappingToleranceP =  processing_parameters.snappingTolerance
+        if(snappingToleranceP && snappingToleranceP in Number){
+            defaultParameters.snappingTolerance = snappingToleranceP
         }
 
         def surface_vegetationP =  processing_parameters.surface_vegetation

@@ -52,7 +52,6 @@ IProcess unweightedOperationFromLowerScale() {
             def DENS = "DENS"
             def NB_DENS = "NB_DENS"
             def STD = "STD"
-            def COLUMN_TYPE_TO_AVOID = ["GEOMETRY", "VARCHAR"]
 
             info "Executing Unweighted statistical operations from lower scale"
 
@@ -63,13 +62,11 @@ IProcess unweightedOperationFromLowerScale() {
             datasource."$inputUpperScaleTableName"."$inputIdUp".createIndex()
 
             def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
-            def varOk = true
+
+            def  columnNamesTypes = datasource."$inputLowerScaleTableName".getColumnsTypes()
+            def filteredColumns = columnNamesTypes.findAll {! ["GEOMETRY", "VARCHAR"].contains(it.value) }
             inputVarAndOperations.each { var, operations ->
-                if (datasource."$inputLowerScaleTableName".getColumns().contains(var) &&
-                        COLUMN_TYPE_TO_AVOID.contains(datasource."$inputLowerScaleTableName"."$var".type)) {
-                    varOk = false
-                }
-                if (varOk) {
+                if (filteredColumns.containsKey(var.toUpperCase())) {
                     operations.each {
                         def op = it.toUpperCase()
                         switch (op) {
@@ -96,7 +93,7 @@ IProcess unweightedOperationFromLowerScale() {
                         }
                     }
                 } else {
-                    error """ The column $var should be numeric"""
+                    warn """ The column $var doesn't exist"""
                 }
 
             }
@@ -824,7 +821,7 @@ IProcess gatherScales() {
 
             // List of columns to remove from the analysis in building and block tables
             def BLOCK_COL_TO_REMOVE = ["THE_GEOM", "ID_RSU", "ID_BLOCK", "MAIN_BUILDING_DIRECTION"]
-            def BUILD_COL_TO_REMOVE = ["THE_GEOM", "ID_RSU", "ID_BUILD", "ID_BLOCK", "NB_LEV", "ZINDEX", "MAIN_USE", "TYPE", "ID_SOURCE"]
+            def BUILD_COL_TO_REMOVE = ["THE_GEOM", "ID_RSU", "ID_BUILD", "ID_BLOCK", "ID_ZONE" , "NB_LEV", "ZINDEX", "MAIN_USE", "TYPE", "ID_SOURCE"]
             def BASE_NAME = "all_scales_table"
 
             info """ Executing the gathering of scales (to building or to RSU scale)"""

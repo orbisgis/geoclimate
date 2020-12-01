@@ -877,7 +877,7 @@ IProcess computeRSUIndicators() {
  * @param hydrographicTable The hydrographic table to be processed
  * @param surface_vegetation The minimum area of vegetation that will be considered to delineate the RSU (default 100,000 m²)
  * @param surface_hydro  The minimum area of water that will be considered to delineate the RSU (default 2,500 m²)
- * @param distance A distance to group two geometries (e.g. two buildings in a block - default 0.01 m)
+ * @param snappingTolerance A distance to group the geometries (e.g. two buildings in a block - default 0.01 m)
  * @param prefixName A prefix used to name the output table
  * @param datasource A connection to a database
  * @param indicatorUse The use defined for the indicator. Depending on this use, only a part of the indicators could
@@ -894,10 +894,10 @@ IProcess createUnitsOfAnalysis() {
         inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
                 roadTable: String, railTable: String, vegetationTable: String,
                 hydrographicTable: String, surface_vegetation: 10000, surface_hydro: 2500,
-                distance: double, prefixName: "", indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"]
+                snappingTolerance: 0.01d, prefixName: "", indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"]
         outputs outputTableBuildingName: String, outputTableBlockName: String, outputTableRsuName: String
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
-              surface_vegetation, surface_hydro, distance, prefixName, indicatorUse ->
+              surface_vegetation, surface_hydro, snappingTolerance, prefixName, indicatorUse ->
             info "Create the units of analysis..."
 
             // Create the RSU
@@ -936,7 +936,7 @@ IProcess createUnitsOfAnalysis() {
                 if (!createBlocks([datasource    : datasource,
                                    inputTableName: buildingTable,
                                    prefixName    : prefixName,
-                                   distance      : distance])) {
+                                   snappingTolerance      : snappingTolerance])) {
                     info "Cannot create the blocks."
                     return
                 }
@@ -1009,8 +1009,10 @@ IProcess computeAllGeoIndicators() {
         id "computeAllGeoIndicators"
         inputs datasource: JdbcDataSource, zoneTable: "", buildingTable: "",
                 roadTable: "", railTable: "", vegetationTable: "",
-                hydrographicTable: "", imperviousTable: "", surface_vegetation: 10000, surface_hydro: 2500,
-                distance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified: false, prefixName: "",
+                hydrographicTable: "", imperviousTable: "",
+                buildingEstimateTableName :"",
+                surface_vegetation: 10000, surface_hydro: 2500,
+                snappingTolerance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified: false, prefixName: "",
                 mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
@@ -1021,11 +1023,15 @@ IProcess computeAllGeoIndicators() {
                 outputTableRsuUrbanTypoArea: String, outputTableRsuUrbanTypoFloorArea: String,
                 outputTableBuildingUrbanTypo: String
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
-              imperviousTable,
-              surface_vegetation, surface_hydro, distance, indicatorUse, svfSimplified, prefixName, mapOfWeights,
+              imperviousTable,buildingEstimateTableName,
+              surface_vegetation, surface_hydro, snappingTolerance, indicatorUse, svfSimplified, prefixName, mapOfWeights,
               urbanTypoModelName, buildingHeightModelName ->
             //Estimate height
             if (buildingHeightModelName) {
+                if(!buildingEstimateTableName){
+                    error "To estimate the building height a table that contains the list of building to estimate must be provided"
+                    return
+                }
                 info "Geoclimate will try to estimate the building heights with the model $buildingHeightModelName."
                 //Let's check if the model exists
                 File inputModelFile = new File(buildingHeightModelName)
@@ -1090,7 +1096,7 @@ IProcess computeAllGeoIndicators() {
                         rsuTable         : results.outputTableRsuIndicators,
                         targetedScale    : "BUILDING",
                         operationsToApply: ["AVG", "STD"],
-                        prefixName       : processing_parameters.prefixName,
+                        prefixName       : prefixName,
                         datasource       : datasource])
                 def gatheredScales = applygatherScales.results.outputTableName
 
@@ -1098,12 +1104,15 @@ IProcess computeAllGeoIndicators() {
 
                 //Apply RF model
                 def applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
-                applyRF.execute([
+                if(!applyRF.execute([
                         explicativeVariablesTableName: gatheredScales,
                         pathAndFileName              : buildingHeightModelName,
                         idName                       : "id_build",
-                        prefixName                   : processing_parameters.prefixName,
-                        datasource                   : datasource])
+                        prefixName                   : prefixName,
+                        datasource                   : datasource])){
+                    error "Cannot apply the building height model $buildingHeightModelName"
+                    return
+                }
 
                 //Update the abstract building table
                 info "Replace the input building table by the estimated height"
@@ -1124,17 +1133,19 @@ IProcess computeAllGeoIndicators() {
 
                 //We must format only estimated buildings
                 //Apply format on the new abstract table
-                IProcess formatEstimatedBuilding = OSM.formatEstimatedBuilding
+                def  epsg =  datasource."$newEstimatedHeigthWithIndicators".srid;
+                IProcess formatEstimatedBuilding = ProcessingChain.FormatingDataChain.formatEstimatedBuilding()
                 formatEstimatedBuilding.execute([
                         datasource                : datasource,
                         inputTableName            : newEstimatedHeigthWithIndicators,
-                        epsg                      : srid])
+                        epsg : epsg])
+
                 def newbuildingTableName = formatEstimatedBuilding.results.outputTableName
 
                 //Drop tables
                 datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators,
                                         $newEstimatedHeigthWithIndicators, $buildEstimatedHeight,
-                                        $gatheredScales, $buildingTableName"""
+                                        $gatheredScales"""
 
                 //We use the existing spatial units
                 def relationBlocks = results.outputTableBlockIndicators
@@ -1172,7 +1183,7 @@ IProcess computeAllGeoIndicators() {
                 //Compute building indicators
                 def computeBuildingsIndicators = ProcessingChain.GeoIndicatorsChain.computeBuildingsIndicators()
                 if (!computeBuildingsIndicators.execute([datasource            : datasource,
-                                                         inputBuildingTableName: relationBuildings,
+                                                         inputBuildingTableName: newbuildingTableName,
                                                          inputRoadTableName    : roadTable,
                                                          indicatorUse          : indicatorUse,
                                                          prefixName            : prefixName])) {
@@ -1273,12 +1284,15 @@ IProcess computeAllGeoIndicators() {
                     gatheredScales = applygatherScales.results.outputTableName
 
                     applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
-                    applyRF.execute([
+                    if(!applyRF.execute([
                             explicativeVariablesTableName: gatheredScales,
                             pathAndFileName              : urbanTypoModelName,
                             idName                       : COLUMN_ID_BUILD,
                             prefixName                   : prefixName,
-                            datasource                   : datasource])
+                            datasource                   : datasource])){
+                        error "Cannot apply the urban typology model $urbanTypoModelName"
+                        return
+                    }
                     def urbanTypoBuild = applyRF.results.outputTableName
 
                     // Creation of a list which contains all types of the urban typology (in their string version)
@@ -1444,7 +1458,7 @@ IProcess computeGeoclimateIndicators() {
         inputs datasource: JdbcDataSource, zoneTable: "", buildingTable: "",
                 roadTable: "", railTable: "", vegetationTable: "",
                 hydrographicTable: "", imperviousTable: "", surface_vegetation: 10000, surface_hydro: 2500,
-                distance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified: false, prefixName: "",
+                snappingTolerance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified: false, prefixName: "",
                 mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
@@ -1455,7 +1469,7 @@ IProcess computeGeoclimateIndicators() {
                 outputTableBuildingUrbanTypo: String
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
               imperviousTable,
-              surface_vegetation, surface_hydro, distance, indicatorUse, svfSimplified, prefixName, mapOfWeights,
+              surface_vegetation, surface_hydro, snappingTolerance, indicatorUse, svfSimplified, prefixName, mapOfWeights,
                urbanTypoModelName ->
             info "Start computing the geoindicators..."
 
@@ -1489,7 +1503,7 @@ IProcess computeGeoclimateIndicators() {
                                        buildingTable    : buildingTable, roadTable: roadTable,
                                        railTable        : railTable, vegetationTable: vegetationTable,
                                        hydrographicTable: hydrographicTable, surface_vegetation: surface_vegetation,
-                                       surface_hydro    : surface_hydro, distance: distance,
+                                       surface_hydro    : surface_hydro, snappingTolerance: snappingTolerance,
                                        prefixName       : prefixName,
                                        indicatorUse     : indicatorUse])) {
                 error "Cannot create the spatial units"
@@ -1603,12 +1617,15 @@ IProcess computeGeoclimateIndicators() {
                 def gatheredScales = applygatherScales.results.outputTableName
 
                 def applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
-                applyRF.execute([
+                if(!applyRF.execute([
                         explicativeVariablesTableName: gatheredScales,
                         pathAndFileName              : urbanTypoModelName,
                         idName                       : COLUMN_ID_BUILD,
                         prefixName                   : prefixName,
-                        datasource                   : datasource])
+                        datasource                   : datasource])){
+                    error "Cannot apply the urban typology model $urbanTypoModelName"
+                    return
+                }
                 def urbanTypoBuild = applyRF.results.outputTableName
 
                 // Creation of a list which contains all types of the urban typology (in their string version)
