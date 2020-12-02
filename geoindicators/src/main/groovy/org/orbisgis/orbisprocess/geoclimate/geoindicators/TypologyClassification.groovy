@@ -1,6 +1,7 @@
 package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
 import com.thoughtworks.xstream.XStream
+import com.thoughtworks.xstream.io.xml.StaxDriver
 import groovy.transform.BaseScript
 import org.h2gis.utilities.TableLocation
 import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
@@ -547,7 +548,7 @@ IProcess createRandomForestModel() {
             try {
                 if (save) {
                     def zOut = new GZIPOutputStream(new FileOutputStream(pathAndFileName))
-                    def xs = new XStream()
+                    def xs = new XStream(new StaxDriver())
                     xs.toXML(model, zOut)
                     zOut.close()
                 }
@@ -616,7 +617,7 @@ IProcess applyRandomForestModel() {
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, modelName.toLowerCase();
             // Load the RandomForest model
-            def xs = new XStream()
+            def xs = new XStream(new StaxDriver())
 
             // Load the model and recover the name of the variable to model
             def gzipInputStream = new GZIPInputStream(fileInputStream)
