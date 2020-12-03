@@ -252,6 +252,10 @@ IProcess workflow() {
                             }
 
                             def h2gis_datasource = H2GIS.open(h2gis_properties)
+                            if(!h2gis_datasource){
+                                error "Cannot load the local H2GIS database to run Geoclimate"
+                                return
+                            }
                             if (osmFilters && osmFilters in Collection) {
                                 def osmprocessing = osm_processing()
                                 if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
@@ -286,6 +290,10 @@ IProcess workflow() {
                             }
                             if (file_outputFolder.canWrite()) {
                                 def h2gis_datasource = H2GIS.open(h2gis_properties)
+                                if(!h2gis_datasource){
+                                    error "Cannot load the local H2GIS database to run Geoclimate"
+                                    return
+                                }
                                 if (osmFilters && osmFilters in Collection) {
                                     def osmprocessing = osm_processing()
                                     if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
@@ -332,6 +340,10 @@ IProcess workflow() {
                                     return null
                                 }
                                 def h2gis_datasource = H2GIS.open(h2gis_properties)
+                                if(!h2gis_datasource){
+                                    error "Cannot load the local H2GIS database to run Geoclimate"
+                                    return
+                                }
                                 if (osmFilters && osmFilters in Collection) {
                                     def osmprocessing = osm_processing()
                                     if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,

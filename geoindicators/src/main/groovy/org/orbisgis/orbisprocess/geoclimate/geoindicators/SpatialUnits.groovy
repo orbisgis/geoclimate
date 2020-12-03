@@ -3,20 +3,16 @@ package org.orbisgis.orbisprocess.geoclimate.geoindicators
 import groovy.transform.BaseScript
 import org.h2.value.ValueGeometry
 import org.h2gis.functions.spatial.create.ST_MakeGrid
-import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.Geometry
-import org.orbisgis.orbisdata.datamanager.api.dataset.DataBaseType
 import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.SQLException
-import java.sql.Statement
 
 import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedComponents
 

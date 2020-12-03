@@ -1016,6 +1016,8 @@ IProcess formatSeaLandMask() {
 
                         datasource.execute("drop table if exists $mergingDataTable, $coastLinesIntersects, $coastLinesIntersectsPoints, $coastLinesPoints," +
                                 "$islands_mark")
+                    }else{
+                        info "A zone table must be provided to compute the sea/land mask"
                     }
                 }else{
                     info "The sea/land mask table is empty"

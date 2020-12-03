@@ -52,6 +52,7 @@ IProcess unweightedOperationFromLowerScale() {
             def DENS = "DENS"
             def NB_DENS = "NB_DENS"
             def STD = "STD"
+            def COLUMN_TYPE_TO_AVOID = ["GEOMETRY", "VARCHAR"]
 
             info "Executing Unweighted statistical operations from lower scale"
 
@@ -62,11 +63,13 @@ IProcess unweightedOperationFromLowerScale() {
             datasource."$inputUpperScaleTableName"."$inputIdUp".createIndex()
 
             def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
-
-            def  columnNamesTypes = datasource."$inputLowerScaleTableName".getColumnsTypes()
-            def filteredColumns = columnNamesTypes.findAll {! ["GEOMETRY", "VARCHAR"].contains(it.value) }
+            def varOk = true
             inputVarAndOperations.each { var, operations ->
-                if (filteredColumns.containsKey(var.toUpperCase())) {
+                if (datasource."$inputLowerScaleTableName".getColumns().contains(var) &&
+                        COLUMN_TYPE_TO_AVOID.contains(datasource."$inputLowerScaleTableName"."$var".type)) {
+                    varOk = false
+                }
+                if (varOk) {
                     operations.each {
                         def op = it.toUpperCase()
                         switch (op) {
@@ -93,7 +96,7 @@ IProcess unweightedOperationFromLowerScale() {
                         }
                     }
                 } else {
-                    warn """ The column $var doesn't exist"""
+                    error """ The column $var should be numeric"""
                 }
 
             }
@@ -460,7 +463,7 @@ IProcess distributionCharacterization() {
             def EXTREMUM_COL = "EXTREMUM_COL"
             def EXTREMUM_COL2 = "EXTREMUM_COL2"
             def EXTREMUM_VAL = "EXTREMUM_VAL"
-            def BASENAME = "DISTRIBUTION_REPARTITION"
+            def BASENAME =  "DISTRIBUTION_REPARTITION"
             def GEOMETRY_FIELD = "THE_GEOM"
 
             info "Executing equality and uniqueness indicators"
@@ -510,12 +513,10 @@ IProcess distributionCharacterization() {
                     if(keepColVal){
                         queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_VAL DOUBLE)"
                     }
-
-
                     datasource queryCreateTable
                     // Will insert values by batch of 1000 in the table
                     datasource.withBatch(1000) { stmt ->
-                        datasource.eachRow("SELECT * FROM $distribTableNameNoNull") { row ->
+                        datasource.eachRow("SELECT * FROM $distribTableNameNoNull".toString()) { row ->
                             def rowMap = row.toRowResult()
                             def id_rsu = rowMap."$inputId"
                             rowMap.remove(inputId.toUpperCase())
@@ -553,7 +554,7 @@ IProcess distributionCharacterization() {
                     datasource queryCreateTable
                     // Will insert values by batch of 1000 in the table
                     datasource.withBatch(1000) { stmt ->
-                        datasource.eachRow("SELECT * FROM $distribTableNameNoNull") { row ->
+                        datasource.eachRow("SELECT * FROM $distribTableNameNoNull".toString()) { row ->
                             def rowMap = row.toRowResult()
                             def id_rsu = rowMap."$inputId"
                             rowMap.remove(inputId.toUpperCase())
@@ -592,7 +593,7 @@ IProcess distributionCharacterization() {
 
                     // Will insert values by batch of 1000 in the table
                     datasource.withBatch(1000) { stmt ->
-                        datasource.eachRow("SELECT * FROM $distribTableNameNoNull") { row ->
+                        datasource.eachRow("SELECT * FROM $distribTableNameNoNull".toString()) { row ->
                             def rowMap = row.toRowResult()
                             def id_rsu = rowMap."$inputId"
                             rowMap.remove(inputId)

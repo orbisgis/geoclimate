@@ -27,7 +27,6 @@ abstract class Geoindicators extends GroovyProcessFactory {
         }
     }
 
-
     static def uuid = {getUuid()}
 
     static def info = { obj -> logger.info(obj.toString()) }
