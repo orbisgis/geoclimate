@@ -410,8 +410,7 @@ class GeoIndicatorsChainTest {
         File directory = new File("./target/geoindicators_workflow")
         H2GIS datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
         def inputTableNames = initTables(datasource)
-        boolean svfSimplified = false
-        boolean lczRandomForest = true
+        boolean svfSimplified = true
         def prefixName = ""
         def ind_i = ["LCZ"]
 
@@ -420,7 +419,7 @@ class GeoIndicatorsChainTest {
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
                 hydrographicTable: inputTableNames.hydrographicTable, indicatorUse: ind_i,
-                svfSimplified: svfSimplified, prefixName: prefixName, lczRandomForest: lczRandomForest)
+                svfSimplified: svfSimplified, prefixName: prefixName)
 
         def expectListRsuTempo = listColBasic + listColCommon
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
@@ -431,7 +430,7 @@ class GeoIndicatorsChainTest {
             assertTrue realListRsu.contains(i)
         }
         if (ind_i.contains("LCZ")) {
-            assertEquals(["ID_RSU", "LCZ1","THE_GEOM"], datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuLcz).columns.sort())
+            assertEquals("ID_RSU,LCZ1,LCZ2,LCZ_EQUALITY_VALUE,LCZ_UNIQUENESS_VALUE,MIN_DISTANCE,THE_GEOM", datasource.getTable(GeoIndicatorsCompute_i.results.outputTableRsuLcz).columns.sort().join(","))
         } else {
             assertEquals(null, GeoIndicatorsCompute_i.results.outputTableRsuLcz)
         }

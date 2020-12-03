@@ -339,6 +339,7 @@ class TypologyClassificationTests {
         }
     }
 
+    @Disabled //TODO reduce the size of the input data
     @Test
     void applyRandomForestClassif() {
         // Information about where to find the training dataset for the test

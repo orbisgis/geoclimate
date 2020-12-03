@@ -129,9 +129,12 @@ IProcess importPreprocess() {
             // The SRID is stored and initialized to -1
             def srid = -1
 
+            def tablesExist = []
             // For each tables in the list, we check the SRID and compare to the srid variable. If different, the process is stopped
             for (String name : list) {
                 if(name) {
+                    if(datasource.hasTable(name)){
+                        tablesExist<<name
                     def table = datasource.getTable(name)
                     if (table != null && !table.isEmpty()) {
                         if (srid == -1) {
@@ -145,6 +148,7 @@ IProcess importPreprocess() {
                     } else {
                         datasource """DROP TABLE IF EXISTS $name"""
                     }
+                    }
                 }
             }
 
@@ -152,46 +156,46 @@ IProcess importPreprocess() {
             // Check if the input files are present
 
             // If the IRIS_GE table does not exist or is empty, then the process is stopped
-            if (!datasource.hasTable(tableIrisName) || datasource.getTable(tableIrisName).isEmpty()) {
+            if (!tablesExist.contains(tableIrisName)) {
                 error 'The process has been stopped since the table IRIS_GE does not exist or is empty'
                 return
             }
 
             // If the following tables does not exists, we create corresponding empty tables
-            if (!datasource.hasTable(tableBuildIndifName)) {
+            if (!tablesExist.contains(tableBuildIndifName)) {
                 datasource.execute("DROP TABLE IF EXISTS $tableBuildIndifName; CREATE TABLE $tableBuildIndifName (THE_GEOM geometry(polygon, $srid), ID varchar, HAUTEUR integer);")
             }
-            if (!datasource.hasTable(tableBuildIndusName)) {
+            if (!tablesExist.contains(tableBuildIndusName)) {
                 datasource.execute("DROP TABLE IF EXISTS $tableBuildIndusName; CREATE TABLE $tableBuildIndusName (THE_GEOM geometry(polygon, $srid), ID varchar, HAUTEUR integer, NATURE varchar);")
             }
-            if (!datasource.hasTable(tableBuildRemarqName)) {
+            if (!tablesExist.contains(tableBuildRemarqName)) {
                 datasource.execute("DROP TABLE IF EXISTS $tableBuildRemarqName;  CREATE TABLE $tableBuildRemarqName (THE_GEOM geometry(polygon, $srid), ID varchar, HAUTEUR integer, NATURE varchar);")
             }
-            if (!datasource.hasTable(tableRoadName)) {
+            if (!tablesExist.contains(tableRoadName)) {
                 datasource.execute("DROP TABLE IF EXISTS $tableRoadName;  CREATE TABLE $tableRoadName (THE_GEOM geometry(linestring, $srid), ID varchar, LARGEUR double precision, NATURE varchar, POS_SOL integer, FRANCHISST varchar);")
             }
-            if (!datasource.hasTable(tableRailName)) {
+            if (!tablesExist.contains(tableRailName)) {
                 datasource.execute("DROP TABLE IF EXISTS $tableRailName;  CREATE TABLE $tableRailName (THE_GEOM geometry(linestring, $srid), ID varchar, NATURE varchar, POS_SOL integer, FRANCHISST varchar);")
             }
-            if (!datasource.hasTable(tableHydroName)) {
+            if (!tablesExist.contains(tableHydroName)) {
                 datasource.execute("DROP TABLE IF EXISTS $tableHydroName;  CREATE TABLE $tableHydroName (THE_GEOM geometry(polygon, $srid), ID varchar);")
             }
-            if (!datasource.hasTable(tableVegetName)) {
+            if (!tablesExist.contains(tableVegetName)) {
                 datasource.execute("DROP TABLE IF EXISTS $tableVegetName; CREATE TABLE $tableVegetName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);")
             }
-            if (!datasource.hasTable(tableImperviousSportName)) {
+            if (!tablesExist.contains(tableImperviousSportName)) {
                 datasource.execute("DROP TABLE IF EXISTS $tableImperviousSportName; CREATE TABLE $tableImperviousSportName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);")
             }
-            if (!datasource.hasTable(tableImperviousBuildSurfName)) {
+            if (!tablesExist.contains(tableImperviousBuildSurfName)) {
                 datasource.execute("DROP TABLE IF EXISTS $tableImperviousBuildSurfName; CREATE TABLE $tableImperviousBuildSurfName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);")
             }
-            if (!datasource.hasTable(tableImperviousRoadSurfName)) {
+            if (!tablesExist.contains(tableImperviousRoadSurfName)) {
                 datasource.execute("DROP TABLE IF EXISTS $tableImperviousRoadSurfName; CREATE TABLE $tableImperviousRoadSurfName (THE_GEOM geometry(polygon, $srid), ID varchar);")
             }
-            if (!datasource.hasTable(tableImperviousActivSurfName)) {
+            if (!tablesExist.contains(tableImperviousActivSurfName)) {
                 datasource.execute("DROP TABLE IF EXISTS $tableImperviousActivSurfName; CREATE TABLE $tableImperviousActivSurfName (THE_GEOM geometry(polygon, $srid), ID varchar, CATEGORIE varchar);")
             }
-            if (!tablePiste_AerodromeName || !datasource.hasTable(tablePiste_AerodromeName)) {
+            if (!tablePiste_AerodromeName || !tablesExist.contains(tablePiste_AerodromeName)) {
                 tablePiste_AerodromeName= "PISTE_AERODROME"
                 datasource.execute("DROP TABLE IF EXISTS $tablePiste_AerodromeName; CREATE TABLE $tablePiste_AerodromeName (THE_GEOM geometry(polygon, $srid), ID varchar,  NATURE varchar);")
             }

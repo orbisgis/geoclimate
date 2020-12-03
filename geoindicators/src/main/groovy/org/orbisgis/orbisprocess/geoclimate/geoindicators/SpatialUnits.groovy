@@ -3,20 +3,16 @@ package org.orbisgis.orbisprocess.geoclimate.geoindicators
 import groovy.transform.BaseScript
 import org.h2.value.ValueGeometry
 import org.h2gis.functions.spatial.create.ST_MakeGrid
-import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.Geometry
-import org.orbisgis.orbisdata.datamanager.api.dataset.DataBaseType
 import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.SQLException
-import java.sql.Statement
 
 import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedComponents
 
@@ -108,7 +104,7 @@ IProcess prepareRSUData() {
         title "Prepare the abstract model to build the RSU"
         id "prepareRSUData"
         inputs zoneTable: "", roadTable: "", railTable: "",
-                vegetationTable: "", hydrographicTable: "", surface_vegetation: 100000,
+                vegetationTable: "", hydrographicTable: "", surface_vegetation: 10000,
                 surface_hydro: 2500, prefixName: "unified_abstract_model", datasource: JdbcDataSource
         outputs outputTableName: String
         run { zoneTable, roadTable, railTable, vegetationTable, hydrographicTable, surface_vegetation,
@@ -274,7 +270,7 @@ IProcess prepareRSUData() {
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
  * @param inputTableName The input table tos create the block (group of geometries)
- * @param distance A distance to group the geometries
+ * @param snappingTolerance A distance to group the geometries
  * @param prefixName A prefix used to name the output table
  * @param outputTableName The name of the output table
  * @return A database table name and the name of the column ID
@@ -283,9 +279,9 @@ IProcess createBlocks() {
     return create {
         title "Merge the geometries that touch each other"
         id "createBlocks"
-        inputs inputTableName: String, distance: 0.0d, prefixName: "block", datasource: JdbcDataSource
+        inputs inputTableName: String, snappingTolerance: 0.0d, prefixName: "block", datasource: JdbcDataSource
         outputs outputTableName: String, outputIdBlock: String
-        run { inputTableName, distance, prefixName, JdbcDataSource datasource ->
+        run { inputTableName, snappingTolerance, prefixName, JdbcDataSource datasource ->
 
             def BASE_NAME = "blocks"
 
@@ -315,7 +311,7 @@ IProcess createBlocks() {
                     SELECT null, a.id_build as START_NODE, b.id_build AS END_NODE 
                     FROM $inputTableName AS a, $inputTableName AS b 
                     WHERE a.id_build<>b.id_build AND a.the_geom && b.the_geom 
-                    AND ST_DWITHIN(b.the_geom,a.the_geom, $distance);
+                    AND ST_DWITHIN(b.the_geom,a.the_geom, $snappingTolerance);
         """
 
             datasource "DROP TABLE IF EXISTS $subGraphTableEdges, $subGraphTableNodes;"
@@ -325,12 +321,12 @@ IProcess createBlocks() {
             //Unify buildings that share a boundary
             info "Merging spatial clusters..."
 
-            if (distance > 0) {
+            if (snappingTolerance > 0) {
                 datasource """
                     CREATE INDEX ON $subGraphTableNodes USING BTREE(NODE_ID);
                     DROP TABLE IF EXISTS $subGraphBlocks;
                     CREATE TABLE $subGraphBlocks AS
-                        SELECT ST_UNION(ST_ACCUM(ST_buffer(A.THE_GEOM, $distance))) AS THE_GEOM
+                        SELECT ST_UNION(ST_ACCUM(ST_buffer(A.THE_GEOM, $snappingTolerance))) AS THE_GEOM
                         FROM $inputTableName A, $subGraphTableNodes B
                         WHERE A.id_build=B.NODE_ID GROUP BY B.CONNECTED_COMPONENT;
             """

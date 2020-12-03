@@ -12,6 +12,7 @@ abstract class ProcessingChain extends GroovyProcessFactory {
 
     public static GeoIndicatorsChain  = new GeoIndicatorsChain()
     public static DataUtils  = new DataUtils()
+    public static FormatingDataChain  = new FormatingDataChain()
 
     //Utility methods
     static def uuid = { UUID.randomUUID().toString().replaceAll("-", "_") }

@@ -625,14 +625,30 @@ IProcess applyRandomForestModel() {
             def varType
             def var2model
             def tree = model.trees[0]
+            def modelColumnNames =[]
             if(tree instanceof RegressionTree){
                 def response = tree.response
                 varType = response.type
                 var2model = response.name
+                modelColumnNames = tree.schema.fields.collect {
+                    it.name
+                }
             }else{
                 def response = tree.tree.response
                 varType = response.type
                 var2model = response.name
+                modelColumnNames = tree.tree.schema.fields.collect {
+                    it.name
+                }
+            }
+            //Check the column names before building the dataframe and apply the model
+            def inputColumns = datasource."$explicativeVariablesTableName".getColumnsTypes()
+
+            def allowedColumnNames = modelColumnNames.intersect(inputColumns.keySet())
+            def notSameColumnNames = allowedColumnNames.size() != modelColumnNames.size()
+            if (!allowedColumnNames && notSameColumnNames) {
+                error "Cannot find the requiered columns to apply the model"
+                return
             }
 
             def isDouble = false
@@ -646,27 +662,28 @@ IProcess applyRandomForestModel() {
             // The table containing explicative variables is recovered
             def explicativeVariablesTable = datasource."$explicativeVariablesTableName"
 
+
             // Read the table containing the explicative variables as a DataFrame
             def dfNofactorized = DataFrame.of(explicativeVariablesTable)
 
             def df = dfNofactorized
-            def columnTypes = df.getColumnsTypes()
             // Identify columns being string (thus needed to be factorized)
-            columnTypes.each{colName, colType ->
-                if(colType == "String"){
+            inputColumns.each{colName, colType ->
+                if(colType == "STRING" || colType=="VARCHAR"){
                     df = df.factorize(colName)
                 }
             }
             // Remove the id for the application of the randomForest
             def df_var = df.drop(idName.toUpperCase())
 
+
             def prediction = Validation.test(model, df_var)
             // We need to add the remove the initial predicted variable in order to not have duplicated...
-                df=df.drop(var2model)
-                df=df.merge(isDouble?DoubleVector.of(var2model, prediction):IntVector.of(var2model, prediction))
+            df=df.drop(var2model)
+            df=df.merge(isDouble?DoubleVector.of(var2model, prediction):IntVector.of(var2model, prediction))
 
 
-                //TODO change this after SMILE answer's
+            //TODO change this after SMILE answer's
             // Keep only the id and the value of the classification
             df = df.select(idName.toUpperCase(), var2model.toUpperCase())
             String tableName = TableLocation.parse(outputTableName, datasource.getDataBaseType() == DataBaseType.H2GIS).toString(datasource.getDataBaseType() == DataBaseType.H2GIS);

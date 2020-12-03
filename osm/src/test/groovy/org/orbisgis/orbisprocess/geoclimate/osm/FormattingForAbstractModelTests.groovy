@@ -29,6 +29,7 @@ class FormattingForAbstractModelTests {
         assertEquals 10, h2GIS.getTable(extractData.results.hydroTableName).rowCount
         assertEquals 44, h2GIS.getTable(extractData.results.imperviousTableName).rowCount
         assertEquals 6, h2GIS.getTable(extractData.results.urbanAreasTableName).rowCount
+        assertEquals 0, h2GIS.getTable(extractData.results.coastlineTableName).rowCount
 
         //Buildings
         IProcess format = OSM.formatBuildingLayer
@@ -131,12 +132,21 @@ class FormattingForAbstractModelTests {
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_formated.shp", true)
         assertEquals 44, h2GIS.getTable(format.results.outputTableName).rowCount
 
+        //Sea/Land mask
+        format = OSM.formatSeaLandMask
+        format.execute([
+                datasource : h2GIS,
+                inputTableName: extractData.results.outputCoastlineTableName,
+                inputZoneEnvelopeTableName: "",
+                epsg: epsg])
+        assertEquals(0, h2GIS.getTable(format.results.outputTableName).getRowCount())
+
     }
 
     @Disabled
     @Test //enable it to test data extraction from the overpass api
     void extractCreateFormatGISLayers() {
-        def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
+        def h2GIS = H2GIS.open('./target/osmdb_gislayers;AUTO_SERVER=TRUE')
 
         //def zoneToExtract ="Shanghai, Chine"
         def zoneToExtract ="École Lycée Joliot-Curie,Rennes"
@@ -144,9 +154,11 @@ class FormattingForAbstractModelTests {
         zoneToExtract = "Québec, Québec (Agglomération), Capitale-Nationale, Québec, Canada"
         //zoneToExtract = "Bucarest"
         zoneToExtract="Helsinki"
+        //zoneToExtract ="Göteborgs Stad"
         //zoneToExtract = "Londres, Grand Londres, Angleterre, Royaume-Uni"
-        //zoneToExtract="Cliscouet, Vannes"
+        //zoneToExtract="Vannes"
         //zoneToExtract="rezé"
+        zoneToExtract = "Redon"
 
         IProcess extractData = OSM.extractAndCreateGISLayers
         extractData.execute([
@@ -218,7 +230,8 @@ class FormattingForAbstractModelTests {
                     inputTableName: extractData.results.hydroTableName,
                     inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
                     epsg: epsg])
-            h2GIS.getTable(format.results.outputTableName).save("./target/osm_hydro_${formatedPlaceName}.geojson", true)
+            def inputWaterTableName = format.results.outputTableName
+            h2GIS.getTable(inputWaterTableName).save("./target/osm_hydro_${formatedPlaceName}.geojson", true)
 
             //Impervious
             format = OSM.formatImperviousLayer
@@ -237,6 +250,25 @@ class FormattingForAbstractModelTests {
                     inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
                     epsg: epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_urban_areas_${formatedPlaceName}.geojson", true)
+
+            //Sea/Land mask
+            format = OSM.formatSeaLandMask
+            format.execute([
+                    datasource : h2GIS,
+                    inputTableName: extractData.results.coastlineTableName,
+                    inputZoneEnvelopeTableName: extractData.results.zoneEnvelopeTableName,
+                    epsg: epsg])
+            def inputSeaLandTableName = format.results.outputTableName;
+            h2GIS.getTable(inputSeaLandTableName).save("./target/osm_sea_land_${formatedPlaceName}.geojson", true)
+
+            //Merge Sea/Land mask and Water layers
+            format = OSM.mergeWaterAndSeaLandTables
+            format.execute([
+                    datasource : h2GIS,
+                    inputSeaLandTableName: inputSeaLandTableName,inputWaterTableName: inputWaterTableName,
+                    epsg: epsg])
+            h2GIS.getTable(format.results.outputTableName).save("./target/osm_water_sea_${formatedPlaceName}.geojson", true)
+
         }else {
             assertTrue(false)
         }

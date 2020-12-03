@@ -463,7 +463,7 @@ IProcess distributionCharacterization() {
             def EXTREMUM_COL = "EXTREMUM_COL"
             def EXTREMUM_COL2 = "EXTREMUM_COL2"
             def EXTREMUM_VAL = "EXTREMUM_VAL"
-            def BASENAME = "DISTRIBUTION_REPARTITION"
+            def BASENAME =  "DISTRIBUTION_REPARTITION"
             def GEOMETRY_FIELD = "THE_GEOM"
 
             info "Executing equality and uniqueness indicators"
@@ -513,12 +513,10 @@ IProcess distributionCharacterization() {
                     if(keepColVal){
                         queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_VAL DOUBLE)"
                     }
-
-
                     datasource queryCreateTable
                     // Will insert values by batch of 1000 in the table
                     datasource.withBatch(1000) { stmt ->
-                        datasource.eachRow("SELECT * FROM $distribTableNameNoNull") { row ->
+                        datasource.eachRow("SELECT * FROM $distribTableNameNoNull".toString()) { row ->
                             def rowMap = row.toRowResult()
                             def id_rsu = rowMap."$inputId"
                             rowMap.remove(inputId.toUpperCase())
@@ -558,7 +556,7 @@ IProcess distributionCharacterization() {
                     datasource queryCreateTable
                     // Will insert values by batch of 1000 in the table
                     datasource.withBatch(1000) { stmt ->
-                        datasource.eachRow("SELECT * FROM $distribTableNameNoNull") { row ->
+                        datasource.eachRow("SELECT * FROM $distribTableNameNoNull".toString()) { row ->
                             def rowMap = row.toRowResult()
                             def id_rsu = rowMap."$inputId"
                             rowMap.remove(inputId.toUpperCase())
@@ -599,7 +597,7 @@ IProcess distributionCharacterization() {
 
                     // Will insert values by batch of 1000 in the table
                     datasource.withBatch(1000) { stmt ->
-                        datasource.eachRow("SELECT * FROM $distribTableNameNoNull") { row ->
+                        datasource.eachRow("SELECT * FROM $distribTableNameNoNull".toString()) { row ->
                             def rowMap = row.toRowResult()
                             def id_rsu = rowMap."$inputId"
                             rowMap.remove(inputId)
@@ -829,7 +827,7 @@ IProcess gatherScales() {
 
             // List of columns to remove from the analysis in building and block tables
             def BLOCK_COL_TO_REMOVE = ["THE_GEOM", "ID_RSU", "ID_BLOCK", "MAIN_BUILDING_DIRECTION"]
-            def BUILD_COL_TO_REMOVE = ["THE_GEOM", "ID_RSU", "ID_BUILD", "ID_BLOCK", "NB_LEV", "ZINDEX", "MAIN_USE", "TYPE", "ID_SOURCE"]
+            def BUILD_COL_TO_REMOVE = ["THE_GEOM", "ID_RSU", "ID_BUILD", "ID_BLOCK", "ID_ZONE" , "NB_LEV", "ZINDEX", "MAIN_USE", "TYPE", "ID_SOURCE"]
             def BASE_NAME = "all_scales_table"
 
             info """ Executing the gathering of scales (to building or to RSU scale)"""

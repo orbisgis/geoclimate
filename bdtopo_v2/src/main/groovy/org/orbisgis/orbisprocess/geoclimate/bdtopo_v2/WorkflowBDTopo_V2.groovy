@@ -262,6 +262,10 @@ IProcess workflow() {
                                     return
                                 }
                                 def h2gis_datasource = H2GIS.open(h2gis_properties)
+                                if(!h2gis_datasource){
+                                    error "Cannot load the local H2GIS database to run Geoclimate"
+                                    return
+                                }
                                 id_zones = loadDataFromFolder(inputFolderPath, h2gis_datasource, id_zones)
                                 if (id_zones) {
                                     bdtopo_processing(h2gis_datasource, processing_parameters, id_zones,
@@ -293,6 +297,10 @@ IProcess workflow() {
                                 }
                                 if (file_outputFolder.canWrite()) {
                                     def h2gis_datasource = H2GIS.open(h2gis_properties)
+                                    if(!h2gis_datasource){
+                                        error "Cannot load the local H2GIS database to run Geoclimate"
+                                        return
+                                    }
                                     id_zones = loadDataFromFolder(inputFolderPath, h2gis_datasource, id_zones)
                                     if (id_zones) {
                                         bdtopo_processing(h2gis_datasource, processing_parameters, id_zones,
@@ -332,6 +340,10 @@ IProcess workflow() {
                                         return
                                     }
                                     def h2gis_datasource = H2GIS.open(h2gis_properties)
+                                    if(!h2gis_datasource){
+                                        error "Cannot load the local H2GIS database to run Geoclimate"
+                                        return
+                                    }
                                     id_zones = loadDataFromFolder(inputFolderPath, h2gis_datasource, id_zones)
                                     if (id_zones) {
                                         bdtopo_processing(h2gis_datasource, processing_parameters, id_zones, null,
@@ -417,6 +429,10 @@ IProcess workflow() {
                                 if (codes && codes in Collection) {
                                     def inputTableNames = inputDataBase.tables
                                     def h2gis_datasource = H2GIS.open(h2gis_properties)
+                                    if(!h2gis_datasource){
+                                        error "Cannot load the local H2GIS database to run Geoclimate"
+                                        return
+                                    }
                                     def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
                                     if (!output_datasource) {
                                         return
@@ -449,6 +465,10 @@ IProcess workflow() {
                                 } else if (codes) {
                                     def inputTableNames = inputDataBase.tables
                                     def h2gis_datasource = H2GIS.open(h2gis_properties)
+                                    if(!h2gis_datasource){
+                                        error "Cannot load the local H2GIS database to run Geoclimate"
+                                        return
+                                    }
                                     def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
                                     if (!output_datasource) {
                                         return
@@ -504,6 +524,10 @@ IProcess workflow() {
                                     if (codes && codes in Collection) {
                                         def inputTableNames = inputDataBase.tables
                                         def h2gis_datasource = H2GIS.open(h2gis_properties)
+                                        if(!h2gis_datasource){
+                                            error "Cannot load the local H2GIS database to run Geoclimate"
+                                            return
+                                        }
                                         info "${codes.size()} areas will be processed"
                                         def nbzones=0;
                                         for (code in codes) {
@@ -539,6 +563,10 @@ IProcess workflow() {
                                     if (codes && codes in Collection) {
                                         def inputTableNames = inputDataBase.tables
                                         def h2gis_datasource = H2GIS.open(h2gis_properties)
+                                        if(!h2gis_datasource){
+                                            error "Cannot load the local H2GIS database to run Geoclimate"
+                                            return
+                                        }
                                         def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
                                         if (!output_datasource) {
                                             return null
@@ -568,6 +596,10 @@ IProcess workflow() {
                                     } else if (codes) {
                                         def inputTableNames = inputDataBase.tables
                                         def h2gis_datasource = H2GIS.open(h2gis_properties)
+                                        if(!h2gis_datasource){
+                                            error "Cannot load the local H2GIS database to run Geoclimate"
+                                            return
+                                        }
                                         def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
                                         if (!output_datasource) {
                                             return null
@@ -714,100 +746,126 @@ def createDatasource(def database_properties){
  * @return true is succeed, false otherwise
  */
 def loadDataFromDatasource(def input_database_properties, def code, def distance, def inputTableNames,  H2GIS h2gis_datasource) {
-    def asValues = inputTableNames.every { it.key in ["iris_ge", "bati_indifferencie", "bati_industriel", "bati_remarquable", "route",
-                                                      "troncon_voie_ferree", "surface_eau", "zone_vegetation", "terrain_sport", "construction_surfacique", "" +
-                                                              "surface_route", "surface_activite"] && it.value }
-    def notSameTableNames = inputTableNames.groupBy { it.value }.size() != inputTableNames.size()
-
-    if (asValues && !notSameTableNames) {
-        def iris_ge_location = inputTableNames.iris_ge
-        input_database_properties =updateDriverURL(input_database_properties)
-        String inputTableName = "(SELECT THE_GEOM, INSEE_COM FROM $iris_ge_location WHERE insee_com=''$code'')"
-        String outputTableName = "IRIS_GE"
-        info "Loading in the H2GIS database $outputTableName"
-        IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
-        def count = h2gis_datasource."$outputTableName".rowCount
-        if (count > 0) {
-            //Compute the envelope of the extracted area to extract the thematic tables
-            def geomToExtract = h2gis_datasource.firstRow("SELECT ST_EXPAND(ST_UNION(ST_ACCUM(the_geom)), 1000) AS THE_GEOM FROM $outputTableName").THE_GEOM
-            int srid = geomToExtract.SRID
-
+    def iris_ge_location = inputTableNames.iris_ge
+    if (!iris_ge_location) {
+        error "The iris_ge table must be specified to run Geoclimate"
+        return
+    }
+    input_database_properties =updateDriverURL(input_database_properties)
+    String inputTableName = "(SELECT THE_GEOM, INSEE_COM FROM $iris_ge_location WHERE insee_com=''$code'')"
+    String outputTableName = "IRIS_GE"
+    info "Loading in the H2GIS database $outputTableName"
+    IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
+    def count = h2gis_datasource."$outputTableName".rowCount
+    if (count > 0) {
+        //Compute the envelope of the extracted area to extract the thematic tables
+        def geomToExtract = h2gis_datasource.firstRow("SELECT ST_EXPAND(ST_UNION(ST_ACCUM(the_geom)), 1000) AS THE_GEOM FROM $outputTableName").THE_GEOM
+        int srid = geomToExtract.SRID
+        def outputTableNameBatiInd = "BATI_INDIFFERENCIE"
+        if(inputTableNames.bati_indifferencie){
             //Extract bati_indifferencie
             inputTableName = "(SELECT ID, THE_GEOM, HAUTEUR FROM ${inputTableNames.bati_indifferencie}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
-            outputTableName = "BATI_INDIFFERENCIE"
-            info "Loading in the H2GIS database $outputTableName"
-            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
-
+            info "Loading in the H2GIS database $outputTableNameBatiInd"
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableNameBatiInd, true, h2gis_datasource)
+        }
+        def   outputTableNameBatiIndus = "BATI_INDUSTRIEL"
+        if(inputTableNames.bati_industriel) {
             //Extract bati_industriel
             inputTableName = "(SELECT ID, THE_GEOM, NATURE, HAUTEUR FROM ${inputTableNames.bati_industriel}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
-            outputTableName = "BATI_INDUSTRIEL"
-            info "Loading in the H2GIS database $outputTableName"
-            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
-
+            info "Loading in the H2GIS database $outputTableNameBatiIndus"
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableNameBatiIndus, true, h2gis_datasource)
+        }
+        def outputTableNameBatiRem = "BATI_REMARQUABLE"
+        if(inputTableNames.bati_remarquable) {
             //Extract bati_remarquable
             inputTableName = "(SELECT ID, THE_GEOM, NATURE, HAUTEUR FROM ${inputTableNames.bati_remarquable}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
-            outputTableName = "BATI_REMARQUABLE"
-            info "Loading in the H2GIS database $outputTableName"
-            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
-
+            info "Loading in the H2GIS database $outputTableNameBatiRem"
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableNameBatiRem, true, h2gis_datasource)
+        }
+        def  outputTableNameRoad = "ROUTE"
+        if(inputTableNames.route) {
             //Extract route
             inputTableName = "(SELECT ID, THE_GEOM, NATURE, LARGEUR, POS_SOL, FRANCHISST FROM ${inputTableNames.route}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
-            outputTableName = "ROUTE"
-            info "Loading in the H2GIS database $outputTableName"
-            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
+            info "Loading in the H2GIS database $outputTableNameRoad"
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableNameRoad, true, h2gis_datasource)
+        }
+        else{
+            error "The route table must be provided"
+            return
+        }
 
+        //Before starting geoclimate algorithms we must check if some tables exist
+        if(!h2gis_datasource.hasTable(outputTableNameBatiInd)&& !h2gis_datasource.hasTable(outputTableNameBatiIndus) && !h2gis_datasource.hasTable(outputTableNameBatiRem)){
+            error "At least one of the following tables must be provided : bati_indifferencie, bati_industriel, bati_remarquable"
+            return
+        }
+        if(!h2gis_datasource.hasTable(outputTableNameRoad)){
+            error "The route table must be provided"
+            return
+        }
+
+        if(inputTableNames.troncon_voie_ferree) {
             //Extract troncon_voie_ferree
             inputTableName = "(SELECT ID, THE_GEOM, NATURE, LARGEUR, POS_SOL, FRANCHISST FROM ${inputTableNames.troncon_voie_ferree}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "TRONCON_VOIE_FERREE"
             info "Loading in the H2GIS database $outputTableName"
-            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)}
 
+        if(inputTableNames.surface_eau) {
             //Extract surface_eau
             inputTableName = "(SELECT ID, THE_GEOM FROM ${inputTableNames.surface_eau}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "SURFACE_EAU"
             info "Loading in the H2GIS database $outputTableName"
-            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)}
 
+        if(inputTableNames.zone_vegetation) {
             //Extract zone_vegetation
             inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.zone_vegetation}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "ZONE_VEGETATION"
             info "Loading in the H2GIS database $outputTableName"
-            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)}
 
+        if(inputTableNames.terrain_sport) {
             //Extract terrain_sport
             inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.terrain_sport}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY) AND NATURE=''Piste de sport'')"
             outputTableName = "TERRAIN_SPORT"
             info "Loading in the H2GIS database $outputTableName"
-            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)}
 
+        if(inputTableNames.construction_surfacique) {
             //Extract construction_surfacique
             inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.construction_surfacique}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY) AND (NATURE=''Barrage'' OR NATURE=''Ecluse'' OR NATURE=''Escalier''))"
             outputTableName = "CONSTRUCTION_SURFACIQUE"
             info "Loading in the H2GIS database $outputTableName"
-            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)}
 
+        if(inputTableNames.surface_route) {
             //Extract surface_route
             inputTableName = "(SELECT ID, THE_GEOM  FROM ${inputTableNames.surface_route}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "SURFACE_ROUTE"
             info "Loading in the H2GIS database $outputTableName"
-            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)}
 
+        if(inputTableNames.surface_activite) {
             //Extract surface_activite
             inputTableName = "(SELECT ID, THE_GEOM, CATEGORIE  FROM ${inputTableNames.surface_activite}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY) AND (CATEGORIE=''Administratif'' OR CATEGORIE=''Enseignement'' OR CATEGORIE=''Santé''))"
             outputTableName = "SURFACE_ACTIVITE"
             info "Loading in the H2GIS database $outputTableName"
             IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
-
-            return true
+        }
+        //Extract PISTE_AERODROME
+        if(inputTableNames.piste_aerodrome){
+            inputTableName = "(SELECT ID, THE_GEOM  FROM ${inputTableNames.piste_aerodrome}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
+            outputTableName = "PISTE_AERODROME"
+            info "Loading in the H2GIS database $outputTableName"
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
+        }
+        return true
 
         } else {
             error "Cannot find any commune with the insee code : $code"
             return
         }
-    } else {
-        error "All table names must be specified in the configuration file."
-        return
-    }
 }
 
 /**
@@ -932,6 +990,9 @@ def findIDZones(def h2gis_datasource, def id_zones){
 def extractProcessingParameters(def processing_parameters){
     def defaultParameters = [distance: 1000,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
                              svfSimplified:false, prefixName: "",
+                             surface_vegetation: 10000,
+                             surface_hydro: 2500,
+                             snappingTolerance :0.01,
                              mapOfWeights : ["sky_view_factor"                : 4,
                                              "aspect_ratio"                   : 3,
                                              "building_surface_fraction"      : 8,
@@ -940,14 +1001,25 @@ def extractProcessingParameters(def processing_parameters){
                                              "height_of_roughness_elements"   : 6,
                                              "terrain_roughness_length"       : 0.5],
                              hLevMin : 3, hLevMax: 15, hThresholdLev2: 10,
-                             lczRandomForest :false,
-                             lczModelName: "LCZ_BDTOPO_V2_RF_1_0.model",
                              urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_0.model"]
     if(processing_parameters){
         def distanceP =  processing_parameters.distance
         if(distanceP && distanceP in Number){
             defaultParameters.distance = distanceP
         }
+        def snappingToleranceP =  processing_parameters.snappingTolerance
+        if(snappingToleranceP && snappingToleranceP in Number){
+            defaultParameters.snappingTolerance = snappingToleranceP
+        }
+        def surface_vegetationP =  processing_parameters.surface_vegetation
+        if(surface_vegetationP && surface_vegetationP in Number){
+            defaultParameters.surface_vegetation = surface_vegetationP
+        }
+        def surface_hydroP =  processing_parameters.surface_hydro
+        if(surface_hydroP && surface_hydroP in Number){
+            defaultParameters.surface_hydro = surface_hydroP
+        }
+
         def indicatorUseP = processing_parameters.indicatorUse
         if(indicatorUseP && indicatorUseP in List){
             defaultParameters.indicatorUse = indicatorUseP
@@ -984,10 +1056,6 @@ def extractProcessingParameters(def processing_parameters){
         def hThresholdLev2P =  processing_parameters.hThresholdLev2
         if(hThresholdLev2P && hThresholdLev2P in Integer){
             defaultParameters.hThresholdLev2 = hThresholdLev2P
-        }
-        def lczRandomForest = processing_parameters.lczRandomForest
-        if(lczRandomForest && lczRandomForest in Boolean){
-            defaultParameters.lczRandomForest = lczRandomForest
         }
     }
     return defaultParameters
@@ -1053,17 +1121,18 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
             def imperviousTableName = prepareBDTopoData.results.outputImpervious
 
             info "BDTOPO V2 GIS layers formated"
-
             //Build the indicators
             IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
             if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
                     buildingTable: buildingTableName, roadTable: roadTableName,
                     railTable: railTableName, vegetationTable: vegetationTableName,
                     hydrographicTable: hydrographicTableName, imperviousTable :imperviousTableName,
+                    surface_vegetation: processing_parameters.surface_vegetation, surface_hydro: processing_parameters.surface_hydro,
+                    snappingTolerance : processing_parameters.snappingTolerance,
                     indicatorUse: processing_parameters.indicatorUse,
                     svfSimplified: processing_parameters.svfSimplified, prefixName: processing_parameters.prefixName,
                     mapOfWeights: processing_parameters.mapOfWeights,
-                    lczRandomForest : processing_parameters.lczRandomForest)) {
+                    urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_0.model")) {
                 error "Cannot build the geoindicators for the zone $id_zone"
                 geoIndicatorsComputed = false
             } else {
