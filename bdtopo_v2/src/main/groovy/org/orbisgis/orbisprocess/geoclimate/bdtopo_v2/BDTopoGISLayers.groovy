@@ -133,21 +133,24 @@ IProcess importPreprocess() {
             // For each tables in the list, we check the SRID and compare to the srid variable. If different, the process is stopped
             for (String name : list) {
                 if(name) {
-                    if(datasource.hasTable(name)){
-                        tablesExist<<name
                     def table = datasource.getTable(name)
-                    if (table != null && !table.isEmpty()) {
+                    if(table){
+                        tablesExist<<name
+                        def currentSrid =table.srid
                         if (srid == -1) {
-                            srid = table.srid
+                            srid = currentSrid
                         } else {
-                            if (srid != table.srid) {
+                            //This is due because the import table does'nt transfert the SRID constraint when the
+                            //table has no rows
+                            if(currentSrid==0 && table.getRowCount()>0 ){
+                                error "The process has been stopped since the table $name has a no SRID"
+                                return
+                            }
+                            else if (currentSrid>0 && srid != currentSrid) {
                                 error "The process has been stopped since the table $name has a different SRID from the others"
                                 return
                             }
                         }
-                    } else {
-                        datasource """DROP TABLE IF EXISTS $name"""
-                    }
                     }
                 }
             }
