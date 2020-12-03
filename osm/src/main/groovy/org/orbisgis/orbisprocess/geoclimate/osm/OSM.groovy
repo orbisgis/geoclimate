@@ -1,5 +1,4 @@
 package org.orbisgis.orbisprocess.geoclimate.osm
-
 /**
  * Main class to access to the OSM processes
  *
