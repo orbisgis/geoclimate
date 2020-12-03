@@ -11,7 +11,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.build.timestamp.format>YYYY-MM-dd</maven.build.timestamp.format>
+        <maven.build.timestamp.format>YYYY-MM-dd-hh-mm-ss</maven.build.timestamp.format>
         <buildNumber>${maven.build.timestamp}</buildNumber>
         <site.basedir>${project.parent.basedir}</site.basedir>
     </properties>
@@ -21,6 +21,10 @@
         <dependency>
             <groupId>org.codehaus.groovy</groupId>
             <artifactId>groovy</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy-json</artifactId>
         </dependency>
         <dependency>
             <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
@@ -33,17 +37,16 @@
         <dependency>
             <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
             <artifactId>bdtopo_v2</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
             <artifactId>osm</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
-            <version>4.5.2</version>
         </dependency>
         <!-- Test dependencies -->
         <dependency>
@@ -109,6 +112,22 @@
                 </configuration>
             </plugin>
         </plugins>
+        <resources>
+            <resource>
+                <directory>src/main/resources/</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/geoclimate.properties</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources/</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>**/geoclimate.properties</exclude>
+                </excludes>
+            </resource>
+        </resources>
     </build>
 
     <distributionManagement>

@@ -1,6 +1,5 @@
 package org.orbisgis.orbisprocess.geoclimate
 
-import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.*
 import org.orbisgis.orbisprocess.geoclimate.processingchain.*
 import org.orbisgis.orbisprocess.geoclimate.osm.*
@@ -10,10 +9,15 @@ import picocli.CommandLine
 import java.util.concurrent.Callable
 
 /**
- * Root access point to the Geoindicators processes.
+ * Root access point to the Geoclimate processes.
+ *
+ * @author Erwan Bocher (CNRS 2020)
+ * @author Sylvain Palominos (UBS chaire GEOTERA)
  */
-@CommandLine.Command(name = "Geoclimate",sortOptions = false, version = "0.1",
-        mixinStandardHelpOptions = true, // add --help and --version options
+@CommandLine.Command(name = "Geoclimate",
+        sortOptions = false,
+        version = "0.1",
+        mixinStandardHelpOptions = true,
         description = "Simple command line tool to run Geoclimate algorithms",
         header =
 ["  ___  ____  _____  ___  __    ____  __  __    __   ____  ____ ",
@@ -22,6 +26,10 @@ import java.util.concurrent.Callable
  " \\___/(____)(_____)\\___)(____)(____)(_/\\/\\_)(__)(__)(__) (____)"])
 
 class Geoclimate implements Callable<Integer> {
+
+    public static final def SUCCESS_CODE = 0
+    public static final def PROCESS_FAIL_CODE = 1
+    public static final def PROCESS_INVALID_CODE = 2
 
     public static def GeoIndicatorsChain  = new GeoIndicatorsChain()
     public static def DataUtils  = new DataUtils()
@@ -33,6 +41,8 @@ class Geoclimate implements Callable<Integer> {
     public static def TypologyClassification = new TypologyClassification()
     public static def OSM = new OSM()
     public static def BDTOPO_V2 = new BDTopo_V2()
+
+    public static def PROPS
 
     /**
      * Set the logger for all the processes.
@@ -46,49 +56,61 @@ class Geoclimate implements Callable<Integer> {
         Geoindicators.logger = logger
     }
 
-    @CommandLine.Option(names = ['-w'], defaultValue = "OSM", required = true,description = 'Name of workflow :  OSM (default) or bdtopo_v2.2')
+    @CommandLine.Option(names = ['-w'],
+            defaultValue = "OSM",
+            required = true,
+            description = "Name of workflow :  OSM (default) or BDTOPO_V2.2")
     String workflow
 
-    @CommandLine.Option(names = ["-f" ],arity = "1", required = true,  description = "The configuration file used to set up the workflow")
-    String configFile;
+    @CommandLine.Option(names = ["-f" ],
+            arity = "1",
+            required = true,
+            description = "The configuration file used to set up the workflow")
+    String configFile
 
     @Override
-    public Integer  call()  {
-        if(workflow.trim().equalsIgnoreCase("osm")){
-            IProcess process = org.orbisgis.orbisprocess.geoclimate.Geoclimate.OSM.workflow
-            def success = process.execute(configurationFile: configFile.trim())
-            if(success){
-                System.out.println("The OSM workflow has been successfully executed")
-                return 0;
-            }else{
-                System.out.println("Cannot execute the OSM workflow")
-                return 1;
+    Integer call() {
+        if (workflow.trim().equalsIgnoreCase("OSM")) {
+            def success = Geoclimate.OSM.workflow.execute(configurationFile: configFile.trim())
+            if (success) {
+                println("The OSM workflow has been successfully executed")
+                return SUCCESS_CODE
+            } else {
+                println("Cannot execute the OSM workflow")
+                return PROCESS_FAIL_CODE
             }
-        }
-        else if(workflow.trim().equalsIgnoreCase("bdtopo_v2.2")){
-            IProcess process = org.orbisgis.orbisprocess.geoclimate.Geoclimate.BDTOPO_V2.workflow
-            def success =  process.execute(configurationFile: configFile.trim())
-            if(success){
-                System.out.println("The bdtopo_v2.2 workflow has been successfully executed")
-                return 0
-            }else{
-                System.out.println("Cannot execute the bdtopo_v2.2 workflow")
-                return 1
+        } else if (workflow.trim().equalsIgnoreCase("BDTOPO_V2.2")) {
+            def success = Geoclimate.BDTOPO_V2.workflow.execute(configurationFile: configFile.trim())
+            if (success) {
+                println("The BDTOPO_V2.2 workflow has been successfully executed")
+                return SUCCESS_CODE
+            } else {
+                println("Cannot execute the BDTOPO_V2.2 workflow")
+                return PROCESS_FAIL_CODE
             }
+        } else {
+            System.out.println("Invalid workflow name. Supported values are OSM (default) or BDTOPO_V2.2")
+            return PROCESS_INVALID_CODE
         }
-        else{
-            System.out.println("Invalid workflow name. Supported values are OSM (default) or bdtopo_v2.2")
-            return 2
-        }
-        System.out.println("Any workflow to run")
-        return 1
     }
 
     /**
-     * Run the Picocli command(s)
-     * @param args
+     * Run the Picocli command(s).
+     *
+     * @param args Geoclimate client arguments.
      */
-    public static void main(String[] args) {
-        System.exit(new CommandLine(new Geoclimate()).execute(args))
+    static void main(String[] args) {
+        def executionCode = new CommandLine(new Geoclimate()).execute(args)
+        if(executionCode != SUCCESS_CODE) {
+            System.exit(executionCode)
+        }
+    }
+
+    static def $static_propertyMissing(String name) {
+        if(!PROPS) {
+            PROPS = new Properties()
+            PROPS.load(Geoclimate.getResourceAsStream("geoclimate.properties"))
+        }
+        return PROPS.get(name)
     }
 }
