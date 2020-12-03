@@ -20,10 +20,10 @@ class OSMGISLayersTests {
         IProcess process = OSM.extractAndCreateGISLayers
         process.execute([
                 datasource : h2GIS,
-                zoneToExtract: "Vannes"])
+                zoneToExtract: "Göteborgs Stad"])
         process.getResults().each {it ->
             if(it.value!=null){
-                h2GIS.getTable(it.value).save("./target/${it.value}.shp", true)
+                h2GIS.getTable(it.value).save("./target/${it.value}.geojson", true)
             }
         }
     }
