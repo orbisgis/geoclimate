@@ -446,76 +446,78 @@ IProcess spatialJoin() {
 }
 
 /**
- * This process is used to generate a grid.
+ * This process is used to generate a continuous cartesian grid
+ * on which indicators have to be aggregated.
  *
  * @param geometry A geometry that defines either Point, Line or Polygon
- * @param deltaX A double value that represents the spatial horizontal step of a cell in the grid
- * @param deltaY A double value that represents the spatial vertical step of a cell in the grid
- * @param prefixName A prefix used to name the output table
+ * @param deltaX The horizontal spatial step of a cell in meter
+ * @param deltaY The vertical spatial step of a cell in meter
+ * @param tableName A Table that contains the geometry of the grid
  * @param datasource A connexion to a database (H2GIS, POSTGIS, ...) where are stored the input Table and in which
  *        the resulting database will be stored
- * @param outputTableName The name of the created table
- * @author Emmanuel Renault, CNRS
+ * @return outputTableName The name of the created table
+ *
+ * @author Emmanuel Renault, CNRS, 2020
  * */
 IProcess createGrid() {
     return create {
-        title "Creating a grid in meters"
+        title"Creating a regular grid in meter"
         id "createGrid"
         inputs geometry: Geometry, deltaX: double, deltaY: double, prefixName: "", datasource: JdbcDataSource
         outputs outputTableName: String
         run { geometry, deltaX, deltaY, prefixName, datasource ->
 
-            def BASE_NAME = "grid"
-            // The name of the outputTableName is constructed
-            def outputTableName = prefix prefixName, BASE_NAME
+            def BASENAME = "grid"
+            def outputTableName = prefix prefixName, BASENAME
+            datasource "DROP TABLE IF EXISTS $outputTableName;"
 
             if (datasource instanceof H2GIS) {
-                info "Creating a regular grid with H2GIS"
-                datasource """CREATE TABLE $outputTableName AS SELECT * FROM 
-                                     ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY);
+                info "Creating grid with H2GIS"
+                datasource """
+                           CREATE TABLE $outputTableName AS SELECT * FROM 
+                           ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY);
                            """
             }
             else if (datasource instanceof POSTGIS) {
-                info "Creating a regular grid with POSTGIS"
-                    PreparedStatement preparedStatement = null
-                    Connection outputConnection = datasource.getConnection()
-                    try {
-                        def createTable = "CREATE TABLE $outputTableName(THE_GEOM GEOMETRY(POLYGON), ID INT, ID_COL INT, ID_ROW INT);"
-                        def insertTable = "INSERT INTO $outputTableName VALUES (?, ?, ?, ?);"
-                        datasource.execute(createTable)
-                        preparedStatement = outputConnection.prepareStatement(insertTable)
-                        def result = ST_MakeGrid.createGrid(outputConnection, ValueGeometry.getFromGeometry(geometry), deltaX, deltaY)
+                info "Creating grid with POSTGIS"
+                PreparedStatement preparedStatement = null
+                Connection outputConnection = datasource.getConnection()
+                try {
+                    def createTable = "CREATE TABLE $outputTableName(THE_GEOM GEOMETRY(POLYGON), ID INT, ID_COL INT, ID_ROW INT);"
+                    def insertTable = "INSERT INTO $outputTableName VALUES (?, ?, ?, ?);"
+                    datasource.execute(createTable)
+                    preparedStatement = outputConnection.prepareStatement(insertTable)
+                    def result = ST_MakeGrid.createGrid(outputConnection, ValueGeometry.getFromGeometry(geometry), deltaX, deltaY)
+                    long batch_size = 0
+                    int batchSize = 1000
 
-                        long batch_size = 0
-                        int batchSize = 1000
-
-                        while (result.next()) {
-                            preparedStatement.setObject( 1, result.getObject(1))
-                            preparedStatement.setObject( 2, result.getInt(2))
-                            preparedStatement.setObject( 3, result.getInt(3))
-                            preparedStatement.setObject( 4, result.getInt(4))
-                            preparedStatement.addBatch()
-                            batch_size++
-                            if (batch_size >= batchSize) {
-                                preparedStatement.executeBatch()
-                                preparedStatement.clearBatch()
-                                batchSize = 0;
-                            }
-                        }
-                        if (batch_size > 0) {
+                    while (result.next()) {
+                        preparedStatement.setObject( 1, result.getObject(1))
+                        preparedStatement.setObject( 2, result.getInt(2))
+                        preparedStatement.setObject( 3, result.getInt(3))
+                        preparedStatement.setObject( 4, result.getInt(4))
+                        preparedStatement.addBatch()
+                        batch_size++
+                        if (batch_size >= batchSize) {
                             preparedStatement.executeBatch()
-                        }
-                    } catch (SQLException e) {
-                        error("Cannot create the grid with the parameters.\n", e)
-                        return null
-                    } finally {
-                        if (preparedStatement != null) {
-                            preparedStatement.close()
+                            preparedStatement.clearBatch()
+                            batchSize = 0;
                         }
                     }
+                    if (batch_size>0) {
+                        preparedStatement.executeBatch()
+                    }
+                } catch (SQLException e) {
+                    error("Cannot create the grid with the parameters.\n", e)
+                    return null
+                } finally {
+                    if (preparedStatement != null) {
+                        preparedStatement.close()
+                    }
+                }
             }
-            info "The grid $outputTableName has been created"
+            info "The table $outputTableName has been created"
             [outputTableName: outputTableName]
-         }
+        }
     }
 }
