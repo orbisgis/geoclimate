@@ -6,7 +6,7 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 
-@BaseScript GroovyProcessFactory pf
+@BaseScript ProcessingChain pf
 
 /**
  * Compute the geoindicators at building scale
