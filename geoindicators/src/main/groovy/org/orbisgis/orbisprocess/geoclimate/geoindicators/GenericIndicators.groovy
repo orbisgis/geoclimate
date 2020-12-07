@@ -26,8 +26,8 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
  *          --> "GEOM_AVG": average the geospatial variables at the upper scale using a geometric average
  *          --> "DENS": sum the geospatial variables at the upper scale and divide by the area of the upper scale
  *          --> "NB_DENS" : count the number of lower scale objects within the upper scale object and divide by the upper
- *          scale area. NOTE THAT THE THREE FIRST LETTERS OF THE MAP KEY WILL BE USED TO CREATE THE NAME OF THE INDICATOR
- *          (e.g. "BUI" in the case of the example given above)
+ *          scale area. NOTE THAT FOR THIS ONE, THE MAP KEY WILL BE USED TO CREATE THE PREFIX NAME OF THE INDICATOR
+ *          (e.g. "BUILDING_AREA" in the case of the example given above ==> the indicator will be BUILDING_AREA_NUMBER_DENSITY)
  * @param prefixName String use as prefix to name the output table
  *
  * @return A database table name.
@@ -53,6 +53,7 @@ IProcess unweightedOperationFromLowerScale() {
             def NB_DENS = "NB_DENS"
             def STD = "STD"
             def COLUMN_TYPE_TO_AVOID = ["GEOMETRY", "VARCHAR"]
+            def SPECIFIC_OPERATIONS = [NB_DENS]
 
             info "Executing Unweighted statistical operations from lower scale"
 
@@ -63,13 +64,13 @@ IProcess unweightedOperationFromLowerScale() {
             datasource."$inputUpperScaleTableName"."$inputIdUp".createIndex()
 
             def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
-            def varOk = true
+
+            def  columnNamesTypes = datasource."$inputLowerScaleTableName".getColumnsTypes()
+            def filteredColumns = columnNamesTypes.findAll {! COLUMN_TYPE_TO_AVOID.contains(it.value) }
             inputVarAndOperations.each { var, operations ->
-                if (datasource."$inputLowerScaleTableName".getColumns().contains(var) &&
-                        COLUMN_TYPE_TO_AVOID.contains(datasource."$inputLowerScaleTableName"."$var".type)) {
-                    varOk = false
-                }
-                if (varOk) {
+                // Some operations may not need to use an existing variable thus not concerned by the column filtering
+                def filteredOperations = operations-SPECIFIC_OPERATIONS
+                if (filteredColumns.containsKey(var.toUpperCase()) | (filteredOperations.isEmpty())) {
                     operations.each {
                         def op = it.toUpperCase()
                         switch (op) {
@@ -96,7 +97,7 @@ IProcess unweightedOperationFromLowerScale() {
                         }
                     }
                 } else {
-                    error """ The column $var should be numeric"""
+                    warn """ The column $var doesn't exist or should be numeric"""
                 }
 
             }

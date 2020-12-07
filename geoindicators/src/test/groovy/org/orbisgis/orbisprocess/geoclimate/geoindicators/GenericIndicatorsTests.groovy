@@ -69,7 +69,8 @@ class GenericIndicatorsTests {
                 inputIdUp                   : "id_rsu",
                 inputIdLow                  : "id_build",
                 inputVarAndOperations       : ["number_building_neighbor"   :["AVG"],
-                                               "area"                       :["SUM", "DENS", "NB_DENS"]],
+                                               "area"                       :["SUM", "DENS"],
+                                               "building"                   :["NB_DENS"]],
                 prefixName                  : "fourth",
                 datasource                  : h2GIS])
         def  pstd =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
@@ -97,7 +98,7 @@ class GenericIndicatorsTests {
                 concat[3]+= "${row.avg_number_building_neighbor}\n"
                 concat[3]+= "${row.sum_area}\n"
                 concat[3]+= "${row.area_density}\n"
-                concat[3]+= "${row.area_number_density}\n"
+                concat[3]+= "${row.building_number_density}\n"
         }
         concat[4] = h2GIS.firstRow("SELECT std_number_building_neighbor FROM fifth_unweighted_operation_from_lower_scale WHERE id_rsu = 1")
 
@@ -111,8 +112,8 @@ class GenericIndicatorsTests {
         assert 16 == nb_rsu.nb
         assert 0 == val_zero.val
         // Test the fix concerning nb_dens_building (initially >0 while no building in RSU...)
-        def nb_dens = h2GIS.firstRow("SELECT area_number_density FROM fourth_unweighted_operation_from_lower_scale WHERE id_rsu = 14")
-        assert 0 == nb_dens["AREA_NUMBER_DENSITY"]
+        def nb_dens = h2GIS.firstRow("SELECT building_number_density FROM fourth_unweighted_operation_from_lower_scale WHERE id_rsu = 14")
+        assert 0 == nb_dens["BUILDING_NUMBER_DENSITY"]
         def geom_ave = h2GIS.firstRow("SELECT geom_avg_height_roof FROM third_unweighted_operation_from_lower_scale WHERE id_rsu = 14")
         assert 0 == geom_ave["geom_avg_height_roof"]
     }

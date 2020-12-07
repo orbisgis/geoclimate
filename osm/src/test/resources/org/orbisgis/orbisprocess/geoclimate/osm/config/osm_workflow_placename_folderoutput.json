@@ -6,16 +6,16 @@
         "delete" :true
     },
     "input" : {
-        "osm" : ["vannes"]},
+        "osm" : ["pont-de-veyle"]},
     "output" :{
-        "folder" : "/home/decide/Bureau/GeoclimateTests3"},
+        "folder" : "/home/decide/Bureau/GeoclimateTestIni"},
     "parameters":
     {"distance" : 1000,
-        "indicatorUse": ["LCZ"],
+        "indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"],
         "svfSimplified": false,
         "prefixName": "","hLevMin": 3,
         "hLevMax": 15,
         "hThresholdLev2": 10,
-        "estimateHeight" : true
+        "estimateHeight" : false
     }
 }
