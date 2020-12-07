@@ -1616,8 +1616,6 @@ IProcess computeGeoclimateIndicators() {
                         datasource       : datasource])
                 def gatheredScales = applygatherScales.results.outputTableName
 
-                datasource.save(gatheredScales, "/home/decide/Bureau/testIni.geojson")
-
                 def applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
                 if(!applyRF.execute([
                         explicativeVariablesTableName: gatheredScales,

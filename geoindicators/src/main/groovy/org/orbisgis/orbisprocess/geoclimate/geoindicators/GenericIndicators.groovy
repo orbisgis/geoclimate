@@ -53,7 +53,6 @@ IProcess unweightedOperationFromLowerScale() {
             def NB_DENS = "NB_DENS"
             def STD = "STD"
             def COLUMN_TYPE_TO_AVOID = ["GEOMETRY", "VARCHAR"]
-            def SPECIFIC_OPERATIONS = [NB_DENS]
 
             info "Executing Unweighted statistical operations from lower scale"
 
@@ -64,13 +63,14 @@ IProcess unweightedOperationFromLowerScale() {
             datasource."$inputUpperScaleTableName"."$inputIdUp".createIndex()
 
             def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
+            def varOk = true
 
-            def  columnNamesTypes = datasource."$inputLowerScaleTableName".getColumnsTypes()
-            def filteredColumns = columnNamesTypes.findAll {! COLUMN_TYPE_TO_AVOID.contains(it.value) }
             inputVarAndOperations.each { var, operations ->
-                // Some operations may not need to use an existing variable thus not concerned by the column filtering
-                def filteredOperations = operations-SPECIFIC_OPERATIONS
-                if (filteredColumns.containsKey(var.toUpperCase()) | (filteredOperations.isEmpty())) {
+                if (datasource."$inputLowerScaleTableName".getColumns().contains(var) &&
+                        COLUMN_TYPE_TO_AVOID.contains(datasource."$inputLowerScaleTableName"."$var".type)) {
+                    varOk = false
+                }
+                if (varOk) {
                     operations.each {
                         def op = it.toUpperCase()
                         switch (op) {
@@ -97,7 +97,7 @@ IProcess unweightedOperationFromLowerScale() {
                         }
                     }
                 } else {
-                    warn """ The column $var doesn't exist or should be numeric"""
+                    error """ The column $var should be numeric"""
                 }
 
             }
