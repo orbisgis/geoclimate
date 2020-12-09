@@ -3,9 +3,8 @@ package org.orbisgis.orbisprocess.geoclimate.processingchain
 import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 
-@BaseScript GroovyProcessFactory pf
+@BaseScript ProcessingChain pf
 
 
 /**
