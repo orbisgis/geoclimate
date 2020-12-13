@@ -1639,6 +1639,10 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
                     }
                     else{
                         tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true);
+                        //Because the select query reproject doesn't contain any geometry metadata
+                        output_datasource.execute("""ALTER TABLE $output_table
+                            ALTER COLUMN the_geom TYPE geometry(geometry, $outputSRID)
+                            USING ST_SetSRID(the_geom,$outputSRID);""");
                     }
                     if(tmpTable){
                     //Workarround to update the SRID on resulset
@@ -1649,6 +1653,10 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
                         tmpTable =h2gis_datasource.getTable(h2gis_table_to_save).save(output_datasource, output_table, true);
                    }else{
                         tmpTable = h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(outputSRID).save(output_datasource, output_table, true);
+                        //Because the select query reproject doesn't contain any geometry metadata
+                        output_datasource.execute("""ALTER TABLE $output_table
+                            ALTER COLUMN the_geom TYPE geometry(geometry, $outputSRID)
+                            USING ST_SetSRID(the_geom,$outputSRID);""");
                     }
                 }
                 if(tmpTable) {
@@ -1747,18 +1755,28 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                     if (filter) {
                         if (!reproject) {
                             tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().save(output_datasource, output_table, true);
+                            if(tmpTable) {
+                                //Workarround to update the SRID on resultset
+                                output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);"""
+                            }
+
                         } else {
                             tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true);
+                            if(tmpTable) {
+                                //Workarround to update the SRID on resultset
+                                output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $outputSRID) USING ST_SetSRID(the_geom,$outputSRID);"""
+                            }
                         }
-                        if(tmpTable) {
-                            //Workarround to update the SRID on resulset
-                            output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);"""
-                        }
+
                     } else {
                         if (!reproject) {
                             tmpTable = h2gis_datasource.getSpatialTable(h2gis_table_to_save).save(output_datasource, output_table, true);
                         } else {
                             tmpTable = h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(outputSRID).save(output_datasource, output_table, true);
+                            //Because the select query reproject doesn't contain any geometry metadata
+                            output_datasource.execute("""ALTER TABLE $output_table
+                            ALTER COLUMN the_geom TYPE geometry(geometry, $outputSRID)
+                            USING ST_SetSRID(the_geom,$outputSRID);""")
                         }
                     }
                     if(tmpTable){
