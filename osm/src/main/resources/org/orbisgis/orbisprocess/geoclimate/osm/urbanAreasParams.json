@@ -2,8 +2,7 @@
     "landuse":["commercial", "residential", "retail", "industrial"]
 
 },
-    "columns":[ "landuse"
-    ],
+    "columns":[ "landuse","industrial"],
     "type": {
         "commercial": {
             "landuse": [
@@ -16,7 +15,12 @@
                 "residential"
             ]
         },
-        "industrial": {
+        "heavy_industry:industria": {
+            "industrial": [
+                "refinery"
+            ]
+        },
+        "light_industry:industrial": {
             "landuse": [
                 "industrial"
             ]
