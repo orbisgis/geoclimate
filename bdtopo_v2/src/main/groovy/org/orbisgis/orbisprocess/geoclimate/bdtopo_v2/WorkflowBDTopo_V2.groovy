@@ -860,6 +860,15 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
             info "Loading in the H2GIS database $outputTableName"
             IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
         }
+
+        //Extract RESERVOIR
+        if(inputTableNames.piste_aerodrome){
+            inputTableName = "(SELECT ID, THE_GEOM, NATURE, HAUTEUR  FROM ${inputTableNames.piste_aerodrome}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
+            outputTableName = "RESERVOIR"
+            info "Loading in the H2GIS database $outputTableName"
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
+        }
+
         return true
 
         } else {
