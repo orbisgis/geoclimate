@@ -168,7 +168,7 @@ class InputDataFormattingTest {
             assertEquals(10, row_test["HEIGHT_WALL"])
             assertEquals(10, row_test["HEIGHT_ROOF"])
             assertEquals(1, row_test["NB_LEV"])
-            assertEquals('industrial', row_test["TYPE"])
+            assertEquals('heavy_industry', row_test["TYPE"])
 
         //... with the building 'BINDIF0001' : HAUTEUR = 0 / Bati indif so no NATURE
         row_test = h2GISDatabase.firstRow("SELECT HEIGHT_WALL, HEIGHT_ROOF, NB_LEV, TYPE FROM BUILDING WHERE ID_SOURCE='BINDIF0001';")
