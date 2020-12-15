@@ -366,7 +366,10 @@ IProcess computeBlockIndicators() {
  * of overlapped layers (for example a geometry containing water and low_vegetation must be either water
  * or either low_vegetation, not both (default ["water", "building", "high_vegetation", "low_vegetation",
  * "road", "impervious"]
- * @param buildingAreaTypeAndComposition Building type proportion that should be calculated (default: ["industrial": ["industrial"], "commercial":["commercial"]])
+ * @param buildingAreaTypeAndComposition Building type proportion that should be calculated (default: ["light_industry": ["light_industry"],
+ *                                                                                                      "heavy_industry": ["heavy_industry"],
+*                                                                                                       "commercial":["commercial"],
+ *                                                                                                      "residential": ["residential"]])
  * @param floorAreaTypeAndComposition Building floor area type proportion that should be calculated (default: ["residential": ["residential"]])
  * @param urbanTypoSurfFraction Map containing as key the name of the fraction indicators useful for the urban typology classification
  * and as value a list of the fractions that have to be summed up to calculate the indicator. No need to modify
@@ -397,7 +400,10 @@ IProcess computeRSUIndicators() {
                 indicatorUse                    : ["LCZ", "URBAN_TYPOLOGY", "TEB"],
                 surfSuperpositions              : ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]],
                 surfPriorities                  : ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"],
-                buildingAreaTypeAndComposition  : ["industrial": ["industrial"], "commercial": ["commercial"],"residential": ["residential"]],
+                buildingAreaTypeAndComposition  : ["light_industry": ["light_industry"],
+                                                   "heavy_industry": ["heavy_industry"],
+                                                   "commercial":["commercial"],
+                                                   "residential": ["residential"]],
                 floorAreaTypeAndComposition     : ["residential": ["residential"]],
                 urbanTypoSurfFraction           : ["vegetation_fraction_urb"                 : ["high_vegetation_fraction",
                                                                                                 "low_vegetation_fraction",

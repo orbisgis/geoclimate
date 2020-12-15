@@ -64,13 +64,14 @@ IProcess prepareData() {
                 tableImperviousRoadSurfName: String,
                 tableImperviousActivSurfName: String,
                 tablePiste_AerodromeName: String,
+                tableReservoirName: String,
                 hLevMin: 3,
                 hLevMax: 15,
                 hThresholdLev2: 10
         outputs outputBuilding: String, outputRoad: String, outputRail: String, outputHydro: String, outputVeget: String, outputImpervious: String, outputZone: String
         run { datasource, distBuffer, distance, idZone, tableIrisName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName, tableRoadName, tableRailName,
               tableHydroName, tableVegetName, tableImperviousSportName, tableImperviousBuildSurfName, tableImperviousRoadSurfName, tableImperviousActivSurfName,
-              tablePiste_AerodromeName, hLevMin, hLevMax, hThresholdLev2 ->
+              tablePiste_AerodromeName, tableReservoirName,hLevMin, hLevMax, hThresholdLev2 ->
 
             if (!datasource) {
                 error "The database to store the BD Topo data doesn't exist"
@@ -112,7 +113,8 @@ IProcess prepareData() {
                                    tableImperviousBuildSurfName: tableImperviousBuildSurfName,
                                    tableImperviousRoadSurfName : tableImperviousRoadSurfName,
                                    tableImperviousActivSurfName: tableImperviousActivSurfName,
-                                   tablePiste_AerodromeName: tablePiste_AerodromeName,
+                                   tablePiste_AerodromeName    : tablePiste_AerodromeName,
+                                   tableReservoirName          : tableReservoirName,
                                    distBuffer                  : distBuffer, distance: distance, idZone: idZone,
                                    building_bd_topo_use_type   : initTables.outputBuildingBDTopoUseType,
                                    building_abstract_use_type  : abstractTables.outputBuildingAbstractUseType,

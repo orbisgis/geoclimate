@@ -862,6 +862,15 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
             info "Loading in the H2GIS database $outputTableName"
             IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
         }
+
+        //Extract RESERVOIR
+        if(inputTableNames.reservoir){
+            inputTableName = "(SELECT ID, THE_GEOM, NATURE, HAUTEUR  FROM ${inputTableNames.reservoir}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
+            outputTableName = "RESERVOIR"
+            info "Loading in the H2GIS database $outputTableName"
+            IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
+        }
+
         return true
 
         } else {
@@ -990,7 +999,9 @@ def findIDZones(def h2gis_datasource, def id_zones){
  * @return a filled map of parameters
  */
 def extractProcessingParameters(def processing_parameters){
-    def defaultParameters = [distance: 1000,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+    def defaultParameters = [distance: 1000,
+                             distance_buffer:500,
+                             indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
                              svfSimplified:false, prefixName: "",
                              surface_vegetation: 10000,
                              surface_hydro: 2500,
@@ -1008,6 +1019,10 @@ def extractProcessingParameters(def processing_parameters){
         def distanceP =  processing_parameters.distance
         if(distanceP && distanceP in Number){
             defaultParameters.distance = distanceP
+        }
+        def distance_bufferP =  processing_parameters.distance_buffer
+        if(distance_bufferP && distance_bufferP in Number){
+            defaultParameters.distance_buffer = distance_bufferP
         }
         def snappingToleranceP =  processing_parameters.snappingTolerance
         if(snappingToleranceP && snappingToleranceP in Number){
@@ -1108,8 +1123,9 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
                               tableHydroName             : 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                               tableImperviousSportName   : 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                               tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                              tablePiste_AerodromeName : 'PISTE_AERODROME',
-                              distBuffer                 : 500, distance: processing_parameters.distance, idZone: id_zone,
+                              tablePiste_AerodromeName   : 'PISTE_AERODROME',
+                              tableReservoirName         : 'RESERVOIR',
+                              distBuffer                 : processing_parameters.distance_buffer, distance: processing_parameters.distance, idZone: id_zone,
                               hLevMin                    : processing_parameters.hLevMin,
                               hLevMax                    : processing_parameters.hLevMax, hThresholdLev2: processing_parameters.hThresholdLev2
         ])){

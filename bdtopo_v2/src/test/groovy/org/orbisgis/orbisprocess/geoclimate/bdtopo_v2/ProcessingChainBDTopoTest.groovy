@@ -25,7 +25,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 
     private static communeToTest = "12174"
 
-    private static def h2db = "./target/myh2gisbdtopodb"
+    private static def h2db = "./target/bdtopo_chain"
     private static def bdtopoFoldName = "sample_$communeToTest"
     private static def listTables = ["IRIS_GE", "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL", "BATI_REMARQUABLE",
     "ROUTE", "SURFACE_EAU", "ZONE_VEGETATION", "TRONCON_VOIE_FERREE", "TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE",
@@ -100,7 +100,8 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
                                     tablePiste_AerodromeName : 'PISTE_AERODROME',
-                                    distBuffer: 500, distance: 1000, idZone: communeToTest,
+                                    tableReservoirName :'RESERVOIR',
+                                    distBuffer: 0, distance: 0, idZone: communeToTest,
                                     hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
         ])
         process.getResults().each {entry ->
@@ -137,8 +138,6 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                 "WHERE id_build = 4 AND id_rsu = 2").toString())
         def row_bu8 = h2GIS.firstRow(("SELECT id_block AS id_block FROM ${pm.results.outputTableBuildingName} " +
                 "WHERE id_build = 8 AND id_rsu = 2").toString())
-//        assertTrue(4 == row_nb.nb_blocks)
-//        assertTrue(row_bu4.id_block ==row_bu8.id_block)
     }
 
 
@@ -156,6 +155,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
                                     tablePiste_AerodromeName : 'PISTE_AERODROME',
+                                    tableReservoirName :'RESERVOIR',
                                     distBuffer: 500, distance: 1000, idZone: communeToTest,
                                     hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
         ])
@@ -168,9 +168,13 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         dirFile.mkdir()
 
         // Define the weights of each indicator in the LCZ creation
-        def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
-                            "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                            "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
+        def mapOfWeights =  ["sky_view_factor"                : 4,
+                            "aspect_ratio"                   : 3,
+                            "building_surface_fraction"      : 8,
+                            "impervious_surface_fraction"    : 0,
+                            "pervious_surface_fraction"      : 0,
+                            "height_of_roughness_elements"   : 6,
+                            "terrain_roughness_length"       : 0.5]
         def svfSimplified = true
         IProcess geodindicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
         assertTrue geodindicators.execute(datasource: datasource, zoneTable: abstractTables.outputZone,
@@ -199,6 +203,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
                                     tablePiste_AerodromeName : 'PISTE_AERODROME',
+                                    tableReservoirName :'RESERVOIR',
                                     distBuffer: 500, distance: 1000, idZone: communeToTest,
                                     hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
         ])
@@ -246,7 +251,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_dboutput.json").toURI()
         //configFile =getClass().getResource("config/bdtopo_workflow_dbinput_dboutput.json").toURI()
         IProcess process = BDTopo_V2.workflow
-        process.execute(configurationFile:configFile)
+        process.execute(configurationFile:"/home/ebocher/applications/geoclimate/bdtopo_workflow_dbinput_outputfolder_erwan.json")
     }
 
     @Test
@@ -350,7 +355,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     void runBDTopoWorkflow(){
         def dbSuffixName = "_workflow"
         def inseeCode = communeToTest
-        def defaultParameters = [distance: 1000,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+        def defaultParameters = [distance: 1000,distance_buffer:500, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
                                  svfSimplified:true, prefixName: "",
                                  mapOfWeights : ["sky_view_factor" : 2, "aspect_ratio": 1, "building_surface_fraction": 4,
                                                  "impervious_surface_fraction" : 0, "pervious_surface_fraction": 0,
@@ -368,7 +373,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     void runBDTopoWorkflowWithSRID(){
         def dbSuffixName = "_workflow"
         def inseeCode = communeToTest
-        def defaultParameters = [distance: 1000,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+        def defaultParameters = [distance: 1000,distance_buffer:500, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
                                  svfSimplified:true, prefixName: "",
                                  mapOfWeights : ["sky_view_factor" : 2, "aspect_ratio": 1, "building_surface_fraction": 4,
                                                  "impervious_surface_fraction" : 0, "pervious_surface_fraction": 0,

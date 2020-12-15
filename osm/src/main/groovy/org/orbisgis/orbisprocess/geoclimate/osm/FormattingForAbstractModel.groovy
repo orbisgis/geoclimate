@@ -929,12 +929,14 @@ static Map parametersMapping(def file, def altResourceStream) {
                         }
                         datasource.withBatch(1000) { stmt ->
                             datasource.eachRow(queryMapper) { row ->
-                                def type = getTypeValue(row, columnNames, mappingType)
+                                def typeAndUseValues = getTypeAndUse(row, columnNames, mappingType)
+                                def use = typeAndUseValues[1]
+                                def type = typeAndUseValues[0]
                                 Geometry geom = row.the_geom
                                 for (int i = 0; i < geom.getNumGeometries(); i++) {
                                     Geometry subGeom = geom.getGeometryN(i)
                                     if (subGeom instanceof Polygon) {
-                                        stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), null, '${row.id}', '${type}','${type}')"
+                                        stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), null, '${row.id}', '${type}','${use}')"
                                     }
                                 }
                             }

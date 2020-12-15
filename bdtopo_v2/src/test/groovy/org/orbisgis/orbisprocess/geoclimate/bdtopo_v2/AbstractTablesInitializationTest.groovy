@@ -25,7 +25,7 @@ class AbstractTablesInitializationTest {
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(4, table.columnCount)
-        assertEquals(36, table.rowCount)
+        assertEquals(38, table.rowCount)
         // Check if the column types are correct
         assertEquals('INTEGER', table.columnType('ID_TYPE'))
         assertEquals('VARCHAR', table.columnType('TERM'))
@@ -48,7 +48,7 @@ class AbstractTablesInitializationTest {
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(3, table.columnCount)
-        assertEquals(36, table.rowCount)
+        assertEquals(38, table.rowCount)
         // Check if the column types are correct
         assertEquals('INTEGER', table.columnType('ID_TYPE'))
         assertEquals('VARCHAR', table.columnType('TERM'))
