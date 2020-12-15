@@ -156,12 +156,13 @@ IProcess workflow() {
                     if(h2gis_folder){
                         databaseFolder=h2gis_folder
                     }
+                    databasePath =  databaseFolder + File.separator + databaseName
                     def h2gis_name= geoclimatedb.get("name")
                     if(h2gis_name){
                         def dbName = h2gis_name.split(";")
                         databaseName=dbName[0]
+                        databasePath =  databaseFolder + File.separator + h2gis_name
                     }
-                    databasePath =  databaseFolder + File.separator + databaseName
                     def delete_h2gis_db = geoclimatedb.get("delete")
                     if (delete_h2gis_db == null) {
                         delete_h2gis = true
@@ -428,6 +429,10 @@ IProcess osm_processing() {
                     id_zone = id_zone in Map ? "bbox_" + id_zone.join('_') : id_zone
                     def zoneTableName = zoneTableNames.outputZoneTable
                     def zoneEnvelopeTableName = zoneTableNames.outputZoneEnvelopeTable
+                    if(h2gis_datasource.getTable(zoneTableName).getRowCount()==0){
+                        error "Cannot find any geometry to define the zone to extract the OSM data"
+                        return
+                    }
                     def srid = h2gis_datasource.getSpatialTable(zoneTableName).srid
                     def reproject =false
                     if(outputSRID){
@@ -455,9 +460,7 @@ IProcess osm_processing() {
                         IProcess createGISLayerProcess = OSM.createGISLayers
                         if (createGISLayerProcess.execute(datasource: h2gis_datasource, osmFilePath: extract.results.outputFilePath, epsg: srid)) {
                             def gisLayersResults = createGISLayerProcess.getResults()
-                            if (zoneTableName != null) {
                                 info "Formating OSM GIS layers"
-
                                 //Format urban areas
                                 IProcess format = OSM.formatUrbanAreas
                                 format.execute([
@@ -536,7 +539,6 @@ IProcess osm_processing() {
                                 format.execute([
                                         datasource : h2gis_datasource,
                                         inputSeaLandTableName: seaLandMaskTableName ,inputWaterTableName : hydrographicTableName,
-                                        inputZoneEnvelopeTableName : zoneEnvelopeTableName,
                                         epsg: srid])
 
                                 hydrographicTableName = format.results.outputTableName
@@ -579,15 +581,18 @@ IProcess osm_processing() {
                                     if (output_datasource && geoIndicatorsComputed) {
                                         saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone, srid, outputSRID, reproject)
                                     }
-                            }
+
                         } else {
                             error "Cannot load the OSM file ${extract.results.outputFilePath}"
+                            return
                         }
                     } else {
                         error "Cannot execute the overpass query $query"
+                        return
                     }
                 } else {
                     error "Cannot calculate a bounding box to extract OSM data"
+                    return
                 }
 
                 info "Number of areas processed ${index + 1} on $nbAreas"
@@ -650,12 +655,14 @@ def extractOSMZone(def datasource, def zoneToExtract, def processing_parameters)
         def tmpGeomEnv = geom.getFactory().toGeometry(envelope)
         tmpGeomEnv.setSRID(4326)
 
-        datasource.execute """drop table if exists ${outputZoneTable}; create table ${outputZoneTable} (the_geom GEOMETRY(${GEOMETRY_TYPE}, $epsg), ID_ZONE VARCHAR);"""
-        datasource.execute(" INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT(?, ?), ?);", geomUTM.toString(),epsg, zoneToExtract.toString())
+        datasource.execute """drop table if exists ${outputZoneTable}; 
+        create table ${outputZoneTable} (the_geom GEOMETRY(${GEOMETRY_TYPE}, $epsg), ID_ZONE VARCHAR);
+        INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT('${geomUTM.toString()}', ${epsg}), '${zoneToExtract.toString()}');"""
 
-        datasource.execute """drop table if exists ${outputZoneEnvelopeTable}; create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);"""
-        datasource.execute("INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT(?,?), ?);"
-        ,ST_Transform.ST_Transform(con, tmpGeomEnv, epsg).toString(), epsg, zoneToExtract.toString())
+        datasource.execute """drop table if exists ${outputZoneEnvelopeTable}; 
+         create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
+        INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${ST_Transform.ST_Transform(con, tmpGeomEnv, epsg).toString()}',${epsg}), '${zoneToExtract.toString()}');
+        """
 
         return [outputZoneTable: outputZoneTable,
                 outputZoneEnvelopeTable: outputZoneEnvelopeTable,
