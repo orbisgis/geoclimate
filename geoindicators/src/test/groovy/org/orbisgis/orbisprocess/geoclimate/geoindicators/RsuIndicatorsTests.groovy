@@ -138,6 +138,39 @@ class RsuIndicatorsTests {
     }
 
     @Test
+    void projectedFacadeAreaDistributionTest2() {
+        // Only the first 5 first created buildings are selected for the tests
+        h2GIS "DROP TABLE IF EXISTS tempo_build, test_rsu_projected_facade_area_distribution;" +
+                " CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 1"
+
+        def listLayersBottom = [0, 10, 20, 30, 40, 50]
+        def numberOfDirection = 4
+        def rangeDeg = 360/numberOfDirection
+        def p = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution()
+        assertTrue p.execute([buildingTable: "tempo_build", rsuTable: "rsu_test", listLayersBottom: listLayersBottom,
+                              numberOfDirection: numberOfDirection, prefixName: "test", datasource: h2GIS])
+        def concat = ""
+        h2GIS.eachRow("SELECT * FROM test_rsu_projected_facade_area_distribution WHERE id_rsu = 1"){
+            row ->
+                // Iterate over columns
+                def names = []
+                for (i in 1..listLayersBottom.size()){
+                    names[i-1]="projected_facade_area_distribution_H${listLayersBottom[i-1]}"+
+                            "_${listLayersBottom[i]}"
+                    if (i == listLayersBottom.size()){
+                        names[listLayersBottom.size()-1]="projected_facade_area_distribution"+
+                                "_H${listLayersBottom[listLayersBottom.size()-1]}"
+                    }
+                    for (int d=0; d<numberOfDirection/2; d++){
+                        int dirDeg = d*360/numberOfDirection
+                        concat+= row["${names[i-1]}_D${dirDeg}_${dirDeg+rangeDeg}".toString()].round(2).toString()+"\n"
+                    }
+                }
+        }
+        assertEquals("0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n", concat)
+    }
+
+    @Test
     void roofAreaDistributionTest() {
         // Only the first 5 first created buildings are selected for the tests
         h2GIS "DROP TABLE IF EXISTS tempo_build, test_rsu_roof_area_distribution; " +
