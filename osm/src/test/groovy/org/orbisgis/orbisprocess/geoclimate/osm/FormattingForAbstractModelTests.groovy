@@ -158,7 +158,7 @@ class FormattingForAbstractModelTests {
         //zoneToExtract = "Londres, Grand Londres, Angleterre, Royaume-Uni"
         //zoneToExtract="Vannes"
         //zoneToExtract="rezé"
-        zoneToExtract = "Redon"
+        zoneToExtract = "Brest"
 
         IProcess extractData = OSM.extractAndCreateGISLayers
         extractData.execute([

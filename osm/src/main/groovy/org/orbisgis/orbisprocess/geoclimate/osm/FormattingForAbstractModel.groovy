@@ -1068,11 +1068,11 @@ IProcess mergeWaterAndSeaLandTables() {
                 datasource.execute("drop table if exists $tmp_water_not_in_sea;")
                 }
                 else{
-                    [outputTableName: inputWaterTableName]
+                    return [outputTableName: inputWaterTableName]
                 }
             }
             info 'The sea/land and water tables have been merged'
-            [outputTableName: outputTableName]
+            return  [outputTableName: outputTableName]
         }
     }
 }
