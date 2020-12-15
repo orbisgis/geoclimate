@@ -368,7 +368,8 @@ IProcess computeBlockIndicators() {
  * "road", "impervious"]
  * @param buildingAreaTypeAndComposition Building type proportion that should be calculated (default: ["light_industry": ["light_industry"],
  *                                                                                                      "heavy_industry": ["heavy_industry"],
-*                                                                                                       "commercial":["commercial"]])
+*                                                                                                       "commercial":["commercial"],
+ *                                                                                                      "residential": ["residential"]])
  * @param floorAreaTypeAndComposition Building floor area type proportion that should be calculated (default: ["residential": ["residential"]])
  * @param urbanTypoSurfFraction Map containing as key the name of the fraction indicators useful for the urban typology classification
  * and as value a list of the fractions that have to be summed up to calculate the indicator. No need to modify
@@ -401,7 +402,8 @@ IProcess computeRSUIndicators() {
                 surfPriorities                  : ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"],
                 buildingAreaTypeAndComposition  : ["light_industry": ["light_industry"],
                                                    "heavy_industry": ["heavy_industry"],
-                                                   "commercial":["commercial"]],
+                                                   "commercial":["commercial"],
+                                                   "residential": ["residential"]],
                 floorAreaTypeAndComposition     : ["residential": ["residential"]],
                 urbanTypoSurfFraction           : ["vegetation_fraction_urb"                 : ["high_vegetation_fraction",
                                                                                                 "low_vegetation_fraction",
