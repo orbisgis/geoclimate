@@ -899,7 +899,6 @@ IProcess createUnitsOfAnalysis() {
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
               surface_vegetation, surface_hydro, snappingTolerance, prefixName, indicatorUse ->
             info "Create the units of analysis..."
-
             // Create the RSU
             def prepareRSUData = Geoindicators.SpatialUnits.prepareRSUData()
             if (!prepareRSUData([datasource        : datasource,
