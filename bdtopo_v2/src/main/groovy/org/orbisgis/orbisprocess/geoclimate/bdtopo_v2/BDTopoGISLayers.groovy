@@ -4,7 +4,6 @@ package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 
 @BaseScript BDTopo_V2_Utils bdTopo_v2_utils
 
@@ -223,7 +222,8 @@ IProcess importPreprocess() {
                      PISTE_AERODROME                   : tablePiste_AerodromeName,
                      RESERVOIR                         : tableReservoirName,
                      TMP_IRIS                          : tmpIris,
-                     ZONE                              : zone, ZONE_BUFFER: zoneBuffer, ZONE_EXTENDED: zoneExtended, ZONE_NEIGHBORS: zoneNeighbors,
+                     ZONE                              : zone,
+                     ZONE_BUFFER: zoneBuffer, ZONE_EXTENDED: zoneExtended, ZONE_NEIGHBORS: zoneNeighbors,
                      BU_ZONE_INDIF                     : bu_zone_indif, BU_ZONE_INDUS: bu_zone_indus, BU_ZONE_REMARQ: bu_zone_remarq,
                      INPUT_BUILDING                    : input_building,
                      INPUT_ROAD                        : input_road,
