@@ -71,7 +71,7 @@ class FormattingForAbstractModelTests {
 
         rows = h2GIS.rows("select type from ${format.results.outputTableName} where id_build=881 or id_build=484 or id_build=610")
         assertEquals(3, rows.size())
-        assertTrue( rows.type==['industrial','industrial','industrial'])
+        assertTrue( rows.type==['light_industry','light_industry','light_industry'])
 
 
         //Roads
