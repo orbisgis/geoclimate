@@ -183,7 +183,7 @@ IProcess identifyLczType() {
                 datasource """DROP TABLE IF EXISTS $classifiedRuralLCZ;
                                 CREATE TABLE $classifiedRuralLCZ
                                         AS SELECT   $ID_FIELD_RSU,
-                                                CASE WHEN IMPERVIOUS_FRACTION_LCZ>ALL_VEGETATION AND IMPERVIOUS_FRACTION_LCZ>WATER_FRACTION_LCZ AND IMPERVIOUS_FRACTION_LCZ>0.05
+                                                CASE WHEN IMPERVIOUS_FRACTION_LCZ>ALL_VEGETATION AND IMPERVIOUS_FRACTION_LCZ>WATER_FRACTION_LCZ AND IMPERVIOUS_FRACTION_LCZ>0.1
                                                         THEN 105
                                                         ELSE CASE WHEN ALL_VEGETATION<WATER_FRACTION_LCZ AND WATER_FRACTION_LCZ> 0.31
                                                                 THEN 107
