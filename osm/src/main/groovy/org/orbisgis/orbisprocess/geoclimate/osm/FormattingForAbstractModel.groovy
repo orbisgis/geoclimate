@@ -650,14 +650,15 @@ static float getHeightWall(height, r_height) {
  * @param hThresholdLev2 value
  * @return a map with the new values
  */
-/*  TODO : when all the values are already available, it might happen that this control modify them. For example, a tower of 32 levels is 92 meters high.
-     The control will put the value of heightRoof to 96 whereas it was 92. Do we accept it or are the real values considered as more reliable then the theoretical ones ?
- */
 static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels, def h_lev_min,
                                    def h_lev_max,def hThresholdLev2, def nbLevFromType){
+    //Use the OSM values
+    if(heightWall!=0 && heightRoof!=0 && nbLevels!=0){
+        return [heightWall:heightWall, heightRoof:heightRoof, nbLevels:nbLevels, estimated:false]
+    }
     //Initialisation of heights and number of levels
     // Update height_wall
-    def boolean estimated =false
+    boolean estimated =false
     if(heightWall==0){
         if(heightRoof==0){
             if(nbLevels==0){
@@ -665,7 +666,7 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
                 estimated = true
             }
             else {
-                heightWall = h_lev_min*nbLevels
+                heightWall = h_lev_min*nbLevels+h_lev_min
             }
         }
         else {

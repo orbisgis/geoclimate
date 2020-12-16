@@ -485,6 +485,10 @@ IProcess computeRSUIndicators() {
             def SVF = "SVF"
             def computeExtFF
 
+            //Re-use the surface fraction table if it has been already calculated
+            //Useful when the building height is estimated.
+            def surfaceFractions = getCachedTableName("GEOCLIMATE_TABLE_RSU_SURFACE_FRACTIONS")
+            if(!surfaceFractions){
             // Calculate all surface fractions indicators
             // Need to create the smallest geometries used as input of the surface fraction process
             def  computeSmallestGeom =  Geoindicators.RsuIndicators.smallestCommunGeometry()
@@ -506,7 +510,8 @@ IProcess computeRSUIndicators() {
                 info "Cannot compute the surface fractions"
                 return
             }
-            def surfaceFractions = computeSurfaceFractions.results.outputTableName
+                surfaceFractions = computeSurfaceFractions.results.outputTableName
+            }
             finalTablesToJoin.put(surfaceFractions, columnIdRsu)
 
             // Get all column names from the surfaceFraction IProcess to make verifications
@@ -852,9 +857,9 @@ IProcess computeRSUIndicators() {
             }
 
             // Remove all intermediate tables (indicators alone in one table)
-            // Recover all created tables in an array
-            def interTabNames = intermediateJoin.keySet().toArray()
-            def finTabNames = finalTablesToJoin.keySet().toArray()
+            // Do not drop cached tables. The drop must be done at the end of the chain
+            def interTabNames = removeAllCachedTableNames(intermediateJoin.keySet())
+            def finTabNames = removeAllCachedTableNames(finalTablesToJoin.keySet())
             // Remove the RSU table from the list of "tables to remove" (since it needs to be conserved)
             interTabNames = interTabNames - rsuTable
             finTabNames = finTabNames - rsuTable
@@ -1033,6 +1038,7 @@ IProcess computeAllGeoIndicators() {
               urbanTypoModelName, buildingHeightModelName ->
             //Estimate height
             if (buildingHeightModelName) {
+                enableTableCache()
                 if(!buildingEstimateTableName){
                     error "To estimate the building height a table that contains the list of building to estimate must be provided"
                     return
@@ -1403,7 +1409,10 @@ IProcess computeAllGeoIndicators() {
                 }
 
                 datasource.execute "DROP TABLE IF EXISTS $rsuLczWithoutGeom;"
-
+                //Drop all cached tables
+                datasource.execute "DROP TABLE IF EXISTS ${getCachedTableNames().join(",")}"
+                //Clean the System properties that stores intermediate table names
+                clearTablesCache()
                 return [outputTableBuildingIndicators   : computeBuildingsIndicators.getResults().outputTableName,
                         outputTableBlockIndicators      : blockIndicators,
                         outputTableRsuIndicators        : computeRSUIndicators.getResults().outputTableName,
@@ -1429,15 +1438,11 @@ IProcess computeAllGeoIndicators() {
                     error "Cannot build the geoindicators"
                     return
                 }
+                //Drop all cached tables
+                datasource.execute "DROP TABLE IF EXISTS ${getCachedTableNames().join(",")}"
+                //Clean the System properties that stores intermediate table names
+                clearTablesCache()
                 return geoIndicators.getResults()
-                /*return [outputTableBuildingIndicators   :results.outputTableBuildingIndicators,
-                        outputTableBlockIndicators      : results,
-                        outputTableRsuIndicators        : results,
-                        outputTableRsuLcz               : results,
-                        outputTableZone                 : results,
-                        outputTableRsuUrbanTypoArea     : results,
-                        outputTableRsuUrbanTypoFloorArea: results,
-                        outputTableBuildingUrbanTypo    : results]*/
             }
         }
     }
