@@ -1410,7 +1410,10 @@ IProcess computeAllGeoIndicators() {
 
                 datasource.execute "DROP TABLE IF EXISTS $rsuLczWithoutGeom;"
                 //Drop all cached tables
-                datasource.execute "DROP TABLE IF EXISTS ${getCachedTableNames().join(",")}"
+                def cachedTableNames = getCachedTableNames()
+                if(cachedTableNames) {
+                    datasource.execute "DROP TABLE IF EXISTS ${cachedTableNames.join(",")}"
+                }
                 //Clean the System properties that stores intermediate table names
                 clearTablesCache()
                 return [outputTableBuildingIndicators   : computeBuildingsIndicators.getResults().outputTableName,
@@ -1439,7 +1442,10 @@ IProcess computeAllGeoIndicators() {
                     return
                 }
                 //Drop all cached tables
-                datasource.execute "DROP TABLE IF EXISTS ${getCachedTableNames().join(",")}"
+                def cachedTableNames = getCachedTableNames()
+                if(cachedTableNames) {
+                    datasource.execute "DROP TABLE IF EXISTS ${cachedTableNames.join(",")}"
+                }
                 //Clean the System properties that stores intermediate table names
                 clearTablesCache()
                 return geoIndicators.getResults()
