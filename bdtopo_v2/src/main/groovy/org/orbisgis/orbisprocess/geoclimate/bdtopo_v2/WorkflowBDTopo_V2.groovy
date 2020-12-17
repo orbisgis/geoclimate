@@ -651,7 +651,6 @@ IProcess workflow() {
                                 error "Please set at least one output provider"
                                 return
                             }
-
                         } else {
                             error "Please set at least one output provider"
                             return
@@ -662,11 +661,10 @@ IProcess workflow() {
                 } else {
                     error "Cannot find any input parameters."
                 }
-
             } else {
                 error "Empty parameters"
             }
-            return [outputMessage: "The process has been done"]
+            return [outputMessage: "The BDTopo V2.2 workflow has been executed"]
         }
     }
 }
@@ -1109,12 +1107,12 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
     }else{
         outputSRID =srid
     }
-
+    def reportingByZones = [:]
     //Let's run the BDTopo process for each insee code
     def prepareBDTopoData = BDTopo_V2.prepareData
-    def geoIndicatorsComputed = false
     info "$nbAreas areas will be processed"
     id_zones.eachWithIndex { id_zone, index->
+        def start  = System.currentTimeMillis()
         info "Starting to process insee id_zone $id_zone"
         if(prepareBDTopoData([datasource                 : h2gis_datasource,
                               tableIrisName              : 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
@@ -1152,29 +1150,55 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
                     mapOfWeights: processing_parameters.mapOfWeights,
                     urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_0.model")) {
                 error "Cannot build the geoindicators for the zone $id_zone"
-                geoIndicatorsComputed = false
             } else {
-                geoIndicatorsComputed = true
+                def results = geoIndicators.results
+                def reporting = results.get("geoclimateReporting")
+                if(reporting){
+                    reporting.put("time", (System.currentTimeMillis() - start) / 1000)
+                    reportingByZones.put(id_zone, reporting)
+                }
+                else{
+                    reportingByZones.put(id_zone, [:])
+                }
+                results.remove("geoclimateReporting")
+                results.put("buildingTableName", buildingTableName)
+                results.put("roadTableName", roadTableName)
+                results.put("railTableName", railTableName)
+                results.put("hydrographicTableName", hydrographicTableName)
+                results.put("vegetationTableName", vegetationTableName)
+                results.put("imperviousTableName", imperviousTableName)
+                if (outputFolder  && outputFiles) {
+                    saveOutputFiles(h2gis_datasource, id_zone, results, outputFiles, outputFolder, "bdtopo_v2_", outputSRID, reproject, deleteOutputData)
+                }
+                if (output_datasource ) {
+                    saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone, srid, outputSRID, reproject)
+
+                }
                 info "${id_zone} has been processed"
             }
-
-            def results = geoIndicators.results
-            results.put("buildingTableName", buildingTableName)
-            results.put("roadTableName", roadTableName)
-            results.put("railTableName", railTableName)
-            results.put("hydrographicTableName", hydrographicTableName)
-            results.put("vegetationTableName", vegetationTableName)
-            results.put("imperviousTableName", imperviousTableName)
-            if(outputFolder && geoIndicatorsComputed && outputFiles) {
-                saveOutputFiles(h2gis_datasource, id_zone, results, outputFiles, outputFolder, "bdtopo_v2_",outputSRID, reproject, deleteOutputData)
-            }
-            if(output_datasource && geoIndicatorsComputed){
-                saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone,srid, outputSRID,reproject)
-
-            }
-            info "${id_zone} has been processed"
         }
+
         info "Number of areas processed ${index+1} on $nbAreas"
+
+        //Print reporting
+        def messageReporting = "\n---- Reporting for the BDTopo workflow ----"
+        reportingByZones.each {
+            def geoIndicatorsReporting = it.value
+            if (geoIndicatorsReporting) {
+                def zoneReporting = """
+-- Zone area : ${it.key} --
+Number of buildings : ${geoIndicatorsReporting.nb_building}
+Number of blocks : ${geoIndicatorsReporting.nb_block}
+Number of RSU : ${geoIndicatorsReporting.nb_rsu}
+Processing time  : ${geoIndicatorsReporting.time} s
+--
+                """
+                messageReporting += zoneReporting.toString()
+            }else{
+                messageReporting += "The zone ${it.key} cannot be processed"
+            }
+        }
+        info messageReporting
     }
 }
 

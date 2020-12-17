@@ -374,11 +374,9 @@ class FormattingForAbstractModelTests {
         datasource    : h2GIS,
         inputTableName: extractData.results.buildingTableName,
         epsg          : epsg,
-        jsonFilename  : null,
-        estimateHeight : false])
+        jsonFilename  : null])
         assertEquals 1040, h2GIS.getTable(format.results.outputTableName).rowCount
-        assertEquals "", format.results.outputEstimateTableName
-
+        assertEquals 1040, h2GIS.getTable(format.results.outputEstimateTableName).rowCount
     }
 
 }
