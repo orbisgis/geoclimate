@@ -55,20 +55,27 @@
                 "scrub"
             ]
         },
+        "grass": {
+            "natural": [
+                "grass"
+            ],
+            "landuse": [
+                "village_green",
+                "grass"
+            ]
+        },
         "grassland": {
             "landcover": [
                 "grass",
                 "grassland"
             ],
             "natural": [
-                "grass",
                 "grassland"
             ],
             "vegetation": [
                 "grassland"
             ],
             "landuse": [
-                "grass",
                 "grassland"
             ]
         },
@@ -162,6 +169,7 @@
         "wood": "high",
         "forest": "high",
         "scrub": "low",
+        "grass": "low",
         "grassland": "low",
         "heath": "low",
         "park": "low",

@@ -1214,12 +1214,12 @@ return create {
     run { rsuTable, buildingTable, roadTable, waterTable, vegetationTable,
           imperviousTable, prefixName, datasource ->
 
-        def BASE_NAME = "SMALLEST_COMMUN_GEOMETRY"
+        def BASE_NAME = "RSU_SMALLEST_COMMUN_GEOMETRY"
 
         info "Executing RSU surface fractions computation"
 
         // The name of the outputTableName is constructed
-        def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
+        def outputTableName = prefix prefixName, BASE_NAME
 
         if (rsuTable && datasource.hasTable(rsuTable)) {
             datasource."$rsuTable".id_rsu.createIndex()
@@ -1402,8 +1402,6 @@ return create {
         } else {
             error """Cannot compute any surface fraction statistics"""
         }
-
-
         [outputTableName: outputTableName]
     }
 }
@@ -1447,13 +1445,12 @@ IProcess surfaceFractions() {
         run { rsuTable, spatialRelationsTable, superpositions, priorities,
               prefixName, datasource ->
 
-            def BASE_NAME = "SURFACE_FRACTIONS"
+            def BASE_TABLE_NAME ="RSU_SURFACE_FRACTIONS"
             def LAYERS = ["road", "water", "high_vegetation", "low_vegetation", "impervious", "building"]
-
             info "Executing RSU surface fractions computation"
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
+            def outputTableName = postfix( BASE_TABLE_NAME)
 
             // Create the indexes on each of the input tables
             datasource."$rsuTable".id_rsu.createIndex()
@@ -1536,6 +1533,8 @@ IProcess surfaceFractions() {
                 }
             }
             datasource query + end_query
+            //Cache the table name to re-use it
+            cacheTableName(BASE_TABLE_NAME, outputTableName)
 
             [outputTableName: outputTableName]
         }

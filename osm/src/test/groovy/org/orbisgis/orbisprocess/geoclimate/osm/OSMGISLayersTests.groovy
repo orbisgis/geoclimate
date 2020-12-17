@@ -20,10 +20,10 @@ class OSMGISLayersTests {
         IProcess process = OSM.extractAndCreateGISLayers
         process.execute([
                 datasource : h2GIS,
-                zoneToExtract: "Göteborgs Stad"])
+                zoneToExtract: "Brest"])
         process.getResults().each {it ->
             if(it.value!=null){
-                h2GIS.getTable(it.value).save("./target/${it.value}.geojson", true)
+                h2GIS.getTable(it.value).save("./target/${it.value}.shp", true)
             }
         }
     }
@@ -53,7 +53,7 @@ class OSMGISLayersTests {
         assertEquals 10, h2GIS.getTable(process.results.hydroTableName).rowCount
 
         //h2GIS.getTable(process.results.imperviousTableName).save("./target/osm_hydro.shp")
-        assertEquals 44, h2GIS.getTable(process.results.imperviousTableName).rowCount
+        assertEquals 45, h2GIS.getTable(process.results.imperviousTableName).rowCount
 
         //h2GIS.getTable(process.results.imperviousTableName).save("./target/osm_hydro.shp")
         assertEquals 6, h2GIS.getTable(process.results.urbanAreasTableName).rowCount

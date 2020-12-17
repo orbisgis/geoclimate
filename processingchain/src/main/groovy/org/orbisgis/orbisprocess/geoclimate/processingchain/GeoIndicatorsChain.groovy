@@ -485,6 +485,10 @@ IProcess computeRSUIndicators() {
             def SVF = "SVF"
             def computeExtFF
 
+            //Re-use the surface fraction table if it has been already calculated
+            //Useful when the building height is estimated.
+            def surfaceFractions = getCachedTableName("GEOCLIMATE_TABLE_RSU_SURFACE_FRACTIONS")
+            if(!surfaceFractions){
             // Calculate all surface fractions indicators
             // Need to create the smallest geometries used as input of the surface fraction process
             def  computeSmallestGeom =  Geoindicators.RsuIndicators.smallestCommunGeometry()
@@ -506,7 +510,8 @@ IProcess computeRSUIndicators() {
                 info "Cannot compute the surface fractions"
                 return
             }
-            def surfaceFractions = computeSurfaceFractions.results.outputTableName
+                surfaceFractions = computeSurfaceFractions.results.outputTableName
+            }
             finalTablesToJoin.put(surfaceFractions, columnIdRsu)
 
             // Get all column names from the surfaceFraction IProcess to make verifications
@@ -852,9 +857,9 @@ IProcess computeRSUIndicators() {
             }
 
             // Remove all intermediate tables (indicators alone in one table)
-            // Recover all created tables in an array
-            def interTabNames = intermediateJoin.keySet().toArray()
-            def finTabNames = finalTablesToJoin.keySet().toArray()
+            // Do not drop cached tables. The drop must be done at the end of the chain
+            def interTabNames = removeAllCachedTableNames(intermediateJoin.keySet())
+            def finTabNames = removeAllCachedTableNames(finalTablesToJoin.keySet())
             // Remove the RSU table from the list of "tables to remove" (since it needs to be conserved)
             interTabNames = interTabNames - rsuTable
             finTabNames = finTabNames - rsuTable
@@ -1012,7 +1017,7 @@ IProcess computeAllGeoIndicators() {
     return create {
         title "Compute all geoindicators"
         id "computeAllGeoIndicators"
-        inputs datasource: JdbcDataSource, zoneTable: "", buildingTable: "",
+        inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
                 roadTable: "", railTable: "", vegetationTable: "",
                 hydrographicTable: "", imperviousTable: "",
                 buildingEstimateTableName :"",
@@ -1033,7 +1038,9 @@ IProcess computeAllGeoIndicators() {
               urbanTypoModelName, buildingHeightModelName ->
             //Estimate height
             if (buildingHeightModelName) {
-                if(!buildingEstimateTableName){
+                def start = System.currentTimeMillis()
+                enableTableCache()
+                if (!buildingEstimateTableName) {
                     error "To estimate the building height a table that contains the list of building to estimate must be provided"
                     return
                 }
@@ -1054,22 +1061,22 @@ IProcess computeAllGeoIndicators() {
                         }
                     }
                 } else {
-                    if(!FilenameUtils.isExtension(pathAndFileName, "model")){
+                    if (!FilenameUtils.isExtension(pathAndFileName, "model")) {
                         error "The extension of the model file must be .model"
                         return
                     }
                 }
-                IProcess geoIndicators =  computeGeoclimateIndicators()
+                IProcess geoIndicators = computeGeoclimateIndicators()
                 if (!geoIndicators.execute(datasource: datasource, zoneTable: zoneTable,
                         buildingTable: buildingTable,
                         roadTable: roadTable,
                         railTable: railTable, vegetationTable: vegetationTable,
                         hydrographicTable: hydrographicTable, imperviousTable: imperviousTable,
                         surface_vegetation: surface_vegetation, surface_hydro: surface_hydro,
-                        indicatorUse:["URBAN_TYPOLOGY"],
+                        indicatorUse: ["URBAN_TYPOLOGY"],
                         svfSimplified: true, prefixName: prefixName,
                         mapOfWeights: mapOfWeights,
-                        urbanTypoModelName:"")){
+                        urbanTypoModelName: "")) {
                     error "Cannot build the geoindicators to estimate the building height"
                     return
                 }
@@ -1092,6 +1099,7 @@ IProcess computeAllGeoIndicators() {
                                                         ON a.id_build=b.id_build
                                                     WHERE b.ESTIMATED = true AND a.ID_RSU IS NOT NULL;"""
 
+
                 info "Collect building indicators to estimate the height"
 
                 def applygatherScales = Geoindicators.GenericIndicators.gatherScales()
@@ -1109,12 +1117,12 @@ IProcess computeAllGeoIndicators() {
 
                 //Apply RF model
                 def applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
-                if(!applyRF.execute([
+                if (!applyRF.execute([
                         explicativeVariablesTableName: gatheredScales,
                         pathAndFileName              : buildingHeightModelName,
                         idName                       : "id_build",
                         prefixName                   : prefixName,
-                        datasource                   : datasource])){
+                        datasource                   : datasource])) {
                     error "Cannot apply the building height model $buildingHeightModelName"
                     return
                 }
@@ -1122,6 +1130,8 @@ IProcess computeAllGeoIndicators() {
                 //Update the abstract building table
                 info "Replace the input building table by the estimated height"
                 def buildEstimatedHeight = applyRF.results.outputTableName
+
+                def nbBuildingEstimated = datasource.firstRow("select count(*) as count from $buildEstimatedHeight").count
 
                 datasource.getTable(buildEstimatedHeight).id_build.createIndex()
 
@@ -1138,12 +1148,12 @@ IProcess computeAllGeoIndicators() {
 
                 //We must format only estimated buildings
                 //Apply format on the new abstract table
-                def  epsg =  datasource."$newEstimatedHeigthWithIndicators".srid;
+                def epsg = datasource."$newEstimatedHeigthWithIndicators".srid;
                 IProcess formatEstimatedBuilding = ProcessingChain.FormatingDataChain.formatEstimatedBuilding()
                 formatEstimatedBuilding.execute([
-                        datasource                : datasource,
-                        inputTableName            : newEstimatedHeigthWithIndicators,
-                        epsg : epsg])
+                        datasource    : datasource,
+                        inputTableName: newEstimatedHeigthWithIndicators,
+                        epsg          : epsg])
 
                 def newbuildingTableName = formatEstimatedBuilding.results.outputTableName
 
@@ -1154,7 +1164,7 @@ IProcess computeAllGeoIndicators() {
 
                 //We use the existing spatial units
                 def relationBlocks = results.outputTableBlockIndicators
-                def relationRSU  = results.outputTableRsuIndicators
+                def relationRSU = results.outputTableRsuIndicators
 
                 //The spatial relation tables RSU and BLOCK  must be filtered to keep only necessary columns
                 def rsuRelationFiltered = prefix prefixName, "RSU_RELATION_"
@@ -1175,8 +1185,8 @@ IProcess computeAllGeoIndicators() {
                 def COLUMN_ID_RSU = "id_rsu"
                 def COLUMN_ID_BUILD = "id_build"
                 def GEOMETRIC_COLUMN = "the_geom"
-                def CORRESPONDENCE_TAB_URB_TYPO = ["ba": 1,"bgh": 2,"icif": 3,"icio": 4,"id": 5,"local": 6,"pcif": 7,
-                                                   "pcio": 8,"pd": 9,"psc": 10]
+                def CORRESPONDENCE_TAB_URB_TYPO = ["ba"  : 1, "bgh": 2, "icif": 3, "icio": 4, "id": 5, "local": 6, "pcif": 7,
+                                                   "pcio": 8, "pd": 9, "psc": 10]
                 def nameColTypoMaj = "TYPO_MAJ"
 
                 // Output Lcz (and urbanTypo) table names are set to null in case LCZ indicators (and urban typo) are not calculated
@@ -1236,41 +1246,41 @@ IProcess computeAllGeoIndicators() {
                     info """ The LCZ classification is performed """
 
                     def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"              : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
-                                             "BUILDING_FRACTION_LCZ"             : "BUILDING_SURFACE_FRACTION",
-                                             "ASPECT_RATIO"                      : "ASPECT_RATIO",
-                                             "GROUND_SKY_VIEW_FACTOR"            : "SKY_VIEW_FACTOR",
-                                             "PERVIOUS_FRACTION_LCZ"             : "PERVIOUS_SURFACE_FRACTION",
-                                             "IMPERVIOUS_FRACTION_LCZ"           : "IMPERVIOUS_SURFACE_FRACTION",
-                                             "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH": "TERRAIN_ROUGHNESS_LENGTH"]
+                                         "BUILDING_FRACTION_LCZ"             : "BUILDING_SURFACE_FRACTION",
+                                         "ASPECT_RATIO"                      : "ASPECT_RATIO",
+                                         "GROUND_SKY_VIEW_FACTOR"            : "SKY_VIEW_FACTOR",
+                                         "PERVIOUS_FRACTION_LCZ"             : "PERVIOUS_SURFACE_FRACTION",
+                                         "IMPERVIOUS_FRACTION_LCZ"           : "IMPERVIOUS_SURFACE_FRACTION",
+                                         "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH": "TERRAIN_ROUGHNESS_LENGTH"]
 
-                        // Get into a new table the ID, geometry column and the 7 indicators defined by Stewart and Oke (2012)
-                        // for LCZ classification (rename the indicators with the real names)
-                        def queryReplaceNames = ""
-                        lczIndicNames.each { oldIndic, newIndic ->
-                            queryReplaceNames += "ALTER TABLE $lczIndicTable ALTER COLUMN $oldIndic RENAME TO $newIndic;"
-                        }
-                        datasource.execute """DROP TABLE IF EXISTS $lczIndicTable;
+                    // Get into a new table the ID, geometry column and the 7 indicators defined by Stewart and Oke (2012)
+                    // for LCZ classification (rename the indicators with the real names)
+                    def queryReplaceNames = ""
+                    lczIndicNames.each { oldIndic, newIndic ->
+                        queryReplaceNames += "ALTER TABLE $lczIndicTable ALTER COLUMN $oldIndic RENAME TO $newIndic;"
+                    }
+                    datasource.execute """DROP TABLE IF EXISTS $lczIndicTable;
                                 CREATE TABLE $lczIndicTable 
                                         AS SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, ${lczIndicNames.keySet().join(",")} 
                                         FROM ${computeRSUIndicators.results.outputTableName};
                                 $queryReplaceNames"""
 
-                        datasource."$lczIndicTable".reload()
+                    datasource."$lczIndicTable".reload()
 
-                        // The classification algorithm is called
-                        def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
-                        if (!classifyLCZ([rsuLczIndicators : lczIndicTable,
-                                          rsuAllIndicators : computeRSUIndicators.results.outputTableName,
-                                          normalisationType: "AVG",
-                                          mapOfWeights     : mapOfWeights,
-                                          prefixName       : prefixName,
-                                          datasource       : datasource,
-                                          prefixName       : prefixName])) {
-                            info "Cannot compute the LCZ classification."
-                            return
-                        }
-                        rsuLcz = classifyLCZ.results.outputTableName
-                        datasource.execute "DROP TABLE IF EXISTS $lczIndicTable"
+                    // The classification algorithm is called
+                    def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
+                    if (!classifyLCZ([rsuLczIndicators : lczIndicTable,
+                                      rsuAllIndicators : computeRSUIndicators.results.outputTableName,
+                                      normalisationType: "AVG",
+                                      mapOfWeights     : mapOfWeights,
+                                      prefixName       : prefixName,
+                                      datasource       : datasource,
+                                      prefixName       : prefixName])) {
+                        info "Cannot compute the LCZ classification."
+                        return
+                    }
+                    rsuLcz = classifyLCZ.results.outputTableName
+                    datasource.execute "DROP TABLE IF EXISTS $lczIndicTable"
 
                 }
                 // If the URBAN_TYPOLOGY indicators should be calculated, we only affect a URBAN typo class
@@ -1289,12 +1299,12 @@ IProcess computeAllGeoIndicators() {
                     gatheredScales = applygatherScales.results.outputTableName
 
                     applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
-                    if(!applyRF.execute([
+                    if (!applyRF.execute([
                             explicativeVariablesTableName: gatheredScales,
                             pathAndFileName              : urbanTypoModelName,
                             idName                       : COLUMN_ID_BUILD,
                             prefixName                   : prefixName,
-                            datasource                   : datasource])){
+                            datasource                   : datasource])) {
                         error "Cannot apply the urban typology model $urbanTypoModelName"
                         return
                     }
@@ -1302,26 +1312,26 @@ IProcess computeAllGeoIndicators() {
 
                     // Creation of a list which contains all types of the urban typology (in their string version)
                     def urbTypoCorrespondenceTabInverted = [:]
-                    CORRESPONDENCE_TAB_URB_TYPO.each{fin, ini->
-                        urbTypoCorrespondenceTabInverted[ini]=fin
+                    CORRESPONDENCE_TAB_URB_TYPO.each { fin, ini ->
+                        urbTypoCorrespondenceTabInverted[ini] = fin
                     }
                     datasource."$urbanTypoBuild".I_TYPO.createIndex()
                     def queryDistinct = """SELECT DISTINCT I_TYPO AS I_TYPO FROM $urbanTypoBuild"""
                     def mapTypos = datasource.rows(queryDistinct)
                     def listTypos = []
-                    mapTypos.each{
+                    mapTypos.each {
                         listTypos.add(urbTypoCorrespondenceTabInverted[it.I_TYPO])
                     }
 
                     // Join the geometry field to the building typology table and replace integer by string values
                     def queryCaseWhenReplace = ""
                     def endCaseWhen = ""
-                    urbTypoCorrespondenceTabInverted.each{ini, fin ->
+                    urbTypoCorrespondenceTabInverted.each { ini, fin ->
                         queryCaseWhenReplace += "CASE WHEN b.I_TYPO=$ini THEN '$fin' ELSE "
                         endCaseWhen += " END"
                     }
                     queryCaseWhenReplace = queryCaseWhenReplace + " 'unknown' " + endCaseWhen
-                    urbanTypoBuilding = prefix  prefixName, "URBAN_TYPO_BUILDING"
+                    urbanTypoBuilding = prefix prefixName, "URBAN_TYPO_BUILDING"
                     datasource."$urbanTypoBuild"."$COLUMN_ID_BUILD".createIndex()
                     datasource."$buildingIndicators"."$COLUMN_ID_BUILD".createIndex()
                     datasource """  DROP TABLE IF EXISTS $urbanTypoBuilding;
@@ -1334,11 +1344,11 @@ IProcess computeAllGeoIndicators() {
 
                     // Create a distribution table (for each RSU, contains the % area OR floor area of each urban typo)
                     def queryCasewhen = [:]
-                    queryCasewhen["AREA"]=""
-                    queryCasewhen["FLOOR_AREA"]=""
-                    queryCasewhen.keySet().each{ind ->
+                    queryCasewhen["AREA"] = ""
+                    queryCasewhen["FLOOR_AREA"] = ""
+                    queryCasewhen.keySet().each { ind ->
                         def querySum = ""
-                        listTypos.each{typoCol ->
+                        listTypos.each { typoCol ->
                             queryCasewhen[ind] += """ SUM(CASE WHEN a.I_TYPO='$typoCol' THEN b.$ind ELSE 0 END) AS TYPO_$typoCol,"""
                             querySum = querySum + " COALESCE(b.TYPO_${typoCol}/(b.TYPO_${listTypos.join("+b.TYPO_")}), 0) AS TYPO_$typoCol,"
                         }
@@ -1395,15 +1405,47 @@ IProcess computeAllGeoIndicators() {
                     }
                     // Drop temporary tables
                     datasource """DROP TABLE IF EXISTS $urbanTypoBuild, $gatheredScales, $distribNotPercent, TEMPO_DISTRIB"""
-                }
-                else{
+                } else {
                     urbanTypoArea = null
                     urbanTypoFloorArea = null
                     urbanTypoBuilding = null
                 }
 
                 datasource.execute "DROP TABLE IF EXISTS $rsuLczWithoutGeom;"
+                //Drop all cached tables
+                def cachedTableNames = getCachedTableNames()
+                if (cachedTableNames) {
+                    datasource.execute "DROP TABLE IF EXISTS ${cachedTableNames.join(",")}"
+                }
 
+                //Populate reporting
+                def nbBuilding = datasource.firstRow("select count(*) as count from ${computeBuildingsIndicators.getResults().outputTableName} WHERE ID_RSU IS NOT NULL").count
+
+                def nbBlock = 0
+                if (blockIndicators) {
+                 nbBlock = datasource.firstRow("select count(*) as count from ${blockIndicators}").count
+                }
+                def nbRSU = datasource.firstRow("select count(*) as count from ${computeRSUIndicators.getResults().outputTableName}").count
+                //Alter the zone table to add statics
+                datasource.execute"""ALTER TABLE ${zoneTable} ADD COLUMN (
+                NB_BUILDING INTEGER,
+                NB_ESTIMATED_BUILDING INTEGER,
+                NB_BLOCK INTEGER,
+                NB_RSU INTEGER,
+                COMPUTATION_TIME INTEGER,
+                LAST_UPDATE VARCHAR
+                )"""
+                //Update reporting to the zone table
+                datasource.execute"""update ${zoneTable} 
+                set nb_estimated_building = ${nbBuildingEstimated}, 
+                nb_building = ${nbBuilding}, 
+                nb_block =  ${nbBlock},
+                nb_rsu = ${nbRSU},
+                computation_time = ${(System.currentTimeMillis()-start)/1000},
+                last_update = CAST(now() AS VARCHAR)"""
+
+                //Clean the System properties that stores intermediate table names
+                clearTablesCache()
                 return [outputTableBuildingIndicators   : computeBuildingsIndicators.getResults().outputTableName,
                         outputTableBlockIndicators      : blockIndicators,
                         outputTableRsuIndicators        : computeRSUIndicators.getResults().outputTableName,
@@ -1414,30 +1456,24 @@ IProcess computeAllGeoIndicators() {
                         outputTableBuildingUrbanTypo    : urbanTypoBuilding]
 
             }
-            else{
-                IProcess geoIndicators =  computeGeoclimateIndicators()
+            else {
+                clearTablesCache()
+                IProcess geoIndicators = computeGeoclimateIndicators()
                 if (!geoIndicators.execute(datasource: datasource, zoneTable: zoneTable,
                         buildingTable: buildingTable,
                         roadTable: roadTable,
                         railTable: railTable, vegetationTable: vegetationTable,
                         hydrographicTable: hydrographicTable, imperviousTable: imperviousTable,
                         surface_vegetation: surface_vegetation, surface_hydro: surface_hydro,
-                        indicatorUse:indicatorUse,
+                        indicatorUse: indicatorUse,
                         svfSimplified: svfSimplified, prefixName: prefixName,
                         mapOfWeights: mapOfWeights,
-                        urbanTypoModelName:urbanTypoModelName)){
+                        urbanTypoModelName: urbanTypoModelName)) {
                     error "Cannot build the geoindicators"
                     return
+                } else {
+                    return geoIndicators.getResults()
                 }
-                return geoIndicators.getResults()
-                /*return [outputTableBuildingIndicators   :results.outputTableBuildingIndicators,
-                        outputTableBlockIndicators      : results,
-                        outputTableRsuIndicators        : results,
-                        outputTableRsuLcz               : results,
-                        outputTableZone                 : results,
-                        outputTableRsuUrbanTypoArea     : results,
-                        outputTableRsuUrbanTypoFloorArea: results,
-                        outputTableBuildingUrbanTypo    : results]*/
             }
         }
     }
@@ -1460,7 +1496,7 @@ IProcess computeGeoclimateIndicators() {
     return create {
         title "Compute all geoindicators"
         id "computeAllGeoIndicators"
-        inputs datasource: JdbcDataSource, zoneTable: "", buildingTable: "",
+        inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
                 roadTable: "", railTable: "", vegetationTable: "",
                 hydrographicTable: "", imperviousTable: "", surface_vegetation: 10000, surface_hydro: 2500,
                 snappingTolerance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified: false, prefixName: "",
@@ -1477,7 +1513,7 @@ IProcess computeGeoclimateIndicators() {
               surface_vegetation, surface_hydro, snappingTolerance, indicatorUse, svfSimplified, prefixName, mapOfWeights,
                urbanTypoModelName ->
             info "Start computing the geoindicators..."
-
+            def start =  System.currentTimeMillis()
             // Temporary (and output tables) are created
             def lczIndicTable = postfix "LCZ_INDIC_TABLE"
             def baseNameUrbanTypoRsu = prefix prefixName, "URBAN_TYPO_RSU_"
@@ -1736,6 +1772,31 @@ IProcess computeGeoclimateIndicators() {
             }
 
             datasource.execute "DROP TABLE IF EXISTS $rsuLczWithoutGeom;"
+
+            //Populate reporting
+            def nbBuilding = datasource.firstRow("select count(*) as count from ${buildingIndicators} WHERE ID_RSU IS NOT NULL").count
+            def nbBlock = 0
+            if(blockIndicators){
+             nbBlock = datasource.firstRow("select count(*) as count from ${blockIndicators}").count
+            }
+            def nbRSU = datasource.firstRow("select count(*) as count from ${rsuIndicators}").count
+            //Alter the zone table to add statics
+            datasource.execute"""ALTER TABLE ${zoneTable} ADD COLUMN (
+                NB_BUILDING INTEGER,
+                NB_ESTIMATED_BUILDING INTEGER,
+                NB_BLOCK INTEGER,
+                NB_RSU INTEGER,
+                COMPUTATION_TIME INTEGER,
+                LAST_UPDATE VARCHAR
+                )"""
+            //Update reporting to the zone table
+            datasource.execute"""update ${zoneTable} 
+            set nb_estimated_building = 0, 
+            nb_building = ${nbBuilding}, 
+            nb_block =  ${nbBlock},
+            nb_rsu = ${nbRSU},
+            computation_time = ${(System.currentTimeMillis()-start)/1000},
+            last_update = CAST(now() AS VARCHAR)"""
 
             return [outputTableBuildingIndicators   : buildingIndicators,
                     outputTableBlockIndicators      : blockIndicators,

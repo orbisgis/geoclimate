@@ -20,7 +20,6 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
  * @param hThresholdLev2 Threshold on the building height, used to determine the number of levels
  * @param epsg EPSG code to apply
  * @param jsonFilename Name of the json formatted file containing the filtering parameters
- * @param estimateHeight Boolean indicating if the buildings heights have to be estimated or not
  * @return outputTableName The name of the final buildings table
  * @return outputEstimatedTableName The name of the table containing the state of estimation for each building
  */
@@ -28,23 +27,21 @@ IProcess formatBuildingLayer() {
     return create {
         title "Transform OSM buildings table into a table that matches the constraints of the GeoClimate input model"
         id "formatBuildingLayer"
-        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, h_lev_min: 3, h_lev_max: 15, hThresholdLev2: 10, jsonFilename: "", estimateHeight: false, urbanAreasTableName : ""
+        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, h_lev_min: 3, h_lev_max: 15, hThresholdLev2: 10, jsonFilename: "",  urbanAreasTableName : ""
         outputs outputTableName: String, outputEstimateTableName: String
-        run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, epsg, h_lev_min, h_lev_max, hThresholdLev2, jsonFilename, estimateHeight, urbanAreasTableName ->
+        run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, epsg, h_lev_min, h_lev_max, hThresholdLev2, jsonFilename, urbanAreasTableName ->
             def outputTableName = postfix "INPUT_BUILDING"
             info 'Formating building layer'
             outputTableName = "INPUT_BUILDING_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-            def outputEstimateTableName = ""
-            if (estimateHeight) {
-                outputEstimateTableName = "EST_${outputTableName}"
-                datasource """
+            def outputEstimateTableName = "EST_${outputTableName}"
+            datasource """
                     DROP TABLE if exists ${outputEstimateTableName};
                     CREATE TABLE ${outputEstimateTableName} (
                         id_build INTEGER,
                         ID_SOURCE VARCHAR,
                         estimated boolean)
                 """
-            }
+
             datasource """ 
                 DROP TABLE if exists ${outputTableName};
                 CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id_build INTEGER, ID_SOURCE VARCHAR, 
@@ -71,7 +68,7 @@ IProcess formatBuildingLayer() {
                         queryMapper += " , st_force2D(st_makevalid(a.the_geom)) as the_geom FROM $inputTableName as a where st_area(a.the_geom)>1"
                     }
                     def id_build=1;
-                    datasource.withBatch(1000) { stmt ->
+                    datasource.withBatch(2000) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             String height = row.height
                             String roof_height = row.'roof:height'
@@ -114,14 +111,14 @@ IProcess formatBuildingLayer() {
                                                     '${use}',
                                                     ${zIndex})
                                             """.toString()
-                                            if (estimateHeight) {
-                                                stmt.addBatch """
+
+                                            stmt.addBatch """
                                                 INSERT INTO ${outputEstimateTableName} values(
                                                     $id_build, 
                                                     '${row.id}',
                                                     ${formatedHeight.estimated})
                                                 """.toString()
-                                            }
+
                                             id_build++
                                         }
                                     }
@@ -650,14 +647,15 @@ static float getHeightWall(height, r_height) {
  * @param hThresholdLev2 value
  * @return a map with the new values
  */
-/*  TODO : when all the values are already available, it might happen that this control modify them. For example, a tower of 32 levels is 92 meters high.
-     The control will put the value of heightRoof to 96 whereas it was 92. Do we accept it or are the real values considered as more reliable then the theoretical ones ?
- */
 static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels, def h_lev_min,
                                    def h_lev_max,def hThresholdLev2, def nbLevFromType){
+    //Use the OSM values
+    if(heightWall!=0 && heightRoof!=0 && nbLevels!=0){
+        return [heightWall:heightWall, heightRoof:heightRoof, nbLevels:nbLevels, estimated:false]
+    }
     //Initialisation of heights and number of levels
     // Update height_wall
-    def boolean estimated =false
+    boolean estimated =false
     if(heightWall==0){
         if(heightRoof==0){
             if(nbLevels==0){
@@ -665,7 +663,7 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
                 estimated = true
             }
             else {
-                heightWall = h_lev_min*nbLevels
+                heightWall = h_lev_min*nbLevels+h_lev_min
             }
         }
         else {
