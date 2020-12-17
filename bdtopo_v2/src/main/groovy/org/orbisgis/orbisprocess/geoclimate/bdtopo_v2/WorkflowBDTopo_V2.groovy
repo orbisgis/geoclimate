@@ -1107,7 +1107,6 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
     }else{
         outputSRID =srid
     }
-    def reportingByZones = [:]
     //Let's run the BDTopo process for each insee code
     def prepareBDTopoData = BDTopo_V2.prepareData
     info "$nbAreas areas will be processed"
@@ -1148,19 +1147,10 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
                     indicatorUse: processing_parameters.indicatorUse,
                     svfSimplified: processing_parameters.svfSimplified, prefixName: processing_parameters.prefixName,
                     mapOfWeights: processing_parameters.mapOfWeights,
-                    urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_0.model")) {
+                    urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_1.model")) {
                 error "Cannot build the geoindicators for the zone $id_zone"
             } else {
                 def results = geoIndicators.results
-                def reporting = results.get("geoclimateReporting")
-                if(reporting){
-                    reporting.put("time", (System.currentTimeMillis() - start) / 1000)
-                    reportingByZones.put(id_zone, reporting)
-                }
-                else{
-                    reportingByZones.put(id_zone, [:])
-                }
-                results.remove("geoclimateReporting")
                 results.put("buildingTableName", buildingTableName)
                 results.put("roadTableName", roadTableName)
                 results.put("railTableName", railTableName)
@@ -1177,28 +1167,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
                 info "${id_zone} has been processed"
             }
         }
-
         info "Number of areas processed ${index+1} on $nbAreas"
-
-        //Print reporting
-        def messageReporting = "\n---- Reporting for the BDTopo workflow ----"
-        reportingByZones.each {
-            def geoIndicatorsReporting = it.value
-            if (geoIndicatorsReporting) {
-                def zoneReporting = """
--- Zone area : ${it.key} --
-Number of buildings : ${geoIndicatorsReporting.nb_building}
-Number of blocks : ${geoIndicatorsReporting.nb_block}
-Number of RSU : ${geoIndicatorsReporting.nb_rsu}
-Processing time  : ${geoIndicatorsReporting.time} s
---
-                """
-                messageReporting += zoneReporting.toString()
-            }else{
-                messageReporting += "The zone ${it.key} cannot be processed"
-            }
-        }
-        info messageReporting
     }
 }
 

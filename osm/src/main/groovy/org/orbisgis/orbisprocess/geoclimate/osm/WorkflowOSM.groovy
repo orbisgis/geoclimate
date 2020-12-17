@@ -558,7 +558,7 @@ IProcess osm_processing() {
                                     svfSimplified: processing_parameters.svfSimplified,
                                     prefixName: processing_parameters.prefixName,
                                     mapOfWeights: processing_parameters.mapOfWeights,
-                                    urbanTypoModelName: "URBAN_TYPOLOGY_OSM_RF_2_0.model",
+                                    urbanTypoModelName: "URBAN_TYPOLOGY_OSM_RF_2_1.model",
                                     buildingHeightModelName: estimateHeight ? "BUILDING_HEIGHT_OSM_RF_2_0.model" : "")) {
                                 error "Cannot build the geoindicators for the zone $id_zone"
                             } else {

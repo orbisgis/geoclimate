@@ -1426,15 +1426,7 @@ IProcess computeAllGeoIndicators() {
                  nbBlock = datasource.firstRow("select count(*) as count from ${blockIndicators}").count
                 }
                 def nbRSU = datasource.firstRow("select count(*) as count from ${computeRSUIndicators.getResults().outputTableName}").count
-                //Alter the zone table to add statics
-                datasource.execute"""ALTER TABLE ${zoneTable} ADD COLUMN (
-                NB_BUILDING INTEGER,
-                NB_ESTIMATED_BUILDING INTEGER,
-                NB_BLOCK INTEGER,
-                NB_RSU INTEGER,
-                COMPUTATION_TIME INTEGER,
-                LAST_UPDATE VARCHAR
-                )"""
+
                 //Update reporting to the zone table
                 datasource.execute"""update ${zoneTable} 
                 set nb_estimated_building = ${nbBuildingEstimated}, 

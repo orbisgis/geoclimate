@@ -350,9 +350,13 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["Pont de veyle"]],
+                        "osm" : ["Brest"]],
                 "output" :[
-                        "folder" : "$directory"]
+                        "folder" : "$directory"],
+                "parameters":
+                        [ "indicatorUse": ["LCZ"],
+                         "svfSimplified": true
+                        ]
         ]
         IProcess process = OSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
@@ -527,20 +531,9 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "folder" : "$directory"],
                 "parameters":
                         ["distance" : 0,
-                         "indicatorUse": ["LCZ"],
-                         "svfSimplified": false,
+                         "indicatorUse": ["LCZ", "URBAN_TYPOLOGY"],
+                         "svfSimplified": true,
                          "prefixName": "",
-                         "mapOfWeights":
-                                 ["sky_view_factor"                : 4,
-                                  "aspect_ratio"                   : 3,
-                                  "building_surface_fraction"      : 8,
-                                  "impervious_surface_fraction"    : 0,
-                                  "pervious_surface_fraction"      : 0,
-                                  "height_of_roughness_elements"   : 6,
-                                  "terrain_roughness_length"       : 0.5],
-                         "hLevMin": 3,
-                         "hLevMax": 15,
-                         "hThresholdLev2": 10,
                          "estimateHeight":true
                         ]
         ]
@@ -595,7 +588,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
         def osm_parmeters = [
-                "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
+                "description" :"Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb" : [
                         "folder" : "${dirFile.absolutePath}",
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
