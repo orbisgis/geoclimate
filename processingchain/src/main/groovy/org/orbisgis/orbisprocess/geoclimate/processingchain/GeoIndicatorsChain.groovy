@@ -1099,7 +1099,6 @@ IProcess computeAllGeoIndicators() {
                                                         ON a.id_build=b.id_build
                                                     WHERE b.ESTIMATED = true AND a.ID_RSU IS NOT NULL;"""
 
-
                 info "Collect building indicators to estimate the height"
 
                 def applygatherScales = Geoindicators.GenericIndicators.gatherScales()

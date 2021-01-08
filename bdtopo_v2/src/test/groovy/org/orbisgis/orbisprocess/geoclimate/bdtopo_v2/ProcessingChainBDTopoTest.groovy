@@ -251,7 +251,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_dboutput.json").toURI()
         //configFile =getClass().getResource("config/bdtopo_workflow_dbinput_dboutput.json").toURI()
         IProcess process = BDTopo_V2.workflow
-        process.execute(configurationFile:configFile)
+        process.execute(configurationFile:"/home/ebocher/applications/geoclimate/bdtopo_workflow_dbinput_outputfolder_erwan.json")
     }
 
     @Test

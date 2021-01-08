@@ -541,6 +541,40 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
+    @Disabled
+    @Test
+    void testGrid_Indicators() {
+        String directory ="./target/geoclimate_chain_estimated_height"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "description" :"Example of configuration file to run the OSM workflow and store the results in a folder",
+                "geoclimatedb" : [
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete" :true
+                ],
+                "input" : [
+                        "osm" : ["Pont de Veyle"]],
+                "output" :[
+                        "folder" : "$directory"],
+                "parameters":
+                        ["distance" : 0,
+                         "indicatorUse": ["LCZ", "URBAN_TYPOLOGY"],
+                         "svfSimplified": true,
+                         "prefixName": "",
+                         "estimateHeight":true,
+                         "grid_indicators": [
+                             "x_size": 1000,
+                             "y_size": 1000,
+                             "indicators": ["RSU_LCZ"]
+                         ]
+                        ]
+        ]
+        IProcess process = OSM.workflow
+        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+    }
 
     @Disabled
     @Test

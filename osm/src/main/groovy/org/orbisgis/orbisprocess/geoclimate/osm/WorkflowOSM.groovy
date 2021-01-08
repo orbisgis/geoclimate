@@ -16,12 +16,12 @@ import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
 import org.orbisgis.orbisanalysis.osm.OSMTools
 
 import java.sql.Connection
 import java.sql.SQLException
-import java.text.SimpleDateFormat
 
 @BaseScript OSM_Utils osm_utils
 
@@ -563,13 +563,48 @@ IProcess osm_processing() {
                                 error "Cannot build the geoindicators for the zone $id_zone"
                             } else {
                                 def results = geoIndicators.getResults()
-                            results.put("buildingTableName", buildingTableName)
-                            results.put("roadTableName", roadTableName)
-                            results.put("railTableName", railTableName)
-                            results.put("hydrographicTableName", hydrographicTableName)
-                            results.put("vegetationTableName", vegetationTableName)
-                            results.put("imperviousTableName", imperviousTableName)
-                            results.put("urbanAreasTableName", urbanAreasTable)
+                                results.put("buildingTableName", buildingTableName)
+                                results.put("roadTableName", roadTableName)
+                                results.put("railTableName", railTableName)
+                                results.put("hydrographicTableName", hydrographicTableName)
+                                results.put("vegetationTableName", vegetationTableName)
+                                results.put("imperviousTableName", imperviousTableName)
+                                results.put("urbanAreasTableName", urbanAreasTable)
+
+                                //Compute the indicator at grid scale if specified
+                                def   grid_indicators = processing_parameters.grid_indicators
+                                if(grid_indicators){
+                                    def x_size = grid_indicators.x_size
+                                    def y_size = grid_indicators.y_size
+                                    //Start to compute the grid
+                                    def gridP = Geoindicators.SpatialUnits.createGrid()
+                                    def box = h2gis_datasource.getSpatialTable(zoneEnvelopeTableName).getExtent()
+                                    if(gridP.execute([geometry: box, deltaX: x_size, deltaY: y_size,  datasource: h2GIS])) {
+                                        def list_indicators = grid_indicators.indicators
+                                        /*
+                                        * Make aggregation process with previous grid and current rsu lcz
+                                        */
+                                        def outputTableRsuLcz =results.outputTableRsuLcz
+                                        if (list_indicators.contains("RSU_LCZ") && outputTableRsuLcz) {
+                                        def targetTableName = gridProcess.results.outputTableName
+                                        def indicatorName = "LCZ1"
+                                        def upperScaleAreaStatistics = Geoclimate.GenericIndicators.upperScaleAreaStatistics()
+                                        if (upperScaleAreaStatistics.execute(
+                                                [upperTableName: targetTableName,
+                                                 upperColumnId : "id",
+                                                 lowerTableName: outputTableRsuLcz,
+                                                 lowerTableName: outputTableRsuLcz,
+                                                 lowerColumName: indicatorName,
+                                                 prefixName    : "agg",
+                                                 datasource    : h2gis_datasource])) {
+                                            results.put("grid_indicators_lcz", upperScaleAreaStatistics.results.outputTableName)
+                                        }
+                                        else{
+                                           info "Cannot compute the LCZ at grid scale"
+                                        }
+                                        }
+                                    }
+                                }
                             if (outputFolder  && ouputTableFiles) {
                                 saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject, deleteOutputData)
                             }
@@ -933,6 +968,39 @@ def extractProcessingParameters(def processing_parameters){
         def estimateHeight = processing_parameters.estimateHeight
         if(estimateHeight && estimateHeight in Boolean){
             defaultParameters.estimateHeight = estimateHeight
+        }
+
+        //Check for grid indicators
+
+        def  grid_indicators = processing_parameters.grid_indicators
+        if(grid_indicators){
+            def x_size = grid_indicators.x_size
+            def y_size = grid_indicators.y_size
+            def list_indicators = grid_indicators.indicators
+            if(x_size && y_size){
+                if(x_size<=0 || y_size<= 0){
+                    info "Invalid grid size padding. Must be greater that 0"
+                    return
+                }
+                if(!list_indicators){
+                    info "The list of indicator names cannot be null or empty"
+                    return
+                }
+                def allowed_grid_indicators=["BUILDING_AREA","WATER_AREA","VEGETATION_AREA","RSU_URBAN_TYPO", "RSU_LCZ"]
+                def allowedOutputIndicators = allowed_grid_indicators.intersect(list_indicators*.toUpperCase())
+                if(allowedOutputIndicators){
+                def grid_indicators_tmp =  [
+                        "x_size": x_size,
+                        "y_size": y_size,
+                        "indicators": allowedOutputIndicators
+                ]
+                defaultParameters.put("grid_indicators", grid_indicators_tmp)
+                }
+                else {
+                    info "Please set a valid list of indicator names in ${allowed_grid_indicators}"
+                    return
+                }
+            }
         }
 
         return defaultParameters
