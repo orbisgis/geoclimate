@@ -99,7 +99,6 @@ IProcess unweightedOperationFromLowerScale() {
                 } else {
                     warn """ The column $var doesn't exist or should be numeric"""
                 }
-
             }
             query += "b.$inputIdUp FROM $inputLowerScaleTableName a RIGHT JOIN $inputUpperScaleTableName b " +
                     "ON a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp"
@@ -1004,10 +1003,9 @@ IProcess upperScaleAreaStatistics() {
         title "Statistics on gridded area for a given indicator"
         id "upperScaleStatisticArea"
         inputs upperTableName: String, upperColumnId: String, lowerTableName: String, lowerColumnName: String,
-                prefixName: String, datasource: JdbcDataSource
+                prefixName: String, datasource: JdbcDataSource, keepGeometry : true
         outputs outputTableName: String
-        run { upperTableName, upperColumnId, lowerTableName, lowerColumnName, prefixName, datasource ->
-
+        run { upperTableName, upperColumnId, lowerTableName, lowerColumnName, prefixName, datasource, keepGeometry ->
             ISpatialTable upperTable = datasource.getSpatialTable(upperTableName)
             def upperGeometryColumn = upperTable.getGeometricColumns().first()
             if(!upperGeometryColumn) {
@@ -1024,7 +1022,7 @@ IProcess upperScaleAreaStatistics() {
             upperTable."$upperColumnId".createIndex()
             lowerTable."$lowerGeometryColumn".createSpatialIndex()
 
-            def spatialJoinTable = "gridSpatialJoin"
+            def spatialJoinTable = "upper_table_join"
             def spatialJoin = """
                               DROP TABLE IF EXISTS $spatialJoinTable;
                               CREATE TABLE $spatialJoinTable 
@@ -1036,8 +1034,8 @@ IProcess upperScaleAreaStatistics() {
                               ST_INTERSECTS(st_force2d(a.$lowerGeometryColumn), st_force2d(b.$upperGeometryColumn));
                               """
             datasource.execute(spatialJoin)
-            datasource "CREATE INDEX ON $spatialJoinTable USING BTREE($lowerColumnName)"
-            datasource "CREATE INDEX ON $spatialJoinTable USING BTREE($upperColumnId)"
+            datasource "CREATE INDEX ON $spatialJoinTable ($lowerColumnName)"
+            datasource "CREATE INDEX ON $spatialJoinTable ($upperColumnId)"
 
             // Creation of a list which contains all indicators of distinct values
             def qIndicator = """
@@ -1076,7 +1074,7 @@ IProcess upperScaleAreaStatistics() {
                      """
             datasource.execute(query)
             //Build indexes
-            datasource "CREATE INDEX ON $pivotTable USING BTREE($upperColumnId)"
+            datasource "CREATE INDEX ON $pivotTable ($upperColumnId)"
 
             // Creation of a table which is built from
             // the union of the grid and pivot tables based on the same cell 'id'
@@ -1084,8 +1082,11 @@ IProcess upperScaleAreaStatistics() {
             def qjoin = """
                         DROP TABLE IF EXISTS $outputTableName;
                         CREATE TABLE $outputTableName
-                        AS SELECT b.$upperColumnId, b.$upperGeometryColumn
+                        AS SELECT b.$upperColumnId
                         """
+            if(keepGeometry){
+                qjoin+=", b.$upperGeometryColumn"
+            }
             listValues.each {
                 def aliasColumn = "${lowerColumnName}_${it.val.toString().replace('.','_')}"
                 qjoin += """

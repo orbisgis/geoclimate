@@ -577,32 +577,46 @@ IProcess osm_processing() {
                                     def x_size = grid_indicators.x_size
                                     def y_size = grid_indicators.y_size
                                     //Start to compute the grid
-                                    def gridP = Geoindicators.SpatialUnits.createGrid()
+                                    def gridProcess = Geoindicators.SpatialUnits.createGrid()
                                     def box = h2gis_datasource.getSpatialTable(zoneEnvelopeTableName).getExtent()
-                                    if(gridP.execute([geometry: box, deltaX: x_size, deltaY: y_size,  datasource: h2GIS])) {
+                                    if(gridProcess.execute([geometry: box, deltaX: x_size, deltaY: y_size,  datasource: h2gis_datasource])) {
+                                        def targetTableName = gridProcess.results.outputTableName
                                         def list_indicators = grid_indicators.indicators
+                                        def indicatorTablesToJoin = [:]
+                                        indicatorTablesToJoin.put(targetTableName, "id")
                                         /*
                                         * Make aggregation process with previous grid and current rsu lcz
                                         */
                                         def outputTableRsuLcz =results.outputTableRsuLcz
                                         if (list_indicators.contains("RSU_LCZ") && outputTableRsuLcz) {
-                                        def targetTableName = gridProcess.results.outputTableName
                                         def indicatorName = "LCZ1"
-                                        def upperScaleAreaStatistics = Geoclimate.GenericIndicators.upperScaleAreaStatistics()
+                                        def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics()
                                         if (upperScaleAreaStatistics.execute(
                                                 [upperTableName: targetTableName,
                                                  upperColumnId : "id",
                                                  lowerTableName: outputTableRsuLcz,
-                                                 lowerTableName: outputTableRsuLcz,
-                                                 lowerColumName: indicatorName,
-                                                 prefixName    : "agg",
+                                                 lowerColumnName: indicatorName,
+                                                 keepGeometry  : false,
+                                                 prefixName    : processing_parameters.prefixName,
                                                  datasource    : h2gis_datasource])) {
-                                            results.put("grid_indicators_lcz", upperScaleAreaStatistics.results.outputTableName)
+                                            indicatorTablesToJoin.put(upperScaleAreaStatistics.results.outputTableName, "id")
                                         }
                                         else{
                                            info "Cannot compute the LCZ at grid scale"
                                         }
                                         }
+
+                                        //Join all indicators at grid scale
+                                        def grid_indicators_table ="grid_indicators"
+                                        def joinGrids = Geoindicators.DataUtils.joinTables()
+                                        if (!joinGrids([inputTableNamesWithId: indicatorTablesToJoin,
+                                                                outputTableName      : grid_indicators_table,
+                                                                datasource           : h2gis_datasource])) {
+                                            info "Cannot merge all indicators in grid table $grid_indicators_table."
+                                            return
+                                        }
+                                        results.put(grid_indicators_table, grid_indicators_table)
+                                        ouputTableFiles<<grid_indicators_table
                                     }
                                 }
                             if (outputFolder  && ouputTableFiles) {
@@ -1049,7 +1063,6 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
         else  if(it.equals("zones")){
             saveTableAsGeojson(results.outputTableZone,  "${subFolder.getAbsolutePath()+File.separator+"zones"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
-
         //Save input GIS tables
         else  if(it.equals("building")){
             saveTableAsGeojson(results.buildingTableName, "${subFolder.getAbsolutePath()+File.separator+"building"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
@@ -1077,6 +1090,9 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
             saveTableAsGeojson(results.outputTableRsuUrbanTypoFloorArea, "${subFolder.getAbsolutePath()+File.separator+"rsu_urban_typo_floor_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }else if(it.equals("building_urban_typo")){
             saveTableAsGeojson(results.outputTableBuildingUrbanTypo, "${subFolder.getAbsolutePath()+File.separator+"building_urban_typo"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        }
+        else if(it.equals("grid_indicators")){
+            saveTableAsGeojson(results.grid_indicators, "${subFolder.getAbsolutePath()+File.separator+"grid_indicators"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
     }
 }

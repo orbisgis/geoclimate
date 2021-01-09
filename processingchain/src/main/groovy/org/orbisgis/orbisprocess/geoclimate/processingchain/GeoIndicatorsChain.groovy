@@ -1418,6 +1418,7 @@ IProcess computeAllGeoIndicators() {
                 }
 
                 //Populate reporting
+
                 def nbBuilding = datasource.firstRow("select count(*) as count from ${computeBuildingsIndicators.getResults().outputTableName} WHERE ID_RSU IS NOT NULL").count
 
                 def nbBlock = 0

@@ -544,7 +544,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
     @Disabled
     @Test
     void testGrid_Indicators() {
-        String directory ="./target/geoclimate_chain_estimated_height"
+        String directory ="./target/geoclimate_chain_grid"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
