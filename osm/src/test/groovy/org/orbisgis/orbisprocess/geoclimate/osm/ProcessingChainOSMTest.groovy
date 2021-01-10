@@ -566,9 +566,9 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                          "prefixName": "",
                          "estimateHeight":true,
                          "grid_indicators": [
-                             "x_size": 1000,
-                             "y_size": 1000,
-                             "indicators": ["RSU_LCZ"]
+                             "x_size": 100,
+                             "y_size": 100,
+                             "indicators": ["RSU_LCZ", "WATER_AREA"]
                          ]
                         ]
         ]

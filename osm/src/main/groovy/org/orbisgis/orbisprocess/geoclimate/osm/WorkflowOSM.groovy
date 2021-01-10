@@ -572,51 +572,19 @@ IProcess osm_processing() {
                                 results.put("urbanAreasTableName", urbanAreasTable)
 
                                 //Compute the indicator at grid scale if specified
-                                def   grid_indicators = processing_parameters.grid_indicators
+                                def  grid_indicators = processing_parameters.grid_indicators
                                 if(grid_indicators){
                                     def x_size = grid_indicators.x_size
                                     def y_size = grid_indicators.y_size
-                                    //Start to compute the grid
-                                    def gridProcess = Geoindicators.SpatialUnits.createGrid()
-                                    def box = h2gis_datasource.getSpatialTable(zoneEnvelopeTableName).getExtent()
-                                    if(gridProcess.execute([geometry: box, deltaX: x_size, deltaY: y_size,  datasource: h2gis_datasource])) {
-                                        def targetTableName = gridProcess.results.outputTableName
-                                        def list_indicators = grid_indicators.indicators
-                                        def indicatorTablesToJoin = [:]
-                                        indicatorTablesToJoin.put(targetTableName, "id")
-                                        /*
-                                        * Make aggregation process with previous grid and current rsu lcz
-                                        */
-                                        def outputTableRsuLcz =results.outputTableRsuLcz
-                                        if (list_indicators.contains("RSU_LCZ") && outputTableRsuLcz) {
-                                        def indicatorName = "LCZ1"
-                                        def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics()
-                                        if (upperScaleAreaStatistics.execute(
-                                                [upperTableName: targetTableName,
-                                                 upperColumnId : "id",
-                                                 lowerTableName: outputTableRsuLcz,
-                                                 lowerColumnName: indicatorName,
-                                                 keepGeometry  : false,
-                                                 prefixName    : processing_parameters.prefixName,
-                                                 datasource    : h2gis_datasource])) {
-                                            indicatorTablesToJoin.put(upperScaleAreaStatistics.results.outputTableName, "id")
-                                        }
-                                        else{
-                                           info "Cannot compute the LCZ at grid scale"
-                                        }
-                                        }
-
-                                        //Join all indicators at grid scale
-                                        def grid_indicators_table ="grid_indicators"
-                                        def joinGrids = Geoindicators.DataUtils.joinTables()
-                                        if (!joinGrids([inputTableNamesWithId: indicatorTablesToJoin,
-                                                                outputTableName      : grid_indicators_table,
-                                                                datasource           : h2gis_datasource])) {
-                                            info "Cannot merge all indicators in grid table $grid_indicators_table."
-                                            return
-                                        }
-                                        results.put(grid_indicators_table, grid_indicators_table)
-                                        ouputTableFiles<<grid_indicators_table
+                                    IProcess rasterizedIndicators =  ProcessingChain.GeoIndicatorsChain.rasterizeIndicators()
+                                    if(rasterizedIndicators.execute(datasource:h2gis_datasource,zoneEnvelopeTableName: zoneEnvelopeTableName,
+                                            x_size : x_size, y_size : y_size,list_indicators :grid_indicators.indicators,
+                                            buildingTable: buildingTableName, roadTable: roadTableName, vegetationTable: vegetationTableName,
+                                            hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName, rsu_lcz:results.outputTableRsuLcz, rsu_urban_typo:"",
+                                            prefixName: processing_parameters.prefixName
+                                    )){
+                                        results.put("grid_indicators", rasterizedIndicators.results.outputTableName)
+                                        ouputTableFiles<<rasterizedIndicators.results.outputTableName
                                     }
                                 }
                             if (outputFolder  && ouputTableFiles) {
@@ -985,7 +953,6 @@ def extractProcessingParameters(def processing_parameters){
         }
 
         //Check for grid indicators
-
         def  grid_indicators = processing_parameters.grid_indicators
         if(grid_indicators){
             def x_size = grid_indicators.x_size
@@ -1000,7 +967,8 @@ def extractProcessingParameters(def processing_parameters){
                     info "The list of indicator names cannot be null or empty"
                     return
                 }
-                def allowed_grid_indicators=["BUILDING_AREA","WATER_AREA","VEGETATION_AREA","RSU_URBAN_TYPO", "RSU_LCZ"]
+                def allowed_grid_indicators=["BUILDING_AREA","BUILDING_HEIGHT_AVG","WATER_AREA","VEGETATION_AREA",
+                          "ROAD_AREA", "IMPERVIOUS_AREA", "RSU_URBAN_TYPO", "RSU_LCZ"]
                 def allowedOutputIndicators = allowed_grid_indicators.intersect(list_indicators*.toUpperCase())
                 if(allowedOutputIndicators){
                 def grid_indicators_tmp =  [
