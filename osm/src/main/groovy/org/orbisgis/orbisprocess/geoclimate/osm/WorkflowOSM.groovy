@@ -481,8 +481,8 @@ IProcess osm_processing() {
                                     inputTableName            : gisLayersResults.buildingTableName,
                                     inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                                     epsg                      : srid,
-                                    h_lev_min                 : processing_parameters.h_lev_min,
-                                    h_lev_max                 : processing_parameters.h_lev_max,
+                                    h_lev_min                 : processing_parameters.hLevMin,
+                                    h_lev_max                 : processing_parameters.hLevMax,
                                     hThresholdLev2            : processing_parameters.hThresholdLev2,
                                     urbanAreasTableName       : urbanAreasTable])
 
