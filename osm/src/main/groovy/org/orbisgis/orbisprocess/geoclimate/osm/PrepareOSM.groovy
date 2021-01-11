@@ -54,7 +54,7 @@ IProcess buildGeoclimateLayers() {
                 def zoneTableName = res.zoneTableName
                 def zoneEnvelopeTableName = res.zoneEnvelopeTableName
                 def epsg = datasource.getSpatialTable(zoneTableName).srid
-                if (zoneTableName != null) {
+                if (zoneEnvelopeTableName != null) {
                     info "Formating OSM GIS layers"
                     IProcess format = OSM.formatBuildingLayer
                     format.execute([
@@ -109,7 +109,7 @@ IProcess buildGeoclimateLayers() {
 
                 }
 
-                [outputBuilding: buildingTableName, outputRoad: roadTableName,
+                return [outputBuilding: buildingTableName, outputRoad: roadTableName,
                  outputRail    : railTableName, outputHydro: hydroTableName,
                  outputVeget   : vegetationTableName, outputImpervious: imperviousTableName,
                  outputZone    : zoneTableName, outputZoneEnvelope: zoneEnvelopeTableName]

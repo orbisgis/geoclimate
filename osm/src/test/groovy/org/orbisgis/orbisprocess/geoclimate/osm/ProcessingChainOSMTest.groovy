@@ -16,7 +16,6 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
     @Test
     void osmToRSU() {
         String directory ="./target/osm_processchain_geoindicators_rsu"
-
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()

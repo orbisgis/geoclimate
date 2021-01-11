@@ -54,9 +54,8 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         return null;
     }
 
-    private def loadFiles(String inseeCode, String dbSuffixName){
-        H2GIS h2GISDatabase = H2GIS.open(h2db+dbSuffixName+";AUTO_SERVER=TRUE", "sa", "")
-
+    private def loadFiles(String dbPath){
+        H2GIS h2GISDatabase = H2GIS.open(dbPath)
         // Load parameter files
         paramTables.each{
             h2GISDatabase.load(getClass().getResource(it+".csv"), it, true)
@@ -88,9 +87,11 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 
     @Test
     void prepareBDTopoTest(){
-        def dbSuffixName = "_prepare"
-        def inseeCode = communeToTest
-        H2GIS h2GISDatabase = loadFiles(inseeCode, dbSuffixName)
+        String directory ="./target/bdtopo_chain_prepare"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        H2GIS h2GISDatabase = loadFiles(dirFile.absolutePath+File.separator+"bdtopo_db;AUTO_SERVER=TRUE")
         def process = BDTopo_V2.prepareData
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
@@ -144,8 +145,11 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 
     @Test
     void bdtopoLczFromTestFiles() {
-        def dbSuffixName = "_lcz"
-        H2GIS datasource = loadFiles(communeToTest, dbSuffixName)
+        String directory ="./target/bdtopo_chain_lcz"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        H2GIS datasource = loadFiles(dirFile.absolutePath+File.separator+"bdtopo_db;AUTO_SERVER=TRUE")
         def process = BDTopo_V2.prepareData
         assertTrue process.execute([datasource: datasource,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
@@ -160,12 +164,6 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                     hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
         ])
         def abstractTables = process.getResults()
-
-        String directory ="./target/bdtopo_processchain_lcz"
-
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
 
         // Define the weights of each indicator in the LCZ creation
         def mapOfWeights =  ["sky_view_factor"                : 4,
@@ -192,8 +190,11 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 
     @Test
     void bdtopoGeoIndicatorsFromTestFiles() {
-        def dbSuffixName = "_geoIndicators"
-        H2GIS h2GISDatabase = loadFiles(communeToTest, dbSuffixName)
+        String directory ="./target/bdtopo_chain_geoindicators"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        H2GIS h2GISDatabase = loadFiles(dirFile.absolutePath+File.separator+"bdtopo_db;AUTO_SERVER=TRUE")
         def process = BDTopo_V2.prepareData
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
@@ -213,12 +214,6 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         def prefixName = ""
         def svfSimplified = true //Fast test
         def indicatorUse = ["TEB", "URBAN_TYPOLOGY", "LCZ"]
-        String directory ="./target/bdtopo_processchain_lcz"
-
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
-
         //Run tests
         geoIndicatorsCalc(dirFile.absolutePath, h2GISDatabase, abstractTables.outputZone, abstractTables.outputBuilding,
                 abstractTables.outputRoad, abstractTables.outputRail, abstractTables.outputVeget,
@@ -353,7 +348,6 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 
     @Test
     void runBDTopoWorkflow(){
-        def dbSuffixName = "_workflow"
         def inseeCode = communeToTest
         def defaultParameters = [distance: 1000,distance_buffer:500,prefixName: "",
                                  "hLevMin": 3,
@@ -365,7 +359,11 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                                  "impervious_surface_fraction" : 0, "pervious_surface_fraction": 0,
                                                  "height_of_roughness_elements": 3, "terrain_roughness_length": 1]
                                  ]]
-        H2GIS h2GISDatabase = loadFiles(inseeCode, dbSuffixName)
+        String directory ="./target/bdtopo_chain_workflow"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        H2GIS h2GISDatabase = loadFiles(dirFile.absolutePath+File.separator+"bdtopo_db;AUTO_SERVER=TRUE")
         def process = new WorkflowBDTopo_V2().bdtopo_processing(h2GISDatabase, defaultParameters, inseeCode, null, null, null, null, 0);
         checkSpatialTable(h2GISDatabase, "block_indicators")
         checkSpatialTable(h2GISDatabase, "building_indicators")
@@ -375,22 +373,21 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
 
     @Test
     void runBDTopoWorkflowWithSRID(){
-        def dbSuffixName = "_workflow"
         def inseeCode = communeToTest
         def defaultParameters = [distance: 1000,distance_buffer:500,  prefixName: "",
-                                 "hLevMax": 15,
-                                 "hThresholdLev2": 10,
-                                 rsu_indicators: [indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+                                 rsu_indicators: [
+                                 indicatorUse: ["LCZ"],
                                  svfSimplified:true,
                                  mapOfWeights : ["sky_view_factor" : 2, "aspect_ratio": 1, "building_surface_fraction": 4,
                                                  "impervious_surface_fraction" : 0, "pervious_surface_fraction": 0,
                                                  "height_of_roughness_elements": 3, "terrain_roughness_length": 1]]]
-        H2GIS h2GISDatabase = loadFiles(inseeCode, dbSuffixName)
-        def outputFolder = "./target/bd_topo_workflow_srid"
-        File dirFile = new File(outputFolder)
+        String directory ="./target/bdtopo_chain_workflow"
+        File dirFile = new File(directory)
         if(dirFile.exists()){
-        FileUtilities.deleteFiles(dirFile, true)
+            FileUtilities.deleteFiles(dirFile, true)
         }
+        dirFile.mkdir()
+        H2GIS h2GISDatabase = loadFiles(dirFile.absolutePath+File.separator+"bdtopo_db;AUTO_SERVER=TRUE")
         dirFile.mkdir()
         def tablesToSave = ["building_indicators",
                             "block_indicators",
