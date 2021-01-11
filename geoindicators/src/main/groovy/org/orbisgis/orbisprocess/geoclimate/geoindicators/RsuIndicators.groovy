@@ -1479,6 +1479,8 @@ IProcess surfaceFractions() {
             def query = """DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT b.${id_rsu} """
             def end_query = """ FROM $spatialRelationsTable AS a RIGHT JOIN $rsuTable b 
                             ON a.${id_rsu}=b.${id_rsu} GROUP BY b.${id_rsu};"""
+
+            if(superpositions){
             // Calculates the fraction of overlapped layers according to "superpositionsWithPriorities"
             superpositions.each { key, values ->
                 // Calculating the overlaying layer when it has no overlapped layer
@@ -1538,7 +1540,21 @@ IProcess surfaceFractions() {
 
                 }
             }
-            datasource query + end_query
+                datasource query + end_query
+
+            }else{
+                def var2Zero = []
+                priorities.each { val ->
+                    def var2ZeroQuery = ""
+                    if (var2Zero) {
+                        var2ZeroQuery = " AND a." + var2Zero.join("=0 AND a.") + " = 0 "
+                    }
+                    var2Zero.add(val)
+                    query += ", COALESCE(SUM(CASE WHEN a.$val =1 $var2ZeroQuery THEN a.area ELSE 0 END),0)/st_area(b.the_geom) AS ${val}_fraction "
+                }
+                datasource query + end_query
+
+            }
             //Cache the table name to re-use it
             cacheTableName(BASE_TABLE_NAME, outputTableName)
 

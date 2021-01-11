@@ -567,4 +567,32 @@ class RsuIndicatorsTests {
         def result0 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName} WHERE ID_RSU=1")
         assertEquals(0.0, result0["building_fraction"])
     }
+
+    @Test
+    void surfaceFractionTest5() {
+        // Only the RSU 4 is conserved for the test
+        h2GIS "DROP TABLE IF EXISTS rsu_tempo;" +
+                "CREATE TABLE rsu_tempo AS SELECT * " +
+                "FROM rsu_test WHERE id_rsu = 4"
+        // Need to create the smallest geometries used as input of the surface fraction process
+        def p = Geoindicators.RsuIndicators.smallestCommunGeometry()
+        assertTrue p.execute([
+                rsuTable: "rsu_tempo",buildingTable: "building_test",vegetationTable: "veget_test",waterTable: "hydro_test",
+                prefixName: "test", datasource: h2GIS])
+        def tempoTable = p.results.outputTableName
+
+        def p0 = Geoindicators.RsuIndicators.surfaceFractions()
+        def superpositions0 = []
+        def priorities0 = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
+        assertTrue p0.execute([
+                rsuTable: "rsu_tempo", spatialRelationsTable: tempoTable,
+                superpositions: superpositions0,
+                priorities: priorities0,
+                prefixName: "test", datasource: h2GIS])
+        def result0 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName}")
+        assertEquals(3.0/10, result0["high_vegetation_fraction"])
+        assertEquals(3.0/20, result0["low_vegetation_fraction"])
+        assertEquals(1.0/4, result0["water_fraction"])
+        assertEquals(3.0/10, result0["building_fraction"])
+    }
 }

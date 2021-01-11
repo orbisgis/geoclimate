@@ -7,9 +7,9 @@
     "folder" : "/tmp/..."},
   "parameters":
   {"distance" : 1000,
+    "rsu_indicators": {
     "indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"],
     "svfSimplified": false,
-    "prefixName": "",
     "mapOfWeights":
     {"sky_view_factor": 1,
       "aspect_ratio": 1,
@@ -21,5 +21,6 @@
     "hLevMin": 3,
     "hLevMax": 15,
     "hThresholdLev2": 10
+    }
   }
 }
