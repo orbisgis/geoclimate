@@ -6,6 +6,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - uses: huaxk/postgis-action@v1
+        with:
+          postgresql version: '9.6'
+          postgresql password: orbisgis
+          postgresql user: 'orbisgis'
+          postgresql db: 'orbisgis_db'
       - uses: actions/checkout@v2
       - name: Set up JDK 1.8
         uses: actions/setup-java@v1
