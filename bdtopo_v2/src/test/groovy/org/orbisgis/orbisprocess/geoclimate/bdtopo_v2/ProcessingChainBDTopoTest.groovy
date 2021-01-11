@@ -376,12 +376,12 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         def inseeCode = communeToTest
         def defaultParameters = [distance: 1000,distance_buffer:500,  prefixName: "",
                                  rsu_indicators: [
-                                 indicatorUse: ["LCZ"],
+                                 indicatorUse: ["LCZ", "TEB"],
                                  svfSimplified:true,
                                  mapOfWeights : ["sky_view_factor" : 2, "aspect_ratio": 1, "building_surface_fraction": 4,
                                                  "impervious_surface_fraction" : 0, "pervious_surface_fraction": 0,
                                                  "height_of_roughness_elements": 3, "terrain_roughness_length": 1]]]
-        String directory ="./target/bdtopo_chain_workflow"
+        String directory ="./target/bdtopo_chain_workflow_srid"
         File dirFile = new File(directory)
         if(dirFile.exists()){
             FileUtilities.deleteFiles(dirFile, true)
@@ -406,7 +406,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         checkSpatialTable(h2GISDatabase, "rsu_indicators")
         checkSpatialTable(h2GISDatabase, "rsu_lcz")
         def geoFiles = []
-        def  folder = new File("./target/bd_topo_workflow_srid/bdtopo_v2_12174")
+        def  folder = new File(directory+File.separator+"bdtopo_v2_12174")
         folder.eachFileRecurse groovy.io.FileType.FILES,  { file ->
             if (file.name.toLowerCase().endsWith(".geojson")) {
                 geoFiles << file.getAbsolutePath()
