@@ -561,7 +561,6 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         ["distance" : 0,
                          rsu_indicators:[
                          "svfSimplified": true,
-                         "prefixName": "",
                          "mapOfWeights":
                                  ["sky_view_factor": 1,
                                   "aspect_ratio": 1,

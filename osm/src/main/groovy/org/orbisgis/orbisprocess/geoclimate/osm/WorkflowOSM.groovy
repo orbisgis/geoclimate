@@ -594,6 +594,7 @@ IProcess osm_processing() {
                                             hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
                                             rsu_lcz:results.outputTableRsuLcz,
                                             rsu_urban_typo_area:results.outputTableRsuUrbanTypoArea,
+                                            rsu_urban_typo_floor_area:results.outputTableRsuUrbanTypoFloorArea,
                                             prefixName: processing_parameters.prefixName
                                     )){
                                         results.put("grid_indicators", rasterizedIndicators.results.outputTableName)

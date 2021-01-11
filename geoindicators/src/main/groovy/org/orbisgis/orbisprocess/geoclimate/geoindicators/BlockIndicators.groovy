@@ -3,7 +3,6 @@ package org.orbisgis.orbisprocess.geoclimate.geoindicators
 import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.*
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisdata.processmanager.process.*
 
 @BaseScript Geoindicators geoindicators
 

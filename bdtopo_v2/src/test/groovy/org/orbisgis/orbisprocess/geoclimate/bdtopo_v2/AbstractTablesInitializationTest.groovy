@@ -1,10 +1,7 @@
 package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 
 import static org.junit.jupiter.api.Assertions.*
 
