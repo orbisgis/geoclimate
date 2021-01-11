@@ -7,6 +7,9 @@
     "folder" : "/tmp/..."},
   "parameters":
   {"distance" : 1000,
+    "hLevMin": 3,
+    "hLevMax": 15,
+    "hThresholdLev2": 10,
     "rsu_indicators": {
     "indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"],
     "svfSimplified": false,
@@ -17,10 +20,7 @@
       "impervious_surface_fraction" : 1,
       "pervious_surface_fraction": 1,
       "height_of_roughness_elements": 1,
-      "terrain_roughness_class": 1},
-    "hLevMin": 3,
-    "hLevMax": 15,
-    "hThresholdLev2": 10
+      "terrain_roughness_class": 1}
     }
   }
 }

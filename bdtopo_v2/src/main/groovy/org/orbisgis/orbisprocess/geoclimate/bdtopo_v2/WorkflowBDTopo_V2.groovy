@@ -1001,7 +1001,8 @@ def findIDZones(def h2gis_datasource, def id_zones){
  */
 def extractProcessingParameters(def processing_parameters){
     def defaultParameters = [distance: 1000,
-                             distance_buffer:500,prefixName: ""]
+                             distance_buffer:500,prefixName: "",
+                             hLevMin : 3, hLevMax: 15, hThresholdLev2: 10]
     if(processing_parameters){
         def distanceP =  processing_parameters.distance
         if(distanceP && distanceP in Number){
@@ -1014,6 +1015,18 @@ def extractProcessingParameters(def processing_parameters){
         def prefixNameP = processing_parameters.prefixName
         if(prefixNameP && prefixNameP in String){
             defaultParameters.prefixName = prefixNameP
+        }
+        def hLevMinP =  processing_parameters.hLevMin
+        if(hLevMinP && hLevMinP in Integer){
+            defaultParameters.hLevMin = hLevMinP
+        }
+        def hLevMaxP =  processing_parameters.hLevMax
+        if(hLevMaxP && hLevMaxP in Integer){
+            defaultParameters.hLevMax = hLevMaxP
+        }
+        def hThresholdLev2P =  processing_parameters.hThresholdLev2
+        if(hThresholdLev2P && hThresholdLev2P in Integer){
+            defaultParameters.hThresholdLev2 = hThresholdLev2P
         }
 
         //Check for rsu indicators
@@ -1031,7 +1044,6 @@ def extractProcessingParameters(def processing_parameters){
                                                           "pervious_surface_fraction"      : 0,
                                                           "height_of_roughness_elements"   : 6,
                                                           "terrain_roughness_length"       : 0.5],
-                                         hLevMin : 3, hLevMax: 15, hThresholdLev2: 10,
                                          urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_0.model"]
             def indicatorUseP = rsu_indicators.indicatorUse
             if(indicatorUseP && indicatorUseP in List) {
@@ -1063,18 +1075,6 @@ def extractProcessingParameters(def processing_parameters){
             def svfSimplifiedP = rsu_indicators.svfSimplified
             if(svfSimplifiedP && svfSimplifiedP in Boolean){
                 rsu_indicators_default.svfSimplified = svfSimplifiedP
-            }
-            def hLevMinP =  rsu_indicators.hLevMin
-            if(hLevMinP && hLevMinP in Integer){
-                rsu_indicators_default.hLevMin = hLevMinP
-            }
-            def hLevMaxP =  rsu_indicators.hLevMax
-            if(hLevMaxP && hLevMaxP in Integer){
-                rsu_indicators_default.hLevMax = hLevMaxP
-            }
-            def hThresholdLev2P =  rsu_indicators.hThresholdLev2
-            if(hThresholdLev2P && hThresholdLev2P in Integer){
-                rsu_indicators_default.hThresholdLev2 = hThresholdLev2P
             }
 
             def mapOfWeightsP = rsu_indicators.mapOfWeights
@@ -1191,12 +1191,12 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
 
             //Add the GIS layers to the list of results
             def results = [:]
-            results.put("buildingTableName", buildingTableName)
             results.put("roadTableName", roadTableName)
             results.put("railTableName", railTableName)
             results.put("hydrographicTableName", hydrographicTableName)
             results.put("vegetationTableName", vegetationTableName)
             results.put("imperviousTableName", imperviousTableName)
+            results.put("outputTableBuildingIndicators", buildingTableName)
 
             //Compute the RSU indicators
             if(rsu_indicators_params){
@@ -1224,7 +1224,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
                 IProcess rasterizedIndicators =  ProcessingChain.GeoIndicatorsChain.rasterizeIndicators()
                 if(rasterizedIndicators.execute(datasource:h2gis_datasource,zoneEnvelopeTableName: zoneTableName,
                         x_size : x_size, y_size : y_size,list_indicators :grid_indicators_params.indicators,
-                        buildingTable: buildingTableName, roadTable: roadTableName, vegetationTable: vegetationTableName,
+                        buildingTable: results.outputTableBuildingIndicators, roadTable: roadTableName, vegetationTable: vegetationTableName,
                         hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
                         rsu_lcz:results.outputTableRsuLcz,
                         rsu_urban_typo_area:results.outputTableRsuUrbanTypoArea,

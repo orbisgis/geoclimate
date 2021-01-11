@@ -282,6 +282,9 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                             "zones":"zones" ]]],
                 "parameters":
                         ["distance" : 0,
+                         "hLevMin": 3,
+                         "hLevMax": 15,
+                         "hThresholdLev2": 10,
                           rsu_indicators: [
                          "indicatorUse": ["LCZ", "TEB", "URBAN_TYPOLOGY"],
                          "svfSimplified": true,
@@ -292,10 +295,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                   "impervious_surface_fraction" : 1,
                                   "pervious_surface_fraction": 1,
                                   "height_of_roughness_elements": 1,
-                                  "terrain_roughness_class": 1  ],
-                         "hLevMin": 3,
-                         "hLevMax": 15,
-                         "hThresholdLev2": 10]
+                                  "terrain_roughness_class": 1  ]]
                         ]
         ]
         IProcess process = BDTopo_V2.workflow
@@ -331,6 +331,9 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                             "zones":"zones" ]]],
                 "parameters":
                         ["distance" : 0,
+                         "hLevMin": 3,
+                         "hLevMax": 15,
+                         "hThresholdLev2": 10,
                          rsu_indicators: [
                          "indicatorUse": ["LCZ", "TEB", "URBAN_TYPOLOGY"],
                          "svfSimplified": true,
@@ -341,10 +344,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                   "impervious_surface_fraction" : 1,
                                   "pervious_surface_fraction": 1,
                                   "height_of_roughness_elements": 1,
-                                  "terrain_roughness_class": 1  ],
-                         "hLevMin": 3,
-                         "hLevMax": 15,
-                         "hThresholdLev2": 10]
+                                  "terrain_roughness_class": 1  ]]
                         ]
         ]
         IProcess process = BDTopo_V2.workflow
@@ -356,12 +356,15 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         def dbSuffixName = "_workflow"
         def inseeCode = communeToTest
         def defaultParameters = [distance: 1000,distance_buffer:500,prefixName: "",
+                                 "hLevMin": 3,
+                                 "hLevMax": 15,
+                                 "hThresholdLev2": 10,
                                  rsu_indicators: [ indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
                                  svfSimplified:true,
                                  mapOfWeights : ["sky_view_factor" : 2, "aspect_ratio": 1, "building_surface_fraction": 4,
                                                  "impervious_surface_fraction" : 0, "pervious_surface_fraction": 0,
-                                                 "height_of_roughness_elements": 3, "terrain_roughness_length": 1],
-                                 hLevMin : 3, hLevMax: 15, hThresholdLev2: 10]]
+                                                 "height_of_roughness_elements": 3, "terrain_roughness_length": 1]
+                                 ]]
         H2GIS h2GISDatabase = loadFiles(inseeCode, dbSuffixName)
         def process = new WorkflowBDTopo_V2().bdtopo_processing(h2GISDatabase, defaultParameters, inseeCode, null, null, null, null, 0);
         checkSpatialTable(h2GISDatabase, "block_indicators")
@@ -374,12 +377,14 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     void runBDTopoWorkflowWithSRID(){
         def dbSuffixName = "_workflow"
         def inseeCode = communeToTest
-        def defaultParameters = [distance: 1000,distance_buffer:500,  prefixName: "", rsu_indicators: [indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+        def defaultParameters = [distance: 1000,distance_buffer:500,  prefixName: "",
+                                 "hLevMax": 15,
+                                 "hThresholdLev2": 10,
+                                 rsu_indicators: [indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
                                  svfSimplified:true,
                                  mapOfWeights : ["sky_view_factor" : 2, "aspect_ratio": 1, "building_surface_fraction": 4,
                                                  "impervious_surface_fraction" : 0, "pervious_surface_fraction": 0,
-                                                 "height_of_roughness_elements": 3, "terrain_roughness_length": 1],
-                                 hLevMin : 3, hLevMax: 15, hThresholdLev2: 10]]
+                                                 "height_of_roughness_elements": 3, "terrain_roughness_length": 1]]]
         H2GIS h2GISDatabase = loadFiles(inseeCode, dbSuffixName)
         def outputFolder = "./target/bd_topo_workflow_srid"
         File dirFile = new File(outputFolder)

@@ -230,10 +230,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                                                    "impervious_surface_fraction" : 1,
                                                    "pervious_surface_fraction": 1,
                                                    "height_of_roughness_elements": 1,
-                                                   "terrain_roughness_length": 1],
-                                          "hLevMin": 3,
-                                          "hLevMax": 15,
-                                          "hThresholdLev2": 10],
+                                                   "terrain_roughness_length": 1]]
                         ]
         ]
         IProcess process = OSM.workflow
@@ -452,6 +449,9 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "folder" : "$directory"],
                 "parameters":
                         ["distance" : 100,
+                         "hLevMin": 3,
+                         "hLevMax": 15,
+                         "hThresholdLev2": 10,
                          rsu_indicators: ["indicatorUse": ["LCZ"],
                                           "svfSimplified": true,
                          "mapOfWeights":
@@ -462,10 +462,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                                   "pervious_surface_fraction": 1,
                                   "height_of_roughness_elements": 1,
                                   "terrain_roughness_length": 1 ,
-                                  "terrain_roughness_class": 1 ],
-                         "hLevMin": 3,
-                         "hLevMax": 15,
-                         "hThresholdLev2": 10]
+                                  "terrain_roughness_class": 1 ]]
                         ]
         ]
         IProcess process = OSM.workflow
@@ -559,6 +556,9 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "folder" : "$directory"],
                 "parameters":
                         ["distance" : 0,
+                         "hLevMin": 3,
+                         "hLevMax": 15,
+                         "hThresholdLev2": 10,
                          rsu_indicators:[
                          "svfSimplified": true,
                          "mapOfWeights":
@@ -568,10 +568,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                                   "impervious_surface_fraction" : 1,
                                   "pervious_surface_fraction": 1,
                                   "height_of_roughness_elements": 1,
-                                  "terrain_roughness_length": 1  ],
-                         "hLevMin": 3,
-                         "hLevMax": 15,
-                         "hThresholdLev2": 10]
+                                  "terrain_roughness_length": 1  ]]
                         ]
         ]
         IProcess process = OSM.workflow
