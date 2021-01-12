@@ -472,6 +472,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         }
     }
 
+    @Disabled
     @Test
     void testGrid_Indicators() {
         String directory ="./target/bdtopo_chain_grid"
