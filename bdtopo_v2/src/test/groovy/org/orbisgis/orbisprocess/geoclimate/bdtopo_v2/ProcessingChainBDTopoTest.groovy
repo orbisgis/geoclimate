@@ -484,7 +484,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                 "geoclimatedb" : [
                         "folder" : "${dirFile.absolutePath}",
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
-                        "delete" :true
+                        "delete" :false
                 ],
                 "input" : [
                         "folder": ["path" :dataFolder,
@@ -503,11 +503,8 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         ]
         IProcess process = BDTopo_V2.workflow
         assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
-        def  grid_file = new File(dirFile.absolutePath+File.separator+"bdtopo_v2_12174" +File.separator+"grid_indicators.geojson")
-        assertTrue(grid_file.exists())
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
-        h2gis.load(grid_file, "grid_file")
-        assertTrue h2gis.firstRow("select count(*) as count from grid_file where water_fraction>0").count>0
+        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
     }
 
 
