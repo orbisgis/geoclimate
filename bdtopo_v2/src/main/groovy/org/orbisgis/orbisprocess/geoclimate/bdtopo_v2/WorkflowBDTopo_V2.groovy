@@ -1231,7 +1231,9 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
                         prefixName: processing_parameters.prefixName
                 )){
                     results.put("grid_indicators", rasterizedIndicators.results.outputTableName)
-                    ouputTableFiles<<rasterizedIndicators.results.outputTableName
+                    if(outputFiles){
+                        outputFiles<<rasterizedIndicators.results.outputTableName
+                    }
                 }
             }
 

@@ -425,7 +425,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                            "block_indicators":"block_indicators",
                            "rsu_indicators":"rsu_indicators",
                            "rsu_lcz":"rsu_lcz",
-                           "zones":"zones" ]
+                           "zones":"zones", "grid_indicators":"grid_indicators" ]
         //Drop all output tables if exist
         postGIS.execute("DROP TABLE IF EXISTS ${outputTables.values().join(",")};");
         String directory ="./target/bdtopo_workflow_postgis"
@@ -454,7 +454,12 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                          rsu_indicators: [
                          "indicatorUse": ["LCZ", "URBAN_TYPOLOGY"],
                          "svfSimplified": true
-                          ]
+                          ],
+                         "grid_indicators": [
+                                 "x_size": 1000,
+                                 "y_size": 1000,
+                                 "indicators": ["WATER_FRACTION"]
+                         ]
                         ]
         ]
         IProcess process = BDTopo_V2.workflow
@@ -466,6 +471,44 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
             assertTrue(spatialTable.getRowCount()>0)
         }
 
+    }
+
+    @Test
+    void testGrid_Indicators() {
+        String directory ="./target/bdtopo_chain_grid"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        String dataFolder = getDataFolderPath()
+        def bdTopoParameters = [
+                "description" :"Example of configuration file to run the grid indicators",
+                "geoclimatedb" : [
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete" :true
+                ],
+                "input" : [
+                        "folder": ["path" :dataFolder,
+                                   "id_zones":[communeToTest]]],
+                "output" :[
+                        "folder" : ["path": "$directory",
+                                    "tables": ["grid_indicators"]]],
+                "parameters":
+                        ["distance" : 0,
+                         "grid_indicators": [
+                                 "x_size": 1000,
+                                 "y_size": 1000,
+                                 "indicators": ["WATER_FRACTION"]
+                         ]
+                        ]
+        ]
+        IProcess process = BDTopo_V2.workflow
+        assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
+        def  grid_file = new File(directory+File.separator+"bdtopo_v2_12174" +File.separator+"grid_indicators.geojson")
+        assertTrue(grid_file.exists())
+        H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
+        h2gis.load(grid_file, "grid_file")
+        assertTrue h2gis.firstRow("select count(*) as count from grid_file where water_fraction>0").count>0
     }
 
 

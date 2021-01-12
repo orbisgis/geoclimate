@@ -505,7 +505,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
         def osm_parmeters = [
-                "description" :"Example of configuration file to run the OSM workflow and store the results in a folder",
+                "description" :"Example of configuration file to run the grid indicators",
                 "geoclimatedb" : [
                         "folder" : "${dirFile.absolutePath}",
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
@@ -532,7 +532,6 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         h2gis.load(grid_file, "grid_file")
         assertTrue h2gis.firstRow("select count(*) as count from grid_file where water_fraction>0").count>0
-
     }
 
     @Disabled

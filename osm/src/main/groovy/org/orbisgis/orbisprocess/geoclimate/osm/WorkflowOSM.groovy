@@ -601,7 +601,9 @@ IProcess osm_processing() {
                                             prefixName: processing_parameters.prefixName
                                     )){
                                         results.put("grid_indicators", rasterizedIndicators.results.outputTableName)
-                                        ouputTableFiles<<rasterizedIndicators.results.outputTableName
+                                        if(ouputTableFiles){
+                                            outputFiles<<rasterizedIndicators.results.outputTableName
+                                        }
                                     }
                             }
 
