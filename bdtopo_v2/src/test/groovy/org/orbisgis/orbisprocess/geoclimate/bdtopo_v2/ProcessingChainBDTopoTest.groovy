@@ -472,7 +472,6 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         }
     }
 
-    @Disabled
     @Test
     void testGrid_Indicators() {
         String directory ="./target/bdtopo_chain_grid"
@@ -504,7 +503,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         ]
         IProcess process = BDTopo_V2.workflow
         assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
-        def  grid_file = new File(directory+File.separator+"bdtopo_v2_12174" +File.separator+"grid_indicators.geojson")
+        def  grid_file = new File(dirFile.absolutePath+File.separator+"bdtopo_v2_12174" +File.separator+"grid_indicators.geojson")
         assertTrue(grid_file.exists())
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         h2gis.load(grid_file, "grid_file")

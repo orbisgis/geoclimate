@@ -528,15 +528,15 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 "parameters":
                         ["distance" : 0,
                          "grid_indicators": [
-                             "x_size": 100,
-                             "y_size": 100,
+                             "x_size": 1000,
+                             "y_size": 1000,
                              "indicators": ["WATER_FRACTION"]
                          ]
                         ]
         ]
         IProcess process = OSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
-        def  grid_file = new File(directory+File.separator+"osm_Pont-de-Veyle" +File.separator+"grid_indicators.geojson")
+        def  grid_file = new File(dirFile.absolutePath+File.separator+"osm_Pont-de-Veyle" +File.separator+"grid_indicators.geojson")
         assertTrue(grid_file.exists())
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         h2gis.load(grid_file, "grid_file")
