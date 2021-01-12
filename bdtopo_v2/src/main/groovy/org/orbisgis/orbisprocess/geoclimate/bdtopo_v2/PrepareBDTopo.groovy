@@ -3,7 +3,6 @@ package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisdata.processmanager.process.ProcessMapper
 
 @BaseScript BDTopo_V2_Utils bdTopo_v2_utils
 
@@ -72,6 +71,15 @@ IProcess prepareData() {
               tableHydroName, tableVegetName, tableImperviousSportName, tableImperviousBuildSurfName, tableImperviousRoadSurfName, tableImperviousActivSurfName,
               tablePiste_AerodromeName, tableReservoirName,hLevMin, hLevMax, hThresholdLev2 ->
 
+            if(!hLevMin){
+                hLevMin=3
+            }
+            if(!hLevMax){
+                hLevMax = 15
+            }
+            if(!hThresholdLev2){
+                hThresholdLev2 = 10
+            }
             if (!datasource) {
                 error "The database to store the BD Topo data doesn't exist"
                 return
@@ -166,54 +174,4 @@ IProcess prepareData() {
 
         }
     }
-}
-
-static ProcessMapper createMapper(){
-    def abstractTablesInit = AbstractTablesInitialization.initParametersAbstract()
-    def bdTopoInitTypes = BDTopoGISLayers.initTypes()
-    def tableFeeding = BDTopoGISLayers.importPreprocess()
-    def dataFormatting = InputDataFormatting.inputDataFormatting()
-
-    ProcessMapper mapper = new ProcessMapper()
-    // FROM abstractTablesInit...
-    // ...to bdTopoInitTypes
-    mapper.link(outputBuildingAbstractUseType : abstractTablesInit, buildingAbstractUseType : bdTopoInitTypes)
-    mapper.link(outputRoadAbstractType : abstractTablesInit, roadAbstractType : bdTopoInitTypes)
-    mapper.link(outputRailAbstractType : abstractTablesInit, railAbstractType : bdTopoInitTypes)
-    mapper.link(outputVegetAbstractType : abstractTablesInit, vegetAbstractType : bdTopoInitTypes)
-
-    // ...to tableFeeding
-    mapper.link(outputBuildingAbstractUseType : abstractTablesInit, buildingAbstractUseType : tableFeeding)
-    mapper.link(outputRoadAbstractType : abstractTablesInit, roadAbstractType : tableFeeding)
-    mapper.link(outputRailAbstractType : abstractTablesInit, railAbstractType : tableFeeding)
-    mapper.link(outputVegetAbstractType : abstractTablesInit, vegetAbstractType : tableFeeding)
-
-    // ...to dataFormatting
-    mapper.link(outputBuildingAbstractParameters : abstractTablesInit, buildingAbstractParameters : dataFormatting)
-    mapper.link(outputRoadAbstractParameters : abstractTablesInit, roadAbstractParameters : dataFormatting)
-    mapper.link(outputVegetAbstractParameters : abstractTablesInit, vegetAbstractParameters : dataFormatting)
-    mapper.link(outputBuildingAbstractUseType : abstractTablesInit, buildingAbstractUseType : dataFormatting)
-    mapper.link(outputRoadAbstractType : abstractTablesInit, roadAbstractType : dataFormatting)
-    mapper.link(outputRailAbstractType : abstractTablesInit, railAbstractType : dataFormatting)
-    mapper.link(outputVegetAbstractType : abstractTablesInit, vegetAbstractType : dataFormatting)
-
-
-    // FROM bdTopoInitTypes...
-    // ...to tableFeeding
-    mapper.link(outputBuildingBDTopoUseType : bdTopoInitTypes, building_bd_topo_use_type : tableFeeding)
-    mapper.link(outputroadBDTopoType : bdTopoInitTypes, road_bd_topo_type : tableFeeding)
-    mapper.link(outputrailBDTopoType : bdTopoInitTypes, rail_bd_topo_type : tableFeeding)
-    mapper.link(outputvegetBDTopoType : bdTopoInitTypes, veget_bd_topo_type : tableFeeding)
-
-    // FROM tableFeeding...
-    // ...to dataFormatting
-    mapper.link(outputBuildingName : tableFeeding, inputBuilding : dataFormatting)
-    mapper.link(outputRoadName : tableFeeding, inputRoad : dataFormatting)
-    mapper.link(outputRailName : tableFeeding, inputRail : dataFormatting)
-    mapper.link(outputHydroName : tableFeeding, inputHydro : dataFormatting)
-    mapper.link(outputVegetName : tableFeeding, inputVeget : dataFormatting)
-    mapper.link(outputZoneName : tableFeeding, inputZone : dataFormatting)
-    mapper.link(outputZoneNeighborsName : tableFeeding, inputZoneNeighbors : dataFormatting)
-
-    return mapper
 }

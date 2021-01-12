@@ -1044,7 +1044,7 @@ def extractProcessingParameters(def processing_parameters){
                                                           "pervious_surface_fraction"      : 0,
                                                           "height_of_roughness_elements"   : 6,
                                                           "terrain_roughness_length"       : 0.5],
-                                         urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_0.model"]
+                                         urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_1.model"]
             def indicatorUseP = rsu_indicators.indicatorUse
             if(indicatorUseP && indicatorUseP in List) {
                 def allowed_rsu_indicators = ["LCZ", "URBAN_TYPOLOGY", "TEB"]

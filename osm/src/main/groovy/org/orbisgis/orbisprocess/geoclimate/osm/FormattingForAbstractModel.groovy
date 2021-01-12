@@ -30,6 +30,17 @@ IProcess formatBuildingLayer() {
         inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, h_lev_min: 3, h_lev_max: 15, hThresholdLev2: 10, jsonFilename: "",  urbanAreasTableName : ""
         outputs outputTableName: String, outputEstimateTableName: String
         run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, epsg, h_lev_min, h_lev_max, hThresholdLev2, jsonFilename, urbanAreasTableName ->
+
+            if(!h_lev_min){
+                h_lev_min=3
+            }
+            if(!h_lev_max){
+                h_lev_max = 15
+            }
+            if(!hThresholdLev2){
+                hThresholdLev2 = 10
+            }
+
             def outputTableName = postfix "INPUT_BUILDING"
             info 'Formating building layer'
             outputTableName = "INPUT_BUILDING_${UUID.randomUUID().toString().replaceAll("-", "_")}"

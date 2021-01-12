@@ -376,7 +376,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         def inseeCode = communeToTest
         def defaultParameters = [distance: 1000,distance_buffer:500,  prefixName: "",
                                  rsu_indicators: [
-                                 indicatorUse: ["LCZ", "TEB"],
+                                 indicatorUse: ["LCZ", "URBAN_TYPOLOGY"],
                                  svfSimplified:true,
                                  mapOfWeights : ["sky_view_factor" : 2, "aspect_ratio": 1, "building_surface_fraction": 4,
                                                  "impervious_surface_fraction" : 0, "pervious_surface_fraction": 0,
