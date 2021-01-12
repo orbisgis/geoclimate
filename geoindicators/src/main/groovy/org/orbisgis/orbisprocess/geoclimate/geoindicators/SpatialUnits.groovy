@@ -44,6 +44,10 @@ IProcess createRSU() {
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
 
+            if(!inputTableName){
+                error "The input data to compute the RSU cannot be null or empty"
+                return null
+            }
             def epsg = datasource.getSpatialTable(inputTableName).srid
 
             if (area <= 0) {

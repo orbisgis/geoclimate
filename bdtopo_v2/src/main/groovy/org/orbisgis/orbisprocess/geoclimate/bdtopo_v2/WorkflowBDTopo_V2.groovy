@@ -75,9 +75,10 @@ import java.sql.SQLException
  *     ,
  *   [OPTIONAL ENTRY]  "parameters":
  *     {"distance" : 1000,
+ *     "prefixName": "",
+ *          rsu_indicators:{
  *         "indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"],
- *         "svfSimplified": false,
- *         "prefixName": "",
+ *         "svfSimplified": false, *
  *         "mapOfWeights":
  *         {"sky_view_factor"                : 4,
  *          "aspect_ratio"                   : 3,
@@ -89,6 +90,7 @@ import java.sql.SQLException
  *         "hLevMin": 3,
  *         "hLevMax": 15,
  *         "hThresho2": 10
+ *         }
  *     }
  *     }
  * The parameters entry tag contains all geoclimate chain parameters.
@@ -205,7 +207,7 @@ IProcess workflow() {
                             id_zones = inputFolder.id_zones
                         }
                         if (output) {
-                            def geoclimatetTableNames = ["building_indicators",
+                            def geoclimateTableNames = ["building_indicators",
                                                          "block_indicators",
                                                          "rsu_indicators",
                                                          "rsu_lcz",
@@ -219,7 +221,8 @@ IProcess workflow() {
                                                          "urban_areas",
                                                          "rsu_urban_typo_area",
                                                          "rsu_urban_typo_floor_area",
-                                                         "building_urban_typo"]
+                                                         "building_urban_typo",
+                                                         "grid_indicators"]
                             //Get processing parameters
                             def processing_parameters = extractProcessingParameters(parameters.parameters)
                             if(!processing_parameters){
@@ -251,7 +254,7 @@ IProcess workflow() {
                                 }
                                 //Check not the conditions for the output database
                                 def outputTableNames = outputDataBase.get("tables")
-                                def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
+                                def allowedOutputTableNames = geoclimateTableNames.intersect(outputTableNames.keySet())
                                 def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size() !=
                                         allowedOutputTableNames.size()
                                 if (!allowedOutputTableNames && notSameTableNames) {
@@ -332,7 +335,7 @@ IProcess workflow() {
 
                             } else if (outputDataBase) {
                                 def outputTableNames = outputDataBase.tables
-                                def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
+                                def allowedOutputTableNames = geoclimateTableNames.intersect(outputTableNames.keySet())
                                 def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size() !=
                                         allowedOutputTableNames.size()
                                 if (allowedOutputTableNames && !notSameTableNames) {
@@ -998,21 +1001,8 @@ def findIDZones(def h2gis_datasource, def id_zones){
  */
 def extractProcessingParameters(def processing_parameters){
     def defaultParameters = [distance: 1000,
-                             distance_buffer:500,
-                             indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
-                             svfSimplified:false, prefixName: "",
-                             surface_vegetation: 10000,
-                             surface_hydro: 2500,
-                             snappingTolerance :0.01,
-                             mapOfWeights : ["sky_view_factor"                : 4,
-                                             "aspect_ratio"                   : 3,
-                                             "building_surface_fraction"      : 8,
-                                             "impervious_surface_fraction"    : 0,
-                                             "pervious_surface_fraction"      : 0,
-                                             "height_of_roughness_elements"   : 6,
-                                             "terrain_roughness_length"       : 0.5],
-                             hLevMin : 3, hLevMax: 15, hThresholdLev2: 10,
-                             urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_0.model"]
+                             distance_buffer:500,prefixName: "",
+                             hLevMin : 3, hLevMax: 15, hThresholdLev2: 10]
     if(processing_parameters){
         def distanceP =  processing_parameters.distance
         if(distanceP && distanceP in Number){
@@ -1022,44 +1012,10 @@ def extractProcessingParameters(def processing_parameters){
         if(distance_bufferP && distance_bufferP in Number){
             defaultParameters.distance_buffer = distance_bufferP
         }
-        def snappingToleranceP =  processing_parameters.snappingTolerance
-        if(snappingToleranceP && snappingToleranceP in Number){
-            defaultParameters.snappingTolerance = snappingToleranceP
-        }
-        def surface_vegetationP =  processing_parameters.surface_vegetation
-        if(surface_vegetationP && surface_vegetationP in Number){
-            defaultParameters.surface_vegetation = surface_vegetationP
-        }
-        def surface_hydroP =  processing_parameters.surface_hydro
-        if(surface_hydroP && surface_hydroP in Number){
-            defaultParameters.surface_hydro = surface_hydroP
-        }
-
-        def indicatorUseP = processing_parameters.indicatorUse
-        if(indicatorUseP && indicatorUseP in List){
-            defaultParameters.indicatorUse = indicatorUseP
-        }
-
-        def svfSimplifiedP = processing_parameters.svfSimplified
-        if(svfSimplifiedP && svfSimplifiedP in Boolean){
-            defaultParameters.svfSimplified = svfSimplifiedP
-        }
         def prefixNameP = processing_parameters.prefixName
         if(prefixNameP && prefixNameP in String){
             defaultParameters.prefixName = prefixNameP
         }
-
-        def mapOfWeightsP = processing_parameters.mapOfWeights
-        if(mapOfWeightsP && mapOfWeightsP in Map){
-            def defaultmapOfWeights = defaultParameters.mapOfWeights
-            if((defaultmapOfWeights+mapOfWeightsP).size()!=defaultmapOfWeights.size()){
-                error "The number of mapOfWeights parameters must contain exactly the parameters ${defaultmapOfWeights.keySet().join(",")}"
-                return
-            }else{
-            defaultParameters.mapOfWeights = mapOfWeightsP
-            }
-        }
-
         def hLevMinP =  processing_parameters.hLevMin
         if(hLevMinP && hLevMinP in Integer){
             defaultParameters.hLevMin = hLevMinP
@@ -1072,6 +1028,100 @@ def extractProcessingParameters(def processing_parameters){
         if(hThresholdLev2P && hThresholdLev2P in Integer){
             defaultParameters.hThresholdLev2 = hThresholdLev2P
         }
+
+        //Check for rsu indicators
+        def  rsu_indicators = processing_parameters.rsu_indicators
+        if(rsu_indicators){
+            def rsu_indicators_default =[indicatorUse: [],
+                                         svfSimplified:false,
+                                         surface_vegetation: 10000,
+                                         surface_hydro: 2500,
+                                         snappingTolerance :0.01,
+                                         mapOfWeights :  ["sky_view_factor"                : 4,
+                                                          "aspect_ratio"                   : 3,
+                                                          "building_surface_fraction"      : 8,
+                                                          "impervious_surface_fraction"    : 0,
+                                                          "pervious_surface_fraction"      : 0,
+                                                          "height_of_roughness_elements"   : 6,
+                                                          "terrain_roughness_length"       : 0.5],
+                                         urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_1.model"]
+            def indicatorUseP = rsu_indicators.indicatorUse
+            if(indicatorUseP && indicatorUseP in List) {
+                def allowed_rsu_indicators = ["LCZ", "URBAN_TYPOLOGY", "TEB"]
+                def allowedOutputRSUIndicators = allowed_rsu_indicators.intersect(indicatorUseP*.toUpperCase())
+                if (allowedOutputRSUIndicators) {
+                    rsu_indicators_default.indicatorUse = indicatorUseP
+                }
+                else {
+                    info "Please set a valid list of RSU indicator names in ${allowedOutputRSUIndicators}"
+                    return
+                }
+            }else{
+                info "The list of RSU indicator names cannot be null or empty"
+                return
+            }
+            def snappingToleranceP =  rsu_indicators.snappingTolerance
+            if(snappingToleranceP && snappingToleranceP in Number){
+                rsu_indicators_default.snappingTolerance = snappingToleranceP
+            }
+            def surface_vegetationP =  rsu_indicators.surface_vegetation
+            if(surface_vegetationP && surface_vegetationP in Number){
+                rsu_indicators_default.surface_vegetation = surface_vegetationP
+            }
+            def surface_hydroP =  rsu_indicators.surface_hydro
+            if(surface_hydroP && surface_hydroP in Number){
+                rsu_indicators_default.surface_hydro = surface_hydroP
+            }
+            def svfSimplifiedP = rsu_indicators.svfSimplified
+            if(svfSimplifiedP && svfSimplifiedP in Boolean){
+                rsu_indicators_default.svfSimplified = svfSimplifiedP
+            }
+
+            def mapOfWeightsP = rsu_indicators.mapOfWeights
+            if(mapOfWeightsP && mapOfWeightsP in Map){
+                def defaultmapOfWeights = rsu_indicators_default.mapOfWeights
+                if((defaultmapOfWeights+mapOfWeightsP).size()!=defaultmapOfWeights.size()){
+                    error "The number of mapOfWeights parameters must contain exactly the parameters ${defaultmapOfWeights.keySet().join(",")}"
+                    return
+                }else{
+                    rsu_indicators_default.mapOfWeights = mapOfWeightsP
+                }
+            }
+            defaultParameters.put("rsu_indicators", rsu_indicators_default)
+        }
+        //Check for grid indicators
+        def  grid_indicators = processing_parameters.grid_indicators
+        if(grid_indicators){
+            def x_size = grid_indicators.x_size
+            def y_size = grid_indicators.y_size
+            def list_indicators = grid_indicators.indicators
+            if(x_size && y_size){
+                if(x_size<=0 || y_size<= 0){
+                    info "Invalid grid size padding. Must be greater that 0"
+                    return
+                }
+                if(!list_indicators){
+                    info "The list of indicator names cannot be null or empty"
+                    return
+                }
+                def allowed_grid_indicators=["BUILDING_FRACTION","BUILDING_HEIGHT", "WATER_FRACTION","VEGETATION_FRACTION",
+                                             "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "RSU_URBAN_TYPO_FRACTION", "RSU_LCZ_FRACTION"]
+                def allowedOutputIndicators = allowed_grid_indicators.intersect(list_indicators*.toUpperCase())
+                if(allowedOutputIndicators){
+                    def grid_indicators_tmp =  [
+                            "x_size": x_size,
+                            "y_size": y_size,
+                            "indicators": allowedOutputIndicators
+                    ]
+                    defaultParameters.put("grid_indicators", grid_indicators_tmp)
+                }
+                else {
+                    info "Please set a valid list of indicator names in ${allowed_grid_indicators}"
+                    return
+                }
+            }
+        }
+        return defaultParameters
     }
     return defaultParameters
 }
@@ -1093,7 +1143,6 @@ def extractProcessingParameters(def processing_parameters){
  */
 def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zones, def outputFolder, def outputFiles, def output_datasource, def outputTableNames, def outputSRID, def deleteOutputData=true){
     def  srid =  h2gis_datasource.getSpatialTable("IRIS_GE").srid
-
     if(!(id_zones in Collection)){
         id_zones = [id_zones]
     }
@@ -1136,36 +1185,68 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
             def imperviousTableName = prepareBDTopoData.results.outputImpervious
 
             info "BDTOPO V2 GIS layers formated"
-            //Build the indicators
-            IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
-            if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
-                    buildingTable: buildingTableName, roadTable: roadTableName,
-                    railTable: railTableName, vegetationTable: vegetationTableName,
-                    hydrographicTable: hydrographicTableName, imperviousTable :imperviousTableName,
-                    surface_vegetation: processing_parameters.surface_vegetation, surface_hydro: processing_parameters.surface_hydro,
-                    snappingTolerance : processing_parameters.snappingTolerance,
-                    indicatorUse: processing_parameters.indicatorUse,
-                    svfSimplified: processing_parameters.svfSimplified, prefixName: processing_parameters.prefixName,
-                    mapOfWeights: processing_parameters.mapOfWeights,
-                    urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_1.model")) {
-                error "Cannot build the geoindicators for the zone $id_zone"
-            } else {
-                def results = geoIndicators.results
-                results.put("buildingTableName", buildingTableName)
-                results.put("roadTableName", roadTableName)
-                results.put("railTableName", railTableName)
-                results.put("hydrographicTableName", hydrographicTableName)
-                results.put("vegetationTableName", vegetationTableName)
-                results.put("imperviousTableName", imperviousTableName)
-                if (outputFolder  && outputFiles) {
-                    saveOutputFiles(h2gis_datasource, id_zone, results, outputFiles, outputFolder, "bdtopo_v2_", outputSRID, reproject, deleteOutputData)
-                }
-                if (output_datasource ) {
-                    saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone, srid, outputSRID, reproject)
 
+            def rsu_indicators_params = processing_parameters.rsu_indicators
+            def grid_indicators_params = processing_parameters.grid_indicators
+
+            //Add the GIS layers to the list of results
+            def results = [:]
+            results.put("roadTableName", roadTableName)
+            results.put("railTableName", railTableName)
+            results.put("hydrographicTableName", hydrographicTableName)
+            results.put("vegetationTableName", vegetationTableName)
+            results.put("imperviousTableName", imperviousTableName)
+            results.put("outputTableBuildingIndicators", buildingTableName)
+
+            //Compute the RSU indicators
+            if(rsu_indicators_params){
+                //Build the indicators
+                IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
+                if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
+                        buildingTable: buildingTableName, roadTable: roadTableName,
+                        railTable: railTableName, vegetationTable: vegetationTableName,
+                        hydrographicTable: hydrographicTableName, imperviousTable :imperviousTableName,
+                        surface_vegetation: rsu_indicators_params.surface_vegetation, surface_hydro: rsu_indicators_params.surface_hydro,
+                        snappingTolerance : rsu_indicators_params.snappingTolerance,
+                        indicatorUse: rsu_indicators_params.indicatorUse,
+                        svfSimplified: rsu_indicators_params.svfSimplified, prefixName: processing_parameters.prefixName,
+                        mapOfWeights: rsu_indicators_params.mapOfWeights,
+                        urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_1.model")) {
+                    error "Cannot build the geoindicators for the zone $id_zone"
+                } else {
+                    results.putAll(geoIndicators.getResults())
                 }
-                info "${id_zone} has been processed"
             }
+            //Compute the grid indicators
+            if(grid_indicators_params) {
+                def x_size = grid_indicators_params.x_size
+                def y_size = grid_indicators_params.y_size
+                IProcess rasterizedIndicators =  ProcessingChain.GeoIndicatorsChain.rasterizeIndicators()
+                if(rasterizedIndicators.execute(datasource:h2gis_datasource,zoneEnvelopeTableName: zoneTableName,
+                        x_size : x_size, y_size : y_size,list_indicators :grid_indicators_params.indicators,
+                        buildingTable: results.outputTableBuildingIndicators, roadTable: roadTableName, vegetationTable: vegetationTableName,
+                        hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
+                        rsu_lcz:results.outputTableRsuLcz,
+                        rsu_urban_typo_area:results.outputTableRsuUrbanTypoArea,
+                        prefixName: processing_parameters.prefixName
+                )){
+                    results.put("grid_indicators", rasterizedIndicators.results.outputTableName)
+                    if(outputFiles){
+                        outputFiles<<rasterizedIndicators.results.outputTableName
+                    }
+                }
+            }
+
+            if (outputFolder  && outputFiles) {
+                saveOutputFiles(h2gis_datasource, id_zone, results, outputFiles, outputFolder, "bdtopo_v2_", outputSRID, reproject, deleteOutputData)
+            }
+            if (output_datasource ) {
+                saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone, srid, outputSRID, reproject)
+
+            }
+            info "${id_zone} has been processed"
+
+
         }
         info "Number of areas processed ${index+1} on $nbAreas"
     }
@@ -1231,6 +1312,8 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
             saveTableAsGeojson(results.outputTableRsuUrbanTypoFloorArea, "${subFolder.getAbsolutePath()+File.separator+"rsu_urban_typo_floor_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }else if(it.equals("building_urban_typo")){
             saveTableAsGeojson(results.outputTableBuildingUrbanTypo, "${subFolder.getAbsolutePath()+File.separator+"building_urban_typo"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        }else if(it.equals("grid_indicators")){
+            saveTableAsGeojson(results.grid_indicators, "${subFolder.getAbsolutePath()+File.separator+"grid_indicators"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
     }
 }
@@ -1758,6 +1841,10 @@ def saveTablesInDatabase(def output_datasource, def h2gis_datasource, def output
 
     //Export building_urban_typo
     indicatorTableBatchExportTable(output_datasource, outputTableNames.building_urban_typo,id_zone,h2gis_datasource, h2gis_tables.outputTableBuildingUrbanTypo
+            , "",inputSRID,outputSRID,reproject)
+
+    //Export grid_indicators
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.grid_indicators,id_zone,h2gis_datasource, h2gis_tables.grid_indicators
             , "",inputSRID,outputSRID,reproject)
 
     //Export zone

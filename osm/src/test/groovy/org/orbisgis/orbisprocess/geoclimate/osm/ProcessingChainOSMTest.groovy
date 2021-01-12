@@ -4,6 +4,7 @@ import groovy.json.JsonOutput
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
+import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
@@ -12,16 +13,14 @@ import static org.junit.jupiter.api.Assertions.*
 
 class ProcessingChainOSMTest extends ChainProcessAbstractTest {
 
-    @Disabled
     @Test
     void osmToRSU() {
-        String directory ="./target/osm_processchain_geoindicators"
-
+        String directory ="./target/osm_processchain_geoindicators_rsu"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
         def h2GIS = H2GIS.open(dirFile.absolutePath+File.separator+'osm_chain_db;AUTO_SERVER=TRUE')
-        def zoneToExtract = "Pont de veyle"
+        def zoneToExtract = "Pont-de-Veyle"
         IProcess process = OSM.buildGeoclimateLayers
 
         process.execute([datasource: h2GIS, zoneToExtract :zoneToExtract, distance: 0])
@@ -47,7 +46,9 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                             inputTableName: prepareRSUData.results.outputTableName,
                             inputZoneTableName :process.getResults().outputZone,
                             prefixName    : prefixName])) {
-                h2GIS.getTable(createRSU.results.outputTableName).save(dirFile.absolutePath+File.separator+"${prefixName}.geojson", true)
+                //TODO enable it for debug purpose
+                // h2GIS.getTable(createRSU.results.outputTableName).save(dirFile.absolutePath+File.separator+"${prefixName}.geojson", true)
+                assertTrue(h2GIS.getTable(createRSU.results.outputTableName).getRowCount()>0)
             }
         }
     }
@@ -61,11 +62,12 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         String urlHydro = new File(getClass().getResource("HYDRO.geojson").toURI()).absolutePath
         String urlZone = new File(getClass().getResource("ZONE.geojson").toURI()).absolutePath
 
-        boolean saveResults = true
-        String directory ="./target/osm_processchain_geoindicators"
+        //TODO enable it for debug purpose
+        boolean saveResults = false
+        String directory ="./target/osm_processchain_geoindicators_redon"
         def prefixName = ""
         def indicatorUse = ["URBAN_TYPOLOGY", "LCZ", "TEB"]
-        def svfSimplified = false
+        def svfSimplified = true
 
         File dirFile = new File(directory)
         dirFile.delete()
@@ -94,14 +96,13 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
 
     }
 
-    @Disabled
     @Test
     void osmGeoIndicatorsFromApi() {
         String directory ="./target/osm_processchain_indicators"
-        boolean saveResults = true
+        //TODO enable it for debug purpose
+        boolean saveResults = false
         def prefixName = ""
-        def svfSimplified = false
-
+        def svfSimplified = true
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
@@ -109,7 +110,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osm_chain_db;AUTO_SERVER=TRUE")
 
         //Extract and transform OSM data
-        def zoneToExtract = "Pont de veyle"
+        def zoneToExtract = "Pont-de-Veyle"
 
         IProcess prepareOSMData = OSM.buildGeoclimateLayers
 
@@ -154,7 +155,8 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         String urlHydro = new File(getClass().getResource("HYDRO.geojson").toURI()).absolutePath
         String urlZone = new File(getClass().getResource("ZONE.geojson").toURI()).absolutePath
 
-        boolean saveResults = true
+        //TODO enable it for debug purpose
+        boolean saveResults = false
         String directory ="./target/osm_processchain_lcz"
 
         File dirFile = new File(directory)
@@ -186,65 +188,64 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 buildingTable: buildingTableName, roadTable: roadTableName,
                 railTable: railTableName, vegetationTable: vegetationTableName,
                 hydrographicTable: hydrographicTableName, indicatorUse: ["LCZ"],
-                mapOfWeights: mapOfWeights,lczRandomForest: false )
+                mapOfWeights: mapOfWeights,svfSimplified: true )
         assertTrue(datasource.getTable(geodindicators.results.outputTableBuildingIndicators).rowCount>0)
         assertNotNull(geodindicators.results.outputTableBlockIndicators)
         assertTrue(datasource.getTable(geodindicators.results.outputTableRsuIndicators).rowCount>0)
         assertTrue(datasource.getTable(geodindicators.results.outputTableRsuLcz).rowCount>0)
     }
 
-    @Disabled
     @Test
     void osmWorkflowToH2Database() {
-        String directory ="./target/geoclimate_chain"
+        String directory ="./target/geoclimate_chain_db"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
         def osm_parmeters = [
-                "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
+                "description" :"Example of configuration file to run the OSM workflow and store the result into a database",
                 "geoclimatedb" : [
                         "folder" : "${dirFile.absolutePath}",
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
-                        "delete" :true
+                        "delete" :false
                 ],
                 "input" : [
-                        "osm" : ["romainville"]],
+                        "osm" : ["Pont-de-Veyle"]],
                 "output" :[
                         "database" :
                                 ["user" : "sa",
-                                "password":"sa",
+                                "password":"",
                                  "url": "jdbc:h2://${dirFile.absolutePath+File.separator+"geoclimate_chain_db_output;AUTO_SERVER=TRUE"}",
-                                 "tables": ["building_indicators":"building_indicators",
-                                          "block_indicators":"block_indicators",
+                                 "tables": [
                                           "rsu_indicators":"rsu_indicators",
-                                          "rsu_lcz":"rsu_lcz",
-                                          "zones":"zones" ]]],
+                                          "rsu_lcz":"rsu_lcz" ]]],
                 "parameters":
                         ["distance" : 0,
-                         "indicatorUse": ["LCZ", "TEB", "URBAN_TYPOLOGY"],
-                         "svfSimplified": true,
-                         "prefixName": "",
-                         "mapOfWeights":
-                                 ["sky_view_factor": 1,
-                                  "aspect_ratio": 1,
-                                  "building_surface_fraction": 1,
-                                  "impervious_surface_fraction" : 1,
-                                  "pervious_surface_fraction": 1,
-                                  "height_of_roughness_elements": 1,
-                                  "terrain_roughness_length": 1],
-                         "hLevMin": 3,
-                         "hLevMax": 15,
-                         "hThresholdLev2": 10
+                         rsu_indicators: ["indicatorUse": ["LCZ"],
+                                          "svfSimplified": true,
+                                          "mapOfWeights":
+                                                  ["sky_view_factor": 1,
+                                                   "aspect_ratio": 1,
+                                                   "building_surface_fraction": 1,
+                                                   "impervious_surface_fraction" : 1,
+                                                   "pervious_surface_fraction": 1,
+                                                   "height_of_roughness_elements": 1,
+                                                   "terrain_roughness_length": 1]]
                         ]
         ]
         IProcess process = OSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        H2GIS outputdb = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db_output;AUTO_SERVER=TRUE")
+        def rsu_indicatorsTable = outputdb.getTable("rsu_indicators")
+        assertNotNull(rsu_indicatorsTable)
+        assertTrue(rsu_indicatorsTable.getRowCount()>0)
+        def rsu_lczTable = outputdb.getTable("rsu_lcz")
+        assertNotNull(rsu_lczTable)
+        assertTrue(rsu_lczTable.getRowCount()>0)
     }
 
-    @Disabled
     @Test
     void osmWorkflowToPostGISDatabase() {
-        String directory ="./target/geoclimate_chain"
+        String directory ="./target/geoclimate_chain_postgis"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
@@ -256,40 +257,52 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["romainville"]],
+                        "osm" : ["Pont-de-Veyle"]],
                 "output" :[
                         "database" :
                                 ["user" : "orbisgis",
                                  "password":"orbisgis",
                                  "url": "jdbc:postgresql://localhost:5432/orbisgis_db",
-                                 "tables": ["building_indicators":"building_indicators",
-                                            "block_indicators":"block_indicators",
+                                 "tables": [
                                             "rsu_indicators":"rsu_indicators",
                                             "rsu_lcz":"rsu_lcz",
-                                            "zones":"zones" ]]],
+                                            "zones":"zones" ,
+                                            "grid_indicators":"grid_indicators"]]],
                 "parameters":
                         ["distance" : 0,
-                         "indicatorUse": ["LCZ", "TEB", "URBAN_TYPOLOGY"],
-                         "svfSimplified": true,
-                         "prefixName": "",
-                         "mapOfWeights":
-                                 ["sky_view_factor": 1,
-                                  "aspect_ratio": 1,
-                                  "building_surface_fraction": 1,
-                                  "impervious_surface_fraction" : 1,
-                                  "pervious_surface_fraction": 1,
-                                  "height_of_roughness_elements": 1,
-                                  "terrain_roughness_length": 1  ],
-                         "hLevMin": 3,
-                         "hLevMax": 15,
-                         "hThresholdLev2": 10
+                         rsu_indicators: ["indicatorUse": ["LCZ"],
+                                          "svfSimplified": true] ,
+                        "grid_indicators": [
+                        "x_size": 1000,
+                        "y_size": 1000,
+                        "indicators": ["ROAD_FRACTION"]
+                        ]
                         ]
         ]
         IProcess process = OSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        def postgis_dbProperties = [databaseName: 'orbisgis_db',
+                                           user        : 'orbisgis',
+                                           password    : 'orbisgis',
+                                           url         : 'jdbc:postgresql://localhost:5432/'
+        ]
+        POSTGIS postgis = POSTGIS.open(postgis_dbProperties);
+        if(postgis){
+            def rsu_indicatorsTable = postgis.getTable("rsu_indicators")
+            assertNotNull(rsu_indicatorsTable)
+            assertTrue(rsu_indicatorsTable.getRowCount()>0)
+            def rsu_lczTable = postgis.getTable("rsu_lcz")
+            assertNotNull(rsu_lczTable)
+            assertTrue(rsu_lczTable.getRowCount()>0)
+            def zonesTable = postgis.getTable("zones")
+            assertNotNull(zonesTable)
+            assertTrue(zonesTable.getRowCount()>0)
+            def gridTable = postgis.getTable("grid_indicators")
+            assertNotNull(gridTable)
+            assertTrue(gridTable.getRowCount()>0)
+        }
     }
 
-    @Disabled
     @Test
     void testOSMWorkflowFromPlaceNameWithSrid() {
         String directory ="./target/geoclimate_chain_srid"
@@ -297,32 +310,28 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
         def osm_parmeters = [
-                "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
+                "description" :"Example of configuration file to run the OSM workflow and store the results in a folder",
                 "geoclimatedb" : [
                         "folder" : "${dirFile.absolutePath}",
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :false
                 ],
                 "input" : [
-                        "osm" : ["Pont-de-veyle"]],
+                        "osm" : ["Pont-de-Veyle"]],
                 "output" :[
                         "folder" : "${directory}",
                         "srid":"4326"],
                 "parameters":
                         ["distance" : 0,
-                         "indicatorUse": ["LCZ"],
-                         "svfSimplified": true,
-                         "prefixName": "",
-                         "hLevMin": 3,
-                         "hLevMax": 15,
-                         "hThresholdLev2": 10
+                         rsu_indicators: ["indicatorUse": ["LCZ"],
+                                          "svfSimplified": true]
                         ]
         ]
         IProcess process = OSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
         //Test the SRID of all output files
         def geoFiles = []
-        def  folder = new File("${directory+File.separator}osm_Pont-de-veyle")
+        def  folder = new File("${directory+File.separator}osm_Pont-de-Veyle")
         folder.eachFileRecurse groovy.io.FileType.FILES,  { file ->
             if (file.name.toLowerCase().endsWith(".geojson")) {
                 geoFiles << file.getAbsolutePath()
@@ -335,7 +344,6 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         }
     }
 
-    @Disabled
     @Test
     void testOSMWorkflowFromPlaceName() {
         String directory ="./target/geoclimate_chain"
@@ -350,12 +358,12 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["Brest"]],
+                        "osm" : ["Pont-de-Veyle"]],
                 "output" :[
                         "folder" : "$directory"],
                 "parameters":
-                        [ "indicatorUse": ["LCZ"],
-                         "svfSimplified": true
+                        [rsu_indicators: ["indicatorUse": ["LCZ"],
+                                          "svfSimplified": true]
                         ]
         ]
         IProcess process = OSM.workflow
@@ -386,7 +394,6 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
-    @Disabled
     @Test
     void testOSMWorkflowFromBbox() {
         String directory ="./target/geoclimate_chain"
@@ -445,14 +452,16 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["Pont de veyle"]],
+                        "osm" : ["Pont-de-Veyle"]],
                 "output" :[
                         "folder" : "$directory"],
                 "parameters":
                         ["distance" : 100,
-                         "indicatorUse": ["LCZ"],
-                         "svfSimplified": true,
-                         "prefixName": "",
+                         "hLevMin": 3,
+                         "hLevMax": 15,
+                         "hThresholdLev2": 10,
+                         rsu_indicators: ["indicatorUse": ["LCZ"],
+                                          "svfSimplified": true,
                          "mapOfWeights":
                                  ["sky_view_factor": 1,
                                   "aspect_ratio": 1,
@@ -461,54 +470,11 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                                   "pervious_surface_fraction": 1,
                                   "height_of_roughness_elements": 1,
                                   "terrain_roughness_length": 1 ,
-                                  "terrain_roughness_class": 1 ],
-                         "hLevMin": 3,
-                         "hLevMax": 15,
-                         "hThresholdLev2": 10
+                                  "terrain_roughness_class": 1 ]]
                         ]
         ]
         IProcess process = OSM.workflow
         assertFalse(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
-    }
-
-    @Disabled
-    @Test
-    void testOSMLCZ() {
-        String directory ="./target/geoclimate_chain"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
-        def osm_parmeters = [
-            "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
-            "geoclimatedb" : [
-                    "folder" : "${dirFile.absolutePath}",
-                    "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
-                    "delete" :true
-            ],
-            "input" : [
-                "osm" : ["Pont de veyle"]],
-            "output" :[
-                "folder" : "$directory"],
-            "parameters":
-            ["distance" : 100,
-                "indicatorUse": ["LCZ"],
-                "svfSimplified": true,
-                "prefixName": "",
-                "mapOfWeights":
-                ["sky_view_factor": 1,
-                    "aspect_ratio": 1,
-                    "building_surface_fraction": 1,
-                    "impervious_surface_fraction" : 1,
-                    "pervious_surface_fraction": 1,
-                    "height_of_roughness_elements": 1,
-                    "terrain_roughness_length": 1  ],
-                "hLevMin": 3,
-                "hLevMax": 15,
-                "hThresholdLev2": 10
-            ]
-        ]
-        IProcess process = OSM.workflow
-        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
     @Disabled
@@ -526,21 +492,53 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["Vannes"]],
+                        "osm" : ["Pont-de-Veyle"]],
                 "output" :[
                         "folder" : "$directory"],
                 "parameters":
                         ["distance" : 0,
-                         "indicatorUse": ["LCZ", "URBAN_TYPOLOGY"],
+                         rsu_indicators: ["indicatorUse": ["LCZ", "URBAN_TYPOLOGY"],
                          "svfSimplified": true,
-                         "prefixName": "",
-                         "estimateHeight":true
+                         "estimateHeight":true]
                         ]
         ]
         IProcess process = OSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
+
+    @Test
+    void testGrid_Indicators() {
+        String directory ="./target/geoclimate_chain_grid"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "description" :"Example of configuration file to run the grid indicators",
+                "geoclimatedb" : [
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete" :false
+                ],
+                "input" : [
+                        "osm" : ["Pont-de-Veyle"]],
+                "output" :[
+                "folder" : ["path": "$directory",
+                    "tables": ["grid_indicators"]]],
+                "parameters":
+                        ["distance" : 0,
+                         "grid_indicators": [
+                             "x_size": 1000,
+                             "y_size": 1000,
+                             "indicators": ["WATER_FRACTION"]
+                         ]
+                        ]
+        ]
+        IProcess process = OSM.workflow
+        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
+        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
+    }
 
     @Disabled
     @Test
@@ -557,13 +555,16 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["Pont de veyle"]],
+                        "osm" : ["Pont-de-Veyle"]],
                 "output" :[
                         "folder" : "$directory"],
                 "parameters":
-                        ["distance" : 1000,
-                         "svfSimplified": false,
-                         "prefixName": "",
+                        ["distance" : 0,
+                         "hLevMin": 3,
+                         "hLevMax": 15,
+                         "hThresholdLev2": 10,
+                         rsu_indicators:[
+                         "svfSimplified": true,
                          "mapOfWeights":
                                  ["sky_view_factor": 1,
                                   "aspect_ratio": 1,
@@ -571,10 +572,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                                   "impervious_surface_fraction" : 1,
                                   "pervious_surface_fraction": 1,
                                   "height_of_roughness_elements": 1,
-                                  "terrain_roughness_length": 1  ],
-                         "hLevMin": 3,
-                         "hLevMax": 15,
-                         "hThresholdLev2": 10
+                                  "terrain_roughness_length": 1  ]]
                         ]
         ]
         IProcess process = OSM.workflow
@@ -595,25 +593,15 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["Pont de veyle"]],
+                        "osm" : ["Pont-de-Veyle"]],
                 "output" :[
                         "folder" : "$directory"],
                 "parameters":
                         [
-                         "indicatorUse": ["TEB"],
-                         "svfSimplified": true,
-                         "prefixName": "",
-                         "mapOfWeights":
-                                 ["sky_view_factor": 1,
-                                  "aspect_ratio": 1,
-                                  "building_surface_fraction": 1,
-                                  "impervious_surface_fraction" : 1,
-                                  "pervious_surface_fraction": 1,
-                                  "height_of_roughness_elements": 1,
-                                  "terrain_roughness_length": 1  ],
-                         "hLevMin": 3,
-                         "hLevMax": 15,
-                         "hThresholdLev2": 10
+                                rsu_indicators:[
+                                        "indicatorUse": ["TEB"],
+                                        "svfSimplified": true
+                                ]
                         ]
         ]
         IProcess process = OSM.workflow

@@ -474,7 +474,7 @@ IProcess computeRSUIndicators() {
             def outputTableName = prefix prefixName, BASE_NAME
 
             // PrefixName for intermediate table (start with a letter to avoid table name issue if start with a number)
-            def temporaryPrefName = "rsu_indicator_"
+            def temporaryPrefName = "rsu_indicator"
 
             // Other temporary tables that have to be deleted at the end of the process
             def urbanTypoFractionIndic = "urban_typo_fraction_indic"
@@ -1099,7 +1099,6 @@ IProcess computeAllGeoIndicators() {
                                                         ON a.id_build=b.id_build
                                                     WHERE b.ESTIMATED = true AND a.ID_RSU IS NOT NULL;"""
 
-
                 info "Collect building indicators to estimate the height"
 
                 def applygatherScales = Geoindicators.GenericIndicators.gatherScales()
@@ -1419,6 +1418,7 @@ IProcess computeAllGeoIndicators() {
                 }
 
                 //Populate reporting
+
                 def nbBuilding = datasource.firstRow("select count(*) as count from ${computeBuildingsIndicators.getResults().outputTableName} WHERE ID_RSU IS NOT NULL").count
 
                 def nbBlock = 0
@@ -1801,3 +1801,164 @@ IProcess computeGeoclimateIndicators() {
         }
     }
 }
+
+/**
+ * This process is used to aggregate geoclimate output indicators on a grid
+ *
+ * @param h2gis_datasource the local H2GIS database
+ * @param zoneEnvelopeTableName
+ * @param x_size x size of the grid
+ * @param y_size y size of the grid
+ * @param list_indicators indicators names to compute
+ * @param buildingTable name
+ * @param roadTable name
+ * @param vegetationTable name
+ * @param hydrographicTable name
+ * @param imperviousTable name
+ * @param rsu_lcz name
+ * @param rsu_urban_typo_area name
+ * @param rsu_urban_typo_floor_area name
+ * @param prefixName for the output table
+ * @param outputTableName the name of grid  table in the output_datasource to save the result
+ * @return
+ */
+IProcess rasterizeIndicators() {
+    return create {
+        title "Aggregate indicators on a grid"
+        id "rasterizeIndicators"
+        inputs datasource: JdbcDataSource,
+                zoneEnvelopeTableName: String,
+                x_size : Integer, y_size : Integer,list_indicators :[],
+                buildingTable: "", roadTable: "", vegetationTable: "",
+                hydrographicTable: "", imperviousTable: "", rsu_lcz:"",
+                rsu_urban_typo_area:"",rsu_urban_typo_floor_area:"",
+                prefixName: String
+        outputs outputTableName: String
+        run { datasource, zoneEnvelopeTableName, x_size, y_size,list_indicators,buildingTable, roadTable, vegetationTable,
+            hydrographicTable, imperviousTable, rsu_lcz,rsu_urban_typo_area,rsu_urban_typo_floor_area, prefixName ->
+            if(x_size<=0 || y_size<= 0){
+                info "Invalid grid size padding. Must be greater that 0"
+                return
+            }
+            if(!list_indicators){
+                info "The list of indicator names cannot be null or empty"
+                return
+            }
+            if(!zoneEnvelopeTableName){
+                info "The zone envelope is null or empty. Cannot compute the grid indicators"
+                return
+            }
+            def grid_indicators_table = "grid_indicators"
+            def grid_column_identifier ="id"
+            //Start to compute the grid
+            def gridProcess = Geoindicators.SpatialUnits.createGrid()
+            def box = datasource.getSpatialTable(zoneEnvelopeTableName).getExtent()
+            if(gridProcess.execute([geometry: box, deltaX: x_size, deltaY: y_size,  datasource: datasource])) {
+                def grid_table_name = gridProcess.results.outputTableName
+                def indicatorTablesToJoin = [:]
+                indicatorTablesToJoin.put(grid_table_name, grid_column_identifier)
+                /*
+                * Make aggregation process with previous grid and current rsu lcz
+                */
+                if (list_indicators*.toUpperCase().contains("RSU_LCZ") && rsu_lcz) {
+                    def indicatorName = "LCZ1"
+                    def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics()
+                    if (upperScaleAreaStatistics.execute(
+                            [upperTableName : grid_table_name,
+                             upperColumnId  : grid_column_identifier,
+                             lowerTableName : rsu_lcz,
+                             lowerColumnName: indicatorName,
+                             keepGeometry   : false,
+                             prefixName     : prefixName,
+                             datasource     : datasource])) {
+                        indicatorTablesToJoin.put(upperScaleAreaStatistics.results.outputTableName, grid_column_identifier)
+                    } else {
+                        info "Cannot compute the LCZ at grid scale"
+                    }
+                }
+                // Calculate all surface fractions indicators on the GRID cell
+                // Need to create the smallest geometries used as input of the surface fraction process
+                def columnFractionsList = [:]
+                def priorities = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
+
+                list_indicators.each{
+                    if(it.equalsIgnoreCase("BUILDING_FRACTION")){
+                        columnFractionsList.put( priorities.indexOf("building"),"building")
+                    }
+                    else if(it.equalsIgnoreCase("WATER_FRACTION")){
+                        columnFractionsList.put(priorities.indexOf("water"), "water")
+                    }else if(it.equalsIgnoreCase("VEGETATION_FRACTION")){
+                        columnFractionsList.put(priorities.indexOf("high_vegetation"),"high_vegetation")
+                        columnFractionsList.put( priorities.indexOf("low_vegetation"),"low_vegetation")
+                    }else if(it.equalsIgnoreCase("ROAD_FRACTION")){
+                        columnFractionsList.put( priorities.indexOf("road"),"road")
+                    }else if(it.equalsIgnoreCase("IMPERVIOUS_FRACTION")){
+                        columnFractionsList.put( priorities.indexOf("impervious"),"impervious")
+                    }
+                }
+                if(columnFractionsList){
+                    def priorities_tmp = columnFractionsList.sort().values()
+                    def computeSmallestGeom = Geoindicators.RsuIndicators.smallestCommunGeometry()
+                    if (computeSmallestGeom.execute([
+                            rsuTable       : grid_table_name, id_rsu: grid_column_identifier,
+                            buildingTable  : buildingTable, roadTable: roadTable,
+                            vegetationTable: vegetationTable, waterTable: hydrographicTable,
+                            imperviousTable: imperviousTable,
+                            prefixName     : prefixName, datasource: datasource])) {
+                        def superpositionsTableGrid = computeSmallestGeom.results.outputTableName
+                        def surfaceFractionsProcess = Geoindicators.RsuIndicators.surfaceFractions()
+                        def superpositions = []
+                        if(surfaceFractionsProcess.execute([
+                                rsuTable: grid_table_name, spatialRelationsTable: superpositionsTableGrid,
+                                id_rsu :grid_column_identifier,
+                                superpositions: superpositions,
+                                priorities: priorities_tmp,
+                                prefixName: prefixName, datasource: datasource])){
+                            indicatorTablesToJoin.put(surfaceFractionsProcess.results.outputTableName, grid_column_identifier)
+                        }
+                    } else {
+                        info "Cannot compute the surface fractions at grid scale"
+                    }
+                }
+                // Compute the building height avg
+                if(list_indicators*.toUpperCase().contains("BUILDING_HEIGHT") && buildingTable){
+                    // Create the relations between grid cells and buildings
+                    def createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
+                    if (!createScalesRelationsGridBl([datasource              : datasource,
+                                                      sourceTable             : buildingTable,
+                                                      targetTable             : grid_table_name,
+                                                      idColumnTarget          : grid_column_identifier,
+                                                      prefixName              : prefixName,
+                                                      nbRelations             : null])) {
+                        info "Cannot compute the scales relations between buildings and grid cells."
+                        return
+                    }
+                    def computeBuildingStats = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
+                    if (!computeBuildingStats([inputLowerScaleTableName: createScalesRelationsGridBl.results.outputTableName,
+                                               inputUpperScaleTableName: grid_table_name,
+                                               inputIdUp               : grid_column_identifier,
+                                               inputIdLow              : grid_column_identifier,
+                                               inputVarAndOperations   : ["height_roof": ["AVG","STD"]],
+                                               prefixName              : prefixName,
+                                               datasource              : datasource])) {
+                        info "Cannot compute the building statistics on grid cells."
+                        return
+                    }
+                    indicatorTablesToJoin.put(computeBuildingStats.results.outputTableName, grid_column_identifier)
+
+                }
+
+                //Join all indicators at grid scale
+                def joinGrids = Geoindicators.DataUtils.joinTables()
+                if (!joinGrids([inputTableNamesWithId: indicatorTablesToJoin,
+                                outputTableName      : grid_indicators_table,
+                                datasource           : datasource])) {
+                    info "Cannot merge all indicators in grid table $grid_indicators_table."
+                    return
+                }
+            }
+            [outputTableName: grid_indicators_table]
+        }
+    }
+}
+
