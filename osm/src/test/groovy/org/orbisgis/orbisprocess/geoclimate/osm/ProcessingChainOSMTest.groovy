@@ -266,11 +266,17 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                                  "tables": [
                                             "rsu_indicators":"rsu_indicators",
                                             "rsu_lcz":"rsu_lcz",
-                                            "zones":"zones" ]]],
+                                            "zones":"zones" ,
+                                            "grid_indicators":"grid_indicators"]]],
                 "parameters":
                         ["distance" : 0,
                          rsu_indicators: ["indicatorUse": ["LCZ"],
-                                          "svfSimplified": true]
+                                          "svfSimplified": true]                        ,
+                        "grid_indicators": [
+                        "x_size": 1000,
+                        "y_size": 1000,
+                        "indicators": ["ROAD_FRACTION"]
+                        ]
                         ]
         ]
         IProcess process = OSM.workflow
@@ -288,9 +294,12 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
             def rsu_lczTable = postgis.getTable("rsu_lcz")
             assertNotNull(rsu_lczTable)
             assertTrue(rsu_lczTable.getRowCount()>0)
-            def zonesTable = postgis.getTable("rsu_lcz")
+            def zonesTable = postgis.getTable("zones")
             assertNotNull(zonesTable)
             assertTrue(zonesTable.getRowCount()>0)
+            def gridTable = postgis.getTable("grid_indicators")
+            assertNotNull(gridTable)
+            assertTrue(gridTable.getRowCount()>0)
         }
     }
 
