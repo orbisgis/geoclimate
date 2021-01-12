@@ -470,7 +470,6 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
             assertNotNull(spatialTable)
             assertTrue(spatialTable.getRowCount()>0)
         }
-
     }
 
     @Test

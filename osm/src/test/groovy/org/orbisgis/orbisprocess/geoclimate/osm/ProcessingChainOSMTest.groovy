@@ -271,7 +271,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 "parameters":
                         ["distance" : 0,
                          rsu_indicators: ["indicatorUse": ["LCZ"],
-                                          "svfSimplified": true]                        ,
+                                          "svfSimplified": true] ,
                         "grid_indicators": [
                         "x_size": 1000,
                         "y_size": 1000,
