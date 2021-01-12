@@ -536,6 +536,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         ]
         IProcess process = OSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
     }
 
