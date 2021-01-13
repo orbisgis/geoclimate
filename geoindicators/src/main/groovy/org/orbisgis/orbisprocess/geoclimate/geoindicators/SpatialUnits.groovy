@@ -427,7 +427,7 @@ IProcess spatialJoin() {
                                                                  ST_INTERSECTS(a.$GEOMETRIC_COLUMN_SOURCE, 
                                                                                             b.$GEOMETRIC_COLUMN_TARGET) 
                                                         ORDER BY ST_AREA(ST_PRECISIONREDUCER(a.$GEOMETRIC_COLUMN_SOURCE, 3),
-                                                                                         ST_PRECISIONREDUCER(b.$GEOMETRIC_COLUMN_TARGET,3))
+                                                                                         ST_PRECISIONREDUCER(b.$GEOMETRIC_COLUMN_TARGET,3)))
                                                         DESC LIMIT $nbRelations) AS $idColumnTarget 
                                             FROM $sourceTable a"""
                 } else {
