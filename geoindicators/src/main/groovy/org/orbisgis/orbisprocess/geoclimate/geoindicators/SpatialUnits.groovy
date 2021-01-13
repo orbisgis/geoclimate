@@ -327,7 +327,7 @@ IProcess createBlocks() {
 
             if (snappingTolerance > 0) {
                 datasource """
-                    CREATE INDEX ON $subGraphTableNodes USING BTREE(NODE_ID);
+                    CREATE INDEX ON $subGraphTableNodes (NODE_ID);
                     DROP TABLE IF EXISTS $subGraphBlocks;
                     CREATE TABLE $subGraphBlocks AS
                         SELECT ST_UNION(ST_ACCUM(ST_buffer(A.THE_GEOM, $snappingTolerance))) AS THE_GEOM
@@ -336,23 +336,26 @@ IProcess createBlocks() {
             """
             } else {
                 datasource """
-        CREATE INDEX ON $subGraphTableNodes USING BTREE(NODE_ID);
+        CREATE INDEX ON $subGraphTableNodes (NODE_ID);
         DROP TABLE IF EXISTS $subGraphBlocks;
         CREATE TABLE $subGraphBlocks
         AS SELECT ST_UNION(ST_ACCUM(ST_MAKEVALID(A.THE_GEOM))) AS THE_GEOM
         FROM $inputTableName A, $subGraphTableNodes B
         WHERE A.id_build=B.NODE_ID GROUP BY B.CONNECTED_COMPONENT;"""
             }
-
             //Create the blocks
             info "Creating the block table..."
-            datasource """DROP TABLE IF EXISTS $outputTableName; 
-        CREATE TABLE $outputTableName ($columnIdName SERIAL, THE_GEOM GEOMETRY) 
+            def tmp_formating_table = postfix "formating_blocks"
+
+            datasource """DROP TABLE IF EXISTS $tmp_formating_table; 
+        CREATE TABLE $tmp_formating_table ($columnIdName SERIAL, THE_GEOM GEOMETRY) 
         AS (SELECT null, st_force2d(ST_MAKEVALID(THE_GEOM)) as the_geom FROM $subGraphBlocks) UNION ALL (SELECT null, st_force2d(ST_MAKEVALID(a.the_geom)) as the_geom FROM $inputTableName a 
-        LEFT JOIN $subGraphTableNodes b ON a.id_build = b.NODE_ID WHERE b.NODE_ID IS NULL);"""
+        LEFT JOIN $subGraphTableNodes b ON a.id_build = b.NODE_ID WHERE b.NODE_ID IS NULL);        
+        DROP TABLE IF EXISTS $outputTableName;
+        CREATE TABLE $outputTableName  as select $columnIdName , st_force2d(st_buffer(the_geom, 0)) as the_geom from  st_explode('$tmp_formating_table') """
 
             // Temporary tables are deleted
-            datasource "DROP TABLE IF EXISTS $graphTable, ${graphTable + "_EDGE_CC"}, " +
+            datasource "DROP TABLE IF EXISTS $tmp_formating_table, $graphTable, ${graphTable + "_EDGE_CC"}, " +
                     "$subGraphBlocks, ${subGraphBlocks + "_NODE_CC"};"
 
             info "The blocks have been created"
@@ -423,8 +426,7 @@ IProcess spatialJoin() {
                                                             WHERE a.$GEOMETRIC_COLUMN_SOURCE && b.$GEOMETRIC_COLUMN_TARGET AND 
                                                                  ST_INTERSECTS(a.$GEOMETRIC_COLUMN_SOURCE, 
                                                                                             b.$GEOMETRIC_COLUMN_TARGET) 
-                                                        ORDER BY ST_AREA(ST_INTERSECTION(ST_PRECISIONREDUCER(a.$GEOMETRIC_COLUMN_SOURCE, 3),
-                                                                                         ST_PRECISIONREDUCER(b.$GEOMETRIC_COLUMN_TARGET,3)))
+                                                        ORDER BY ST_AREA(st_intersection(a.$GEOMETRIC_COLUMN_SOURCE,b.$GEOMETRIC_COLUMN_TARGET))
                                                         DESC LIMIT $nbRelations) AS $idColumnTarget 
                                             FROM $sourceTable a"""
                 } else {
