@@ -540,10 +540,10 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
     }
 
-    @Disabled
+    @Disabled //Use it for debug
     @Test
-    void testOSMConfigurationFileWithoutIndicUse() {
-        String directory ="./target/geoclimate_chain"
+    void testIntegration() {
+        String directory ="./target/geoclimate_chain_integration"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
@@ -552,29 +552,24 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 "geoclimatedb" : [
                         "folder" : "${dirFile.absolutePath}",
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
-                        "delete" :true
+                        "delete" :false
                 ],
                 "input" : [
-                        "osm" : ["Pont-de-Veyle"]],
+                        "osm" : ["Nantes"]],
                 "output" :[
-                        "folder" : "$directory"],
+                        "folder" :[ path : "$directory"], "tables": [
+                        "building_indicators":"building_indicators"
+                ]],
                 "parameters":
                         ["distance" : 0,
-                         "hLevMin": 3,
-                         "hLevMax": 15,
-                         "hThresholdLev2": 10,
-                         rsu_indicators:[
-                         "svfSimplified": true,
-                         "mapOfWeights":
-                                 ["sky_view_factor": 1,
-                                  "aspect_ratio": 1,
-                                  "building_surface_fraction": 1,
-                                  "impervious_surface_fraction" : 1,
-                                  "pervious_surface_fraction": 1,
-                                  "height_of_roughness_elements": 1,
-                                  "terrain_roughness_length": 1  ]]
+                         "rsu_indicators":[
+                                 "indicatorUse": ["LCZ", "URBAN_TYPOLOGY"],
+                                 "svfSimplified": true,
+                                 "estimateHeight":true
+                         ]
                         ]
         ]
+
         IProcess process = OSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }

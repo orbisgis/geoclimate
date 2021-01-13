@@ -327,7 +327,7 @@ IProcess createBlocks() {
 
             if (snappingTolerance > 0) {
                 datasource """
-                    CREATE INDEX ON $subGraphTableNodes USING BTREE(NODE_ID);
+                    CREATE INDEX ON $subGraphTableNodes (NODE_ID);
                     DROP TABLE IF EXISTS $subGraphBlocks;
                     CREATE TABLE $subGraphBlocks AS
                         SELECT ST_UNION(ST_ACCUM(ST_buffer(A.THE_GEOM, $snappingTolerance))) AS THE_GEOM
@@ -336,23 +336,23 @@ IProcess createBlocks() {
             """
             } else {
                 datasource """
-        CREATE INDEX ON $subGraphTableNodes USING BTREE(NODE_ID);
+        CREATE INDEX ON $subGraphTableNodes (NODE_ID);
         DROP TABLE IF EXISTS $subGraphBlocks;
         CREATE TABLE $subGraphBlocks
         AS SELECT ST_UNION(ST_ACCUM(ST_MAKEVALID(A.THE_GEOM))) AS THE_GEOM
         FROM $inputTableName A, $subGraphTableNodes B
         WHERE A.id_build=B.NODE_ID GROUP BY B.CONNECTED_COMPONENT;"""
             }
-
             //Create the blocks
             info "Creating the block table..."
+
             datasource """DROP TABLE IF EXISTS $outputTableName; 
         CREATE TABLE $outputTableName ($columnIdName SERIAL, THE_GEOM GEOMETRY) 
-        AS (SELECT null, st_force2d(ST_MAKEVALID(THE_GEOM)) as the_geom FROM $subGraphBlocks) UNION ALL (SELECT null, st_force2d(ST_MAKEVALID(a.the_geom)) as the_geom FROM $inputTableName a 
+        AS (SELECT null, st_force2d(st_buffer(ST_MAKEVALID(THE_GEOM), 0)) as the_geom FROM $subGraphBlocks) UNION ALL (SELECT null, st_force2d(ST_MAKEVALID(a.the_geom)) as the_geom FROM $inputTableName a 
         LEFT JOIN $subGraphTableNodes b ON a.id_build = b.NODE_ID WHERE b.NODE_ID IS NULL);"""
 
             // Temporary tables are deleted
-            datasource "DROP TABLE IF EXISTS $graphTable, ${graphTable + "_EDGE_CC"}, " +
+            datasource "DROP TABLE IF EXISTS  $graphTable, ${graphTable + "_EDGE_CC"}, " +
                     "$subGraphBlocks, ${subGraphBlocks + "_NODE_CC"};"
 
             info "The blocks have been created"

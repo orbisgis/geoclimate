@@ -1037,12 +1037,15 @@ IProcess upperScaleAreaStatistics() {
             datasource "CREATE INDEX ON $spatialJoinTable ($lowerColumnName)"
             datasource "CREATE INDEX ON $spatialJoinTable ($upperColumnId)"
 
+
             // Creation of a list which contains all indicators of distinct values
             def qIndicator = """
                              SELECT DISTINCT $lowerColumnName 
                              AS val FROM $spatialJoinTable
                              """
             def listValues = datasource.rows(qIndicator)
+
+            def isString = datasource.getTable(spatialJoinTable).getColumnType(lowerColumnName)=="VARCHAR"
 
             // Creation of the pivot table which contains for each upper geometry
             def pivotTable = "pivotAreaTable"
@@ -1061,11 +1064,28 @@ IProcess upperScaleAreaStatistics() {
             query += " FROM (SELECT $upperColumnId"
             listValues.each {
                 def aliasColumn = "${lowerColumnName}_${it.val.toString().replace('.','_')}"
-                query += """
+                if(it.val){
+                    if(isString){
+                        query += """
+                         , CASE WHEN $lowerColumnName='${it.val}'
+                         THEN SUM(area) ELSE 0 END
+                         AS $aliasColumn
+                         """
+                    }else{
+                        query += """
                          , CASE WHEN $lowerColumnName=${it.val}
                          THEN SUM(area) ELSE 0 END
                          AS $aliasColumn
                          """
+                    }
+                }
+                else{
+                    query += """
+                         , CASE WHEN $lowerColumnName is null
+                         THEN SUM(area) ELSE 0 END
+                         AS $aliasColumn
+                         """
+                }
             }
             query += """
                      FROM $spatialJoinTable
