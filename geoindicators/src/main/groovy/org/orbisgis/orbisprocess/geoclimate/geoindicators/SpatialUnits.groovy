@@ -348,11 +348,11 @@ IProcess createBlocks() {
             def tmp_formating_table = postfix "formating_blocks"
 
             datasource """DROP TABLE IF EXISTS $tmp_formating_table; 
-        CREATE TABLE $tmp_formating_table ($columnIdName SERIAL, THE_GEOM GEOMETRY) 
-        AS (SELECT null, st_force2d(ST_MAKEVALID(THE_GEOM)) as the_geom FROM $subGraphBlocks) UNION ALL (SELECT null, st_force2d(ST_MAKEVALID(a.the_geom)) as the_geom FROM $inputTableName a 
+        CREATE TABLE $tmp_formating_table (THE_GEOM GEOMETRY) 
+        AS (SELECT st_force2d(ST_MAKEVALID(THE_GEOM)) as the_geom FROM $subGraphBlocks) UNION ALL (SELECT  st_force2d(ST_MAKEVALID(a.the_geom)) as the_geom FROM $inputTableName a 
         LEFT JOIN $subGraphTableNodes b ON a.id_build = b.NODE_ID WHERE b.NODE_ID IS NULL);        
         DROP TABLE IF EXISTS $outputTableName;
-        CREATE TABLE $outputTableName  as select $columnIdName , st_force2d(st_buffer(the_geom, 0)) as the_geom from  st_explode('$tmp_formating_table') """
+        CREATE TABLE $outputTableName  as select EXPLOD_ID as $columnIdName , st_force2d(st_buffer(the_geom, 0)) as the_geom from  st_explode('$tmp_formating_table'); """
 
             // Temporary tables are deleted
             datasource "DROP TABLE IF EXISTS $tmp_formating_table, $graphTable, ${graphTable + "_EDGE_CC"}, " +
