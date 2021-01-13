@@ -1104,8 +1104,8 @@ def extractProcessingParameters(def processing_parameters){
                     info "The list of indicator names cannot be null or empty"
                     return
                 }
-                def allowed_grid_indicators=["BUILDING_FRACTION","BUILDING_HEIGHT", "WATER_FRACTION","VEGETATION_FRACTION",
-                                             "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "RSU_URBAN_TYPO_FRACTION", "RSU_LCZ_FRACTION"]
+                def allowed_grid_indicators=["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
+                                             "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "URBAN_TYPO_AREA_FRACTION", "LCZ_FRACTION"]
                 def allowedOutputIndicators = allowed_grid_indicators.intersect(list_indicators*.toUpperCase())
                 if(allowedOutputIndicators){
                     def grid_indicators_tmp =  [
@@ -1196,7 +1196,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
             results.put("hydrographicTableName", hydrographicTableName)
             results.put("vegetationTableName", vegetationTableName)
             results.put("imperviousTableName", imperviousTableName)
-            results.put("outputTableBuildingIndicators", buildingTableName)
+            results.put("buildingTableName", buildingTableName)
 
             //Compute the RSU indicators
             if(rsu_indicators_params){
@@ -1224,7 +1224,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
                 IProcess rasterizedIndicators =  ProcessingChain.GeoIndicatorsChain.rasterizeIndicators()
                 if(rasterizedIndicators.execute(datasource:h2gis_datasource,zoneEnvelopeTableName: zoneTableName,
                         x_size : x_size, y_size : y_size,list_indicators :grid_indicators_params.indicators,
-                        buildingTable: results.outputTableBuildingIndicators, roadTable: roadTableName, vegetationTable: vegetationTableName,
+                        buildingTable: buildingTableName, roadTable: roadTableName, vegetationTable: vegetationTableName,
                         hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
                         rsu_lcz:results.outputTableRsuLcz,
                         rsu_urban_typo_area:results.outputTableRsuUrbanTypoArea,
