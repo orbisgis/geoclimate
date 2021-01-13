@@ -1037,8 +1037,6 @@ IProcess computeAllGeoIndicators() {
               imperviousTable,buildingEstimateTableName,
               surface_vegetation, surface_hydro, snappingTolerance, indicatorUse, svfSimplified, prefixName, mapOfWeights,
               urbanTypoModelName, buildingHeightModelName ->
-            //Return the output building table because new height values can be updated
-            def buildingTableName = buildingTable
             //Estimate height
             if (buildingHeightModelName) {
                 def start = System.currentTimeMillis()
@@ -1157,7 +1155,7 @@ IProcess computeAllGeoIndicators() {
                         inputTableName: newEstimatedHeigthWithIndicators,
                         epsg          : epsg])
 
-                buildingTableName = formatEstimatedBuilding.results.outputTableName
+                def buildingTableName = formatEstimatedBuilding.results.outputTableName
 
                 //Drop tables
                 datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators,
@@ -1469,7 +1467,7 @@ IProcess computeAllGeoIndicators() {
                     return
                 } else {
                     def results = geoIndicators.getResults()
-                    results.put("buildingTableName" : buildingTable)
+                    results.put("buildingTableName", buildingTable)
                     return results
                 }
             }
