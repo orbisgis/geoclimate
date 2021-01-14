@@ -211,7 +211,8 @@ IProcess workflow() {
                                                     "rsu_urban_typo_area",
                                                     "rsu_urban_typo_floor_area",
                                                     "building_urban_typo",
-                                                    "grid_indicators"]
+                                                    "grid_indicators",
+                                                    "sea_land_mask"]
                         //Get processing parameters
                         def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
                         if(!processing_parameters){
@@ -560,6 +561,7 @@ IProcess osm_processing() {
                             results.put("imperviousTableName", imperviousTableName)
                             results.put("urbanAreasTableName", urbanAreasTable)
                             results.put("buildingTableName", buildingTableName)
+                            results.put("seaLandMaskTableName", seaLandMaskTableName)
 
                             //Compute the RSU indicators
                             if(rsu_indicators_params){
@@ -570,6 +572,7 @@ IProcess osm_processing() {
                                         railTable: railTableName, vegetationTable: vegetationTableName,
                                         hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
                                         buildingEstimateTableName: buildingEstimateTableName,
+                                        seaLandMaskTableName:seaLandMaskTableName,
                                         surface_vegetation: rsu_indicators_params.surface_vegetation,
                                         surface_hydro: rsu_indicators_params.surface_hydro,
                                         snappingTolerance: rsu_indicators_params.snappingTolerance,
@@ -601,9 +604,6 @@ IProcess osm_processing() {
                                             prefixName: processing_parameters.prefixName
                                     )){
                                         results.put("grid_indicators", rasterizedIndicators.results.outputTableName)
-                                        if(ouputTableFiles){
-                                            ouputTableFiles<<rasterizedIndicators.results.outputTableName
-                                        }
                                     }
                             }
                             if (outputFolder  && ouputTableFiles) {
@@ -724,7 +724,9 @@ def outputFolderProperties(def outputFolder){
                         "urban_areas",
                         "rsu_urban_typo_area",
                         "rsu_urban_typo_floor_area",
-                        "building_urban_typo"]
+                        "building_urban_typo",
+                        "grid_indicators",
+                        "sea_land_mask"]
     if(outputFolder in Map){
         def outputPath = outputFolder.get("path")
         def outputTables = outputFolder.get("tables")
@@ -1091,6 +1093,9 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
         else if(it.equals("grid_indicators")){
             saveTableAsGeojson(results.grid_indicators, "${subFolder.getAbsolutePath()+File.separator+"grid_indicators"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
+        else if(it.equals("sea_land_mask")){
+            saveTableAsGeojson(results.seaLandMaskTableName, "${subFolder.getAbsolutePath()+File.separator+"sea_land_mask"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        }
     }
 }
 
@@ -1185,6 +1190,10 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
 
     //Export urban areas table
     abstractModelTableBatchExportTable(output_datasource, outputTableNames.urban_areas, id_zone,h2gis_datasource, h2gis_tables.urbanAreasTableName
+            , "",inputSRID,outputSRID,reproject)
+
+    //Export sea land mask table
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.sea_land_mask, id_zone,h2gis_datasource, h2gis_tables.seaLandMaskTableName
             , "",inputSRID,outputSRID,reproject)
 
     con.setAutoCommit(false)
