@@ -904,11 +904,11 @@ IProcess createUnitsOfAnalysis() {
         id "createUnitsOfAnalysis"
         inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
                 roadTable: String, railTable: String, vegetationTable: String,
-                hydrographicTable: String, surface_vegetation: 10000, surface_hydro: 2500,
+                hydrographicTable: String, seaLandMaskTableName: "", surface_vegetation: 10000, surface_hydro: 2500,
                 snappingTolerance: 0.01d, prefixName: "", indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"]
         outputs outputTableBuildingName: String, outputTableBlockName: String, outputTableRsuName: String
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
-              surface_vegetation, surface_hydro, snappingTolerance, prefixName, indicatorUse ->
+            seaLandMaskTableName, surface_vegetation, surface_hydro, snappingTolerance, prefixName, indicatorUse ->
             info "Create the units of analysis..."
             // Create the RSU
             def prepareRSUData = Geoindicators.SpatialUnits.prepareRSUData()
@@ -918,6 +918,7 @@ IProcess createUnitsOfAnalysis() {
                                  railTable         : railTable,
                                  vegetationTable   : vegetationTable,
                                  hydrographicTable : hydrographicTable,
+                                 seaLandMaskTableName :seaLandMaskTableName,
                                  surface_vegetation: surface_vegetation,
                                  surface_hydro     : surface_hydro,
                                  prefixName        : prefixName])) {
@@ -1021,7 +1022,7 @@ IProcess computeAllGeoIndicators() {
         inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
                 roadTable: "", railTable: "", vegetationTable: "",
                 hydrographicTable: "", imperviousTable: "",
-                buildingEstimateTableName :"",
+                buildingEstimateTableName :"",seaLandMaskTableName:"",
                 surface_vegetation: 10000, surface_hydro: 2500,
                 snappingTolerance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified: false, prefixName: "",
                 mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
@@ -1034,11 +1035,11 @@ IProcess computeAllGeoIndicators() {
                 outputTableRsuUrbanTypoArea: String, outputTableRsuUrbanTypoFloorArea: String,
                 outputTableBuildingUrbanTypo: String, buildingTableName :String
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
-              imperviousTable,buildingEstimateTableName,
+              imperviousTable,buildingEstimateTableName,seaLandMaskTableName,
               surface_vegetation, surface_hydro, snappingTolerance, indicatorUse, svfSimplified, prefixName, mapOfWeights,
               urbanTypoModelName, buildingHeightModelName ->
             //Estimate height
-            if (buildingHeightModelName) {
+            if (buildingHeightModelName && datasource.getTable(buildingTable).getRowCount()>0) {
                 def start = System.currentTimeMillis()
                 enableTableCache()
                 if (!buildingEstimateTableName) {
@@ -1073,6 +1074,7 @@ IProcess computeAllGeoIndicators() {
                         roadTable: roadTable,
                         railTable: railTable, vegetationTable: vegetationTable,
                         hydrographicTable: hydrographicTable, imperviousTable: imperviousTable,
+                        seaLandMaskTableName :seaLandMaskTableName,
                         surface_vegetation: surface_vegetation, surface_hydro: surface_hydro,
                         indicatorUse: ["URBAN_TYPOLOGY"],
                         svfSimplified: true, prefixName: prefixName,
@@ -1473,6 +1475,7 @@ IProcess computeAllGeoIndicators() {
                         roadTable: roadTable,
                         railTable: railTable, vegetationTable: vegetationTable,
                         hydrographicTable: hydrographicTable, imperviousTable: imperviousTable,
+                        seaLandMaskTableName: seaLandMaskTableName,
                         surface_vegetation: surface_vegetation, surface_hydro: surface_hydro,
                         indicatorUse: indicatorUse,
                         svfSimplified: svfSimplified, prefixName: prefixName,
@@ -1509,7 +1512,8 @@ IProcess computeGeoclimateIndicators() {
         id "computeAllGeoIndicators"
         inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
                 roadTable: "", railTable: "", vegetationTable: "",
-                hydrographicTable: "", imperviousTable: "", surface_vegetation: 10000, surface_hydro: 2500,
+                hydrographicTable: "", imperviousTable: "",
+                seaLandMaskTableName :"", surface_vegetation: 10000, surface_hydro: 2500,
                 snappingTolerance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified: false, prefixName: "",
                 mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
@@ -1520,7 +1524,7 @@ IProcess computeGeoclimateIndicators() {
                 outputTableRsuUrbanTypoArea: String, outputTableRsuUrbanTypoFloorArea: String,
                 outputTableBuildingUrbanTypo: String
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
-              imperviousTable,
+              imperviousTable,seaLandMaskTableName,
               surface_vegetation, surface_hydro, snappingTolerance, indicatorUse, svfSimplified, prefixName, mapOfWeights,
                urbanTypoModelName ->
             info "Start computing the geoindicators..."
@@ -1554,7 +1558,8 @@ IProcess computeGeoclimateIndicators() {
             if (!spatialUnits.execute([datasource       : datasource, zoneTable: zoneTable,
                                        buildingTable    : buildingTable, roadTable: roadTable,
                                        railTable        : railTable, vegetationTable: vegetationTable,
-                                       hydrographicTable: hydrographicTable, surface_vegetation: surface_vegetation,
+                                       hydrographicTable: hydrographicTable, seaLandMaskTableName:seaLandMaskTableName,
+                                       surface_vegetation: surface_vegetation,
                                        surface_hydro    : surface_hydro, snappingTolerance: snappingTolerance,
                                        prefixName       : prefixName,
                                        indicatorUse     : indicatorUse])) {
