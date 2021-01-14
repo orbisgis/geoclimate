@@ -946,8 +946,7 @@ def extractProcessingParameters(def processing_parameters){
                     return
                 }
             }else{
-                info "The list of RSU indicator names cannot be null or empty"
-                return
+                rsu_indicators_default.indicatorUse = []
             }
             def snappingToleranceP =  rsu_indicators.snappingTolerance
             if(snappingToleranceP && snappingToleranceP in Number){
