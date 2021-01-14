@@ -1113,7 +1113,9 @@ def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource,def o
         if(!reproject){
         h2gis_datasource.save(outputTable, filePath,deleteOutputData)
         }else{
+            if(h2gis_datasource.getTable(outputTable).getRowCount()>0){
             h2gis_datasource.getSpatialTable(outputTable).reproject(outputSRID.toInteger()).save(filePath, deleteOutputData)
+            }
         }
         info "${outputTable} has been saved in ${filePath}."
     }
