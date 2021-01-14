@@ -506,6 +506,38 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
+    @Test
+    void testOnlyEstimateHeight() {
+        String directory ="./target/geoclimate_chain_grid"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "description" :"Example of configuration file to run only the estimated height model",
+                "geoclimatedb" : [
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete" :false
+                ],
+                "input" : [
+                        "osm" : ["Pont-de-Veyle"]],
+                "output" :[
+                        "folder" : ["path": "$directory",
+                                    "tables": ["building"]]],
+                "parameters":
+                        ["distance" : 0,
+                         "rsu_indicators": [
+                                 "svfSimplified": true,
+                                 "estimateHeight":true
+                         ]
+                        ]
+        ]
+        IProcess process = OSM.workflow
+        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
+        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
+    }
+
 
     @Test
     void testGrid_Indicators() {

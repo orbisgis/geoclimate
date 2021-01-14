@@ -1156,15 +1156,30 @@ IProcess computeAllGeoIndicators() {
                         epsg          : epsg])
 
                 def buildingTableName = formatEstimatedBuilding.results.outputTableName
+                //We use the existing spatial units
+                def relationBlocks = results.outputTableBlockIndicators
+                def relationRSU = results.outputTableRsuIndicators
+
+                //This is a shortcut to extract building with estimated height
+                if(indicatorUse.isEmpty()){
+                    //Clean the System properties that stores intermediate table names
+                    clearTablesCache()
+                    return [outputTableBuildingIndicators   : results.outputTableBuildingIndicators,
+                            outputTableBlockIndicators      : relationBlocks,
+                            outputTableRsuIndicators        : relationRSU,
+                            outputTableRsuLcz               : null,
+                            outputTableZone                 : zoneTable,
+                            outputTableRsuUrbanTypoArea     : null,
+                            outputTableRsuUrbanTypoFloorArea: null,
+                            outputTableBuildingUrbanTypo    : null,
+                            buildingTableName             : buildingTableName]
+                }
 
                 //Drop tables
                 datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators,
                                         $newEstimatedHeigthWithIndicators, $buildEstimatedHeight,
                                         $gatheredScales"""
 
-                //We use the existing spatial units
-                def relationBlocks = results.outputTableBlockIndicators
-                def relationRSU = results.outputTableRsuIndicators
 
                 //The spatial relation tables RSU and BLOCK  must be filtered to keep only necessary columns
                 def rsuRelationFiltered = prefix prefixName, "RSU_RELATION_"
