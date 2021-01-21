@@ -66,9 +66,10 @@ import java.sql.SQLException
  *  *     ,
  *  *   [OPTIONAL ENTRY]  "parameters":
  *  *     {"distance" : 1000,
+ *  *         "prefixName": "",
+ *  *        rsu_indicators:{
  *  *         "indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"],
  *  *         "svfSimplified": false,
- *  *         "prefixName": "",
  *  *         "mapOfWeights":
  *  *         {"sky_view_factor": 1,
  *  *             "aspect_ratio": 1,
@@ -80,6 +81,7 @@ import java.sql.SQLException
  *  *         "hLevMin": 3,
  *  *         "hLevMax": 15,
  *  *         "hThresho2": 10
+ *          }
  *  *     }
  *  *     }
  *  The parameters entry tag contains all geoclimate chain parameters.
@@ -156,12 +158,13 @@ IProcess workflow() {
                     if(h2gis_folder){
                         databaseFolder=h2gis_folder
                     }
+                    databasePath =  databaseFolder + File.separator + databaseName
                     def h2gis_name= geoclimatedb.get("name")
                     if(h2gis_name){
                         def dbName = h2gis_name.split(";")
                         databaseName=dbName[0]
+                        databasePath =  databaseFolder + File.separator + h2gis_name
                     }
-                    databasePath =  databaseFolder + File.separator + databaseName
                     def delete_h2gis_db = geoclimatedb.get("delete")
                     if (delete_h2gis_db == null) {
                         delete_h2gis = true
@@ -207,7 +210,9 @@ IProcess workflow() {
                                                     "urban_areas",
                                                     "rsu_urban_typo_area",
                                                     "rsu_urban_typo_floor_area",
-                                                    "building_urban_typo"]
+                                                    "building_urban_typo",
+                                                    "grid_indicators",
+                                                    "sea_land_mask"]
                         //Get processing parameters
                         def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
                         if(!processing_parameters){
@@ -416,18 +421,21 @@ IProcess osm_processing() {
                 outputFolder: "", ouputTableFiles: "", output_datasource: "", outputTableNames: "", outputSRID : String, downloadAllOSMData : true,deleteOutputData:true
         outputs outputMessage: String
         run { h2gis_datasource, processing_parameters, id_zones, outputFolder, ouputTableFiles, output_datasource, outputTableNames, outputSRID, downloadAllOSMData,deleteOutputData ->
-
-            // Temporary tables
+             // Temporary tables
             int nbAreas = id_zones.size();
             info "$nbAreas osm areas will be processed"
-            def geoIndicatorsComputed = false
             id_zones.eachWithIndex { id_zone, index ->
+                def start = System.currentTimeMillis();
                 //Extract the zone table and read its SRID
                 def zoneTableNames = extractOSMZone(h2gis_datasource, id_zone, processing_parameters)
                 if (zoneTableNames) {
                     id_zone = id_zone in Map ? "bbox_" + id_zone.join('_') : id_zone
                     def zoneTableName = zoneTableNames.outputZoneTable
                     def zoneEnvelopeTableName = zoneTableNames.outputZoneEnvelopeTable
+                    if(h2gis_datasource.getTable(zoneTableName).getRowCount()==0){
+                        error "Cannot find any geometry to define the zone to extract the OSM data"
+                        return
+                    }
                     def srid = h2gis_datasource.getSpatialTable(zoneTableName).srid
                     def reproject =false
                     if(outputSRID){
@@ -455,144 +463,172 @@ IProcess osm_processing() {
                         IProcess createGISLayerProcess = OSM.createGISLayers
                         if (createGISLayerProcess.execute(datasource: h2gis_datasource, osmFilePath: extract.results.outputFilePath, epsg: srid)) {
                             def gisLayersResults = createGISLayerProcess.getResults()
-                            if (zoneTableName != null) {
-                                info "Formating OSM GIS layers"
+                            def rsu_indicators_params = processing_parameters.rsu_indicators
+                            def grid_indicators_params = processing_parameters.grid_indicators
 
-                                //Format urban areas
-                                IProcess format = OSM.formatUrbanAreas
-                                format.execute([
-                                        datasource                : h2gis_datasource,
-                                        inputTableName            : gisLayersResults.urbanAreasTableName,
-                                        inputZoneEnvelopeTableName: zoneEnvelopeTableName,
-                                        epsg                      : srid])
-                                def urbanAreasTable = format.results.outputTableName
+                            info "Formating OSM GIS layers"
+                            //Format urban areas
+                            IProcess format = OSM.formatUrbanAreas
+                            format.execute([
+                                    datasource                : h2gis_datasource,
+                                    inputTableName            : gisLayersResults.urbanAreasTableName,
+                                    inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                    epsg                      : srid])
+                            def urbanAreasTable = format.results.outputTableName
 
-                                def estimateHeight = processing_parameters."estimateHeight"
-                                format = OSM.formatBuildingLayer
-                                format.execute([
-                                        datasource                : h2gis_datasource,
-                                        inputTableName            : gisLayersResults.buildingTableName,
-                                        inputZoneEnvelopeTableName: zoneEnvelopeTableName,
-                                        epsg                      : srid,
-                                        estimateHeight            : estimateHeight,
-                                        urbanAreasTableName : urbanAreasTable ])
+                            format = OSM.formatBuildingLayer
+                            format.execute([
+                                    datasource                : h2gis_datasource,
+                                    inputTableName            : gisLayersResults.buildingTableName,
+                                    inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                    epsg                      : srid,
+                                    h_lev_min                 : processing_parameters.hLevMin,
+                                    h_lev_max                 : processing_parameters.hLevMax,
+                                    hThresholdLev2            : processing_parameters.hThresholdLev2,
+                                    urbanAreasTableName       : urbanAreasTable])
 
-                                def buildingTableName = format.results.outputTableName
-                                def buildingEstimateTableName = format.results.outputEstimateTableName
+                            def buildingTableName = format.results.outputTableName
+                            def buildingEstimateTableName = format.results.outputEstimateTableName
 
-                                format = OSM.formatRoadLayer
-                                format.execute([
-                                        datasource                : h2gis_datasource,
-                                        inputTableName            : gisLayersResults.roadTableName,
-                                        inputZoneEnvelopeTableName: zoneEnvelopeTableName,
-                                        epsg                      : srid])
-                                def roadTableName = format.results.outputTableName
+                            format = OSM.formatRoadLayer
+                            format.execute([
+                                    datasource                : h2gis_datasource,
+                                    inputTableName            : gisLayersResults.roadTableName,
+                                    inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                    epsg                      : srid])
+                            def roadTableName = format.results.outputTableName
 
 
-                                format = OSM.formatRailsLayer
-                                format.execute([
-                                        datasource                : h2gis_datasource,
-                                        inputTableName            : gisLayersResults.railTableName,
-                                        inputZoneEnvelopeTableName: zoneEnvelopeTableName,
-                                        epsg                      : srid])
-                                def railTableName = format.results.outputTableName
+                            format = OSM.formatRailsLayer
+                            format.execute([
+                                    datasource                : h2gis_datasource,
+                                    inputTableName            : gisLayersResults.railTableName,
+                                    inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                    epsg                      : srid])
+                            def railTableName = format.results.outputTableName
 
-                                format = OSM.formatVegetationLayer
-                                format.execute([
-                                        datasource                : h2gis_datasource,
-                                        inputTableName            : gisLayersResults.vegetationTableName,
-                                        inputZoneEnvelopeTableName: zoneEnvelopeTableName,
-                                        epsg                      : srid])
-                                def vegetationTableName = format.results.outputTableName
+                            format = OSM.formatVegetationLayer
+                            format.execute([
+                                    datasource                : h2gis_datasource,
+                                    inputTableName            : gisLayersResults.vegetationTableName,
+                                    inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                    epsg                      : srid])
+                            def vegetationTableName = format.results.outputTableName
 
-                                format = OSM.formatHydroLayer
-                                format.execute([
-                                        datasource                : h2gis_datasource,
-                                        inputTableName            : gisLayersResults.hydroTableName,
-                                        inputZoneEnvelopeTableName: zoneEnvelopeTableName,
-                                        epsg                      : srid])
-                                def hydrographicTableName = format.results.outputTableName
+                            format = OSM.formatHydroLayer
+                            format.execute([
+                                    datasource                : h2gis_datasource,
+                                    inputTableName            : gisLayersResults.hydroTableName,
+                                    inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                    epsg                      : srid])
+                            def hydrographicTableName = format.results.outputTableName
 
-                                format = OSM.formatImperviousLayer
-                                format.execute([
-                                        datasource                : h2gis_datasource,
-                                        inputTableName            : gisLayersResults.imperviousTableName,
-                                        inputZoneEnvelopeTableName: zoneEnvelopeTableName,
-                                        epsg                      : srid])
-                                def imperviousTableName = format.results.outputTableName
+                            format = OSM.formatImperviousLayer
+                            format.execute([
+                                    datasource                : h2gis_datasource,
+                                    inputTableName            : gisLayersResults.imperviousTableName,
+                                    inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                    epsg                      : srid])
+                            def imperviousTableName = format.results.outputTableName
 
-                                //Sea/Land mask
-                                format = OSM.formatSeaLandMask
-                                format.execute([
-                                        datasource : h2gis_datasource,
-                                        inputTableName: gisLayersResults.coastlineTableName,
-                                        inputZoneEnvelopeTableName : zoneEnvelopeTableName,
-                                        epsg: srid])
+                            //Sea/Land mask
+                            format = OSM.formatSeaLandMask
+                            format.execute([
+                                    datasource                : h2gis_datasource,
+                                    inputTableName            : gisLayersResults.coastlineTableName,
+                                    inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                    epsg                      : srid])
 
-                                def seaLandMaskTableName = format.results.outputTableName
+                            def seaLandMaskTableName = format.results.outputTableName
 
-                                //Sea/Land mask
-                                format = OSM.mergeWaterAndSeaLandTables
-                                format.execute([
-                                        datasource : h2gis_datasource,
-                                        inputSeaLandTableName: seaLandMaskTableName ,inputWaterTableName : hydrographicTableName,
-                                        inputZoneEnvelopeTableName : zoneEnvelopeTableName,
-                                        epsg: srid])
+                            //Merge the Sea/Land mask with water tabke
+                            format = OSM.mergeWaterAndSeaLandTables
+                            format.execute([
+                                    datasource           : h2gis_datasource,
+                                    inputSeaLandTableName: seaLandMaskTableName, inputWaterTableName: hydrographicTableName,
+                                    epsg                 : srid])
 
-                                hydrographicTableName = format.results.outputTableName
+                            hydrographicTableName = format.results.outputTableName
 
-                                info "OSM GIS layers formated"
+                            info "OSM GIS layers formated"
 
-                                //Compute the indicators
+                            //Add the GIS layers to the list of results
+                            def results = [:]
+                            results.put("roadTableName", roadTableName)
+                            results.put("railTableName", railTableName)
+                            results.put("hydrographicTableName", hydrographicTableName)
+                            results.put("vegetationTableName", vegetationTableName)
+                            results.put("imperviousTableName", imperviousTableName)
+                            results.put("urbanAreasTableName", urbanAreasTable)
+                            results.put("buildingTableName", buildingTableName)
+                            results.put("seaLandMaskTableName", seaLandMaskTableName)
+
+                            //Compute the RSU indicators
+                            if(rsu_indicators_params){
+                                def estimateHeight  = rsu_indicators_params."estimateHeight"
                                 IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
                                 if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
                                         buildingTable: buildingTableName, roadTable: roadTableName,
                                         railTable: railTableName, vegetationTable: vegetationTableName,
                                         hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
-                                        buildingEstimateTableName :buildingEstimateTableName,
-                                        surface_vegetation: processing_parameters.surface_vegetation,
-                                        surface_hydro: processing_parameters.surface_hydro,
-                                        snappingTolerance : processing_parameters.snappingTolerance,
-                                        indicatorUse: processing_parameters.indicatorUse,
-                                        svfSimplified: processing_parameters.svfSimplified,
+                                        buildingEstimateTableName: buildingEstimateTableName,
+                                        seaLandMaskTableName:seaLandMaskTableName,
+                                        surface_vegetation: rsu_indicators_params.surface_vegetation,
+                                        surface_hydro: rsu_indicators_params.surface_hydro,
+                                        snappingTolerance: rsu_indicators_params.snappingTolerance,
+                                        indicatorUse: rsu_indicators_params.indicatorUse,
+                                        svfSimplified: rsu_indicators_params.svfSimplified,
                                         prefixName: processing_parameters.prefixName,
-                                        mapOfWeights: processing_parameters.mapOfWeights,
-                                        urbanTypoModelName: "URBAN_TYPOLOGY_OSM_RF_2_0.model",
-                                        buildingHeightModelName : estimateHeight?"BUILDING_HEIGHT_OSM_RF_2_0.model":"")) {
+                                        mapOfWeights: rsu_indicators_params.mapOfWeights,
+                                        urbanTypoModelName: "URBAN_TYPOLOGY_OSM_RF_2_1.model",
+                                        buildingHeightModelName: estimateHeight ? "BUILDING_HEIGHT_OSM_RF_2_0.model" : "")) {
                                     error "Cannot build the geoindicators for the zone $id_zone"
-                                    geoIndicatorsComputed = false
-                                } else {
-                                    geoIndicatorsComputed = true
-                                    info "${id_zone} has been processed"
                                 }
-                                    def results = geoIndicators.getResults()
-                                    results.put("buildingTableName", buildingTableName)
-                                    results.put("roadTableName", roadTableName)
-                                    results.put("railTableName", railTableName)
-                                    results.put("hydrographicTableName", hydrographicTableName)
-                                    results.put("vegetationTableName", vegetationTableName)
-                                    results.put("imperviousTableName", imperviousTableName)
-                                    results.put("urbanAreasTableName", urbanAreasTable)
-                                    if (outputFolder && geoIndicatorsComputed && ouputTableFiles) {
-                                        saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject, deleteOutputData)
-                                    }
-                                    if (output_datasource && geoIndicatorsComputed) {
-                                        saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone, srid, outputSRID, reproject)
+                                else{
+                                     results.putAll(geoIndicators.getResults())
+                                }
+                            }
+
+                            //Compute the grid indicators
+                            if(grid_indicators_params){
+                                    def x_size = grid_indicators_params.x_size
+                                    def y_size = grid_indicators_params.y_size
+                                    IProcess rasterizedIndicators =  ProcessingChain.GeoIndicatorsChain.rasterizeIndicators()
+                                    if(rasterizedIndicators.execute(datasource:h2gis_datasource,zoneEnvelopeTableName: zoneEnvelopeTableName,
+                                            x_size : x_size, y_size : y_size,list_indicators :grid_indicators_params.indicators,
+                                            buildingTable: buildingTableName, roadTable: roadTableName, vegetationTable: vegetationTableName,
+                                            hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
+                                            rsu_lcz:results.outputTableRsuLcz,
+                                            rsu_urban_typo_area:results.outputTableRsuUrbanTypoArea,
+                                            rsu_urban_typo_floor_area:results.outputTableRsuUrbanTypoFloorArea,
+                                            prefixName: processing_parameters.prefixName
+                                    )){
+                                        results.put("grid_indicators", rasterizedIndicators.results.outputTableName)
                                     }
                             }
+                            if (outputFolder  && ouputTableFiles) {
+                                saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject, deleteOutputData)
+                            }
+                            if (output_datasource) {
+                                saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone, srid, outputSRID, reproject)
+                            }
+
                         } else {
                             error "Cannot load the OSM file ${extract.results.outputFilePath}"
+                            return
                         }
                     } else {
                         error "Cannot execute the overpass query $query"
+                        return
                     }
                 } else {
                     error "Cannot calculate a bounding box to extract OSM data"
+                    return
                 }
 
                 info "Number of areas processed ${index + 1} on $nbAreas"
             }
-            return [outputMessage: "The OSM processing tasks have been done"]
+            return [outputMessage: "The OSM workflow has been executed"]
         }
     }
 }
@@ -650,12 +686,14 @@ def extractOSMZone(def datasource, def zoneToExtract, def processing_parameters)
         def tmpGeomEnv = geom.getFactory().toGeometry(envelope)
         tmpGeomEnv.setSRID(4326)
 
-        datasource.execute """drop table if exists ${outputZoneTable}; create table ${outputZoneTable} (the_geom GEOMETRY(${GEOMETRY_TYPE}, $epsg), ID_ZONE VARCHAR);"""
-        datasource.execute(" INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT(?, ?), ?);", geomUTM.toString(),epsg, zoneToExtract.toString())
+        datasource.execute """drop table if exists ${outputZoneTable}; 
+        create table ${outputZoneTable} (the_geom GEOMETRY(${GEOMETRY_TYPE}, $epsg), ID_ZONE VARCHAR);
+        INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT('${geomUTM.toString()}', ${epsg}), '${zoneToExtract.toString()}');"""
 
-        datasource.execute """drop table if exists ${outputZoneEnvelopeTable}; create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);"""
-        datasource.execute("INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT(?,?), ?);"
-        ,ST_Transform.ST_Transform(con, tmpGeomEnv, epsg).toString(), epsg, zoneToExtract.toString())
+        datasource.execute """drop table if exists ${outputZoneEnvelopeTable}; 
+         create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
+        INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${ST_Transform.ST_Transform(con, tmpGeomEnv, epsg).toString()}',${epsg}), '${zoneToExtract.toString()}');
+        """
 
         return [outputZoneTable: outputZoneTable,
                 outputZoneEnvelopeTable: outputZoneEnvelopeTable,
@@ -686,7 +724,9 @@ def outputFolderProperties(def outputFolder){
                         "urban_areas",
                         "rsu_urban_typo_area",
                         "rsu_urban_typo_floor_area",
-                        "building_urban_typo"]
+                        "building_urban_typo",
+                        "grid_indicators",
+                        "sea_land_mask"]
     if(outputFolder in Map){
         def outputPath = outputFolder.get("path")
         def outputTables = outputFolder.get("tables")
@@ -855,64 +895,16 @@ def findIDZones(def h2gis_datasource, def id_zones){
  * @return a filled map of parameters
  */
 def extractProcessingParameters(def processing_parameters){
-    def defaultParameters = [distance: 0,indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
-                             svfSimplified:false, prefixName: "",
-                             surface_vegetation: 10000,
-                             surface_hydro: 2500,
-                             snappingTolerance :0.01,
-                             mapOfWeights :  ["sky_view_factor"                : 4,
-                                              "aspect_ratio"                   : 3,
-                                              "building_surface_fraction"      : 8,
-                                              "impervious_surface_fraction"    : 0,
-                                              "pervious_surface_fraction"      : 0,
-                                              "height_of_roughness_elements"   : 6,
-                                              "terrain_roughness_length"       : 0.5],
-                             hLevMin : 3, hLevMax: 15, hThresholdLev2: 10,
-                             estimateHeight:false,
-                             lczModelName: "LCZ_OSM_RF_1_0.model",
-                             urbanTypoModelName: "URBAN_TYPOLOGY_OSM_RF_2_0.model"]
+    def defaultParameters = [distance: 0, prefixName: "",
+                             hLevMin : 3, hLevMax: 15, hThresholdLev2: 10]
     if(processing_parameters){
         def distanceP =  processing_parameters.distance
         if(distanceP && distanceP in Number){
             defaultParameters.distance = distanceP
         }
-        def indicatorUseP = processing_parameters.indicatorUse
-        if(indicatorUseP && indicatorUseP in List){
-            defaultParameters.indicatorUse = indicatorUseP
-        }
-
-        def snappingToleranceP =  processing_parameters.snappingTolerance
-        if(snappingToleranceP && snappingToleranceP in Number){
-            defaultParameters.snappingTolerance = snappingToleranceP
-        }
-
-        def surface_vegetationP =  processing_parameters.surface_vegetation
-        if(surface_vegetationP && surface_vegetationP in Number){
-            defaultParameters.surface_vegetation = surface_vegetationP
-        }
-        def surface_hydroP =  processing_parameters.surface_hydro
-        if(surface_hydroP && surface_hydroP in Number){
-            defaultParameters.surface_hydro = surface_hydroP
-        }
-
-        def svfSimplifiedP = processing_parameters.svfSimplified
-        if(svfSimplifiedP && svfSimplifiedP in Boolean){
-            defaultParameters.svfSimplified = svfSimplifiedP
-        }
         def prefixNameP = processing_parameters.prefixName
         if(prefixNameP && prefixNameP in String){
             defaultParameters.prefixName = prefixNameP
-        }
-
-        def mapOfWeightsP = processing_parameters.mapOfWeights
-        if(mapOfWeightsP && mapOfWeightsP in Map){
-            def defaultmapOfWeights = defaultParameters.mapOfWeights
-            if((defaultmapOfWeights+mapOfWeightsP).size()!=defaultmapOfWeights.size()){
-                error "The number of mapOfWeights parameters must contain exactly the parameters ${defaultmapOfWeights.keySet().join(",")}"
-                return
-            }else{
-                defaultParameters.mapOfWeights = mapOfWeightsP
-            }
         }
 
         def hLevMinP =  processing_parameters.hLevMin
@@ -927,9 +919,101 @@ def extractProcessingParameters(def processing_parameters){
         if(hThresholdLev2P && hThresholdLev2P in Integer){
             defaultParameters.hThresholdLev2 = hThresholdLev2P
         }
-        def estimateHeight = processing_parameters.estimateHeight
-        if(estimateHeight && estimateHeight in Boolean){
-            defaultParameters.estimateHeight = estimateHeight
+        //Check for rsu indicators
+        def  rsu_indicators = processing_parameters.rsu_indicators
+        if(rsu_indicators){
+            def rsu_indicators_default =[indicatorUse: [],
+                                         svfSimplified:false,
+                                         surface_vegetation: 10000,
+                                         surface_hydro: 2500,
+                                         snappingTolerance :0.01,
+                                         mapOfWeights :  ["sky_view_factor"                : 4,
+                                                          "aspect_ratio"                   : 3,
+                                                          "building_surface_fraction"      : 8,
+                                                          "impervious_surface_fraction"    : 0,
+                                                          "pervious_surface_fraction"      : 0,
+                                                          "height_of_roughness_elements"   : 6,
+                                                          "terrain_roughness_length"       : 0.5],
+                                         estimateHeight:false,
+                                         urbanTypoModelName: "URBAN_TYPOLOGY_OSM_RF_2_1.model"]
+            def indicatorUseP = rsu_indicators.indicatorUse
+            if(indicatorUseP && indicatorUseP in List) {
+                def allowed_rsu_indicators = ["LCZ", "URBAN_TYPOLOGY", "TEB"]
+                def allowedOutputRSUIndicators = allowed_rsu_indicators.intersect(indicatorUseP*.toUpperCase())
+                if (allowedOutputRSUIndicators) {
+                    rsu_indicators_default.indicatorUse = indicatorUseP
+                }
+                else {
+                    info "Please set a valid list of RSU indicator names in ${allowedOutputRSUIndicators}"
+                    return
+                }
+            }else{
+                rsu_indicators_default.indicatorUse = []
+            }
+            def snappingToleranceP =  rsu_indicators.snappingTolerance
+            if(snappingToleranceP && snappingToleranceP in Number){
+                rsu_indicators_default.snappingTolerance = snappingToleranceP
+            }
+            def surface_vegetationP =  rsu_indicators.surface_vegetation
+            if(surface_vegetationP && surface_vegetationP in Number){
+                rsu_indicators_default.surface_vegetation = surface_vegetationP
+            }
+            def surface_hydroP =  rsu_indicators.surface_hydro
+            if(surface_hydroP && surface_hydroP in Number){
+                rsu_indicators_default.surface_hydro = surface_hydroP
+            }
+            def svfSimplifiedP = rsu_indicators.svfSimplified
+            if(svfSimplifiedP && svfSimplifiedP in Boolean){
+                rsu_indicators_default.svfSimplified = svfSimplifiedP
+            }
+            def estimateHeight = rsu_indicators.estimateHeight
+            if(estimateHeight && estimateHeight in Boolean){
+                rsu_indicators_default.estimateHeight = estimateHeight
+            }
+            def mapOfWeightsP = rsu_indicators.mapOfWeights
+            if(mapOfWeightsP && mapOfWeightsP in Map){
+                def defaultmapOfWeights = rsu_indicators_default.mapOfWeights
+                if((defaultmapOfWeights+mapOfWeightsP).size()!=defaultmapOfWeights.size()){
+                    error "The number of mapOfWeights parameters must contain exactly the parameters ${defaultmapOfWeights.keySet().join(",")}"
+                    return
+                }else{
+                    rsu_indicators_default.mapOfWeights = mapOfWeightsP
+                }
+            }
+            defaultParameters.put("rsu_indicators", rsu_indicators_default)
+        }
+
+        //Check for grid indicators
+        def  grid_indicators = processing_parameters.grid_indicators
+        if(grid_indicators){
+            def x_size = grid_indicators.x_size
+            def y_size = grid_indicators.y_size
+            def list_indicators = grid_indicators.indicators
+            if(x_size && y_size){
+                if(x_size<=0 || y_size<= 0){
+                    info "Invalid grid size padding. Must be greater that 0"
+                    return
+                }
+                if(!list_indicators){
+                    info "The list of indicator names cannot be null or empty"
+                    return
+                }
+                def allowed_grid_indicators=["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
+                          "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "URBAN_TYPO_AREA_FRACTION", "LCZ_FRACTION"]
+                def allowedOutputIndicators = allowed_grid_indicators.intersect(list_indicators*.toUpperCase())
+                if(allowedOutputIndicators){
+                def grid_indicators_tmp =  [
+                        "x_size": x_size,
+                        "y_size": y_size,
+                        "indicators": allowedOutputIndicators
+                ]
+                defaultParameters.put("grid_indicators", grid_indicators_tmp)
+                }
+                else {
+                    info "Please set a valid list of indicator names in ${allowed_grid_indicators}"
+                    return
+                }
+            }
         }
 
         return defaultParameters
@@ -948,6 +1032,7 @@ def extractProcessingParameters(def processing_parameters){
  * @param ouputFolder the ouput folder
  * @param outputSRID srid code to reproject the result
  * @param reproject  true if the file must reprojected
+ * @param deleteOutputData delete the files if exist
  * @return
  */
 def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFiles, def ouputFolder, def subFolderName, def outputSRID, def reproject, def deleteOutputData){
@@ -977,7 +1062,6 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
         else  if(it.equals("zones")){
             saveTableAsGeojson(results.outputTableZone,  "${subFolder.getAbsolutePath()+File.separator+"zones"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
-
         //Save input GIS tables
         else  if(it.equals("building")){
             saveTableAsGeojson(results.buildingTableName, "${subFolder.getAbsolutePath()+File.separator+"building"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
@@ -1006,6 +1090,12 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
         }else if(it.equals("building_urban_typo")){
             saveTableAsGeojson(results.outputTableBuildingUrbanTypo, "${subFolder.getAbsolutePath()+File.separator+"building_urban_typo"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
+        else if(it.equals("grid_indicators")){
+            saveTableAsGeojson(results.grid_indicators, "${subFolder.getAbsolutePath()+File.separator+"grid_indicators"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        }
+        else if(it.equals("sea_land_mask")){
+            saveTableAsGeojson(results.seaLandMaskTableName, "${subFolder.getAbsolutePath()+File.separator+"sea_land_mask"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        }
     }
 }
 
@@ -1023,464 +1113,13 @@ def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource,def o
         if(!reproject){
         h2gis_datasource.save(outputTable, filePath,deleteOutputData)
         }else{
+            if(h2gis_datasource.getTable(outputTable).getRowCount()>0){
             h2gis_datasource.getSpatialTable(outputTable).reproject(outputSRID.toInteger()).save(filePath, deleteOutputData)
+            }
         }
         info "${outputTable} has been saved in ${filePath}."
     }
 }
-
-/**
- * Create the output tables in the output_datasource
- * @param output_datasource connexion to the output database
- * @param outputTableNames name of tables to store the geoclimate results
- * @param srid epsg code for the output tables
- * @return
- */
-def createOutputTables(def output_datasource, def outputTableNames, def srid){
-    //Output table names
-    def output_zones = outputTableNames.zones
-    def output_building_indicators = outputTableNames.building_indicators
-    def output_block_indicators = outputTableNames.block_indicators
-    def output_rsu_indicators = outputTableNames.rsu_indicators
-    def output_rsu_lcz = outputTableNames.rsu_lcz
-    def output_building = outputTableNames.building
-    def output_road = outputTableNames.road
-    def output_rail = outputTableNames.rail
-    def output_water = outputTableNames.water
-    def output_vegetation = outputTableNames.vegetation
-    def output_impervious = outputTableNames.impervious
-    def output_urban_areas = outputTableNames.urban_areas
-    def output_rsu_urban_typo_area = outputTableNames.rsu_urban_typo_area
-    def output_rsu_urban_typo_floor_area = outputTableNames.rsu_urban_typo_floor_area
-    def output_building_urban_typo= outputTableNames.building_urban_typo
-
-
-    if (output_block_indicators && !output_datasource.hasTable(output_block_indicators)){
-        output_datasource.execute """CREATE TABLE $output_block_indicators (
-        ID_BLOCK INTEGER, THE_GEOM GEOMETRY(GEOMETRY,$srid),
-        ID_RSU INTEGER, AREA DOUBLE PRECISION,
-        FLOOR_AREA DOUBLE PRECISION,VOLUME DOUBLE PRECISION,
-        HOLE_AREA_DENSITY DOUBLE PRECISION,
-        BUILDING_DIRECTION_EQUALITY DOUBLE PRECISION,
-        BUILDING_DIRECTION_UNIQUENESS DOUBLE PRECISION,
-        MAIN_BUILDING_DIRECTION VARCHAR,
-        CLOSINGNESS DOUBLE PRECISION, NET_COMPACTNESS DOUBLE PRECISION,
-        AVG_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION,
-        STD_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION,
-        ID_ZONE VARCHAR
-        );
-        CREATE INDEX IF NOT EXISTS idx_${output_block_indicators.replaceAll(".", "_")}_id_zone ON $output_block_indicators (ID_ZONE);"""
-    }
-    else if (output_block_indicators){
-        def outputTableSRID = output_datasource.getSpatialTable(output_block_indicators).srid
-        if(outputTableSRID!=srid){
-            error "The SRID of the output table ($outputTableSRID) $output_block_indicators is different than the srid of the result table ($srid)"
-            return null
-        }
-        //Test if we can write in the database
-        output_datasource.execute """INSERT INTO $output_block_indicators (ID_ZONE) VALUES('geoclimate');
-        DELETE from $output_block_indicators WHERE ID_ZONE= 'geoclimate';"""
-    }
-
-    if (output_building_indicators && !output_datasource.hasTable(output_building_indicators)){
-        output_datasource.execute """
-        CREATE TABLE $output_building_indicators (
-                THE_GEOM GEOMETRY(GEOMETRY,$srid),
-                ID_BUILD INTEGER,
-                ID_SOURCE VARCHAR,
-                HEIGHT_WALL INTEGER,
-                HEIGHT_ROOF INTEGER,
-                NB_LEV INTEGER,
-                TYPE VARCHAR,
-                MAIN_USE VARCHAR,
-                ZINDEX INTEGER,
-                ID_ZONE VARCHAR,
-                ID_BLOCK INTEGER,
-                ID_RSU INTEGER,
-                PERIMETER DOUBLE PRECISION,
-                AREA DOUBLE PRECISION,
-                VOLUME DOUBLE PRECISION,
-                FLOOR_AREA DOUBLE PRECISION,
-                TOTAL_FACADE_LENGTH DOUBLE PRECISION,
-                CONTIGUITY DOUBLE PRECISION,
-                COMMON_WALL_FRACTION DOUBLE PRECISION,
-                NUMBER_BUILDING_NEIGHBOR BIGINT,
-                AREA_CONCAVITY DOUBLE PRECISION,
-                FORM_FACTOR DOUBLE PRECISION,
-                RAW_COMPACTNESS DOUBLE PRECISION,
-                PERIMETER_CONVEXITY DOUBLE PRECISION,
-                MINIMUM_BUILDING_SPACING DOUBLE PRECISION,
-                ROAD_DISTANCE DOUBLE PRECISION,
-                LIKELIHOOD_LARGE_BUILDING DOUBLE PRECISION
-        );
-        CREATE INDEX IF NOT EXISTS idx_${output_building_indicators.replaceAll(".", "_")}_id_zone  ON $output_building_indicators (ID_ZONE);
-        """
-    }
-    else if (output_building_indicators){
-        def outputTableSRID = output_datasource.getSpatialTable(output_building_indicators).srid
-        if(outputTableSRID!=srid){
-            error "The SRID of the output table ($outputTableSRID) $output_building_indicators is different than the srid of the result table ($srid)"
-            return null
-        }
-        //Test if we can write in the database
-        output_datasource.execute """INSERT INTO $output_building_indicators (ID_ZONE) VALUES('geoclimate');
-        DELETE from $output_building_indicators WHERE ID_ZONE= 'geoclimate';"""
-    }
-
-    if (output_rsu_indicators && !output_datasource.hasTable(output_rsu_indicators)){
-        output_datasource.execute """
-    CREATE TABLE $output_rsu_indicators (
-    ID_RSU INTEGER,
-	THE_GEOM GEOMETRY(GEOMETRY,$srid),	
-	HIGH_VEGETATION_FRACTION DOUBLE PRECISION,
-	HIGH_VEGETATION_WATER_FRACTION DOUBLE PRECISION,
-	HIGH_VEGETATION_BUILDING_FRACTION DOUBLE PRECISION,
-	HIGH_VEGETATION_LOW_VEGETATION_FRACTION DOUBLE PRECISION,
-	HIGH_VEGETATION_ROAD_FRACTION DOUBLE PRECISION,
-	HIGH_VEGETATION_IMPERVIOUS_FRACTION DOUBLE PRECISION,
-	WATER_FRACTION DOUBLE PRECISION,
-	BUILDING_FRACTION DOUBLE PRECISION,
-	LOW_VEGETATION_FRACTION DOUBLE PRECISION,
-	ROAD_FRACTION DOUBLE PRECISION,
-	IMPERVIOUS_FRACTION DOUBLE PRECISION,
-	VEGETATION_FRACTION_URB DOUBLE PRECISION,
-	LOW_VEGETATION_FRACTION_URB DOUBLE PRECISION,
-	HIGH_VEGETATION_IMPERVIOUS_FRACTION_URB DOUBLE PRECISION,
-	HIGH_VEGETATION_PERVIOUS_FRACTION_URB DOUBLE PRECISION,
-	ROAD_FRACTION_URB DOUBLE PRECISION,
-	IMPERVIOUS_FRACTION_URB DOUBLE PRECISION,
-	BUILDING_FRACTION_LCZ DOUBLE PRECISION,
-	PERVIOUS_FRACTION_LCZ DOUBLE PRECISION,
-	HIGH_VEGETATION_FRACTION_LCZ DOUBLE PRECISION,
-	LOW_VEGETATION_FRACTION_LCZ DOUBLE PRECISION,
-	IMPERVIOUS_FRACTION_LCZ DOUBLE PRECISION,
-	WATER_FRACTION_LCZ DOUBLE PRECISION,
-	AREA DOUBLE PRECISION,
-	AVG_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION,
-	STD_HEIGHT_ROOF_AREA_WEIGHTED DOUBLE PRECISION,
-	ROAD_DIRECTION_DISTRIBUTION_H0_D0_30 DOUBLE PRECISION,
-	ROAD_DIRECTION_DISTRIBUTION_H0_D30_60 DOUBLE PRECISION,
-	ROAD_DIRECTION_DISTRIBUTION_H0_D60_90 DOUBLE PRECISION,
-	ROAD_DIRECTION_DISTRIBUTION_H0_D90_120 DOUBLE PRECISION,
-	ROAD_DIRECTION_DISTRIBUTION_H0_D120_150 DOUBLE PRECISION,
-	ROAD_DIRECTION_DISTRIBUTION_H0_D150_180 DOUBLE PRECISION,
-	GROUND_LINEAR_ROAD_DENSITY DOUBLE PRECISION,
-	NON_VERT_ROOF_AREA_H0_10 DOUBLE PRECISION,
-	NON_VERT_ROOF_AREA_H10_20 DOUBLE PRECISION,
-	NON_VERT_ROOF_AREA_H20_30 DOUBLE PRECISION,
-	NON_VERT_ROOF_AREA_H30_40 DOUBLE PRECISION,
-	NON_VERT_ROOF_AREA_H40_50 DOUBLE PRECISION,
-	NON_VERT_ROOF_AREA_H50 DOUBLE PRECISION,
-	VERT_ROOF_AREA_H0_10 DOUBLE PRECISION,
-	VERT_ROOF_AREA_H10_20 DOUBLE PRECISION,
-	VERT_ROOF_AREA_H20_30 DOUBLE PRECISION,
-	VERT_ROOF_AREA_H30_40 DOUBLE PRECISION,
-	VERT_ROOF_AREA_H40_50 DOUBLE PRECISION,
-	VERT_ROOF_AREA_H50 DOUBLE PRECISION,
-	VERT_ROOF_DENSITY DOUBLE PRECISION,
-	NON_VERT_ROOF_DENSITY DOUBLE PRECISION,
-	FREE_EXTERNAL_FACADE_DENSITY DOUBLE PRECISION,
-	GEOM_AVG_HEIGHT_ROOF DOUBLE PRECISION,
-	BUILDING_VOLUME_DENSITY DOUBLE PRECISION,
-	AVG_VOLUME DOUBLE PRECISION,
-	AVG_NUMBER_BUILDING_NEIGHBOR DOUBLE PRECISION,
-	BUILDING_FLOOR_AREA_DENSITY DOUBLE PRECISION,
-	AVG_MINIMUM_BUILDING_SPACING DOUBLE PRECISION,
-	BUILDING_NUMBER_DENSITY DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D0_30 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D0_30 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D0_30 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D0_30 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D0_30 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D0_30 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D30_60 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D30_60 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D30_60 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D30_60 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D30_60 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D30_60 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D60_90 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D60_90 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D60_90 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D60_90 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D60_90 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D60_90 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D90_120 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D90_120 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D90_120 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D90_120 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D90_120 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D90_120 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D120_150 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D120_150 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D120_150 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D120_150 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D120_150 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D120_150 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D150_180 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D150_180 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D150_180 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D150_180 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D150_180 DOUBLE PRECISION,
-	PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D150_180 DOUBLE PRECISION,
-	BUILDING_TOTAL_FRACTION DOUBLE PRECISION,
-	ASPECT_RATIO DOUBLE PRECISION,
-	GROUND_SKY_VIEW_FACTOR DOUBLE PRECISION,
-	EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH DOUBLE PRECISION,
-	EFFECTIVE_TERRAIN_ROUGHNESS_CLASS INTEGER,
-	BUILDING_DIRECTION_EQUALITY DOUBLE PRECISION,
-	BUILDING_DIRECTION_UNIQUENESS DOUBLE PRECISION,
-	MAIN_BUILDING_DIRECTION VARCHAR,
-    ID_ZONE VARCHAR
-    );    
-        CREATE INDEX IF NOT EXISTS idx_${output_rsu_indicators.replaceAll(".", "_")}_id_zone ON $output_rsu_indicators (ID_ZONE);
-        """
-    } else if (output_rsu_indicators){
-        def outputTableSRID = output_datasource.getSpatialTable(output_rsu_indicators).srid
-        if(outputTableSRID!=srid){
-            error "The SRID of the output table ($outputTableSRID) $output_rsu_indicators is different than the srid of the result table ($srid)"
-            return null
-        }
-        //Test if we can write in the database
-        output_datasource.execute """INSERT INTO $output_rsu_indicators (ID_ZONE) VALUES('geoclimate');
-        DELETE from $output_rsu_indicators WHERE ID_ZONE= 'geoclimate';"""
-    }
-
-    if (output_rsu_lcz && !output_datasource.hasTable(output_rsu_lcz)){
-        output_datasource.execute """
-        CREATE TABLE $output_rsu_lcz(
-                ID_ZONE VARCHAR,
-                ID_RSU INTEGER,
-                THE_GEOM GEOMETRY(GEOMETRY,$srid),
-                LCZ1 INTEGER,
-                LCZ2 INTEGER,
-                MIN_DISTANCE DOUBLE PRECISION,
-                PSS DOUBLE PRECISION
-        );
-        CREATE INDEX IF NOT EXISTS idx_${output_rsu_lcz.replaceAll(".", "_")}_id_zone ON $output_rsu_lcz (ID_ZONE);
-        """
-    }else if (output_rsu_lcz){
-        def outputTableSRID = output_datasource.getSpatialTable(output_rsu_lcz).srid
-        if(outputTableSRID!=srid){
-            error "The SRID of the output table ($outputTableSRID) $output_rsu_lcz is different than the srid of the result table ($srid)"
-            return null
-        }
-        //Test if we can write in the database
-        output_datasource.execute """INSERT INTO $output_rsu_lcz (ID_ZONE) VALUES('geoclimate');
-        DELETE from $output_rsu_lcz WHERE ID_ZONE= 'geoclimate';"""
-    }
-
-    if (output_zones && !output_datasource.hasTable(output_zones)){
-        output_datasource.execute """
-        CREATE TABLE $output_zones(
-                ID_ZONE VARCHAR,
-                THE_GEOM GEOMETRY(GEOMETRY,$srid)
-        );
-        CREATE INDEX IF NOT EXISTS idx_${output_zones.replaceAll(".", "_")}_id_zone ON $output_zones (ID_ZONE);
-        """
-    }else if (output_zones){
-        def outputTableSRID = output_datasource.getSpatialTable(output_zones).srid
-        if(outputTableSRID!=srid){
-            error "The SRID of the output table ($outputTableSRID) $output_zones is different than the srid of the result table ($srid)"
-            return null
-        }
-        //Test if we can write in the database
-        output_datasource.execute """INSERT INTO $output_zones (ID_ZONE) VALUES('geoclimate');
-        DELETE from $output_zones WHERE ID_ZONE= 'geoclimate';"""
-    }
-
-    if (output_building && !output_datasource.hasTable(output_building)){
-        output_datasource.execute """CREATE TABLE $output_building  (THE_GEOM GEOMETRY(POLYGON, $srid), 
-        id_build serial, ID_SOURCE VARCHAR, HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT,
-        NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER);
-        CREATE INDEX IF NOT EXISTS idx_${output_building.replaceAll(".", "_")}_id_source ON $output_building (ID_SOURCE);"""
-    }
-    else if (output_building){
-        def outputTableSRID = output_datasource.getSpatialTable(output_building).srid
-        if(outputTableSRID!=srid){
-            error "The SRID of the output table ($outputTableSRID) $output_building is different than the srid of the result table ($srid)"
-            return null
-        }
-        //Test if we can write in the database
-        output_datasource.execute """INSERT INTO $output_building (ID_SOURCE) VALUES('geoclimate');
-        DELETE from $output_building WHERE ID_SOURCE= 'geoclimate';"""
-    }
-
-    if (output_road && !output_datasource.hasTable(output_road)){
-        output_datasource.execute """CREATE TABLE $output_road  (THE_GEOM GEOMETRY(GEOMETRY, $srid), 
-        id_road serial, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR, CROSSING VARCHAR(30),
-        SURFACE VARCHAR, SIDEWALK VARCHAR, ZINDEX INTEGER);
-        CREATE INDEX IF NOT EXISTS idx_${output_road.replaceAll(".", "_")}_id_source ON $output_road (ID_SOURCE);"""
-    }
-    else if (output_road){
-        def outputTableSRID = output_datasource.getSpatialTable(output_road).srid
-        if(outputTableSRID!=srid){
-            error "The SRID of the output table ($outputTableSRID) $output_road is different than the srid of the result table ($srid)"
-            return null
-        }
-        //Test if we can write in the database
-        output_datasource.execute """INSERT INTO $output_road (ID_SOURCE) VALUES('geoclimate');
-        DELETE from $output_road WHERE ID_SOURCE= 'geoclimate';"""
-    }
-
-    if (output_rail && !output_datasource.hasTable(output_rail)){
-        output_datasource.execute """CREATE TABLE $output_rail  (THE_GEOM GEOMETRY(GEOMETRY, $srid), 
-        id_rail serial,ID_SOURCE VARCHAR, TYPE VARCHAR,CROSSING VARCHAR(30), ZINDEX INTEGER);
-        CREATE INDEX IF NOT EXISTS idx_${output_rail.replaceAll(".", "_")}_id_source ON $output_rail (ID_SOURCE);"""
-    }
-    else if (output_rail){
-        def outputTableSRID = output_datasource.getSpatialTable(output_rail).srid
-        if(outputTableSRID!=srid){
-            error "The SRID of the output table ($outputTableSRID) $output_rail is different than the srid of the result table ($srid)"
-            return null
-        }
-        //Test if we can write in the database
-        output_datasource.execute """INSERT INTO $output_rail (ID_SOURCE) VALUES('geoclimate');
-        DELETE from $output_rail WHERE ID_SOURCE= 'geoclimate';"""
-    }
-
-    if (output_water && !output_datasource.hasTable(output_water)){
-        output_datasource.execute """CREATE TABLE $output_water  (THE_GEOM GEOMETRY(POLYGON, $srid), 
-        id_hydro serial, ID_SOURCE VARCHAR);
-        CREATE INDEX IF NOT EXISTS idx_${output_water.replaceAll(".", "_")}_id_source ON $output_water (ID_SOURCE);"""
-    }
-    else if (output_water){
-        def outputTableSRID = output_datasource.getSpatialTable(output_water).srid
-        if(outputTableSRID!=srid){
-            error "The SRID of the output table ($outputTableSRID) $output_water is different than the srid of the result table ($srid)"
-            return null
-        }
-        //Test if we can write in the database
-        output_datasource.execute """INSERT INTO $output_water (ID_SOURCE) VALUES('geoclimate');
-        DELETE from $output_water WHERE ID_SOURCE= 'geoclimate';"""
-    }
-
-    if (output_vegetation && !output_datasource.hasTable(output_vegetation)){
-        output_datasource.execute """CREATE TABLE $output_vegetation  (THE_GEOM GEOMETRY(POLYGON, $srid), 
-        id_veget serial, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4));
-        CREATE INDEX IF NOT EXISTS idx_${output_vegetation.replaceAll(".", "_")}_id_source ON $output_vegetation (ID_SOURCE);"""
-    }
-    else if (output_vegetation){
-        def outputTableSRID = output_datasource.getSpatialTable(output_vegetation).srid
-        if(outputTableSRID!=srid){
-            error "The SRID of the output table ($outputTableSRID) $output_vegetation is different than the srid of the result table ($srid)"
-            return null
-        }
-        //Test if we can write in the database
-        output_datasource.execute """INSERT INTO $output_vegetation (ID_SOURCE) VALUES('geoclimate');
-        DELETE from $output_vegetation WHERE ID_SOURCE= 'geoclimate';"""
-    }
-
-    if (output_impervious && !output_datasource.hasTable(output_impervious)){
-        output_datasource.execute """CREATE TABLE $output_impervious  (THE_GEOM GEOMETRY(POLYGON, $srid), 
-        id_impervious serial, ID_SOURCE VARCHAR);
-        CREATE INDEX IF NOT EXISTS idx_${output_impervious.replaceAll(".", "_")}_id_source ON $output_impervious (ID_SOURCE);"""
-    }
-    else if (output_impervious){
-        def outputTableSRID = output_datasource.getSpatialTable(output_impervious).srid
-        if(outputTableSRID!=srid){
-            error "The SRID of the output table ($outputTableSRID) $output_impervious is different than the srid of the result table ($srid)"
-            return null
-        }
-        //Test if we can write in the database
-        output_datasource.execute """INSERT INTO $output_impervious (ID_SOURCE) VALUES('geoclimate');
-        DELETE from $output_impervious WHERE ID_SOURCE= 'geoclimate';"""
-    }
-
-    if (output_urban_areas && !output_datasource.hasTable(output_urban_areas)){
-        output_datasource.execute """CREATE TABLE $output_urban_areas  (THE_GEOM GEOMETRY(POLYGON, $srid), 
-        id_urban serial, ID_SOURCE VARCHAR, TYPE VARCHAR, MAIN_USE VARCHAR);
-        CREATE INDEX IF NOT EXISTS idx_${output_urban_areas.replaceAll(".", "_")}_id_source ON $output_urban_areas (ID_SOURCE);"""
-    }
-    else if (output_urban_areas){
-        def outputTableSRID = output_datasource.getSpatialTable(output_urban_areas).srid
-        if(outputTableSRID!=srid){
-            error "The SRID of the output table ($outputTableSRID) $output_urban_areas is different than the srid of the result table ($srid)"
-            return null
-        }
-        //Test if we can write in the database
-        output_datasource.execute """INSERT INTO $output_urban_areas (ID_SOURCE) VALUES('geoclimate');
-        DELETE from $output_urban_areas WHERE ID_SOURCE= 'geoclimate';"""
-    }
-
-    if (output_rsu_urban_typo_area && !output_datasource.hasTable(output_rsu_urban_typo_area)){
-        output_datasource.execute """CREATE TABLE $output_rsu_urban_typo_area (
-        ID_RSU INTEGER, THE_GEOM GEOMETRY(GEOMETRY,$srid),
-        TYPO_BA DOUBLE PRECISION,
-        TYPO_ICIO DOUBLE PRECISION,
-        TYPO_ID DOUBLE PRECISION,
-        TYPO_LOCAL DOUBLE PRECISION,
-        TYPO_PCIO DOUBLE PRECISION,
-        TYPO_PD DOUBLE PRECISION,
-        TYPO_PSC DOUBLE PRECISION,
-        UNIQUENESS_VALUE DOUBLE PRECISION,
-        TYPO_MAJ VARCHAR,
-        ID_ZONE VARCHAR
-        );
-         CREATE INDEX IF NOT EXISTS idx_${output_rsu_urban_typo_area.replaceAll(".", "_")}_id_zone ON $output_rsu_urban_typo_area (ID_ZONE);"""
-
-    }
-    else if (output_rsu_urban_typo_area){
-        def outputTableSRID = output_datasource.getSpatialTable(output_rsu_urban_typo_area).srid
-        if(outputTableSRID!=srid){
-            error "The SRID of the output table ($outputTableSRID) $output_rsu_urban_typo_area is different than the srid of the result table ($srid)"
-            return null
-        }
-        //Test if we can write in the database
-        output_datasource.execute """INSERT INTO $output_rsu_urban_typo_area (ID_ZONE) VALUES('geoclimate');
-        DELETE from $output_rsu_urban_typo_area WHERE ID_ZONE= 'geoclimate';"""
-    }
-
-    if (output_rsu_urban_typo_floor_area && !output_datasource.hasTable(output_rsu_urban_typo_floor_area)){
-        output_datasource.execute """CREATE TABLE $output_rsu_urban_typo_floor_area (
-        ID_RSU INTEGER, THE_GEOM GEOMETRY(GEOMETRY,$srid),
-        TYPO_BA DOUBLE PRECISION,
-        TYPO_ICIO DOUBLE PRECISION,
-        TYPO_ID DOUBLE PRECISION,
-        TYPO_LOCAL DOUBLE PRECISION,
-        TYPO_PCIO DOUBLE PRECISION,
-        TYPO_PD DOUBLE PRECISION,
-        TYPO_PSC DOUBLE PRECISION,
-        UNIQUENESS_VALUE DOUBLE PRECISION,
-        TYPO_MAJ VARCHAR,
-        ID_ZONE VARCHAR
-        );
-        CREATE INDEX IF NOT EXISTS idx_${output_rsu_urban_typo_floor_area.replaceAll(".", "_")}_id_zone ON $output_rsu_urban_typo_floor_area (ID_ZONE);"""
-    }
-    else if (output_rsu_urban_typo_floor_area){
-        def outputTableSRID = output_datasource.getSpatialTable(output_rsu_urban_typo_floor_area).srid
-        if(outputTableSRID!=srid){
-            error "The SRID of the output table ($outputTableSRID) $output_rsu_urban_typo_floor_area is different than the srid of the result table ($srid)"
-            return null
-        }
-        //Test if we can write in the database
-        output_datasource.execute """INSERT INTO $output_rsu_urban_typo_floor_area (ID_ZONE) VALUES('geoclimate');
-        DELETE from $output_rsu_urban_typo_floor_area WHERE ID_ZONE= 'geoclimate';"""
-    }
-
-    if (output_building_urban_typo && !output_datasource.hasTable(output_building_urban_typo)){
-        output_datasource.execute """CREATE TABLE $output_building_urban_typo (
-        ID_BUILD INTEGER,
-        ID_RSU INTEGER, THE_GEOM GEOMETRY(GEOMETRY,$srid),
-        I_TYPO VARCHAR,
-        ID_ZONE VARCHAR
-        );
-        CREATE INDEX IF NOT EXISTS idx_${output_building_urban_typo.replaceAll(".", "_")}_id_zone ON $output_building_urban_typo (ID_ZONE);"""
-    }
-    else if (output_building_urban_typo){
-        def outputTableSRID = output_datasource.getSpatialTable(output_building_urban_typo).srid
-        if(outputTableSRID!=srid){
-            error "The SRID of the output table ($outputTableSRID) $output_building_urban_typo is different than the srid of the result table ($srid)"
-            return null
-        }
-        //Test if we can write in the database
-        output_datasource.execute """INSERT INTO $output_building_urban_typo (ID_ZONE) VALUES('geoclimate');
-        DELETE from $output_building_urban_typo WHERE ID_ZONE= 'geoclimate';"""
-    }
-
-    return true
-}
-
 /**
  * Save the output tables in a database
  * @param output_datasource a connexion a database
@@ -1488,7 +1127,8 @@ def createOutputTables(def output_datasource, def outputTableNames, def srid){
  * @param outputTableNames name of the output tables
  * @param h2gis_tables name of H2GIS to save
  * @param id_zone id of the zone
- * @param outputSRID srid code to reproject the data
+ * @param outputSRID srid code to reproject the data *
+ * @param reproject the output table
  * @return
  */
 def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_datasource, def outputTableNames, def h2gis_tables, def id_zone,def inputSRID, def outputSRID, def reproject){
@@ -1516,6 +1156,10 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
 
     //Export rsu_urban_typo_floor_area
     indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_urban_typo_floor_area,id_zone,h2gis_datasource, h2gis_tables.outputTableRsuUrbanTypoFloorArea
+            , "",inputSRID,outputSRID,reproject)
+
+    //Export grid_indicators
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.grid_indicators,id_zone,h2gis_datasource, h2gis_tables.grid_indicators
             , "",inputSRID,outputSRID,reproject)
 
     //Export building_urban_typo
@@ -1548,6 +1192,10 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
 
     //Export urban areas table
     abstractModelTableBatchExportTable(output_datasource, outputTableNames.urban_areas, id_zone,h2gis_datasource, h2gis_tables.urbanAreasTableName
+            , "",inputSRID,outputSRID,reproject)
+
+    //Export sea land mask table
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.sea_land_mask, id_zone,h2gis_datasource, h2gis_tables.seaLandMaskTableName
             , "",inputSRID,outputSRID,reproject)
 
     con.setAutoCommit(false)
@@ -1639,6 +1287,10 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
                     }
                     else{
                         tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true);
+                        //Because the select query reproject doesn't contain any geometry metadata
+                        output_datasource.execute("""ALTER TABLE $output_table
+                            ALTER COLUMN the_geom TYPE geometry(geometry, $outputSRID)
+                            USING ST_SetSRID(the_geom,$outputSRID);""");
                     }
                     if(tmpTable){
                     //Workarround to update the SRID on resulset
@@ -1649,6 +1301,10 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
                         tmpTable =h2gis_datasource.getTable(h2gis_table_to_save).save(output_datasource, output_table, true);
                    }else{
                         tmpTable = h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(outputSRID).save(output_datasource, output_table, true);
+                        //Because the select query reproject doesn't contain any geometry metadata
+                        output_datasource.execute("""ALTER TABLE $output_table
+                            ALTER COLUMN the_geom TYPE geometry(geometry, $outputSRID)
+                            USING ST_SetSRID(the_geom,$outputSRID);""");
                     }
                 }
                 if(tmpTable) {
@@ -1747,18 +1403,28 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                     if (filter) {
                         if (!reproject) {
                             tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().save(output_datasource, output_table, true);
+                            if(tmpTable) {
+                                //Workarround to update the SRID on resultset
+                                output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);"""
+                            }
+
                         } else {
                             tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true);
+                            if(tmpTable) {
+                                //Workarround to update the SRID on resultset
+                                output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $outputSRID) USING ST_SetSRID(the_geom,$outputSRID);"""
+                            }
                         }
-                        if(tmpTable) {
-                            //Workarround to update the SRID on resulset
-                            output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);"""
-                        }
+
                     } else {
                         if (!reproject) {
                             tmpTable = h2gis_datasource.getSpatialTable(h2gis_table_to_save).save(output_datasource, output_table, true);
                         } else {
                             tmpTable = h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(outputSRID).save(output_datasource, output_table, true);
+                            //Because the select query reproject doesn't contain any geometry metadata
+                            output_datasource.execute("""ALTER TABLE $output_table
+                            ALTER COLUMN the_geom TYPE geometry(geometry, $outputSRID)
+                            USING ST_SetSRID(the_geom,$outputSRID);""")
                         }
                     }
                     if(tmpTable){

@@ -4,7 +4,6 @@ package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 
 @BaseScript BDTopo_V2_Utils bdTopo_v2_utils
 
@@ -66,6 +65,7 @@ IProcess importPreprocess() {
                 tableImperviousRoadSurfName: String,
                 tableImperviousActivSurfName: String,
                 tablePiste_AerodromeName:"",
+                tableReservoirName :"",
                 distBuffer: 500,
                 distance: 1000,
                 idZone: String,
@@ -91,7 +91,7 @@ IProcess importPreprocess() {
         run { datasource, tableIrisName, tableBuildIndifName, tableBuildIndusName,
               tableBuildRemarqName, tableRoadName, tableRailName, tableHydroName, tableVegetName,
               tableImperviousSportName, tableImperviousBuildSurfName, tableImperviousRoadSurfName,
-              tableImperviousActivSurfName, tablePiste_AerodromeName,distBuffer, distance, idZone,
+              tableImperviousActivSurfName, tablePiste_AerodromeName,tableReservoirName, distBuffer, distance, idZone,
               building_bd_topo_use_type, building_abstract_use_type,
               road_bd_topo_type, road_abstract_type, road_bd_topo_crossing, road_abstract_crossing,
               rail_bd_topo_type, rail_abstract_type, rail_bd_topo_crossing, rail_abstract_crossing,
@@ -117,6 +117,7 @@ IProcess importPreprocess() {
             def tmp_imperv_surface_activite = postfix 'TMP_IMPERV_SURFACE_ACTIVITE_'
             def input_impervious = 'INPUT_IMPERVIOUS'
             def tmp_imperv_piste_aerodrome = postfix 'TMP_IMPERV_PISTE_AERODROME'
+            def bu_zone_reservoir = postfix 'BU_ZONE_RESERVOIR_'
 
             // -------------------------------------------------------------------------------
             // Control the SRIDs from input tables
@@ -124,7 +125,7 @@ IProcess importPreprocess() {
             def list = [tableIrisName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName,
                         tableRoadName, tableRailName, tableHydroName, tableVegetName,
                         tableImperviousSportName, tableImperviousBuildSurfName,
-                        tableImperviousRoadSurfName, tableImperviousActivSurfName, tablePiste_AerodromeName]
+                        tableImperviousRoadSurfName, tableImperviousActivSurfName, tablePiste_AerodromeName,tableReservoirName]
 
             // The SRID is stored and initialized to -1
             def srid = -1
@@ -202,6 +203,12 @@ IProcess importPreprocess() {
                 tablePiste_AerodromeName= "PISTE_AERODROME"
                 datasource.execute("DROP TABLE IF EXISTS $tablePiste_AerodromeName; CREATE TABLE $tablePiste_AerodromeName (THE_GEOM geometry(polygon, $srid), ID varchar,  NATURE varchar);")
             }
+
+            if (!tableReservoirName || !tablesExist.contains(tableReservoirName)) {
+                tableReservoirName= "RESERVOIR"
+                datasource.execute("DROP TABLE IF EXISTS $tableReservoirName; CREATE TABLE $tableReservoirName (THE_GEOM geometry(polygon, $srid), ID varchar,  NATURE varchar, HAUTEUR integer);")
+            }
+
             // -------------------------------------------------------------------------------
 
             def success = datasource.executeScript(getClass().getResourceAsStream('importPreprocess.sql'),
@@ -213,8 +220,10 @@ IProcess importPreprocess() {
                      TERRAIN_SPORT                     : tableImperviousSportName, CONSTRUCTION_SURFACIQUE: tableImperviousBuildSurfName,
                      SURFACE_ROUTE                     : tableImperviousRoadSurfName, SURFACE_ACTIVITE: tableImperviousActivSurfName,
                      PISTE_AERODROME                   : tablePiste_AerodromeName,
+                     RESERVOIR                         : tableReservoirName,
                      TMP_IRIS                          : tmpIris,
-                     ZONE                              : zone, ZONE_BUFFER: zoneBuffer, ZONE_EXTENDED: zoneExtended, ZONE_NEIGHBORS: zoneNeighbors,
+                     ZONE                              : zone,
+                     ZONE_BUFFER: zoneBuffer, ZONE_EXTENDED: zoneExtended, ZONE_NEIGHBORS: zoneNeighbors,
                      BU_ZONE_INDIF                     : bu_zone_indif, BU_ZONE_INDUS: bu_zone_indus, BU_ZONE_REMARQ: bu_zone_remarq,
                      INPUT_BUILDING                    : input_building,
                      INPUT_ROAD                        : input_road,
@@ -225,6 +234,7 @@ IProcess importPreprocess() {
                      TMP_IMPERV_TERRAIN_SPORT          : tmp_imperv_terrain_sport, TMP_IMPERV_SURFACE_ACTIVITE: tmp_imperv_surface_activite,
                      INPUT_IMPERVIOUS                  : input_impervious,
                      TMP_IMPERV_PISTE_AERODROME        : tmp_imperv_piste_aerodrome,
+                     BU_ZONE_RESERVOIR                 : bu_zone_reservoir,
                      BUILDING_BD_TOPO_USE_TYPE         : building_bd_topo_use_type, BUILDING_ABSTRACT_USE_TYPE: building_abstract_use_type,
                      ROAD_BD_TOPO_TYPE                 : road_bd_topo_type, ROAD_ABSTRACT_TYPE: road_abstract_type,
                      ROAD_BD_TOPO_CROSSING             : road_bd_topo_crossing, ROAD_ABSTRACT_CROSSING: road_abstract_crossing,

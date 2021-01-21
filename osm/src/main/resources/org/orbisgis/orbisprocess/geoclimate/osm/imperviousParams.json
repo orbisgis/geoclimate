@@ -12,7 +12,7 @@
     ],
     "leisure": ["pitch"],
     "railway": ["platform"],
-    "landuse": ["railway"]
+    "landuse": ["railway","construction"]
   },
   "columns": [
     "highway",

@@ -110,16 +110,17 @@ IProcess extractAndCreateGISLayers() {
                 if (extract.execute(overpassQuery: query)) {
                     IProcess createGISLayerProcess = createGISLayers()
                     if (createGISLayerProcess.execute(datasource: datasource, osmFilePath: extract.results.outputFilePath, epsg: epsg)) {
-                        [buildingTableName    : createGISLayerProcess.getResults().buildingTableName,
-                         roadTableName        : createGISLayerProcess.getResults().roadTableName,
-                         railTableName        : createGISLayerProcess.getResults().railTableName,
-                         vegetationTableName  : createGISLayerProcess.getResults().vegetationTableName,
-                         hydroTableName       : createGISLayerProcess.getResults().hydroTableName,
-                         imperviousTableName  : createGISLayerProcess.getResults().imperviousTableName,
-                         urbanAreasTableName : createGISLayerProcess.getResults().urbanAreasTableName,
+                        def results =createGISLayerProcess.getResults();
+                        return [buildingTableName    : results.buildingTableName,
+                         roadTableName        : results.roadTableName,
+                         railTableName        : results.railTableName,
+                         vegetationTableName  : results.vegetationTableName,
+                         hydroTableName       : results.hydroTableName,
+                         imperviousTableName  : results.imperviousTableName,
+                         urbanAreasTableName : results.urbanAreasTableName,
                          zoneTableName        : outputZoneTable,
                          zoneEnvelopeTableName: outputZoneEnvelopeTable,
-                         coastlineTableName : createGISLayerProcess.getResults().coastlineTableName]
+                         coastlineTableName : results.coastlineTableName]
                     } else {
                         error "Cannot load the OSM file ${extract.results.outputFilePath}"
                     }

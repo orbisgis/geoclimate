@@ -64,6 +64,9 @@ INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(null, 'church', 'Building that wa
 INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(null, 'government', 'Building built to house government offices', 'https://wiki.openstreetmap.org/wiki/Tag:building=government');
 INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(null, 'townhall', 'Building that may serve as an administrative center, or may be merely a community meeting place', 'https://wiki.openstreetmap.org/wiki/Tag:amenity=townhall');
 INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(null, 'office', 'Office block typically houses companies, but offices may be also rented by any other kind of organization like charities, government, any NGO etc.', 'https://wiki.openstreetmap.org/wiki/Tag:building=office');
+INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(null, 'heavy_industry', 'Low-rise and midrise industrial structures (towers, tanks, stacks)', 'https://en.wikipedia.org/wiki/Heavy_industry');
+INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(null, 'light_industry', 'Industrial structure that require fewer raw materials, space and power. For example, electronics manufacturing', 'https://en.wikipedia.org/wiki/Light_industry');
+
 
 
 --------------------------------------------------------
@@ -115,6 +118,8 @@ INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(null, 'church', 0);
 INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(null, 'government', 1);
 INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(null, 'townhall', 1);
 INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(null, 'office', 1);
+INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(null, 'heavy_industry', 0);
+INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(null, 'light_industry', 0);
 
 
 

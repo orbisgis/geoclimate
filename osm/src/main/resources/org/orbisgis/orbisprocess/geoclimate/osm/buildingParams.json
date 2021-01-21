@@ -49,7 +49,9 @@
         "church": 0,
         "government": 1,
         "townhall": 1,
-        "office": 1
+        "office": 1,
+        "heavy_industry": 0,
+        "light_industry": 0
     },
     "type" : {
         "terminal:transportation": {
@@ -335,7 +337,7 @@
                 "!= no"
             ]
         },
-        "industrial": {
+        "light_industry:industrial": {
             "building": [
                 "industrial",
                 "factory",
@@ -346,6 +348,19 @@
             ],
             "amenity": [
                 "factory"
+            ]
+        },
+        "heavy_industry:industrial": {
+            "building": [
+                "digester"
+            ],
+            "industrial": [
+                "gas",
+                "heating_station",
+                "oil_mill",
+                "oil",
+                "wellsite",
+                "well_cluster"
             ]
         },
         "greenhouse:agricultural": {

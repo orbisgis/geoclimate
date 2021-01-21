@@ -546,8 +546,8 @@ class TypologyClassificationTests {
     @Test
     void createRandomForestModelURBAN_TYPOLOGY_BDTOPO_V2_RF() {
         // Specify the model and training datat appropriate to the right use
-        def model_name = "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_0.model"
-        def training_data_name = "TRAINING_DATA_URBAN_TYPOLOGY_BDTOPO_V2_RF_1_0.geojson.gz"
+        def model_name = "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_1.model"
+        def training_data_name = "TRAINING_DATA_URBAN_TYPOLOGY_BDTOPO_V2_RF_2_1.geojson.gz"
         // Name of the variable to model
         def var2model = "I_TYPO"
         def var2ModelFinal = "I_TYPO"
@@ -556,12 +556,12 @@ class TypologyClassificationTests {
 
         // Information about where to find the training dataset for the test
         def trainingTableName = "training_table"
-        String directory ="../geoclimate/models"
-        def savePath = directory+File.separator+model_name+".model"
+        String directory ="../geoclimate/models/"
+        def savePath = directory+File.separator+model_name
 
         if(new File(directory).exists()){
             // Read the training data
-            h2GIS """ CALL GEOJSONREAD('${directory+File.separator+training_data_name+".geojson.gz"}', 'tempo0')"""
+            h2GIS """ CALL GEOJSONREAD('${directory+File.separator+training_data_name}', 'tempo0')"""
 
             // Select only specific data
             h2GIS """   DROP TABLE IF EXISTS tempo;
@@ -629,8 +629,8 @@ class TypologyClassificationTests {
     @Test
     void createRandomForestModelURBAN_TYPOLOGY_OSM_RF() {
         // Specify the model and training datat appropriate to the right use
-        def model_name = "URBAN_TYPOLOGY_OSM_RF_2_0.model"
-        def training_data_name = "TRAINING_DATA_URBAN_TYPOLOGY_OSM_RF_2_0.geojson.gz"
+        def model_name = "URBAN_TYPOLOGY_OSM_RF_2_1.model"
+        def training_data_name = "TRAINING_DATA_URBAN_TYPOLOGY_OSM_RF_2_1.geojson.gz"
         // Name of the variable to model
         def var2model = "I_TYPO"
         def var2ModelFinal = "I_TYPO"
@@ -639,12 +639,12 @@ class TypologyClassificationTests {
 
         // Information about where to find the training dataset for the test
         def trainingTableName = "training_table"
-        String directory ="../geoclimate/models"
-        def savePath = directory+File.separator+model_name+".model"
+        String directory ="../geoclimate/models/"
+        def savePath = directory+File.separator+model_name
 
         if(new File(directory).exists()){
             // Read the training data
-            h2GIS """ CALL GEOJSONREAD('${directory+File.separator+training_data_name+".geojson.gz"}', 'tempo0')"""
+            h2GIS """ CALL GEOJSONREAD('${directory+File.separator+training_data_name}', 'tempo0')"""
 
             // Select only specific data
             h2GIS """   DROP TABLE IF EXISTS tempo;

@@ -27,8 +27,8 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
  *          --> "GEOM_AVG": average the geospatial variables at the upper scale using a geometric average
  *          --> "DENS": sum the geospatial variables at the upper scale and divide by the area of the upper scale
  *          --> "NB_DENS" : count the number of lower scale objects within the upper scale object and divide by the upper
- *          scale area. NOTE THAT THE THREE FIRST LETTERS OF THE MAP KEY WILL BE USED TO CREATE THE NAME OF THE INDICATOR
- *          (e.g. "BUI" in the case of the example given above)
+ *          scale area. NOTE THAT FOR THIS ONE, THE MAP KEY WILL BE USED TO CREATE THE PREFIX NAME OF THE INDICATOR
+ *          (e.g. "BUILDING_AREA" in the case of the example given above ==> the indicator will be BUILDING_AREA_NUMBER_DENSITY)
  * @param prefixName String use as prefix to name the output table
  *
  * @return A database table name.
@@ -54,6 +54,7 @@ IProcess unweightedOperationFromLowerScale() {
             def NB_DENS = "NB_DENS"
             def STD = "STD"
             def COLUMN_TYPE_TO_AVOID = ["GEOMETRY", "VARCHAR"]
+            def SPECIFIC_OPERATIONS = [NB_DENS]
 
             info "Executing Unweighted statistical operations from lower scale"
 
@@ -64,13 +65,13 @@ IProcess unweightedOperationFromLowerScale() {
             datasource."$inputUpperScaleTableName"."$inputIdUp".createIndex()
 
             def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
-            def varOk = true
+
+            def  columnNamesTypes = datasource."$inputLowerScaleTableName".getColumnsTypes()
+            def filteredColumns = columnNamesTypes.findAll {! COLUMN_TYPE_TO_AVOID.contains(it.value) }
             inputVarAndOperations.each { var, operations ->
-                if (datasource."$inputLowerScaleTableName".getColumns().contains(var) &&
-                        COLUMN_TYPE_TO_AVOID.contains(datasource."$inputLowerScaleTableName"."$var".type)) {
-                    varOk = false
-                }
-                if (varOk) {
+                // Some operations may not need to use an existing variable thus not concerned by the column filtering
+                def filteredOperations = operations-SPECIFIC_OPERATIONS
+                if (filteredColumns.containsKey(var.toUpperCase()) | (filteredOperations.isEmpty())) {
                     operations.each {
                         def op = it.toUpperCase()
                         switch (op) {
@@ -97,9 +98,8 @@ IProcess unweightedOperationFromLowerScale() {
                         }
                     }
                 } else {
-                    error """ The column $var should be numeric"""
+                    warn """ The column $var doesn't exist or should be numeric"""
                 }
-
             }
             query += "b.$inputIdUp FROM $inputLowerScaleTableName a RIGHT JOIN $inputUpperScaleTableName b " +
                     "ON a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp"
@@ -1004,10 +1004,9 @@ IProcess upperScaleAreaStatistics() {
         title "Statistics on gridded area for a given indicator"
         id "upperScaleStatisticArea"
         inputs upperTableName: String, upperColumnId: String, lowerTableName: String, lowerColumnName: String,
-                prefixName: String, datasource: JdbcDataSource
+                prefixName: String, datasource: JdbcDataSource, keepGeometry : true
         outputs outputTableName: String
-        run { upperTableName, upperColumnId, lowerTableName, lowerColumnName, prefixName, datasource ->
-
+        run { upperTableName, upperColumnId, lowerTableName, lowerColumnName, prefixName, datasource, keepGeometry ->
             ISpatialTable upperTable = datasource.getSpatialTable(upperTableName)
             def upperGeometryColumn = upperTable.getGeometricColumns().first()
             if(!upperGeometryColumn) {
@@ -1024,7 +1023,7 @@ IProcess upperScaleAreaStatistics() {
             upperTable."$upperColumnId".createIndex()
             lowerTable."$lowerGeometryColumn".createSpatialIndex()
 
-            def spatialJoinTable = "gridSpatialJoin"
+            def spatialJoinTable = "upper_table_join"
             def spatialJoin = """
                               DROP TABLE IF EXISTS $spatialJoinTable;
                               CREATE TABLE $spatialJoinTable 
@@ -1036,8 +1035,9 @@ IProcess upperScaleAreaStatistics() {
                               ST_INTERSECTS(st_force2d(a.$lowerGeometryColumn), st_force2d(b.$upperGeometryColumn));
                               """
             datasource.execute(spatialJoin)
-            datasource "CREATE INDEX ON $spatialJoinTable USING BTREE($lowerColumnName)"
-            datasource "CREATE INDEX ON $spatialJoinTable USING BTREE($upperColumnId)"
+            datasource "CREATE INDEX ON $spatialJoinTable ($lowerColumnName)"
+            datasource "CREATE INDEX ON $spatialJoinTable ($upperColumnId)"
+
 
             // Creation of a list which contains all indicators of distinct values
             def qIndicator = """
@@ -1045,6 +1045,8 @@ IProcess upperScaleAreaStatistics() {
                              AS val FROM $spatialJoinTable
                              """
             def listValues = datasource.rows(qIndicator)
+
+            def isString = datasource.getTable(spatialJoinTable).getColumnType(lowerColumnName)=="VARCHAR"
 
             // Creation of the pivot table which contains for each upper geometry
             def pivotTable = "pivotAreaTable"
@@ -1063,11 +1065,28 @@ IProcess upperScaleAreaStatistics() {
             query += " FROM (SELECT $upperColumnId"
             listValues.each {
                 def aliasColumn = "${lowerColumnName}_${it.val.toString().replace('.','_')}"
-                query += """
+                if(it.val){
+                    if(isString){
+                        query += """
+                         , CASE WHEN $lowerColumnName='${it.val}'
+                         THEN SUM(area) ELSE 0 END
+                         AS $aliasColumn
+                         """
+                    }else{
+                        query += """
                          , CASE WHEN $lowerColumnName=${it.val}
                          THEN SUM(area) ELSE 0 END
                          AS $aliasColumn
                          """
+                    }
+                }
+                else{
+                    query += """
+                         , CASE WHEN $lowerColumnName is null
+                         THEN SUM(area) ELSE 0 END
+                         AS $aliasColumn
+                         """
+                }
             }
             query += """
                      FROM $spatialJoinTable
@@ -1076,7 +1095,7 @@ IProcess upperScaleAreaStatistics() {
                      """
             datasource.execute(query)
             //Build indexes
-            datasource "CREATE INDEX ON $pivotTable USING BTREE($upperColumnId)"
+            datasource "CREATE INDEX ON $pivotTable ($upperColumnId)"
 
             // Creation of a table which is built from
             // the union of the grid and pivot tables based on the same cell 'id'
@@ -1084,8 +1103,11 @@ IProcess upperScaleAreaStatistics() {
             def qjoin = """
                         DROP TABLE IF EXISTS $outputTableName;
                         CREATE TABLE $outputTableName
-                        AS SELECT b.$upperColumnId, b.$upperGeometryColumn
+                        AS SELECT b.$upperColumnId
                         """
+            if(keepGeometry){
+                qjoin+=", b.$upperGeometryColumn"
+            }
             listValues.each {
                 def aliasColumn = "${lowerColumnName}_${it.val.toString().replace('.','_')}"
                 qjoin += """

@@ -37,7 +37,7 @@ IProcess buildGeoclimateLayers() {
             }
 
             info "Building OSM GIS layers"
-            IProcess process = processManager.OSMGISLayers.extractAndCreateGISLayers
+            IProcess process = OSM.extractAndCreateGISLayers
             if (process.execute([datasource: datasource, zoneToExtract: zoneToExtract,
                                  distance  : distance])) {
 
@@ -54,9 +54,9 @@ IProcess buildGeoclimateLayers() {
                 def zoneTableName = res.zoneTableName
                 def zoneEnvelopeTableName = res.zoneEnvelopeTableName
                 def epsg = datasource.getSpatialTable(zoneTableName).srid
-                if (zoneTableName != null) {
+                if (zoneEnvelopeTableName != null) {
                     info "Formating OSM GIS layers"
-                    IProcess format = processManager.FormattingForAbstractModel.formatBuildingLayer
+                    IProcess format = OSM.formatBuildingLayer
                     format.execute([
                             datasource                : datasource,
                             inputTableName            : buildingTableName,
@@ -64,7 +64,7 @@ IProcess buildGeoclimateLayers() {
                             epsg                      : epsg])
                     buildingTableName = format.results.outputTableName
 
-                    format = processManager.FormattingForAbstractModel.formatRoadLayer
+                    format = OSM.formatRoadLayer
                     format.execute([
                             datasource                : datasource,
                             inputTableName            : roadTableName,
@@ -73,7 +73,7 @@ IProcess buildGeoclimateLayers() {
                     roadTableName = format.results.outputTableName
 
 
-                    format = processManager.FormattingForAbstractModel.formatRailsLayer
+                    format = OSM.formatRailsLayer
                     format.execute([
                             datasource                : datasource,
                             inputTableName            : railTableName,
@@ -81,7 +81,7 @@ IProcess buildGeoclimateLayers() {
                             epsg                      : epsg])
                     railTableName = format.results.outputTableName
 
-                    format = processManager.FormattingForAbstractModel.formatVegetationLayer
+                    format = OSM.formatVegetationLayer
                     format.execute([
                             datasource                : datasource,
                             inputTableName            : vegetationTableName,
@@ -89,7 +89,7 @@ IProcess buildGeoclimateLayers() {
                             epsg                      : epsg])
                     vegetationTableName = format.results.outputTableName
 
-                    format = processManager.FormattingForAbstractModel.formatHydroLayer
+                    format = OSM.formatHydroLayer
                     format.execute([
                             datasource                : datasource,
                             inputTableName            : hydroTableName,
@@ -97,7 +97,7 @@ IProcess buildGeoclimateLayers() {
                             epsg                      : epsg])
                     hydroTableName = format.results.outputTableName
 
-                    format = processManager.FormattingForAbstractModel.formatImperviousLayer
+                    format = OSM.formatImperviousLayer
                     format.execute([
                             datasource                : datasource,
                             inputTableName            : imperviousTableName,
@@ -109,7 +109,7 @@ IProcess buildGeoclimateLayers() {
 
                 }
 
-                [outputBuilding: buildingTableName, outputRoad: roadTableName,
+                return [outputBuilding: buildingTableName, outputRoad: roadTableName,
                  outputRail    : railTableName, outputHydro: hydroTableName,
                  outputVeget   : vegetationTableName, outputImpervious: imperviousTableName,
                  outputZone    : zoneTableName, outputZoneEnvelope: zoneEnvelopeTableName]

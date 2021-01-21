@@ -104,10 +104,6 @@ IProcess identifyLczType() {
                 def classifiedRuralLCZ = postfix "classifiedRuralLCZ"
                 def urbanLCZ = postfix "urbanLCZ"
                 def urbanLCZExceptIndus = postfix "urbanLCZExceptIndus"
-                def allLczTable = postfix "allLczTable"
-                def pivotedTable = postfix "pivotedTable"
-                def mainLczTable = postfix "mainLczTable"
-                def classifiedUrbanLcz = postfix "classifiedUrbanLcz"
                 def classifiedLcz = postfix "classifiedLcz"
                 def classifiedIndustrialCommercialLcz = postfix "classifiedIndustrialLcz"
                 def ruralAndIndustrialCommercialLCZ = postfix "ruralAndIndustrialLCZ"
@@ -187,7 +183,7 @@ IProcess identifyLczType() {
                 datasource """DROP TABLE IF EXISTS $classifiedRuralLCZ;
                                 CREATE TABLE $classifiedRuralLCZ
                                         AS SELECT   $ID_FIELD_RSU,
-                                                CASE WHEN IMPERVIOUS_FRACTION_LCZ>ALL_VEGETATION AND IMPERVIOUS_FRACTION_LCZ>WATER_FRACTION_LCZ AND IMPERVIOUS_FRACTION_LCZ>0.05
+                                                CASE WHEN IMPERVIOUS_FRACTION_LCZ>ALL_VEGETATION AND IMPERVIOUS_FRACTION_LCZ>WATER_FRACTION_LCZ AND IMPERVIOUS_FRACTION_LCZ>0.1
                                                         THEN 105
                                                         ELSE CASE WHEN ALL_VEGETATION<WATER_FRACTION_LCZ AND WATER_FRACTION_LCZ> 0.31
                                                                 THEN 107
@@ -208,7 +204,8 @@ IProcess identifyLczType() {
                 // Keep only the RSU that have not been classified as rural
                 datasource """DROP TABLE IF EXISTS $urbanLCZ;
                                 CREATE TABLE $urbanLCZ
-                                        AS SELECT a.*
+                                        AS SELECT   a.*, 
+                                                    a.AREA_FRACTION_COMMERCIAL + a.AREA_FRACTION_LIGHT_INDUSTRY AS AREA_FRACTION_LOWRISE_TYPO
                                         FROM $rsuAllIndicators a
                                         LEFT JOIN $ruralLCZ b
                                         ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU
@@ -216,11 +213,11 @@ IProcess identifyLczType() {
 
                 // 0. Set as industrial areas or large low-rise (commercial) having more of industrial or commercial than residential
                 // and at least 1/3 of fraction
-                if (datasource."$urbanLCZ".columns.contains("AREA_FRACTION_INDUSTRIAL")) {
+                if (datasource."$urbanLCZ".columns.contains("AREA_FRACTION_HEAVY_INDUSTRY")) {
                     datasource """DROP TABLE IF EXISTS $classifiedIndustrialCommercialLcz;
                                 CREATE TABLE $classifiedIndustrialCommercialLcz
                                         AS SELECT   $ID_FIELD_RSU,
-                                                    CASE WHEN AREA_FRACTION_INDUSTRIAL > AREA_FRACTION_COMMERCIAL
+                                                    CASE WHEN AREA_FRACTION_HEAVY_INDUSTRY > AREA_FRACTION_LOWRISE_TYPO
                                                         THEN 10 
                                                         ELSE 8  END AS LCZ1,
                                                     null        AS LCZ2, 
@@ -228,8 +225,8 @@ IProcess identifyLczType() {
                                                     null        AS LCZ_UNIQUENESS_VALUE,
                                                     null        AS LCZ_EQUALITY_VALUE
                                         FROM $urbanLCZ 
-                                        WHERE   AREA_FRACTION_INDUSTRIAL > AREA_FRACTION_COMMERCIAL AND AREA_FRACTION_INDUSTRIAL>0.33
-                                                OR AREA_FRACTION_COMMERCIAL > AREA_FRACTION_RESIDENTIAL AND AREA_FRACTION_COMMERCIAL>0.33
+                                        WHERE   AREA_FRACTION_HEAVY_INDUSTRY > AREA_FRACTION_LOWRISE_TYPO AND AREA_FRACTION_HEAVY_INDUSTRY>0.33
+                                                OR AREA_FRACTION_LOWRISE_TYPO > AREA_FRACTION_RESIDENTIAL AND AREA_FRACTION_LOWRISE_TYPO>0.33
                                                     AND AVG_NB_LEV_AREA_WEIGHTED < 3
                                                     AND LOW_VEGETATION_FRACTION_LCZ+HIGH_VEGETATION_FRACTION_LCZ<0.2
                                                     AND GROUND_SKY_VIEW_FACTOR > 0.7;

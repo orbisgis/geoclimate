@@ -44,6 +44,10 @@ IProcess createRSU() {
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
 
+            if(!inputTableName){
+                error "The input data to compute the RSU cannot be null or empty"
+                return null
+            }
             def epsg = datasource.getSpatialTable(inputTableName).srid
 
             if (area <= 0) {
@@ -104,10 +108,10 @@ IProcess prepareRSUData() {
         title "Prepare the abstract model to build the RSU"
         id "prepareRSUData"
         inputs zoneTable: "", roadTable: "", railTable: "",
-                vegetationTable: "", hydrographicTable: "", surface_vegetation: 10000,
+                vegetationTable: "", hydrographicTable: "", seaLandMaskTableName :"", surface_vegetation: 10000,
                 surface_hydro: 2500, prefixName: "unified_abstract_model", datasource: JdbcDataSource
         outputs outputTableName: String
-        run { zoneTable, roadTable, railTable, vegetationTable, hydrographicTable, surface_vegetation,
+        run { zoneTable, roadTable, railTable, vegetationTable, hydrographicTable, seaLandMaskTableName, surface_vegetation,
               surface_hydrographic, prefixName, datasource ->
 
             def BASE_NAME = "prepared_rsu_data"
@@ -132,6 +136,13 @@ IProcess prepareRSUData() {
 
             if (numberZone == 1) {
                 def epsg = datasource."$zoneTable".srid
+                //Add the land mask
+                if (seaLandMaskTableName && datasource.hasTable(seaLandMaskTableName)) {
+                    if (datasource."$seaLandMaskTableName") {
+                        info "Preparing land mask..."
+                        queryCreateOutputTable += [land_mask_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $seaLandMaskTableName where type ='land')"]
+                    }
+                }
                 if (vegetationTable && datasource.hasTable(vegetationTable)) {
                     if (datasource."$vegetationTable") {
                         info "Preparing vegetation..."
@@ -248,7 +259,6 @@ IProcess prepareRSUData() {
                     datasource """DROP TABLE if exists $outputTableName;
             CREATE TABLE $outputTableName(the_geom GEOMETRY) AS (SELECT st_setsrid(ST_ToMultiLine(THE_GEOM),$epsg) 
             FROM $zoneTable);"""
-
                 }
                 if (dropTableList) {
                     datasource "DROP TABLE IF EXISTS ${dropTableList.join(',')};"
@@ -323,7 +333,7 @@ IProcess createBlocks() {
 
             if (snappingTolerance > 0) {
                 datasource """
-                    CREATE INDEX ON $subGraphTableNodes USING BTREE(NODE_ID);
+                    CREATE INDEX ON $subGraphTableNodes (NODE_ID);
                     DROP TABLE IF EXISTS $subGraphBlocks;
                     CREATE TABLE $subGraphBlocks AS
                         SELECT ST_UNION(ST_ACCUM(ST_buffer(A.THE_GEOM, $snappingTolerance))) AS THE_GEOM
@@ -332,23 +342,23 @@ IProcess createBlocks() {
             """
             } else {
                 datasource """
-        CREATE INDEX ON $subGraphTableNodes USING BTREE(NODE_ID);
+        CREATE INDEX ON $subGraphTableNodes (NODE_ID);
         DROP TABLE IF EXISTS $subGraphBlocks;
         CREATE TABLE $subGraphBlocks
         AS SELECT ST_UNION(ST_ACCUM(ST_MAKEVALID(A.THE_GEOM))) AS THE_GEOM
         FROM $inputTableName A, $subGraphTableNodes B
         WHERE A.id_build=B.NODE_ID GROUP BY B.CONNECTED_COMPONENT;"""
             }
-
             //Create the blocks
             info "Creating the block table..."
+
             datasource """DROP TABLE IF EXISTS $outputTableName; 
         CREATE TABLE $outputTableName ($columnIdName SERIAL, THE_GEOM GEOMETRY) 
         AS (SELECT null, st_force2d(ST_MAKEVALID(THE_GEOM)) as the_geom FROM $subGraphBlocks) UNION ALL (SELECT null, st_force2d(ST_MAKEVALID(a.the_geom)) as the_geom FROM $inputTableName a 
         LEFT JOIN $subGraphTableNodes b ON a.id_build = b.NODE_ID WHERE b.NODE_ID IS NULL);"""
 
             // Temporary tables are deleted
-            datasource "DROP TABLE IF EXISTS $graphTable, ${graphTable + "_EDGE_CC"}, " +
+            datasource "DROP TABLE IF EXISTS  $graphTable, ${graphTable + "_EDGE_CC"}, " +
                     "$subGraphBlocks, ${subGraphBlocks + "_NODE_CC"};"
 
             info "The blocks have been created"
@@ -419,8 +429,8 @@ IProcess spatialJoin() {
                                                             WHERE a.$GEOMETRIC_COLUMN_SOURCE && b.$GEOMETRIC_COLUMN_TARGET AND 
                                                                  ST_INTERSECTS(a.$GEOMETRIC_COLUMN_SOURCE, 
                                                                                             b.$GEOMETRIC_COLUMN_TARGET) 
-                                                        ORDER BY ST_AREA(ST_INTERSECTION(ST_PRECISIONREDUCER(a.$GEOMETRIC_COLUMN_SOURCE, 3),
-                                                                                         ST_PRECISIONREDUCER(b.$GEOMETRIC_COLUMN_TARGET,3)))
+                                                        ORDER BY ST_AREA(ST_INTERSECTION(ST_BUFFER(ST_PRECISIONREDUCER(a.$GEOMETRIC_COLUMN_SOURCE, 3),0),
+                                                                                         ST_BUFFER(ST_PRECISIONREDUCER(b.$GEOMETRIC_COLUMN_TARGET,3),0)))
                                                         DESC LIMIT $nbRelations) AS $idColumnTarget 
                                             FROM $sourceTable a"""
                 } else {

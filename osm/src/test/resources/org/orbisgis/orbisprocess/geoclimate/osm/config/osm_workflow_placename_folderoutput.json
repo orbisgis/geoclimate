@@ -11,11 +11,15 @@
         "folder" : "/home/decide/Bureau/GeoclimateTests3"},
     "parameters":
     {"distance" : 1000,
-        "indicatorUse": ["LCZ"],
-        "svfSimplified": false,
-        "prefixName": "","hLevMin": 3,
+        "hLevMin": 3,
         "hLevMax": 15,
         "hThresholdLev2": 10,
-        "estimateHeight" : true
+        "rsu_indicators": {
+            "indicatorUse": [
+                "LCZ"
+            ],
+            "svfSimplified": false,
+            "estimateHeight": true
+        }
     }
 }

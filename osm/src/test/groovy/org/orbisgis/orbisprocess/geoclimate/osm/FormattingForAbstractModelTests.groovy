@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertNotNull
@@ -27,7 +26,7 @@ class FormattingForAbstractModelTests {
         assertEquals 44, h2GIS.getTable(extractData.results.railTableName).rowCount
         assertEquals 135, h2GIS.getTable(extractData.results.vegetationTableName).rowCount
         assertEquals 10, h2GIS.getTable(extractData.results.hydroTableName).rowCount
-        assertEquals 44, h2GIS.getTable(extractData.results.imperviousTableName).rowCount
+        assertEquals 45, h2GIS.getTable(extractData.results.imperviousTableName).rowCount
         assertEquals 6, h2GIS.getTable(extractData.results.urbanAreasTableName).rowCount
         assertEquals 0, h2GIS.getTable(extractData.results.coastlineTableName).rowCount
 
@@ -71,7 +70,7 @@ class FormattingForAbstractModelTests {
 
         rows = h2GIS.rows("select type from ${format.results.outputTableName} where id_build=881 or id_build=484 or id_build=610")
         assertEquals(3, rows.size())
-        assertTrue( rows.type==['industrial','industrial','industrial'])
+        assertTrue( rows.type==['light_industry','light_industry','light_industry'])
 
 
         //Roads
@@ -130,7 +129,7 @@ class FormattingForAbstractModelTests {
                 inputTableName: extractData.results.imperviousTableName,
                 epsg: epsg])
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_formated.shp", true)
-        assertEquals 44, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertEquals 45, h2GIS.getTable(format.results.outputTableName).rowCount
 
         //Sea/Land mask
         format = OSM.formatSeaLandMask
@@ -158,7 +157,7 @@ class FormattingForAbstractModelTests {
         //zoneToExtract = "Londres, Grand Londres, Angleterre, Royaume-Uni"
         //zoneToExtract="Vannes"
         //zoneToExtract="rezé"
-        zoneToExtract = "Redon"
+        zoneToExtract = "Brest"
 
         IProcess extractData = OSM.extractAndCreateGISLayers
         extractData.execute([
@@ -177,13 +176,24 @@ class FormattingForAbstractModelTests {
             h2GIS.getTable(extractData.results.zoneEnvelopeTableName).save("./target/osm_zone_envelope_${formatedPlaceName}.geojson", true)
 
 
+            //Urban Areas
+            IProcess format  = OSM.formatUrbanAreas
+            format.execute([
+                    datasource : h2GIS,
+                    inputTableName: extractData.results.urbanAreasTableName,
+                    inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
+                    epsg: epsg])
+            def urbanAreasTableName = format.results.outputTableName;
+            h2GIS.getTable(format.results.outputTableName).save("./target/osm_urban_areas_${formatedPlaceName}.geojson", true)
+
             //Buildings
-            IProcess format = OSM.formatBuildingLayer
+            format = OSM.formatBuildingLayer
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.buildingTableName,
                     inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
-                    epsg: epsg])
+                    epsg: epsg,
+                    urbanAreasTableName : urbanAreasTableName])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_${formatedPlaceName}.geojson", true)
             assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count==0
             assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count==0
@@ -242,14 +252,6 @@ class FormattingForAbstractModelTests {
                     epsg: epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_${formatedPlaceName}.geojson", true)
 
-            //Urban Areas
-            format = OSM.formatUrbanAreas
-            format.execute([
-                    datasource : h2GIS,
-                    inputTableName: extractData.results.urbanAreasTableName,
-                    inputZoneEnvelopeTableName :extractData.results.zoneEnvelopeTableName,
-                    epsg: epsg])
-            h2GIS.getTable(format.results.outputTableName).save("./target/osm_urban_areas_${formatedPlaceName}.geojson", true)
 
             //Sea/Land mask
             format = OSM.formatSeaLandMask
@@ -343,7 +345,7 @@ class FormattingForAbstractModelTests {
         assertEquals 44, h2GIS.getTable(extractData.results.railTableName).rowCount
         assertEquals 135, h2GIS.getTable(extractData.results.vegetationTableName).rowCount
         assertEquals 10, h2GIS.getTable(extractData.results.hydroTableName).rowCount
-        assertEquals 44, h2GIS.getTable(extractData.results.imperviousTableName).rowCount
+        assertEquals 45, h2GIS.getTable(extractData.results.imperviousTableName).rowCount
 
         //Buildings with estimation state
         IProcess format = OSM.formatBuildingLayer
@@ -371,11 +373,9 @@ class FormattingForAbstractModelTests {
         datasource    : h2GIS,
         inputTableName: extractData.results.buildingTableName,
         epsg          : epsg,
-        jsonFilename  : null,
-        estimateHeight : false])
+        jsonFilename  : null])
         assertEquals 1040, h2GIS.getTable(format.results.outputTableName).rowCount
-        assertEquals "", format.results.outputEstimateTableName
-
+        assertEquals 1040, h2GIS.getTable(format.results.outputEstimateTableName).rowCount
     }
 
 }

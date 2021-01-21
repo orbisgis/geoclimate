@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS.open
-import static org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager.load
 
 class RsuIndicatorsTests {
 
@@ -135,6 +134,39 @@ class RsuIndicatorsTests {
 
         }
         assertEquals("637.1\n637.1\n32.53\n32.53\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n", concat)
+    }
+
+    @Test
+    void projectedFacadeAreaDistributionTest2() {
+        // Only the first 5 first created buildings are selected for the tests
+        h2GIS "DROP TABLE IF EXISTS tempo_build, test_rsu_projected_facade_area_distribution;" +
+                " CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 1"
+
+        def listLayersBottom = [0, 10, 20, 30, 40, 50]
+        def numberOfDirection = 4
+        def rangeDeg = 360/numberOfDirection
+        def p = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution()
+        assertTrue p.execute([buildingTable: "tempo_build", rsuTable: "rsu_test", listLayersBottom: listLayersBottom,
+                              numberOfDirection: numberOfDirection, prefixName: "test", datasource: h2GIS])
+        def concat = ""
+        h2GIS.eachRow("SELECT * FROM test_rsu_projected_facade_area_distribution WHERE id_rsu = 1"){
+            row ->
+                // Iterate over columns
+                def names = []
+                for (i in 1..listLayersBottom.size()){
+                    names[i-1]="projected_facade_area_distribution_H${listLayersBottom[i-1]}"+
+                            "_${listLayersBottom[i]}"
+                    if (i == listLayersBottom.size()){
+                        names[listLayersBottom.size()-1]="projected_facade_area_distribution"+
+                                "_H${listLayersBottom[listLayersBottom.size()-1]}"
+                    }
+                    for (int d=0; d<numberOfDirection/2; d++){
+                        int dirDeg = d*360/numberOfDirection
+                        concat+= row["${names[i-1]}_D${dirDeg}_${dirDeg+rangeDeg}".toString()].round(2).toString()+"\n"
+                    }
+                }
+        }
+        assertEquals("0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n", concat)
     }
 
     @Test
@@ -533,5 +565,33 @@ class RsuIndicatorsTests {
                 prefixName: "test", datasource: h2GIS])
         def result0 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName} WHERE ID_RSU=1")
         assertEquals(0.0, result0["building_fraction"])
+    }
+
+    @Test
+    void surfaceFractionTest5() {
+        // Only the RSU 4 is conserved for the test
+        h2GIS "DROP TABLE IF EXISTS rsu_tempo;" +
+                "CREATE TABLE rsu_tempo AS SELECT * " +
+                "FROM rsu_test WHERE id_rsu = 4"
+        // Need to create the smallest geometries used as input of the surface fraction process
+        def p = Geoindicators.RsuIndicators.smallestCommunGeometry()
+        assertTrue p.execute([
+                rsuTable: "rsu_tempo",buildingTable: "building_test",vegetationTable: "veget_test",waterTable: "hydro_test",
+                prefixName: "test", datasource: h2GIS])
+        def tempoTable = p.results.outputTableName
+
+        def p0 = Geoindicators.RsuIndicators.surfaceFractions()
+        def superpositions0 = []
+        def priorities0 = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
+        assertTrue p0.execute([
+                rsuTable: "rsu_tempo", spatialRelationsTable: tempoTable,
+                superpositions: superpositions0,
+                priorities: priorities0,
+                prefixName: "test", datasource: h2GIS])
+        def result0 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName}")
+        assertEquals(3.0/10, result0["high_vegetation_fraction"])
+        assertEquals(3.0/20, result0["low_vegetation_fraction"])
+        assertEquals(1.0/4, result0["water_fraction"])
+        assertEquals(3.0/10, result0["building_fraction"])
     }
 }

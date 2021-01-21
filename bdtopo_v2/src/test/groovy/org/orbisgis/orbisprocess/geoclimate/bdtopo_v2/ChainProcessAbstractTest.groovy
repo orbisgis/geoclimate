@@ -1,7 +1,6 @@
 package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
 import org.slf4j.Logger

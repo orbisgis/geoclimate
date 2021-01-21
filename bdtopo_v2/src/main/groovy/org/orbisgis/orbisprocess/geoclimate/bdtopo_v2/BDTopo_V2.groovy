@@ -1,7 +1,6 @@
 package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
-import org.slf4j.LoggerFactory
+
 
 /**
  * Class to manage and access to the BDTOPO processes
