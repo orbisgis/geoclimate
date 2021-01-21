@@ -147,7 +147,7 @@ CREATE TABLE $RAIL(THE_GEOM geometry, ID_RAIL serial, ID_SOURCE varchar(24), TYP
 -- Filling the CROSSING column with a 'null' value when no value
 UPDATE $RAIL SET CROSSING = 'null' WHERE CROSSING is null;
 
--- Clean not needed layers
+-- Clean not needed layersi
 DROP TABLE IF EXISTS $INPUT_RAIL;
 
 
