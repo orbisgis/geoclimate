@@ -155,7 +155,7 @@ class BuildingIndicatorsTests {
                 "id_build = 28 ORDER BY id_build ASC"){
             row -> concat+= "${row.likelihood_large_building.round(2)}\n"
         }
-        assertEquals("0.0\n0.02\n1.0\n", concat)
+        assertEquals("0.00\n0.02\n1.00\n", concat)
     }
 
 }
