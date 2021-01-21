@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.orbisgis</groupId>
         <artifactId>orbisparent</artifactId>
-        <version>1.0.3-SNAPSHOT</version>
+        <version>1.0.3-RC1</version>
     </parent>
     <groupId>org.orbisgis.orbisprocess</groupId>
     <artifactId>geoclimate-parent</artifactId>

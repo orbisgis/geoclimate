@@ -610,7 +610,7 @@ IProcess roofAreaDistribution() {
                         a.building_total_facade_length, 
                         a.non_vertical_roof_area, 
                         a.vertical_roof_area, 
-                        ISNULL(b.vert_roof_to_remove,0) 
+                        IFNULL(b.vert_roof_to_remove,0) 
                     FROM $buildRoofSurfIni a 
                     LEFT JOIN $buildVertRoofInter b 
                     ON a.$ID_COLUMN_BU=b.$ID_COLUMN_BU);"""
