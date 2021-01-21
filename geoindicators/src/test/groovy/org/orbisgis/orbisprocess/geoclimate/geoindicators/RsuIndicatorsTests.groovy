@@ -271,7 +271,7 @@ class RsuIndicatorsTests {
         h2GIS.eachRow("SELECT * FROM test_rsu_effective_terrain_roughness_length WHERE id_rsu = 1"){
             row -> concat += row["effective_terrain_roughness_length"].round(2)
         }
-        assertEquals(1.6, concat)
+        assertEquals(1.60, concat)
     }
 
     @Test

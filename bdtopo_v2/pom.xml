@@ -30,10 +30,12 @@
         <dependency>
             <groupId>org.orbisgis.orbisdata.datamanager</groupId>
             <artifactId>jdbc</artifactId>
+            <version>1.0.1-RC1</version>
         </dependency>
         <dependency>
             <groupId>org.orbisgis.orbisdata.processmanager</groupId>
             <artifactId>process</artifactId>
+            <version>1.0.1-RC1</version>
         </dependency>
         <dependency>
             <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
