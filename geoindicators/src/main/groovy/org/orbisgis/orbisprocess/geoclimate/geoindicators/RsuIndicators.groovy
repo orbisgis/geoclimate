@@ -1461,12 +1461,6 @@ IProcess surfaceFractions() {
             // Create the indexes on each of the input tables
             datasource."$rsuTable"."$id_rsu".createIndex()
             datasource."$spatialRelationsTable"."$id_rsu".createIndex()
-            datasource."$spatialRelationsTable".water.createIndex()
-            datasource."$spatialRelationsTable".road.createIndex()
-            datasource."$spatialRelationsTable".impervious.createIndex()
-            datasource."$spatialRelationsTable".building.createIndex()
-            datasource."$spatialRelationsTable".low_vegetation.createIndex()
-            datasource."$spatialRelationsTable".high_vegetation.createIndex()
 
             // Need to set priority number for future sorting
             def prioritiesMap = [:]
