@@ -1,5 +1,6 @@
 package org.orbisgis.orbisprocess.geoclimate.processingchain
 
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
@@ -149,6 +150,7 @@ class GeoIndicatorsChainTest {
     }
 
     @Test
+    @Disabled
     void GeoIndicatorsTest2() {
         File directory = new File("./target/geoindicators_workflow")
         H2GIS datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
