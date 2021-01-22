@@ -84,14 +84,14 @@ IProcess extractAndCreateGISLayers() {
                 def tmpGeomEnv = geom.getFactory().toGeometry(envelope)
                 tmpGeomEnv.setSRID(4326)
 
-                datasource.execute """create table ${outputZoneTable} (the_geom GEOMETRY(${GEOMETRY_TYPE}, $epsg), ID_ZONE VARCHAR);"""
-                datasource.execute(
-                        "INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT(?, ?), ?);",
-                        geomUTM.toString(), epsg, zoneToExtract.toString())
+                datasource.execute """drop table if exists ${outputZoneTable}; 
+        create table ${outputZoneTable} (the_geom GEOMETRY(${GEOMETRY_TYPE}, $epsg), ID_ZONE VARCHAR);
+        INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT('${geomUTM.toString()}', ${epsg}), '${zoneToExtract.toString()}');"""
 
-                datasource.execute """create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);"""
-                datasource.execute("""INSERT INTO ${outputZoneEnvelopeTable} 
-                    VALUES (ST_GEOMFROMTEXT(?,?), ?);""", ST_Transform.ST_Transform(con, tmpGeomEnv, epsg).toString(), epsg, zoneToExtract.toString())
+                datasource.execute """drop table if exists ${outputZoneEnvelopeTable}; 
+         create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
+        INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${ST_Transform.ST_Transform(con, tmpGeomEnv, epsg).toString()}',${epsg}), '${zoneToExtract.toString()}');
+        """
 
                 //Prepare OSM extraction
                 def query = "[maxsize:1073741824]" + Utilities.buildOSMQuery(envelope, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
