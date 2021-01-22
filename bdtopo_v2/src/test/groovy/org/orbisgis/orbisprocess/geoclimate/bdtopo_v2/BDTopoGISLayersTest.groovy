@@ -70,12 +70,12 @@ class BDTopoGISLayersTest {
         assertEquals(3219, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
+        assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
         assertEquals('INTEGER', table.columnType('HEIGHT_WALL'))
         assertEquals('INTEGER', table.columnType('HEIGHT_ROOF'))
         assertEquals('INTEGER', table.columnType('NB_LEV'))
-        assertEquals('VARCHAR', table.columnType('TYPE'))
-        assertEquals('VARCHAR', table.columnType('MAIN_USE'))
+        assertEquals('CHARACTER VARYING', table.columnType('TYPE'))
+        assertEquals('CHARACTER VARYING', table.columnType('MAIN_USE'))
         assertEquals('INTEGER', table.columnType('ZINDEX'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
@@ -109,13 +109,13 @@ class BDTopoGISLayersTest {
         assertEquals(1779, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
-        assertEquals('DOUBLE', table.columnType('WIDTH'))
-        assertEquals('VARCHAR', table.columnType('TYPE'))
-        assertEquals('VARCHAR', table.columnType('SURFACE'))
-        assertEquals('VARCHAR', table.columnType('SIDEWALK'))
+        assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
+        assertEquals('DOUBLE PRECISION', table.columnType('WIDTH'))
+        assertEquals('CHARACTER VARYING', table.columnType('TYPE'))
+        assertEquals('CHARACTER VARYING', table.columnType('SURFACE'))
+        assertEquals('CHARACTER VARYING', table.columnType('SIDEWALK'))
         assertEquals('INTEGER', table.columnType('ZINDEX'))
-        assertEquals('VARCHAR', table.columnType('CROSSING'))
+        assertEquals('CHARACTER VARYING', table.columnType('CROSSING'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
             assertNotNull(row.THE_GEOM)
@@ -148,10 +148,10 @@ class BDTopoGISLayersTest {
         assertEquals(5, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
-        assertEquals('VARCHAR', table.columnType('TYPE'))
+        assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
+        assertEquals('CHARACTER VARYING', table.columnType('TYPE'))
         assertEquals('INTEGER', table.columnType('ZINDEX'))
-        assertEquals('VARCHAR', table.columnType('CROSSING'))
+        assertEquals('CHARACTER VARYING', table.columnType('CROSSING'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
             assertNotNull(row.THE_GEOM)
@@ -175,7 +175,7 @@ class BDTopoGISLayersTest {
         assertEquals(92, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
+        assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
             assertNotNull(row.THE_GEOM)
@@ -193,8 +193,8 @@ class BDTopoGISLayersTest {
         assertEquals(2325, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
-        assertEquals('VARCHAR', table.columnType('TYPE'))
+        assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
+        assertEquals('CHARACTER VARYING', table.columnType('TYPE'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
             assertNotNull(row.THE_GEOM)
@@ -214,7 +214,7 @@ class BDTopoGISLayersTest {
         assertEquals(7, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
+        assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
             assertNotNull(row.THE_GEOM)
@@ -231,7 +231,7 @@ class BDTopoGISLayersTest {
         assertEquals(2, table.columnCount)
         assertEquals(1, table.rowCount)
         // Check if the column types are correct
-        assertEquals('VARCHAR', table.columnType('ID_ZONE'))
+        assertEquals('CHARACTER VARYING', table.columnType('ID_ZONE'))
         assertTrue(table.THE_GEOM.spatial)
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
@@ -277,12 +277,12 @@ class BDTopoGISLayersTest {
         assertEquals(274, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.getColumnType('ID_SOURCE'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('ID_SOURCE'))
         assertEquals('INTEGER', table.getColumnType('HEIGHT_WALL'))
         assertEquals('INTEGER', table.getColumnType('HEIGHT_ROOF'))
         assertEquals('INTEGER', table.getColumnType('NB_LEV'))
-        assertEquals('VARCHAR', table.getColumnType('TYPE'))
-        assertEquals('VARCHAR', table.getColumnType('MAIN_USE'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('TYPE'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('MAIN_USE'))
         assertEquals('INTEGER', table.getColumnType('ZINDEX'))
 
         // Check if the BATI_INDIFFERENCIE table has the correct number of columns and rows
@@ -292,7 +292,7 @@ class BDTopoGISLayersTest {
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.getColumnType('ID'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('ID'))
         assertEquals('INTEGER', table.getColumnType('HAUTEUR'))
     }
 
@@ -329,12 +329,12 @@ class BDTopoGISLayersTest {
         assertEquals(2963, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.getColumnType('ID_SOURCE'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('ID_SOURCE'))
         assertEquals('INTEGER', table.getColumnType('HEIGHT_WALL'))
         assertEquals('INTEGER', table.getColumnType('HEIGHT_ROOF'))
         assertEquals('INTEGER', table.getColumnType('NB_LEV'))
-        assertEquals('VARCHAR', table.getColumnType('TYPE'))
-        assertEquals('VARCHAR', table.getColumnType('MAIN_USE'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('TYPE'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('MAIN_USE'))
         assertEquals('INTEGER', table.getColumnType('ZINDEX'))
 
         // Check if the BATI_INDUSTRIEL table has the correct number of columns and rows
@@ -344,9 +344,9 @@ class BDTopoGISLayersTest {
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.getColumnType('ID'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('ID'))
         assertEquals('INTEGER', table.getColumnType('HAUTEUR'))
-        assertEquals('VARCHAR', table.getColumnType('NATURE'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('NATURE'))
     }
 
     // Check whether the INPUT_BUILDING table is well produced, despite the absence of the BATI_REMARQUABLE table
@@ -382,12 +382,12 @@ class BDTopoGISLayersTest {
         assertEquals(3201, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.getColumnType('ID_SOURCE'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('ID_SOURCE'))
         assertEquals('INTEGER', table.getColumnType('HEIGHT_WALL'))
         assertEquals('INTEGER', table.getColumnType('HEIGHT_ROOF'))
         assertEquals('INTEGER', table.getColumnType('NB_LEV'))
-        assertEquals('VARCHAR', table.getColumnType('TYPE'))
-        assertEquals('VARCHAR', table.getColumnType('MAIN_USE'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('TYPE'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('MAIN_USE'))
         assertEquals('INTEGER', table.getColumnType('ZINDEX'))
 
         // Check if the BATI_REMARQUABLE table has the correct number of columns and rows
@@ -397,9 +397,9 @@ class BDTopoGISLayersTest {
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.getColumnType('ID'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('ID'))
         assertEquals('INTEGER', table.getColumnType('HAUTEUR'))
-        assertEquals('VARCHAR', table.getColumnType('NATURE'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('NATURE'))
     }
 
     // Check whether the INPUT_ROAD table is well produced, despite the absence of the ROUTE table
@@ -435,13 +435,13 @@ class BDTopoGISLayersTest {
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.getColumnType('ID_SOURCE'))
-        assertEquals('DOUBLE', table.getColumnType('WIDTH'))
-        assertEquals('VARCHAR', table.getColumnType('TYPE'))
-        assertEquals('VARCHAR', table.getColumnType('SURFACE'))
-        assertEquals('VARCHAR', table.getColumnType('SIDEWALK'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('ID_SOURCE'))
+        assertEquals('DOUBLE PRECISION', table.getColumnType('WIDTH'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('TYPE'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('SURFACE'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('SIDEWALK'))
         assertEquals('INTEGER', table.getColumnType('ZINDEX'))
-        assertEquals('VARCHAR', table.getColumnType('CROSSING'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('CROSSING'))
 
         // Check if the ROUTE table has the correct number of columns and rows
         table = h2GISDatabase.getTable("ROUTE")
@@ -450,11 +450,11 @@ class BDTopoGISLayersTest {
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.getColumnType('ID'))
-        assertEquals('DOUBLE', table.getColumnType('LARGEUR'))
-        assertEquals('VARCHAR', table.getColumnType('NATURE'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('ID'))
+        assertEquals('DOUBLE PRECISION', table.getColumnType('LARGEUR'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('NATURE'))
         assertEquals('INTEGER', table.getColumnType('POS_SOL'))
-        assertEquals('VARCHAR', table.getColumnType('FRANCHISST'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('FRANCHISST'))
     }
 
     // Check whether the INPUT_RAIL table is well produced, despite the absence of the TRONCON_VOIE_FERREE table
@@ -490,10 +490,10 @@ class BDTopoGISLayersTest {
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.getColumnType('ID_SOURCE'))
-        assertEquals('VARCHAR', table.getColumnType('TYPE'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('ID_SOURCE'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('TYPE'))
         assertEquals('INTEGER', table.getColumnType('ZINDEX'))
-        assertEquals('VARCHAR', table.getColumnType('CROSSING'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('CROSSING'))
 
         // Check if the TRONCON_VOIE_FERREE table has the correct number of columns and rows
         table = h2GISDatabase.getTable("TRONCON_VOIE_FERREE")
@@ -502,10 +502,10 @@ class BDTopoGISLayersTest {
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.getColumnType('ID'))
-        assertEquals('VARCHAR', table.getColumnType('NATURE'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('ID'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('NATURE'))
         assertEquals('INTEGER', table.getColumnType('POS_SOL'))
-        assertEquals('VARCHAR', table.getColumnType('FRANCHISST'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('FRANCHISST'))
     }
 
     // Check whether the INPUT_HYDRO table is well produced, despite the absence of the SURFACE_EAU table
@@ -541,7 +541,7 @@ class BDTopoGISLayersTest {
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.getColumnType('ID_SOURCE'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('ID_SOURCE'))
 
         // Check if the SURFACE_EAU table has the correct number of columns and rows
         table = h2GISDatabase.getTable("SURFACE_EAU")
@@ -550,7 +550,7 @@ class BDTopoGISLayersTest {
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.getColumnType('ID'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('ID'))
     }
 
     // Check whether the INPUT_VEGET table is well produced, despite the absence of the ZONE_VEGETATION table
@@ -586,8 +586,8 @@ class BDTopoGISLayersTest {
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.getColumnType('ID_SOURCE'))
-        assertEquals('VARCHAR', table.getColumnType('TYPE'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('ID_SOURCE'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('TYPE'))
 
         // Check if the ZONE_VEGETATION table has the correct number of columns and rows
         table = h2GISDatabase.getTable("ZONE_VEGETATION")
@@ -596,8 +596,8 @@ class BDTopoGISLayersTest {
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.getColumnType('ID'))
-        assertEquals('VARCHAR', table.getColumnType('NATURE'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('ID'))
+        assertEquals('CHARACTER VARYING', table.getColumnType('NATURE'))
     }
 
     // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the SURFACE_ACTIVITE table
@@ -633,7 +633,7 @@ class BDTopoGISLayersTest {
         assertEquals(2, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
+        assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
             assertNotNull(row.THE_GEOM)
@@ -649,8 +649,8 @@ class BDTopoGISLayersTest {
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.columnType('ID'))
-        assertEquals('VARCHAR', table.columnType('CATEGORIE'))
+        assertEquals('CHARACTER VARYING', table.columnType('ID'))
+        assertEquals('CHARACTER VARYING', table.columnType('CATEGORIE'))
     }
 
     // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the TERRAIN_SPORT table
@@ -686,7 +686,7 @@ class BDTopoGISLayersTest {
         assertEquals(7, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
+        assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
             assertNotNull(row.THE_GEOM)
@@ -702,8 +702,8 @@ class BDTopoGISLayersTest {
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.columnType('ID'))
-        assertEquals('VARCHAR', table.columnType('NATURE'))
+        assertEquals('CHARACTER VARYING', table.columnType('ID'))
+        assertEquals('CHARACTER VARYING', table.columnType('NATURE'))
     }
 
     // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the CONSTRUCTION_SURFACIQUE table
@@ -739,7 +739,7 @@ class BDTopoGISLayersTest {
         assertEquals(7, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
+        assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
             assertNotNull(row.THE_GEOM)
@@ -755,8 +755,8 @@ class BDTopoGISLayersTest {
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
-        assertEquals('VARCHAR', table.columnType('ID'))
-        assertEquals('VARCHAR', table.columnType('NATURE'))
+        assertEquals('CHARACTER VARYING', table.columnType('ID'))
+        assertEquals('CHARACTER VARYING', table.columnType('NATURE'))
     }
 
     // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the SURFACE_ROUTE table
@@ -792,7 +792,7 @@ class BDTopoGISLayersTest {
         assertEquals(5, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.the_geom.isSpatial())
-        assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
+        assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
             assertNotNull(row.THE_GEOM)
@@ -808,7 +808,7 @@ class BDTopoGISLayersTest {
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.the_geom.isSpatial())
-        assertEquals('VARCHAR', table.columnType('ID'))
+        assertEquals('CHARACTER VARYING', table.columnType('ID'))
     }
 
 
@@ -858,8 +858,8 @@ class BDTopoGISLayersTest {
         assertEquals(23, table.rowCount)
         // Check if the column types are correct
         assertEquals('INTEGER', table.columnType('ID_NATURE'))
-        assertEquals('VARCHAR', table.columnType('NATURE'))
-        assertEquals('VARCHAR', table.columnType('TABLE_NAME'))
+        assertEquals('CHARACTER VARYING', table.columnType('NATURE'))
+        assertEquals('CHARACTER VARYING', table.columnType('TABLE_NAME'))
         assertEquals('INTEGER', table.columnType('ID_TYPE'))
         // For each rows, check if the fields contains null or empty values
         table.eachRow { row ->
@@ -880,8 +880,8 @@ class BDTopoGISLayersTest {
         assertEquals(4, table.columnCount)
         assertEquals(12, table.rowCount)
         assertEquals('INTEGER', table.columnType('ID_NATURE'))
-        assertEquals('VARCHAR', table.columnType('NATURE'))
-        assertEquals('VARCHAR', table.columnType('TABLE_NAME'))
+        assertEquals('CHARACTER VARYING', table.columnType('NATURE'))
+        assertEquals('CHARACTER VARYING', table.columnType('TABLE_NAME'))
         assertEquals('INTEGER', table.columnType('ID_TYPE'))
         table.eachRow { row ->
             assertNotNull(row.ID_NATURE)
@@ -902,8 +902,8 @@ class BDTopoGISLayersTest {
         assertEquals(4, table.columnCount)
         assertEquals(4, table.rowCount)
         assertEquals('INTEGER', table.columnType('ID_FRANCHISST'))
-        assertEquals('VARCHAR', table.columnType('FRANCHISST'))
-        assertEquals('VARCHAR', table.columnType('TABLE_NAME'))
+        assertEquals('CHARACTER VARYING', table.columnType('FRANCHISST'))
+        assertEquals('CHARACTER VARYING', table.columnType('TABLE_NAME'))
         assertEquals('INTEGER', table.columnType('ID_CROSSING'))
         table.eachRow { row ->
             assertNotNull(row.ID_FRANCHISST)
@@ -924,8 +924,8 @@ class BDTopoGISLayersTest {
         assertEquals(4, table.columnCount)
         assertEquals(8, table.rowCount)
         assertEquals('INTEGER', table.columnType('ID_NATURE'))
-        assertEquals('VARCHAR', table.columnType('NATURE'))
-        assertEquals('VARCHAR', table.columnType('TABLE_NAME'))
+        assertEquals('CHARACTER VARYING', table.columnType('NATURE'))
+        assertEquals('CHARACTER VARYING', table.columnType('TABLE_NAME'))
         assertEquals('INTEGER', table.columnType('ID_TYPE'))
         table.eachRow { row ->
             assertNotNull(row.ID_NATURE)
@@ -946,8 +946,8 @@ class BDTopoGISLayersTest {
         assertEquals(4, table.columnCount)
         assertEquals(3, table.rowCount)
         assertEquals('INTEGER', table.columnType('ID_FRANCHISST'))
-        assertEquals('VARCHAR', table.columnType('FRANCHISST'))
-        assertEquals('VARCHAR', table.columnType('TABLE_NAME'))
+        assertEquals('CHARACTER VARYING', table.columnType('FRANCHISST'))
+        assertEquals('CHARACTER VARYING', table.columnType('TABLE_NAME'))
         assertEquals('INTEGER', table.columnType('ID_CROSSING'))
         table.eachRow { row ->
             assertNotNull(row.ID_FRANCHISST)
@@ -968,8 +968,8 @@ class BDTopoGISLayersTest {
         assertEquals(4, table.columnCount)
         assertEquals(14, table.rowCount)
         assertEquals('INTEGER', table.columnType('ID_NATURE'))
-        assertEquals('VARCHAR', table.columnType('NATURE'))
-        assertEquals('VARCHAR', table.columnType('TABLE_NAME'))
+        assertEquals('CHARACTER VARYING', table.columnType('NATURE'))
+        assertEquals('CHARACTER VARYING', table.columnType('TABLE_NAME'))
         assertEquals('INTEGER', table.columnType('ID_TYPE'))
         table.eachRow { row ->
             assertNotNull(row.ID_NATURE)
