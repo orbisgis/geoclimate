@@ -2029,6 +2029,10 @@ IProcess rasterizeIndicators() {
                     info "Cannot merge all indicators in grid table $grid_indicators_table."
                     return
                 }
+                def dropTempTables = Geoindicators.DataUtils.dropTables()
+                def tablesToDrop = indicatorTablesToJoin.keySet().toList()
+                dropTempTables([inputTableNames: tablesToDrop,
+                                   datasource           : datasource])
             }
             [outputTableName: grid_indicators_table]
         }

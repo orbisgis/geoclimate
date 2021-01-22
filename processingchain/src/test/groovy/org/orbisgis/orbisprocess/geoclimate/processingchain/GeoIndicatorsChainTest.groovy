@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -434,6 +435,19 @@ class GeoIndicatorsChainTest {
         } else {
             assertEquals(null, GeoIndicatorsCompute_i.results.outputTableRsuLcz)
         }
+    }
+
+    @Test
+    void GeoIndicatorsTest8() {
+        File directory = new File("./target/geoindicators_workflow")
+        def dir = directory.absolutePath
+        H2GIS datasource = H2GIS.open("D:/Users/le_sauxe/Documents/IUT/Recherche/Test_Geoclimate"
+                + File.separator + "geoclimate_db;AUTO_SERVER=TRUE")
+        def gridProcess = Geoindicators.SpatialUnits.createGrid()
+        def box = datasource.getSpatialTable("emprise").getExtent()
+        gridProcess.execute([geometry: box, deltaX: 1000, deltaY: 1000,  datasource: datasource])
+        def grid_table_name = gridProcess.results.outputTableName
+        H2GIS.getTable(grid_table_name).save("./target/grid_table_name.shp", true)
     }
 
     /**

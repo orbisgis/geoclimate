@@ -1090,6 +1090,7 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
         }
         else if(it.equals("grid_indicators")){
             saveTableAsGeojson(results.grid_indicators, "${subFolder.getAbsolutePath()+File.separator+"grid_indicators"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+            saveTableAsAsciiGrid(results.grid_indicators,h2gis_datasource,"${subFolder.getAbsolutePath()+File.separator+"grid_indicators_"}")
         }
     }
 }
@@ -1525,3 +1526,48 @@ static Map readJSONParameters(def jsonFile) {
         return jsonSlurper.parse(jsonFile)
     }
 }
+
+/**
+ * Method to export a table corresponding to a grid with indicators in as many ESRI ASCII grid files as indicators
+ * @param h2gis_table_to_save
+ * @param h2gis_datasource
+ * @param output_files_generic_name
+ * @return
+ */
+def saveTableAsAsciiGrid(String h2gis_table_to_save, H2GIS h2gis_datasource, String output_files_generic_name) {
+    def query = "select max(id_col) as cmax, max(id_row) as rmax from $h2gis_table_to_save"
+    def nbcols
+    def nbrows
+    h2gis_datasource.eachRow(query){row ->
+        nbcols = row.cmax
+        nbrows = row.rmax
+    }
+    def env = h2gis_datasource.getSpatialTable(h2gis_table_to_save).getExtent().getEnvelopeInternal();
+    def xmin =env.getMinX()
+    def ymin =env.getMinY()
+
+    def IndicsTable = h2gis_datasource."$h2gis_table_to_save"
+    List columnNames = IndicsTable.columns
+    columnNames.remove("THE_GEOM")
+    columnNames.remove("ID")
+    columnNames.remove("ID_COL")
+    columnNames.remove("ID_ROW")
+    columnNames.each { it ->
+        new File("${output_files_generic_name}${it}.asc").withOutputStream { stream ->
+            stream.write "ncols $nbcols\nnrows $nbrows\nxllcorner $xmin\nyllcorner $ymin\ncellsize ???\nnodata_value -9999\n".getBytes()
+            query = "select id_row, id_col, $it from $h2gis_table_to_save order by id_row, id_col"
+            String fileContent = ""
+            h2gis_datasource.eachRow(query) { row ->
+                fileContent += row.getString(it) + " "
+                if (row.getInt("id_col") == nbcols) {
+                    fileContent += "\n"
+                    stream.write fileContent.getBytes()
+                    fileContent=""
+                }
+            }
+            info "$h2gis_table_to_save has been saved in ${output_files_generic_name}${it}.asc"
+        }
+    }
+}
+
+
