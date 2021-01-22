@@ -607,6 +607,49 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
+    @Disabled //Use it for debug SLIM copernicus
+    @Test
+    void testIntegrationSlim() {
+        String directory ="./target/geoclimate_slim_integration"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
+                "geoclimatedb" : [
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete" :false
+                ],
+                "input" : [
+                        "osm" : [[
+                                         71.16667,
+                                         25.58318,
+                                         71.25,
+                                         25.66652
+                                 ]]],
+                "output" :["folder" : "$directory"]
+                ,
+                "parameters":
+                        ["distance" : 0,
+                         "rsu_indicators":[
+                                 "indicatorUse": ["LCZ"],
+                                 "svfSimplified": true,
+                                 "estimateHeight":true
+                         ],
+                         "grid_indicators": [
+                                 "x_size": 1000,
+                                 "y_size": 1000,
+                                 "indicators": ["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
+                                                "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "LCZ_FRACTION"]
+                         ]
+                        ]
+        ]
+
+        IProcess process = OSM.workflow
+        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+    }
+
     @Test
     void testOSMTEB() {
         String directory = "./target/geoclimate_chain"

@@ -397,7 +397,8 @@ IProcess workflow() {
                                                          "urban_areas",
                                                          "rsu_urban_typo_area",
                                                          "rsu_urban_typo_floor_area",
-                                                         "building_urban_typo"]
+                                                         "building_urban_typo",
+                                                         "grid_indicators"]
                             //Get processing parameters
                             def processing_parameters = extractProcessingParameters(parameters.parameters)
                             if(!processing_parameters){
@@ -690,7 +691,8 @@ def outputFolderProperties(def outputFolder){
                         "impervious",
                         "rsu_urban_typo_area",
                         "rsu_urban_typo_floor_area",
-                        "building_urban_typo"]
+                        "building_urban_typo",
+                        "grid_indicators"]
 
     if(outputFolder in Map){
         def outputPath = outputFolder.path
@@ -1231,9 +1233,6 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
                         prefixName: processing_parameters.prefixName
                 )){
                     results.put("grid_indicators", rasterizedIndicators.results.outputTableName)
-                    if(outputFiles){
-                        outputFiles<<rasterizedIndicators.results.outputTableName
-                    }
                 }
             }
 
