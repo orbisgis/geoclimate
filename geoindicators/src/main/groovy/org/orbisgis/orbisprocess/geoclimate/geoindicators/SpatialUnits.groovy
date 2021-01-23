@@ -152,7 +152,7 @@ IProcess prepareRSUData() {
 
                         datasource "DROP TABLE IF EXISTS $vegetation_indice"
                         datasource "CREATE TABLE $vegetation_indice(THE_GEOM geometry, ID serial," +
-                                " CONTACT integer) AS (SELECT ST_MAKEVALID(THE_GEOM) AS the_geom, NULL , 0 FROM ST_EXPLODE('" +
+                                " CONTACT integer) AS (SELECT ST_MAKEVALID(THE_GEOM) AS the_geom, CAST((row_number() over()) as Integer), 0 FROM ST_EXPLODE('" +
                                 "(SELECT * FROM $vegetationTable)') " +
                                 " WHERE ST_DIMENSION(the_geom)>0 AND ST_ISEMPTY(the_geom)=FALSE)"
                         datasource "CREATE INDEX IF NOT EXISTS veg_indice_idx ON $vegetation_indice USING RTREE(THE_GEOM)"
@@ -193,7 +193,7 @@ IProcess prepareRSUData() {
 
                         datasource "DROP TABLE IF EXISTS $hydrographic_indice"
                         datasource "CREATE TABLE $hydrographic_indice(THE_GEOM geometry, ID serial," +
-                                " CONTACT integer) AS (SELECT st_makevalid(THE_GEOM) AS the_geom, NULL , 0 FROM " +
+                                " CONTACT integer) AS (SELECT st_makevalid(THE_GEOM) AS the_geom, CAST((row_number() over()) as Integer) , 0 FROM " +
                                 "ST_EXPLODE('(SELECT * FROM $hydrographicTable)')" +
                                 " WHERE ST_DIMENSION(the_geom)>0 AND ST_ISEMPTY(the_geom)=false)"
 
@@ -318,7 +318,7 @@ IProcess createBlocks() {
             datasource """
                 DROP TABLE IF EXISTS $graphTable; 
                 CREATE TABLE $graphTable (EDGE_ID SERIAL, START_NODE INT, END_NODE INT) AS 
-                    SELECT null, a.id_build as START_NODE, b.id_build AS END_NODE 
+                    SELECT CAST((row_number() over()) as Integer), a.id_build as START_NODE, b.id_build AS END_NODE 
                     FROM $inputTableName AS a, $inputTableName AS b 
                     WHERE a.id_build<>b.id_build AND a.the_geom && b.the_geom 
                     AND ST_DWITHIN(b.the_geom,a.the_geom, $snappingTolerance);
@@ -354,8 +354,10 @@ IProcess createBlocks() {
 
             datasource """DROP TABLE IF EXISTS $outputTableName; 
         CREATE TABLE $outputTableName ($columnIdName SERIAL, THE_GEOM GEOMETRY) 
-        AS (SELECT null, st_force2d(ST_MAKEVALID(THE_GEOM)) as the_geom FROM $subGraphBlocks) UNION ALL (SELECT null, st_force2d(ST_MAKEVALID(a.the_geom)) as the_geom FROM $inputTableName a 
-        LEFT JOIN $subGraphTableNodes b ON a.id_build = b.NODE_ID WHERE b.NODE_ID IS NULL);"""
+        AS SELECT CAST((row_number() over()) as Integer), the_geom FROM 
+        ((SELECT st_force2d(ST_MAKEVALID(THE_GEOM)) as the_geom FROM $subGraphBlocks) 
+        UNION ALL (SELECT  st_force2d(ST_MAKEVALID(a.the_geom)) as the_geom FROM $inputTableName a 
+        LEFT JOIN $subGraphTableNodes b ON a.id_build = b.NODE_ID WHERE b.NODE_ID IS NULL));"""
 
             // Temporary tables are deleted
             datasource "DROP TABLE IF EXISTS  $graphTable, ${graphTable + "_EDGE_CC"}, " +

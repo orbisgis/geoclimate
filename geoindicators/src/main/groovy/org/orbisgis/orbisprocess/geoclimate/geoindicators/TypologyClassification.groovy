@@ -666,7 +666,7 @@ IProcess applyRandomForestModel() {
             def df = dfNofactorized
             // Identify columns being string (thus needed to be factorized)
             inputColumns.each{colName, colType ->
-                if(colType == "STRING" || colType=="VARCHAR"){
+                if(colType == "STRING" || colType=="VARCHAR" || colType=="CHARACTER VARYING"){
                     df = df.factorize(colName)
                 }
             }

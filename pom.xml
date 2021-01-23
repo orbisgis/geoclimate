@@ -6,18 +6,18 @@
     <parent>
         <groupId>org.orbisgis</groupId>
         <artifactId>orbisparent</artifactId>
-        <version>1.0.3-SNAPSHOT</version>
+        <version>1.0.3-RC1</version>
     </parent>
     <groupId>org.orbisgis.orbisprocess</groupId>
     <artifactId>geoclimate-parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0-RC1</version>
     <modules>
         <module>geoindicators</module>
-        <module>bdtopo_v2</module>
         <module>processingchain</module>
-        <module>geoclimate</module>
+        <module>bdtopo_v2</module>
         <module>osm</module>
+        <module>geoclimate</module>
     </modules>
 
     <properties>
@@ -43,6 +43,10 @@
         </developer>
         <developer>
             <name>Erwan Bocher</name>
+            <organization>CNRS, Lab-STICC UMR 6285</organization>
+        </developer>
+        <developer>
+            <name>Elisabeth  Le Saux Wiederhold</name>
             <organization>CNRS, Lab-STICC UMR 6285</organization>
         </developer>
         <developer>

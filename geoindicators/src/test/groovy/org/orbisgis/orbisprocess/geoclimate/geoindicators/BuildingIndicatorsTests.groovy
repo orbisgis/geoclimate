@@ -37,7 +37,7 @@ class BuildingIndicatorsTests {
                               prefixName : "test",datasource:h2GIS])
         h2GIS.getTable("test_building_size_properties").eachRow {
             row ->
-                assertEquals(141, row.volume)
+                assertEquals(141, (int)row.volume)
                 assertEquals(47, row.floor_area)
                 assertEquals(38, row.total_facade_length)
                 assertEquals(0, row.passive_volume_ratio)
@@ -155,7 +155,7 @@ class BuildingIndicatorsTests {
                 "id_build = 28 ORDER BY id_build ASC"){
             row -> concat+= "${row.likelihood_large_building.round(2)}\n"
         }
-        assertEquals("0.0\n0.02\n1.0\n", concat)
+        assertEquals("0.00\n0.02\n1.00\n", concat)
     }
 
 }
