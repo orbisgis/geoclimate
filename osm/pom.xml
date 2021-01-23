@@ -45,6 +45,7 @@
         <dependency>
             <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
             <artifactId>geoindicators</artifactId>
+            <version>1.0.0-RC1</version>
         </dependency>
         <dependency>
             <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
