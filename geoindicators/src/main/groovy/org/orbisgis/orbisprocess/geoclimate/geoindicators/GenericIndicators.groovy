@@ -3,7 +3,6 @@ package org.orbisgis.orbisprocess.geoclimate.geoindicators
 import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
 import org.orbisgis.orbisdata.datamanager.jdbc.*
-import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2gisSpatialTable
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 
 @BaseScript Geoindicators geoindicators
@@ -164,7 +163,7 @@ IProcess weightedAggregatedStatistics() {
             def weightedMean = ""
             inputVarWeightsOperations.each { var, weights ->
                 weights.each { weight, operations ->
-                    nameAndType += "weighted_avg_${var}_$weight DOUBLE DEFAULT 0,"
+                    nameAndType += "weighted_avg_${var}_$weight DOUBLE PRECISION DEFAULT 0,"
                     weightedMean += "COALESCE(SUM(a.$var*a.$weight) / SUM(a.$weight),0) AS weighted_avg_${var}_$weight,"
                 }
             }
@@ -504,7 +503,7 @@ IProcess distributionCharacterization() {
 
                 if (distribIndicator.contains("equality") && !distribIndicator.contains("uniqueness")) {
                     def queryCreateTable = """CREATE TABLE $outputTableMissingSomeObjects($inputId integer, 
-                                                                    $EQUALITY DOUBLE,
+                                                                    $EQUALITY DOUBLE PRECISION,
                                                                     $EXTREMUM_COL VARCHAR)"""
                     // If the second extremum col should be conserved
                     if(keep2ndCol){
@@ -512,7 +511,7 @@ IProcess distributionCharacterization() {
                     }
                     // If the value of the extremum column should be conserved
                     if(keepColVal){
-                        queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_VAL DOUBLE)"
+                        queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_VAL DOUBLE PRECISION)"
                     }
                     datasource queryCreateTable
                     // Will insert values by batch of 1000 in the table
@@ -543,7 +542,7 @@ IProcess distributionCharacterization() {
 
                 } else if (!distribIndicator.contains("equality") && distribIndicator.contains("uniqueness")) {
                     def queryCreateTable = """CREATE TABLE $outputTableMissingSomeObjects($inputId integer, 
-                                                                    $UNIQUENESS DOUBLE,
+                                                                    $UNIQUENESS DOUBLE PRECISION,
                                                                     $EXTREMUM_COL VARCHAR)"""
                     // If the second extremum col should be conserved
                     if(keep2ndCol){
@@ -551,7 +550,7 @@ IProcess distributionCharacterization() {
                     }
                     // If the value of the extremum column should be conserved
                     if(keepColVal){
-                        queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_VAL DOUBLE)"
+                        queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_VAL DOUBLE PRECISION)"
                     }
 
                     datasource queryCreateTable
@@ -582,8 +581,8 @@ IProcess distributionCharacterization() {
                                             COALESCE(a.$EXTREMUM_COL, 'unknown') AS $EXTREMUM_COL,"""
                 } else if (distribIndicator.contains("equality") && distribIndicator.contains("uniqueness")) {
                     def queryCreateTable = """CREATE TABLE $outputTableMissingSomeObjects($inputId integer, 
-                                                                    $EQUALITY DOUBLE,
-                                                                    $UNIQUENESS DOUBLE,
+                                                                    $EQUALITY DOUBLE PRECISION,
+                                                                    $UNIQUENESS DOUBLE PRECISION,
                                                                     $EXTREMUM_COL VARCHAR)"""
                     // If the second extremum col should be conserved
                     if(keep2ndCol){
@@ -591,7 +590,7 @@ IProcess distributionCharacterization() {
                     }
                     // If the value of the extremum column should be conserved
                     if(keepColVal){
-                        queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_VAL DOUBLE)"
+                        queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_VAL DOUBLE PRECISION)"
                     }
 
                     datasource queryCreateTable

@@ -25,8 +25,8 @@ The distance of each RSU to each of the LCZ types is calculated in the normalize
 | **ID_RSU** ![](../../resources/images/common/icons/pk.png) | integer          | RSU's unique id              |
 | LCZ1                                                       | integer          | Main LCZ type                |
 | LCZ2                                                       | integer          | Secondary LCZ type           |
-| MIN_DISTANCE                                               | DOUBLE | Minimum distance to each LCZ |
-| PSS                                                        | DOUBLE | *Perkin Skill Score*         |
+| MIN_DISTANCE                                               | double precision | Minimum distance to each LCZ |
+| PSS                                                        | double precision | *Perkin Skill Score*         |
 
 
 

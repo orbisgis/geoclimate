@@ -265,7 +265,7 @@ DROP TABLE IF EXISTS $ROAD_FC_W_ZERO, $ROAD_FC_W_NULL, $ROAD_FC_W_RANGE;
 
 -- If the ZINDEX is null, then it's initialised to 0
 DROP TABLE IF EXISTS $ROAD;
-CREATE TABLE $ROAD (THE_GEOM geometry, ID_ROAD serial, ID_SOURCE varchar(24), WIDTH DOUBLE, TYPE varchar, SURFACE varchar, SIDEWALK varchar, ZINDEX integer, CROSSING varchar)
+CREATE TABLE $ROAD (THE_GEOM geometry, ID_ROAD serial, ID_SOURCE varchar(24), WIDTH DOUBLE PRECISION, TYPE varchar, SURFACE varchar, SIDEWALK varchar, ZINDEX integer, CROSSING varchar)
     AS SELECT ST_FORCE2D(THE_GEOM) as the_geom, CAST((row_number() over()) as Integer), ID_SOURCE, WIDTH, TYPE, SURFACE, SIDEWALK, CASE WHEN ZINDEX is null THEN 0 ELSE ZINDEX END, CROSSING FROM ST_EXPLODE('$INPUT_ROAD');
 
 -- Updating the width using the rule ("If null or equal to 0 then replace by the minimum width defined in the ROAD ABSTRACT_PARAMETERS table")

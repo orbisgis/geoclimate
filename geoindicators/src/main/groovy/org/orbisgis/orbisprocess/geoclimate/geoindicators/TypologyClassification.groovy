@@ -653,7 +653,7 @@ IProcess applyRandomForestModel() {
                 isDouble=true
             }
             // We need to add the name of the predicted variable in order to use the model
-            datasource.execute """ALTER TABLE $explicativeVariablesTableName ADD COLUMN $var2model ${isDouble?"DOUBLE":"INTEGER"} DEFAULT 0"""
+            datasource.execute """ALTER TABLE $explicativeVariablesTableName ADD COLUMN $var2model ${isDouble?"DOUBLE PRECISION":"INTEGER"} DEFAULT 0"""
             datasource."$explicativeVariablesTableName".reload()
 
             // The table containing explicative variables is recovered
@@ -690,7 +690,7 @@ IProcess applyRandomForestModel() {
                 try {
                     Statement outputconnectionStatement = outputconnection.createStatement();
                     outputconnectionStatement.execute("DROP TABLE IF EXISTS " + tableName);
-                    def create_table_ = "CREATE TABLE ${tableName} (${idName.toUpperCase()} INTEGER, ${var2model.toUpperCase()} ${isDouble?"DOUBLE":"INTEGER"})" ;
+                    def create_table_ = "CREATE TABLE ${tableName} (${idName.toUpperCase()} INTEGER, ${var2model.toUpperCase()} ${isDouble?"DOUBLE PRECISION":"INTEGER"})" ;
                     def insertTable = "INSERT INTO ${tableName}  VALUES(?,?)";
                     outputconnection.setAutoCommit(false);
                     outputconnectionStatement.execute(create_table_.toString());
