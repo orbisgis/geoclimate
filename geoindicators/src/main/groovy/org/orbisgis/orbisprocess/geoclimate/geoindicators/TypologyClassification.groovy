@@ -21,7 +21,6 @@ import smile.validation.Validation
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
 
-import org.orbisgis.orbisdata.datamanager.api.dataset.DataBaseType;
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.SQLException

@@ -6,7 +6,6 @@ import org.h2.tools.DeleteDbFiles
 import org.h2gis.utilities.FileUtilities
 import org.orbisgis.orbisdata.datamanager.api.dataset.ITable
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
-import org.orbisgis.orbisdata.datamanager.jdbc.io.IOMethods
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
