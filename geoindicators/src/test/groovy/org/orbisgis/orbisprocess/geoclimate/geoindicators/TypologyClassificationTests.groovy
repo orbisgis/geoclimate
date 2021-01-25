@@ -71,8 +71,8 @@ class TypologyClassificationTests {
         assert 104 == results[6]["LCZ1"]
         assert 105 == results[7]["LCZ1"]
         assert 101 == results[18]["LCZ1"]
-        assert 8 == results[19]["LCZ2"]
-        assert 4 == results[20]["LCZ2"]
+        assert 8 == results[19]["LCZ1"]
+        assert 4 == results[20]["LCZ1"]
 
         h2GIS """
                 DROP TABLE IF EXISTS buff_rsu_test_lcz_indics, buff_rsu_test_all_indics_for_lcz;
@@ -146,11 +146,11 @@ class TypologyClassificationTests {
                                        "terrain_roughness_length"       : 0.5],
                 prefixName          : "test",
                 datasource          : h2GIS])
-        assert 1 == h2GIS.firstRow("SELECT LCZ1 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 13").lcz1
-        assert 1 == h2GIS.firstRow("SELECT LCZ1 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 14").lcz1
-        assert 1 == h2GIS.firstRow("SELECT LCZ1 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 15").lcz1
-        assert 4 == h2GIS.firstRow("SELECT LCZ2 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 15").lcz2
-        assert 1 == h2GIS.firstRow("SELECT LCZ1 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 16").lcz1
+        assert 6 == h2GIS.firstRow("SELECT LCZ1 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 13").lcz1
+        assert 6 == h2GIS.firstRow("SELECT LCZ1 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 14").lcz1
+        assert 4 == h2GIS.firstRow("SELECT LCZ1 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 15").lcz1
+        assert 5 == h2GIS.firstRow("SELECT LCZ2 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 15").lcz2
+        assert 6 == h2GIS.firstRow("SELECT LCZ1 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 16").lcz1
         assert 102 == h2GIS.firstRow("SELECT LCZ1 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 17").lcz1
     }
 

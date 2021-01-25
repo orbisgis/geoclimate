@@ -6,12 +6,12 @@
     <parent>
         <groupId>org.orbisgis</groupId>
         <artifactId>orbisparent</artifactId>
-        <version>1.0.3-RC1</version>
+        <version>1.0.3-SNAPSHOT</version>
     </parent>
     <groupId>org.orbisgis.orbisprocess</groupId>
     <artifactId>geoclimate-parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.0.0-RC1</version>
+    <version>1.0.0-SNAPSHOT</version>
     <modules>
         <module>geoindicators</module>
         <module>processingchain</module>

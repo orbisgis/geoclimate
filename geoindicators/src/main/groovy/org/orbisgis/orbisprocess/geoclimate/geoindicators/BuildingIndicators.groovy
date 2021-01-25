@@ -394,7 +394,7 @@ IProcess roadDistance() {
             datasource """
                 DROP TABLE IF EXISTS $road_surf;
                 CREATE TABLE $road_surf AS 
-                    SELECT ST_BUFFER($GEOMETRIC_FIELD, $ROAD_WIDTH::double precision/2,'endcap=flat') AS $GEOMETRIC_FIELD 
+                    SELECT ST_BUFFER($GEOMETRIC_FIELD, $ROAD_WIDTH::DOUBLE/2,'endcap=flat') AS $GEOMETRIC_FIELD 
                     FROM $inputRoadTableName; 
                 CREATE INDEX IF NOT EXISTS buff_ids ON $road_surf USING RTREE($GEOMETRIC_FIELD)"""
             // The roads located within the buffer are identified

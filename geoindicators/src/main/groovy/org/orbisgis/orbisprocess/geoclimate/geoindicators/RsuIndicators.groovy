@@ -1239,7 +1239,7 @@ return create {
                 def roadTable_zindex0_buffer = postfix "road_zindex0_buffer"
                 def road_tmp = postfix "road_zindex0"
                 datasource """DROP TABLE IF EXISTS $roadTable_zindex0_buffer, $road_tmp;
-            CREATE TABLE $roadTable_zindex0_buffer as SELECT st_buffer(the_geom, WIDTH::double precision/2)
+            CREATE TABLE $roadTable_zindex0_buffer as SELECT st_buffer(the_geom, WIDTH::DOUBLE/2)
             AS the_geom
             FROM $roadTable  where ZINDEX=0 ;
             CREATE INDEX IF NOT EXISTS ids_$roadTable_zindex0_buffer ON $roadTable_zindex0_buffer USING RTREE(the_geom);

@@ -4,6 +4,7 @@ import com.thoughtworks.xstream.XStream
 import com.thoughtworks.xstream.io.xml.StaxDriver
 import groovy.transform.BaseScript
 import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.dbtypes.DBTypes
 import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
@@ -21,7 +22,6 @@ import smile.validation.Validation
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
 
-import org.orbisgis.orbisdata.datamanager.api.dataset.DataBaseType;
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.SQLException
@@ -653,7 +653,7 @@ IProcess applyRandomForestModel() {
                 isDouble=true
             }
             // We need to add the name of the predicted variable in order to use the model
-            datasource.execute """ALTER TABLE $explicativeVariablesTableName ADD COLUMN $var2model ${isDouble?"DOUBLE PRECISION":"INTEGER"} DEFAULT 0"""
+            datasource.execute """ALTER TABLE $explicativeVariablesTableName ADD COLUMN $var2model ${isDouble?"DOUBLE":"INTEGER"} DEFAULT 0"""
             datasource."$explicativeVariablesTableName".reload()
 
             // The table containing explicative variables is recovered
@@ -666,7 +666,7 @@ IProcess applyRandomForestModel() {
             def df = dfNofactorized
             // Identify columns being string (thus needed to be factorized)
             inputColumns.each{colName, colType ->
-                if(colType == "STRING" || colType=="VARCHAR" || colType=="CHARACTER VARYING"){
+                if(colType == "STRING" || colType=="VARCHAR" || colType=="VARCHAR"){
                     df = df.factorize(colName)
                 }
             }
@@ -683,14 +683,14 @@ IProcess applyRandomForestModel() {
             //TODO change this after SMILE answer's
             // Keep only the id and the value of the classification
             df = df.select(idName.toUpperCase(), var2model.toUpperCase())
-            String tableName = TableLocation.parse(outputTableName, datasource.getDataBaseType() == DataBaseType.H2GIS).toString(datasource.getDataBaseType() == DataBaseType.H2GIS);
+            String tableName = TableLocation.parse(outputTableName, datasource.getDataBaseType() == DBTypes.H2GIS).toString(datasource.getDataBaseType());
             try {
                 PreparedStatement preparedStatement = null;
                 Connection outputconnection = datasource.getConnection();
                 try {
                     Statement outputconnectionStatement = outputconnection.createStatement();
                     outputconnectionStatement.execute("DROP TABLE IF EXISTS " + tableName);
-                    def create_table_ = "CREATE TABLE ${tableName} (${idName.toUpperCase()} INTEGER, ${var2model.toUpperCase()} ${isDouble?"DOUBLE PRECISION":"INTEGER"})" ;
+                    def create_table_ = "CREATE TABLE ${tableName} (${idName.toUpperCase()} INTEGER, ${var2model.toUpperCase()} ${isDouble?"DOUBLE":"INTEGER"})" ;
                     def insertTable = "INSERT INTO ${tableName}  VALUES(?,?)";
                     outputconnection.setAutoCommit(false);
                     outputconnectionStatement.execute(create_table_.toString());

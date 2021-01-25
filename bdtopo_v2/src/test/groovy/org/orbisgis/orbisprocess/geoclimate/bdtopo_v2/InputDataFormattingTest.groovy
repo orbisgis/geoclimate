@@ -85,14 +85,14 @@ class InputDataFormattingTest {
         // Check if the column types are correct
         assertTrue(table.the_geom.spatial)
         assertEquals('INTEGER', table.columnType('ID_BUILD'))
-        assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
+        assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         assertEquals('INTEGER', table.columnType('HEIGHT_WALL'))
         assertEquals('INTEGER', table.columnType('HEIGHT_ROOF'))
         assertEquals('INTEGER', table.columnType('NB_LEV'))
-        assertEquals('CHARACTER VARYING', table.columnType('TYPE'))
-        assertEquals('CHARACTER VARYING', table.columnType('MAIN_USE'))
+        assertEquals('VARCHAR', table.columnType('TYPE'))
+        assertEquals('VARCHAR', table.columnType('MAIN_USE'))
         assertEquals('INTEGER', table.columnType('ZINDEX'))
-        assertEquals('CHARACTER VARYING', table.columnType('ID_ZONE'))
+        assertEquals('VARCHAR', table.columnType('ID_ZONE'))
 
         // For each rows, check if the fields contains the expected values
         table.eachRow(){ row ->
@@ -247,13 +247,13 @@ class InputDataFormattingTest {
         // Check if the column types are correct
         assertTrue(table.the_geom.spatial)
         assertEquals('INTEGER', table.columnType('ID_ROAD'))
-        assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
-        assertEquals('DOUBLE PRECISION', table.columnType('WIDTH'))
-        assertEquals('CHARACTER VARYING', table.columnType('TYPE'))
-        assertEquals('CHARACTER VARYING', table.columnType('SURFACE'))
-        assertEquals('CHARACTER VARYING', table.columnType('SIDEWALK'))
+        assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
+        assertEquals('DOUBLE', table.columnType('WIDTH'))
+        assertEquals('VARCHAR', table.columnType('TYPE'))
+        assertEquals('VARCHAR', table.columnType('SURFACE'))
+        assertEquals('VARCHAR', table.columnType('SIDEWALK'))
         assertEquals('INTEGER', table.columnType('ZINDEX'))
-        assertEquals('CHARACTER VARYING', table.columnType('CROSSING'))
+        assertEquals('VARCHAR', table.columnType('CROSSING'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
             assertNotNull(row.THE_GEOM)
@@ -341,10 +341,10 @@ class InputDataFormattingTest {
         // Check if the column types are correct
         assertTrue(table.the_geom.spatial)
         assertEquals('INTEGER', table.columnType('ID_RAIL'))
-        assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
-        assertEquals('CHARACTER VARYING', table.columnType('TYPE'))
+        assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
+        assertEquals('VARCHAR', table.columnType('TYPE'))
         assertEquals('INTEGER', table.columnType('ZINDEX'))
-        assertEquals('CHARACTER VARYING', table.columnType('CROSSING'))
+        assertEquals('VARCHAR', table.columnType('CROSSING'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
             assertNotNull(row.THE_GEOM)
@@ -397,7 +397,7 @@ class InputDataFormattingTest {
         // Check if the column types are correct
         assertTrue(table.the_geom.spatial)
         assertEquals('INTEGER', table.columnType('ID_HYDRO'))
-        assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
+        assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
             assertNotNull(row.THE_GEOM)
@@ -436,9 +436,9 @@ class InputDataFormattingTest {
         // Check if the column types are correct
         assertTrue(table.the_geom.spatial)
         assertEquals('INTEGER', table.columnType('ID_VEGET'))
-        assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
-        assertEquals('CHARACTER VARYING', table.columnType('TYPE'))
-        assertEquals('CHARACTER VARYING', table.columnType('HEIGHT_CLASS'))
+        assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
+        assertEquals('VARCHAR', table.columnType('TYPE'))
+        assertEquals('VARCHAR', table.columnType('HEIGHT_CLASS'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
             assertNotNull(row.THE_GEOM)
@@ -504,7 +504,7 @@ class InputDataFormattingTest {
         // Check if the column types are correct
         assertTrue(table.the_geom.spatial)
         assertEquals('INTEGER', table.columnType('ID_IMPERVIOUS'))
-        assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
+        assertEquals('VARCHAR', table.columnType('ID_SOURCE'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
             assertNotNull(row.THE_GEOM)
@@ -527,7 +527,7 @@ class InputDataFormattingTest {
         assertEquals(2, table.columnCount)
         assertEquals(1, table.rowCount)
         // Check if the column types are correct
-        assertEquals('CHARACTER VARYING', table.columnType('ID_ZONE'))
+        assertEquals('VARCHAR', table.columnType('ID_ZONE'))
         assertTrue(table.the_geom.spatial)
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->

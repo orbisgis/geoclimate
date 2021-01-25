@@ -110,7 +110,7 @@ UPDATE $INPUT_BUILDING SET TYPE=(SELECT c.TERM FROM $BUILDING_BD_TOPO_USE_TYPE b
 -- Road (from the layer "ROUTE") that are in the study area (ZONE_BUFFER)
 -------------------------------------
 DROP TABLE IF EXISTS $INPUT_ROAD;
-CREATE TABLE $INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH double precision, TYPE varchar, SURFACE varchar, SIDEWALK varchar, ZINDEX integer, CROSSING varchar)
+CREATE TABLE $INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH DOUBLE, TYPE varchar, SURFACE varchar, SIDEWALK varchar, ZINDEX integer, CROSSING varchar)
 AS SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(a.THE_GEOM) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID, a.LARGEUR, a.NATURE, '', '', a.POS_SOL, a.FRANCHISST FROM $ROUTE a, $ZONE_BUFFER b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
 CREATE INDEX ON $INPUT_ROAD USING RTREE(the_geom);
 
