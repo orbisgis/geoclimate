@@ -556,7 +556,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "osm" : ["Pont-de-Veyle"]],
                 "output" :[
                 "folder" : ["path": "$directory",
-                    "tables": ["grid_indicators"]]],
+                    "tables": ["grid_indicators", "zones"]]],
                 "parameters":
                         ["distance" : 0,
                          "grid_indicators": [
@@ -570,6 +570,9 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
+        def  grid_file = new File("${directory+File.separator}osm_Pont-de-Veyle${File.separator}grid_indicators_WATER_FRACTION.asc")
+        h2gis.execute("DROP TABLE IF EXISTS water_grid; CALL ASCREAD('${grid_file.getAbsolutePath()}', 'water_grid')")
+        assertTrue h2gis.firstRow("select count(*) as count from water_grid").count==6
     }
 
     @Disabled //Use it for debug
