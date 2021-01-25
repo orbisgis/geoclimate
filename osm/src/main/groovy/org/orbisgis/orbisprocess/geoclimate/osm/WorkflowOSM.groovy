@@ -7,6 +7,7 @@ import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.FileUtilities
 import org.h2gis.utilities.GeographyUtilities
 import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.orbisanalysis.osm.utils.Utilities
@@ -593,10 +594,15 @@ IProcess osm_processing() {
                             def x_size = grid_indicators_params.x_size
                             def y_size = grid_indicators_params.y_size
                             //Compute the grid indicators
+                            GeometryFactory gf = new GeometryFactory()
+                            def geomEnv =  gf.toGeometry(zoneTableNames.envelope)
+                            geomEnv.setSRID(4326)
                             if(grid_indicators_params){
                                     IProcess rasterizedIndicators =  ProcessingChain.GeoIndicatorsChain.rasterizeIndicators()
-                                    if(rasterizedIndicators.execute(datasource:h2gis_datasource,zoneEnvelopeTableName: zoneEnvelopeTableName,
-                                            x_size : x_size, y_size : y_size,list_indicators :grid_indicators_params.indicators,
+                                    if(rasterizedIndicators.execute(datasource:h2gis_datasource,envelope: geomEnv,
+                                            x_size : x_size, y_size : y_size,
+                                            srid : srid,
+                                            list_indicators :grid_indicators_params.indicators,
                                             buildingTable: buildingTableName, roadTable: roadTableName, vegetationTable: vegetationTableName,
                                             hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
                                             rsu_lcz:results.outputTableRsuLcz,

@@ -3,6 +3,7 @@ package org.orbisgis.orbisprocess.geoclimate.processingchain
 import groovy.transform.BaseScript
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
+import org.locationtech.jts.geom.Envelope
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
@@ -1851,14 +1852,15 @@ IProcess rasterizeIndicators() {
         title "Aggregate indicators on a grid"
         id "rasterizeIndicators"
         inputs datasource: JdbcDataSource,
-                zoneEnvelopeTableName: String,
-                x_size : Integer, y_size : Integer,list_indicators :[],
+                envelope: Envelope,
+                x_size : Integer, y_size : Integer,
+                srid : Integer,list_indicators :[],
                 buildingTable: "", roadTable: "", vegetationTable: "",
                 hydrographicTable: "", imperviousTable: "", rsu_lcz:"",
                 rsu_urban_typo_area:"",rsu_urban_typo_floor_area:"",
                 prefixName: String
         outputs outputTableName: String
-        run { datasource, zoneEnvelopeTableName, x_size, y_size,list_indicators,buildingTable, roadTable, vegetationTable,
+        run { datasource, envelope, x_size, y_size,srid,list_indicators,buildingTable, roadTable, vegetationTable,
             hydrographicTable, imperviousTable, rsu_lcz,rsu_urban_typo_area,rsu_urban_typo_floor_area, prefixName ->
             if(x_size<=0 || y_size<= 0){
                 info "Invalid grid size padding. Must be greater that 0"
@@ -1868,17 +1870,23 @@ IProcess rasterizeIndicators() {
                 info "The list of indicator names cannot be null or empty"
                 return
             }
-            if(!zoneEnvelopeTableName){
-                info "The zone envelope is null or empty. Cannot compute the grid indicators"
+            if(!envelope){
+                info "The envelope is null or empty. Cannot compute the grid indicators"
                 return
             }
             def grid_indicators_table = "grid_indicators"
             def grid_column_identifier ="id"
             //Start to compute the grid
             def gridProcess = Geoindicators.SpatialUnits.createGrid()
-            def box = datasource.getSpatialTable(zoneEnvelopeTableName).getExtent()
-            if(gridProcess.execute([geometry: box, deltaX: x_size, deltaY: y_size,  datasource: datasource])) {
+            if(gridProcess.execute([geometry: envelope, deltaX: x_size, deltaY: y_size,  datasource: datasource])) {
                 def grid_table_name = gridProcess.results.outputTableName
+                //Reproject the grid in the local UTM
+                if(envelope.getSRID()==4326){
+                    def reprojectedGrid =  postfix("grid")
+                    datasource.execute """drop table if exists $reprojectedGrid; 
+                    create table $reprojectedGrid as  select st_transform(the_geom, $srid) as the_geom, id, id_col, id_row from $grid_table_name""";
+                    grid_table_name = reprojectedGrid
+                }
                 def indicatorTablesToJoin = [:]
                 indicatorTablesToJoin.put(grid_table_name, grid_column_identifier)
                 /*

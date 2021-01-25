@@ -20,6 +20,7 @@ import smile.validation.RMSE
 import smile.validation.Validation
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
+import org.h2gis.utilities.dbtypes.DBTypes
 
 import java.sql.Connection
 import java.sql.PreparedStatement
@@ -682,7 +683,7 @@ IProcess applyRandomForestModel() {
             //TODO change this after SMILE answer's
             // Keep only the id and the value of the classification
             df = df.select(idName.toUpperCase(), var2model.toUpperCase())
-            String tableName = TableLocation.parse(outputTableName, datasource.getDataBaseType() == DataBaseType.H2GIS).toString(datasource.getDataBaseType() == DataBaseType.H2GIS);
+            String tableName = TableLocation.parse(outputTableName, datasource.getDataBaseType() == DBTypes.H2GIS).toString(datasource.getDataBaseType() == DBTypes.H2GIS);
             try {
                 PreparedStatement preparedStatement = null;
                 Connection outputconnection = datasource.getConnection();
