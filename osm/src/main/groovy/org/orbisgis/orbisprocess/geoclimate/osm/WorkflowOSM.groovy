@@ -591,14 +591,16 @@ IProcess osm_processing() {
                                      results.putAll(geoIndicators.getResults())
                                 }
                             }
-                            def x_size = grid_indicators_params.x_size
-                            def y_size = grid_indicators_params.y_size
-                            //Compute the grid indicators
+                            def x_size =-1
+                            def y_size=-1
+                                    //Compute the grid indicators
                             GeometryFactory gf = new GeometryFactory()
                             def geomEnv =  gf.toGeometry(zoneTableNames.envelope)
                             geomEnv.setSRID(4326)
                             if(grid_indicators_params){
-                                    IProcess rasterizedIndicators =  ProcessingChain.GeoIndicatorsChain.rasterizeIndicators()
+                                x_size = grid_indicators_params.x_size
+                                y_size = grid_indicators_params.y_size
+                                IProcess rasterizedIndicators =  ProcessingChain.GeoIndicatorsChain.rasterizeIndicators()
                                     if(rasterizedIndicators.execute(datasource:h2gis_datasource,envelope: geomEnv,
                                             x_size : x_size, y_size : y_size,
                                             srid : srid,
@@ -1153,7 +1155,7 @@ def saveTableToAsciiGrid(def outputTable , def subFolder,def filePrefix, def h2g
 
             //Save each grid
             columnNames.each { it ->
-                def outputFile = new File("${subFolder.getAbsolutePath() + File.separator + filePrefix + "_" + it}.asc")
+                def outputFile = new File("${subFolder.getAbsolutePath() + File.separator + filePrefix + "_" + it.toLowerCase()}.asc")
                 if (deleteOutputData) {
                     outputFile.delete()
                 }
