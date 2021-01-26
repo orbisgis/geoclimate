@@ -1004,8 +1004,8 @@ IProcess formatSeaLandMask() {
                         a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom);     
                         
                         CREATE TABLE $islands_mark (the_geom GEOMETRY, ID SERIAL) AS 
-                       SELECT the_geom, CAST((row_number() over()) as Integer) FROM st_explode('(  
-                       SELECT ST_LINEMERGE(st_accum(THE_GEOM)) AS the_geom FROM $coastLinesIntersects)') where  st_isclosed(the_geom)=false
+                       SELECT the_geom, NULL FROM st_explode('(  
+                       SELECT ST_LINEMERGE(st_accum(THE_GEOM)) AS the_geom, NULL FROM $coastLinesIntersects)')
                         ;                   
 
                         CREATE TABLE $mergingDataTable  AS
@@ -1019,7 +1019,7 @@ IProcess formatSeaLandMask() {
                         
                         CREATE TABLE $coastLinesPoints as  SELECT ST_LocateAlong(the_geom, 0.5, -0.01) AS the_geom FROM 
                         st_explode('(select ST_GeometryN(ST_ToMultiSegments(st_intersection(a.the_geom, b.the_geom)), 1) as the_geom from $islands_mark as a,
-                        $inputZoneEnvelopeTableName as b WHERE st_isclosed(a.the_geom) = false and a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom))');
+                        $inputZoneEnvelopeTableName as b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom))');
     
                         CREATE TABLE $coastLinesIntersectsPoints as  SELECT the_geom FROM st_explode('$coastLinesPoints'); 
 

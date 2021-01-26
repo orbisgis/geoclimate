@@ -7,6 +7,7 @@ import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.FileUtilities
 import org.h2gis.utilities.GeographyUtilities
 import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.orbisanalysis.osm.utils.Utilities
@@ -18,6 +19,7 @@ import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
 import org.orbisgis.orbisanalysis.osm.OSMTools
+import org.h2gis.functions.io.utility.PRJUtil;
 
 import java.sql.Connection
 import java.sql.SQLException
@@ -554,6 +556,7 @@ IProcess osm_processing() {
 
                             //Add the GIS layers to the list of results
                             def results = [:]
+                            results.put("outputTableZone", zoneTableName)
                             results.put("roadTableName", roadTableName)
                             results.put("railTableName", railTableName)
                             results.put("hydrographicTableName", hydrographicTableName)
@@ -588,14 +591,20 @@ IProcess osm_processing() {
                                      results.putAll(geoIndicators.getResults())
                                 }
                             }
-
-                            //Compute the grid indicators
+                            def x_size
+                            def y_size
+                                    //Compute the grid indicators
+                            GeometryFactory gf = new GeometryFactory()
+                            def geomEnv =  gf.toGeometry(zoneTableNames.envelope)
+                            geomEnv.setSRID(4326)
                             if(grid_indicators_params){
-                                    def x_size = grid_indicators_params.x_size
-                                    def y_size = grid_indicators_params.y_size
-                                    IProcess rasterizedIndicators =  ProcessingChain.GeoIndicatorsChain.rasterizeIndicators()
-                                    if(rasterizedIndicators.execute(datasource:h2gis_datasource,zoneEnvelopeTableName: zoneEnvelopeTableName,
-                                            x_size : x_size, y_size : y_size,list_indicators :grid_indicators_params.indicators,
+                                x_size = grid_indicators_params.x_size
+                                y_size = grid_indicators_params.y_size
+                                IProcess rasterizedIndicators =  ProcessingChain.GeoIndicatorsChain.rasterizeIndicators()
+                                    if(rasterizedIndicators.execute(datasource:h2gis_datasource,envelope: geomEnv,
+                                            x_size : x_size, y_size : y_size,
+                                            srid : srid,
+                                            list_indicators :grid_indicators_params.indicators,
                                             buildingTable: buildingTableName, roadTable: roadTableName, vegetationTable: vegetationTableName,
                                             hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
                                             rsu_lcz:results.outputTableRsuLcz,
@@ -607,7 +616,8 @@ IProcess osm_processing() {
                                     }
                             }
                             if (outputFolder  && ouputTableFiles) {
-                                saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject, deleteOutputData)
+                                saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject, deleteOutputData, x_size, y_size)
+
                             }
                             if (output_datasource) {
                                 saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone, srid, outputSRID, reproject)
@@ -1033,9 +1043,11 @@ def extractProcessingParameters(def processing_parameters){
  * @param outputSRID srid code to reproject the result
  * @param reproject  true if the file must reprojected
  * @param deleteOutputData delete the files if exist
+ * @param x_size of the grid indicators
+ * @param y_size of the grid indicators
  * @return
  */
-def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFiles, def ouputFolder, def subFolderName, def outputSRID, def reproject, def deleteOutputData){
+def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFiles, def ouputFolder, def subFolderName, def outputSRID, def reproject, def deleteOutputData, def x_size, def  y_size){
     //Create a subfolder to store each results
     def folderName = id_zone in Map?id_zone.join("_"):id_zone
     def subFolder = new File(ouputFolder.getAbsolutePath()+File.separator+subFolderName+folderName)
@@ -1091,13 +1103,85 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
             saveTableAsGeojson(results.outputTableBuildingUrbanTypo, "${subFolder.getAbsolutePath()+File.separator+"building_urban_typo"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else if(it.equals("grid_indicators")){
-            saveTableAsGeojson(results.grid_indicators, "${subFolder.getAbsolutePath()+File.separator+"grid_indicators"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+            if(!x_size ||!y_size || x_size!=y_size){
+                saveTableAsGeojson(results.grid_indicators, "${subFolder.getAbsolutePath()+File.separator+"grid_indicators"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+            }
+            else{
+                saveTableToAsciiGrid(results.grid_indicators, subFolder, "grid_indicators", h2gis_datasource,outputSRID,reproject,deleteOutputData, x_size)
+            }
         }
         else if(it.equals("sea_land_mask")){
             saveTableAsGeojson(results.seaLandMaskTableName, "${subFolder.getAbsolutePath()+File.separator+"sea_land_mask"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
     }
 }
+
+/**
+ * Method to export a table corresponding to a grid with indicators in as many ESRI ASCII grid files as indicators
+ * @param h2gis_table_to_save
+ * @param h2gis_datasource
+ * @param output_files_generic_name
+ * @return
+ */
+def saveTableToAsciiGrid(def outputTable , def subFolder,def filePrefix, def h2gis_datasource,def outputSRID, def reproject, def deleteOutputData,def x_size) {
+   //Check if the table exists
+    if(outputTable && h2gis_datasource.hasTable(outputTable)) {
+        def env;
+        if (!reproject) {
+            env = h2gis_datasource.getSpatialTable(outputTable).getExtent().getEnvelopeInternal();
+        } else {
+            def geom = h2gis_datasource.firstRow("SELECT st_transform(ST_EXTENT(the_geom), $outputSRID.toInteger()) as geom from $h2gis_table_to_save").geom
+            if (geom) {
+                env = geom.getEnvelopeInternal();
+            }
+        }
+        if (env) {
+            def xmin = env.getMinX()
+            def ymin = env.getMinY()
+            def nbColsRowS = h2gis_datasource.firstRow("select max(id_col) as cmax, max(id_row) as rmax from $outputTable")
+            def nbcols = nbColsRowS.cmax
+            def nbrows = nbColsRowS.rmax
+
+            def IndicsTable = h2gis_datasource."$outputTable"
+            List columnNames = IndicsTable.columns
+            columnNames.remove("THE_GEOM")
+            columnNames.remove("ID")
+            columnNames.remove("ID_COL")
+            columnNames.remove("ID_ROW")
+
+            //Add indexes
+            h2gis_datasource.getTable(outputTable)."ID_COL".createIndex()
+            h2gis_datasource.getTable(outputTable)."ID_ROW".createIndex()
+
+            //Save each grid
+            columnNames.each { it ->
+                def outputFile = new File("${subFolder.getAbsolutePath() + File.separator + filePrefix + "_" + it.toLowerCase()}.asc")
+                if (deleteOutputData) {
+                    outputFile.delete()
+                }
+                outputFile.withOutputStream { stream ->
+                    stream << "ncols $nbcols\nnrows $nbrows\nxllcorner $xmin\nyllcorner $ymin\ncellsize $x_size\nnodata_value -9999\n"
+                    def query = "select id_row, id_col, $it from $outputTable order by id_row, id_col"
+                    def rowData = ""
+                    h2gis_datasource.eachRow(query) { row ->
+                        rowData += row.getString(it) + " "
+                        if (row.getInt("id_col") == nbcols) {
+                            rowData += "\n"
+                            stream << rowData
+                            rowData = ""
+                        }
+                    }
+                }
+                //Save the PRJ file
+                if(outputSRID.toInteger()>=0) {
+                    File outPrjFile = new File("${subFolder.getAbsolutePath() + File.separator + filePrefix + "_" + it}.prj")
+                    PRJUtil.writePRJ(h2gis_datasource.getConnection(), outputSRID.toInteger(),outPrjFile)
+                }
+                info "$outputTable has been saved in ${filePrefix + "_" + it}.asc"
+            }
+        }
+    }
+    }
 
 /**
  * Method to save a table into a geojson file

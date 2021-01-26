@@ -1223,8 +1223,11 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
                 def x_size = grid_indicators_params.x_size
                 def y_size = grid_indicators_params.y_size
                 IProcess rasterizedIndicators =  ProcessingChain.GeoIndicatorsChain.rasterizeIndicators()
-                if(rasterizedIndicators.execute(datasource:h2gis_datasource,zoneEnvelopeTableName: zoneTableName,
-                        x_size : x_size, y_size : y_size,list_indicators :grid_indicators_params.indicators,
+                def geomEnv = h2gis_datasource.getSpatialTable(zoneTableName).getExtent()
+                if(rasterizedIndicators.execute(datasource:h2gis_datasource,envelope: geomEnv,
+                        x_size : x_size, y_size : y_size,
+                        srid : srid,
+                        list_indicators :grid_indicators_params.indicators,
                         buildingTable: buildingTableName, roadTable: roadTableName, vegetationTable: vegetationTableName,
                         hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
                         rsu_lcz:results.outputTableRsuLcz,

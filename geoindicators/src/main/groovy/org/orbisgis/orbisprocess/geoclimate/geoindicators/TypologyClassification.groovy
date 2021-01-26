@@ -21,6 +21,7 @@ import smile.validation.RMSE
 import smile.validation.Validation
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
+import org.h2gis.utilities.dbtypes.DBTypes
 
 import java.sql.Connection
 import java.sql.PreparedStatement
