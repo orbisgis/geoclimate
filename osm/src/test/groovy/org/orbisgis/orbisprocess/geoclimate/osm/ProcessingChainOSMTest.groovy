@@ -556,7 +556,8 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "osm" : ["Pont-de-Veyle"]],
                 "output" :[
                 "folder" : ["path": "$directory",
-                    "tables": ["grid_indicators", "zones"]]],
+                    "tables": ["grid_indicators", "zones"]],
+                "srid":4326],
                 "parameters":
                         ["distance" : 0,
                          "grid_indicators": [
