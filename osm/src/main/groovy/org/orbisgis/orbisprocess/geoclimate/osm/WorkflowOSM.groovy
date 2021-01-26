@@ -221,8 +221,9 @@ IProcess workflow() {
                             return
                         }
                         def outputSRID = output.get("srid")
-                        if(outputSRID && outputSRID.isInteger()){
-                            outputSRID = outputSRID.toInteger()
+                        if(!outputSRID && outputSRID>=0){
+                            error "The ouput srid must be greater or equal than 0"
+                            return null
                         }
                         def outputDataBase = output.get("database")
                         def outputFolder = output.get("folder")
@@ -420,7 +421,7 @@ IProcess osm_processing() {
         title "Build OSM data and compute the geoindicators"
         id "osm_processing"
         inputs h2gis_datasource: JdbcDataSource, processing_parameters: Map, id_zones: Map,
-                outputFolder: "", ouputTableFiles: "", output_datasource: "", outputTableNames: "", outputSRID : String, downloadAllOSMData : true,deleteOutputData:true
+                outputFolder: "", ouputTableFiles: "", output_datasource: "", outputTableNames: "", outputSRID : Integer, downloadAllOSMData : true,deleteOutputData:true
         outputs outputMessage: String
         run { h2gis_datasource, processing_parameters, id_zones, outputFolder, ouputTableFiles, output_datasource, outputTableNames, outputSRID, downloadAllOSMData,deleteOutputData ->
              // Temporary tables
@@ -1130,7 +1131,7 @@ def saveTableToAsciiGrid(def outputTable , def subFolder,def filePrefix, def h2g
         if (!reproject) {
             env = h2gis_datasource.getSpatialTable(outputTable).getExtent().getEnvelopeInternal();
         } else {
-            def geom = h2gis_datasource.firstRow("SELECT st_transform(ST_EXTENT(the_geom), $outputSRID.toInteger()) as geom from $h2gis_table_to_save").geom
+            def geom = h2gis_datasource.firstRow("SELECT st_transform(ST_EXTENT(the_geom), $outputSRID) as geom from $h2gis_table_to_save").geom
             if (geom) {
                 env = geom.getEnvelopeInternal();
             }
@@ -1173,9 +1174,9 @@ def saveTableToAsciiGrid(def outputTable , def subFolder,def filePrefix, def h2g
                     }
                 }
                 //Save the PRJ file
-                if(outputSRID.toInteger()>=0) {
+                if(outputSRID>=0) {
                     File outPrjFile = new File("${subFolder.getAbsolutePath() + File.separator + filePrefix + "_" + it}.prj")
-                    PRJUtil.writePRJ(h2gis_datasource.getConnection(), outputSRID.toInteger(),outPrjFile)
+                    PRJUtil.writePRJ(h2gis_datasource.getConnection(), outputSRID,outPrjFile)
                 }
                 info "$outputTable has been saved in ${filePrefix + "_" + it}.asc"
             }
@@ -1198,7 +1199,7 @@ def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource,def o
         h2gis_datasource.save(outputTable, filePath,deleteOutputData)
         }else{
             if(h2gis_datasource.getTable(outputTable).getRowCount()>0){
-            h2gis_datasource.getSpatialTable(outputTable).reproject(outputSRID.toInteger()).save(filePath, deleteOutputData)
+            h2gis_datasource.getSpatialTable(outputTable).reproject(outputSRID).save(filePath, deleteOutputData)
             }
         }
         info "${outputTable} has been saved in ${filePath}."
