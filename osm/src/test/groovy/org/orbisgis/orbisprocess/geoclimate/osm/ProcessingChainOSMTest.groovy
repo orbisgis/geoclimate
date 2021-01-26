@@ -320,7 +320,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "osm" : ["Pont-de-Veyle"]],
                 "output" :[
                         "folder" : "${directory}",
-                        "srid":"4326"],
+                        "srid":4326],
                 "parameters":
                         ["distance" : 0,
                          rsu_indicators: ["indicatorUse": ["LCZ"],
@@ -609,6 +609,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
+
     @Disabled //Use it for debug SLIM copernicus
     @Test
     void testIntegrationSlim() {
@@ -625,7 +626,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 ],
                 "input" : [
                         "osm" : [[
-                                         52.08484801362273, -10.75003575696209, 52.001518013622736, -10.66670575696209
+                                         47.5850280136227326, -2.8336857569620904, 47.6683580136227292, -2.7503557569620902
                                  ]]],
                 "output" :["folder" : "$directory"]
                 ,

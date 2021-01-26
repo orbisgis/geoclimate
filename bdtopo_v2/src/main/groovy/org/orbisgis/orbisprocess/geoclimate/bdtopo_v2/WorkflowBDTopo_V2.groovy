@@ -237,8 +237,9 @@ IProcess workflow() {
                                 return null
                             }
                             def outputSRID = output.get("srid")
-                            if(outputSRID && outputSRID.isInteger()){
-                                outputSRID = outputSRID.toInteger()
+                            if(outputSRID && outputSRID>=0){
+                                error "The ouput srid must be greater or equal than 0"
+                                return null
                             }
                             if (outputDataBase && outputFolder) {
                                 def outputFolderProperties = outputFolderProperties(outputFolder)
@@ -404,8 +405,9 @@ IProcess workflow() {
                                 return
                             }
                             def outputSRID = output.get("srid")
-                            if(outputSRID && outputSRID.isInteger()){
-                                outputSRID = outputSRID.toInteger()
+                            if(!outputSRID && outputSRID>=0){
+                                error "The ouput srid must be greater or equal than 0"
+                                return null
                             }
                             def outputDataBase = output.database
                             def outputFolder = output.folder
@@ -1332,7 +1334,7 @@ def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource,def o
         if(!reproject){
             h2gis_datasource.save(outputTable, filePath, deleteOutputData)
         }else{
-            h2gis_datasource.getSpatialTable(outputTable).reproject(outputSRID.toInteger()).save(filePath,deleteOutputData)
+            h2gis_datasource.getSpatialTable(outputTable).reproject(outputSRID).save(filePath,deleteOutputData)
         }
         info "${outputTable} has been saved in ${filePath}."
     }
