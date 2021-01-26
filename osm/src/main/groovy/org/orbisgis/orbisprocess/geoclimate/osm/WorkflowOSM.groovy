@@ -591,8 +591,8 @@ IProcess osm_processing() {
                                      results.putAll(geoIndicators.getResults())
                                 }
                             }
-                            def x_size =-1
-                            def y_size=-1
+                            def x_size
+                            def y_size
                                     //Compute the grid indicators
                             GeometryFactory gf = new GeometryFactory()
                             def geomEnv =  gf.toGeometry(zoneTableNames.envelope)
@@ -1103,7 +1103,7 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
             saveTableAsGeojson(results.outputTableBuildingUrbanTypo, "${subFolder.getAbsolutePath()+File.separator+"building_urban_typo"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else if(it.equals("grid_indicators")){
-            if(x_size!=y_size){
+            if(!x_size ||!y_size || x_size!=y_size){
                 saveTableAsGeojson(results.grid_indicators, "${subFolder.getAbsolutePath()+File.separator+"grid_indicators"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
             }
             else{

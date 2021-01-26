@@ -1862,7 +1862,7 @@ IProcess rasterizeIndicators() {
         outputs outputTableName: String
         run { datasource, envelope, x_size, y_size,srid,list_indicators,buildingTable, roadTable, vegetationTable,
             hydrographicTable, imperviousTable, rsu_lcz,rsu_urban_typo_area,rsu_urban_typo_floor_area, prefixName ->
-            if(x_size<=0 || y_size<= 0){
+            if(!x_size ||!y_size || x_size<=0 || y_size<= 0){
                 info "Invalid grid size padding. Must be greater that 0"
                 return
             }
