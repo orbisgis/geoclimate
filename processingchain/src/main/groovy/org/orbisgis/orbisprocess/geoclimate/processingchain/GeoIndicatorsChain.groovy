@@ -3,6 +3,7 @@ package org.orbisgis.orbisprocess.geoclimate.processingchain
 import groovy.transform.BaseScript
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
+import org.locationtech.jts.geom.Envelope
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
@@ -904,11 +905,11 @@ IProcess createUnitsOfAnalysis() {
         id "createUnitsOfAnalysis"
         inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
                 roadTable: String, railTable: String, vegetationTable: String,
-                hydrographicTable: String, surface_vegetation: 10000, surface_hydro: 2500,
+                hydrographicTable: String, seaLandMaskTableName: "", surface_vegetation: 10000, surface_hydro: 2500,
                 snappingTolerance: 0.01d, prefixName: "", indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"]
         outputs outputTableBuildingName: String, outputTableBlockName: String, outputTableRsuName: String
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
-              surface_vegetation, surface_hydro, snappingTolerance, prefixName, indicatorUse ->
+            seaLandMaskTableName, surface_vegetation, surface_hydro, snappingTolerance, prefixName, indicatorUse ->
             info "Create the units of analysis..."
             // Create the RSU
             def prepareRSUData = Geoindicators.SpatialUnits.prepareRSUData()
@@ -918,6 +919,7 @@ IProcess createUnitsOfAnalysis() {
                                  railTable         : railTable,
                                  vegetationTable   : vegetationTable,
                                  hydrographicTable : hydrographicTable,
+                                 seaLandMaskTableName :seaLandMaskTableName,
                                  surface_vegetation: surface_vegetation,
                                  surface_hydro     : surface_hydro,
                                  prefixName        : prefixName])) {
@@ -1021,7 +1023,7 @@ IProcess computeAllGeoIndicators() {
         inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
                 roadTable: "", railTable: "", vegetationTable: "",
                 hydrographicTable: "", imperviousTable: "",
-                buildingEstimateTableName :"",
+                buildingEstimateTableName :"",seaLandMaskTableName:"",
                 surface_vegetation: 10000, surface_hydro: 2500,
                 snappingTolerance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified: false, prefixName: "",
                 mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
@@ -1034,11 +1036,11 @@ IProcess computeAllGeoIndicators() {
                 outputTableRsuUrbanTypoArea: String, outputTableRsuUrbanTypoFloorArea: String,
                 outputTableBuildingUrbanTypo: String, buildingTableName :String
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
-              imperviousTable,buildingEstimateTableName,
+              imperviousTable,buildingEstimateTableName,seaLandMaskTableName,
               surface_vegetation, surface_hydro, snappingTolerance, indicatorUse, svfSimplified, prefixName, mapOfWeights,
               urbanTypoModelName, buildingHeightModelName ->
             //Estimate height
-            if (buildingHeightModelName) {
+            if (buildingHeightModelName && datasource.getTable(buildingTable).getRowCount()>0) {
                 def start = System.currentTimeMillis()
                 enableTableCache()
                 if (!buildingEstimateTableName) {
@@ -1073,6 +1075,7 @@ IProcess computeAllGeoIndicators() {
                         roadTable: roadTable,
                         railTable: railTable, vegetationTable: vegetationTable,
                         hydrographicTable: hydrographicTable, imperviousTable: imperviousTable,
+                        seaLandMaskTableName :seaLandMaskTableName,
                         surface_vegetation: surface_vegetation, surface_hydro: surface_hydro,
                         indicatorUse: ["URBAN_TYPOLOGY"],
                         svfSimplified: true, prefixName: prefixName,
@@ -1473,6 +1476,7 @@ IProcess computeAllGeoIndicators() {
                         roadTable: roadTable,
                         railTable: railTable, vegetationTable: vegetationTable,
                         hydrographicTable: hydrographicTable, imperviousTable: imperviousTable,
+                        seaLandMaskTableName: seaLandMaskTableName,
                         surface_vegetation: surface_vegetation, surface_hydro: surface_hydro,
                         indicatorUse: indicatorUse,
                         svfSimplified: svfSimplified, prefixName: prefixName,
@@ -1509,7 +1513,8 @@ IProcess computeGeoclimateIndicators() {
         id "computeAllGeoIndicators"
         inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
                 roadTable: "", railTable: "", vegetationTable: "",
-                hydrographicTable: "", imperviousTable: "", surface_vegetation: 10000, surface_hydro: 2500,
+                hydrographicTable: "", imperviousTable: "",
+                seaLandMaskTableName :"", surface_vegetation: 10000, surface_hydro: 2500,
                 snappingTolerance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified: false, prefixName: "",
                 mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
@@ -1520,7 +1525,7 @@ IProcess computeGeoclimateIndicators() {
                 outputTableRsuUrbanTypoArea: String, outputTableRsuUrbanTypoFloorArea: String,
                 outputTableBuildingUrbanTypo: String
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
-              imperviousTable,
+              imperviousTable,seaLandMaskTableName,
               surface_vegetation, surface_hydro, snappingTolerance, indicatorUse, svfSimplified, prefixName, mapOfWeights,
                urbanTypoModelName ->
             info "Start computing the geoindicators..."
@@ -1554,7 +1559,8 @@ IProcess computeGeoclimateIndicators() {
             if (!spatialUnits.execute([datasource       : datasource, zoneTable: zoneTable,
                                        buildingTable    : buildingTable, roadTable: roadTable,
                                        railTable        : railTable, vegetationTable: vegetationTable,
-                                       hydrographicTable: hydrographicTable, surface_vegetation: surface_vegetation,
+                                       hydrographicTable: hydrographicTable, seaLandMaskTableName:seaLandMaskTableName,
+                                       surface_vegetation: surface_vegetation,
                                        surface_hydro    : surface_hydro, snappingTolerance: snappingTolerance,
                                        prefixName       : prefixName,
                                        indicatorUse     : indicatorUse])) {
@@ -1846,16 +1852,17 @@ IProcess rasterizeIndicators() {
         title "Aggregate indicators on a grid"
         id "rasterizeIndicators"
         inputs datasource: JdbcDataSource,
-                zoneEnvelopeTableName: String,
-                x_size : Integer, y_size : Integer,list_indicators :[],
+                envelope: Envelope,
+                x_size : Integer, y_size : Integer,
+                srid : Integer,list_indicators :[],
                 buildingTable: "", roadTable: "", vegetationTable: "",
                 hydrographicTable: "", imperviousTable: "", rsu_lcz:"",
                 rsu_urban_typo_area:"",rsu_urban_typo_floor_area:"",
                 prefixName: String
         outputs outputTableName: String
-        run { datasource, zoneEnvelopeTableName, x_size, y_size,list_indicators,buildingTable, roadTable, vegetationTable,
+        run { datasource, envelope, x_size, y_size,srid,list_indicators,buildingTable, roadTable, vegetationTable,
             hydrographicTable, imperviousTable, rsu_lcz,rsu_urban_typo_area,rsu_urban_typo_floor_area, prefixName ->
-            if(x_size<=0 || y_size<= 0){
+            if(!x_size ||!y_size || x_size<=0 || y_size<= 0){
                 info "Invalid grid size padding. Must be greater that 0"
                 return
             }
@@ -1863,17 +1870,23 @@ IProcess rasterizeIndicators() {
                 info "The list of indicator names cannot be null or empty"
                 return
             }
-            if(!zoneEnvelopeTableName){
-                info "The zone envelope is null or empty. Cannot compute the grid indicators"
+            if(!envelope){
+                info "The envelope is null or empty. Cannot compute the grid indicators"
                 return
             }
             def grid_indicators_table = "grid_indicators"
             def grid_column_identifier ="id"
             //Start to compute the grid
             def gridProcess = Geoindicators.SpatialUnits.createGrid()
-            def box = datasource.getSpatialTable(zoneEnvelopeTableName).getExtent()
-            if(gridProcess.execute([geometry: box, deltaX: x_size, deltaY: y_size,  datasource: datasource])) {
+            if(gridProcess.execute([geometry: envelope, deltaX: x_size, deltaY: y_size,  datasource: datasource])) {
                 def grid_table_name = gridProcess.results.outputTableName
+                //Reproject the grid in the local UTM
+                if(envelope.getSRID()==4326){
+                    def reprojectedGrid =  postfix("grid")
+                    datasource.execute """drop table if exists $reprojectedGrid; 
+                    create table $reprojectedGrid as  select st_transform(the_geom, $srid) as the_geom, id, id_col, id_row from $grid_table_name""";
+                    grid_table_name = reprojectedGrid
+                }
                 def indicatorTablesToJoin = [:]
                 indicatorTablesToJoin.put(grid_table_name, grid_column_identifier)
                 /*

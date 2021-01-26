@@ -108,10 +108,10 @@ IProcess prepareRSUData() {
         title "Prepare the abstract model to build the RSU"
         id "prepareRSUData"
         inputs zoneTable: "", roadTable: "", railTable: "",
-                vegetationTable: "", hydrographicTable: "", surface_vegetation: 10000,
+                vegetationTable: "", hydrographicTable: "", seaLandMaskTableName :"", surface_vegetation: 10000,
                 surface_hydro: 2500, prefixName: "unified_abstract_model", datasource: JdbcDataSource
         outputs outputTableName: String
-        run { zoneTable, roadTable, railTable, vegetationTable, hydrographicTable, surface_vegetation,
+        run { zoneTable, roadTable, railTable, vegetationTable, hydrographicTable, seaLandMaskTableName, surface_vegetation,
               surface_hydrographic, prefixName, datasource ->
 
             def BASE_NAME = "prepared_rsu_data"
@@ -136,6 +136,13 @@ IProcess prepareRSUData() {
 
             if (numberZone == 1) {
                 def epsg = datasource."$zoneTable".srid
+                //Add the land mask
+                if (seaLandMaskTableName && datasource.hasTable(seaLandMaskTableName)) {
+                    if (datasource."$seaLandMaskTableName") {
+                        info "Preparing land mask..."
+                        queryCreateOutputTable += [land_mask_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $seaLandMaskTableName where type ='land')"]
+                    }
+                }
                 if (vegetationTable && datasource.hasTable(vegetationTable)) {
                     if (datasource."$vegetationTable") {
                         info "Preparing vegetation..."
@@ -252,7 +259,6 @@ IProcess prepareRSUData() {
                     datasource """DROP TABLE if exists $outputTableName;
             CREATE TABLE $outputTableName(the_geom GEOMETRY) AS (SELECT st_setsrid(ST_ToMultiLine(THE_GEOM),$epsg) 
             FROM $zoneTable);"""
-
                 }
                 if (dropTableList) {
                     datasource "DROP TABLE IF EXISTS ${dropTableList.join(',')};"
@@ -348,7 +354,7 @@ IProcess createBlocks() {
 
             datasource """DROP TABLE IF EXISTS $outputTableName; 
         CREATE TABLE $outputTableName ($columnIdName SERIAL, THE_GEOM GEOMETRY) 
-        AS (SELECT null, st_force2d(st_buffer(ST_MAKEVALID(THE_GEOM), 0)) as the_geom FROM $subGraphBlocks) UNION ALL (SELECT null, st_force2d(ST_MAKEVALID(a.the_geom)) as the_geom FROM $inputTableName a 
+        AS (SELECT null, st_force2d(ST_MAKEVALID(THE_GEOM)) as the_geom FROM $subGraphBlocks) UNION ALL (SELECT null, st_force2d(ST_MAKEVALID(a.the_geom)) as the_geom FROM $inputTableName a 
         LEFT JOIN $subGraphTableNodes b ON a.id_build = b.NODE_ID WHERE b.NODE_ID IS NULL);"""
 
             // Temporary tables are deleted
@@ -423,8 +429,8 @@ IProcess spatialJoin() {
                                                             WHERE a.$GEOMETRIC_COLUMN_SOURCE && b.$GEOMETRIC_COLUMN_TARGET AND 
                                                                  ST_INTERSECTS(a.$GEOMETRIC_COLUMN_SOURCE, 
                                                                                             b.$GEOMETRIC_COLUMN_TARGET) 
-                                                        ORDER BY ST_AREA(ST_INTERSECTION(ST_PRECISIONREDUCER(a.$GEOMETRIC_COLUMN_SOURCE, 3),
-                                                                                         ST_PRECISIONREDUCER(b.$GEOMETRIC_COLUMN_TARGET,3)))
+                                                        ORDER BY ST_AREA(ST_INTERSECTION(ST_BUFFER(ST_PRECISIONREDUCER(a.$GEOMETRIC_COLUMN_SOURCE, 3),0),
+                                                                                         ST_BUFFER(ST_PRECISIONREDUCER(b.$GEOMETRIC_COLUMN_TARGET,3),0)))
                                                         DESC LIMIT $nbRelations) AS $idColumnTarget 
                                             FROM $sourceTable a"""
                 } else {

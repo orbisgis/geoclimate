@@ -6,7 +6,6 @@ import org.h2.tools.DeleteDbFiles
 import org.h2gis.utilities.FileUtilities
 import org.orbisgis.orbisdata.datamanager.api.dataset.ITable
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
-import org.orbisgis.orbisdata.datamanager.jdbc.io.IOMethods
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
@@ -397,7 +396,8 @@ IProcess workflow() {
                                                          "urban_areas",
                                                          "rsu_urban_typo_area",
                                                          "rsu_urban_typo_floor_area",
-                                                         "building_urban_typo"]
+                                                         "building_urban_typo",
+                                                         "grid_indicators"]
                             //Get processing parameters
                             def processing_parameters = extractProcessingParameters(parameters.parameters)
                             if(!processing_parameters){
@@ -690,7 +690,8 @@ def outputFolderProperties(def outputFolder){
                         "impervious",
                         "rsu_urban_typo_area",
                         "rsu_urban_typo_floor_area",
-                        "building_urban_typo"]
+                        "building_urban_typo",
+                        "grid_indicators"]
 
     if(outputFolder in Map){
         def outputPath = outputFolder.path
@@ -1222,8 +1223,11 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
                 def x_size = grid_indicators_params.x_size
                 def y_size = grid_indicators_params.y_size
                 IProcess rasterizedIndicators =  ProcessingChain.GeoIndicatorsChain.rasterizeIndicators()
-                if(rasterizedIndicators.execute(datasource:h2gis_datasource,zoneEnvelopeTableName: zoneTableName,
-                        x_size : x_size, y_size : y_size,list_indicators :grid_indicators_params.indicators,
+                def geomEnv = h2gis_datasource.getSpatialTable(zoneTableName).getExtent()
+                if(rasterizedIndicators.execute(datasource:h2gis_datasource,envelope: geomEnv,
+                        x_size : x_size, y_size : y_size,
+                        srid : srid,
+                        list_indicators :grid_indicators_params.indicators,
                         buildingTable: buildingTableName, roadTable: roadTableName, vegetationTable: vegetationTableName,
                         hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
                         rsu_lcz:results.outputTableRsuLcz,
@@ -1231,9 +1235,6 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
                         prefixName: processing_parameters.prefixName
                 )){
                     results.put("grid_indicators", rasterizedIndicators.results.outputTableName)
-                    if(outputFiles){
-                        outputFiles<<rasterizedIndicators.results.outputTableName
-                    }
                 }
             }
 
