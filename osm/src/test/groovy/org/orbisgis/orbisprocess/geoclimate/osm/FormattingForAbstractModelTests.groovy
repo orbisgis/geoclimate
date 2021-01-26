@@ -2,6 +2,8 @@ package org.orbisgis.orbisprocess.geoclimate.osm
 
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInfo
+import org.orbisgis.orbisanalysis.osm.utils.Utilities
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 
@@ -10,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 class FormattingForAbstractModelTests {
+
 
     @Test
    void formattingGISLayers() {
@@ -139,6 +142,40 @@ class FormattingForAbstractModelTests {
                 inputZoneEnvelopeTableName: "",
                 epsg: epsg])
         assertEquals(0, h2GIS.getTable(format.results.outputTableName).getRowCount())
+    }
+
+    @Test
+    void extractSeaLandTest(TestInfo testInfo) {
+        def h2GIS = H2GIS.open('./target/sea_land;AUTO_SERVER=TRUE')
+        def epsg =32629
+        def osmBbox = [52.08484801362273, -10.75003575696209, 52.001518013622736, -10.66670575696209]
+        def geom = Utilities.geometryFromNominatim(osmBbox)
+        IProcess extractData = OSM.createGISLayers
+        extractData.execute([
+                datasource : h2GIS,
+                osmFilePath: new File(this.class.getResource("sea_land_data.osm").toURI()).getAbsolutePath(),
+                epsg :epsg])
+
+        def zoneEnvelopeTableName = "zone_envelope_sea_land"
+        h2GIS.execute("""drop table if exists $zoneEnvelopeTableName;
+         create table $zoneEnvelopeTableName as select st_transform(st_geomfromtext('$geom', ${geom.getSRID()}), $epsg) as the_geom""")
+
+        //Test coastline
+        assertEquals(1, h2GIS.getTable(extractData.results.coastlineTableName).getRowCount())
+
+        //Sea/Land mask
+        def format = OSM.formatSeaLandMask
+        format.execute([
+                datasource : h2GIS,
+                inputTableName: extractData.results.coastlineTableName,
+                inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                epsg: epsg])
+        def inputSeaLandTableName = format.results.outputTableName;
+        assertEquals(2, h2GIS.getTable(inputSeaLandTableName).getRowCount())
+        assertTrue h2GIS.firstRow("select count(*) as count from ${inputSeaLandTableName} where type='land'").count==1
+
+        h2GIS.getTable(inputSeaLandTableName).save("./target/osm_sea_land_${testInfo.getDisplayName()}.geojson", true)
+
 
     }
 
