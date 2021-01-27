@@ -594,14 +594,13 @@ IProcess osm_processing() {
                             }
                             //Default
                             def outputGrid = "geojson"
-                            def x_size, y_size
-                                    //Compute the grid indicators
+                            //Compute the grid indicators
                             GeometryFactory gf = new GeometryFactory()
                             def geomEnv =  gf.toGeometry(zoneTableNames.envelope)
                             geomEnv.setSRID(4326)
                             if(grid_indicators_params){
-                                x_size = grid_indicators_params.x_size
-                                y_size = grid_indicators_params.y_size
+                                def x_size = grid_indicators_params.x_size
+                                def y_size = grid_indicators_params.y_size
                                 outputGrid = grid_indicators_params.output
                                 IProcess rasterizedIndicators =  ProcessingChain.GeoIndicatorsChain.rasterizeIndicators()
                                     if(rasterizedIndicators.execute(datasource:h2gis_datasource,envelope: geomEnv,
@@ -619,7 +618,7 @@ IProcess osm_processing() {
                                     }
                             }
                             if (outputFolder  && ouputTableFiles) {
-                                saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject, deleteOutputData, x_size, outputGrid)
+                                saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject, deleteOutputData outputGrid)
 
                             }
                             if (output_datasource) {
@@ -1062,7 +1061,7 @@ def extractProcessingParameters(def processing_parameters){
  * @param outputGrid file format of the grid
  * @return
  */
-def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFiles, def ouputFolder, def subFolderName, def outputSRID, def reproject, def deleteOutputData, def x_size, def outputGrid){
+def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFiles, def ouputFolder, def subFolderName, def outputSRID, def reproject, def deleteOutputData, def outputGrid){
     //Create a subfolder to store each results
     def folderName = id_zone in Map?id_zone.join("_"):id_zone
     def subFolder = new File(ouputFolder.getAbsolutePath()+File.separator+subFolderName+folderName)
@@ -1122,7 +1121,7 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
                 saveTableAsGeojson(results.grid_indicators, "${subFolder.getAbsolutePath()+File.separator+"grid_indicators"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
             }
             else if(outputGrid=="ascii"){
-                saveTableToAsciiGrid(results.grid_indicators, subFolder, "grid_indicators", h2gis_datasource,outputSRID,reproject,deleteOutputData, x_size)
+                saveTableToAsciiGrid(results.grid_indicators, subFolder, "grid_indicators", h2gis_datasource,outputSRID,reproject,deleteOutputData)
             }
         }
         else if(it.equals("sea_land_mask")){
@@ -1138,7 +1137,7 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
  * @param output_files_generic_name
  * @return
  */
-def saveTableToAsciiGrid(def outputTable , def subFolder,def filePrefix, def h2gis_datasource,def outputSRID, def reproject, def deleteOutputData, def x_size) {
+def saveTableToAsciiGrid(def outputTable , def subFolder,def filePrefix, def h2gis_datasource,def outputSRID, def reproject, def deleteOutputData) {
    //Check if the table exists
     if(outputTable && h2gis_datasource.hasTable(outputTable)) {
         def env;
@@ -1158,7 +1157,7 @@ def saveTableToAsciiGrid(def outputTable , def subFolder,def filePrefix, def h2g
             def nbrows = nbColsRowS.rmax
 
             double dy = env.getMaxY()-ymin;
-            x_size = dy/nbrows;
+            def x_size = dy/nbrows;
 
             def IndicsTable = h2gis_datasource."$outputTable"
             List columnNames = IndicsTable.columns
