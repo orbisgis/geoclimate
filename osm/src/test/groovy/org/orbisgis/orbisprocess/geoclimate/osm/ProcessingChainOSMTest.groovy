@@ -563,7 +563,8 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                          "grid_indicators": [
                              "x_size": 1000,
                              "y_size": 1000,
-                             "indicators": ["WATER_FRACTION"]
+                             "indicators": ["WATER_FRACTION"],
+                             "output":"asc"
                          ]
                         ]
         ]

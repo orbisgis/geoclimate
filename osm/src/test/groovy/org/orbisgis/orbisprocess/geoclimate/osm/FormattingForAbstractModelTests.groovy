@@ -345,7 +345,6 @@ class FormattingForAbstractModelTests {
         if(extractData.results.zoneTableName!=null) {
             def epsg = h2GIS.getSpatialTable(extractData.results.zoneTableName).srid
 
-
             //Buildings
             IProcess format = OSM.formatBuildingLayer
             format.execute([

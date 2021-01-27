@@ -1023,7 +1023,7 @@ def extractProcessingParameters(def processing_parameters){
                 ]
                     def grid_output = grid_indicators.output
                     if(grid_output) {
-                        if(grid_output.toLowerCase() in ["ascii","geojson"]){
+                        if(grid_output.toLowerCase() in ["asc","geojson"]){
                             grid_indicators_tmp.output =grid_output.toLowerCase()
                         }
                     }
@@ -1120,7 +1120,7 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
             if(outputGrid=="geoson"){
                 saveTableAsGeojson(results.grid_indicators, "${subFolder.getAbsolutePath()+File.separator+"grid_indicators"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
             }
-            else if(outputGrid=="ascii"){
+            else if(outputGrid=="asc"){
                 saveTableToAsciiGrid(results.grid_indicators, subFolder, "grid_indicators", h2gis_datasource,outputSRID,reproject,deleteOutputData)
             }
         }
