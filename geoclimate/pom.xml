@@ -6,6 +6,7 @@
         <groupId>org.orbisgis.orbisprocess</groupId>
         <artifactId>geoclimate-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -37,12 +38,10 @@
         <dependency>
             <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
             <artifactId>bdtopo_v2</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
             <artifactId>osm</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>info.picocli</groupId>

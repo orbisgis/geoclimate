@@ -394,7 +394,7 @@ IProcess roadDistance() {
             datasource """
                 DROP TABLE IF EXISTS $road_surf;
                 CREATE TABLE $road_surf AS 
-                    SELECT ST_BUFFER($GEOMETRIC_FIELD, $ROAD_WIDTH::double precision/2,'endcap=flat') AS $GEOMETRIC_FIELD 
+                    SELECT ST_BUFFER($GEOMETRIC_FIELD, $ROAD_WIDTH::DOUBLE PRECISION/2,'endcap=flat') AS $GEOMETRIC_FIELD 
                     FROM $inputRoadTableName; 
                 CREATE INDEX IF NOT EXISTS buff_ids ON $road_surf USING RTREE($GEOMETRIC_FIELD)"""
             // The roads located within the buffer are identified
@@ -412,7 +412,7 @@ IProcess roadDistance() {
             // distance)
             datasource """
                 DROP TABLE IF EXISTS $outputTableName; 
-                CREATE TABLE $outputTableName($BASE_NAME DOUBLE, $ID_FIELD_BU INTEGER) AS (
+                CREATE TABLE $outputTableName($BASE_NAME DOUBLE PRECISION, $ID_FIELD_BU INTEGER) AS (
                     SELECT COALESCE(MIN(st_distance(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD)), $bufferDist), a.$ID_FIELD_BU 
                     FROM $road_within_buffer b 
                     RIGHT JOIN $inputBuildingTableName a 

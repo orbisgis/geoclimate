@@ -36,6 +36,10 @@
             <artifactId>process</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.orbisgis.orbisdata.datamanager</groupId>
+            <artifactId>dataframe</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
             <artifactId>geoindicators</artifactId>
         </dependency>

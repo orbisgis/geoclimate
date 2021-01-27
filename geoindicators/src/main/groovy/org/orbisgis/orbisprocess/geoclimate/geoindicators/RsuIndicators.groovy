@@ -610,7 +610,7 @@ IProcess roofAreaDistribution() {
                         a.building_total_facade_length, 
                         a.non_vertical_roof_area, 
                         a.vertical_roof_area, 
-                        ISNULL(b.vert_roof_to_remove,0) 
+                        IFNULL(b.vert_roof_to_remove,0) 
                     FROM $buildRoofSurfIni a 
                     LEFT JOIN $buildVertRoofInter b 
                     ON a.$ID_COLUMN_BU=b.$ID_COLUMN_BU);"""
@@ -1239,7 +1239,7 @@ return create {
                 def roadTable_zindex0_buffer = postfix "road_zindex0_buffer"
                 def road_tmp = postfix "road_zindex0"
                 datasource """DROP TABLE IF EXISTS $roadTable_zindex0_buffer, $road_tmp;
-            CREATE TABLE $roadTable_zindex0_buffer as SELECT st_buffer(the_geom, WIDTH::double precision/2)
+            CREATE TABLE $roadTable_zindex0_buffer as SELECT st_buffer(the_geom, WIDTH::DOUBLE PRECISION/2)
             AS the_geom
             FROM $roadTable  where ZINDEX=0 ;
             CREATE INDEX IF NOT EXISTS ids_$roadTable_zindex0_buffer ON $roadTable_zindex0_buffer USING RTREE(the_geom);
@@ -1461,12 +1461,6 @@ IProcess surfaceFractions() {
             // Create the indexes on each of the input tables
             datasource."$rsuTable"."$id_rsu".createIndex()
             datasource."$spatialRelationsTable"."$id_rsu".createIndex()
-            datasource."$spatialRelationsTable".water.createIndex()
-            datasource."$spatialRelationsTable".road.createIndex()
-            datasource."$spatialRelationsTable".impervious.createIndex()
-            datasource."$spatialRelationsTable".building.createIndex()
-            datasource."$spatialRelationsTable".low_vegetation.createIndex()
-            datasource."$spatialRelationsTable".high_vegetation.createIndex()
 
             // Need to set priority number for future sorting
             def prioritiesMap = [:]

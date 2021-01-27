@@ -37,7 +37,7 @@ class BuildingIndicatorsTests {
                               prefixName : "test",datasource:h2GIS])
         h2GIS.getTable("test_building_size_properties").eachRow {
             row ->
-                assertEquals(141, row.volume)
+                assertEquals(141, (int)row.volume)
                 assertEquals(47, row.floor_area)
                 assertEquals(38, row.total_facade_length)
                 assertEquals(0, row.passive_volume_ratio)

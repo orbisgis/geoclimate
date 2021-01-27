@@ -4,6 +4,7 @@ import com.thoughtworks.xstream.XStream
 import com.thoughtworks.xstream.io.xml.StaxDriver
 import groovy.transform.BaseScript
 import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.dbtypes.DBTypes
 import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
@@ -666,7 +667,7 @@ IProcess applyRandomForestModel() {
             def df = dfNofactorized
             // Identify columns being string (thus needed to be factorized)
             inputColumns.each{colName, colType ->
-                if(colType == "STRING" || colType=="VARCHAR"){
+                if(colType == "STRING" || colType=="VARCHAR" || colType=="CHARACTER VARYING"){
                     df = df.factorize(colName)
                 }
             }
