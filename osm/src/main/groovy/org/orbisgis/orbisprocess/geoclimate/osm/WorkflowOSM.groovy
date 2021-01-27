@@ -618,7 +618,7 @@ IProcess osm_processing() {
                                     }
                             }
                             if (outputFolder  && ouputTableFiles) {
-                                saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject, deleteOutputData outputGrid)
+                                saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject, deleteOutputData, outputGrid)
 
                             }
                             if (output_datasource) {
