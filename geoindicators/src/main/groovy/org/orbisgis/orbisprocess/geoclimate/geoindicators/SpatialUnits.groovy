@@ -40,7 +40,7 @@ IProcess createRSU() {
             def COLUMN_ID_NAME = "id_rsu"
             def BASE_NAME = "rsu"
 
-            info "Creating the reference spatial units"
+            debug "Creating the reference spatial units"
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
 
@@ -78,7 +78,7 @@ IProcess createRSU() {
                                 FROM $inputTableName)') where st_area(the_geom) > $area"""
             }
 
-            info "Reference spatial units table created"
+            debug "Reference spatial units table created"
 
             [outputTableName: outputTableName, outputIdRsu: COLUMN_ID_NAME]
         }
@@ -116,7 +116,7 @@ IProcess prepareRSUData() {
 
             def BASE_NAME = "prepared_rsu_data"
 
-            info "Preparing the abstract model to build the RSU"
+            debug "Preparing the abstract model to build the RSU"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
@@ -139,13 +139,13 @@ IProcess prepareRSUData() {
                 //Add the land mask
                 if (seaLandMaskTableName && datasource.hasTable(seaLandMaskTableName)) {
                     if (datasource."$seaLandMaskTableName") {
-                        info "Preparing land mask..."
+                        debug "Preparing land mask..."
                         queryCreateOutputTable += [land_mask_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $seaLandMaskTableName where type ='land')"]
                     }
                 }
                 if (vegetationTable && datasource.hasTable(vegetationTable)) {
                     if (datasource."$vegetationTable") {
-                        info "Preparing vegetation..."
+                        debug "Preparing vegetation..."
                         vegetation_indice = postfix vegetationTable
                         vegetation_unified = postfix "vegetation_unified"
                         vegetation_tmp = postfix "vegetation_tmp"
@@ -186,7 +186,7 @@ IProcess prepareRSUData() {
                 if (hydrographicTable && datasource.hasTable(hydrographicTable)) {
                     if (datasource."$hydrographicTable") {
                         //Extract water
-                        info "Preparing hydrographic..."
+                        debug "Preparing hydrographic..."
                         hydrographic_indice = postfix hydrographicTable
                         hydrographic_unified = postfix "hydrographic_unified"
                         hydrographic_tmp = postfix "hydrographic_tmp"
@@ -232,19 +232,19 @@ IProcess prepareRSUData() {
 
                 if (roadTable && datasource.hasTable(roadTable)) {
                     if (datasource."$roadTable") {
-                        info "Preparing road..."
+                        debug "Preparing road..."
                         queryCreateOutputTable += [road_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $roadTable where (zindex=0 or crossing = 'bridge') and type!='service')"]
                     }
                 }
 
                 if (railTable && datasource.hasTable(railTable) && !datasource."$railTable".isEmpty()) {
                     if (datasource."$railTable") {
-                        info "Preparing rail..."
+                        debug "Preparing rail..."
                         queryCreateOutputTable += [rail_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $railTable where zindex=0 or crossing = 'bridge')"]
                     }
                 }
                 // The input table that contains the geometries to be transformed as RSU
-                info "Grouping all tables..."
+                debug "Grouping all tables..."
                 if (queryCreateOutputTable) {
                     datasource """
                         DROP TABLE if exists $outputTableName;
@@ -263,7 +263,7 @@ IProcess prepareRSUData() {
                 if (dropTableList) {
                     datasource "DROP TABLE IF EXISTS ${dropTableList.join(',')};"
                 }
-                info "RSU created..."
+                debug "RSU created..."
 
             } else {
                 error "Cannot compute the RSU. The input zone table must have one row."
@@ -295,7 +295,7 @@ IProcess createBlocks() {
 
             def BASE_NAME = "blocks"
 
-            info "Creating the blocks..."
+            debug "Creating the blocks..."
 
             def columnIdName = "id_block"
 
@@ -303,11 +303,11 @@ IProcess createBlocks() {
             def outputTableName = prefix prefixName, BASE_NAME
 
             //Find all neighbors for each building
-            info "Building index to perform the process..."
+            debug "Building index to perform the process..."
             datasource."$inputTableName".the_geom.createSpatialIndex()
             datasource."$inputTableName".id_build.createIndex()
 
-            info "Building spatial clusters..."
+            debug "Building spatial clusters..."
 
             // Create temporary table names (for tables that will be removed at the end of the IProcess)
             def graphTable = postfix "spatial_clusters"
@@ -329,7 +329,7 @@ IProcess createBlocks() {
             getConnectedComponents(datasource.getConnection(), graphTable, "undirected")
 
             //Unify buildings that share a boundary
-            info "Merging spatial clusters..."
+            debug "Merging spatial clusters..."
 
             if (snappingTolerance > 0) {
                 datasource """
@@ -350,7 +350,7 @@ IProcess createBlocks() {
         WHERE A.id_build=B.NODE_ID GROUP BY B.CONNECTED_COMPONENT;"""
             }
             //Create the blocks
-            info "Creating the block table..."
+            debug "Creating the block table..."
 
             datasource """DROP TABLE IF EXISTS $outputTableName; 
         CREATE TABLE $outputTableName ($columnIdName SERIAL, THE_GEOM GEOMETRY) 
@@ -363,7 +363,7 @@ IProcess createBlocks() {
             datasource "DROP TABLE IF EXISTS  $graphTable, ${graphTable + "_EDGE_CC"}, " +
                     "$subGraphBlocks, ${subGraphBlocks + "_NODE_CC"};"
 
-            info "The blocks have been created"
+            debug "The blocks have been created"
             [outputTableName: outputTableName, outputIdBlock: columnIdName]
         }
     }
@@ -405,7 +405,7 @@ IProcess spatialJoin() {
             def GEOMETRIC_COLUMN_SOURCE = "the_geom"
             def GEOMETRIC_COLUMN_TARGET = "the_geom"
 
-            info "Creating a spatial join between objects from two tables :  $sourceTable and $targetTable"
+            debug "Creating a spatial join between objects from two tables :  $sourceTable and $targetTable"
 
             // The name of the outputTableName is constructed (the prefix name is not added since it is already contained
             // in the inputLowerScaleTableName object
@@ -450,7 +450,7 @@ IProcess spatialJoin() {
                 }
             }
 
-            info "The spatial join have been performed between :  $sourceTable and $targetTable"
+            debug "The spatial join have been performed between :  $sourceTable and $targetTable"
 
             [outputTableName: outputTableName, idColumnTarget: idColumnTarget]
         }
@@ -480,17 +480,17 @@ IProcess createGrid() {
         run { geometry, deltaX, deltaY, rowCol, prefixName, datasource ->
             if(rowCol){
                 if(!deltaX ||!deltaY || deltaX<1 || deltaY< 1){
-                    info "Invalid grid size padding. Must be greater or equal than 1"
+                    debug "Invalid grid size padding. Must be greater or equal than 1"
                     return
                 }
             }else{
                 if(!deltaX ||!deltaY || deltaX<=0 || deltaY<= 0){
-                    info "Invalid grid size padding. Must be greater than 0"
+                    error "Invalid grid size padding. Must be greater than 0"
                     return
                 }
             }
             if(!geometry){
-                info "The envelope is null or empty. Cannot compute the grid"
+                error "The envelope is null or empty. Cannot compute the grid"
                 return
             }
 
@@ -499,14 +499,14 @@ IProcess createGrid() {
             datasource "DROP TABLE IF EXISTS $outputTableName;"
 
             if (datasource instanceof H2GIS) {
-                info "Creating grid with H2GIS"
+                debug "Creating grid with H2GIS"
                 datasource """
                            CREATE TABLE $outputTableName AS SELECT * FROM 
                            ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY,$rowCol);
                            """
             }
             else if (datasource instanceof POSTGIS) {
-                info "Creating grid with POSTGIS"
+                debug "Creating grid with POSTGIS"
                 PreparedStatement preparedStatement = null
                 Connection outputConnection = datasource.getConnection()
                 try {
@@ -543,7 +543,7 @@ IProcess createGrid() {
                     }
                 }
             }
-            info "The table $outputTableName has been created"
+            debug "The table $outputTableName has been created"
             [outputTableName: outputTableName]
         }
     }

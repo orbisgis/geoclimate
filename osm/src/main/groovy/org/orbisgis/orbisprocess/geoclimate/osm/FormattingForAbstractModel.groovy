@@ -42,7 +42,7 @@ IProcess formatBuildingLayer() {
             }
 
             def outputTableName = postfix "INPUT_BUILDING"
-            info 'Formating building layer'
+            debug 'Formating building layer'
             outputTableName = "INPUT_BUILDING_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             def outputEstimateTableName = "EST_${outputTableName}"
             datasource """
@@ -169,7 +169,7 @@ IProcess formatBuildingLayer() {
                     }
                 }
             }
-            info 'Buildings transformation finishes'
+            debug 'Buildings transformation finishes'
             [outputTableName: outputTableName, outputEstimateTableName: outputEstimateTableName]
         }
     }
@@ -191,7 +191,7 @@ IProcess formatRoadLayer() {
         inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, jsonFilename: ""
         outputs outputTableName: String
         run { datasource, inputTableName, inputZoneEnvelopeTableName, epsg, jsonFilename ->
-            info('Formating road layer')
+            debug('Formating road layer')
             def outputTableName = postfix "INPUT_ROAD"
             datasource """
             DROP TABLE IF EXISTS $outputTableName;
@@ -279,7 +279,7 @@ IProcess formatRoadLayer() {
                     }
                 }
             }
-            info('Roads transformation finishes')
+            debug('Roads transformation finishes')
             [outputTableName: outputTableName]
         }
     }
@@ -301,7 +301,7 @@ IProcess formatRailsLayer() {
         inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, jsonFilename: ""
         outputs outputTableName: String
         run { datasource, inputTableName, inputZoneEnvelopeTableName, epsg, jsonFilename ->
-            info('Rails transformation starts')
+            debug('Rails transformation starts')
             def outputTableName = "INPUT_RAILS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             datasource.execute """ drop table if exists $outputTableName;
                 CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_rail serial,ID_SOURCE VARCHAR, TYPE VARCHAR,CROSSING VARCHAR(30), ZINDEX INTEGER);"""
@@ -367,7 +367,7 @@ IProcess formatRailsLayer() {
                     }
                 }
             }
-            info('Rails transformation finishes')
+            debug('Rails transformation finishes')
             [outputTableName: outputTableName]
         }
     }
@@ -389,7 +389,7 @@ IProcess formatVegetationLayer() {
         inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, jsonFilename: ""
         outputs outputTableName: String
         run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, epsg, jsonFilename ->
-            info('Vegetation transformation starts')
+            debug('Vegetation transformation starts')
             def outputTableName = postfix "INPUT_VEGET"
             datasource """ 
                 DROP TABLE IF EXISTS $outputTableName;
@@ -444,7 +444,7 @@ IProcess formatVegetationLayer() {
                     }
                 }
             }
-            info('Vegetation transformation finishes')
+            debug('Vegetation transformation finishes')
             [outputTableName: outputTableName]
         }
     }
@@ -464,7 +464,7 @@ IProcess formatHydroLayer() {
         inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int
         outputs outputTableName: String
         run { datasource, inputTableName, inputZoneEnvelopeTableName, epsg ->
-            info('Hydro transformation starts')
+            debug('Hydro transformation starts')
             def outputTableName = "INPUT_HYDRO_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             datasource.execute """Drop table if exists $outputTableName;
                     CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_hydro serial, ID_SOURCE VARCHAR);"""
@@ -501,7 +501,7 @@ IProcess formatHydroLayer() {
                     }
                 }
             }
-            info('Hydro transformation finishes')
+            debug('Hydro transformation finishes')
             [outputTableName: outputTableName]
         }
     }
@@ -521,11 +521,11 @@ IProcess formatImperviousLayer() {
         inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, jsonFilename: ""
         outputs outputTableName: String
         run { datasource, inputTableName, inputZoneEnvelopeTableName, epsg, jsonFilename ->
-            info('Impervious transformation starts')
+            debug('Impervious transformation starts')
             def outputTableName = "INPUT_IMPERVIOUS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             datasource.execute """Drop table if exists $outputTableName;
                     CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_impervious serial, ID_SOURCE VARCHAR);"""
-            info(inputTableName)
+            debug(inputTableName)
             if (inputTableName != null) {
                 def paramsDefaultFile = this.class.getResourceAsStream("imperviousParams.json")
                 def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
@@ -572,7 +572,7 @@ IProcess formatImperviousLayer() {
                     }
                 }
             }
-            info('Impervious transformation finishes')
+            debug('Impervious transformation finishes')
             [outputTableName: outputTableName]
         }
     }
@@ -911,7 +911,7 @@ static Map parametersMapping(def file, def altResourceStream) {
             inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, jsonFilename: ""
             outputs outputTableName: String
             run { datasource, inputTableName, inputZoneEnvelopeTableName, epsg, jsonFilename->
-                info('Urban areas transformation starts')
+                debug('Urban areas transformation starts')
                 def outputTableName = "INPUT_URBAN_AREAS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
                 datasource.execute """Drop table if exists $outputTableName;
                     CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_urban serial, ID_SOURCE VARCHAR, TYPE VARCHAR, MAIN_USE VARCHAR);"""
@@ -958,7 +958,7 @@ static Map parametersMapping(def file, def altResourceStream) {
                         }
                     }
                 }
-                info('Urban areas transformation finishes')
+                debug('Urban areas transformation finishes')
                 [outputTableName: outputTableName]
             }
         }
@@ -980,7 +980,7 @@ IProcess formatSeaLandMask() {
         outputs outputTableName: String
         run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, epsg ->
          def outputTableName = postfix "INPUT_SEA_LAND_MASK_"
-            info 'Computing sea/land mask table'
+            debug 'Computing sea/land mask table'
             datasource """ 
                 DROP TABLE if exists ${outputTableName};
                 CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id serial, TYPE VARCHAR);
@@ -1034,13 +1034,13 @@ IProcess formatSeaLandMask() {
                         datasource.execute("drop table if exists $mergingDataTable, $coastLinesIntersects, $coastLinesIntersectsPoints, $coastLinesPoints," +
                                 "$islands_mark")
                     }else{
-                        info "A zone table must be provided to compute the sea/land mask"
+                        debug "A zone table must be provided to compute the sea/land mask"
                     }
                 }else{
-                    info "The sea/land mask table is empty"
+                    debug "The sea/land mask table is empty"
                 }
                 }
-            info 'The sea/land mask has been computed'
+            debug 'The sea/land mask has been computed'
             [outputTableName: outputTableName]
             }
         }
@@ -1063,7 +1063,7 @@ IProcess mergeWaterAndSeaLandTables() {
         outputs outputTableName: String
         run { JdbcDataSource datasource, inputSeaLandTableName,inputWaterTableName, epsg ->
             def outputTableName = postfix "INPUT_WATER_SEA_"
-            info 'Merging sea/land mask and water table'
+            debug 'Merging sea/land mask and water table'
             datasource """ 
                 DROP TABLE if exists ${outputTableName};
                 CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id_hydro serial, id_source VARCHAR);
@@ -1088,7 +1088,7 @@ IProcess mergeWaterAndSeaLandTables() {
                     return [outputTableName: inputWaterTableName]
                 }
             }
-            info 'The sea/land and water tables have been merged'
+            debug 'The sea/land and water tables have been merged'
             return  [outputTableName: outputTableName]
         }
     }

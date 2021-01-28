@@ -31,7 +31,7 @@ IProcess holeAreaDensity() {
             def ID_COLUMN_BL = "id_block"
             def BASE_NAME = "hole_area_density"
 
-            info "Executing Hole area ratio"
+            debug "Executing Hole area ratio"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefix(prefixName, "block_" + BASE_NAME)
@@ -80,7 +80,7 @@ IProcess netCompactness() {
             def HEIGHT_WALL = "height_wall"
             def BASE_NAME = "net_compactness"
 
-            info "Executing Block net net_compactness"
+            debug "Executing Block net net_compactness"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefix(prefixName, "block_" + BASE_NAME)
@@ -148,7 +148,7 @@ IProcess closingness() {
             def ID_COLUMN_BL = "id_block"
             def BASE_NAME = "closingness"
 
-            info "Executing Closingness of a block"
+            debug "Executing Closingness of a block"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefix(prefixName, "block_" + BASE_NAME)

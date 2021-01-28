@@ -160,7 +160,7 @@ IProcess createGISLayers() {
             }
             def prefix = "OSM_DATA_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             def load = OSMTools.Loader.load()
-            info "Loading"
+            debug "Loading"
             if (load(datasource: datasource, osmTablesPrefix: prefix, osmFilePath: osmFilePath)) {
                 def outputBuildingTableName = null
                 def outputRoadTableName = null
@@ -172,7 +172,7 @@ IProcess createGISLayers() {
                 def outputCoastlineTableName =null
                 //Create building layer
                 def transform = OSMTools.Transform.toPolygons()
-                info "Create the building layer"
+                debug "Create the building layer"
                 def paramsDefaultFile = this.class.getResourceAsStream("buildingParams.json")
                 def parametersMap = readJSONParameters(paramsDefaultFile)
                 def tags = parametersMap.get("tags")
@@ -180,12 +180,12 @@ IProcess createGISLayers() {
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
                     outputBuildingTableName = postfix("OSM_BUILDING")
                     datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputBuildingTableName")
-                    info "Building layer created"
+                    debug "Building layer created"
                 }
 
                 //Create road layer
                 transform = OSMTools.Transform.extractWaysAsLines()
-                info "Create the road layer"
+                debug "Create the road layer"
                 paramsDefaultFile = this.class.getResourceAsStream("roadParams.json")
                 parametersMap = readJSONParameters(paramsDefaultFile)
                 tags = parametersMap.get("tags")
@@ -193,12 +193,12 @@ IProcess createGISLayers() {
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
                     outputRoadTableName = postfix("OSM_ROAD")
                     datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputRoadTableName")
-                    info "Road layer created"
+                    debug "Road layer created"
                 }
 
                 //Create rail layer
                 transform = OSMTools.Transform.extractWaysAsLines()
-                info "Create the rail layer"
+                debug "Create the rail layer"
                 paramsDefaultFile = this.class.getResourceAsStream("railParams.json")
                 parametersMap = readJSONParameters(paramsDefaultFile)
                 tags = parametersMap.get("tags")
@@ -206,7 +206,7 @@ IProcess createGISLayers() {
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
                     outputRailTableName = postfix("OSM_RAIL")
                     datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputRailTableName")
-                    info "Rail layer created"
+                    debug "Rail layer created"
                 }
                 //Create vegetation layer
                 paramsDefaultFile = this.class.getResourceAsStream("vegetParams.json")
@@ -214,11 +214,11 @@ IProcess createGISLayers() {
                 tags = parametersMap.get("tags")
                 columnsToKeep = parametersMap.get("columns")
                 transform = OSMTools.Transform.toPolygons()
-                info "Create the vegetation layer"
+                debug "Create the vegetation layer"
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
                     outputVegetationTableName = postfix("OSM_VEGETATION")
                     datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputVegetationTableName")
-                    info "Vegetation layer created"
+                    debug "Vegetation layer created"
                 }
 
                 //Create water layer
@@ -226,11 +226,11 @@ IProcess createGISLayers() {
                 parametersMap = readJSONParameters(paramsDefaultFile)
                 tags = parametersMap.get("tags")
                 transform = OSMTools.Transform.toPolygons()
-                info "Create the water layer"
+                debug "Create the water layer"
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags)) {
                     outputHydroTableName = postfix("OSM_WATER")
                     datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputHydroTableName")
-                    info "Water layer created"
+                    debug "Water layer created"
                 }
 
                 //Create impervious layer
@@ -239,11 +239,11 @@ IProcess createGISLayers() {
                 tags = parametersMap.get("tags")
                 columnsToKeep = parametersMap.get("columns")
                 transform = OSMTools.Transform.toPolygons()
-                info "Create the impervious layer"
+                debug "Create the impervious layer"
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
                     outputImperviousTableName = postfix("OSM_IMPERVIOUS")
                     datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputImperviousTableName")
-                    info "Impervious layer created"
+                    debug "Impervious layer created"
                 }
 
                 //Create urban areas layer
@@ -252,23 +252,23 @@ IProcess createGISLayers() {
                 tags = parametersMap.get("tags")
                 columnsToKeep = parametersMap.get("columns")
                 transform = OSMTools.Transform.toPolygons()
-                info "Create the urban areas layer"
+                debug "Create the urban areas layer"
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
                     outputUrbanAreasTableName = postfix("OSM_URBAN_AREAS")
                     datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputUrbanAreasTableName")
-                    info "Urban areas layer created"
+                    debug "Urban areas layer created"
                 }
 
                 //Create coastline layer
                 transform = OSMTools.Transform.toLines()
-                info "Create the coastline layer"
+                debug "Create the coastline layer"
                 paramsDefaultFile = this.class.getResourceAsStream("coastlineParams.json")
                 parametersMap = readJSONParameters(paramsDefaultFile)
                 tags = parametersMap.get("tags")
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags)) {
                     outputCoastlineTableName = postfix("OSM_COASTLINE")
                     datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputCoastlineTableName")
-                    info "Coastline layer created"
+                    debug "Coastline layer created"
                 }
 
                 //Drop the OSM tables

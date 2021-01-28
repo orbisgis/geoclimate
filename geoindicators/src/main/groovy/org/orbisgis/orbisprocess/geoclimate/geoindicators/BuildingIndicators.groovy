@@ -47,7 +47,7 @@ IProcess sizeProperties() {
             def DIST_PASSIV = 3
             def BASE_NAME = "building_size_properties"
 
-            info "Executing Building size properties"
+            debug "Executing Building size properties"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
@@ -125,7 +125,7 @@ IProcess neighborsProperties() {
             def OPS = [OP_CONTIGUITY, OP_COMMON_WALL_FRACTION, OP_NUMBER_BUILDING_NEIGHBOR]
             def BASE_NAME = "building_neighbors_properties"
 
-            info "Executing Building interactions properties"
+            debug "Executing Building interactions properties"
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
             def build_intersec = postfix "build_intersec"
@@ -233,7 +233,7 @@ IProcess formProperties() {
             def OP_CONVEXITY = "perimeter_convexity"
             def BASE_NAME = "building_form_properties"
 
-            info "Executing Building form properties"
+            debug "Executing Building form properties"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
@@ -301,7 +301,7 @@ IProcess minimumBuildingSpacing() {
             def ID_FIELD = "id_build"
             def BASE_NAME = "minimum_building_spacing"
 
-            info "Executing Building minimum building spacing"
+            debug "Executing Building minimum building spacing"
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
@@ -371,7 +371,7 @@ IProcess roadDistance() {
             def ROAD_WIDTH = "width"
             def BASE_NAME = "road_distance"
 
-            info "Executing Building road distance"
+            debug "Executing Building road distance"
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
@@ -465,7 +465,7 @@ IProcess likelihoodLargeBuilding() {
             def ID_FIELD_BU = "id_build"
             def BASE_NAME = "likelihood_large_building"
 
-            info "Executing Building closeness to a 50 m wide building"
+            debug "Executing Building closeness to a 50 m wide building"
 
             // Processes used for the indicator calculation
             // a and r are the two parameters necessary for the logistic regression calculation (their value is
