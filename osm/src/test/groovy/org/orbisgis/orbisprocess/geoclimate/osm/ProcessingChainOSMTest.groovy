@@ -578,6 +578,40 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue h2gis.firstRow("select count(*) as count from water_grid").count==6
     }
 
+    @Test
+    void testLoggerZones() {
+        String directory ="./target/geoclimate_chain_grid_logger"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "description" :"Example of configuration file to run the grid indicators",
+                "geoclimatedb" : [
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete" :false
+                ],
+                "input" : [
+                        "osm" : [[48.49749,5.25349,48.58082,5.33682]],
+                        "delete":true],
+                "output" :[
+                        "folder" : ["path": "$directory",
+                                    "tables": ["grid_indicators", "zones"]]],
+                "parameters":
+                        ["distance" : 0,
+                         "grid_indicators": [
+                                 "x_size": 10,
+                                 "y_size": 10,
+                                  rowCol: true,
+                                 "indicators": ["WATER_FRACTION"],
+                                 "output":"asc"
+                         ]
+                        ]
+        ]
+        IProcess process = OSM.workflow
+        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+    }
+
     @Disabled //Use it for debug
     @Test
     void testIntegration() {

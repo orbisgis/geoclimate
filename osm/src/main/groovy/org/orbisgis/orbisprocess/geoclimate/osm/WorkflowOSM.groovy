@@ -273,12 +273,14 @@ IProcess workflow() {
                                 return
                             }
                             if (osmFilters && osmFilters in Collection) {
+                                def logTableZones = postfix("log_zones")
                                 def osmprocessing = osm_processing()
                                 if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
                                         processing_parameters: processing_parameters,
                                         id_zones: osmFilters, outputFolder: file_outputFolder, ouputTableFiles: outputFolderProperties.tables,
                                         output_datasource: output_datasource, outputTableNames: finalOutputTables, outputSRID :outputSRID, downloadAllOSMData:downloadAllOSMData, deleteOutputData: deleteOutputData,
-                                        deleteOSMFile:deleteOSMFile)) {
+                                        deleteOSMFile:deleteOSMFile, logTableZones:logTableZones)) {
+                                    h2gis_datasource.getSpatialTable(logTableZones).save("${databaseFolder+File.separator}logzones.geojson")
                                     return null
                                 }
                                 if (delete_h2gis) {
@@ -312,12 +314,14 @@ IProcess workflow() {
                                     return
                                 }
                                 if (osmFilters && osmFilters in Collection) {
+                                    def logTableZones = postfix("log_zones")
                                     def osmprocessing = osm_processing()
                                     if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
                                             processing_parameters: processing_parameters,
                                             id_zones: osmFilters, outputFolder: file_outputFolder, ouputTableFiles: outputFolderProperties.tables,
                                             output_datasource: null, outputTableNames: null, outputSRID :outputSRID, downloadAllOSMData:downloadAllOSMData, deleteOutputData: deleteOutputData,
-                                            deleteOSMFile:deleteOSMFile)) {
+                                            deleteOSMFile:deleteOSMFile, logTableZones: logTableZones)) {
+                                        h2gis_datasource.getSpatialTable(logTableZones).save("${databaseFolder+File.separator}logzones.geojson")
                                         return null
                                     }
                                     //Delete database
@@ -363,12 +367,14 @@ IProcess workflow() {
                                     return
                                 }
                                 if (osmFilters && osmFilters in Collection) {
+                                    def logTableZones = postfix("log_zones")
                                     def osmprocessing = osm_processing()
                                     if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
                                             processing_parameters: processing_parameters,
                                             id_zones: osmFilters, outputFolder: null, ouputTableFiles: null,
                                             output_datasource: output_datasource, outputTableNames: finalOutputTables,outputSRID :outputSRID,downloadAllOSMData:downloadAllOSMData,
-                                            deleteOutputData: deleteOutputData,deleteOSMFile:deleteOSMFile)) {
+                                            deleteOutputData: deleteOutputData,deleteOSMFile:deleteOSMFile,logTableZones: logTableZones)) {
+                                        h2gis_datasource.getSpatialTable(logTableZones).save("${databaseFolder+File.separator}logzones.geojson")
                                         return null
                                     }
                                     if (delete_h2gis) {
@@ -433,11 +439,13 @@ IProcess osm_processing() {
         id "osm_processing"
         inputs h2gis_datasource: JdbcDataSource, processing_parameters: Map, id_zones: Map,
                 outputFolder: "", ouputTableFiles: "", output_datasource: "", outputTableNames: "", outputSRID : Integer, downloadAllOSMData : true,
-                deleteOutputData:true, deleteOSMFile:false
+                deleteOutputData:true, deleteOSMFile:false, logTableZones:String
         outputs outputMessage: String
         run { h2gis_datasource, processing_parameters, id_zones, outputFolder, ouputTableFiles, output_datasource, outputTableNames,
-              outputSRID, downloadAllOSMData,deleteOutputData, deleteOSMFile ->
-             // Temporary tables
+              outputSRID, downloadAllOSMData,deleteOutputData, deleteOSMFile,logTableZones ->
+            //Create the table to log on the processed zone
+             h2gis_datasource.execute """DROP TABLE IF EXISTS $logTableZones;
+            CREATE TABLE $logTableZones (the_geom GEOMETRY(GEOMETRY, 4326), request VARCHAR, info VARCHAR)"""
             int nbAreas = id_zones.size();
             info "$nbAreas osm areas will be processed"
             id_zones.eachWithIndex { id_zone, index ->
@@ -495,6 +503,7 @@ IProcess osm_processing() {
                                     inputTableName            : gisLayersResults.urbanAreasTableName,
                                     inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                                     epsg                      : srid])
+
                             def urbanAreasTable = format.results.outputTableName
 
                             format = OSM.formatBuildingLayer
@@ -604,7 +613,12 @@ IProcess osm_processing() {
                                         mapOfWeights: rsu_indicators_params.mapOfWeights,
                                         urbanTypoModelName: "URBAN_TYPOLOGY_OSM_RF_2_1.model",
                                         buildingHeightModelName: estimateHeight ? "BUILDING_HEIGHT_OSM_RF_2_0.model" : "")) {
+
                                     error "Cannot build the geoindicators for the zone $id_zone"
+
+                                    h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,$id_zone, 'Error computing geoindicators')"
+
+                                    return
                                 }
                                 else{
                                      results.putAll(geoIndicators.getResults())
@@ -634,6 +648,8 @@ IProcess osm_processing() {
                                     )){
                                         results.put("grid_indicators", rasterizedIndicators.results.outputTableName)
                                     }
+                            }else{
+                                h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,$id_zone, 'Error computing the grid indicators')"
                             }
                             if (outputFolder  && ouputTableFiles) {
                                 saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject, deleteOutputData, outputGrid)
@@ -644,14 +660,29 @@ IProcess osm_processing() {
                             }
 
                         } else {
+                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,$id_zone, 'Error loading the OSM file')"
                             error "Cannot load the OSM file ${extract.results.outputFilePath}"
                             return
                         }
                     } else {
+                        //Log in table
+                        h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,$id_zone, 'Error to extract the data with OverPass')"
                         error "Cannot execute the overpass query $query"
                         return
                     }
                 } else {
+                    //Log in table
+                    if (id_zone in Collection) {
+                        def geom = Utilities.geometryFromOverpass(id_zone)
+                        if (!geom) {
+                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(null,$id_zone, 'Error to extract the zone with Nominatim')"
+                        }
+                        else{
+                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('$geom',4326) ,$id_zone, 'Error to extract the zone with Nominatim')"
+                        }
+                    } else if (id_zone instanceof String) {
+                        h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(null,$id_zone, 'Error to extract the zone with Nominatim')"
+                    }
                     error "Cannot calculate a bounding box to extract OSM data"
                     return
                 }
@@ -727,7 +758,9 @@ def extractOSMZone(def datasource, def zoneToExtract, def processing_parameters)
 
         return [outputZoneTable: outputZoneTable,
                 outputZoneEnvelopeTable: outputZoneEnvelopeTable,
-                envelope:envelope]
+                envelope:envelope,
+                geometry :geom
+                ]
     }else{
         error "The zone to extract cannot be null or empty"
         return null
