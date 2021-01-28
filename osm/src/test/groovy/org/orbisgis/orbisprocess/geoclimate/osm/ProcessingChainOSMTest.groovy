@@ -554,7 +554,8 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "osm" : ["Pont-de-Veyle"]],
+                        "osm" : ["Pont-de-Veyle"],
+                        "delete":true],
                 "output" :[
                 "folder" : ["path": "$directory",
                     "tables": ["grid_indicators", "zones"]]],

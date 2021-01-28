@@ -192,6 +192,14 @@ IProcess workflow() {
                         error "The all parameter must be a boolean value"
                         return null
                     }
+                    def deleteOSMFile = input.get("delete")
+                    if(!deleteOSMFile){
+                        deleteOSMFile=false
+                    }
+                    else if(!Boolean.valueOf(deleteOSMFile)){
+                        error "The delete option must be false or true"
+                        return null
+                    }
 
                     if (!osmFilters) {
                         error "Please set at least one OSM filter. e.g osm : ['A place name']"
@@ -269,7 +277,8 @@ IProcess workflow() {
                                 if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
                                         processing_parameters: processing_parameters,
                                         id_zones: osmFilters, outputFolder: file_outputFolder, ouputTableFiles: outputFolderProperties.tables,
-                                        output_datasource: output_datasource, outputTableNames: finalOutputTables, outputSRID :outputSRID, downloadAllOSMData:downloadAllOSMData, deleteOutputData: deleteOutputData)) {
+                                        output_datasource: output_datasource, outputTableNames: finalOutputTables, outputSRID :outputSRID, downloadAllOSMData:downloadAllOSMData, deleteOutputData: deleteOutputData,
+                                        deleteOSMFile:deleteOSMFile)) {
                                     return null
                                 }
                                 if (delete_h2gis) {
@@ -307,7 +316,8 @@ IProcess workflow() {
                                     if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
                                             processing_parameters: processing_parameters,
                                             id_zones: osmFilters, outputFolder: file_outputFolder, ouputTableFiles: outputFolderProperties.tables,
-                                            output_datasource: null, outputTableNames: null, outputSRID :outputSRID, downloadAllOSMData:downloadAllOSMData, deleteOutputData: deleteOutputData)) {
+                                            output_datasource: null, outputTableNames: null, outputSRID :outputSRID, downloadAllOSMData:downloadAllOSMData, deleteOutputData: deleteOutputData,
+                                            deleteOSMFile:deleteOSMFile)) {
                                         return null
                                     }
                                     //Delete database
@@ -357,7 +367,8 @@ IProcess workflow() {
                                     if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
                                             processing_parameters: processing_parameters,
                                             id_zones: osmFilters, outputFolder: null, ouputTableFiles: null,
-                                            output_datasource: output_datasource, outputTableNames: finalOutputTables,outputSRID :outputSRID,downloadAllOSMData:downloadAllOSMData, deleteOutputData: deleteOutputData)) {
+                                            output_datasource: output_datasource, outputTableNames: finalOutputTables,outputSRID :outputSRID,downloadAllOSMData:downloadAllOSMData,
+                                            deleteOutputData: deleteOutputData,deleteOSMFile:deleteOSMFile)) {
                                         return null
                                     }
                                     if (delete_h2gis) {
@@ -421,9 +432,11 @@ IProcess osm_processing() {
         title "Build OSM data and compute the geoindicators"
         id "osm_processing"
         inputs h2gis_datasource: JdbcDataSource, processing_parameters: Map, id_zones: Map,
-                outputFolder: "", ouputTableFiles: "", output_datasource: "", outputTableNames: "", outputSRID : Integer, downloadAllOSMData : true,deleteOutputData:true
+                outputFolder: "", ouputTableFiles: "", output_datasource: "", outputTableNames: "", outputSRID : Integer, downloadAllOSMData : true,
+                deleteOutputData:true, deleteOSMFile:false
         outputs outputMessage: String
-        run { h2gis_datasource, processing_parameters, id_zones, outputFolder, ouputTableFiles, output_datasource, outputTableNames, outputSRID, downloadAllOSMData,deleteOutputData ->
+        run { h2gis_datasource, processing_parameters, id_zones, outputFolder, ouputTableFiles, output_datasource, outputTableNames,
+              outputSRID, downloadAllOSMData,deleteOutputData, deleteOSMFile ->
              // Temporary tables
             int nbAreas = id_zones.size();
             info "$nbAreas osm areas will be processed"
@@ -465,6 +478,11 @@ IProcess osm_processing() {
                     if (extract.execute(overpassQuery: query)) {
                         IProcess createGISLayerProcess = OSM.createGISLayers
                         if (createGISLayerProcess.execute(datasource: h2gis_datasource, osmFilePath: extract.results.outputFilePath, epsg: srid)) {
+                            if(deleteOSMFile){
+                                if( new File(extract.results.outputFilePath).delete()){
+                                    info "The osm file ${extract.results.outputFilePath}has been deleted"
+                                }
+                            }
                             def gisLayersResults = createGISLayerProcess.getResults()
                             def rsu_indicators_params = processing_parameters.rsu_indicators
                             def grid_indicators_params = processing_parameters.grid_indicators
