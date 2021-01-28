@@ -97,7 +97,7 @@ IProcess importPreprocess() {
               rail_bd_topo_type, rail_abstract_type, rail_bd_topo_crossing, rail_abstract_crossing,
               veget_bd_topo_type, veget_abstract_type ->
 
-            info('Import the BD Topo data')
+            debug('Import the BD Topo data')
             def tmpIris = postfix 'TMP_IRIS_'
             def zone = 'ZONE'
             def zoneBuffer = postfix 'ZONE_BUFFER_'
@@ -284,7 +284,7 @@ IProcess initTypes() {
                 outputrailBDTopoType: String, outputrailBDTopoCrossing: String, outputvegetBDTopoType: String
         run { JdbcDataSource datasource, buildingAbstractUseType, roadAbstractType, roadAbstractCrossing,
               railAbstractType, railAbstractCrossing, vegetAbstractType ->
-            info 'Executing the typesMatching.sql script'
+            debug 'Executing the typesMatching.sql script'
             def buildingBDTopoUseType = 'BUILDING_BD_TOPO_USE_TYPE'
             def roadBDTopoType = 'ROAD_BD_TOPO_TYPE'
             def roadBDTopoCrossing = 'ROAD_BD_TOPO_CROSSING'
@@ -309,7 +309,7 @@ IProcess initTypes() {
             if (!success) {
                 error "Error occurred on the execution of the typesMatching.sql script"
             } else {
-                info 'The typesMatching.sql script has been executed'
+                debug 'The typesMatching.sql script has been executed'
                 [outputBuildingBDTopoUseType: buildingBDTopoUseType, outputroadBDTopoType: roadBDTopoType,
                  outputroadBDTopoCrossing   : roadBDTopoCrossing, outputrailBDTopoType: railBDTopoType,
                  outputrailBDTopoCrossing   : railBDTopoCrossing, outputvegetBDTopoType: vegetBDTopoType

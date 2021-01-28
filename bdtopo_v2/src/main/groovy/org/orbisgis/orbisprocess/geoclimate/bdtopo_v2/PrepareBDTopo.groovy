@@ -88,7 +88,7 @@ IProcess prepareData() {
             //Init model
             def initParametersAbstract = BDTopo_V2.initParametersAbstract
             if (!initParametersAbstract(datasource: datasource)) {
-                info "Cannot initialize the geoclimate data model."
+                error "Cannot initialize the geoclimate data model."
                 return
             }
             def abstractTables = initParametersAbstract.results
@@ -100,7 +100,7 @@ IProcess prepareData() {
                             roadAbstractType       : abstractTables.outputRoadAbstractType, roadAbstractCrossing: abstractTables.outputRoadAbstractCrossing,
                             railAbstractType       : abstractTables.outputRailAbstractType, railAbstractCrossing: abstractTables.outputRailAbstractCrossing,
                             vegetAbstractType      : abstractTables.outputVegetAbstractType])) {
-                info "Cannot initialize the BD Topo parameters."
+                error "Cannot initialize the BD Topo parameters."
                 return
             }
             def initTables = initTypes.results
@@ -135,7 +135,7 @@ IProcess prepareData() {
                                    rail_abstract_crossing      : abstractTables.outputRailAbstractCrossing,
                                    veget_bd_topo_type          : initTables.outputvegetBDTopoType,
                                    veget_abstract_type         : abstractTables.outputVegetAbstractType])) {
-                info "Cannot import preprocess."
+                error "Cannot import preprocess."
                 return
             }
             def preprocessTables = importPreprocess.results
@@ -155,11 +155,11 @@ IProcess prepareData() {
                                       buildingAbstractParameters: abstractTables.outputBuildingAbstractParameters,
                                       roadAbstractParameters    : abstractTables.outputRoadAbstractParameters,
                                       vegetAbstractParameters   : abstractTables.outputVegetAbstractParameters])) {
-                info "Cannot format data and compute statistics."
+                error "Cannot format data and compute statistics."
                 return
             }
 
-            info "End of the BD Topo extract transform process."
+            debug "End of the BD Topo extract transform process."
 
             def finalBuildings = inputDataFormatting.results.outputBuilding
             def finalRoads = inputDataFormatting.results.outputRoad

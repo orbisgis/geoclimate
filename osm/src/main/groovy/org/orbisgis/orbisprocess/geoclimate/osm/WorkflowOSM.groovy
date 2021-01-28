@@ -144,8 +144,8 @@ IProcess workflow() {
             Map parameters = readJSONParameters(configFile)
 
             if (parameters) {
-                info "Reading file parameters from $configFile"
-                info parameters.get("description")
+                debug "Reading file parameters from $configFile"
+                debug parameters.get("description")
                 def input = parameters.get("input")
                 def output = parameters.get("output")
                 //Default H2GIS database properties
@@ -288,7 +288,7 @@ IProcess workflow() {
                                     if(localCon){
                                         localCon.close()
                                         DeleteDbFiles.execute(databaseFolder, databaseName, true)
-                                        info "The local H2GIS database : ${databasePath} has been deleted"
+                                        debug "The local H2GIS database : ${databasePath} has been deleted"
                                     }
                                     else{
                                         error "Cannot delete the local H2GIS database : ${databasePath} "
@@ -330,7 +330,7 @@ IProcess workflow() {
                                         if(localCon){
                                             localCon.close()
                                             DeleteDbFiles.execute(databaseFolder, databaseName, true)
-                                            info "The local H2GIS database : ${databasePath} has been deleted"
+                                            debug "The local H2GIS database : ${databasePath} has been deleted"
                                         }
                                         else{
                                             error "Cannot delete the local H2GIS database : ${databasePath} "
@@ -382,7 +382,7 @@ IProcess workflow() {
                                         if(localCon){
                                             localCon.close()
                                             DeleteDbFiles.execute(databaseFolder, databaseName, true)
-                                            info "The local H2GIS database : ${databasePath} has been deleted"
+                                            debug "The local H2GIS database : ${databasePath} has been deleted"
                                         }
                                         else{
                                             error "Cannot delete the local H2GIS database : ${databasePath} "
@@ -488,14 +488,14 @@ IProcess osm_processing() {
                         if (createGISLayerProcess.execute(datasource: h2gis_datasource, osmFilePath: extract.results.outputFilePath, epsg: srid)) {
                             if(deleteOSMFile){
                                 if( new File(extract.results.outputFilePath).delete()){
-                                    info "The osm file ${extract.results.outputFilePath}has been deleted"
+                                    debug "The osm file ${extract.results.outputFilePath}has been deleted"
                                 }
                             }
                             def gisLayersResults = createGISLayerProcess.getResults()
                             def rsu_indicators_params = processing_parameters.rsu_indicators
                             def grid_indicators_params = processing_parameters.grid_indicators
 
-                            info "Formating OSM GIS layers"
+                            debug "Formating OSM GIS layers"
                             //Format urban areas
                             IProcess format = OSM.formatUrbanAreas
                             format.execute([
@@ -580,7 +580,7 @@ IProcess osm_processing() {
 
                             hydrographicTableName = format.results.outputTableName
 
-                            info "OSM GIS layers formated"
+                            debug "OSM GIS layers formated"
 
                             //Add the GIS layers to the list of results
                             def results = [:]
@@ -891,7 +891,7 @@ def loadDataFromFolder(def inputFolder, def h2gis_datasource, def id_zones){
                 //Load the files
                 def numberFiles = geoFiles.size()
                 geoFiles.eachWithIndex { geoFile , index->
-                    info "Loading file $geoFile $index on $numberFiles"
+                    debug "Loading file $geoFile $index on $numberFiles"
                     h2gis_datasource.load(geoFile, true)
                 }
                 return id_zones
@@ -1007,7 +1007,7 @@ def extractProcessingParameters(def processing_parameters){
                     rsu_indicators_default.indicatorUse = indicatorUseP
                 }
                 else {
-                    info "Please set a valid list of RSU indicator names in ${allowedOutputRSUIndicators}"
+                    error "Please set a valid list of RSU indicator names in ${allowedOutputRSUIndicators}"
                     return
                 }
             }else{
@@ -1054,11 +1054,11 @@ def extractProcessingParameters(def processing_parameters){
             def list_indicators = grid_indicators.indicators
             if(x_size && y_size){
                 if(x_size<=0 || y_size<= 0){
-                    info "Invalid grid size padding. Must be greater that 0"
+                    error "Invalid grid size padding. Must be greater that 0"
                     return
                 }
                 if(!list_indicators){
-                    info "The list of indicator names cannot be null or empty"
+                    error "The list of indicator names cannot be null or empty"
                     return
                 }
                 def allowed_grid_indicators=["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
@@ -1086,7 +1086,7 @@ def extractProcessingParameters(def processing_parameters){
                 defaultParameters.put("grid_indicators", grid_indicators_tmp)
                 }
                 else {
-                    info "Please set a valid list of indicator names in ${allowed_grid_indicators}"
+                    error "Please set a valid list of indicator names in ${allowed_grid_indicators}"
                     return
                 }
             }

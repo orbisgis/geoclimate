@@ -36,12 +36,12 @@ IProcess buildGeoclimateLayers() {
                 return
             }
 
-            info "Building OSM GIS layers"
+            debug "Building OSM GIS layers"
             IProcess process = OSM.extractAndCreateGISLayers
             if (process.execute([datasource: datasource, zoneToExtract: zoneToExtract,
                                  distance  : distance])) {
 
-                info "OSM GIS layers created"
+                debug "OSM GIS layers created"
 
                 Map res = process.getResults()
 
@@ -55,7 +55,7 @@ IProcess buildGeoclimateLayers() {
                 def zoneEnvelopeTableName = res.zoneEnvelopeTableName
                 def epsg = datasource.getSpatialTable(zoneTableName).srid
                 if (zoneEnvelopeTableName != null) {
-                    info "Formating OSM GIS layers"
+                    debug "Formating OSM GIS layers"
                     IProcess format = OSM.formatBuildingLayer
                     format.execute([
                             datasource                : datasource,
@@ -105,7 +105,7 @@ IProcess buildGeoclimateLayers() {
                             epsg                      : epsg])
                     imperviousTableName = format.results.outputTableName
 
-                    info "OSM GIS layers formated"
+                    debug "OSM GIS layers formated"
 
                 }
 

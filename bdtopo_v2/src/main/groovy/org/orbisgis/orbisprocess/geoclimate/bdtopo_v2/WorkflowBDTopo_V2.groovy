@@ -149,8 +149,8 @@ IProcess workflow() {
             }
             Map parameters = readJSONParameters(configFile)
             if (parameters) {
-                info "Reading file parameters from $configFile"
-                info parameters.description
+                debug "Reading file parameters from $configFile"
+                debug parameters.description
                 def input = parameters.input
                 def output = parameters.output
                 //Default H2GIS database properties
@@ -281,7 +281,7 @@ IProcess workflow() {
                                         if(localCon){
                                             localCon.close()
                                             DeleteDbFiles.execute(databaseFolder, databaseName, true)
-                                            info "The local H2GIS database : ${databasePath} has been deleted"
+                                            debug "The local H2GIS database : ${databasePath} has been deleted"
                                         }
                                         else{
                                             error "Cannot delete the local H2GIS database : ${databasePath} "
@@ -316,7 +316,7 @@ IProcess workflow() {
                                             if(localCon){
                                                 localCon.close()
                                                 DeleteDbFiles.execute(databaseFolder, databaseName, true)
-                                                info "The local H2GIS database : ${databasePath} has been deleted"
+                                                debug "The local H2GIS database : ${databasePath} has been deleted"
                                             }
                                             else{
                                                 error "Cannot delete the local H2GIS database : ${databasePath} "
@@ -358,7 +358,7 @@ IProcess workflow() {
                                             if(localCon){
                                                 localCon.close()
                                                 DeleteDbFiles.execute(databaseFolder, databaseName, true)
-                                                info "The local H2GIS database : ${databasePath} has been deleted"
+                                                debug "The local H2GIS database : ${databasePath} has been deleted"
                                             }
                                             else{
                                                 error "Cannot delete the local H2GIS database : ${databasePath} "
@@ -462,7 +462,7 @@ IProcess workflow() {
                                         if(localCon){
                                             localCon.close()
                                             DeleteDbFiles.execute(databaseFolder, databaseName, true)
-                                            info "The local H2GIS database : ${databasePath} has been deleted"
+                                            debug "The local H2GIS database : ${databasePath} has been deleted"
                                         }
                                         else{
                                             error "Cannot delete the local H2GIS database : ${databasePath} "
@@ -507,7 +507,7 @@ IProcess workflow() {
                                             if(localCon){
                                                 localCon.close()
                                                 DeleteDbFiles.execute(databaseFolder, databaseName, true)
-                                                info "The local H2GIS database : ${databasePath} has been deleted"
+                                                debug "The local H2GIS database : ${databasePath} has been deleted"
                                             }
                                             else{
                                                 error "Cannot delete the local H2GIS database : ${databasePath} "
@@ -594,7 +594,7 @@ IProcess workflow() {
                                             if(localCon){
                                                 localCon.close()
                                                 DeleteDbFiles.execute(databaseFolder, databaseName, true)
-                                                info "The local H2GIS database : ${databasePath} has been deleted"
+                                                debug "The local H2GIS database : ${databasePath} has been deleted"
                                             }
                                             else{
                                                 error "Cannot delete the local H2GIS database : ${databasePath} "
@@ -636,7 +636,7 @@ IProcess workflow() {
                                                 if(localCon){
                                                     localCon.close()
                                                     DeleteDbFiles.execute(databaseFolder, databaseName, true)
-                                                    info "The local H2GIS database : ${databasePath} has been deleted"
+                                                    debug "The local H2GIS database : ${databasePath} has been deleted"
                                                 }
                                                 else{
                                                     error "Cannot delete the local H2GIS database : ${databasePath} "
@@ -760,7 +760,7 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
     input_database_properties =updateDriverURL(input_database_properties)
     String inputTableName = "(SELECT THE_GEOM, INSEE_COM FROM $iris_ge_location WHERE insee_com=''$code'')"
     String outputTableName = "IRIS_GE"
-    info "Loading in the H2GIS database $outputTableName"
+    debug "Loading in the H2GIS database $outputTableName"
     IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
     def count = h2gis_datasource."$outputTableName".rowCount
     if (count > 0) {
@@ -771,28 +771,28 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
         if(inputTableNames.bati_indifferencie){
             //Extract bati_indifferencie
             inputTableName = "(SELECT ID, THE_GEOM, HAUTEUR FROM ${inputTableNames.bati_indifferencie}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
-            info "Loading in the H2GIS database $outputTableNameBatiInd"
+            debug "Loading in the H2GIS database $outputTableNameBatiInd"
             IOMethods.loadTable(input_database_properties, inputTableName, outputTableNameBatiInd, true, h2gis_datasource)
         }
         def   outputTableNameBatiIndus = "BATI_INDUSTRIEL"
         if(inputTableNames.bati_industriel) {
             //Extract bati_industriel
             inputTableName = "(SELECT ID, THE_GEOM, NATURE, HAUTEUR FROM ${inputTableNames.bati_industriel}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
-            info "Loading in the H2GIS database $outputTableNameBatiIndus"
+            debug "Loading in the H2GIS database $outputTableNameBatiIndus"
             IOMethods.loadTable(input_database_properties, inputTableName, outputTableNameBatiIndus, true, h2gis_datasource)
         }
         def outputTableNameBatiRem = "BATI_REMARQUABLE"
         if(inputTableNames.bati_remarquable) {
             //Extract bati_remarquable
             inputTableName = "(SELECT ID, THE_GEOM, NATURE, HAUTEUR FROM ${inputTableNames.bati_remarquable}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
-            info "Loading in the H2GIS database $outputTableNameBatiRem"
+            debug "Loading in the H2GIS database $outputTableNameBatiRem"
             IOMethods.loadTable(input_database_properties, inputTableName, outputTableNameBatiRem, true, h2gis_datasource)
         }
         def  outputTableNameRoad = "ROUTE"
         if(inputTableNames.route) {
             //Extract route
             inputTableName = "(SELECT ID, THE_GEOM, NATURE, LARGEUR, POS_SOL, FRANCHISST FROM ${inputTableNames.route}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
-            info "Loading in the H2GIS database $outputTableNameRoad"
+            debug "Loading in the H2GIS database $outputTableNameRoad"
             IOMethods.loadTable(input_database_properties, inputTableName, outputTableNameRoad, true, h2gis_datasource)
         }
         else{
@@ -814,56 +814,56 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
             //Extract troncon_voie_ferree
             inputTableName = "(SELECT ID, THE_GEOM, NATURE, LARGEUR, POS_SOL, FRANCHISST FROM ${inputTableNames.troncon_voie_ferree}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "TRONCON_VOIE_FERREE"
-            info "Loading in the H2GIS database $outputTableName"
+            debug "Loading in the H2GIS database $outputTableName"
             IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)}
 
         if(inputTableNames.surface_eau) {
             //Extract surface_eau
             inputTableName = "(SELECT ID, THE_GEOM FROM ${inputTableNames.surface_eau}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "SURFACE_EAU"
-            info "Loading in the H2GIS database $outputTableName"
+            debug "Loading in the H2GIS database $outputTableName"
             IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)}
 
         if(inputTableNames.zone_vegetation) {
             //Extract zone_vegetation
             inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.zone_vegetation}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "ZONE_VEGETATION"
-            info "Loading in the H2GIS database $outputTableName"
+            debug "Loading in the H2GIS database $outputTableName"
             IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)}
 
         if(inputTableNames.terrain_sport) {
             //Extract terrain_sport
             inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.terrain_sport}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY) AND NATURE=''Piste de sport'')"
             outputTableName = "TERRAIN_SPORT"
-            info "Loading in the H2GIS database $outputTableName"
+            debug "Loading in the H2GIS database $outputTableName"
             IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)}
 
         if(inputTableNames.construction_surfacique) {
             //Extract construction_surfacique
             inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.construction_surfacique}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY) AND (NATURE=''Barrage'' OR NATURE=''Ecluse'' OR NATURE=''Escalier''))"
             outputTableName = "CONSTRUCTION_SURFACIQUE"
-            info "Loading in the H2GIS database $outputTableName"
+            debug "Loading in the H2GIS database $outputTableName"
             IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)}
 
         if(inputTableNames.surface_route) {
             //Extract surface_route
             inputTableName = "(SELECT ID, THE_GEOM  FROM ${inputTableNames.surface_route}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "SURFACE_ROUTE"
-            info "Loading in the H2GIS database $outputTableName"
+            debug "Loading in the H2GIS database $outputTableName"
             IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)}
 
         if(inputTableNames.surface_activite) {
             //Extract surface_activite
             inputTableName = "(SELECT ID, THE_GEOM, CATEGORIE  FROM ${inputTableNames.surface_activite}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY) AND (CATEGORIE=''Administratif'' OR CATEGORIE=''Enseignement'' OR CATEGORIE=''Santé''))"
             outputTableName = "SURFACE_ACTIVITE"
-            info "Loading in the H2GIS database $outputTableName"
+            debug "Loading in the H2GIS database $outputTableName"
             IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
         }
         //Extract PISTE_AERODROME
         if(inputTableNames.piste_aerodrome){
             inputTableName = "(SELECT ID, THE_GEOM  FROM ${inputTableNames.piste_aerodrome}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "PISTE_AERODROME"
-            info "Loading in the H2GIS database $outputTableName"
+            debug "Loading in the H2GIS database $outputTableName"
             IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
         }
 
@@ -871,7 +871,7 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
         if(inputTableNames.reservoir){
             inputTableName = "(SELECT ID, THE_GEOM, NATURE, HAUTEUR  FROM ${inputTableNames.reservoir}  WHERE the_geom && ''SRID=$srid;$geomToExtract''::GEOMETRY AND ST_INTERSECTS(the_geom, ''SRID=$srid;$geomToExtract''::GEOMETRY))"
             outputTableName = "RESERVOIR"
-            info "Loading in the H2GIS database $outputTableName"
+            debug "Loading in the H2GIS database $outputTableName"
             IOMethods.loadTable(input_database_properties, inputTableName, outputTableName, true, h2gis_datasource)
         }
 
@@ -937,7 +937,7 @@ def loadDataFromFolder(def inputFolder, def h2gis_datasource, def id_zones){
                 //Load the files
                 def numberFiles = geoFiles.size()
                 geoFiles.eachWithIndex { geoFile , index->
-                    info "Loading file $geoFile $index on $numberFiles"
+                    debug "Loading file $geoFile $index on $numberFiles"
                     h2gis_datasource.load(geoFile, true)
                 }
                 return id_zones
@@ -1056,11 +1056,11 @@ def extractProcessingParameters(def processing_parameters){
                     rsu_indicators_default.indicatorUse = indicatorUseP
                 }
                 else {
-                    info "Please set a valid list of RSU indicator names in ${allowedOutputRSUIndicators}"
+                    error "Please set a valid list of RSU indicator names in ${allowedOutputRSUIndicators}"
                     return
                 }
             }else{
-                info "The list of RSU indicator names cannot be null or empty"
+                error "The list of RSU indicator names cannot be null or empty"
                 return
             }
             def snappingToleranceP =  rsu_indicators.snappingTolerance
@@ -1100,11 +1100,11 @@ def extractProcessingParameters(def processing_parameters){
             def list_indicators = grid_indicators.indicators
             if(x_size && y_size){
                 if(x_size<=0 || y_size<= 0){
-                    info "Invalid grid size padding. Must be greater that 0"
+                    error "Invalid grid size padding. Must be greater that 0"
                     return
                 }
                 if(!list_indicators){
-                    info "The list of indicator names cannot be null or empty"
+                    error "The list of indicator names cannot be null or empty"
                     return
                 }
                 def allowed_grid_indicators=["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
@@ -1119,7 +1119,7 @@ def extractProcessingParameters(def processing_parameters){
                     defaultParameters.put("grid_indicators", grid_indicators_tmp)
                 }
                 else {
-                    info "Please set a valid list of indicator names in ${allowed_grid_indicators}"
+                    error "Please set a valid list of indicator names in ${allowed_grid_indicators}"
                     return
                 }
             }
@@ -1895,7 +1895,7 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
             if (output_datasource.hasTable(output_table)) {
                 output_datasource.execute("DELETE FROM $output_table WHERE id_zone=?", id_zone.toString());
                 //If the table exists we populate it with the last result
-                info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
+                debug "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
                 int BATCH_MAX_SIZE = 1000;
                 ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource)
                 if (inputRes) {
@@ -1950,12 +1950,12 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
                         return false;
                     } finally {
                         outputconnection.setAutoCommit(true);
-                        info "The table $h2gis_table_to_save has been exported into the table $output_table"
+                        debug "The table $h2gis_table_to_save has been exported into the table $output_table"
                     }
                 }
             }else {
                 def tmpTable =null
-                info "Start to export the table $h2gis_table_to_save into the table $output_table"
+                debug "Start to export the table $h2gis_table_to_save into the table $output_table"
                 if (filter) {
                     if(!reproject){
                         tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().save(output_datasource, output_table, true);
@@ -1987,7 +1987,7 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
                 if(tmpTable) {
                     output_datasource.execute("UPDATE $output_table SET id_zone= ?", id_zone);
                     output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""")
-                    info "The table $h2gis_table_to_save has been exported into the table $output_table"
+                    debug "The table $h2gis_table_to_save has been exported into the table $output_table"
                 }else{
                     warn "The table $h2gis_table_to_save hasn't been exported into the table $output_table"
                 }
