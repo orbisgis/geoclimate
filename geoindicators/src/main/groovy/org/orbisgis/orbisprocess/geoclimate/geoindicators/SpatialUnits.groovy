@@ -475,9 +475,24 @@ IProcess createGrid() {
     return create {
         title"Creating a regular grid in meter"
         id "createGrid"
-        inputs geometry: Geometry, deltaX: double, deltaY: double, prefixName: "", datasource: JdbcDataSource
+        inputs geometry: Geometry, deltaX: double, deltaY: double, rowCol : false, prefixName: "", datasource: JdbcDataSource
         outputs outputTableName: String
-        run { geometry, deltaX, deltaY, prefixName, datasource ->
+        run { geometry, deltaX, deltaY, rowCol, prefixName, datasource ->
+            if(rowCol){
+                if(!deltaX ||!deltaY || deltaX<1 || deltaY< 1){
+                    info "Invalid grid size padding. Must be greater or equal than 1"
+                    return
+                }
+            }else{
+                if(!deltaX ||!deltaY || deltaX<=0 || deltaY<= 0){
+                    info "Invalid grid size padding. Must be greater than 0"
+                    return
+                }
+            }
+            if(!geometry){
+                info "The envelope is null or empty. Cannot compute the grid"
+                return
+            }
 
             def BASENAME = "grid"
             def outputTableName = prefix prefixName, BASENAME
@@ -487,7 +502,7 @@ IProcess createGrid() {
                 info "Creating grid with H2GIS"
                 datasource """
                            CREATE TABLE $outputTableName AS SELECT * FROM 
-                           ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY);
+                           ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY,$rowCol);
                            """
             }
             else if (datasource instanceof POSTGIS) {
@@ -499,7 +514,7 @@ IProcess createGrid() {
                     def insertTable = "INSERT INTO $outputTableName VALUES (?, ?, ?, ?);"
                     datasource.execute(createTable)
                     preparedStatement = outputConnection.prepareStatement(insertTable)
-                    def result = ST_MakeGrid.createGrid(outputConnection, ValueGeometry.getFromGeometry(geometry), deltaX, deltaY)
+                    def result = ST_MakeGrid.createGrid(outputConnection, ValueGeometry.getFromGeometry(geometry), deltaX, deltaY, rowCol)
                     long batch_size = 0
                     int batchSize = 1000
 

@@ -3,6 +3,7 @@ package org.orbisgis.orbisprocess.geoclimate.osm
 import groovy.json.JsonOutput
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.orbisgis.orbisanalysis.osm.utils.Utilities
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
@@ -553,7 +554,8 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "osm" : ["Pont-de-Veyle"]],
+                        "osm" : ["Pont-de-Veyle"],
+                        "delete":true],
                 "output" :[
                 "folder" : ["path": "$directory",
                     "tables": ["grid_indicators", "zones"]]],
@@ -562,7 +564,8 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                          "grid_indicators": [
                              "x_size": 1000,
                              "y_size": 1000,
-                             "indicators": ["WATER_FRACTION"]
+                             "indicators": ["WATER_FRACTION"],
+                             "output":"asc"
                          ]
                         ]
         ]
@@ -573,6 +576,40 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         def  grid_file = new File("${directory+File.separator}osm_Pont-de-Veyle${File.separator}grid_indicators_water_fraction.asc")
         h2gis.execute("DROP TABLE IF EXISTS water_grid; CALL ASCREAD('${grid_file.getAbsolutePath()}', 'water_grid')")
         assertTrue h2gis.firstRow("select count(*) as count from water_grid").count==6
+    }
+
+    @Test
+    void testLoggerZones() {
+        String directory ="./target/geoclimate_chain_grid_logger"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "description" :"Example of configuration file to run the grid indicators",
+                "geoclimatedb" : [
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete" :false
+                ],
+                "input" : [
+                        "osm" : [[48.49749,5.25349,48.58082,5.33682]],
+                        "delete":true],
+                "output" :[
+                        "folder" : ["path": "$directory",
+                                    "tables": ["grid_indicators", "zones"]]],
+                "parameters":
+                        ["distance" : 0,
+                         "grid_indicators": [
+                                 "x_size": 10,
+                                 "y_size": 10,
+                                  rowCol: true,
+                                 "indicators": ["WATER_FRACTION"],
+                                 "output":"asc"
+                         ]
+                        ]
+        ]
+        IProcess process = OSM.workflow
+        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
     @Disabled //Use it for debug
@@ -628,18 +665,15 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "osm" : [[
                                          47.5850280136227326, -2.8336857569620904, 47.6683580136227292, -2.7503557569620902
                                  ]]],
-                "output" :["folder" : "$directory"]
+                "output" :["folder" : "$directory",srid: 4326]
                 ,
                 "parameters":
                         ["distance" : 0,
-                         "rsu_indicators":[
-                                 "indicatorUse": ["LCZ"],
-                                 "svfSimplified": true,
-                                 "estimateHeight":true
-                         ],
                          "grid_indicators": [
-                                 "x_size": 1000,
-                                 "y_size": 1000,
+                                 "x_size": 10,
+                                 "y_size": 10,
+                                 "rowCol": true,
+                                 "output" : "ascii",
                                  "indicators": ["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
                                                 "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "LCZ_FRACTION"]
                          ]
@@ -649,6 +683,23 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         IProcess process = OSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
+
+
+    @Disabled
+    @Test
+    void createSlimDomain(){
+        String directory ="./target/geoclimate_slim"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        H2GIS outputdb = H2GIS.open(dirFile.absolutePath+File.separator+"slim_domain;AUTO_SERVER=TRUE")
+        def geometry = Utilities.geometryFromNominatim([29.9999991084025197,-11.9999857569620900,72.0007180136227305,32.0023184854007070]);
+        def deltaX = 100000
+        geometry.setSRID(4326)
+        outputdb.execute("""CREATE TABLE SLIM_DOMAINS as select * from ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaX);""")
+        outputdb.execute("call shpwrite('/tmp/grid_domains.shp', 'SLIM_DOMAINS')")
+    }
+
 
     @Test
     void testOSMTEB() {
