@@ -616,7 +616,7 @@ IProcess osm_processing() {
 
                                     error "Cannot build the geoindicators for the zone $id_zone"
 
-                                    h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,$id_zone, 'Error computing geoindicators')"
+                                    h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error computing geoindicators')"
 
                                     return
                                 }
@@ -649,7 +649,7 @@ IProcess osm_processing() {
                                         results.put("grid_indicators", rasterizedIndicators.results.outputTableName)
                                     }
                             }else{
-                                h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,$id_zone, 'Error computing the grid indicators')"
+                                h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error computing the grid indicators')"
                             }
                             if (outputFolder  && ouputTableFiles) {
                                 saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject, deleteOutputData, outputGrid)
@@ -660,13 +660,13 @@ IProcess osm_processing() {
                             }
 
                         } else {
-                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,$id_zone, 'Error loading the OSM file')"
+                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error loading the OSM file')"
                             error "Cannot load the OSM file ${extract.results.outputFilePath}"
                             return
                         }
                     } else {
                         //Log in table
-                        h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,$id_zone, 'Error to extract the data with OverPass')"
+                        h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error to extract the data with OverPass')"
                         error "Cannot execute the overpass query $query"
                         return
                     }
@@ -675,13 +675,13 @@ IProcess osm_processing() {
                     if (id_zone in Collection) {
                         def geom = Utilities.geometryFromOverpass(id_zone)
                         if (!geom) {
-                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(null,$id_zone, 'Error to extract the zone with Nominatim')"
+                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(null,'$id_zone', 'Error to extract the zone with Nominatim')"
                         }
                         else{
-                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('$geom',4326) ,$id_zone, 'Error to extract the zone with Nominatim')"
+                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('$geom',4326) ,'$id_zone', 'Error to extract the zone with Nominatim')"
                         }
                     } else if (id_zone instanceof String) {
-                        h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(null,$id_zone, 'Error to extract the zone with Nominatim')"
+                        h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(null,'$id_zone', 'Error to extract the zone with Nominatim')"
                     }
                     error "Cannot calculate a bounding box to extract OSM data"
                     return
