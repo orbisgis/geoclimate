@@ -33,7 +33,7 @@ IProcess initParametersAbstract() {
                 outputRoadAbstractCrossing: String, outputRailAbstractType: String, outputRailAbstractCrossing: String,
                 outputVegetAbstractType: String, outputVegetAbstractParameters: String
         run { JdbcDataSource datasource ->
-            info 'Executing the parametersAndAbstractTables.sql script'
+            debug 'Executing the parametersAndAbstractTables.sql script'
             def buildingAbstractUseType = 'BUILDING_ABSTRACT_USE_TYPE'
             def buildingAbstractParam = 'BUILDING_ABSTRACT_PARAMETERS'
             def roadAbstractType = 'ROAD_ABSTRACT_TYPE'
@@ -58,7 +58,7 @@ IProcess initParametersAbstract() {
                      VEGET_ABSTRACT_PARAMETERS   : vegetAbstractParam
                     ])
 
-            info 'The parametersAndAbstractTables.sql script has been executed'
+            debug 'The parametersAndAbstractTables.sql script has been executed'
 
             [outputBuildingAbstractUseType   : buildingAbstractUseType,
              outputBuildingAbstractParameters: buildingAbstractParam,

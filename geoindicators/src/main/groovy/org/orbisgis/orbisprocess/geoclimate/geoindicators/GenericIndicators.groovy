@@ -55,7 +55,7 @@ IProcess unweightedOperationFromLowerScale() {
             def COLUMN_TYPE_TO_AVOID = ["GEOMETRY", "VARCHAR"]
             def SPECIFIC_OPERATIONS = [NB_DENS]
 
-            info "Executing Unweighted statistical operations from lower scale"
+            debug "Executing Unweighted statistical operations from lower scale"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
@@ -144,7 +144,7 @@ IProcess weightedAggregatedStatistics() {
             def STD = "STD"
             def BASE_NAME = "weighted_aggregated_statistics"
 
-            info "Executing Weighted statistical operations from lower scale"
+            debug "Executing Weighted statistical operations from lower scale"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
@@ -230,7 +230,7 @@ IProcess geometryProperties() {
                        "st_coorddim", "st_num_geoms", "st_num_pts", "st_issimple", "st_isvalid", "st_isempty"]
             def BASE_NAME = "geometry_properties"
 
-            info "Executing Geometry properties"
+            debug "Executing Geometry properties"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
@@ -299,7 +299,7 @@ IProcess buildingDirectionDistribution() {
             def UNIQUENESS = "BUILDING_DIRECTION_UNIQUENESS"
             def BASENAME = "MAIN_BUILDING_DIRECTION"
 
-            info "Executing Perkins skill score building direction"
+            debug "Executing Perkins skill score building direction"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASENAME
@@ -466,7 +466,7 @@ IProcess distributionCharacterization() {
             def BASENAME =  "DISTRIBUTION_REPARTITION"
             def GEOMETRY_FIELD = "THE_GEOM"
 
-            info "Executing equality and uniqueness indicators"
+            debug "Executing equality and uniqueness indicators"
 
             if (extremum.toUpperCase() == "GREATEST" || extremum.toUpperCase() == "LEAST") {
                 // The name of the outputTableName is constructed
@@ -716,7 +716,7 @@ IProcess typeProportion() {
             def BASE_NAME = "type_proportion"
             def NB_LEV = "nb_lev"
 
-            info "Executing typeProportion"
+            debug "Executing typeProportion"
 
             if(areaTypeAndComposition || floorAreaTypeAndComposition) {
                 // The name of the outputTableName is constructed
@@ -830,7 +830,7 @@ IProcess gatherScales() {
             def BUILD_COL_TO_REMOVE = ["THE_GEOM", "ID_RSU", "ID_BUILD", "ID_BLOCK", "ID_ZONE" , "NB_LEV", "ZINDEX", "MAIN_USE", "TYPE", "ID_SOURCE"]
             def BASE_NAME = "all_scales_table"
 
-            info """ Executing the gathering of scales (to building or to RSU scale)"""
+            debug """ Executing the gathering of scales (to building or to RSU scale)"""
 
             if ((targetedScale.toUpperCase() == "RSU") || (targetedScale.toUpperCase() == "BUILDING")) {
                 // Temporary tables that will be deleted at the end of the process
@@ -1122,7 +1122,7 @@ IProcess upperScaleAreaStatistics() {
             datasource.execute(qjoin)
             // Drop intermediate tables created during process
             datasource.execute("DROP TABLE IF EXISTS $spatialJoinTable, $pivotTable;")
-            info "The zonal area table have been created"
+            debug "The zonal area table have been created"
             [outputTableName: outputTableName]
         }
     }

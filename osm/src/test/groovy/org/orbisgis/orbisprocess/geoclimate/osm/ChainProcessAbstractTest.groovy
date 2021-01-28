@@ -42,7 +42,7 @@ class ChainProcessAbstractTest {
         String relationRSU = spatialUnits.getResults().outputTableRsuName
 
         if (saveResults) {
-            logger.info("Saving spatial units")
+            logger.debug("Saving spatial units")
             IProcess saveTables = Geoindicators.DataUtils.saveTablesAsFiles()
             saveTables.execute([inputTableNames: spatialUnits.getResults().values(), delete:true
                                 , directory    : directory, datasource: datasource])
@@ -67,7 +67,7 @@ class ChainProcessAbstractTest {
         String buildingIndicators = computeBuildingsIndicators.getResults().outputTableName
         assertTrue(datasource.getSpatialTable(buildingIndicators).srid>0)
         if (saveResults) {
-            logger.info("Saving building indicators")
+            logger.debug("Saving building indicators")
             datasource.getSpatialTable(buildingIndicators).save(directory + File.separator + "${buildingIndicators}.geojson", true)
         }
 
@@ -85,7 +85,7 @@ class ChainProcessAbstractTest {
                                                        prefixName            : prefixName])
             String blockIndicators = computeBlockIndicators.getResults().outputTableName
             if (saveResults) {
-                logger.info("Saving block indicators")
+                logger.debug("Saving block indicators")
                 datasource.getSpatialTable(blockIndicators).save(directory + File.separator + "${blockIndicators}.geojson", true)
             }
             //Check if we have the same number of blocks
@@ -108,7 +108,7 @@ class ChainProcessAbstractTest {
                                                  svfSimplified    : svfSimplified])
         String rsuIndicators = computeRSUIndicators.getResults().outputTableName
         if (saveResults) {
-            logger.info("Saving RSU indicators")
+            logger.debug("Saving RSU indicators")
             datasource.getSpatialTable(rsuIndicators).save(directory + File.separator + "${rsuIndicators}.geojson", true)
         }
 

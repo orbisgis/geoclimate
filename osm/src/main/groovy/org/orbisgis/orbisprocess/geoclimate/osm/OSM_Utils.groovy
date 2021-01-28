@@ -17,7 +17,7 @@ abstract class OSM_Utils extends GroovyProcessFactory {
     static def info = { obj -> logger.info(obj.toString()) }
     static def warn = { obj -> logger.warn(obj.toString()) }
     static def error = { obj -> logger.error(obj.toString()) }
-
+    static debug = { obj -> logger.debug(obj.toString()) }
     /**
      * Utility method to generate a name
      * @param prefixName
