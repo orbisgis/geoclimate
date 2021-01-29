@@ -1854,31 +1854,23 @@ IProcess rasterizeIndicators() {
         inputs datasource: JdbcDataSource,
                 envelope: Envelope,
                 x_size : Integer, y_size : Integer,
-                srid : Integer,list_indicators :[],
+                srid : Integer,rowCol : false, list_indicators :[],
                 buildingTable: "", roadTable: "", vegetationTable: "",
                 hydrographicTable: "", imperviousTable: "", rsu_lcz:"",
                 rsu_urban_typo_area:"",rsu_urban_typo_floor_area:"",
                 prefixName: String
         outputs outputTableName: String
-        run { datasource, envelope, x_size, y_size,srid,list_indicators,buildingTable, roadTable, vegetationTable,
+        run { datasource, envelope, x_size, y_size,srid,rowCol, list_indicators,buildingTable, roadTable, vegetationTable,
             hydrographicTable, imperviousTable, rsu_lcz,rsu_urban_typo_area,rsu_urban_typo_floor_area, prefixName ->
-            if(!x_size ||!y_size || x_size<=0 || y_size<= 0){
-                info "Invalid grid size padding. Must be greater that 0"
-                return
-            }
             if(!list_indicators){
                 info "The list of indicator names cannot be null or empty"
-                return
-            }
-            if(!envelope){
-                info "The envelope is null or empty. Cannot compute the grid indicators"
                 return
             }
             def grid_indicators_table = "grid_indicators"
             def grid_column_identifier ="id"
             //Start to compute the grid
             def gridProcess = Geoindicators.SpatialUnits.createGrid()
-            if(gridProcess.execute([geometry: envelope, deltaX: x_size, deltaY: y_size,  datasource: datasource])) {
+            if(gridProcess.execute([geometry: envelope, deltaX: x_size, deltaY: y_size,  rowCol :rowCol , datasource: datasource])) {
                 def grid_table_name = gridProcess.results.outputTableName
                 //Reproject the grid in the local UTM
                 if(envelope.getSRID()==4326){

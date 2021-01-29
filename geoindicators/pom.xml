@@ -8,9 +8,11 @@
         <groupId>org.orbisgis.orbisprocess</groupId>
         <artifactId>geoclimate-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../</relativePath>
     </parent>
     <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
     <artifactId>geoindicators</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -31,18 +33,46 @@
         <dependency>
             <groupId>org.orbisgis.orbisdata.datamanager</groupId>
             <artifactId>jdbc</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-simple</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.orbisgis.orbisdata.datamanager</groupId>
+            <artifactId>api</artifactId>
         </dependency>
         <dependency>
             <groupId>org.orbisgis.orbisdata.processmanager</groupId>
             <artifactId>process</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-simple</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.orbisgis.orbisdata.datamanager</groupId>
             <artifactId>dataframe</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-simple</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.orbisgis</groupId>
             <artifactId>h2gis-network</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-simple</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.github.haifengl</groupId>
@@ -57,12 +87,20 @@
             <groupId>com.github.haifengl</groupId>
             <artifactId>smile-data</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+        </dependency>
 
         <!-- Test dependencies -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>

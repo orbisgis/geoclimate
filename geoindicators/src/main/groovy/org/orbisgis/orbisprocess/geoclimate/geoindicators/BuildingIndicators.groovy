@@ -47,7 +47,7 @@ IProcess sizeProperties() {
             def DIST_PASSIV = 3
             def BASE_NAME = "building_size_properties"
 
-            info "Executing Building size properties"
+            debug "Executing Building size properties"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
@@ -125,7 +125,7 @@ IProcess neighborsProperties() {
             def OPS = [OP_CONTIGUITY, OP_COMMON_WALL_FRACTION, OP_NUMBER_BUILDING_NEIGHBOR]
             def BASE_NAME = "building_neighbors_properties"
 
-            info "Executing Building interactions properties"
+            debug "Executing Building interactions properties"
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
             def build_intersec = postfix "build_intersec"
@@ -233,7 +233,7 @@ IProcess formProperties() {
             def OP_CONVEXITY = "perimeter_convexity"
             def BASE_NAME = "building_form_properties"
 
-            info "Executing Building form properties"
+            debug "Executing Building form properties"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
@@ -301,7 +301,7 @@ IProcess minimumBuildingSpacing() {
             def ID_FIELD = "id_build"
             def BASE_NAME = "minimum_building_spacing"
 
-            info "Executing Building minimum building spacing"
+            debug "Executing Building minimum building spacing"
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
@@ -371,7 +371,7 @@ IProcess roadDistance() {
             def ROAD_WIDTH = "width"
             def BASE_NAME = "road_distance"
 
-            info "Executing Building road distance"
+            debug "Executing Building road distance"
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
@@ -394,7 +394,7 @@ IProcess roadDistance() {
             datasource """
                 DROP TABLE IF EXISTS $road_surf;
                 CREATE TABLE $road_surf AS 
-                    SELECT ST_BUFFER($GEOMETRIC_FIELD, $ROAD_WIDTH::double precision/2,'endcap=flat') AS $GEOMETRIC_FIELD 
+                    SELECT ST_BUFFER($GEOMETRIC_FIELD, $ROAD_WIDTH::DOUBLE PRECISION/2,'endcap=flat') AS $GEOMETRIC_FIELD 
                     FROM $inputRoadTableName; 
                 CREATE INDEX IF NOT EXISTS buff_ids ON $road_surf USING RTREE($GEOMETRIC_FIELD)"""
             // The roads located within the buffer are identified
@@ -412,7 +412,7 @@ IProcess roadDistance() {
             // distance)
             datasource """
                 DROP TABLE IF EXISTS $outputTableName; 
-                CREATE TABLE $outputTableName($BASE_NAME DOUBLE, $ID_FIELD_BU INTEGER) AS (
+                CREATE TABLE $outputTableName($BASE_NAME DOUBLE PRECISION, $ID_FIELD_BU INTEGER) AS (
                     SELECT COALESCE(MIN(st_distance(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD)), $bufferDist), a.$ID_FIELD_BU 
                     FROM $road_within_buffer b 
                     RIGHT JOIN $inputBuildingTableName a 
@@ -465,7 +465,7 @@ IProcess likelihoodLargeBuilding() {
             def ID_FIELD_BU = "id_build"
             def BASE_NAME = "likelihood_large_building"
 
-            info "Executing Building closeness to a 50 m wide building"
+            debug "Executing Building closeness to a 50 m wide building"
 
             // Processes used for the indicator calculation
             // a and r are the two parameters necessary for the logistic regression calculation (their value is

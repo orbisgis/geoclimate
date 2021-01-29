@@ -6,6 +6,7 @@
         <groupId>org.orbisgis.orbisprocess</groupId>
         <artifactId>geoclimate-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -18,6 +19,7 @@
 
     <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
     <artifactId>processingchain</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
     <dependencies>
         <dependency>
             <groupId>org.codehaus.groovy</groupId>
@@ -26,20 +28,40 @@
         <dependency>
             <groupId>org.orbisgis.orbisdata.datamanager</groupId>
             <artifactId>jdbc</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-simple</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.orbisgis.orbisdata.processmanager</groupId>
             <artifactId>process</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-simple</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
             <artifactId>geoindicators</artifactId>
         </dependency>
-        <!-- Test dependencies -->
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+        </dependency>
+        <!-- Test dependencies -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>

@@ -79,7 +79,7 @@ IProcess identifyLczType() {
             def BASE_NAME = "RSU_LCZ"
             def GEOMETRIC_FIELD = "THE_GEOM"
 
-            info "Set the LCZ type of each RSU"
+            debug "Set the LCZ type of each RSU"
 
             // List of possible operations
 
@@ -419,7 +419,7 @@ IProcess identifyLczType() {
                     $distribLczTable, $distribLczTableInt, $allLczTable, $pivotedTable, $mainLczTable, 
                     $classifiedLcz, $classifiedUrbanLcz, $classifiedRuralLCZ, $distribLczTableWithoutLcz1;"""
 */
-                info "The LCZ classification has been performed."
+                debug "The LCZ classification has been performed."
 
                 [outputTableName: outputTableName]
             } else {
@@ -488,7 +488,7 @@ IProcess createRandomForestModel() {
                 error "The rule value cannot be null or empty. Please use 'GINI' or 'ENTROPY'"
                 return
             }
-            info "Create a Random Forest model"
+            debug "Create a Random Forest model"
 
             def trainingTable = datasource."$trainingTableName"
 
@@ -534,12 +534,12 @@ IProcess createRandomForestModel() {
             if(DataType.isDouble(dfFactorized.schema().field(varToModel).type)){
                 truth = dfFactorized.apply(varToModel).toDoubleArray()
                 def rmse = RMSE.of(truth, prediction)
-                info "The root mean square error is : ${rmse}"
+                error "The root mean square error is : ${rmse}"
             }
             else{
                 truth = dfFactorized.apply(varToModel).toIntArray()
                 def accuracy = Accuracy.of(truth, prediction)
-                info "The percentage of the data that have been well classified is : ${accuracy * 100}%"
+                debug "The percentage of the data that have been well classified is : ${accuracy * 100}%"
             }
 
             try {
@@ -584,7 +584,7 @@ IProcess applyRandomForestModel() {
         outputs outputTableName: String
         run { String explicativeVariablesTableName, String pathAndFileName, String idName,
               String prefixName, JdbcDataSource datasource ->
-            info "Apply a Random Forest model"
+            debug "Apply a Random Forest model"
             def modelName;
             File inputModelFile = new File(pathAndFileName)
             modelName = FilenameUtils.getBaseName(pathAndFileName)
@@ -666,7 +666,7 @@ IProcess applyRandomForestModel() {
             def df = dfNofactorized
             // Identify columns being string (thus needed to be factorized)
             inputColumns.each{colName, colType ->
-                if(colType == "STRING" || colType=="VARCHAR"){
+                if(colType == "STRING" || colType=="VARCHAR" || colType=="CHARACTER VARYING"){
                     df = df.factorize(colName)
                 }
             }

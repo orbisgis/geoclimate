@@ -24,7 +24,7 @@ IProcess joinTables() {
         outputs outputTableName: String
         run { inputTableNamesWithId, outputTableName, datasource, prefixWithTabName ->
 
-            info "Executing Utility process to join tables in one"
+            debug "Executing Utility process to join tables in one"
 
             def columnKey
             def alias = "a"
@@ -101,7 +101,7 @@ IProcess saveTablesAsFiles() {
 
             if (!dirFile.exists()) {
                 dirFile.mkdir()
-                info "The folder $directory has been created"
+                debug "The folder $directory has been created"
             } else if (!dirFile.isDirectory()) {
                 error "Invalid directory path"
                 return
@@ -113,7 +113,7 @@ IProcess saveTablesAsFiles() {
                     def table = datasource.getTable(tableName)
                     if (table) {
                         table.save(fileToSave, delete)
-                        info "The table $tableName has been saved in file $fileToSave"
+                        debug "The table $tableName has been saved in file $fileToSave"
                     }
                 }
             }

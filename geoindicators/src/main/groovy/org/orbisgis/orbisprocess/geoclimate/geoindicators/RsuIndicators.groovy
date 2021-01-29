@@ -43,7 +43,7 @@ IProcess freeExternalFacadeDensity() {
             def HEIGHT_WALL = "height_wall"
             def BASE_NAME = "free_external_facade_density"
 
-            info "Executing RSU free external facade density"
+            debug "Executing RSU free external facade density"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
@@ -117,7 +117,7 @@ IProcess groundSkyViewFactor() {
             def HEIGHT_WALL = "height_wall"
             def BASE_NAME = "ground_sky_view_factor"
 
-            info "Executing RSU ground sky view factor"
+            debug "Executing RSU ground sky view factor"
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
@@ -211,7 +211,7 @@ IProcess groundSkyViewFactor() {
 
             def tObis = System.currentTimeMillis() - to_start
 
-            info "SVF calculation time: ${tObis / 1000} s"
+            debug "SVF calculation time: ${tObis / 1000} s"
 
             // The temporary tables are deleted
             datasource "DROP TABLE IF EXISTS $rsuDiff, $ptsRSUtot, $multiptsRSU, $rsuDiffTot,$pts_order,$multiptsRSUtot, $svfPts"
@@ -253,7 +253,7 @@ IProcess aspectRatio() {
             def COLUMN_ID_RSU = "id_rsu"
             def BASE_NAME = "aspect_ratio"
 
-            info "Executing RSU aspect ratio"
+            debug "Executing RSU aspect ratio"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
@@ -305,7 +305,7 @@ IProcess projectedFacadeAreaDistribution() {
             def ID_COLUMN_BU = "id_build"
             def HEIGHT_WALL = "height_wall"
 
-            info "Executing RSU projected facade area distribution"
+            debug "Executing RSU projected facade area distribution"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
@@ -525,7 +525,7 @@ IProcess roofAreaDistribution() {
             def HEIGHT_ROOF = "height_roof"
             def BASE_NAME = "roof_area_distribution"
 
-            info "Executing RSU roof area distribution (and optionally roof density)"
+            debug "Executing RSU roof area distribution (and optionally roof density)"
 
             // To avoid overwriting the output files of this step, a unique identifier is created
             // Temporary table names
@@ -610,7 +610,7 @@ IProcess roofAreaDistribution() {
                         a.building_total_facade_length, 
                         a.non_vertical_roof_area, 
                         a.vertical_roof_area, 
-                        ISNULL(b.vert_roof_to_remove,0) 
+                        IFNULL(b.vert_roof_to_remove,0) 
                     FROM $buildRoofSurfIni a 
                     LEFT JOIN $buildVertRoofInter b 
                     ON a.$ID_COLUMN_BU=b.$ID_COLUMN_BU);"""
@@ -765,7 +765,7 @@ IProcess effectiveTerrainRoughnessLength() {
             def ID_COLUMN_RSU = "id_rsu"
             def BASE_NAME = "effective_terrain_roughness_length"
 
-            info "Executing RSU effective terrain roughness length"
+            debug "Executing RSU effective terrain roughness length"
 
             // Processes used for the indicator calculation
             // Some local variables are initialized
@@ -852,7 +852,7 @@ IProcess linearRoadOperations() {
             def Z_INDEX = "zindex"
             def BASE_NAME = "rsu_road_linear_properties"
 
-            info "Executing Operations on the linear of road"
+            debug "Executing Operations on the linear of road"
 
             datasource."$rsuTable".the_geom.createSpatialIndex()
             datasource."$rsuTable".id_rsu.createIndex()
@@ -1043,7 +1043,7 @@ IProcess effectiveTerrainRoughnessClass() {
             def ID_COLUMN_RSU = "id_rsu"
             def BASE_NAME = "effective_terrain_roughness_class"
 
-            info "Executing RSU effective terrain roughness class"
+            debug "Executing RSU effective terrain roughness class"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
@@ -1115,7 +1115,7 @@ IProcess extendedFreeFacadeFraction() {
             def HEIGHT_WALL = "height_wall"
             def BASE_NAME = "extended_free_facade_fraction"
 
-            info "Executing RSU free facade fraction (for SVF fast)"
+            debug "Executing RSU free facade fraction (for SVF fast)"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
@@ -1219,7 +1219,7 @@ return create {
         }
         def BASE_NAME = "RSU_SMALLEST_COMMUN_GEOMETRY"
 
-        info "Compute the smallest geometries"
+        debug "Compute the smallest geometries"
 
         //To avoid column name duplication
         def ID_COLUMN_NAME =  postfix "id"
@@ -1233,13 +1233,13 @@ return create {
             def tablesToMerge = [:]
             tablesToMerge += ["$rsuTable": "select ST_ExteriorRing(the_geom) as the_geom, ${id_rsu} from $rsuTable"]
             if (roadTable && datasource.hasTable(roadTable)) {
-                info "Preparing table : $roadTable"
+                debug "Preparing table : $roadTable"
                 datasource."$roadTable".the_geom.createSpatialIndex()
                 //Separate road features according the zindex
                 def roadTable_zindex0_buffer = postfix "road_zindex0_buffer"
                 def road_tmp = postfix "road_zindex0"
                 datasource """DROP TABLE IF EXISTS $roadTable_zindex0_buffer, $road_tmp;
-            CREATE TABLE $roadTable_zindex0_buffer as SELECT st_buffer(the_geom, WIDTH::double precision/2)
+            CREATE TABLE $roadTable_zindex0_buffer as SELECT st_buffer(the_geom, WIDTH::DOUBLE PRECISION/2)
             AS the_geom
             FROM $roadTable  where ZINDEX=0 ;
             CREATE INDEX IF NOT EXISTS ids_$roadTable_zindex0_buffer ON $roadTable_zindex0_buffer USING RTREE(the_geom);
@@ -1251,7 +1251,7 @@ return create {
             }
 
             if (vegetationTable && datasource.hasTable(vegetationTable)) {
-                info "Preparing table : $vegetationTable"
+                debug "Preparing table : $vegetationTable"
                 datasource."$vegetationTable".the_geom.createSpatialIndex()
                 def low_vegetation_rsu_tmp = postfix "low_vegetation_rsu_zindex0"
                 def low_vegetation_tmp = postfix "low_vegetation_zindex0"
@@ -1277,7 +1277,7 @@ return create {
             }
 
             if (waterTable && datasource.hasTable(waterTable)) {
-                info "Preparing table : $waterTable"
+                debug "Preparing table : $waterTable"
                 datasource."$waterTable".the_geom.createSpatialIndex()
                 def water_tmp = postfix "water_zindex0"
                 datasource """DROP TABLE IF EXISTS $water_tmp;
@@ -1288,7 +1288,7 @@ return create {
             }
 
             if (imperviousTable && datasource.hasTable(imperviousTable)) {
-                info "Preparing table : $imperviousTable"
+                debug "Preparing table : $imperviousTable"
                 datasource."$imperviousTable".the_geom.createSpatialIndex()
                 def impervious_tmp = postfix "impervious_zindex0"
                 datasource """DROP TABLE IF EXISTS $impervious_tmp;
@@ -1299,7 +1299,7 @@ return create {
             }
 
             if (buildingTable && datasource.hasTable(buildingTable)) {
-                info "Preparing table : $buildingTable"
+                debug "Preparing table : $buildingTable"
                 datasource."$buildingTable".the_geom.createSpatialIndex()
                 def building_tmp = postfix "building_zindex0"
                 datasource """DROP TABLE IF EXISTS $building_tmp;
@@ -1310,7 +1310,7 @@ return create {
             }
 
             //Merging all tables in one
-            info "Grouping all tables in one..."
+            debug "Grouping all tables in one..."
             if (!tablesToMerge) {
                 error "Any features to compute surface fraction statistics"
                 return
@@ -1321,7 +1321,7 @@ return create {
                """
 
             //Polygonize the input tables
-            info "Generating minimum polygon areas"
+            debug "Generating minimum polygon areas"
             def tmp_point_polygonize = postfix "tmp_point_polygonize_zindex0"
             datasource """DROP TABLE IF EXISTS $tmp_point_polygonize;
                 CREATE TABLE $tmp_point_polygonize as  select  EXPLOD_ID as ${ID_COLUMN_NAME}, st_pointonsurface(st_force2D(the_geom)) as the_geom ,
@@ -1345,7 +1345,7 @@ return create {
 
             def finalMerge = []
             tablesToMerge.each { entry ->
-                info "Processing table $entry.key"
+                debug "Processing table $entry.key"
                 def tmptableName = "tmp_stats_$entry.key"
                 if (entry.key.startsWith("high_vegetation")) {
                     datasource."$entry.key".the_geom.createSpatialIndex()
@@ -1453,7 +1453,7 @@ IProcess surfaceFractions() {
 
             def BASE_TABLE_NAME ="RSU_SURFACE_FRACTIONS"
             def LAYERS = ["road", "water", "high_vegetation", "low_vegetation", "impervious", "building"]
-            info "Executing RSU surface fractions computation"
+            debug "Executing RSU surface fractions computation"
 
             // The name of the outputTableName is constructed
             def outputTableName = postfix( BASE_TABLE_NAME)
@@ -1461,12 +1461,6 @@ IProcess surfaceFractions() {
             // Create the indexes on each of the input tables
             datasource."$rsuTable"."$id_rsu".createIndex()
             datasource."$spatialRelationsTable"."$id_rsu".createIndex()
-            datasource."$spatialRelationsTable".water.createIndex()
-            datasource."$spatialRelationsTable".road.createIndex()
-            datasource."$spatialRelationsTable".impervious.createIndex()
-            datasource."$spatialRelationsTable".building.createIndex()
-            datasource."$spatialRelationsTable".low_vegetation.createIndex()
-            datasource."$spatialRelationsTable".high_vegetation.createIndex()
 
             // Need to set priority number for future sorting
             def prioritiesMap = [:]
