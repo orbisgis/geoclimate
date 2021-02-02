@@ -1168,7 +1168,7 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
             saveTableAsGeojson(results.outputTableBuildingUrbanTypo, "${subFolder.getAbsolutePath()+File.separator+"building_urban_typo"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else if(it.equals("grid_indicators")){
-            if(outputGrid=="geoson"){
+            if(outputGrid=="geojson"){
                 saveTableAsGeojson(results.grid_indicators, "${subFolder.getAbsolutePath()+File.separator+"grid_indicators"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
             }
             else if(outputGrid=="asc"){
