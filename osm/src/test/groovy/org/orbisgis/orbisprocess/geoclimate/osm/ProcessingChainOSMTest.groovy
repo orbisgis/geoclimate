@@ -541,7 +541,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
 
 
     @Test
-    void testGrid_Indicators() {
+    void testGrid_Indicators1() {
         String directory ="./target/geoclimate_chain_grid"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -557,16 +557,16 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "osm" : ["Pont-de-Veyle"],
                         "delete":true],
                 "output" :[
-                "folder" : ["path": "$directory",
-                    "tables": ["grid_indicators", "zones"]],
-                "srid":4326],
+                        "folder" : ["path": "$directory",
+                                    "tables": ["grid_indicators", "zones"]],
+                        "srid":4326],
                 "parameters":
                         ["distance" : 0,
                          "grid_indicators": [
-                             "x_size": 1000,
-                             "y_size": 1000,
-                             "indicators": ["WATER_FRACTION"],
-                             "output":"asc"
+                                 "x_size": 1000,
+                                 "y_size": 1000,
+                                 "indicators": ["WATER_FRACTION"],
+                                 "output":"asc"
                          ]
                         ]
         ]
@@ -577,6 +577,60 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         def  grid_file = new File("${directory+File.separator}osm_Pont-de-Veyle${File.separator}grid_indicators_water_fraction.asc")
         h2gis.execute("DROP TABLE IF EXISTS water_grid; CALL ASCREAD('${grid_file.getAbsolutePath()}', 'water_grid')")
         assertTrue h2gis.firstRow("select count(*) as count from water_grid").count==6
+    }
+
+    @Test
+    void testGrid_Indicators2() {
+        String directory ="D:/Users/le_sauxe/Documents/IUT/Recherche/Labsticc/SLIM/geoclimate_chain"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parameters = [
+                "description" :"Example of configuration file to run the grid indicators",
+                "geoclimatedb" : [
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "test_db;AUTO_SERVER=TRUE",
+                        "delete" :false
+                ],
+                "input" : [
+                        "osm" : [[47.33087, -0.57961, 47.4142, -0.49628]],
+                        "delete":true],
+                "output" :[
+                        "folder" : ["path": "$directory",
+                                    "tables": ["zones",
+                                               "rsu_indicators",
+                                               "rsu_lcz",
+                                               "grid_indicators"]],
+                        "srid":4326],
+                "parameters":
+                        ["distance" : 0,
+                         "rsu_indicators": [
+                             "indicatorUse": ["LCZ"],
+                             "svfSimplified": true,
+                             "estimateHeight": true
+                         ],
+                         "grid_indicators": [
+                             "x_size": 10,
+                             "y_size": 10,
+                             "rowCol": true,
+                             "indicators": ["BUILDING_FRACTION",
+                                            "BUILDING_HEIGHT",
+                                            "WATER_FRACTION",
+                                            "VEGETATION_FRACTION",
+                                            "ROAD_FRACTION",
+                                            "IMPERVIOUS_FRACTION",
+                                            "LCZ_FRACTION"],
+                             "output":"asc"
+                         ]
+                        ]
+        ]
+        IProcess process = OSM.workflow
+        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parameters, directory)))
+        //H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
+        //assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
+        //def  grid_file = new File("${directory+File.separator}osm_Pont-de-Veyle${File.separator}grid_indicators_water_fraction.asc")
+        //h2gis.execute("DROP TABLE IF EXISTS water_grid; CALL ASCREAD('${grid_file.getAbsolutePath()}', 'water_grid')")
+        //assertTrue h2gis.firstRow("select count(*) as count from water_grid").count==6
     }
 
     @Test

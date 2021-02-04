@@ -3,6 +3,7 @@ package org.orbisgis.orbisprocess.geoclimate.osm
 import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 
 @BaseScript OSM_Utils osm_utils
 
@@ -54,6 +55,7 @@ IProcess buildGeoclimateLayers() {
                 def zoneTableName = res.zoneTableName
                 def zoneEnvelopeTableName = res.zoneEnvelopeTableName
                 def epsg = datasource.getSpatialTable(zoneTableName).srid
+                def tablesToDrop = []
                 if (zoneEnvelopeTableName != null) {
                     debug "Formating OSM GIS layers"
                     IProcess format = OSM.formatBuildingLayer
@@ -62,6 +64,7 @@ IProcess buildGeoclimateLayers() {
                             inputTableName            : buildingTableName,
                             inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                             epsg                      : epsg])
+                    tablesToDrop << buildingTableName
                     buildingTableName = format.results.outputTableName
 
                     format = OSM.formatRoadLayer
@@ -70,6 +73,7 @@ IProcess buildGeoclimateLayers() {
                             inputTableName            : roadTableName,
                             inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                             epsg                      : epsg])
+                    tablesToDrop << roadTableName
                     roadTableName = format.results.outputTableName
 
 
@@ -79,6 +83,7 @@ IProcess buildGeoclimateLayers() {
                             inputTableName            : railTableName,
                             inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                             epsg                      : epsg])
+                    tablesToDrop << railTableName
                     railTableName = format.results.outputTableName
 
                     format = OSM.formatVegetationLayer
@@ -87,6 +92,7 @@ IProcess buildGeoclimateLayers() {
                             inputTableName            : vegetationTableName,
                             inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                             epsg                      : epsg])
+                    tablesToDrop << vegetationTableName
                     vegetationTableName = format.results.outputTableName
 
                     format = OSM.formatHydroLayer
@@ -95,6 +101,7 @@ IProcess buildGeoclimateLayers() {
                             inputTableName            : hydroTableName,
                             inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                             epsg                      : epsg])
+                    tablesToDrop << hydroTableName
                     hydroTableName = format.results.outputTableName
 
                     format = OSM.formatImperviousLayer
@@ -103,9 +110,15 @@ IProcess buildGeoclimateLayers() {
                             inputTableName            : imperviousTableName,
                             inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                             epsg                      : epsg])
+                    tablesToDrop << imperviousTableName
                     imperviousTableName = format.results.outputTableName
 
+                    def dropTempTables = Geoindicators.DataUtils.dropTables()
+                    dropTempTables([inputTableNames: tablesToDrop,
+                                    datasource           : datasource])
+
                     debug "OSM GIS layers formated"
+
 
                 }
 

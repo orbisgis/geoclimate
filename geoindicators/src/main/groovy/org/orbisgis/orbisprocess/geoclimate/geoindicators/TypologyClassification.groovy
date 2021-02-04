@@ -236,7 +236,7 @@ IProcess identifyLczType() {
                                             FROM $classifiedIndustrialCommercialLcz 
                                         UNION ALL 
                                             SELECT *
-                                            FROM $classifiedRuralLCZ"""
+                                            FROM $classifiedRuralLCZ;"""
                 } else {
                     datasource """ALTER TABLE $classifiedRuralLCZ RENAME TO $ruralAndIndustrialCommercialLCZ"""
                 }
@@ -412,13 +412,15 @@ IProcess identifyLczType() {
                 } else {
                     datasource """ALTER TABLE $classifiedLcz RENAME TO $outputTableName;"""
                 }
-/*
+
                 // Temporary tables are deleted
-                datasource """DROP TABLE IF EXISTS ${prefixName}_distribution_repartition,
+                datasource """DROP TABLE IF EXISTS ${prefix prefixName, 'DISTRIBUTION_REPARTITION'},
                     $LCZ_classes, $normalizedValues, $normalizedRange,
-                    $distribLczTable, $distribLczTableInt, $allLczTable, $pivotedTable, $mainLczTable, 
-                    $classifiedLcz, $classifiedUrbanLcz, $classifiedRuralLCZ, $distribLczTableWithoutLcz1;"""
-*/
+                    $distribLczTable, $distribLczTableInt, $classifiedLcz,
+                    $classifiedRuralLCZ, $classifiedIndustrialCommercialLcz,
+                    $distribLczTableWithoutLcz1, $ruralLCZ, $urbanLCZ, $urbanLCZExceptIndus,
+                    $ruralAndIndustrialCommercialLCZ;"""
+
                 debug "The LCZ classification has been performed."
 
                 [outputTableName: outputTableName]

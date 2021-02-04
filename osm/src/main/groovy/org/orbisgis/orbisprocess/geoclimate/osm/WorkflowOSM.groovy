@@ -17,6 +17,7 @@ import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
 import org.orbisgis.orbisanalysis.osm.OSMTools
 import org.h2gis.functions.io.utility.PRJUtil;
@@ -494,7 +495,7 @@ IProcess osm_processing() {
                             def gisLayersResults = createGISLayerProcess.getResults()
                             def rsu_indicators_params = processing_parameters.rsu_indicators
                             def grid_indicators_params = processing_parameters.grid_indicators
-
+                            def tablesToDrop = []
                             debug "Formating OSM GIS layers"
                             //Format urban areas
                             IProcess format = OSM.formatUrbanAreas
@@ -503,7 +504,7 @@ IProcess osm_processing() {
                                     inputTableName            : gisLayersResults.urbanAreasTableName,
                                     inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                                     epsg                      : srid])
-
+                            tablesToDrop << gisLayersResults.urbanAreasTableName
                             def urbanAreasTable = format.results.outputTableName
 
                             format = OSM.formatBuildingLayer
@@ -516,7 +517,7 @@ IProcess osm_processing() {
                                     h_lev_max                 : processing_parameters.hLevMax,
                                     hThresholdLev2            : processing_parameters.hThresholdLev2,
                                     urbanAreasTableName       : urbanAreasTable])
-
+                            tablesToDrop << gisLayersResults.buildingTableName
                             def buildingTableName = format.results.outputTableName
                             def buildingEstimateTableName = format.results.outputEstimateTableName
 
@@ -526,6 +527,7 @@ IProcess osm_processing() {
                                     inputTableName            : gisLayersResults.roadTableName,
                                     inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                                     epsg                      : srid])
+                            tablesToDrop << gisLayersResults.roadTableName
                             def roadTableName = format.results.outputTableName
 
 
@@ -535,6 +537,7 @@ IProcess osm_processing() {
                                     inputTableName            : gisLayersResults.railTableName,
                                     inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                                     epsg                      : srid])
+                            tablesToDrop << gisLayersResults.railTableName
                             def railTableName = format.results.outputTableName
 
                             format = OSM.formatVegetationLayer
@@ -543,6 +546,7 @@ IProcess osm_processing() {
                                     inputTableName            : gisLayersResults.vegetationTableName,
                                     inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                                     epsg                      : srid])
+                            tablesToDrop << gisLayersResults.vegetationTableName
                             def vegetationTableName = format.results.outputTableName
 
                             format = OSM.formatHydroLayer
@@ -551,6 +555,7 @@ IProcess osm_processing() {
                                     inputTableName            : gisLayersResults.hydroTableName,
                                     inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                                     epsg                      : srid])
+                            tablesToDrop << gisLayersResults.hydroTableName
                             def hydrographicTableName = format.results.outputTableName
 
                             format = OSM.formatImperviousLayer
@@ -559,6 +564,7 @@ IProcess osm_processing() {
                                     inputTableName            : gisLayersResults.imperviousTableName,
                                     inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                                     epsg                      : srid])
+                            tablesToDrop << gisLayersResults.imperviousTableName
                             def imperviousTableName = format.results.outputTableName
 
                             //Sea/Land mask
@@ -568,17 +574,20 @@ IProcess osm_processing() {
                                     inputTableName            : gisLayersResults.coastlineTableName,
                                     inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                                     epsg                      : srid])
-
+                            tablesToDrop << gisLayersResults.coastlineTableName
                             def seaLandMaskTableName = format.results.outputTableName
 
-                            //Merge the Sea/Land mask with water tabke
+                            //Merge the Sea/Land mask with water table
                             format = OSM.mergeWaterAndSeaLandTables
                             format.execute([
                                     datasource           : h2gis_datasource,
                                     inputSeaLandTableName: seaLandMaskTableName, inputWaterTableName: hydrographicTableName,
                                     epsg                 : srid])
-
                             hydrographicTableName = format.results.outputTableName
+
+                            def dropTempTables = Geoindicators.DataUtils.dropTables()
+                            dropTempTables([inputTableNames: tablesToDrop,
+                                            datasource           : h2gis_datasource])
 
                             debug "OSM GIS layers formated"
 
