@@ -438,19 +438,6 @@ class GeoIndicatorsChainTest {
         }
     }
 
-    @Test
-    void GeoIndicatorsTest8() {
-        File directory = new File("./target/geoindicators_workflow")
-        def dir = directory.absolutePath
-        H2GIS datasource = H2GIS.open("D:/Users/le_sauxe/Documents/IUT/Recherche/Test_Geoclimate"
-                + File.separator + "geoclimate_db;AUTO_SERVER=TRUE")
-        def gridProcess = Geoindicators.SpatialUnits.createGrid()
-        def box = datasource.getSpatialTable("emprise").getExtent()
-        gridProcess.execute([geometry: box, deltaX: 1000, deltaY: 1000,  datasource: datasource])
-        def grid_table_name = gridProcess.results.outputTableName
-        H2GIS.getTable(grid_table_name).save("./target/grid_table_name.shp", true)
-    }
-
     /**
      * Method to check the result for the RSU indicators table
      * Please add new checks here
