@@ -3,6 +3,7 @@ package org.orbisgis.orbisprocess.geoclimate.osm
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.h2.tools.DeleteDbFiles
+import org.h2gis.functions.io.utility.IOMethods
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.FileUtilities
 import org.h2gis.utilities.GeographyUtilities
@@ -222,7 +223,8 @@ IProcess workflow() {
                                                     "rsu_urban_typo_floor_area",
                                                     "building_urban_typo",
                                                     "grid_indicators",
-                                                    "sea_land_mask"]
+                                                    "sea_land_mask",
+                                                    "building_height_missing"]
                         //Get processing parameters
                         def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
                         if(!processing_parameters){
@@ -593,6 +595,7 @@ IProcess osm_processing() {
                             results.put("urbanAreasTableName", urbanAreasTable)
                             results.put("buildingTableName", buildingTableName)
                             results.put("seaLandMaskTableName", seaLandMaskTableName)
+                            results.put("building_height_missing", buildingEstimateTableName)
 
                             //Compute the RSU indicators
                             if(rsu_indicators_params){
@@ -789,7 +792,8 @@ def outputFolderProperties(def outputFolder){
                         "rsu_urban_typo_floor_area",
                         "building_urban_typo",
                         "grid_indicators",
-                        "sea_land_mask"]
+                        "sea_land_mask",
+                         "building_height_missing"]
     if(outputFolder in Map){
         def outputPath = outputFolder.get("path")
         def outputTables = outputFolder.get("tables")
@@ -1178,6 +1182,9 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
         else if(it.equals("sea_land_mask")){
             saveTableAsGeojson(results.seaLandMaskTableName, "${subFolder.getAbsolutePath()+File.separator+"sea_land_mask"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
+        else if(it.equals("building_height_missing")){
+            saveTableAsCSV(results.building_height_missing, "${subFolder.getAbsolutePath()+File.separator+"building_height_missing"}.csv", h2gis_datasource,deleteOutputData)
+        }
     }
 }
 
@@ -1250,6 +1257,20 @@ def saveTableToAsciiGrid(def outputTable , def subFolder,def filePrefix, def h2g
         }
     }
     }
+
+/**
+ * Method to save a table into a csV file
+ * @param outputTable name of the table to export
+ * @param filePath path to save the table
+ * @param h2gis_datasource connection to the database
+ * @param deleteOutputData true to delete the file if exists
+ */
+def saveTableAsCSV(def outputTable , def filePath,def h2gis_datasource, def deleteOutputData){
+    if(outputTable && h2gis_datasource.hasTable(outputTable)){
+        h2gis_datasource.save("(SELECT ID_BUILD, ID_SOURCE FROM $outputTable WHERE estimated=true)", filePath,deleteOutputData)
+        info "${outputTable} has been saved in ${filePath}."
+    }
+}
 
 /**
  * Method to save a table into a geojson file
@@ -1350,6 +1371,21 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
     abstractModelTableBatchExportTable(output_datasource, outputTableNames.sea_land_mask, id_zone,h2gis_datasource, h2gis_tables.seaLandMaskTableName
             , "",inputSRID,outputSRID,reproject)
 
+    //Export building_height_missing table
+    def output_table = outputTableNames.building_height_missing
+    def h2gis_table_to_save= h2gis_tables.building_height_missing
+
+    if(output_table) {
+        if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
+            if (output_datasource.hasTable(output_table)) {
+                output_datasource.execute("DELETE FROM $output_table WHERE id_zone=?", id_zone.toString());
+            }else{
+                output_datasource.execute """CREATE TABLE $output_table(ID_BUILD INTEGER, ID_SOURCE VARCHAR, ID_ZONE VARCHAR)"""
+            }
+            IOMethods.exportToDataBase(h2gis_datasource.getConnection(),"(SELECT ID_BUILD, ID_SOURCE, '$id_zone' as ID_ZONE from $h2gis_table_to_save where estimated=true)".toString(),
+                    output_datasource.getConnection(), output_table, 2, 1000);
+        }
+    }
     con.setAutoCommit(false)
 }
 
