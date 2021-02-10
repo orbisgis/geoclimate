@@ -639,7 +639,7 @@ IProcess osm_processing() {
                                             x_size : x_size, y_size : y_size,
                                             srid : srid,rowCol: grid_indicators_params.rowCol,
                                             list_indicators :grid_indicators_params.indicators,
-                                            buildingTable: buildingTableName, roadTable: roadTableName, vegetationTable: vegetationTableName,
+                                            buildingTable: results.buildingTableName, roadTable: roadTableName, vegetationTable: vegetationTableName,
                                             hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
                                             rsu_lcz:results.outputTableRsuLcz,
                                             rsu_urban_typo_area:results.outputTableRsuUrbanTypoArea,
