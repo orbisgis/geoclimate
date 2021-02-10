@@ -268,7 +268,8 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                                             "rsu_indicators":"rsu_indicators",
                                             "rsu_lcz":"rsu_lcz",
                                             "zones":"zones" ,
-                                            "grid_indicators":"grid_indicators"]]],
+                                            "grid_indicators":"grid_indicators",
+                                            "building_height_missing":"building_height_missing"]]],
                 "parameters":
                         ["distance" : 0,
                          rsu_indicators: ["indicatorUse": ["LCZ"],
@@ -301,6 +302,9 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
             def gridTable = postgis.getTable("grid_indicators")
             assertNotNull(gridTable)
             assertTrue(gridTable.getRowCount()>0)
+            def building_height_missing = postgis.getTable("building_height_missing")
+            assertNotNull(building_height_missing)
+            assertTrue(building_height_missing.getRowCount()>0)
         }
     }
 
@@ -627,18 +631,24 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "osm" : ["Nantes"]],
+                        "osm" : ["Angers"]],
                 "output" :[
-                        "folder" :[ path : "$directory"], "tables": [
-                        "building_indicators":"building_indicators"
-                ]],
+                        "folder" :"$directory"]
+                ,
                 "parameters":
                         ["distance" : 0,
                          "rsu_indicators":[
-                                 "indicatorUse": ["LCZ", "URBAN_TYPOLOGY"],
+                                 "indicatorUse": ["LCZ"],
                                  "svfSimplified": true,
                                  "estimateHeight":true
-                         ]
+                         ],"grid_indicators": [
+                                "x_size": 10,
+                                "y_size": 10,
+                                "rowCol": true,
+                                "output" : "geojson",
+                                "indicators": ["BUILDING_FRACTION","BUILDING_HEIGHT","WATER_FRACTION","VEGETATION_FRACTION",
+                                               "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "LCZ_FRACTION"]
+                        ]
                         ]
         ]
 
