@@ -985,6 +985,7 @@ IProcess gatherScales() {
 /**
  * This process is used to compute aggregate the area of a specific variable to a upper scale from a lower scale (for
  * example the LCZs variables within a Reference Spatial Unit)
+ * The aggregate value is divided by the geometry area of the upper table
  *
  * @param upperTableName the name of the upper scale table
  * @param upperColumnId unique identifier for the upper scale table
@@ -1110,7 +1111,7 @@ IProcess upperScaleAreaStatistics() {
             listValues.each {
                 def aliasColumn = "${lowerColumnName}_${it.val.toString().replace('.','_')}"
                 qjoin += """
-                         , NVL($aliasColumn, 0)
+                         , NVL($aliasColumn, 0) / ST_AREA(b.$upperGeometryColumn)
                          AS $aliasColumn
                          """
             }
