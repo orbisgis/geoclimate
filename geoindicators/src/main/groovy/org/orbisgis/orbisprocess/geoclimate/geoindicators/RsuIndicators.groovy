@@ -1336,7 +1336,7 @@ return create {
             def final_polygonize = postfix "final_polygonize_zindex0"
             datasource """
             DROP TABLE IF EXISTS $final_polygonize;
-            CREATE TABLE $final_polygonize as select a.AREA , a.the_geom, a.${ID_COLUMN_NAME}, b.${id_rsu}
+            CREATE TABLE $final_polygonize as select a.AREA , st_force2D(st_buffer(a.the_geom, 0)) as the_geom, a.${ID_COLUMN_NAME}, b.${id_rsu}
             from $tmp_point_polygonize as a, $rsuTable as b
             where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) AND a.${id_rsu} =b.${id_rsu}"""
 
@@ -1359,7 +1359,7 @@ return create {
                     datasource."$entry.key"."${id_rsu}".createIndex()
                     datasource """DROP TABLE IF EXISTS $tmptableName;
                  CREATE TABLE $tmptableName AS SELECT b.area,1 as low_vegetation, 0 as high_vegetation, 0 as water, 0 as impervious, 0 as road, 0 as building, b.${ID_COLUMN_NAME}, b.${id_rsu} from ${entry.key} as a,
-                $final_polygonize as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) AND a.${id_rsu} =b.${id_rsu}"""
+                $final_polygonize as b where a.the_geom && b.the_geom and st_intersects(st_force2D(a.the_geom), b.the_geom) AND a.${id_rsu} =b.${id_rsu}"""
                     finalMerge.add("SELECT * FROM $tmptableName")
                 } else if (entry.key.startsWith("water")) {
                     datasource."$entry.key".the_geom.createSpatialIndex()
