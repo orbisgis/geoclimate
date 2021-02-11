@@ -673,12 +673,17 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 ],
                 "input" : [
                         "osm" : [[
-                                         47.5850280136227326, -2.8336857569620904, 47.6683580136227292, -2.7503557569620902
+                                         50.41408, 16.08639, 50.49741, 16.16972
                                  ]]],
                 "output" :["folder" : "$directory",srid: 4326]
                 ,
                 "parameters":
                         ["distance" : 0,
+                         "rsu_indicators":[
+                                 "indicatorUse": ["LCZ"],
+                                 "svfSimplified": true,
+                                 "estimateHeight":true
+                         ],
                          "grid_indicators": [
                                  "x_size": 10,
                                  "y_size": 10,
