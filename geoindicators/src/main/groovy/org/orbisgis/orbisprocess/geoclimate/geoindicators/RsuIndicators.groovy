@@ -1262,14 +1262,14 @@ return create {
                     $vegetationTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='low' group by b.${id_rsu};
                 CREATE INDEX ON $low_vegetation_rsu_tmp(${id_rsu});
-                CREATE TABLE $low_vegetation_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_rsu} FROM 
+                CREATE TABLE $low_vegetation_tmp AS SELECT ST_CollectionExtract(st_buffer(st_intersection(a.the_geom, b.the_geom),0),3) AS the_geom, b.${id_rsu} FROM 
                         $low_vegetation_rsu_tmp AS a, $rsuTable AS b WHERE a.${id_rsu}=b.${id_rsu} group by b.${id_rsu};
                         DROP TABLE IF EXISTS $high_vegetation_tmp,$high_vegetation_rsu_tmp;
                 CREATE TABLE $high_vegetation_rsu_tmp as select st_union(st_accum(a.the_geom)) as the_geom,  b.${id_rsu} FROM 
                     $vegetationTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='high' group by b.${id_rsu};
                 CREATE INDEX ON $high_vegetation_rsu_tmp(${id_rsu});
-                CREATE TABLE $high_vegetation_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_rsu} FROM 
+                CREATE TABLE $high_vegetation_tmp AS SELECT ST_CollectionExtract(st_buffer(st_intersection(a.the_geom, b.the_geom),0),3) AS the_geom, b.${id_rsu} FROM 
                         $high_vegetation_rsu_tmp AS a, $rsuTable AS b WHERE a.${id_rsu}=b.${id_rsu} group by b.${id_rsu};
                 DROP TABLE $low_vegetation_rsu_tmp, $high_vegetation_rsu_tmp;"""
                 tablesToMerge += ["$low_vegetation_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_rsu} from $low_vegetation_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
@@ -1281,7 +1281,7 @@ return create {
                 datasource."$waterTable".the_geom.createSpatialIndex()
                 def water_tmp = postfix "water_zindex0"
                 datasource """DROP TABLE IF EXISTS $water_tmp;
-                CREATE TABLE $water_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_rsu} FROM 
+                CREATE TABLE $water_tmp AS SELECT ST_CollectionExtract(st_buffer(st_intersection(a.the_geom, b.the_geom),0),3) AS the_geom, b.${id_rsu} FROM 
                         $waterTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom)"""
                 tablesToMerge += ["$water_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_rsu} from $water_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
@@ -1336,7 +1336,7 @@ return create {
             def final_polygonize = postfix "final_polygonize_zindex0"
             datasource """
             DROP TABLE IF EXISTS $final_polygonize;
-            CREATE TABLE $final_polygonize as select a.AREA , st_force2D(st_buffer(a.the_geom, 0)) as the_geom, a.${ID_COLUMN_NAME}, b.${id_rsu}
+            CREATE TABLE $final_polygonize as select a.AREA , a.the_geom as the_geom, a.${ID_COLUMN_NAME}, b.${id_rsu}
             from $tmp_point_polygonize as a, $rsuTable as b
             where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) AND a.${id_rsu} =b.${id_rsu}"""
 
@@ -1359,7 +1359,7 @@ return create {
                     datasource."$entry.key"."${id_rsu}".createIndex()
                     datasource """DROP TABLE IF EXISTS $tmptableName;
                  CREATE TABLE $tmptableName AS SELECT b.area,1 as low_vegetation, 0 as high_vegetation, 0 as water, 0 as impervious, 0 as road, 0 as building, b.${ID_COLUMN_NAME}, b.${id_rsu} from ${entry.key} as a,
-                $final_polygonize as b where a.the_geom && b.the_geom and st_intersects(st_force2D(a.the_geom), b.the_geom) AND a.${id_rsu} =b.${id_rsu}"""
+                $final_polygonize as b where a.the_geom && b.the_geom and st_intersects(a.the_geom,b.the_geom) AND a.${id_rsu} =b.${id_rsu}"""
                     finalMerge.add("SELECT * FROM $tmptableName")
                 } else if (entry.key.startsWith("water")) {
                     datasource."$entry.key".the_geom.createSpatialIndex()
