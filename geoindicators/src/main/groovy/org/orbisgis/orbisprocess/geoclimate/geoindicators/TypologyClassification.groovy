@@ -683,7 +683,7 @@ IProcess applyRandomForestModel() {
             //TODO change this after SMILE answer's
             // Keep only the id and the value of the classification
             df = df.select(idName.toUpperCase(), var2model.toUpperCase())
-            String tableName = TableLocation.parse(outputTableName, datasource.getDataBaseType() == DBTypes.H2GIS).toString(datasource.getDataBaseType());
+            String tableName = TableLocation.parse(outputTableName, datasource.getDataBaseType()).toString();
             try {
                 PreparedStatement preparedStatement = null;
                 Connection outputconnection = datasource.getConnection();

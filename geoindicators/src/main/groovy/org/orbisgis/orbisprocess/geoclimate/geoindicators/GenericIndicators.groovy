@@ -735,7 +735,7 @@ IProcess typeProportion() {
                     queryCaseWh += " ST_AREA($GEOMETRIC_FIELD_LOW) AS AREA, "
                     areaTypeAndComposition.forEach { type, compo ->
                         queryCaseWh += "CASE WHEN $typeFieldName='${compo.join("' OR $typeFieldName='")}' THEN ST_AREA($GEOMETRIC_FIELD_LOW) END AS AREA_${type},"
-                        queryCalc += "SUM(AREA_${type})/SUM(AREA) AS AREA_FRACTION_${type}, "
+                        queryCalc += "CASE WHEN SUM(AREA)=0 THEN 0 ELSE SUM(AREA_${type})/SUM(AREA) END AS AREA_FRACTION_${type}, "
                     }
                 }
 
@@ -744,7 +744,7 @@ IProcess typeProportion() {
                     queryCaseWh += " ST_AREA($GEOMETRIC_FIELD_LOW)*$NB_LEV AS FLOOR_AREA, "
                     floorAreaTypeAndComposition.forEach { type, compo ->
                         queryCaseWh += "CASE WHEN $typeFieldName='${compo.join("' OR $typeFieldName='")}' THEN ST_AREA($GEOMETRIC_FIELD_LOW)*$NB_LEV END AS FLOOR_AREA_${type},"
-                        queryCalc += "SUM(FLOOR_AREA_${type})/SUM(FLOOR_AREA) AS FLOOR_AREA_FRACTION_${type}, "
+                        queryCalc += "CASE WHEN SUM(FLOOR_AREA) =0 THEN 0 ELSE SUM(FLOOR_AREA_${type})/SUM(FLOOR_AREA) END AS FLOOR_AREA_FRACTION_${type}, "
                     }
                 }
 
