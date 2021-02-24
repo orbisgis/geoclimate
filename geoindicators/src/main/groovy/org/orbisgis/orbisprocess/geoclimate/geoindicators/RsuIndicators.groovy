@@ -1321,7 +1321,8 @@ return create {
                """
 
             //Polygonize the input tables
-            debug "Generating minimum polygon areas"
+            debug "Generating " +
+                    "minimum polygon areas"
             def tmp_point_polygonize = postfix "tmp_point_polygonize_zindex0"
             datasource """DROP TABLE IF EXISTS $tmp_point_polygonize;
                 CREATE TABLE $tmp_point_polygonize as  select  EXPLOD_ID as ${ID_COLUMN_NAME}, st_pointonsurface(st_force2D(the_geom)) as the_geom ,
