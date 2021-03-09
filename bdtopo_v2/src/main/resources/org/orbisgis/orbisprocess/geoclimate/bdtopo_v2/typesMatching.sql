@@ -52,6 +52,8 @@ INSERT INTO $BUILDING_BD_TOPO_USE_TYPE VALUES(21, 'Sous-préfecture', 'BATI_REMA
 INSERT INTO $BUILDING_BD_TOPO_USE_TYPE VALUES(22, 'Tour, donjon, moulin', 'BATI_REMARQUABLE', null);
 INSERT INTO $BUILDING_BD_TOPO_USE_TYPE VALUES(23, 'Tribune', 'BATI_REMARQUABLE', null);
 
+CREATE INDEX ON $BUILDING_BD_TOPO_USE_TYPE(NATURE);
+
 -- Define the correspondences between the BD Topo and the abstract table "$BUILDING_ABSTRACT_USE_TYPE"
 
 -- For "BATI_INDIFFERENCIE"
@@ -108,6 +110,8 @@ INSERT INTO $ROAD_BD_TOPO_TYPE VALUES(9, 'Bac piéton', 'ROUTE', null);
 INSERT INTO $ROAD_BD_TOPO_TYPE VALUES(10, 'Piste cyclable', 'ROUTE', null);
 INSERT INTO $ROAD_BD_TOPO_TYPE VALUES(11, 'Sentier', 'ROUTE', null);
 INSERT INTO $ROAD_BD_TOPO_TYPE VALUES(12, 'Escalier', 'ROUTE', null);
+
+CREATE INDEX ON $ROAD_BD_TOPO_TYPE(NATURE);
 
 -- Define the correspondences between the BD Topo and the abstract table "$ROAD_ABSTRACT_TYPE"
 

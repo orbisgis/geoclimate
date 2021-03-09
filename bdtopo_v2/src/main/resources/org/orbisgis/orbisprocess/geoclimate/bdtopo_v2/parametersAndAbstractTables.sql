@@ -67,7 +67,7 @@ INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(36, 'office', 'Office block typic
 INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(37, 'heavy_industry', 'Low-rise and midrise industrial structures (towers, tanks, stacks)', 'https://en.wikipedia.org/wiki/Heavy_industry');
 INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(38, 'light_industry', 'Industrial structure that require fewer raw materials, space and power. For example, electronics manufacturing', 'https://en.wikipedia.org/wiki/Light_industry');
 
-
+CREATE INDEX ON $BUILDING_ABSTRACT_USE_TYPE(TERM);
 
 --------------------------------------------------------
 -- Abstract Building parameters
@@ -121,7 +121,8 @@ INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(36, 'office', 1);
 INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(37, 'heavy_industry', 0);
 INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(38, 'light_industry', 0);
 
-
+CREATE INDEX ON $BUILDING_ABSTRACT_PARAMETERS(TERM);
+CREATE INDEX ON $BUILDING_ABSTRACT_PARAMETERS(NB_LEV);
 
 ----------------------------------------------------------------------------------------------------------------------
 -- FOR ROAD
@@ -153,6 +154,7 @@ INSERT INTO $ROAD_ABSTRACT_TYPE VALUES(14, 'highway_link', 'Connecting ramp to/f
 INSERT INTO $ROAD_ABSTRACT_TYPE VALUES(15, 'roundabout', 'Generally a circular (self-intersecting) highway junction where the traffic on the roundabout has right of way', 'https://wiki.openstreetmap.org/wiki/Tag:junction=roundabout');
 INSERT INTO $ROAD_ABSTRACT_TYPE VALUES(16, 'ferry', 'A ferry route used to transport things or people from one bank of a watercourse or inlet to the other, or as a permanent or seasonal local maritime link, and a link to a foreign country', 'http://professionnels.ign.fr/doc/DC_BDTOPO_3-0Beta.pdf');
 
+CREATE INDEX ON $ROAD_ABSTRACT_TYPE(TERM);
 
 --------------------------------------------------------
 -- Abstract table for the road surface
@@ -178,6 +180,7 @@ INSERT INTO $ROAD_ABSTRACT_SURFACE VALUES(12, 'mud', 'Wet unpaved surface', 'htt
 INSERT INTO $ROAD_ABSTRACT_SURFACE VALUES(13, 'metal', 'Metallic surface', 'https://wiki.openstreetmap.org/wiki/Key:surface');
 INSERT INTO $ROAD_ABSTRACT_SURFACE VALUES(14, 'water', 'Used to qualify the surface of ferry route that uses water waterbodies, rivers, seas,...) as a traffic surface', '');
 
+CREATE INDEX ON $ROAD_ABSTRACT_SURFACE(TERM);
 
 --------------------------------------------------------
 -- Abstract road parameters
@@ -209,6 +212,8 @@ INSERT INTO $ROAD_ABSTRACT_PARAMETERS VALUES(14, 'highway_link', 8);
 INSERT INTO $ROAD_ABSTRACT_PARAMETERS VALUES(15, 'roundabout', 4);
 INSERT INTO $ROAD_ABSTRACT_PARAMETERS VALUES(16, 'ferry', 0);
 
+CREATE INDEX ON $ROAD_ABSTRACT_PARAMETERS(TERM);
+CREATE INDEX ON $ROAD_ABSTRACT_PARAMETERS(MIN_WIDTH);
 
 --------------------------------------------------------
 -- Abstract table for the road crossing

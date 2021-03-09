@@ -673,7 +673,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 ],
                 "input" : [
                         "osm" : [[
-                                         50.41408, 16.08639, 50.49741, 16.16972
+                                         68.66335, 22.41947, 68.74668, 22.5028
                                  ]]],
                 "output" :["folder" : "$directory",srid: 4326]
                 ,

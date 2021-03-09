@@ -30,7 +30,7 @@
 
 DROP TABLE IF EXISTS $ZONE_NEIGHBORS;
 CREATE TABLE $ZONE_NEIGHBORS (the_geom geometry, ID_ZONE varchar) AS SELECT ST_FORCE2D(THE_GEOM) as the_geom, ID_ZONE FROM $ZONE UNION SELECT ST_DIFFERENCE(ST_EXPAND(the_geom, $EXPAND), the_geom) as the_geom, 'outside' FROM $ZONE;
-CREATE INDEX ON $ZONE_NEIGHBORS USING RTREE(the_geom);
+CREATE SPATIAL INDEX ON $ZONE_NEIGHBORS (the_geom);
 
 ---------------------------------------------------------------------------------
 -- 1. PROCESS BUILDINGS
@@ -40,8 +40,8 @@ CREATE INDEX ON $ZONE_NEIGHBORS USING RTREE(the_geom);
 
 DROP TABLE IF EXISTS $BU_ZONE;
 CREATE TABLE $BU_ZONE (THE_GEOM geometry, ID_BUILD serial, ID_SOURCE varchar(24), HEIGHT_WALL integer, HEIGHT_ROOF integer, NB_LEV integer, TYPE varchar, MAIN_USE varchar, ZINDEX integer) AS SELECT ST_FORCE2D(THE_GEOM), CAST((row_number() over()) as Integer), ID_SOURCE, HEIGHT_WALL, HEIGHT_ROOF, NB_LEV, TYPE, MAIN_USE, ZINDEX FROM $INPUT_BUILDING;
-CREATE INDEX ON $BU_ZONE USING RTREE(the_geom);
-CREATE INDEX ON $BU_ZONE USING BTREE(ID_BUILD);
+CREATE SPATIAL INDEX ON $BU_ZONE (the_geom);
+CREATE INDEX ON $BU_ZONE (ID_BUILD);
 
 
 -------------------------------------------------------
