@@ -508,6 +508,99 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     }
 
 
+    @Disabled //Use it for integration test with a postgis database
+    @Test
+    void testIntegrationPostGIS() {
+        String directory ="./target/geoclimate_postgis_integration"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+
+        def user = ""
+        def password = ""
+        def url = "jdbc:postgresql://"
+        def id_zones = [""]
+        def local_database_name="paendora_${System.currentTimeMillis()}"
+
+        /*================================================================================
+        * Input database and tables
+        */
+
+        def  input = [
+                "database": [
+                        "user":user,
+                        "password": password,
+                        "url": url,
+                        "id_zones":id_zones,
+                        "tables": ["iris_ge":"ign_iris.iris_ge_2016",
+                                   "bati_indifferencie":"ign_bdtopo_2017.bati_indifferencie",
+                                   "bati_industriel":"ign_bdtopo_2017.bati_industriel",
+                                   "bati_remarquable":"ign_bdtopo_2017.bati_remarquable",
+                                   "route":"ign_bdtopo_2017.route",
+                                   "troncon_voie_ferree":"ign_bdtopo_2017.troncon_voie_ferree",
+                                   "surface_eau":"ign_bdtopo_2017.surface_eau",
+                                   "zone_vegetation":"ign_bdtopo_2017.zone_vegetation",
+                                   "terrain_sport":"ign_bdtopo_2017.terrain_sport",
+                                   "construction_surfacique":"ign_bdtopo_2017.construction_surfacique",
+                                   "surface_route":"ign_bdtopo_2017.surface_route",
+                                   "surface_activite":"ign_bdtopo_2017.surface_activite",
+                                   "piste_aerodrome":"ign_bdtopo_2017.piste_aerodrome"]
+                ]]
+
+
+        /*================================================================================
+        * output tables in the database
+        */
+        def  output  = [
+                "database": [
+                        "user":user,
+                        "password": password,
+                        "url": url,
+                        "tables": [
+                                "building_indicators":"labsticc_building_indicators_2154",
+                                "block_indicators":"labsticc_block_indicators_2154",
+                                "rsu_indicators":"labsticc_rsu_indicators_2154",
+                                "rsu_lcz":"labsticc_rsu_lcz_2154",
+                                "zones":"labsticc_zones_2154",
+                                "building_urban_typo":"labsticc_building_urban_typo_2154",
+                                "rsu_urban_typo_area":"labsticc_rsu_urban_typo_area_2154",
+                                "rsu_urban_typo_floor_area":"labsticc_rsu_urban_typo_floor_area_2154",
+                                "grid_indicators":"labsticc_grid_indicators_2154"]
+                ]
+        ]
+
+
+        /*================================================================================
+        * WORKFLOW PARAMETERS
+        */
+        def workflow_parameters = [
+                "description" :"Run the Geoclimate chain with BDTopo data imported and exported to a POSTGIS database",
+                "geoclimatedb" : [
+                        "folder" :directory,
+                        "name" : "${local_database_name};AUTO_SERVER=TRUE",
+                        "delete" : true
+                ],
+                "input" :input,
+                "output" : output,
+                "parameters": [ "distance" : 100   ,
+                                "rsu_indicators":[
+                                        "indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+                                        "svfSimplified": false,
+                                ],
+                                "grid_indicators": [
+                                        "x_size": 100,
+                                        "y_size": 100,
+                                        "indicators": ["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
+                                                       "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "URBAN_TYPO_AREA_FRACTION", "LCZ_FRACTION"]
+                                ]
+                ]
+        ]
+
+        IProcess process = BDTopo_V2.workflow
+        assertTrue(process.execute(configurationFile: createConfigFile(workflow_parameters, directory)))
+    }
+
+
     /**
      * Check if the table exist and contains at least one row
      * @param datasource

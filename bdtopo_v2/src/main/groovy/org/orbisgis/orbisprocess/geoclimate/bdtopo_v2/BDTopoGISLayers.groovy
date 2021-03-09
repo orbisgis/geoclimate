@@ -2,6 +2,7 @@
 package org.orbisgis.orbisprocess.geoclimate.bdtopo_v2
 
 import groovy.transform.BaseScript
+import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 
@@ -134,7 +135,7 @@ IProcess importPreprocess() {
             // For each tables in the list, we check the SRID and compare to the srid variable. If different, the process is stopped
             for (String name : list) {
                 if(name) {
-                    def table = datasource.getTable(name)
+                    ISpatialTable table = datasource.getSpatialTable(name)
                     if(table){
                         tablesExist<<name
                         def currentSrid =table.srid
