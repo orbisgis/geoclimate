@@ -26,7 +26,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
 
         process.execute([datasource: h2GIS, zoneToExtract :zoneToExtract, distance: 0])
 
-        def prefixName  = zoneToExtract.trim().split("\\s*(,|\\s)\\s*").join("_");
+        def prefixName  = "osm"
 
         // Create the RSU
         def prepareRSUData = Geoindicators.SpatialUnits.prepareRSUData()
