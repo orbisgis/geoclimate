@@ -1,25 +1,55 @@
 {
-    "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
-    "geoclimatedb" : {
-        "folder" : "/tmp",
-        "name": "geoclimate_db;AUTO_SERVER=TRUE",
-        "delete" :true
+    "description": "Run the Geoclimate chain with OSM data and export result to a folder",
+    "geoclimatedb": {
+        "folder": "/tmp",
+        "name": "testBabeth;AUTO_SERVER=TRUE",
+        "delete": false
     },
-    "input" : {
-        "osm" : ["vannes"]},
-    "output" :{
-        "folder" : "/home/decide/Bureau/GeoclimateTests3"},
-    "parameters":
-    {"distance" : 1000,
-        "hLevMin": 3,
-        "hLevMax": 15,
-        "hThresholdLev2": 10,
+    "input": {
+        "osm": [
+            [
+                53.41396,
+                5.33682,
+                53.49729,
+                5.42015
+            ]
+        ],
+        "delete": true
+    },
+    "output": {
+        "folder": {
+            "path": "/tmp",
+            "tables": [
+                "zones",
+                "rsu_indicators",
+                "rsu_lcz",
+                "grid_indicators"
+            ]
+        },
+        "srid": 4326
+    },
+    "parameters": {
         "rsu_indicators": {
             "indicatorUse": [
                 "LCZ"
             ],
-            "svfSimplified": false,
+            "svfSimplified": true,
             "estimateHeight": true
+        },
+        "grid_indicators": {
+            "x_size": 10,
+            "y_size": 10,
+            "rowCol": true,
+            "output": "asc",
+            "indicators": [
+                "BUILDING_FRACTION",
+                "BUILDING_HEIGHT",
+                "WATER_FRACTION",
+                "VEGETATION_FRACTION",
+                "ROAD_FRACTION",
+                "IMPERVIOUS_FRACTION",
+                "LCZ_FRACTION"
+            ]
         }
     }
 }
