@@ -346,35 +346,11 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
     }
 
-    @Test
-    void runBDTopoWorkflow(){
-        def inseeCode = communeToTest
-        def defaultParameters = [distance: 1000,distance_buffer:500,prefixName: "",
-                                 "hLevMin": 3,
-                                 "hLevMax": 15,
-                                 "hThresholdLev2": 10,
-                                 rsu_indicators: [ indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"],
-                                 svfSimplified:true,
-                                 mapOfWeights : ["sky_view_factor" : 2, "aspect_ratio": 1, "building_surface_fraction": 4,
-                                                 "impervious_surface_fraction" : 0, "pervious_surface_fraction": 0,
-                                                 "height_of_roughness_elements": 3, "terrain_roughness_length": 1]
-                                 ]]
-        String directory ="./target/bdtopo_chain_workflow"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
-        H2GIS h2GISDatabase = loadFiles(dirFile.absolutePath+File.separator+"bdtopo_db;AUTO_SERVER=TRUE")
-        def process = new WorkflowBDTopo_V2().bdtopo_processing(h2GISDatabase, defaultParameters, inseeCode, null, null, null, null, 0);
-        checkSpatialTable(h2GISDatabase, "block_indicators")
-        checkSpatialTable(h2GISDatabase, "building_indicators")
-        checkSpatialTable(h2GISDatabase, "rsu_indicators")
-        checkSpatialTable(h2GISDatabase, "rsu_lcz")
-    }
 
     @Test
     void runBDTopoWorkflowWithSRID(){
         def inseeCode = communeToTest
-        def defaultParameters = [distance: 1000,distance_buffer:500,  prefixName: "",
+        def defaultParameters = [distance: 0,distance_buffer:0,  prefixName: "",
                                  rsu_indicators: [
                                  indicatorUse: ["LCZ", "URBAN_TYPOLOGY"],
                                  svfSimplified:true,
@@ -389,17 +365,8 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         dirFile.mkdir()
         H2GIS h2GISDatabase = loadFiles(dirFile.absolutePath+File.separator+"bdtopo_db;AUTO_SERVER=TRUE")
         dirFile.mkdir()
-        def tablesToSave = ["building_indicators",
-                            "block_indicators",
-                            "rsu_indicators",
-                            "rsu_lcz",
-                            "zones",
-                            "building",
-                            "road",
-                            "rail" ,
-                            "water",
-                            "vegetation",
-                            "impervious"]
+        def tablesToSave = [
+                            "rsu_lcz",]
         def process = new WorkflowBDTopo_V2().bdtopo_processing(h2GISDatabase, defaultParameters, inseeCode, dirFile, tablesToSave, null, null, 4326);
         checkSpatialTable(h2GISDatabase, "block_indicators")
         checkSpatialTable(h2GISDatabase, "building_indicators")
@@ -473,7 +440,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     }
 
     @Test
-    void testGrid_Indicators() {
+    void testWorkFlow() {
         String directory ="./target/bdtopo_chain_grid"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -498,7 +465,11 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                  "x_size": 1000,
                                  "y_size": 1000,
                                  "indicators": ["WATER_FRACTION"]
-                         ]
+                         ],
+                         "rsu_indicators":[
+                                 "indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+                                 "svfSimplified": false,
+                         ],
                         ]
         ]
         IProcess process = BDTopo_V2.workflow
@@ -515,11 +486,10 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-
-        def user = ""
-        def password = ""
-        def url = "jdbc:postgresql://"
-        def id_zones = [""]
+        def user = "erwan"
+        def password = "k@ndinsky22"
+        def url = "jdbc:postgresql://149.202.221.161:5432/paendora"
+        def id_zones = ["35238"]
         def local_database_name="paendora_${System.currentTimeMillis()}"
 
         /*================================================================================
@@ -557,15 +527,15 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                         "password": password,
                         "url": url,
                         "tables": [
-                                "building_indicators":"labsticc_building_indicators_2154",
-                                "block_indicators":"labsticc_block_indicators_2154",
-                                "rsu_indicators":"labsticc_rsu_indicators_2154",
-                                "rsu_lcz":"labsticc_rsu_lcz_2154",
-                                "zones":"labsticc_zones_2154",
-                                "building_urban_typo":"labsticc_building_urban_typo_2154",
-                                "rsu_urban_typo_area":"labsticc_rsu_urban_typo_area_2154",
-                                "rsu_urban_typo_floor_area":"labsticc_rsu_urban_typo_floor_area_2154",
-                                "grid_indicators":"labsticc_grid_indicators_2154"]
+                                "building_indicators":"bdtopo_2017_geoclimate.building_indicators_2154",
+                                "block_indicators":"bdtopo_2017_geoclimate.block_indicators_2154",
+                                "rsu_indicators":"bdtopo_2017_geoclimate.rsu_indicators_2154",
+                                "rsu_lcz":"bdtopo_2017_geoclimate.rsu_lcz_2154",
+                                "zones":"bdtopo_2017_geoclimate.zones_2154",
+                                "building_urban_typo":"bdtopo_2017_geoclimate.building_urban_typo_2154",
+                                "rsu_urban_typo_area":"bdtopo_2017_geoclimate.rsu_urban_typo_area_2154",
+                                "rsu_urban_typo_floor_area":"bdtopo_2017_geoclimate.rsu_urban_typo_floor_area_2154",
+                                "grid_indicators":"bdtopo_2017_geoclimate.grid_indicators_2154"]
                 ]
         ]
 
