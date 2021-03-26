@@ -1116,32 +1116,47 @@ IProcess computeAllGeoIndicators() {
                         datasource       : datasource])
                 def gatheredScales = applygatherScales.results.outputTableName
 
-                info "Start estimating the building height"
+                //We use the existing spatial units
+                def relationBlocks = results.outputTableBlockIndicators
+                def relationRSU = results.outputTableRsuIndicators
 
-                //Apply RF model
-                def applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
-                if (!applyRF.execute([
-                        explicativeVariablesTableName: gatheredScales,
-                        pathAndFileName              : buildingHeightModelName,
-                        idName                       : "id_build",
-                        prefixName                   : prefixName,
-                        datasource                   : datasource])) {
-                    error "Cannot apply the building height model $buildingHeightModelName"
-                    return
+                def buildingTableName = "BUILDING_TABLE_WITH_RSU_AND_BLOCK_ID"
+                def nbBuildingEstimated
+                if(datasource.getTable(gatheredScales).isEmpty()){
+                    info "No building height to estimate"
+                    nbBuildingEstimated = 0
+                    datasource.execute """DROP TABLE IF EXISTS $buildingTableName;
+                                       CREATE TABLE $buildingTableName 
+                                            AS SELECT  THE_GEOM, ID_BUILD, ID_SOURCE, HEIGHT_WALL ,
+                                                HEIGHT_ROOF, NB_LEV, TYPE, MAIN_USE, ZINDEX, ID_BLOCK, ID_RSU from $buildingIndicatorsTableName"""
                 }
+                else{
+                    info "Start estimating the building height"
 
-                //Update the abstract building table
-                info "Replace the input building table by the estimated height"
-                def buildEstimatedHeight = applyRF.results.outputTableName
+                    //Apply RF model
+                    def applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
+                    if (!applyRF.execute([
+                            explicativeVariablesTableName: gatheredScales,
+                            pathAndFileName              : buildingHeightModelName,
+                            idName                       : "id_build",
+                            prefixName                   : prefixName,
+                            datasource                   : datasource])) {
+                        error "Cannot apply the building height model $buildingHeightModelName"
+                        return
+                    }
 
-                def nbBuildingEstimated = datasource.firstRow("select count(*) as count from $buildEstimatedHeight").count
+                    //Update the abstract building table
+                    info "Replace the input building table by the estimated height"
+                    def buildEstimatedHeight = applyRF.results.outputTableName
 
-                datasource.getTable(buildEstimatedHeight).id_build.createIndex()
+                    nbBuildingEstimated = datasource.firstRow("select count(*) as count from $buildEstimatedHeight").count
 
-                def newEstimatedHeigthWithIndicators = "NEW_BUILDING_INDICATORS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+                    datasource.getTable(buildEstimatedHeight).id_build.createIndex()
 
-                //Use build table indicators
-                datasource.execute """DROP TABLE IF EXISTS $newEstimatedHeigthWithIndicators;
+                    def newEstimatedHeigthWithIndicators = "NEW_BUILDING_INDICATORS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+
+                    //Use build table indicators
+                    datasource.execute """DROP TABLE IF EXISTS $newEstimatedHeigthWithIndicators;
                                            CREATE TABLE $newEstimatedHeigthWithIndicators as 
                                             SELECT  a.THE_GEOM, a.ID_BUILD,a.ID_SOURCE,
                                         CASE WHEN b.HEIGHT_ROOF IS NULL THEN a.HEIGHT_WALL ELSE 0 END AS HEIGHT_WALL ,
@@ -1149,40 +1164,37 @@ IProcess computeAllGeoIndicators() {
                                                 CASE WHEN b.HEIGHT_ROOF IS NULL THEN a.NB_LEV ELSE 0 END AS NB_LEV, a.TYPE,a.MAIN_USE, a.ZINDEX, a.ID_BLOCK, a.ID_RSU from $buildingIndicatorsTableName
                                         a LEFT JOIN $buildEstimatedHeight b on a.id_build=b.id_build"""
 
-                //We must format only estimated buildings
-                //Apply format on the new abstract table
-                def epsg = datasource."$newEstimatedHeigthWithIndicators".srid;
-                IProcess formatEstimatedBuilding = ProcessingChain.FormatingDataChain.formatEstimatedBuilding()
-                formatEstimatedBuilding.execute([
-                        datasource    : datasource,
-                        inputTableName: newEstimatedHeigthWithIndicators,
-                        epsg          : epsg])
+                    //We must format only estimated buildings
+                    //Apply format on the new abstract table
+                    def epsg = datasource."$newEstimatedHeigthWithIndicators".srid;
+                    IProcess formatEstimatedBuilding = ProcessingChain.FormatingDataChain.formatEstimatedBuilding()
+                    formatEstimatedBuilding.execute([
+                            datasource    : datasource,
+                            inputTableName: newEstimatedHeigthWithIndicators,
+                            epsg          : epsg])
 
-                def buildingTableName = formatEstimatedBuilding.results.outputTableName
-                //We use the existing spatial units
-                def relationBlocks = results.outputTableBlockIndicators
-                def relationRSU = results.outputTableRsuIndicators
+                    buildingTableName = formatEstimatedBuilding.results.outputTableName
 
-                //This is a shortcut to extract building with estimated height
-                if(indicatorUse.isEmpty()){
-                    //Clean the System properties that stores intermediate table names
-                    clearTablesCache()
-                    return [outputTableBuildingIndicators   : results.outputTableBuildingIndicators,
-                            outputTableBlockIndicators      : relationBlocks,
-                            outputTableRsuIndicators        : relationRSU,
-                            outputTableRsuLcz               : null,
-                            outputTableZone                 : zoneTable,
-                            outputTableRsuUrbanTypoArea     : null,
-                            outputTableRsuUrbanTypoFloorArea: null,
-                            outputTableBuildingUrbanTypo    : null,
-                            buildingTableName             : buildingTableName]
-                }
+                    //This is a shortcut to extract building with estimated height
+                    if(indicatorUse.isEmpty()){
+                        //Clean the System properties that stores intermediate table names
+                        clearTablesCache()
+                        return [outputTableBuildingIndicators   : results.outputTableBuildingIndicators,
+                                outputTableBlockIndicators      : relationBlocks,
+                                outputTableRsuIndicators        : relationRSU,
+                                outputTableRsuLcz               : null,
+                                outputTableZone                 : zoneTable,
+                                outputTableRsuUrbanTypoArea     : null,
+                                outputTableRsuUrbanTypoFloorArea: null,
+                                outputTableBuildingUrbanTypo    : null,
+                                buildingTableName             : buildingTableName]
+                    }
 
-                //Drop tables
-                datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators,
+                    //Drop tables
+                    datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators,
                                         $newEstimatedHeigthWithIndicators, $buildEstimatedHeight,
                                         $gatheredScales"""
-
+                }
 
                 //The spatial relation tables RSU and BLOCK  must be filtered to keep only necessary columns
                 def rsuRelationFiltered = prefix prefixName, "RSU_RELATION_"
@@ -1316,7 +1328,7 @@ IProcess computeAllGeoIndicators() {
                             datasource       : datasource])
                     gatheredScales = applygatherScales.results.outputTableName
 
-                    applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
+                    def applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
                     if (!applyRF.execute([
                             explicativeVariablesTableName: gatheredScales,
                             pathAndFileName              : urbanTypoModelName,
