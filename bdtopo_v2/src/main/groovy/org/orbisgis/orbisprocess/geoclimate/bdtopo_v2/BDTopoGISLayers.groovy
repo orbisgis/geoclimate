@@ -135,7 +135,7 @@ IProcess importPreprocess() {
             // For each tables in the list, we check the SRID and compare to the srid variable. If different, the process is stopped
             for (String name : list) {
                 if(name) {
-                    ISpatialTable table = datasource.getSpatialTable(name)
+                    def table = datasource.getTable(name)
                     if(table){
                         tablesExist<<name
                         def currentSrid =table.srid

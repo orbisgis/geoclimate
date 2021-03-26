@@ -13,7 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue
 
 class FormattingForAbstractModelTests {
 
-
     @Test
    void formattingGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
