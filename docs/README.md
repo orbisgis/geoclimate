@@ -2,8 +2,7 @@
 
 [![GitHub](https://img.shields.io/github/license/orbisgis/h2gis.svg)](https://github.com/orbisgis/geoclimate/blob/master/LICENSE.md) 
 [![Build Stat](https://img.shields.io/jenkins/s/http/jenkins.orbisgis.org/job/geoclimate.svg)](http://jenkins.orbisgis.org/job/geoclimate) 
-[![Build Test](https://img.shields.io/jenkins/t/http/jenkins.orbisgis.org/job/geoclimate.svg)](https://jenkins.orbisgis.org/job/geoclimate/test_results_analyzer/) 
-[![codecov](https://img.shields.io/codecov/c/github/orbisgis/geoclimate.svg)](https://codecov.io/gh/orbisgis/geoclimate) 
+[![Build Test](https://img.shields.io/jenkins/t/http/jenkins.orbisgis.org/job/geoclimate.svg)](https://jenkins.orbisgis.org/job/geoclimate/test_results_analyzer/)
 [![Codacy Badge](https://img.shields.io/codacy/grade/93899ea0675d43a2a3787ce5dd3c5595.svg)](https://www.codacy.com/app/orbisgis/geoclimate?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=orbisgis/geoclimate&amp;utm_campaign=Badge_Grade) 
 
 <span style="color:red">**Warning: this documentation is under construction**</span>
