@@ -121,3 +121,26 @@ IProcess saveTablesAsFiles() {
         }
     }
 }
+
+/**
+ * An utility process to drop several tables. Usefull for example for dropping temporary tables.
+ *
+ * @param  inputTableNames list of the names of the tables to drop
+ * @param datasource connection to the database
+ *
+ * @return
+ */
+IProcess dropTables() {
+    return create {
+        title "Utility process to drop several tables"
+        id "dropTables"
+        inputs inputTableNames: List, datasource: JdbcDataSource
+        outputs dropped: Boolean
+        run { inputTableNames, datasource ->
+            inputTableNames.each { tableName ->
+                datasource "DROP TABLE IF EXISTS $tableName"
+            }
+            [dropped: true]
+        }
+    }
+}

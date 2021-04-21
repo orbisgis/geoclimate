@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -490,5 +491,6 @@ class GeoIndicatorsChainTest {
             datasource.getTable(tableName).save("${directory.absolutePath}${File.separator}${rsuIndicatorsTableName}.geojson")
         }
     }
+
 
 }

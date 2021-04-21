@@ -1102,6 +1102,7 @@ IProcess computeAllGeoIndicators() {
                                                         RIGHT JOIN $buildingEstimateTableName b 
                                                         ON a.id_build=b.id_build
                                                     WHERE b.ESTIMATED = true AND a.ID_RSU IS NOT NULL;"""
+                datasource.execute "DROP TABLE IF EXISTS $buildingEstimateTableName;"
 
                 info "Collect building indicators to estimate the height"
 
@@ -1885,6 +1886,8 @@ IProcess rasterizeIndicators() {
             if(gridProcess.execute([geometry: envelope, deltaX: x_size, deltaY: y_size,  rowCol :rowCol , datasource: datasource])) {
                 def grid_table_name = gridProcess.results.outputTableName
                 //Reproject the grid in the local UTM
+                def tablesToDrop =[]
+                tablesToDrop << grid_table_name
                 if(envelope.getSRID()==4326){
                     def reprojectedGrid =  postfix("grid")
                     datasource.execute """drop table if exists $reprojectedGrid; 
@@ -2046,6 +2049,10 @@ IProcess rasterizeIndicators() {
                     info "Cannot merge all indicators in grid table $grid_indicators_table."
                     return
                 }
+                def dropTempTables = Geoindicators.DataUtils.dropTables()
+                tablesToDrop.addAll(indicatorTablesToJoin.keySet().toList())
+                dropTempTables([inputTableNames: tablesToDrop,
+                                   datasource           : datasource])
             }
             [outputTableName: grid_indicators_table]
         }
