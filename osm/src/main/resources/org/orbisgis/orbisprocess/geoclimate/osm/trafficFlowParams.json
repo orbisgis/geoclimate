@@ -1,0 +1,163 @@
+{
+  "flow_data": {
+    "Motorway": {
+      "day_nb_vh": 26103,
+      "ev_nb_vh": 7458,
+      "night_nb_vh": 3729,
+      "day_percent_hv": 0.25,
+      "ev_percent_hv": 0.35,
+      "night_percent_hv": 0.45,
+      "day_percent_lv": 0.75,
+      "ev_percent_lv": 0.65,
+      "night_percent_lv": 0.55
+    },
+    "Trunk roads": {
+      "day_nb_vh": 17936,
+      "ev_nb_vh": 3826,
+      "night_nb_vh": 2152,
+      "day_percent_hv": 0.2,
+      "ev_percent_hv": 0.2,
+      "night_percent_hv": 0.2,
+      "day_percent_lv": 0.8,
+      "ev_percent_lv": 0.8,
+      "night_percent_lv": 0.8
+    },
+    "Main roads": {
+      "day_nb_vh": 7124,
+      "ev_nb_vh": 1069,
+      "night_nb_vh": 712,
+      "day_percent_hv": 0.2,
+      "ev_percent_hv": 0.15,
+      "night_percent_hv": 0.1,
+      "day_percent_lv": 0.8,
+      "ev_percent_lv": 0.85,
+      "night_percent_lv": 0.9
+    },
+    "Small main roads": {
+      "day_nb_vh": 1400,
+      "ev_nb_vh": 400,
+      "night_nb_vh": 200,
+      "day_percent_hv": 0.15,
+      "ev_percent_hv": 0.1,
+      "night_percent_hv": 0.05,
+      "day_percent_lv": 0.85,
+      "ev_percent_lv": 0.9,
+      "night_percent_lv": 0.95
+    },
+    "Collecting roads": {
+      "day_nb_vh": 700,
+      "ev_nb_vh": 200,
+      "night_nb_vh": 100,
+      "day_percent_hv": 0.1,
+      "ev_percent_hv": 0.06,
+      "night_percent_hv": 0.03,
+      "day_percent_lv": 0.9,
+      "ev_percent_lv": 0.94,
+      "night_percent_lv": 0.97
+    },
+    "Service roads": {
+      "day_nb_vh": 350,
+      "ev_nb_vh": 100,
+      "night_nb_vh": 50,
+      "day_percent_hv": 0.05,
+      "ev_percent_hv": 0.02,
+      "night_percent_hv": 0.01,
+      "day_percent_lv": 0.95,
+      "ev_percent_lv": 0.98,
+      "night_percent_lv": 0.99
+    },
+    "Dead-end roads": {
+      "day_nb_vh": 175,
+      "ev_nb_vh": 50,
+      "night_nb_vh": 25,
+      "day_percent_hv": 0.02,
+      "ev_percent_hv": 0.01,
+      "night_percent_hv": 0,
+      "day_percent_lv": 0.98,
+      "ev_percent_lv": 0.99,
+      "night_percent_lv": 1
+    }
+  },
+  "flow_periods": {
+    "day_nb_hours": 12,
+    "ev_nb_hours": 4,
+    "night_nb_hours": 8
+  },
+  "maxspeed": {
+    "Motorway": 130,
+    "Trunk roads": 110,
+    "Main roads": 80,
+    "Small main roads": 80,
+    "Collecting roads": 50,
+    "Service roads": 30,
+    "Dead-end roads": 30
+  },
+  "pavements": {
+    "NL05": null,
+    "NL05": "asphalt",
+    "NL08": [
+      "concrete",
+      "wood",
+      "grass",
+      "sand",
+      "earth",
+      "ground",
+      "sett",
+      "mud",
+      "dirt",
+      "unpaved",
+      "compacted",
+      "gravel",
+      "fine_gravel"
+    ],
+    "NL10": [
+      "paved",
+      "paving_stones",
+      "cobblestone"
+    ]
+  },
+  "road_types": {
+    "Motorway": {
+      "highway": [
+        "motorway",
+        "motorway_link"
+      ]
+    },
+    "Trunk roads": {
+      "highway": [
+        "trunk",
+        "trunk_link"
+      ]
+    },
+    "Main roads": {
+      "highway": [
+        "primary",
+        "primary_link"
+      ]
+    },
+    "Small main roads": {
+      "highway": [
+        "secondary",
+        "secondary_link"
+      ]
+    },
+    "Collecting roads": {
+      "highway": [
+        "tertiary",
+        "tertiary_link",
+        "unclassified"
+      ]
+    },
+    "Service roads": {
+      "highway": [
+        "residential"
+      ]
+    },
+    "Dead-end roads": {
+      "highway": [
+        "service",
+        "living_street"
+      ]
+    }
+  }
+}

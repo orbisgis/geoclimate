@@ -1096,6 +1096,9 @@ def extractProcessingParameters(def processing_parameters){
             }
         }
 
+        //Check for traffic_flow method
+        def  traffic_flow = processing_parameters.traffic_flow
+
         return defaultParameters
     }
     else{

@@ -141,6 +141,17 @@ class FormattingForAbstractModelTests {
                 inputZoneEnvelopeTableName: "",
                 epsg: epsg])
         assertEquals(0, h2GIS.getTable(format.results.outputTableName).getRowCount())
+
+        //Build traffic data
+        format = OSM.build_traffic_flow
+        format.execute([
+                datasource : h2GIS,
+                inputTableName: extractData.results.roadTableName,
+                epsg: epsg,
+                jsonFilename: null])
+
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_traffic.shp", true)
+        assertEquals 211, h2GIS.getTable(format.results.outputTableName).rowCount
     }
 
     @Test
