@@ -26,7 +26,7 @@ The geospatial indicators are computed at three [spatial units](./chain_document
 
 More than 60 urban indicators are yet available. At a first stage, those indicators have been selected:
 1. to feed the [TEB](http://www.umr-cnrm.fr/spip.php?article199) climate model developed by [Météo France](http://www.meteofrance.com),
-2. to classify the urban tissues and build the *Local Climate Zones* ([LCZ](http://www.wudapt.org/lcz/)).
+2. to classify the urban tissues and build the *Local Climate Zones* ([LCZ](https://www.wudapt.org/lcz/lcz-framework/)).
 
 Even if Geoclimate has been developed for climate studies, the indicators can be used for other topics such as landscape ecology, land use, habitat conservation planning or any environmental or territory applications.
 
