@@ -1133,7 +1133,7 @@ IProcess mergeWaterAndSeaLandTables() {
                 datasource """
                 DROP TABLE IF EXISTS $outputTableName;
                 CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_ROAD SERIAL, ID_SOURCE VARCHAR, 
-                ROAD_TYPE VARCHAR, SURFACE VARCHAR, ONEWAY BOOLEAN, SLOPE DOUBLE PRECISION,PAVEMENT VARCHAR,
+                ROAD_TYPE VARCHAR, SURFACE VARCHAR, DIRECTION INTEGER, SLOPE DOUBLE PRECISION,PAVEMENT VARCHAR,
                 DAY_LV_HOUR INTEGER, DAY_HV_HOUR INTEGER, DAY_LV_SPEED INTEGER ,DAY_HV_SPEED INTEGER, 
                 NIGHT_LV_HOUR INTEGER, NIGHT_HV_HOUR INTEGER, NIGHT_LV_SPEED INTEGER, NIGHT_HV_SPEED INTEGER, 
                 EV_LV_HOUR INTEGER,EV_HV_HOUR INTEGER, EV_LV_SPEED INTEGER, EV_HV_SPEED INTEGER);
@@ -1233,18 +1233,17 @@ IProcess mergeWaterAndSeaLandTables() {
                                     //Explode geometries
                                     for (int i = 0; i < geom.getNumGeometries(); i++) {
                                         stmt.addBatch """insert into $outputTableName (THE_GEOM, ID_SOURCE, ROAD_TYPE,
-                                        SURFACE, ONEWAY, SLOPE ,PAVEMENT,
+                                        SURFACE, DIRECTION, SLOPE ,PAVEMENT,
                                         DAY_LV_HOUR, DAY_HV_HOUR , DAY_LV_SPEED  ,DAY_HV_SPEED , 
                                         NIGHT_LV_HOUR , NIGHT_HV_HOUR , NIGHT_LV_SPEED , NIGHT_HV_SPEED , 
                                         EV_LV_HOUR ,EV_HV_HOUR , EV_LV_SPEED , EV_HV_SPEED ) 
                                         values(ST_GEOMFROMTEXT('${geom.getGeometryN(i)}',$epsg), '${row.id}','${road_type}',
-                                        '${surface}',${oneway},null, '${pavement_value}',
+                                        '${surface}',${oneway?1:3},null, '${pavement_value}',
                                         ${traffic_data.day_lv_hour},${traffic_data.day_hv_hour},${maxspeed_value},${maxspeed_value},
                                         ${traffic_data.night_lv_hour},${traffic_data.night_hv_hour},${maxspeed_value},${maxspeed_value},
                                         ${traffic_data.ev_lv_hour},${traffic_data.ev_hv_hour},${maxspeed_value},${maxspeed_value})""".toString()
                                     }
                                 }
-
                             }
                         }
             datasource.execute """COMMENT ON COLUMN ${outputTableName}."ROAD_TYPE" IS 'Default value road type';
@@ -1260,7 +1259,8 @@ IProcess mergeWaterAndSeaLandTables() {
             COMMENT ON COLUMN ${outputTableName}."EV_HV_HOUR" IS 'Number of heavy vehicles per hour for evening';
             COMMENT ON COLUMN ${outputTableName}."EV_LV_SPEED" IS 'Light vehicles speed for evening';
             COMMENT ON COLUMN ${outputTableName}."EV_HV_SPEED" IS 'Number of heavy vehicles per hour for evening';
-            COMMENT ON COLUMN ${outputTableName}."SLOPE" IS 'Slope (in %) of the road section.'"""
+            COMMENT ON COLUMN ${outputTableName}."SLOPE" IS 'Slope (in %) of the road section.';
+            COMMENT ON COLUMN ${outputTableName}."DIRECTION" IS 'Define the direction of the road section. 1 = one way road section and the traffic goes in the same way that the slope definition you have used, 2 = one way road section and the traffic goes in the inverse way that the slope definition you have used, 3 = bi-directional traffic flow, the flow is split into two components and correct half for uphill and half for downhill'"""
 
                     }
                 }
@@ -1333,7 +1333,6 @@ static Map getNumberVehiclesPerHour(def type, boolean oneway, def flow_data, def
     return ["day_lv_hour" : Math.round(day_lv_hour),"day_hv_hour" : Math.round(day_hv_hour),
             "night_lv_hour":Math.round(night_lv_hour),"night_hv_hour":Math.round(night_hv_hour),
             "ev_lv_hour": Math.round(ev_lv_hour),"ev_hv_hour":Math.round(ev_hv_hour)]
-
 
 }
 
