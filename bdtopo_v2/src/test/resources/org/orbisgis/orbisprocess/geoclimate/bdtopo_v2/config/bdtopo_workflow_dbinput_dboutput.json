@@ -5,7 +5,7 @@
         "name": "geoclimate_db;AUTO_SERVER=TRUE",
         "delete" :true
     },
-    "input" : {
+    "input" : {"bdtopo_v2": {
         "database": {
             "user": "-",
             "password": "-",
@@ -23,7 +23,7 @@
                 "construction_surfacique":"ign_bdtopo_2017.construction_surfacique",
                 "surface_route":"ign_bdtopo_2017.surface_route",
                 "surface_activite":"ign_bdtopo_2017.surface_activite"}
-        }
+        }}
     },
     "output" :{
         "database": {

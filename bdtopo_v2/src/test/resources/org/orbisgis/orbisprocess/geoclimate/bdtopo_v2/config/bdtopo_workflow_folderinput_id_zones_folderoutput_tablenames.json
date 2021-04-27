@@ -5,9 +5,9 @@
         "name": "geoclimate_db;AUTO_SERVER=TRUE",
         "delete" :true
     },
-    "input" : {
+    "input" :{"bdtopo_v2": {
         "folder": {"path" :"/tmp/...",
-            "id_zones":["id zone here"]}
+            "id_zones":["id zone here"]}}
     },
     "output" :{
      "folder" : {"path": "/tmp/...",
