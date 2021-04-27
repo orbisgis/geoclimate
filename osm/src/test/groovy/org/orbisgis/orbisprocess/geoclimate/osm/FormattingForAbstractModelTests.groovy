@@ -1,5 +1,6 @@
 package org.orbisgis.orbisprocess.geoclimate.osm
 
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
@@ -12,10 +13,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 class FormattingForAbstractModelTests {
+    static  H2GIS h2GIS
+
+    @BeforeAll
+    static  void loadDb(){
+         h2GIS = H2GIS.open('./target/osm_formating_test;AUTO_SERVER=TRUE')
+    }
 
     @Test
    void formattingGISLayers() {
-        def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
         def epsg =2154
         IProcess extractData = OSM.createGISLayers
         extractData.execute([
@@ -213,7 +219,6 @@ class FormattingForAbstractModelTests {
 
     @Test
     void extractSeaLandTest(TestInfo testInfo) {
-        def h2GIS = H2GIS.open('./target/sea_land;AUTO_SERVER=TRUE')
         def epsg =32629
         def osmBbox = [52.08484801362273, -10.75003575696209, 52.001518013622736, -10.66670575696209]
         def geom = Utilities.geometryFromNominatim(osmBbox)
@@ -402,8 +407,6 @@ class FormattingForAbstractModelTests {
      * @param zoneToExtract
      */
     void createGISLayersCheckHeight(def zoneToExtract) {
-        def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
-
         IProcess extractData = OSM.extractAndCreateGISLayers
         extractData.execute([
                 datasource : h2GIS,
@@ -435,7 +438,6 @@ class FormattingForAbstractModelTests {
 
     @Test
     void formattingGISBuildingLayer() {
-        def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
         def epsg = 2154
         IProcess extractData = OSM.createGISLayers
         extractData.execute([

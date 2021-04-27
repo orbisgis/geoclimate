@@ -1129,7 +1129,7 @@ IProcess mergeWaterAndSeaLandTables() {
             outputs outputTableName: String
             run { datasource, inputTableName, inputZoneEnvelopeTableName, epsg, jsonFilename ->
                 debug('Create the default traffic data')
-                def outputTableName = postfix "TRAFFIC_FLOW"
+                def outputTableName =  "TRAFFIC_FLOW"
                 datasource """
                 DROP TABLE IF EXISTS $outputTableName;
                 CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_ROAD SERIAL, ID_SOURCE VARCHAR, 

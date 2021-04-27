@@ -224,7 +224,8 @@ IProcess workflow() {
                                                     "building_urban_typo",
                                                     "grid_indicators",
                                                     "sea_land_mask",
-                                                    "building_height_missing"]
+                                                    "building_height_missing",
+                                                    "traffic_flow"]
                         //Get processing parameters
                         def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
                         if(!processing_parameters){
@@ -472,6 +473,7 @@ IProcess osm_processing() {
                         outputSRID =srid
                     }
                     //Prepare OSM extraction
+                    //TODO set key values ?
                     def query = "[maxsize:1073741824]" + Utilities.buildOSMQuery(zoneTableNames.envelope, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
 
                     if(downloadAllOSMData){
@@ -481,6 +483,7 @@ IProcess osm_processing() {
                                            "leisure", "highway", "natural",
                                            "landuse", "landcover",
                                            "vegetation","waterway"]
+                        //TODO : Remove unecessary keys according the output tables set in the config file
                         query =  "[maxsize:1073741824]"+ Utilities.buildOSMQueryWithAllData(zoneTableNames.envelope, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
                     }
 
@@ -496,39 +499,40 @@ IProcess osm_processing() {
                             def gisLayersResults = createGISLayerProcess.getResults()
                             def rsu_indicators_params = processing_parameters.rsu_indicators
                             def grid_indicators_params = processing_parameters.grid_indicators
+                            def traffic_flow = processing_parameters.traffic_flow
 
                             debug "Formating OSM GIS layers"
-                            //Format urban areas
-                            IProcess format = OSM.formatUrbanAreas
-                            format.execute([
-                                    datasource                : h2gis_datasource,
-                                    inputTableName            : gisLayersResults.urbanAreasTableName,
-                                    inputZoneEnvelopeTableName: zoneEnvelopeTableName,
-                                    epsg                      : srid])
+                            //Process only the required table
+                            def urbanAreasTable ,buildingTableName,buildingEstimateTableName,  roadTableName,
+                                    railTableName,vegetationTableName, hydrographicTableName, imperviousTableName,
+                             seaLandMaskTableName
+                            //Add the GIS layers to the list of results
+                            def results = [:]
 
-                            def urbanAreasTable = format.results.outputTableName
+                            if(rsu_indicators_params|| grid_indicators_params){
+                                //Format urban areas
+                                IProcess format = OSM.formatUrbanAreas
+                                format.execute([
+                                        datasource                : h2gis_datasource,
+                                        inputTableName            : gisLayersResults.urbanAreasTableName,
+                                        inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                        epsg                      : srid])
 
-                            format = OSM.formatBuildingLayer
-                            format.execute([
-                                    datasource                : h2gis_datasource,
-                                    inputTableName            : gisLayersResults.buildingTableName,
-                                    inputZoneEnvelopeTableName: zoneEnvelopeTableName,
-                                    epsg                      : srid,
-                                    h_lev_min                 : processing_parameters.hLevMin,
-                                    h_lev_max                 : processing_parameters.hLevMax,
-                                    hThresholdLev2            : processing_parameters.hThresholdLev2,
-                                    urbanAreasTableName       : urbanAreasTable])
+                                urbanAreasTable = format.results.outputTableName
 
-                            def buildingTableName = format.results.outputTableName
-                            def buildingEstimateTableName = format.results.outputEstimateTableName
+                                format = OSM.formatBuildingLayer
+                                format.execute([
+                                        datasource                : h2gis_datasource,
+                                        inputTableName            : gisLayersResults.buildingTableName,
+                                        inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                        epsg                      : srid,
+                                        h_lev_min                 : processing_parameters.hLevMin,
+                                        h_lev_max                 : processing_parameters.hLevMax,
+                                        hThresholdLev2            : processing_parameters.hThresholdLev2,
+                                        urbanAreasTableName       : urbanAreasTable])
 
-                            format = OSM.formatRoadLayer
-                            format.execute([
-                                    datasource                : h2gis_datasource,
-                                    inputTableName            : gisLayersResults.roadTableName,
-                                    inputZoneEnvelopeTableName: zoneEnvelopeTableName,
-                                    epsg                      : srid])
-                            def roadTableName = format.results.outputTableName
+                                buildingTableName = format.results.outputTableName
+                                buildingEstimateTableName = format.results.outputEstimateTableName
 
 
                             format = OSM.formatRailsLayer
@@ -537,7 +541,7 @@ IProcess osm_processing() {
                                     inputTableName            : gisLayersResults.railTableName,
                                     inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                                     epsg                      : srid])
-                            def railTableName = format.results.outputTableName
+                             railTableName = format.results.outputTableName
 
                             format = OSM.formatVegetationLayer
                             format.execute([
@@ -545,7 +549,7 @@ IProcess osm_processing() {
                                     inputTableName            : gisLayersResults.vegetationTableName,
                                     inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                                     epsg                      : srid])
-                            def vegetationTableName = format.results.outputTableName
+                                vegetationTableName = format.results.outputTableName
 
                             format = OSM.formatHydroLayer
                             format.execute([
@@ -553,7 +557,7 @@ IProcess osm_processing() {
                                     inputTableName            : gisLayersResults.hydroTableName,
                                     inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                                     epsg                      : srid])
-                            def hydrographicTableName = format.results.outputTableName
+                             hydrographicTableName = format.results.outputTableName
 
                             format = OSM.formatImperviousLayer
                             format.execute([
@@ -561,7 +565,7 @@ IProcess osm_processing() {
                                     inputTableName            : gisLayersResults.imperviousTableName,
                                     inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                                     epsg                      : srid])
-                            def imperviousTableName = format.results.outputTableName
+                             imperviousTableName = format.results.outputTableName
 
                             //Sea/Land mask
                             format = OSM.formatSeaLandMask
@@ -571,9 +575,9 @@ IProcess osm_processing() {
                                     inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                                     epsg                      : srid])
 
-                            def seaLandMaskTableName = format.results.outputTableName
+                                seaLandMaskTableName = format.results.outputTableName
 
-                            //Merge the Sea/Land mask with water tabke
+                            //Merge the Sea/Land mask with water table
                             format = OSM.mergeWaterAndSeaLandTables
                             format.execute([
                                     datasource           : h2gis_datasource,
@@ -581,11 +585,19 @@ IProcess osm_processing() {
                                     epsg                 : srid])
 
                             hydrographicTableName = format.results.outputTableName
+                            }
+                            else if(traffic_flow || rsu_indicators_params||grid_indicators_params){
+                                IProcess format = OSM.formatRoadLayer
+                                format.execute([
+                                        datasource                : h2gis_datasource,
+                                        inputTableName            : gisLayersResults.roadTableName,
+                                        inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                        epsg                      : srid])
 
+                                roadTableName = format.results.outputTableName
+                            }
                             debug "OSM GIS layers formated"
 
-                            //Add the GIS layers to the list of results
-                            def results = [:]
                             results.put("outputTableZone", zoneTableName)
                             results.put("roadTableName", roadTableName)
                             results.put("railTableName", railTableName)
@@ -596,6 +608,16 @@ IProcess osm_processing() {
                             results.put("buildingTableName", buildingTableName)
                             results.put("seaLandMaskTableName", seaLandMaskTableName)
                             results.put("building_height_missing", buildingEstimateTableName)
+
+                            //Compute traffic flow
+                            if(traffic_flow){
+                                IProcess format =  OSM.build_traffic_flow
+                                format.execute([
+                                        datasource : h2gis_datasource,
+                                        inputTableName: gisLayersResults.roadTableName,
+                                        epsg: srid])
+                                results.put("traffic_flow", format.results.outputTableName)
+                            }
 
                             //Compute the RSU indicators
                             if(rsu_indicators_params){
@@ -629,7 +651,7 @@ IProcess osm_processing() {
                             }
                             //Default
                             def outputGrid = "geojson"
-                            //Compute the grid indicators
+                            //Compute the grid indicators based on the original extent in WGS84
                             GeometryFactory gf = new GeometryFactory()
                             def geomEnv =  gf.toGeometry(zoneTableNames.envelope)
                             geomEnv.setSRID(4326)
@@ -793,7 +815,8 @@ def outputFolderProperties(def outputFolder){
                         "building_urban_typo",
                         "grid_indicators",
                         "sea_land_mask",
-                         "building_height_missing"]
+                        "building_height_missing",
+                        "traffic_flow"]
     if(outputFolder in Map){
         def outputPath = outputFolder.get("path")
         def outputTables = outputFolder.get("tables")
@@ -1098,6 +1121,9 @@ def extractProcessingParameters(def processing_parameters){
 
         //Check for traffic_flow method
         def  traffic_flow = processing_parameters.traffic_flow
+        if(traffic_flow && traffic_flow in Boolean){
+            defaultParameters.put("traffic_flow", traffic_flow)
+        }
 
         return defaultParameters
     }
@@ -1131,50 +1157,50 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
     }
     outputFiles.each{
         //Save indicators
-        if(it.equals("building_indicators")){
+        if(it == "building_indicators"){
             saveTableAsGeojson(results.outputTableBuildingIndicators, "${subFolder.getAbsolutePath()+File.separator+"building_indicators"}.geojson",h2gis_datasource,outputSRID, reproject, deleteOutputData)
         }
-        else if(it.equals("block_indicators")){
+        else if(it == "block_indicators"){
             saveTableAsGeojson(results.outputTableBlockIndicators, "${subFolder.getAbsolutePath()+File.separator+"block_indicators"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
-        else  if(it.equals("rsu_indicators")){
+        else  if(it == "rsu_indicators"){
             saveTableAsGeojson(results.outputTableRsuIndicators, "${subFolder.getAbsolutePath()+File.separator+"rsu_indicators"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
-        else  if(it.equals("rsu_lcz")){
+        else  if(it == "rsu_lcz"){
             saveTableAsGeojson(results.outputTableRsuLcz,  "${subFolder.getAbsolutePath()+File.separator+"rsu_lcz"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
-        else  if(it.equals("zones")){
+        else  if(it == "zones"){
             saveTableAsGeojson(results.outputTableZone,  "${subFolder.getAbsolutePath()+File.separator+"zones"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         //Save input GIS tables
-        else  if(it.equals("building")){
+        else  if(it == "building"){
             saveTableAsGeojson(results.buildingTableName, "${subFolder.getAbsolutePath()+File.separator+"building"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
-        else if(it.equals("road")){
+        else if(it == "road"){
             saveTableAsGeojson(results.roadTableName,  "${subFolder.getAbsolutePath()+File.separator+"road"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
-        else if(it.equals("rail")){
+        else if(it == "rail"){
             saveTableAsGeojson(results.railTableName,  "${subFolder.getAbsolutePath()+File.separator+"rail"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
-        if(it.equals("water")){
+        if(it == "water"){
             saveTableAsGeojson(results.hydrographicTableName, "${subFolder.getAbsolutePath()+File.separator+"water"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
-        else if(it.equals("vegetation")){
+        else if(it == "vegetation"){
             saveTableAsGeojson(results.vegetationTableName,  "${subFolder.getAbsolutePath()+File.separator+"vegetation"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
-        else if(it.equals("impervious")){
+        else if(it == "impervious"){
             saveTableAsGeojson(results.imperviousTableName, "${subFolder.getAbsolutePath()+File.separator+"impervious"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
-        else if(it.equals("urban_areas")){
+        else if(it == "urban_areas"){
             saveTableAsGeojson(results.urbanAreasTableName, "${subFolder.getAbsolutePath()+File.separator+"urban_areas"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }else if(it.equals("rsu_urban_typo_area")){
+        }else if(it == "rsu_urban_typo_area"){
             saveTableAsGeojson(results.outputTableRsuUrbanTypoArea, "${subFolder.getAbsolutePath()+File.separator+"rsu_urban_typo_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }else if(it.equals("rsu_urban_typo_floor_area")){
+        }else if(it == "rsu_urban_typo_floor_area"){
             saveTableAsGeojson(results.outputTableRsuUrbanTypoFloorArea, "${subFolder.getAbsolutePath()+File.separator+"rsu_urban_typo_floor_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }else if(it.equals("building_urban_typo")){
+        }else if(it == "building_urban_typo"){
             saveTableAsGeojson(results.outputTableBuildingUrbanTypo, "${subFolder.getAbsolutePath()+File.separator+"building_urban_typo"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
-        else if(it.equals("grid_indicators")){
+        else if(it == "grid_indicators"){
             if(outputGrid=="geojson"){
                 saveTableAsGeojson(results.grid_indicators, "${subFolder.getAbsolutePath()+File.separator+"grid_indicators"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
             }
@@ -1182,11 +1208,14 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
                 saveTableToAsciiGrid(results.grid_indicators, subFolder, "grid_indicators", h2gis_datasource,outputSRID,reproject,deleteOutputData)
             }
         }
-        else if(it.equals("sea_land_mask")){
+        else if(it == "sea_land_mask"){
             saveTableAsGeojson(results.seaLandMaskTableName, "${subFolder.getAbsolutePath()+File.separator+"sea_land_mask"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
-        else if(it.equals("building_height_missing")){
+        else if(it == "building_height_missing"){
             saveTableAsCSV(results.building_height_missing, "${subFolder.getAbsolutePath()+File.separator+"building_height_missing"}.csv", h2gis_datasource,deleteOutputData)
+        }
+        else if(it == "traffic_flow"){
+            saveTableAsGeojson(results.traffic_flow,  "${subFolder.getAbsolutePath()+File.separator+"traffic_flow"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
     }
 }
@@ -1389,6 +1418,11 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
                     output_datasource.getConnection(), output_table, 2, 1000);
         }
     }
+
+    //Export traffic_flow
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.traffic_flow, id_zone,h2gis_datasource, h2gis_tables.traffic_flow
+            , "", inputSRID,outputSRID,reproject)
+
     con.setAutoCommit(false)
 }
 
