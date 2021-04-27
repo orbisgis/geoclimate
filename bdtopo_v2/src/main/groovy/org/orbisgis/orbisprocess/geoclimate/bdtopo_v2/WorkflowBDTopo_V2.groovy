@@ -194,8 +194,13 @@ IProcess workflow() {
                     }
                 }
                 if (input) {
-                    def inputDataBase = input.database
-                    def inputFolder = input.folder
+                    def isbdTopo_v2 = input.bdtopo_v2
+                    if(!isbdTopo_v2){
+                        error "The input datasource must be defined with the name bdtopo_v2"
+                        return
+                    }
+                    def inputDataBase = isbdTopo_v2.database
+                    def inputFolder = isbdTopo_v2.folder
                     def id_zones = []
                     if (inputFolder && inputDataBase) {
                         error "Please set only one input data provider"

@@ -262,9 +262,9 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                         "name" : "bdtopo_workflow_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
-                "input" : [
+                "input" : ["bdtopo_v2": [
                         "folder": ["path" :".../processingChain",
-                                   "id_zones":["56350"]]],
+                                   "id_zones":["56350"]]]],
                 "output" :[
                         "database" :
                                 ["user" : "sa",
@@ -311,9 +311,9 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                         "name" : "bdtopo_workflow_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
-                "input" : [
+                "input" :["bdtopo_v2":  [
                         "folder": ["path" :".../processingChain",
-                            "id_zones":["-", "-"]]],
+                            "id_zones":["-", "-"]]]],
                 "output" :[
                         "database" :
                                 ["user" : "sa",
@@ -407,9 +407,9 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                         "name" : "bdtopo_workflow_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
-                "input" : [
+                "input" : ["bdtopo_v2": [
                         "folder": ["path" :dataFolder,
-                                   "id_zones":[communeToTest]]],
+                                   "id_zones":[communeToTest]]]],
                 "output" :[
                         "database" :
                                 ["user" : postgis_dbProperties.user,
@@ -453,9 +453,9 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :false
                 ],
-                "input" : [
+                "input" :["bdtopo_v2":  [
                         "folder": ["path" :dataFolder,
-                                   "id_zones":[communeToTest]]],
+                                   "id_zones":[communeToTest]]]],
                 "output" :[
                         "folder" : ["path": "$directory",
                                     "tables": ["grid_indicators"]]],
@@ -496,7 +496,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         * Input database and tables
         */
 
-        def  input = [
+        def  input = ["bdtopo_v2": [
                 "database": [
                         "user":user,
                         "password": password,
@@ -515,7 +515,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                    "surface_route":"ign_bdtopo_2017.surface_route",
                                    "surface_activite":"ign_bdtopo_2017.surface_activite",
                                    "piste_aerodrome":"ign_bdtopo_2017.piste_aerodrome"]
-                ]]
+                ]]]
 
 
         /*================================================================================
