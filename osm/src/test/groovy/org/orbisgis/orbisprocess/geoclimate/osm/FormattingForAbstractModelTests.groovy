@@ -1,5 +1,6 @@
 package org.orbisgis.orbisprocess.geoclimate.osm
 
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
@@ -12,10 +13,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 class FormattingForAbstractModelTests {
+    static  H2GIS h2GIS
+
+    @BeforeAll
+    static  void loadDb(){
+         h2GIS = H2GIS.open('./target/osm_formating_test;AUTO_SERVER=TRUE')
+    }
 
     @Test
    void formattingGISLayers() {
-        def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
         def epsg =2154
         IProcess extractData = OSM.createGISLayers
         extractData.execute([
@@ -141,11 +147,78 @@ class FormattingForAbstractModelTests {
                 inputZoneEnvelopeTableName: "",
                 epsg: epsg])
         assertEquals(0, h2GIS.getTable(format.results.outputTableName).getRowCount())
+
+        //Build traffic data
+        format = OSM.build_traffic_flow
+        format.execute([
+                datasource : h2GIS,
+                inputTableName: extractData.results.roadTableName,
+                epsg: epsg,
+                jsonFilename: null])
+
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_traffic.shp", true)
+        assertEquals 211, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where road_type is not null").count==211
+
+        def traffic_flow = h2GIS.firstRow("select * from ${format.results.outputTableName} where road_type = 'Collecting roads' limit 1")
+
+        def expectedFlow = [ROAD_TYPE:'Collecting roads',SURFACE:'asphalt',PAVEMENT:'NL05' , DIRECTION:3, DAY_LV_HOUR : 53, DAY_HV_HOUR : 6, DAY_LV_SPEED : 50  ,
+                            DAY_HV_SPEED  : 50, NIGHT_LV_HOUR :12, NIGHT_HV_HOUR :0, NIGHT_LV_SPEED :50, NIGHT_HV_SPEED :50,
+                            EV_LV_HOUR:47 ,EV_HV_HOUR :3, EV_LV_SPEED:50, EV_HV_SPEED:50 ]
+        traffic_flow.each {it ->
+            if(expectedFlow.get(it.key)) {
+                assertEquals(expectedFlow.get(it.key), it.value)
+            }
+        }
+
+        traffic_flow = h2GIS.firstRow("select * from ${format.results.outputTableName} where road_type = 'Dead-end roads' limit 1")
+
+        expectedFlow = [ROAD_TYPE:'Dead-end roads',SURFACE:null,PAVEMENT:'NL05' , DIRECTION:1, DAY_LV_HOUR : 7, DAY_HV_HOUR : 0, DAY_LV_SPEED : 30  ,
+                            DAY_HV_SPEED  : 30, NIGHT_LV_HOUR :2, NIGHT_HV_HOUR :0, NIGHT_LV_SPEED :30, NIGHT_HV_SPEED :30,
+                            EV_LV_HOUR:6 ,EV_HV_HOUR :0, EV_LV_SPEED:30, EV_HV_SPEED:30 ]
+        traffic_flow.each {it ->
+            if(expectedFlow.get(it.key)) {
+                assertEquals(expectedFlow.get(it.key), it.value)
+            }
+        }
+
+        traffic_flow = h2GIS.firstRow("select * from ${format.results.outputTableName} where road_type = 'Service roads' limit 1")
+
+        expectedFlow = [ROAD_TYPE:'Service roads',SURFACE:'asphalt',PAVEMENT:'NL05' , DIRECTION:3, DAY_LV_HOUR : 28, DAY_HV_HOUR : 1, DAY_LV_SPEED : 50  ,
+                        DAY_HV_SPEED  : 50, NIGHT_LV_HOUR :6, NIGHT_HV_HOUR :0, NIGHT_LV_SPEED :50, NIGHT_HV_SPEED :50,
+                        EV_LV_HOUR:25 ,EV_HV_HOUR :1, EV_LV_SPEED:50, EV_HV_SPEED:50 ]
+        traffic_flow.each {it ->
+            if(expectedFlow.get(it.key)) {
+                assertEquals(expectedFlow.get(it.key), it.value)
+            }
+        }
+
+        traffic_flow = h2GIS.firstRow("select * from ${format.results.outputTableName} where road_type = 'Small main roads' limit 1")
+
+        expectedFlow = [ROAD_TYPE:'Small main roads',SURFACE:'asphalt',PAVEMENT:'NL05' , DIRECTION:3, DAY_LV_HOUR : 99, DAY_HV_HOUR : 18, DAY_LV_SPEED : 30  ,
+                        DAY_HV_SPEED  : 30, NIGHT_LV_HOUR :24, NIGHT_HV_HOUR :1, NIGHT_LV_SPEED :30, NIGHT_HV_SPEED :30,
+                        EV_LV_HOUR:90 ,EV_HV_HOUR :10, EV_LV_SPEED:30, EV_HV_SPEED:30 ]
+        traffic_flow.each {it ->
+            if(expectedFlow.get(it.key)) {
+                assertEquals(expectedFlow.get(it.key), it.value)
+            }
+        }
+
+        traffic_flow = h2GIS.firstRow("select * from ${format.results.outputTableName} where road_type = 'Main roads' limit 1")
+
+        expectedFlow = [ROAD_TYPE:'Main roads',SURFACE:'asphalt',PAVEMENT:'NL05' , DIRECTION:3, DAY_LV_HOUR : 475, DAY_HV_HOUR :119, DAY_LV_SPEED : 50  ,
+                        DAY_HV_SPEED  : 50, NIGHT_LV_HOUR :80, NIGHT_HV_HOUR :9, NIGHT_LV_SPEED :50, NIGHT_HV_SPEED :50,
+                        EV_LV_HOUR:227 ,EV_HV_HOUR :40, EV_LV_SPEED:50, EV_HV_SPEED:50 ]
+        traffic_flow.each {it ->
+            if(expectedFlow.get(it.key)) {
+                assertEquals(expectedFlow.get(it.key), it.value)
+            }
+        }
+
     }
 
     @Test
     void extractSeaLandTest(TestInfo testInfo) {
-        def h2GIS = H2GIS.open('./target/sea_land;AUTO_SERVER=TRUE')
         def epsg =32629
         def osmBbox = [52.08484801362273, -10.75003575696209, 52.001518013622736, -10.66670575696209]
         def geom = Utilities.geometryFromNominatim(osmBbox)
@@ -334,8 +407,6 @@ class FormattingForAbstractModelTests {
      * @param zoneToExtract
      */
     void createGISLayersCheckHeight(def zoneToExtract) {
-        def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
-
         IProcess extractData = OSM.extractAndCreateGISLayers
         extractData.execute([
                 datasource : h2GIS,
@@ -367,7 +438,6 @@ class FormattingForAbstractModelTests {
 
     @Test
     void formattingGISBuildingLayer() {
-        def h2GIS = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
         def epsg = 2154
         IProcess extractData = OSM.createGISLayers
         extractData.execute([

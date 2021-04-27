@@ -16,7 +16,8 @@ class OSM  {
     public static def extractAndCreateGISLayers
     public static def buildGeoclimateLayers
     public static def formatUrbanAreas
-    public static def formatSeaLandMask;
+    public static def formatSeaLandMask
+    public static def build_traffic_flow
     public static def mergeWaterAndSeaLandTables;
     static {
         def formattingForAbstractModel = new FormattingForAbstractModel()
@@ -31,6 +32,7 @@ class OSM  {
         formatImperviousLayer= formattingForAbstractModel.formatImperviousLayer()
         formatUrbanAreas = formattingForAbstractModel.formatUrbanAreas()
         formatSeaLandMask = formattingForAbstractModel.formatSeaLandMask()
+        build_traffic_flow= formattingForAbstractModel.build_traffic_flow()
         mergeWaterAndSeaLandTables = formattingForAbstractModel.mergeWaterAndSeaLandTables()
         createGISLayers  = osmGISLayers.createGISLayers()
         extractAndCreateGISLayers  = osmGISLayers.extractAndCreateGISLayers()

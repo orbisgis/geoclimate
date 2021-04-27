@@ -745,6 +745,34 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
+
+    @Test
+    void testTrafficFlow() {
+        String directory ="./target/geoclimate_chain_grid"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "description" :"Example of configuration file to run only the estimated height model",
+                "geoclimatedb" : [
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete" :false
+                ],
+                "input" : [
+                        "osm" : ["Pont-de-Veyle"]],
+                "output" :[
+                        "folder" : ["path": "$directory",
+                                    "tables": ["traffic_flow"]]],
+                "parameters":
+                        ["traffic_flow" : true]
+        ]
+        IProcess process = OSM.workflow
+        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
+        assertTrue h2gis.firstRow("select count(*) as count from traffic_flow where road_type is not null").count>0
+    }
+
     /**
      * Create a configuration file
      * @param osmParameters
@@ -831,6 +859,5 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 FROM $outputTableStats AS a, $outputTable b WHERE a.id_rsu=b.id_rsu GROUP BY b.id_rsu"""
 
         datasource.save("stats_rsu", './target/stats_rsu.shp', true)
-
     }
 }
