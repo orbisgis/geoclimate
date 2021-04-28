@@ -225,7 +225,7 @@ IProcess workflow() {
                                                     "grid_indicators",
                                                     "sea_land_mask",
                                                     "building_height_missing",
-                                                    "traffic_flow"]
+                                                    "road_traffic"]
                         //Get processing parameters
                         def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
                         if(!processing_parameters){
@@ -499,7 +499,7 @@ IProcess osm_processing() {
                             def gisLayersResults = createGISLayerProcess.getResults()
                             def rsu_indicators_params = processing_parameters.rsu_indicators
                             def grid_indicators_params = processing_parameters.grid_indicators
-                            def traffic_flow = processing_parameters.traffic_flow
+                            def road_traffic = processing_parameters.road_traffic
 
                             debug "Formating OSM GIS layers"
                             //Process only the required table
@@ -586,8 +586,9 @@ IProcess osm_processing() {
 
                             hydrographicTableName = format.results.outputTableName
                             }
-
+                          
                             if(traffic_flow || rsu_indicators_params||grid_indicators_params){
+
                                 IProcess format = OSM.formatRoadLayer
                                 format.execute([
                                         datasource                : h2gis_datasource,
@@ -611,13 +612,13 @@ IProcess osm_processing() {
                             results.put("building_height_missing", buildingEstimateTableName)
 
                             //Compute traffic flow
-                            if(traffic_flow){
-                                IProcess format =  OSM.build_traffic_flow
+                            if(road_traffic){
+                                IProcess format =  OSM.build_road_traffic
                                 format.execute([
                                         datasource : h2gis_datasource,
                                         inputTableName: gisLayersResults.roadTableName,
                                         epsg: srid])
-                                results.put("traffic_flow", format.results.outputTableName)
+                                results.put("road_traffic", format.results.outputTableName)
                             }
 
                             //Compute the RSU indicators
@@ -817,7 +818,7 @@ def outputFolderProperties(def outputFolder){
                         "grid_indicators",
                         "sea_land_mask",
                         "building_height_missing",
-                        "traffic_flow"]
+                        "road_traffic"]
     if(outputFolder in Map){
         def outputPath = outputFolder.get("path")
         def outputTables = outputFolder.get("tables")
@@ -1120,10 +1121,10 @@ def extractProcessingParameters(def processing_parameters){
             }
         }
 
-        //Check for traffic_flow method
-        def  traffic_flow = processing_parameters.traffic_flow
-        if(traffic_flow && traffic_flow in Boolean){
-            defaultParameters.put("traffic_flow", traffic_flow)
+        //Check for road_traffic method
+        def  road_traffic = processing_parameters.road_traffic
+        if(road_traffic && road_traffic in Boolean){
+            defaultParameters.put("road_traffic", road_traffic)
         }
 
         return defaultParameters
@@ -1215,8 +1216,8 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
         else if(it == "building_height_missing"){
             saveTableAsCSV(results.building_height_missing, "${subFolder.getAbsolutePath()+File.separator+"building_height_missing"}.csv", h2gis_datasource,deleteOutputData)
         }
-        else if(it == "traffic_flow"){
-            saveTableAsGeojson(results.traffic_flow,  "${subFolder.getAbsolutePath()+File.separator+"traffic_flow"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        else if(it == "road_traffic"){
+            saveTableAsGeojson(results.road_traffic,  "${subFolder.getAbsolutePath()+File.separator+"road_traffic"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
     }
 }
@@ -1420,8 +1421,8 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
         }
     }
 
-    //Export traffic_flow
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.traffic_flow, id_zone,h2gis_datasource, h2gis_tables.traffic_flow
+    //Export road_traffic
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.road_traffic, id_zone,h2gis_datasource, h2gis_tables.road_traffic
             , "", inputSRID,outputSRID,reproject)
 
     con.setAutoCommit(false)

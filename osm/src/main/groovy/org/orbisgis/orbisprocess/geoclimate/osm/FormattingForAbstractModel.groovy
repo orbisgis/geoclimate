@@ -1121,15 +1121,15 @@ IProcess mergeWaterAndSeaLandTables() {
      *
      * @return The name of the road table
      */
-    IProcess build_traffic_flow() {
+    IProcess build_road_traffic() {
         return create {
             title "Compute a default traffic data according the WGAEN values"
-            id "traffic_flow"
+            id "road_traffic"
             inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, jsonFilename: ""
             outputs outputTableName: String
             run { datasource, inputTableName, inputZoneEnvelopeTableName, epsg, jsonFilename ->
                 debug('Create the default traffic data')
-                def outputTableName =  "TRAFFIC_FLOW"
+                def outputTableName =  "ROAD_TRAFFIC"
                 datasource """
                 DROP TABLE IF EXISTS $outputTableName;
                 CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_ROAD SERIAL, ID_SOURCE VARCHAR, 

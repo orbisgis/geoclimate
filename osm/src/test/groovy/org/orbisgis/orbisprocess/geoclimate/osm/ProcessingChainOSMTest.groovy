@@ -747,13 +747,13 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
 
 
     @Test
-    void testTrafficFlow() {
+    void testRoad_traffic() {
         String directory ="./target/geoclimate_chain_grid"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
         def osm_parmeters = [
-                "description" :"Example of configuration file to run only the estimated height model",
+                "description" :"Example of configuration file to run only the road traffic estimation",
                 "geoclimatedb" : [
                         "folder" : "${dirFile.absolutePath}",
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
@@ -763,14 +763,14 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         "osm" : ["Pont-de-Veyle"]],
                 "output" :[
                         "folder" : ["path": "$directory",
-                                    "tables": ["traffic_flow"]]],
+                                    "tables": ["road_traffic"]]],
                 "parameters":
-                        ["traffic_flow" : true]
+                        ["road_traffic" : true]
         ]
         IProcess process = OSM.workflow
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
-        assertTrue h2gis.firstRow("select count(*) as count from traffic_flow where road_type is not null").count>0
+        assertTrue h2gis.firstRow("select count(*) as count from road_traffic where road_type is not null").count>0
     }
 
     /**

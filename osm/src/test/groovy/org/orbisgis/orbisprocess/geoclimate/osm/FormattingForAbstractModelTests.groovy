@@ -149,7 +149,7 @@ class FormattingForAbstractModelTests {
         assertEquals(0, h2GIS.getTable(format.results.outputTableName).getRowCount())
 
         //Build traffic data
-        format = OSM.build_traffic_flow
+        format = OSM.build_road_traffic
         format.execute([
                 datasource : h2GIS,
                 inputTableName: extractData.results.roadTableName,
@@ -160,56 +160,56 @@ class FormattingForAbstractModelTests {
         assertEquals 211, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where road_type is not null").count==211
 
-        def traffic_flow = h2GIS.firstRow("select * from ${format.results.outputTableName} where road_type = 'Collecting roads' limit 1")
+        def road_traffic = h2GIS.firstRow("select * from ${format.results.outputTableName} where road_type = 'Collecting roads' limit 1")
 
         def expectedFlow = [ROAD_TYPE:'Collecting roads',SURFACE:'asphalt',PAVEMENT:'NL05' , DIRECTION:3, DAY_LV_HOUR : 53, DAY_HV_HOUR : 6, DAY_LV_SPEED : 50  ,
                             DAY_HV_SPEED  : 50, NIGHT_LV_HOUR :12, NIGHT_HV_HOUR :0, NIGHT_LV_SPEED :50, NIGHT_HV_SPEED :50,
                             EV_LV_HOUR:47 ,EV_HV_HOUR :3, EV_LV_SPEED:50, EV_HV_SPEED:50 ]
-        traffic_flow.each {it ->
+        road_traffic.each {it ->
             if(expectedFlow.get(it.key)) {
                 assertEquals(expectedFlow.get(it.key), it.value)
             }
         }
 
-        traffic_flow = h2GIS.firstRow("select * from ${format.results.outputTableName} where road_type = 'Dead-end roads' limit 1")
+        road_traffic = h2GIS.firstRow("select * from ${format.results.outputTableName} where road_type = 'Dead-end roads' limit 1")
 
         expectedFlow = [ROAD_TYPE:'Dead-end roads',SURFACE:null,PAVEMENT:'NL05' , DIRECTION:1, DAY_LV_HOUR : 7, DAY_HV_HOUR : 0, DAY_LV_SPEED : 30  ,
                             DAY_HV_SPEED  : 30, NIGHT_LV_HOUR :2, NIGHT_HV_HOUR :0, NIGHT_LV_SPEED :30, NIGHT_HV_SPEED :30,
                             EV_LV_HOUR:6 ,EV_HV_HOUR :0, EV_LV_SPEED:30, EV_HV_SPEED:30 ]
-        traffic_flow.each {it ->
+        road_traffic.each {it ->
             if(expectedFlow.get(it.key)) {
                 assertEquals(expectedFlow.get(it.key), it.value)
             }
         }
 
-        traffic_flow = h2GIS.firstRow("select * from ${format.results.outputTableName} where road_type = 'Service roads' limit 1")
+        road_traffic = h2GIS.firstRow("select * from ${format.results.outputTableName} where road_type = 'Service roads' limit 1")
 
         expectedFlow = [ROAD_TYPE:'Service roads',SURFACE:'asphalt',PAVEMENT:'NL05' , DIRECTION:3, DAY_LV_HOUR : 28, DAY_HV_HOUR : 1, DAY_LV_SPEED : 50  ,
                         DAY_HV_SPEED  : 50, NIGHT_LV_HOUR :6, NIGHT_HV_HOUR :0, NIGHT_LV_SPEED :50, NIGHT_HV_SPEED :50,
                         EV_LV_HOUR:25 ,EV_HV_HOUR :1, EV_LV_SPEED:50, EV_HV_SPEED:50 ]
-        traffic_flow.each {it ->
+        road_traffic.each {it ->
             if(expectedFlow.get(it.key)) {
                 assertEquals(expectedFlow.get(it.key), it.value)
             }
         }
 
-        traffic_flow = h2GIS.firstRow("select * from ${format.results.outputTableName} where road_type = 'Small main roads' limit 1")
+        road_traffic = h2GIS.firstRow("select * from ${format.results.outputTableName} where road_type = 'Small main roads' limit 1")
 
         expectedFlow = [ROAD_TYPE:'Small main roads',SURFACE:'asphalt',PAVEMENT:'NL05' , DIRECTION:3, DAY_LV_HOUR : 99, DAY_HV_HOUR : 18, DAY_LV_SPEED : 30  ,
                         DAY_HV_SPEED  : 30, NIGHT_LV_HOUR :24, NIGHT_HV_HOUR :1, NIGHT_LV_SPEED :30, NIGHT_HV_SPEED :30,
                         EV_LV_HOUR:90 ,EV_HV_HOUR :10, EV_LV_SPEED:30, EV_HV_SPEED:30 ]
-        traffic_flow.each {it ->
+        road_traffic.each {it ->
             if(expectedFlow.get(it.key)) {
                 assertEquals(expectedFlow.get(it.key), it.value)
             }
         }
 
-        traffic_flow = h2GIS.firstRow("select * from ${format.results.outputTableName} where road_type = 'Main roads' limit 1")
+        road_traffic = h2GIS.firstRow("select * from ${format.results.outputTableName} where road_type = 'Main roads' limit 1")
 
         expectedFlow = [ROAD_TYPE:'Main roads',SURFACE:'asphalt',PAVEMENT:'NL05' , DIRECTION:3, DAY_LV_HOUR : 475, DAY_HV_HOUR :119, DAY_LV_SPEED : 50  ,
                         DAY_HV_SPEED  : 50, NIGHT_LV_HOUR :80, NIGHT_HV_HOUR :9, NIGHT_LV_SPEED :50, NIGHT_HV_SPEED :50,
                         EV_LV_HOUR:227 ,EV_HV_HOUR :40, EV_LV_SPEED:50, EV_HV_SPEED:50 ]
-        traffic_flow.each {it ->
+        road_traffic.each {it ->
             if(expectedFlow.get(it.key)) {
                 assertEquals(expectedFlow.get(it.key), it.value)
             }
@@ -251,7 +251,7 @@ class FormattingForAbstractModelTests {
 
     }
 
-    @Disabled
+    //@Disabled
     @Test //enable it to test data extraction from the overpass api
     void extractCreateFormatGISLayers() {
         def h2GIS = H2GIS.open('./target/osmdb_gislayers;AUTO_SERVER=TRUE')
@@ -264,9 +264,9 @@ class FormattingForAbstractModelTests {
         zoneToExtract="Helsinki"
         //zoneToExtract ="Göteborgs Stad"
         //zoneToExtract = "Londres, Grand Londres, Angleterre, Royaume-Uni"
-        //zoneToExtract="Vannes"
+        zoneToExtract="Vannes"
         //zoneToExtract="rezé"
-        zoneToExtract = "Brest"
+        //zoneToExtract = "Brest"
 
         IProcess extractData = OSM.extractAndCreateGISLayers
         extractData.execute([
@@ -379,6 +379,15 @@ class FormattingForAbstractModelTests {
                     inputSeaLandTableName: inputSeaLandTableName,inputWaterTableName: inputWaterTableName,
                     epsg: epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_water_sea_${formatedPlaceName}.geojson", true)
+
+            //Build traffic data
+            format = OSM.build_road_traffic
+            format.execute([
+                    datasource : h2GIS,
+                    inputTableName: extractData.results.roadTableName,
+                    epsg: epsg,
+                    jsonFilename: null])
+            h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_traffic_${formatedPlaceName}.geojson", true)
 
         }else {
             assertTrue(false)
