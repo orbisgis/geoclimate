@@ -587,7 +587,7 @@ IProcess osm_processing() {
                             hydrographicTableName = format.results.outputTableName
                             }
                           
-                            if(traffic_flow || rsu_indicators_params||grid_indicators_params){
+                            if(road_traffic || rsu_indicators_params||grid_indicators_params){
 
                                 IProcess format = OSM.formatRoadLayer
                                 format.execute([
