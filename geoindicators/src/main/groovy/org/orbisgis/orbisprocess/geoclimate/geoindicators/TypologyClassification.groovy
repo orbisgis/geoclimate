@@ -615,13 +615,13 @@ IProcess applyRandomForestModel() {
             // Load the RandomForest model
             def xs = new XStream(new StaxDriver())
             // clear out existing permissions and start a whitelist
-            xstream.addPermission(NoTypePermission.NONE);
+            xs.addPermission(NoTypePermission.NONE);
             // allow some basics
-            xstream.addPermission(NullPermission.NULL);
-            xstream.addPermission(PrimitiveTypePermission.PRIMITIVES);
-            xstream.allowTypeHierarchy(Collection.class);
+            xs.addPermission(NullPermission.NULL);
+            xs.addPermission(PrimitiveTypePermission.PRIMITIVES);
+            xs.allowTypeHierarchy(Collection.class);
             // allow any type from the same package
-            xstream.allowTypesByWildcard(new String[] {
+            xs.allowTypesByWildcard(new String[] {
                     TypologyClassification.class.getPackage().getName()+".*"
             })
 
