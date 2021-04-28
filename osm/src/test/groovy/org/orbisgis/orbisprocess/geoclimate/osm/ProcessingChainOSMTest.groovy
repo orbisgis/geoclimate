@@ -673,7 +673,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 ],
                 "input" : [
                         "osm" : [[
-                                         68.66335, 22.41947, 68.74668, 22.5028
+                                         53.83061, 9.83664, 53.91394, 9.91997
                                  ]]],
                 "output" :["folder" : "$directory",srid: 4326]
                 ,
@@ -688,7 +688,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                                  "x_size": 10,
                                  "y_size": 10,
                                  "rowCol": true,
-                                 "output" : "ascii",
+                                 "output" : "asc",
                                  "indicators": ["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
                                                 "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "LCZ_FRACTION"]
                          ]

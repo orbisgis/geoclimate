@@ -1,6 +1,7 @@
 package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
 import com.thoughtworks.xstream.XStream
+import com.thoughtworks.xstream.security.*
 import com.thoughtworks.xstream.io.xml.StaxDriver
 import groovy.transform.BaseScript
 import org.h2gis.utilities.TableLocation
@@ -14,6 +15,7 @@ import smile.data.vector.DoubleVector
 import smile.regression.RandomForest as RandomForestRegression
 import smile.data.formula.Formula
 import smile.data.vector.IntVector
+import smile.regression.Regression
 import smile.regression.RegressionTree
 import smile.validation.Accuracy
 import smile.validation.RMSE
@@ -614,6 +616,18 @@ IProcess applyRandomForestModel() {
             def outputTableName = prefix prefixName, modelName.toLowerCase();
             // Load the RandomForest model
             def xs = new XStream(new StaxDriver())
+            // clear out existing permissions and start a whitelist
+            xs.addPermission(NoTypePermission.NONE);
+            // allow some basics
+            xs.addPermission(NullPermission.NULL);
+            xs.addPermission(PrimitiveTypePermission.PRIMITIVES);
+            xs.allowTypeHierarchy(Collection.class);
+            // allow any type from the packages
+            xs.allowTypesByWildcard(new String[] {
+                    TypologyClassification.class.getPackage().getName()+".*",
+                    "smile.regression.*","smile.data.formula.*", "smile.data.type.*", "smile.data.measure.*", "smile.data.measure.*",
+             "smile.base.cart.*","smile.classification.*","java.lang.*"
+            })
 
             // Load the model and recover the name of the variable to model
             def gzipInputStream = new GZIPInputStream(fileInputStream)
