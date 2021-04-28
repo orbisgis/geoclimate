@@ -614,6 +614,16 @@ IProcess applyRandomForestModel() {
             def outputTableName = prefix prefixName, modelName.toLowerCase();
             // Load the RandomForest model
             def xs = new XStream(new StaxDriver())
+            // clear out existing permissions and start a whitelist
+            xstream.addPermission(NoTypePermission.NONE);
+            // allow some basics
+            xstream.addPermission(NullPermission.NULL);
+            xstream.addPermission(PrimitiveTypePermission.PRIMITIVES);
+            xstream.allowTypeHierarchy(Collection.class);
+            // allow any type from the same package
+            xstream.allowTypesByWildcard(new String[] {
+                    TypologyClassification.class.getPackage().getName()+".*"
+            })
 
             // Load the model and recover the name of the variable to model
             def gzipInputStream = new GZIPInputStream(fileInputStream)
