@@ -626,7 +626,7 @@ IProcess applyRandomForestModel() {
             xs.allowTypesByWildcard(new String[] {
                     TypologyClassification.class.getPackage().getName()+".*",
                     "smile.regression.*","smile.data.formula.*", "smile.data.type.*", "smile.data.measure.*", "smile.data.measure.*",
-             "smile.base.cart.*","smile.classification.*","java.lang.*",
+             "smile.base.cart.*","smile.classification.*","java.lang.*"
             })
 
             // Load the model and recover the name of the variable to model
