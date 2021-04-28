@@ -149,7 +149,7 @@ class FormattingForAbstractModelTests {
         assertEquals(0, h2GIS.getTable(format.results.outputTableName).getRowCount())
 
         //Build traffic data
-        format = OSM.build_traffic_flow
+        format = OSM.build_road_traffic
         format.execute([
                 datasource : h2GIS,
                 inputTableName: extractData.results.roadTableName,
@@ -381,13 +381,13 @@ class FormattingForAbstractModelTests {
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_water_sea_${formatedPlaceName}.geojson", true)
 
             //Build traffic data
-            format = OSM.build_traffic_flow
+            format = OSM.build_road_traffic
             format.execute([
                     datasource : h2GIS,
                     inputTableName: extractData.results.roadTableName,
                     epsg: epsg,
                     jsonFilename: null])
-            h2GIS.getTable(format.results.outputTableName).save("./target/osm_traffic_flow_${formatedPlaceName}.geojson", true)
+            h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_traffic_${formatedPlaceName}.geojson", true)
 
         }else {
             assertTrue(false)
