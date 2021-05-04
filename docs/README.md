@@ -5,6 +5,8 @@
 [![Build Test](https://img.shields.io/jenkins/t/http/jenkins.orbisgis.org/job/geoclimate.svg)](https://jenkins.orbisgis.org/job/geoclimate/test_results_analyzer/)
 [![Codacy Badge](https://img.shields.io/codacy/grade/93899ea0675d43a2a3787ce5dd3c5595.svg)](https://www.codacy.com/app/orbisgis/geoclimate?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=orbisgis/geoclimate&amp;utm_campaign=Badge_Grade) 
 
+ **A geospatial processing toolbox for environmental and climate studies** 
+ 
 ![bandeau_geoclimate](./resources/images/readme/bandeau_geoclimate.png)
 
 
