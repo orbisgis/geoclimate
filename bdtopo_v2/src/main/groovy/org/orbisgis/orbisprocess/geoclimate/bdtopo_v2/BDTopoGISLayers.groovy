@@ -53,18 +53,18 @@ IProcess importPreprocess() {
         title 'Import and prepare BDTopo layers'
         id "importPreprocess"
         inputs datasource: JdbcDataSource,
-                tableIrisName: String,
-                tableBuildIndifName: String,
-                tableBuildIndusName: String,
-                tableBuildRemarqName: String,
-                tableRoadName: String,
-                tableRailName: String,
-                tableHydroName: String,
-                tableVegetName: String,
-                tableImperviousSportName: String,
-                tableImperviousBuildSurfName: String,
-                tableImperviousRoadSurfName: String,
-                tableImperviousActivSurfName: String,
+                tableIrisName: "",
+                tableBuildIndifName: "",
+                tableBuildIndusName: "",
+                tableBuildRemarqName: "",
+                tableRoadName: "",
+                tableRailName: "",
+                tableHydroName: "",
+                tableVegetName: "",
+                tableImperviousSportName: "",
+                tableImperviousBuildSurfName: "",
+                tableImperviousRoadSurfName: "",
+                tableImperviousActivSurfName: "",
                 tablePiste_AerodromeName:"",
                 tableReservoirName :"",
                 distBuffer: 500,
@@ -120,9 +120,14 @@ IProcess importPreprocess() {
             def tmp_imperv_piste_aerodrome = postfix 'TMP_IMPERV_PISTE_AERODROME'
             def bu_zone_reservoir = postfix 'BU_ZONE_RESERVOIR_'
 
+            // If the IRIS_GE table is empty, then the process is stopped
+            if (!tableIrisName) {
+                error 'The process has been stopped since the table IRIS_GE is empty'
+                return
+            }
+
             // -------------------------------------------------------------------------------
             // Control the SRIDs from input tables
-
             def list = [tableIrisName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName,
                         tableRoadName, tableRailName, tableHydroName, tableVegetName,
                         tableImperviousSportName, tableImperviousBuildSurfName,
@@ -167,45 +172,56 @@ IProcess importPreprocess() {
             }
 
             // If the following tables does not exists, we create corresponding empty tables
-            if (!tablesExist.contains(tableBuildIndifName)) {
+            if ( !tablesExist.contains(tableBuildIndifName)) {
+                tableBuildIndifName ="BATI_INDIFFERENCIE"
                 datasource.execute("DROP TABLE IF EXISTS $tableBuildIndifName; CREATE TABLE $tableBuildIndifName (THE_GEOM geometry(polygon, $srid), ID varchar, HAUTEUR integer);")
             }
             if (!tablesExist.contains(tableBuildIndusName)) {
+                tableBuildIndusName="BATI_INDUSTRIEL"
                 datasource.execute("DROP TABLE IF EXISTS $tableBuildIndusName; CREATE TABLE $tableBuildIndusName (THE_GEOM geometry(polygon, $srid), ID varchar, HAUTEUR integer, NATURE varchar);")
             }
             if (!tablesExist.contains(tableBuildRemarqName)) {
+                tableBuildRemarqName="BATI_REMARQUABLE"
                 datasource.execute("DROP TABLE IF EXISTS $tableBuildRemarqName;  CREATE TABLE $tableBuildRemarqName (THE_GEOM geometry(polygon, $srid), ID varchar, HAUTEUR integer, NATURE varchar);")
             }
             if (!tablesExist.contains(tableRoadName)) {
-                datasource.execute("DROP TABLE IF EXISTS $tableRoadName;  CREATE TABLE $tableRoadName (THE_GEOM geometry(linestring, $srid), ID varchar, LARGEUR DOUBLE PRECISION, NATURE varchar, POS_SOL integer, FRANCHISST varchar);")
+                tableRoadName ="ROUTE"
+                datasource.execute("DROP TABLE IF EXISTS $tableRoadName;  CREATE TABLE $tableRoadName (THE_GEOM geometry(linestring, $srid), ID varchar, LARGEUR DOUBLE PRECISION, NATURE varchar, POS_SOL integer, FRANCHISST varchar, SENS varchar);")
             }
             if (!tablesExist.contains(tableRailName)) {
+                tableRailName = "TRONCON_VOIE_FERREE"
                 datasource.execute("DROP TABLE IF EXISTS $tableRailName;  CREATE TABLE $tableRailName (THE_GEOM geometry(linestring, $srid), ID varchar, NATURE varchar, POS_SOL integer, FRANCHISST varchar);")
             }
             if (!tablesExist.contains(tableHydroName)) {
+                tableHydroName ="SURFACE_EAU"
                 datasource.execute("DROP TABLE IF EXISTS $tableHydroName;  CREATE TABLE $tableHydroName (THE_GEOM geometry(polygon, $srid), ID varchar);")
             }
             if (!tablesExist.contains(tableVegetName)) {
+                tableVegetName ="ZONE_VEGETATION"
                 datasource.execute("DROP TABLE IF EXISTS $tableVegetName; CREATE TABLE $tableVegetName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);")
             }
             if (!tablesExist.contains(tableImperviousSportName)) {
+                tableImperviousSportName = "TERRAIN_SPORT"
                 datasource.execute("DROP TABLE IF EXISTS $tableImperviousSportName; CREATE TABLE $tableImperviousSportName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);")
             }
             if (!tablesExist.contains(tableImperviousBuildSurfName)) {
+                tableImperviousBuildSurfName ="CONSTRUCTION_SURFACIQUE"
                 datasource.execute("DROP TABLE IF EXISTS $tableImperviousBuildSurfName; CREATE TABLE $tableImperviousBuildSurfName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);")
             }
             if (!tablesExist.contains(tableImperviousRoadSurfName)) {
+                tableImperviousRoadSurfName = "SURFACE_ROUTE"
                 datasource.execute("DROP TABLE IF EXISTS $tableImperviousRoadSurfName; CREATE TABLE $tableImperviousRoadSurfName (THE_GEOM geometry(polygon, $srid), ID varchar);")
             }
             if (!tablesExist.contains(tableImperviousActivSurfName)) {
+                tableImperviousActivSurfName = "SURFACE_ACTIVITE"
                 datasource.execute("DROP TABLE IF EXISTS $tableImperviousActivSurfName; CREATE TABLE $tableImperviousActivSurfName (THE_GEOM geometry(polygon, $srid), ID varchar, CATEGORIE varchar);")
             }
-            if (!tablePiste_AerodromeName || !tablesExist.contains(tablePiste_AerodromeName)) {
+            if (!tablesExist.contains(tablePiste_AerodromeName)) {
                 tablePiste_AerodromeName= "PISTE_AERODROME"
                 datasource.execute("DROP TABLE IF EXISTS $tablePiste_AerodromeName; CREATE TABLE $tablePiste_AerodromeName (THE_GEOM geometry(polygon, $srid), ID varchar,  NATURE varchar);")
             }
 
-            if (!tableReservoirName || !tablesExist.contains(tableReservoirName)) {
+            if (!tablesExist.contains(tableReservoirName)) {
                 tableReservoirName= "RESERVOIR"
                 datasource.execute("DROP TABLE IF EXISTS $tableReservoirName; CREATE TABLE $tableReservoirName (THE_GEOM geometry(polygon, $srid), ID varchar,  NATURE varchar, HAUTEUR integer);")
             }

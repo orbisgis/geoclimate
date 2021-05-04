@@ -242,7 +242,7 @@ class InputDataFormattingTest {
         assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
-        assertEquals(9, table.columnCount)
+        assertEquals(11, table.columnCount)
         assertEquals(9, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.the_geom.spatial)

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.TestInfo
 import org.orbisgis.orbisanalysis.osm.utils.Utilities
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertNotNull
@@ -94,6 +95,7 @@ class FormattingForAbstractModelTests {
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH<=0").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where CROSSING IS NOT NULL").count==7
 
+        def formatedRoadTable = format.results.outputTableName
         //Rails
         format = OSM.formatRailsLayer
         format.execute([
@@ -149,16 +151,15 @@ class FormattingForAbstractModelTests {
         assertEquals(0, h2GIS.getTable(format.results.outputTableName).getRowCount())
 
         //Build traffic data
-        format = OSM.build_road_traffic
+        format = Geoindicators.TrafficFlow.build_road_traffic()
         format.execute([
                 datasource : h2GIS,
-                inputTableName: extractData.results.roadTableName,
-                epsg: epsg,
-                jsonFilename: null])
+                inputTableName: formatedRoadTable,
+                epsg: epsg])
 
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_traffic.shp", true)
         assertEquals 211, h2GIS.getTable(format.results.outputTableName).rowCount
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where road_type is not null").count==211
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where road_type is not null").count==142
 
         def road_traffic = h2GIS.firstRow("select * from ${format.results.outputTableName} where road_type = 'Collecting roads' limit 1")
 
@@ -379,15 +380,6 @@ class FormattingForAbstractModelTests {
                     inputSeaLandTableName: inputSeaLandTableName,inputWaterTableName: inputWaterTableName,
                     epsg: epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_water_sea_${formatedPlaceName}.geojson", true)
-
-            //Build traffic data
-            format = OSM.build_road_traffic
-            format.execute([
-                    datasource : h2GIS,
-                    inputTableName: extractData.results.roadTableName,
-                    epsg: epsg,
-                    jsonFilename: null])
-            h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_traffic_${formatedPlaceName}.geojson", true)
 
         }else {
             assertTrue(false)

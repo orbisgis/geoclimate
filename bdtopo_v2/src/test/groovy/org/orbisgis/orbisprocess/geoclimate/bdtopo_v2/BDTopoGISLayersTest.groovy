@@ -105,7 +105,7 @@ class BDTopoGISLayersTest {
         assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
-        assertEquals(8, table.columnCount)
+        assertEquals(9, table.columnCount)
         assertEquals(1779, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
@@ -431,7 +431,7 @@ class BDTopoGISLayersTest {
         assertNotNull(tableName)
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
-        assertEquals(8, table.columnCount)
+        assertEquals(9, table.columnCount)
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
@@ -446,7 +446,7 @@ class BDTopoGISLayersTest {
         // Check if the ROUTE table has the correct number of columns and rows
         table = h2GISDatabase.getTable("ROUTE")
         assertNotNull(table)
-        assertEquals(6, table.columnCount)
+        assertEquals(7, table.columnCount)
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)

@@ -10,6 +10,7 @@ import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
 import static org.junit.jupiter.api.Assertions.*
 
@@ -141,8 +142,6 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                 "WHERE id_build = 8 AND id_rsu = 2").toString())
     }
 
-
-
     @Test
     void bdtopoLczFromTestFiles() {
         String directory ="./target/bdtopo_chain_lcz"
@@ -218,6 +217,31 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         geoIndicatorsCalc(dirFile.absolutePath, h2GISDatabase, abstractTables.outputZone, abstractTables.outputBuilding,
                 abstractTables.outputRoad, abstractTables.outputRail, abstractTables.outputVeget,
                 abstractTables.outputHydro, saveResults, svfSimplified, indicatorUse,  prefixName)
+    }
+
+
+    @Test
+    void roadTrafficFromBDTopoTest(){
+        String directory ="./target/bdtopo_chain_prepare"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        H2GIS h2GISDatabase = loadFiles(dirFile.absolutePath+File.separator+"bdtopo_db;AUTO_SERVER=TRUE")
+        def process = BDTopo_V2.prepareData
+        assertTrue process.execute([datasource: h2GISDatabase,
+                                    tableIrisName: 'IRIS_GE',
+                                    tableRoadName: 'ROUTE',
+                                    distBuffer: 0, distance: 0, idZone: communeToTest
+        ])
+
+        def road_traffic =  Geoindicators.TrafficFlow.build_road_traffic()
+        road_traffic.execute([
+                datasource : h2GISDatabase,
+                inputTableName: process.getResults().outputRoad,
+                epsg: 2154])
+
+        assertEquals 813 , h2GISDatabase.getTable(road_traffic.results.outputTableName).rowCount
+        assertTrue h2GISDatabase.firstRow("select count(*) as count from ${road_traffic.results.outputTableName} where road_type is not null").count==813
     }
 
     // Test the workflow on the commune INSEE 01306 only for TEB in order to verify that only RSU_INDICATORS and BUILDING_INDICATORS are saved
@@ -476,6 +500,38 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
+    }
+
+
+    @Test
+    void testWorkFlowRoadTraffic() {
+        String directory ="./target/bdtopo_roadtraffic"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        String dataFolder = getDataFolderPath()
+        def bdTopoParameters = [
+                "description" :"Example of configuration file to build the road traffic",
+                "geoclimatedb" : [
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete" :false
+                ],
+                "input" :["bdtopo_v2":  [
+                        "folder": ["path" :dataFolder,
+                                   "id_zones":[communeToTest]]]],
+                "output" :[
+                        "folder" : ["path": "$directory",
+                                    "tables": ["road_traffic"]]],
+                "parameters":
+                        ["distance" : 0,
+                         "road_traffic": true
+                        ]
+        ]
+        IProcess process = BDTopo_V2.workflow
+        assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
+        H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
+        assertTrue h2gis.firstRow("select count(*) as count from road_traffic where road_type is null").count==0
     }
 
 
