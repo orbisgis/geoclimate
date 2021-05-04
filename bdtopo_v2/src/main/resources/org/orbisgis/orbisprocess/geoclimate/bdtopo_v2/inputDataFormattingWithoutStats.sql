@@ -121,8 +121,9 @@ UPDATE $BUILDING SET NB_LEV = 	CASE WHEN TYPE in (SELECT TERM FROM $BUILDING_ABS
 
 -- If the ZINDEX is null, then it's initialised to 0
 DROP TABLE IF EXISTS $ROAD;
-CREATE TABLE $ROAD (THE_GEOM geometry, ID_ROAD serial, ID_SOURCE varchar(24), WIDTH DOUBLE PRECISION, TYPE varchar, SURFACE varchar, SIDEWALK varchar, ZINDEX integer, CROSSING varchar)
-    AS SELECT ST_FORCE2D(ST_MAKEVALID(THE_GEOM)) as the_geom, CAST((row_number() over()) as Integer), ID_SOURCE, WIDTH, TYPE, SURFACE, SIDEWALK, CASE WHEN ZINDEX is null THEN 0 ELSE ZINDEX END, CROSSING FROM ST_EXPLODE('$INPUT_ROAD');
+CREATE TABLE $ROAD (THE_GEOM geometry, ID_ROAD serial, ID_SOURCE varchar(24), WIDTH DOUBLE PRECISION, TYPE varchar, SURFACE varchar, SIDEWALK varchar, ZINDEX integer, CROSSING varchar, MAXSPEED INTEGER, DIRECTION INTEGER)
+    AS SELECT ST_FORCE2D(ST_MAKEVALID(THE_GEOM)) as the_geom, CAST((row_number() over()) as Integer), ID_SOURCE, WIDTH, TYPE, SURFACE, SIDEWALK, CASE WHEN ZINDEX is null THEN 0 ELSE ZINDEX END, CROSSING, -1,
+    CASE WHEN SENS='Double' then 3 WHEN SENS='Direct' then 1  WHEN SENS='Inverse' then 2 else -1 end  FROM ST_EXPLODE('$INPUT_ROAD');
 
 -- Updating the width using the rule ("If null or equal to 0 then replace by the minimum width defined in the ROAD ABSTRACT_PARAMETERS table")
 UPDATE $ROAD SET WIDTH = (SELECT b.MIN_WIDTH FROM $ROAD_ABSTRACT_PARAMETERS b WHERE b.TERM=TYPE) WHERE WIDTH = 0 or WIDTH is null or WIDTH < 0;

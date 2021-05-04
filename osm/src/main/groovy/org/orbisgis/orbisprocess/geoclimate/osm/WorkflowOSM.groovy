@@ -18,6 +18,7 @@ import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
 import org.orbisgis.orbisanalysis.osm.OSMTools
 import org.h2gis.functions.io.utility.PRJUtil;
@@ -613,10 +614,10 @@ IProcess osm_processing() {
 
                             //Compute traffic flow
                             if(road_traffic){
-                                IProcess format =  OSM.build_road_traffic
+                                IProcess format =  Geoindicators.TrafficFlow.build_road_traffic()
                                 format.execute([
                                         datasource : h2gis_datasource,
-                                        inputTableName: gisLayersResults.roadTableName,
+                                        inputTableName: roadTableName,
                                         epsg: srid])
                                 results.put("road_traffic", format.results.outputTableName)
                             }

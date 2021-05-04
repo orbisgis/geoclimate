@@ -117,47 +117,40 @@
     ]
   },
   "road_types": {
-    "Motorway": {
-      "highway": [
+    "Motorway": [
         "motorway",
-        "motorway_link"
-      ]
-    },
-    "Trunk roads": {
-      "highway": [
+        "motorway_link" ]
+    ,
+    "Trunk roads": [
         "trunk",
         "trunk_link"
       ]
-    },
-    "Main roads": {
-      "highway": [
+    ,
+    "Main roads": [
         "primary",
         "primary_link"
       ]
-    },
-    "Small main roads": {
-      "highway": [
+    ,
+    "Small main roads":[
         "secondary",
-        "secondary_link"
+        "secondary_link",
+        "highway",
+        "highway_link"
       ]
-    },
-    "Collecting roads": {
-      "highway": [
+    ,
+    "Collecting roads": [
         "tertiary",
         "tertiary_link",
         "unclassified"
+      ],
+    "Service roads": [
+        "residential",
+        "roundabout"
       ]
-    },
-    "Service roads": {
-      "highway": [
-        "residential"
-      ]
-    },
-    "Dead-end roads": {
-      "highway": [
+    ,
+    "Dead-end roads":  [
         "service",
         "living_street"
       ]
-    }
   }
 }

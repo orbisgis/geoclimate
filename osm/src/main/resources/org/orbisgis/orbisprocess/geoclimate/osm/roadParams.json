@@ -26,10 +26,14 @@
                 "artificial_turf"
             ]
         },
+       "asphalt": {
+         "surface": [
+           "asphalt"
+         ]
+       },
         "paved": {
             "surface": [
-                "paved",
-                "asphalt"
+                "paved"
             ]
         },
         "ground": {
