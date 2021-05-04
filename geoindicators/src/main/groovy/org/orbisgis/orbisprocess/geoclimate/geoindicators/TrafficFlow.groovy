@@ -6,7 +6,6 @@ import org.locationtech.jts.geom.Geometry
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 
-import java.util.regex.Pattern
 
 @BaseScript Geoindicators geoindicators
 

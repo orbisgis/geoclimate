@@ -158,10 +158,10 @@ class FormattingForAbstractModelTests {
                 epsg: epsg])
 
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_traffic.shp", true)
-        assertEquals 211, h2GIS.getTable(format.results.outputTableName).rowCount
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where road_type is not null").count==142
+        assertEquals 143, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where road_type is not null").count==143
 
-        def road_traffic = h2GIS.firstRow("select * from ${format.results.outputTableName} where road_type = 'Collecting roads' limit 1")
+        def road_traffic = h2GIS.firstRow("select * from ${format.results.outputTableName} where road_type = 'Collecting roads' and direction =3 limit 1")
 
         def expectedFlow = [ROAD_TYPE:'Collecting roads',SURFACE:'asphalt',PAVEMENT:'NL05' , DIRECTION:3, DAY_LV_HOUR : 53, DAY_HV_HOUR : 6, DAY_LV_SPEED : 50  ,
                             DAY_HV_SPEED  : 50, NIGHT_LV_HOUR :12, NIGHT_HV_HOUR :0, NIGHT_LV_SPEED :50, NIGHT_HV_SPEED :50,
@@ -172,7 +172,7 @@ class FormattingForAbstractModelTests {
             }
         }
 
-        road_traffic = h2GIS.firstRow("select * from ${format.results.outputTableName} where road_type = 'Dead-end roads' limit 1")
+        road_traffic = h2GIS.firstRow("select * from ${format.results.outputTableName} where road_type = 'Dead-end roads' and direction = 1 limit 1")
 
         expectedFlow = [ROAD_TYPE:'Dead-end roads',SURFACE:null,PAVEMENT:'NL05' , DIRECTION:1, DAY_LV_HOUR : 7, DAY_HV_HOUR : 0, DAY_LV_SPEED : 30  ,
                             DAY_HV_SPEED  : 30, NIGHT_LV_HOUR :2, NIGHT_HV_HOUR :0, NIGHT_LV_SPEED :30, NIGHT_HV_SPEED :30,

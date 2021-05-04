@@ -14,7 +14,7 @@ abstract class Geoindicators extends GroovyProcessFactory {
     public static SpatialUnits = new SpatialUnits()
     public static DataUtils = new DataUtils()
     public static TypologyClassification = new TypologyClassification()
-    public static  TrafficFlow = new TrafficFlow()
+    public static TrafficFlow = new TrafficFlow()
 
     //Utility methods
     static def getUuid(){
