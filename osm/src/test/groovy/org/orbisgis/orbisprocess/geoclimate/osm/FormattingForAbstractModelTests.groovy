@@ -9,6 +9,9 @@ import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 
+import java.util.regex.Matcher
+import java.util.regex.Pattern
+
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
@@ -19,6 +22,19 @@ class FormattingForAbstractModelTests {
     @BeforeAll
     static  void loadDb(){
          h2GIS = H2GIS.open('./target/osm_formating_test;AUTO_SERVER=TRUE')
+    }
+
+    @Test
+    void formatHeightRoof() {
+        def heightPattern = Pattern.compile("((?:\\d+\\/|(?:\\d+|^|\\s)\\.)?\\d+)\\s*([^\\s\\d+\\-.,:;^\\/]+(?:\\^\\d+(?:\$|(?=[\\s:;\\/])))?(?:\\/[^\\s\\d+\\-.,:;^\\/]+(?:\\^\\d+(?:\$|(?=[\\s:;\\/])))?)*)?", Pattern.CASE_INSENSITIVE)
+        assertEquals(6, FormattingForAbstractModel.getHeightRoof("6",heightPattern))
+        assertEquals(6, FormattingForAbstractModel.getHeightRoof("6 m",heightPattern))
+        assertEquals(6, FormattingForAbstractModel.getHeightRoof("6m",heightPattern))
+        assertEquals(3.3528f, FormattingForAbstractModel.getHeightRoof("11'",heightPattern))
+        assertEquals(3.4544f, FormattingForAbstractModel.getHeightRoof("11'4''",heightPattern))
+        assertEquals(3.4544f, FormattingForAbstractModel.getHeightRoof("11 '4''",heightPattern))
+        assertEquals(3.4544f, FormattingForAbstractModel.getHeightRoof("11 '4 ''",heightPattern))
+        assertEquals(0.1016f, FormattingForAbstractModel.getHeightRoof("4''",heightPattern))
     }
 
     @Test
@@ -248,7 +264,6 @@ class FormattingForAbstractModelTests {
         assertTrue h2GIS.firstRow("select count(*) as count from ${inputSeaLandTableName} where type='land'").count==1
 
         h2GIS.getTable(inputSeaLandTableName).save("./target/osm_sea_land_${testInfo.getDisplayName()}.geojson", true)
-
 
     }
 
