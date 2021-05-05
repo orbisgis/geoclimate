@@ -80,6 +80,8 @@ IProcess formatBuildingLayer() {
                     } else {
                         queryMapper += " , st_force2D(st_makevalid(a.the_geom)) as the_geom FROM $inputTableName as a where st_area(a.the_geom)>1"
                     }
+
+                    def heightPattern = Pattern.compile("((?:\\d+\\/|(?:\\d+|^|\\s)\\.)?\\d+)\\s*([^\\s\\d+\\-.,:;^\\/]+(?:\\^\\d+(?:\$|(?=[\\s:;\\/])))?(?:\\/[^\\s\\d+\\-.,:;^\\/]+(?:\\^\\d+(?:\$|(?=[\\s:;\\/])))?)*)?", Pattern.CASE_INSENSITIVE)
                     def id_build=1;
                     datasource.withBatch(2000) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
@@ -87,7 +89,7 @@ IProcess formatBuildingLayer() {
                             String roof_height = row.'roof:height'
                             String b_lev = row.'building:levels'
                             String roof_lev = row.'roof:levels'
-                            def heightRoof = getHeightRoof(height)
+                            def heightRoof = getHeightRoof(height,heightPattern)
                             def heightWall = getHeightWall(heightRoof, roof_height)
 
                             def nbLevels = getNbLevels(b_lev, roof_lev)
@@ -740,28 +742,48 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
  * @param row The row of the raw table to examine
  * @return The calculated value of height_roof (default value : 0)
  */
-static float getHeightRoof(height ) {
-    float result = 0
-    if (height != null) {
-        if (height.isFloat()) {
-            result = height.toFloat()
-        } else {
-            // see if a pattern can be found and convert in meters
-            def matcher = ("99.12 m" =~ /^(\d+|\d+\.\d+) ?(ft|foot|feet|'|m) ?(\d+)? ?("|in)?/)
-            if (matcher.find()) {
-                def (_, h, u, d) = matcher[0]
-                if (u == "m") {
-                    result = h.toFloat()
-                } else {
-                    result = h.toFloat() * 0.3048
-                    if (d != null) {
-                        result += d.toFloat() * 0.0254
-                    }
-                }
-            }
+static float getHeightRoof(height,heightPattern) {
+    if (!height) return 0
+    def matcher = heightPattern.matcher(height)
+    if (!matcher.find()) {
+        return 0
+    }
+    def new_h = 0
+    def match1_group1 = matcher.group(1)
+    def match1_group2 = matcher.group(2)
+    //next match for feet, inch
+    if (matcher.find()) {
+        def match2_group1 = matcher.group(1)
+        def match2_group2 = matcher.group(2)
+        if(match1_group1){
+            new_h = Float.parseFloat(match1_group1)*12
+        }
+        if(match2_group2=="''"){
+            new_h +=Float.parseFloat(match2_group1)
+        }
+        return new_h*0.0254
+
+    }else{
+    if(match1_group1 && match1_group2==null) {
+        return Float.parseFloat(match1_group1)
+    }
+    //next mach for feet, inch matcher.find();
+    else {
+        def type = match1_group2.toLowerCase()
+        switch (type) {
+            case "m":
+                return Float.parseFloat(match1_group1)
+            case "foot":
+                return Float.parseFloat(match1_group1) * 0.3048
+            case "'":
+                return Float.parseFloat(match1_group1) *12*0.0254
+            case "''":
+                return Float.parseFloat(match1_group1) *0.0254
+            default:
+                return 0
         }
     }
-    return result
+    }
 }
 
 /**
@@ -799,9 +821,6 @@ static int getZIndex (String zindex){
     return (zindex != null && zindex.isInteger()) ? zindex.toInteger() : 0
 }
 
-static String getCrossingValue( def crossingValue, def myMap) {
-    return myMap[crossingValue]
-}
 /**
  * This function defines the input value for a column of the geoClimate Input Model according to a given mapping between the expected value and the set of key/values tag in OSM
  * @param row The row of the raw table to examine
