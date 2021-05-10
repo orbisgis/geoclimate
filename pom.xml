@@ -168,7 +168,7 @@
     <repositories>
         <repository>
             <id>orbisgis-release</id>
-            <url>http://nexus.orbisgis.org/repository/orbisgis-release</url>
+            <url>https://nexus.orbisgis.org/repository/orbisgis-release</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
@@ -178,7 +178,7 @@
         </repository>
         <repository>
             <id>orbisgis-snapshot</id>
-            <url>http://nexus.orbisgis.org/repository/orbisgis-snapshot</url>
+            <url>https://nexus.orbisgis.org/repository/orbisgis-snapshot</url>
             <snapshots>
                 <enabled>true</enabled>
                 <updatePolicy>always</updatePolicy>
