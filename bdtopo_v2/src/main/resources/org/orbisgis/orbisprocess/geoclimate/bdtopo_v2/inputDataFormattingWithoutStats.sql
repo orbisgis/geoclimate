@@ -48,7 +48,7 @@ CREATE INDEX ON $BU_ZONE (ID_BUILD);
 -- Identify the city id where the building is
 -------------------------------------------------------
 
--- 1- Select buildings that are within a city and assign the INSEE CODE to the building
+-- 1- Select buildings that are within a city and assign the a ID_ZONE to the building
 DROP TABLE IF EXISTS $BUILD_WITHIN_ZONE;
 CREATE TABLE $BUILD_WITHIN_ZONE AS SELECT a.ID_BUILD, b.ID_ZONE as ID_ZONE FROM $BU_ZONE a, $ZONE_NEIGHBORS b WHERE a.the_geom && b.the_geom AND ST_CONTAINS(b.the_geom, a.the_geom);
 

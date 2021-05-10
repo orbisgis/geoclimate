@@ -1,7 +1,6 @@
 package org.orbisgis.orbisprocess.geoclimate.geoindicators
 
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 import static org.junit.jupiter.api.Assertions.assertEquals
@@ -31,7 +30,7 @@ class TrafficFlowTests {
         (4, 'LINESTRING (85 60, 85 -1, 155 1, 148 54, 92 50, 96 -12, 119 -11, 117 -4, 78 -5)'::GEOMETRY, 10, 0, null,  'highway', 90, 1, null),
         (5, 'LINESTRING (20 100, 25 100, 25 120, 20 120)'::GEOMETRY, 6, 0, null,  'highway',50, 1, null),
         (6, 'LINESTRING (50 105, 47 99)'::GEOMETRY, 6, -1, null,  'highway', 50, 3, null);"""
-        def traffic = Geoindicators.TrafficFlow.build_road_traffic()
+        def traffic = Geoindicators.RoadIndicators.build_road_traffic()
         traffic.execute([
                 datasource : h2GIS,
                 inputTableName: "ROAD_TEST",

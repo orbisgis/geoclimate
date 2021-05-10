@@ -15,7 +15,7 @@ class BDTopoGISLayersTest {
     @BeforeEach
     void beforeEach(){
         def dataFolderInseeCode = "sample_$communeToTest"
-        def listFilesBDTopo = ["IRIS_GE", "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL", "BATI_REMARQUABLE",
+        def listFilesBDTopo = ["COMMUNE", "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL", "BATI_REMARQUABLE",
                                "ROUTE", "SURFACE_EAU", "ZONE_VEGETATION", "ZONE_VEGETATION",
                                "TRONCON_VOIE_FERREE", "TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE",
                                "SURFACE_ROUTE", "SURFACE_ACTIVITE"]
@@ -43,7 +43,7 @@ class BDTopoGISLayersTest {
     void importPreprocessTest() {
         def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
-                                    tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                    tableCommuneName: 'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
                                     tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
@@ -247,10 +247,10 @@ class BDTopoGISLayersTest {
     // Check whether the INPUT_BUILDING table is well produced, despite the absence of the BATI_INDIFFERENCIE table
     @Test
     void importPreprocessBuildIndifTest() {
-        h2GISDatabase.execute ("DROP TABLE IF EXISTS BATI_INDIFFERENCIE;")
+        h2GISDatabase.execute ("""DROP TABLE IF EXISTS BATI_INDIFFERENCIE""")
         def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
-                                    tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                    tableCommuneName: 'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
                                     tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
@@ -299,10 +299,10 @@ class BDTopoGISLayersTest {
     // Check whether the INPUT_BUILDING table is well produced, despite the absence of the BATI_INDUSTRIEL table
     @Test
     void importPreprocessBuildIndusTest() {
-        h2GISDatabase.execute ("DROP TABLE IF EXISTS BATI_INDUSTRIEL;")
+        h2GISDatabase.execute ("""DROP TABLE IF EXISTS BATI_INDUSTRIEL""")
         def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
-                                    tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                    tableCommuneName: 'COMMUNE',tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
                                     tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
@@ -352,10 +352,10 @@ class BDTopoGISLayersTest {
     // Check whether the INPUT_BUILDING table is well produced, despite the absence of the BATI_REMARQUABLE table
     @Test
     void importPreprocessBuildRemarqTest() {
-        h2GISDatabase.execute ("DROP TABLE IF EXISTS BATI_REMARQUABLE;")
+        h2GISDatabase.execute ("""DROP TABLE IF EXISTS BATI_REMARQUABLE """)
         def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
-                                    tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                    tableCommuneName: 'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
                                     tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
@@ -405,10 +405,10 @@ class BDTopoGISLayersTest {
     // Check whether the INPUT_ROAD table is well produced, despite the absence of the ROUTE table
     @Test
     void importPreprocessRoadTest() {
-        h2GISDatabase.execute ("DROP TABLE IF EXISTS ROUTE;")
+        h2GISDatabase.execute ("""DROP TABLE IF EXISTS ROUTE""")
         def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
-                                    tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                    tableCommuneName: 'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
                                     tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
@@ -463,7 +463,7 @@ class BDTopoGISLayersTest {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS TRONCON_VOIE_FERREE;")
         def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
-                                    tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                    tableCommuneName: 'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
                                     tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
@@ -514,7 +514,7 @@ class BDTopoGISLayersTest {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS SURFACE_EAU;")
         def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
-                                    tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                    tableCommuneName: 'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
                                     tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
@@ -559,7 +559,7 @@ class BDTopoGISLayersTest {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS ZONE_VEGETATION;")
         def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
-                                    tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                    tableCommuneName: 'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
                                     tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
@@ -606,7 +606,7 @@ class BDTopoGISLayersTest {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS SURFACE_ACTIVITE;")
         def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
-                                    tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                    tableCommuneName: 'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
                                     tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
@@ -659,7 +659,7 @@ class BDTopoGISLayersTest {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS TERRAIN_SPORT;")
         def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
-                                    tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                    tableCommuneName: 'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
                                     tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
@@ -712,7 +712,7 @@ class BDTopoGISLayersTest {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS CONSTRUCTION_SURFACIQUE;")
         def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
-                                    tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                    tableCommuneName: 'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
                                     tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
@@ -765,7 +765,7 @@ class BDTopoGISLayersTest {
         h2GISDatabase.execute ("DROP TABLE IF EXISTS SURFACE_ROUTE;")
         def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
-                                    tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                    tableCommuneName: 'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
                                     tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
@@ -817,7 +817,7 @@ class BDTopoGISLayersTest {
     void checkMakeValidBuildingIndif() {
         def process = BDTopo_V2.importPreprocess
         assertTrue process.execute([datasource: h2GISDatabase,
-                                    tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                    tableCommuneName: 'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
                                     tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',

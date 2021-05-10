@@ -15,7 +15,7 @@ class InputDataFormattingTest {
     @BeforeEach
     void beforeEach(){
         def dataFolderInseeCode = "bd_topo_unit_test"
-        def listFilesBDTopo = ["IRIS_GE", "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL", "BATI_REMARQUABLE",
+        def listFilesBDTopo = ["COMMUNE", "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL", "BATI_REMARQUABLE",
                                "ROUTE", "TRONCON_VOIE_FERREE", "SURFACE_EAU", "ZONE_VEGETATION"
                               ,"TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE","SURFACE_ROUTE", "SURFACE_ACTIVITE"]
 
@@ -42,7 +42,7 @@ class InputDataFormattingTest {
     void inputDataFormatting(){
         def processImport = BDTopo_V2.importPreprocess
         assertTrue processImport.execute([datasource: h2GISDatabase,
-                                          tableIrisName: 'IRIS_GE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
+                                          tableCommuneName:'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                           tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
                                           tableRoadName: 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
                                           tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',

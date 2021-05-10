@@ -736,6 +736,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                 "parameters":
                         [
                                 rsu_indicators:[
+                                        "unit" :  "GRID",
                                         "indicatorUse": ["TEB"],
                                         "svfSimplified": true
                                 ]

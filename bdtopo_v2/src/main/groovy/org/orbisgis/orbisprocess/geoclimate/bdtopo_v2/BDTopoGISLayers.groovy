@@ -11,8 +11,8 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
 /**
  * This script allows to import, filter and preprocess needed data from BD Topo for a specific ZONE
  *
- * @param datasource A connexion to a database (H2GIS, PostGIS, ...), in which the data to process will be stored
- * @param tableIrisName The table name in which the IRIS are stored
+ * @param datasource A connexion to a database (H2GIS), in which the data to process will be stored
+ * @param tableCommuneName The table name that represents the commune to process
  * @param tableBuildIndifName The table name in which the undifferentiated ("Indifférencié" in french) buildings are stored
  * @param tableBuildIndusName The table name in which the industrial buildings are stored
  * @param tableBuildRemarqName The table name in which the remarkable ("Remarquable" in french) buildings are stored
@@ -53,7 +53,7 @@ IProcess importPreprocess() {
         title 'Import and prepare BDTopo layers'
         id "importPreprocess"
         inputs datasource: JdbcDataSource,
-                tableIrisName: "",
+                tableCommuneName: "",
                 tableBuildIndifName: "",
                 tableBuildIndusName: "",
                 tableBuildRemarqName: "",
@@ -89,7 +89,7 @@ IProcess importPreprocess() {
                 outputVegetName: String,
                 outputImperviousName: String,
                 outputZoneName: String
-        run { datasource, tableIrisName, tableBuildIndifName, tableBuildIndusName,
+        run { datasource, tableCommuneName, tableBuildIndifName, tableBuildIndusName,
               tableBuildRemarqName, tableRoadName, tableRailName, tableHydroName, tableVegetName,
               tableImperviousSportName, tableImperviousBuildSurfName, tableImperviousRoadSurfName,
               tableImperviousActivSurfName, tablePiste_AerodromeName,tableReservoirName, distBuffer, distance, idZone,
@@ -99,11 +99,9 @@ IProcess importPreprocess() {
               veget_bd_topo_type, veget_abstract_type ->
 
             debug('Import the BD Topo data')
-            def tmpIris = postfix 'TMP_IRIS_'
-            def zone = 'ZONE'
+            def zone = postfix 'ZONE'
             def zoneBuffer = postfix 'ZONE_BUFFER_'
             def zoneExtended = postfix 'ZONE_EXTENDED_'
-            def zoneNeighbors = 'ZONE_NEIGHBORS'
             def bu_zone_indif = postfix 'BU_ZONE_INDIF_'
             def bu_zone_indus = postfix 'BU_ZONE_INDUS_'
             def bu_zone_remarq = postfix 'BU_ZONE_REMARQ_'
@@ -120,15 +118,15 @@ IProcess importPreprocess() {
             def tmp_imperv_piste_aerodrome = postfix 'TMP_IMPERV_PISTE_AERODROME'
             def bu_zone_reservoir = postfix 'BU_ZONE_RESERVOIR_'
 
-            // If the IRIS_GE table is empty, then the process is stopped
-            if (!tableIrisName) {
-                error 'The process has been stopped since the table IRIS_GE is empty'
+            // If the Commune table is empty, then the process is stopped
+            if (!tableCommuneName) {
+                error 'The process has been stopped since the table Commnune is empty'
                 return
             }
 
             // -------------------------------------------------------------------------------
             // Control the SRIDs from input tables
-            def list = [tableIrisName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName,
+            def list = [tableCommuneName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName,
                         tableRoadName, tableRailName, tableHydroName, tableVegetName,
                         tableImperviousSportName, tableImperviousBuildSurfName,
                         tableImperviousRoadSurfName, tableImperviousActivSurfName, tablePiste_AerodromeName,tableReservoirName]
@@ -165,9 +163,9 @@ IProcess importPreprocess() {
             // -------------------------------------------------------------------------------
             // Check if the input files are present
 
-            // If the IRIS_GE table does not exist or is empty, then the process is stopped
-            if (!tablesExist.contains(tableIrisName)) {
-                error 'The process has been stopped since the table IRIS_GE does not exist or is empty'
+            // If the COMMUNE table does not exist or is empty, then the process is stopped
+            if (!tablesExist.contains(tableCommuneName)) {
+                error 'The process has been stopped since the table zone does not exist or is empty'
                 return
             }
 
@@ -230,7 +228,8 @@ IProcess importPreprocess() {
 
             def success = datasource.executeScript(getClass().getResourceAsStream('importPreprocess.sql'),
                     [ID_ZONE                           : idZone, DIST_BUFFER: distBuffer, EXPAND: distance,
-                     IRIS_GE                           : tableIrisName, BATI_INDIFFERENCIE: tableBuildIndifName,
+                     COMMUNE                           :  tableCommuneName,
+                     BATI_INDIFFERENCIE                : tableBuildIndifName,
                      BATI_INDUSTRIEL                   : tableBuildIndusName, BATI_REMARQUABLE: tableBuildRemarqName,
                      ROUTE                             : tableRoadName, TRONCON_VOIE_FERREE: tableRailName,
                      SURFACE_EAU                       : tableHydroName, ZONE_VEGETATION: tableVegetName,
@@ -238,9 +237,9 @@ IProcess importPreprocess() {
                      SURFACE_ROUTE                     : tableImperviousRoadSurfName, SURFACE_ACTIVITE: tableImperviousActivSurfName,
                      PISTE_AERODROME                   : tablePiste_AerodromeName,
                      RESERVOIR                         : tableReservoirName,
-                     TMP_IRIS                          : tmpIris,
                      ZONE                              : zone,
-                     ZONE_BUFFER: zoneBuffer, ZONE_EXTENDED: zoneExtended, ZONE_NEIGHBORS: zoneNeighbors,
+                     ZONE_BUFFER                       : zoneBuffer,
+                     ZONE_EXTENDED                     : zoneExtended,
                      BU_ZONE_INDIF                     : bu_zone_indif, BU_ZONE_INDUS: bu_zone_indus, BU_ZONE_REMARQ: bu_zone_remarq,
                      INPUT_BUILDING                    : input_building,
                      INPUT_ROAD                        : input_road,

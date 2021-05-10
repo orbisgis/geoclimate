@@ -11,7 +11,7 @@
             "password": "-",
             "url": "jdbc:postgresql://-",
             "id_zones":["id zone here"],
-            "tables": {"iris_ge":"ign_iris.iris_ge_2016",
+            "tables": {"commune":"ign_bdtopo_2017.commune",
                 "bati_indifferencie":"ign_bdtopo_2017.bati_indifferencie",
                 "bati_industriel":"ign_bdtopo_2017.bati_industriel",
                 "bati_remarquable":"ign_bdtopo_2017.bati_remarquable",

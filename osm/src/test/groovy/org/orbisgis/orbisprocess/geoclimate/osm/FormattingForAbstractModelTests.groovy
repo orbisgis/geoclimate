@@ -1,7 +1,6 @@
 package org.orbisgis.orbisprocess.geoclimate.osm
 
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.orbisgis.orbisanalysis.osm.utils.Utilities
@@ -9,7 +8,6 @@ import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
 
-import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 import static org.junit.jupiter.api.Assertions.assertEquals
@@ -167,7 +165,7 @@ class FormattingForAbstractModelTests {
         assertEquals(0, h2GIS.getTable(format.results.outputTableName).getRowCount())
 
         //Build traffic data
-        format = Geoindicators.TrafficFlow.build_road_traffic()
+        format = Geoindicators.RoadIndicators.build_road_traffic()
         format.execute([
                 datasource : h2GIS,
                 inputTableName: formatedRoadTable,
