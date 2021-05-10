@@ -16,7 +16,7 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
  * @param distBuffer The distance (exprimed in meter) used to compute the buffer area around the ZONE
  * @param distance The distance (exprimed in meter) used to compute the extended area around the ZONE
  * @param idZone The Zone id
- * @param tableIrisName The table name in which the IRIS are stored
+ * @param tableZoneName The table name in which the zone area is stored
  * @param tableBuildIndifName The table name in which the undifferentiated ("Indifférencié" in french) buildings are stored
  * @param tableBuildIndusName The table name in which the industrial buildings are stored
  * @param tableBuildRemarqName The table name in which the remarkable ("Remarquable" in french) buildings are stored
@@ -49,7 +49,7 @@ IProcess prepareData() {
                 distBuffer: 500,
                 distance: 1000,
                 idZone: String,
-                tableIrisName: "",
+                tableCommuneName: "",
                 tableBuildIndifName: "",
                 tableBuildIndusName: "",
                 tableBuildRemarqName: "",
@@ -67,7 +67,7 @@ IProcess prepareData() {
                 hLevMax: 15,
                 hThresholdLev2: 10
         outputs outputBuilding: String, outputRoad: String, outputRail: String, outputHydro: String, outputVeget: String, outputImpervious: String, outputZone: String
-        run { datasource, distBuffer, distance, idZone, tableIrisName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName, tableRoadName, tableRailName,
+        run { datasource, distBuffer, distance, idZone, tableCommuneName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName, tableRoadName, tableRailName,
               tableHydroName, tableVegetName, tableImperviousSportName, tableImperviousBuildSurfName, tableImperviousRoadSurfName, tableImperviousActivSurfName,
               tablePiste_AerodromeName, tableReservoirName,hLevMin, hLevMax, hThresholdLev2 ->
 
@@ -108,7 +108,7 @@ IProcess prepareData() {
             //Import preprocess
             def importPreprocess = BDTopo_V2.importPreprocess
             if (!importPreprocess([datasource                  : datasource,
-                                   tableIrisName               : tableIrisName,
+                                   tableCommuneName               : tableCommuneName,
                                    tableBuildIndifName         : tableBuildIndifName,
                                    tableBuildIndusName         : tableBuildIndusName,
                                    tableBuildRemarqName        : tableBuildRemarqName,
@@ -150,7 +150,6 @@ IProcess prepareData() {
                                       inputVeget                : preprocessTables.outputVegetName,
                                       inputImpervious           : preprocessTables.outputImperviousName,
                                       inputZone                 : preprocessTables.outputZoneName,
-                                      //inputZoneNeighbors: preprocessTables.outputZoneNeighborsName,
                                       hLevMin                   : hLevMin, hLevMax: hLevMax, hThresholdLev2: hThresholdLev2, idZone: idZone,
                                       buildingAbstractParameters: abstractTables.outputBuildingAbstractParameters,
                                       roadAbstractParameters    : abstractTables.outputRoadAbstractParameters,

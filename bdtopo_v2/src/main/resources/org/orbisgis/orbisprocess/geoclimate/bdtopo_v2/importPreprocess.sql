@@ -9,7 +9,7 @@
 -- Last update : 17/12/2019																		--
 -- Licence : GPLv3 (https://www.gnu.org/licenses/gpl-3.0.html)                                  --
 -- Comments :																					--
---   - Input layers : IRIS_GE,BATI_INDIFFERENCIE, BATI_INDUSTRIEL, BATI_REMARQUABLE,            --
+--   - Input layers : COMMUNE,BATI_INDIFFERENCIE, BATI_INDUSTRIEL, BATI_REMARQUABLE,            --
 --					  ROUTE, TRONCON_VOIE_FERREE, SURFACE_EAU, ZONE_VEGETATION                  --
 --					  TERRAIN_SPORT, CONSTRUCTION_SURFACIQUE, SURFACE_ROUTE, SURFACE_ACTIVITE   --
 --   - Output layers, that will feed the GeoClimate model :                                     --
@@ -28,8 +28,7 @@
 -- 1- Create (spatial) indexes if not already exists on the input layers
 --------------------------------------------------------------------------------------------------
 
-CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_IRIS_GE ON $IRIS_GE (the_geom);
-CREATE INDEX IF NOT EXISTS idx_insee_IRIS_GE ON $IRIS_GE (INSEE_COM);
+
 CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_BATI_INDIFFERENCIE ON $BATI_INDIFFERENCIE (the_geom);
 CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_BATI_INDUSTRIEL ON $BATI_INDUSTRIEL (the_geom);
 CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_BATI_REMARQUABLE ON $BATI_REMARQUABLE (the_geom);
@@ -49,15 +48,14 @@ CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_$RESERVOIR ON $RESERVOIR (the_geom)
 --    In the Paendora (BD Topo) context, a zone is defined by a city ("commune" in french)
 --------------------------------------------------------------------------------------------------
 
--- Extraction of IRIS on the study commune
-DROP TABLE IF EXISTS $TMP_IRIS;
-CREATE TABLE $TMP_IRIS (THE_GEOM geometry, INSEE_COM varchar) AS SELECT CASE WHEN ST_ISVALID(THE_GEOM) THEN ST_FORCE2D(THE_GEOM) ELSE ST_FORCE2D(ST_MAKEVALID(THE_GEOM)) END, INSEE_COM FROM $IRIS_GE WHERE INSEE_COM='$ID_ZONE';
-CREATE SPATIAL INDEX ON $TMP_IRIS (the_geom);
-
--- Generation of the geometry of the commune, on the basis of the IRIS
+--Create the zone table
 DROP TABLE IF EXISTS $ZONE;
-CREATE TABLE $ZONE (THE_GEOM geometry, ID_ZONE varchar) AS SELECT ST_UNION(ST_ACCUM(THE_GEOM)), INSEE_COM FROM $TMP_IRIS GROUP BY INSEE_COM;
-CREATE SPATIAL INDEX ON $ZONE (the_geom);
+CREATE TABLE $ZONE AS SELECT the_geom, CODE_INSEE AS ID_ZONE  FROM $COMMUNE;
+
+CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_ZONE ON $ZONE (the_geom);
+CREATE INDEX IF NOT EXISTS idx_ID_ZONE ON $ZONE (ID_ZONE);
+
+
 
 -- Generation of a buffer area around the studied commune
 DROP TABLE IF EXISTS $ZONE_BUFFER;
@@ -68,11 +66,6 @@ CREATE SPATIAL INDEX ON $ZONE_BUFFER (the_geom);
 DROP TABLE IF EXISTS $ZONE_EXTENDED;
 CREATE TABLE $ZONE_EXTENDED AS SELECT ST_EXPAND(the_geom, $EXPAND) as the_geom FROM $ZONE;
 CREATE SPATIAL INDEX ON $ZONE_EXTENDED (the_geom);
-
--- Generation of the geometries of the neighbouring communes to the one studied
-DROP TABLE IF EXISTS $ZONE_NEIGHBORS;
-CREATE TABLE $ZONE_NEIGHBORS (the_geom geometry, ID_ZONE varchar) AS SELECT the_geom, ID_ZONE FROM $ZONE UNION SELECT ST_DIFFERENCE(b.the_geom, a.the_geom) as the_geom, 'outside' FROM $ZONE a, $ZONE_EXTENDED b;
-CREATE SPATIAL INDEX ON $ZONE_NEIGHBORS (the_geom);
 
 
 --------------------------------------------------------------------------------------------------
@@ -182,4 +175,4 @@ DROP TABLE IF EXISTS $TMP_IMPERV_TERRAIN_SPORT, $TMP_IMPERV_CONSTRUCTION_SURFACI
 --------------------------------------------------------------------------------------------------
 -- Clear not needed tables
 --------------------------------------------------------------------------------------------------
-DROP TABLE $ZONE_NEIGHBORS, $TMP_IRIS, $ZONE_BUFFER, $ZONE_EXTENDED, $BU_ZONE_INDIF, $BU_ZONE_INDUS, $BU_ZONE_REMARQ, $BU_ZONE_RESERVOIR;
+DROP TABLE $ZONE_BUFFER, $ZONE_EXTENDED, $BU_ZONE_INDIF, $BU_ZONE_INDUS, $BU_ZONE_REMARQ, $BU_ZONE_RESERVOIR;

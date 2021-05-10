@@ -614,7 +614,7 @@ IProcess osm_processing() {
 
                             //Compute traffic flow
                             if(road_traffic){
-                                IProcess format =  Geoindicators.TrafficFlow.build_road_traffic()
+                                IProcess format =  Geoindicators.RoadIndicators.build_road_traffic()
                                 format.execute([
                                         datasource : h2gis_datasource,
                                         inputTableName: roadTableName,
@@ -893,93 +893,6 @@ def updateDriverURL(def input_database_properties){
     }
 }
 
-/**
- * Load  shapefiles into the local H2GIS database
- *
- * @param inputFolder where the files are
- * @param h2gis_datasource the local database for the geoclimate processes
- * @param id_zones a list of id zones to process
- * @return a list of id_zones
- */
-def loadDataFromFolder(def inputFolder, def h2gis_datasource, def id_zones){
-    def  folder = new File(inputFolder)
-    if(folder.isDirectory()) {
-        def geoFiles = []
-        folder.eachFileRecurse groovy.io.FileType.FILES,  { file ->
-            if (file.name.toLowerCase().endsWith(".shp")) {
-                geoFiles << file.getAbsolutePath()
-            }
-        }
-        //Looking for IRIS_GE shape file
-        def iris_ge_file = geoFiles.find{ it.toLowerCase().endsWith("iris_ge.shp")}
-        if(iris_ge_file) {
-            //Load IRIS_GE and check if there is some id_zones inside
-            h2gis_datasource.load(iris_ge_file, true)
-            id_zones = findIDZones(h2gis_datasource, id_zones)
-            geoFiles.remove(iris_ge_file)
-            if(id_zones){
-                //Load the files
-                def numberFiles = geoFiles.size()
-                geoFiles.eachWithIndex { geoFile , index->
-                    debug "Loading file $geoFile $index on $numberFiles"
-                    h2gis_datasource.load(geoFile, true)
-                }
-                return id_zones
-
-            }else{
-                error "The iris_ge file doesn't contains any zone identifiers"
-                return null
-            }
-        }
-        else{
-            error "The input folder must contains a file named iris_ge"
-            return null
-        }
-    }else{
-        error "The input folder must be a directory"
-        return null
-    }
-
-}
-
-/**
- * Return a list of id_zones
- * @param h2gis_datasource the local database for the geoclimate processes
- * @param id_zones a list of id zones to process
- * @return
- */
-def findIDZones(def h2gis_datasource, def id_zones){
-    def inseeCodes = []
-    if(h2gis_datasource.hasTable("IRIS_GE")) {
-        if (id_zones) {
-            if(id_zones in Collection){
-                if (h2gis_datasource.firstRow("select count(*) as COUNT_ZONES FROM IRIS_GE where insee_com in ('${id_zones.join("','")}')").COUNT_ZONES > 0) {
-                    inseeCodes = id_zones
-                } else {
-                    error "Cannot find any commune from the list of zones  : ${id_zones.join(",")}"
-                }
-            }
-            else {
-                if (h2gis_datasource.firstRow("select count(*) as COUNT_ZONES FROM IRIS_GE where ${id_zones}").COUNT_ZONES > 0) {
-                    inseeCodes = id_zones
-                } else {
-                    error "Cannot find any commune from the query : ${id_zones}"
-                }
-            }
-
-        } else {
-            h2gis_datasource.eachRow("select distinct insee_com from IRIS_GE group by insee_com ;") { row ->
-                inseeCodes << row.insee_com
-            }
-        }
-
-        return inseeCodes
-    }
-    else{
-        return inseeCodes
-    }
-
-}
 /**
  * Read the file parameters and create a new map of parameters
  * The map of parameters is initialized with default values
