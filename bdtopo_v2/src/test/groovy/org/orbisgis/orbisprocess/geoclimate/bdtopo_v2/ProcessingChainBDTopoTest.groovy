@@ -677,16 +677,15 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def user = ""
-        def password = ""
-        def url = "jdbc:postgresql://x.x.x.x:5432/paendora"
-        def id_zones = ["35238"]
+        def user = "ebocher"
+        def password = "k@ndinsky22"
+        def url = "jdbc:postgresql://194.199.60.147:5432/geoclimate"
+        def id_zones = ["22233"]
         def local_database_name="paendora_${System.currentTimeMillis()}"
 
         /*================================================================================
         * Input database and tables
         */
-
         def  input = ["bdtopo_v2": [
                 "database": [
                         "user":user,
@@ -718,15 +717,16 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                         "password": password,
                         "url": url,
                         "tables": [
-                                "building_indicators":"bdtopo_2017_geoclimate.building_indicators_2154",
-                                "block_indicators":"bdtopo_2017_geoclimate.block_indicators_2154",
-                                "rsu_indicators":"bdtopo_2017_geoclimate.rsu_indicators_2154",
-                                "rsu_lcz":"bdtopo_2017_geoclimate.rsu_lcz_2154",
-                                "zones":"bdtopo_2017_geoclimate.zones_2154",
-                                "building_urban_typo":"bdtopo_2017_geoclimate.building_urban_typo_2154",
-                                "rsu_urban_typo_area":"bdtopo_2017_geoclimate.rsu_urban_typo_area_2154",
-                                "rsu_urban_typo_floor_area":"bdtopo_2017_geoclimate.rsu_urban_typo_floor_area_2154",
-                                "grid_indicators":"bdtopo_2017_geoclimate.grid_indicators_2154"]
+                                "building_indicators":"paendora.building_indicators_2154",
+                                "block_indicators":"paendora.block_indicators_2154",
+                                "rsu_indicators":"paendora.rsu_indicators_2154",
+                                "rsu_lcz":"paendora.rsu_lcz_2154",
+                                "zones":"paendora.zones_2154",
+                                "building_urban_typo":"paendora.building_urban_typo_2154",
+                                "rsu_urban_typo_area":"paendora.rsu_urban_typo_area_2154",
+                                "rsu_urban_typo_floor_area":"paendora.rsu_urban_typo_floor_area_2154",
+                                "grid_indicators":"paendora.grid_indicators_2154",
+                                "road_traffic" : "paendora.road_traffic_2154"]
                 ]
         ]
 
@@ -743,7 +743,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                 ],
                 "input" :input,
                 "output" : output,
-                "parameters": [ "distance" : 100   ,
+                "parameters": [ "distance" : 1000   ,
                                 "rsu_indicators":[
                                         "indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"],
                                         "svfSimplified": false,
@@ -753,7 +753,8 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                         "y_size": 100,
                                         "indicators": ["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
                                                        "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "URBAN_TYPO_AREA_FRACTION", "LCZ_FRACTION"]
-                                ]
+                                ],
+                                "road_traffic": true
                 ]
         ]
 
