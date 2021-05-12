@@ -812,7 +812,7 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
         INSERT INTO ${outputTableName} VALUES(ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, ${commune_srid}), ${tmp_insee})""")
     }else if (code instanceof String) {
         //input_database_properties =updateDriverURL(input_database_properties)
-        String inputTableName = "(SELECT THE_GEOM, CODE_INSEE FROM $commune_location WHERE CODE_INSEE='$code' or nom=''$code')"
+        String inputTableName = "(SELECT THE_GEOM, CODE_INSEE FROM $commune_location WHERE CODE_INSEE='$code' or nom='$code')"
         debug "Loading in the H2GIS database $outputTableName"
         IOMethods.exportToDataBase(sourceConnection, inputTableName,h2gis_datasource.getConnection(), outputTableName, -1, 1000);
     }
