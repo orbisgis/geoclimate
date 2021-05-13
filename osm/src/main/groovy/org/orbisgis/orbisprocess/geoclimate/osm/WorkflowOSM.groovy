@@ -622,8 +622,16 @@ IProcess osm_processing() {
                                 results.put("road_traffic", format.results.outputTableName)
                             }
 
-                            //Compute the RSU indicators
+                            def rsuIndicatorsToCompute = false
+                            if(grid_indicators_params){
+                                rsuIndicatorsToCompute = grid_indicators_params.indicators.findAll{element -> element.toUpperCase() in["LCZ_FRACTION", "URBAN_TYPO_AREA_FRACTION"]}
+                            }
                             if(rsu_indicators_params){
+                                rsuIndicatorsToCompute =true
+                            }
+
+                            //Compute the RSU indicators
+                            if(rsuIndicatorsToCompute){
                                 def estimateHeight  = rsu_indicators_params."estimateHeight"
                                 IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
                                 if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,

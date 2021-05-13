@@ -1308,9 +1308,15 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
             results.put("vegetationTableName", vegetationTableName)
             results.put("imperviousTableName", imperviousTableName)
             results.put("buildingTableName", buildingTableName)
-
-            //Compute the RSU indicators
+            def rsuIndicatorsToCompute = false
+            if(grid_indicators_params){
+                rsuIndicatorsToCompute = grid_indicators_params.indicators.findAll{element -> element.toUpperCase() in["LCZ_FRACTION", "URBAN_TYPO_AREA_FRACTION"]}
+            }
             if(rsu_indicators_params){
+                rsuIndicatorsToCompute =true
+            }
+            //Compute the RSU indicators
+            if(rsuIndicatorsToCompute){
                 //Build the indicators
                 IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
                 if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
