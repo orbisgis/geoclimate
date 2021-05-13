@@ -1301,6 +1301,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
 
             //Add the GIS layers to the list of results
             def results = [:]
+            results.put("outputTableZone", zoneTableName)
             results.put("roadTableName", roadTableName)
             results.put("railTableName", railTableName)
             results.put("hydrographicTableName", hydrographicTableName)

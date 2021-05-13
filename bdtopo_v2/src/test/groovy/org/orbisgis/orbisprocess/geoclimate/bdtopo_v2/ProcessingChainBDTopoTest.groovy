@@ -677,9 +677,9 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def user = "ebocher"
-        def password = "k@ndinsky22"
-        def url = "jdbc:postgresql://194.199.60.147:5432/geoclimate"
+        def user = ""
+        def password = ""
+        def url = "jdbc:postgresql://:5432/geoclimate"
         def id_zones = ["22233"]
         def local_database_name="paendora_${System.currentTimeMillis()}"
 
