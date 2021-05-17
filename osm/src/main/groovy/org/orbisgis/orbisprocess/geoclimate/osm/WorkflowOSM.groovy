@@ -622,8 +622,16 @@ IProcess osm_processing() {
                                 results.put("road_traffic", format.results.outputTableName)
                             }
 
-                            //Compute the RSU indicators
+                            def rsuIndicatorsToCompute = false
+                            if(grid_indicators_params){
+                                rsuIndicatorsToCompute = grid_indicators_params.indicators.findAll{element -> element.toUpperCase() in["LCZ_FRACTION", "URBAN_TYPO_AREA_FRACTION"]}
+                            }
                             if(rsu_indicators_params){
+                                rsuIndicatorsToCompute =true
+                            }
+
+                            //Compute the RSU indicators
+                            if(rsuIndicatorsToCompute){
                                 def estimateHeight  = rsu_indicators_params."estimateHeight"
                                 IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
                                 if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
@@ -1287,6 +1295,10 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
     indicatorTableBatchExportTable(output_datasource, outputTableNames.building_urban_typo,id_zone,h2gis_datasource, h2gis_tables.outputTableBuildingUrbanTypo
             , "",inputSRID,outputSRID,reproject)
 
+    //Export road_traffic
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.road_traffic, id_zone,h2gis_datasource, h2gis_tables.road_traffic
+            , "", inputSRID,outputSRID,reproject)
+
     //Export zone
     abstractModelTableBatchExportTable(output_datasource, outputTableNames.zones,id_zone, h2gis_datasource, h2gis_tables.outputTableZone
             , "",inputSRID,outputSRID,reproject)
@@ -1335,9 +1347,6 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
         }
     }
 
-    //Export road_traffic
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.road_traffic, id_zone,h2gis_datasource, h2gis_tables.road_traffic
-            , "", inputSRID,outputSRID,reproject)
 
     con.setAutoCommit(false)
 }

@@ -819,32 +819,32 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
     def count = h2gis_datasource."$outputTableName".rowCount
     if (count > 0) {
         //Compute the envelope of the extracted area to extract the thematic tables
-        def geomToExtract = h2gis_datasource.firstRow("SELECT ST_EXPAND(ST_UNION(ST_ACCUM(the_geom)), ${distance}}) AS THE_GEOM FROM $outputTableName").THE_GEOM
+        def geomToExtract = h2gis_datasource.firstRow("SELECT ST_EXPAND(ST_UNION(ST_ACCUM(the_geom)), ${distance}) AS THE_GEOM FROM $outputTableName").THE_GEOM
         def outputTableNameBatiInd = "BATI_INDIFFERENCIE"
         if(inputTableNames.bati_indifferencie){
             //Extract bati_indifferencie
-            inputTableName = "(SELECT ID, THE_GEOM, HAUTEUR FROM ${inputTableNames.bati_indifferencie}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$srid;$geomToExtract'::GEOMETRY))"
+            def  inputTableName = "(SELECT ID, THE_GEOM, HAUTEUR FROM ${inputTableNames.bati_indifferencie}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
             debug "Loading in the H2GIS database $outputTableNameBatiInd"
             IOMethods.exportToDataBase(sourceConnection, inputTableName,h2gis_datasource.getConnection(), outputTableNameBatiInd, -1, 1000);
         }
-        def   outputTableNameBatiIndus = "BATI_INDUSTRIEL"
+        def  outputTableNameBatiIndus = "BATI_INDUSTRIEL"
         if(inputTableNames.bati_industriel) {
             //Extract bati_industriel
-            inputTableName = "(SELECT ID, THE_GEOM, NATURE, HAUTEUR FROM ${inputTableNames.bati_industriel}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$srid;$geomToExtract'::GEOMETRY))"
+            def inputTableName = "(SELECT ID, THE_GEOM, NATURE, HAUTEUR FROM ${inputTableNames.bati_industriel}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
             debug "Loading in the H2GIS database $outputTableNameBatiIndus"
             IOMethods.exportToDataBase(sourceConnection, inputTableName,h2gis_datasource.getConnection(), outputTableNameBatiIndus, -1, 1000);
         }
         def outputTableNameBatiRem = "BATI_REMARQUABLE"
         if(inputTableNames.bati_remarquable) {
             //Extract bati_remarquable
-            inputTableName = "(SELECT ID, THE_GEOM, NATURE, HAUTEUR FROM ${inputTableNames.bati_remarquable}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$srid;$geomToExtract'::GEOMETRY))"
+            def inputTableName = "(SELECT ID, THE_GEOM, NATURE, HAUTEUR FROM ${inputTableNames.bati_remarquable}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
             debug "Loading in the H2GIS database $outputTableNameBatiRem"
             IOMethods.exportToDataBase(sourceConnection, inputTableName,h2gis_datasource.getConnection(), outputTableNameBatiRem, -1, 1000);
         }
         def  outputTableNameRoad = "ROUTE"
         if(inputTableNames.route) {
             //Extract route
-            inputTableName = "(SELECT ID, THE_GEOM, NATURE, LARGEUR, POS_SOL, FRANCHISST FROM ${inputTableNames.route}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$srid;$geomToExtract'::GEOMETRY))"
+            def inputTableName = "(SELECT ID, THE_GEOM, NATURE, LARGEUR, POS_SOL, FRANCHISST, SENS FROM ${inputTableNames.route}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
             debug "Loading in the H2GIS database $outputTableNameRoad"
             IOMethods.exportToDataBase(sourceConnection, inputTableName,h2gis_datasource.getConnection(), outputTableNameRoad, -1, 1000);
         }
@@ -865,7 +865,7 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
 
         if(inputTableNames.troncon_voie_ferree) {
             //Extract troncon_voie_ferree
-            inputTableName = "(SELECT ID, THE_GEOM, NATURE, LARGEUR, POS_SOL, FRANCHISST FROM ${inputTableNames.troncon_voie_ferree}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$srid;$geomToExtract'::GEOMETRY))"
+            def inputTableName = "(SELECT ID, THE_GEOM, NATURE, LARGEUR, POS_SOL, FRANCHISST FROM ${inputTableNames.troncon_voie_ferree}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
             outputTableName = "TRONCON_VOIE_FERREE"
             debug "Loading in the H2GIS database $outputTableName"
             IOMethods.exportToDataBase(sourceConnection, inputTableName,h2gis_datasource.getConnection(), outputTableName, -1, 1000);
@@ -873,7 +873,7 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
 
         if(inputTableNames.surface_eau) {
             //Extract surface_eau
-            inputTableName = "(SELECT ID, THE_GEOM FROM ${inputTableNames.surface_eau}  WHERE the_geom && 'SRID=$srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
+            def inputTableName = "(SELECT ID, THE_GEOM FROM ${inputTableNames.surface_eau}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
             outputTableName = "SURFACE_EAU"
             debug "Loading in the H2GIS database $outputTableName"
             IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000);
@@ -881,7 +881,7 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
 
         if(inputTableNames.zone_vegetation) {
             //Extract zone_vegetation
-            inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.zone_vegetation}  WHERE the_geom && 'SRID=$srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
+            def inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.zone_vegetation}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
             outputTableName = "ZONE_VEGETATION"
             debug "Loading in the H2GIS database $outputTableName"
             IOMethods.exportToDataBase(sourceConnection, inputTableName,h2gis_datasource.getConnection(), outputTableName, -1, 1000);
@@ -889,7 +889,7 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
 
         if(inputTableNames.terrain_sport) {
             //Extract terrain_sport
-            inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.terrain_sport}  WHERE the_geom && 'SRID=$srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY) AND NATURE='Piste de sport')"
+            def inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.terrain_sport}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY) AND NATURE='Piste de sport')"
             outputTableName = "TERRAIN_SPORT"
             debug "Loading in the H2GIS database $outputTableName"
 
@@ -897,28 +897,28 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
 
         if(inputTableNames.construction_surfacique) {
             //Extract construction_surfacique
-            inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.construction_surfacique}  WHERE the_geom && 'SRID=$srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY) AND (NATURE='Barrage' OR NATURE='Ecluse' OR NATURE='Escalier'))"
+            def inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.construction_surfacique}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY) AND (NATURE='Barrage' OR NATURE='Ecluse' OR NATURE='Escalier'))"
             outputTableName = "CONSTRUCTION_SURFACIQUE"
             debug "Loading in the H2GIS database $outputTableName"
             IOMethods.exportToDataBase(sourceConnection, inputTableName,h2gis_datasource.getConnection(), outputTableName, -1, 1000);}
 
         if(inputTableNames.surface_route) {
             //Extract surface_route
-            inputTableName = "(SELECT ID, THE_GEOM  FROM ${inputTableNames.surface_route}  WHERE the_geom && 'SRID=$srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
+            def inputTableName = "(SELECT ID, THE_GEOM  FROM ${inputTableNames.surface_route}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
             outputTableName = "SURFACE_ROUTE"
             debug "Loading in the H2GIS database $outputTableName"
             IOMethods.exportToDataBase(sourceConnection, inputTableName,h2gis_datasource.getConnection(), outputTableName, -1, 1000);}
 
         if(inputTableNames.surface_activite) {
             //Extract surface_activite
-            inputTableName = "(SELECT ID, THE_GEOM, CATEGORIE  FROM ${inputTableNames.surface_activite}  WHERE the_geom && 'SRID=$srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY) AND (CATEGORIE='Administratif' OR CATEGORIE='Enseignement' OR CATEGORIE='Santé'))"
+            def inputTableName = "(SELECT ID, THE_GEOM, CATEGORIE  FROM ${inputTableNames.surface_activite}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY) AND (CATEGORIE='Administratif' OR CATEGORIE='Enseignement' OR CATEGORIE='Santé'))"
             outputTableName = "SURFACE_ACTIVITE"
             debug "Loading in the H2GIS database $outputTableName"
             IOMethods.exportToDataBase(sourceConnection, inputTableName,h2gis_datasource.getConnection(), outputTableName, -1, 1000);
         }
         //Extract PISTE_AERODROME
         if(inputTableNames.piste_aerodrome){
-            inputTableName = "(SELECT ID, THE_GEOM  FROM ${inputTableNames.piste_aerodrome}  WHERE the_geom && 'SRID=$srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
+            def inputTableName = "(SELECT ID, THE_GEOM  FROM ${inputTableNames.piste_aerodrome}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
             outputTableName = "PISTE_AERODROME"
             debug "Loading in the H2GIS database $outputTableName"
             IOMethods.exportToDataBase(sourceConnection, inputTableName,h2gis_datasource.getConnection(), outputTableName, -1, 1000);
@@ -926,7 +926,7 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
 
         //Extract RESERVOIR
         if(inputTableNames.reservoir){
-            inputTableName = "(SELECT ID, THE_GEOM, NATURE, HAUTEUR  FROM ${inputTableNames.reservoir}  WHERE the_geom && 'SRID=$srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
+            def inputTableName = "(SELECT ID, THE_GEOM, NATURE, HAUTEUR  FROM ${inputTableNames.reservoir}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
             outputTableName = "RESERVOIR"
             debug "Loading in the H2GIS database $outputTableName"
             IOMethods.exportToDataBase(sourceConnection, inputTableName,h2gis_datasource.getConnection(), outputTableName, -1, 1000);
@@ -1269,7 +1269,6 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
     }
     //Let's run the BDTopo process for each insee code
     def prepareBDTopoData = BDTopo_V2.prepareData
-    info "$nbAreas areas will be processed"
     id_zones.eachWithIndex { id_zone, index->
         def start  = System.currentTimeMillis()
         info "Starting to process insee id_zone $id_zone"
@@ -1302,15 +1301,22 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
 
             //Add the GIS layers to the list of results
             def results = [:]
+            results.put("outputTableZone", zoneTableName)
             results.put("roadTableName", roadTableName)
             results.put("railTableName", railTableName)
             results.put("hydrographicTableName", hydrographicTableName)
             results.put("vegetationTableName", vegetationTableName)
             results.put("imperviousTableName", imperviousTableName)
             results.put("buildingTableName", buildingTableName)
-
-            //Compute the RSU indicators
+            def rsuIndicatorsToCompute = false
+            if(grid_indicators_params){
+                rsuIndicatorsToCompute = grid_indicators_params.indicators.findAll{element -> element.toUpperCase() in["LCZ_FRACTION", "URBAN_TYPO_AREA_FRACTION"]}
+            }
             if(rsu_indicators_params){
+                rsuIndicatorsToCompute =true
+            }
+            //Compute the RSU indicators
+            if(rsuIndicatorsToCompute){
                 //Build the indicators
                 IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
                 if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
@@ -1507,6 +1513,10 @@ def saveTablesInDatabase(def output_datasource, def h2gis_datasource, def output
     indicatorTableBatchExportTable(output_datasource, outputTableNames.grid_indicators,id_zone,h2gis_datasource, h2gis_tables.grid_indicators
             , "",inputSRID,outputSRID,reproject)
 
+    //Export road_traffic
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.road_traffic, id_zone,h2gis_datasource, h2gis_tables.road_traffic
+            , "", inputSRID,outputSRID,reproject)
+
     //Export zone
     abstractModelTableBatchExportTable(output_datasource, outputTableNames.zones, id_zone, h2gis_datasource, h2gis_tables.outputTableZone
             ,  "",  inputSRID, outputSRID,reproject)
@@ -1530,9 +1540,7 @@ def saveTablesInDatabase(def output_datasource, def h2gis_datasource, def output
     //Export impervious
     abstractModelTableBatchExportTable(output_datasource, outputTableNames.impervious, id_zone, h2gis_datasource, h2gis_tables.imperviousTableName
             ,  "",inputSRID, outputSRID,reproject)
-    //Export road_traffic
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.road_traffic, id_zone,h2gis_datasource, h2gis_tables.road_traffic
-            , "", inputSRID,outputSRID,reproject)
+
     con.setAutoCommit(false);
 
 }
@@ -1566,7 +1574,6 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
                         //We check if the number of columns is not the same
                         //If there is more columns in the input table we alter the output table
                         def outPutColumnsNames = outputColumns.keySet()
-                        int columnsCount = outPutColumnsNames.size();
                         def diffCols = inputColumns.keySet().findAll { e -> !outPutColumnsNames*.toLowerCase().contains(e.toLowerCase()) }
                         def alterTable = ""
                         if (diffCols) {
