@@ -14,7 +14,6 @@
     <version>1.0.0-SNAPSHOT</version>
     <modules>
         <module>geoindicators</module>
-        <module>processingchain</module>
         <module>bdtopo_v2</module>
         <module>osm</module>
         <module>geoclimate</module>
@@ -47,15 +46,11 @@
             <organization>CNRS, Lab-STICC UMR 6285</organization>
         </developer>
         <developer>
-            <name>Elisabeth  Le Saux Wiederhold</name>
-            <organization>CNRS, Lab-STICC UMR 6285</organization>
-        </developer>
-        <developer>
-            <name>Jonathan Lao</name>
+            <name>Elisabeth Le Saux Wiederhold</name>
             <organization>UBS, Lab-STICC UMR 6285</organization>
         </developer>
         <developer>
-            <name>Elisabeth Le Saux Wiederhold</name>
+            <name>Jonathan Lao</name>
             <organization>UBS, Lab-STICC UMR 6285</organization>
         </developer>
         <developer>
@@ -82,13 +77,8 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
+                <groupId>org.orbisgis.geoclimate</groupId>
                 <artifactId>geoindicators</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
-                <artifactId>processingchain</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

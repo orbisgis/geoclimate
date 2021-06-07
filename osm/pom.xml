@@ -59,13 +59,8 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
+            <groupId>org.orbisgis.geoclimate</groupId>
             <artifactId>geoindicators</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
-            <artifactId>processingchain</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>

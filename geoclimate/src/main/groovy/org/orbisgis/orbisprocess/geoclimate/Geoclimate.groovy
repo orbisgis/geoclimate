@@ -1,5 +1,6 @@
 package org.orbisgis.orbisprocess.geoclimate
 
+import org.orbisgis.geoclimate.geoindicators.BlockIndicators
 import org.orbisgis.orbisprocess.geoclimate.geoindicators.*
 import org.orbisgis.orbisprocess.geoclimate.processingchain.*
 import org.orbisgis.orbisprocess.geoclimate.osm.*
