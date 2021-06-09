@@ -1,4 +1,4 @@
-package org.orbisgis.orbisprocess.geoclimate.osm
+package org.orbisgis.geoclimate.osm
 
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
@@ -10,9 +10,9 @@ import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 
-class OSMGISLayersTests {
+class InputDataLoadingTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(OSMGISLayersTests.class)
+    private static final Logger logger = LoggerFactory.getLogger(InputDataLoadingTest.class)
 
     static  H2GIS h2GIS
 
@@ -24,7 +24,7 @@ class OSMGISLayersTests {
     @Disabled //enable it to test data extraction from the overpass api
     @Test
     void extractAndCreateGISLayers() {
-        IProcess process = OSM.extractAndCreateGISLayers
+        IProcess process = OSM.InputDataLoading.extractAndCreateGISLayers()
         process.execute([
                 datasource : h2GIS,
                 zoneToExtract: "Île de la Nouvelle-Amsterdam"])
@@ -37,7 +37,7 @@ class OSMGISLayersTests {
 
     @Test
     void createGISLayersTest() {
-        IProcess process = OSM.createGISLayers
+        IProcess process = OSM.InputDataLoading.createGISLayers()
         def osmfile = new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath()
         process.execute([
                 datasource : h2GIS,

@@ -3,8 +3,8 @@ package org.orbisgis.geoclimate.geoindicators
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+
 import org.orbisgis.geoclimate.Geoindicators
-import static org.junit.jupiter.api.Assertions.assertNotNull
 
 import static org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS.open
 
@@ -35,31 +35,44 @@ class DataUtilsTests {
 
     @Test
     void joinTest() {
-        def result =  Geoindicators.DataUtils.joinTables(
-                [tablea:"ida", tableb:"idb", tablec:"idc"], "test", h2GIS)
-        assertNotNull result
-        def table = h2GIS."${result.outputTableName}"
+        def p = Geoindicators.DataUtils.joinTables()
+        assert p([
+                inputTableNamesWithId   : [tablea:"ida", tableb:"idb", tablec:"idc"],
+                outputTableName         : "test",
+                datasource              : h2GIS])
+
+        def table = h2GIS."${p.results.outputTableName}"
         assert "IDA,NAME,LAB,LOCATION" == table.columns.join(",")
         assert 1 == table.rowCount
+
         table.eachRow { assert it.lab.equals('CNRS') && it.location.equals('Vannes') }
     }
 
     @Test
     void joinTest2() {
-        def result =   Geoindicators.DataUtils.joinTables(
-               [tablea:"ida", tableb:"idb", tablec:"idc"],"test",
-               h2GIS,true)
-        assertNotNull result
-        def table = h2GIS."${result.outputTableName}"
+        def p = Geoindicators.DataUtils.joinTables()
+        assert p([
+                inputTableNamesWithId   : [tablea:"ida", tableb:"idb", tablec:"idc"],
+                outputTableName         : "test",
+                datasource              : h2GIS,
+                prefixWithTabName       : true])
+
+        def table = h2GIS."${p.results.outputTableName}"
         assert "TABLEA_IDA,TABLEA_NAME,TABLEB_LAB,TABLEC_LOCATION" == table.columns.join(",")
         assert 1 == table.rowCount
+
         table.eachRow { assert it.tableb_lab.equals('CNRS') && it.tablec_location.equals('Vannes') }
     }
 
     @Test
     void saveTablesAsFiles() {
         def directory = "./target/savedFiles"
-        assertNotNull Geoindicators.DataUtils.saveTablesAsFiles(["tablea","tablegeom"],true, directory, h2GIS)
+        def p = Geoindicators.DataUtils.saveTablesAsFiles()
+        assert p([
+                inputTableNames : ["tablea","tablegeom"],
+                directory       : directory,
+                delete       : true,
+                datasource      : h2GIS])
 
         assert 1 == h2GIS.table(h2GIS.load(directory+File.separator+"tablegeom.geojson", true)).rowCount
         assert 1 == h2GIS.table(h2GIS.load(directory+File.separator+"tablea.csv", true)).rowCount

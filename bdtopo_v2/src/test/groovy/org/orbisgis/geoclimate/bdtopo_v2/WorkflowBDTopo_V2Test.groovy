@@ -13,11 +13,10 @@ import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
-import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
+import org.orbisgis.geoclimate.Geoindicators
 import static org.junit.jupiter.api.Assertions.*
 
-class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
+class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
 
     def static postgis_dbProperties = [databaseName: 'orbisgis_db',
                                user        : 'orbisgis',
@@ -90,13 +89,13 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
     }
 
     @Test
-    void prepareBDTopoTest(){
+    void loadAndFormatData(){
         String directory ="./target/bdtopo_chain_prepare"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
         H2GIS h2GISDatabase = loadFiles(dirFile.absolutePath+File.separator+"bdtopo_db;AUTO_SERVER=TRUE")
-        def process = BDTopo_V2.prepareData
+        def process = BDTopo_V2.WorkflowBDTopo_V2.loadAndFormatData()
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableCommuneName: 'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -127,7 +126,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                 "CREATE TABLE tempo_zone AS SELECT * FROM zone_test;" +
                 "CREATE TABLE tempo_veget AS SELECT id_veget, the_geom FROM veget_test WHERE id_veget < 4;" +
                 "CREATE TABLE tempo_hydro AS SELECT id_hydro, the_geom FROM hydro_test WHERE id_hydro < 2;")
-        IProcess pm =  ProcessingChain.GeoIndicatorsChain.createUnitsOfAnalysis()
+        IProcess pm =  Geoindicators.WorkflowGeoIndicators.createUnitsOfAnalysis()
         pm.execute([datasource          : h2GIS,        zoneTable               : "tempo_zone",     roadTable           : "tempo_road",
                     railTable           : "", vegetationTable         : "tempo_veget",    hydrographicTable   : "tempo_hydro",
                     surface_vegetation  : null,         surface_hydro           : null,             buildingTable       : "tempo_build",
@@ -152,7 +151,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         dirFile.delete()
         dirFile.mkdir()
         H2GIS datasource = loadFiles(dirFile.absolutePath+File.separator+"bdtopo_db;AUTO_SERVER=TRUE")
-        def process = BDTopo_V2.prepareData
+        def process = BDTopo_V2.WorkflowBDTopo_V2.loadAndFormatData()
         assertTrue process.execute([datasource: datasource,
                                     tableCommuneName: 'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -176,7 +175,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                             "height_of_roughness_elements"   : 6,
                             "terrain_roughness_length"       : 0.5]
         def svfSimplified = true
-        IProcess geodindicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
+        IProcess geodindicators = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
         assertTrue geodindicators.execute(datasource: datasource, zoneTable: abstractTables.outputZone,
                 buildingTable: abstractTables.outputBuilding, roadTable: abstractTables.outputRoad,
                 railTable: abstractTables.outputRail, vegetationTable: abstractTables.outputVeget,
@@ -197,7 +196,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         dirFile.delete()
         dirFile.mkdir()
         H2GIS h2GISDatabase = loadFiles(dirFile.absolutePath+File.separator+"bdtopo_db;AUTO_SERVER=TRUE")
-        def process = BDTopo_V2.prepareData
+        def process = BDTopo_V2.WorkflowBDTopo_V2.loadAndFormatData()
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableCommuneName: 'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                     tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -230,7 +229,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         dirFile.delete()
         dirFile.mkdir()
         H2GIS h2GISDatabase = loadFiles(dirFile.absolutePath+File.separator+"bdtopo_db;AUTO_SERVER=TRUE")
-        def process = BDTopo_V2.prepareData
+        def process = BDTopo_V2.WorkflowBDTopo_V2.loadAndFormatData()
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableCommuneName: 'COMMUNE',
                                     tableRoadName: 'ROUTE',
@@ -254,7 +253,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        IProcess processBDTopo = BDTopo_V2.workflow
+        IProcess processBDTopo = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(processBDTopo.execute(configurationFile: getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()))
         assertNotNull(processBDTopo.getResults().outputFolder)
         def baseNamePathAndFileOut = processBDTopo.getResults().outputFolder + File.separator + "zone_" + communeToTest + "_"
@@ -271,7 +270,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()
         //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_dboutput.json").toURI()
         //configFile =getClass().getResource("config/bdtopo_workflow_dbinput_dboutput.json").toURI()
-        IProcess process = BDTopo_V2.workflow
+        IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         process.execute(configurationFile:configFile)
     }
 
@@ -319,7 +318,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                   "terrain_roughness_class": 1  ]]
                         ]
         ]
-        IProcess process = BDTopo_V2.workflow
+        IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertFalse(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
     }
 
@@ -368,7 +367,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                                   "terrain_roughness_class": 1  ]]
                         ]
         ]
-        IProcess process = BDTopo_V2.workflow
+        IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
     }
 
@@ -393,7 +392,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
         dirFile.mkdir()
         def tablesToSave = [
                             "rsu_lcz",]
-        def process = new WorkflowBDTopo_V2().bdtopo_processing(h2GISDatabase, defaultParameters, inseeCode, dirFile, tablesToSave, null, null, 4326);
+        def process = BDTopo_V2.WorkflowBDTopo_V2.bdtopo_processing(h2GISDatabase, defaultParameters, inseeCode, dirFile, tablesToSave, null, null, 4326);
         checkSpatialTable(h2GISDatabase, "block_indicators")
         checkSpatialTable(h2GISDatabase, "building_indicators")
         checkSpatialTable(h2GISDatabase, "rsu_indicators")
@@ -455,7 +454,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                          ]
                         ]
         ]
-        IProcess process = BDTopo_V2.workflow
+        IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
         //Check if the tables exist and contains at least one row
         outputTables.values().each {it->
@@ -514,7 +513,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                          ]
                         ]
         ]
-        IProcess process = BDTopo_V2.workflow
+        IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
         //Check if the tables exist and contains at least one row
         outputTables.values().each {it->
@@ -557,7 +556,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                          ],
                         ]
         ]
-        IProcess process = BDTopo_V2.workflow
+        IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
@@ -592,7 +591,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                          ]
                         ]
         ]
-        IProcess process = BDTopo_V2.workflow
+        IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
@@ -631,7 +630,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                          ]
                         ]
         ]
-        IProcess process = BDTopo_V2.workflow
+        IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where BUILDING_FRACTION>0").count>0
@@ -663,14 +662,14 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                          "road_traffic": true
                         ]
         ]
-        IProcess process = BDTopo_V2.workflow
+        IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from road_traffic where road_type is null").count==0
     }
 
     @Disabled //Use it for integration test with a postgis database
-    @Test
+    @org.junit.jupiter.api.Test
     void testIntegrationPostGIS() {
         String directory ="./target/geoclimate_postgis_integration"
         File dirFile = new File(directory)
@@ -757,7 +756,7 @@ class ProcessingChainBDTopoTest extends ChainProcessAbstractTest{
                 ]
         ]
 
-        IProcess process = BDTopo_V2.workflow
+        IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(configurationFile: createConfigFile(workflow_parameters, directory)))
     }
 

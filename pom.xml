@@ -8,7 +8,7 @@
         <artifactId>orbisparent</artifactId>
         <version>1.0.3-SNAPSHOT</version>
     </parent>
-    <groupId>org.orbisgis.orbisprocess</groupId>
+    <groupId>org.orbisgis.geoclimate</groupId>
     <artifactId>geoclimate-parent</artifactId>
     <packaging>pom</packaging>
     <version>1.0.0-SNAPSHOT</version>
@@ -67,12 +67,12 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
+                <groupId>org.orbisgis.geoclimate</groupId>
                 <artifactId>osm</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
+                <groupId>org.orbisgis.geoclimate</groupId>
                 <artifactId>bdtopo_v2</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -82,7 +82,7 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
+                <groupId>org.orbisgis.geoclimate</groupId>
                 <artifactId>geoclimate</artifactId>
                 <version>${project.version}</version>
             </dependency>

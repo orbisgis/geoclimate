@@ -1,10 +1,7 @@
 package org.orbisgis.orbisprocess.geoclimate
 
-import org.orbisgis.geoclimate.geoindicators.BlockIndicators
-import org.orbisgis.orbisprocess.geoclimate.geoindicators.*
-import org.orbisgis.orbisprocess.geoclimate.processingchain.*
-import org.orbisgis.orbisprocess.geoclimate.osm.*
-import org.orbisgis.orbisprocess.geoclimate.bdtopo_v2.*
+import org.orbisgis.geoclimate.bdtopo_v2.BDTopo_V2
+import org.orbisgis.geoclimate.osm.OSM
 import picocli.CommandLine
 
 import java.util.concurrent.Callable
@@ -32,16 +29,8 @@ class Geoclimate implements Callable<Integer> {
     public static final def PROCESS_FAIL_CODE = 1
     public static final def PROCESS_INVALID_CODE = 2
 
-    public static def GeoIndicatorsChain  = new GeoIndicatorsChain()
-    public static def DataUtils  = new DataUtils()
-    public static def BuildingIndicators = new BuildingIndicators()
-    public static def RsuIndicators = new RsuIndicators()
-    public static def BlockIndicators = new BlockIndicators()
-    public static def GenericIndicators = new GenericIndicators()
-    public static def SpatialUnits = new SpatialUnits()
-    public static def TypologyClassification = new TypologyClassification()
     public static def OSM = new OSM()
-    public static def BDTOPO_V2 = new BDTopo_V2()
+    public static def BDTOPO_V2 = BDTopo_V2
 
     public static def PROPS
 
@@ -51,10 +40,8 @@ class Geoclimate implements Callable<Integer> {
      * @param logger Logger to use in the processes.
      */
     static void setLogger(def logger){
-        OSM_Utils.logger = logger
+        OSM.logger = logger
         BDTopo_V2_Utils.logger = logger
-        ProcessingChain.logger = logger
-        Geoindicators.logger = logger
     }
 
     @CommandLine.Option(names = ['-w'],
@@ -72,7 +59,7 @@ class Geoclimate implements Callable<Integer> {
     @Override
     Integer call() {
         if (workflow.trim().equalsIgnoreCase("OSM")) {
-            def success = Geoclimate.OSM.workflow.execute(configurationFile: configFile.trim())
+            def success = OSM.workflow.execute(configurationFile: configFile.trim())
             if (success) {
                 println("The OSM workflow has been successfully executed")
                 return SUCCESS_CODE
@@ -81,7 +68,7 @@ class Geoclimate implements Callable<Integer> {
                 return PROCESS_FAIL_CODE
             }
         } else if (workflow.trim().equalsIgnoreCase("BDTOPO_V2.2")) {
-            def success = Geoclimate.BDTOPO_V2.workflow.execute(configurationFile: configFile.trim())
+            def success = BDTopo_V2.WorkflowBDTopo_V2.workflow().execute(configurationFile: configFile.trim())
             if (success) {
                 println("The BDTOPO_V2.2 workflow has been successfully executed")
                 return SUCCESS_CODE

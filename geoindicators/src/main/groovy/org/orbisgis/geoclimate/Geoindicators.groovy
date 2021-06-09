@@ -8,10 +8,11 @@ import org.orbisgis.geoclimate.geoindicators.RoadIndicators
 import org.orbisgis.geoclimate.geoindicators.RsuIndicators
 import org.orbisgis.geoclimate.geoindicators.SpatialUnits
 import org.orbisgis.geoclimate.geoindicators.TypologyClassification
-import org.orbisgis.geoclimate.geoindicatorsChain.GeoIndicatorsChain
+import org.orbisgis.geoclimate.workflowGeoIndicators.WorkflowGeoIndicators
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import org.slf4j.LoggerFactory
 
-abstract class Geoindicators extends Script {
+abstract class Geoindicators  extends GroovyProcessFactory  {
     public static def logger = LoggerFactory.getLogger(Geoindicators.class)
 
     //Processes
@@ -25,7 +26,7 @@ abstract class Geoindicators extends Script {
     public static RoadIndicators = new RoadIndicators()
 
     //The whole chain to run the geoindicators
-    public static GeoIndicatorsChain = new GeoIndicatorsChain()
+    public static WorkflowGeoIndicators = new WorkflowGeoIndicators()
 
     //Utility methods
     static def getUuid(){
@@ -109,21 +110,5 @@ abstract class Geoindicators extends Script {
      */
     static  void clearTablesCache(){
         System.properties.removeAll {it.key.startsWith("GEOCLIMATE")}
-    }
-
-    static String prefix(String name) {
-        return UUID.randomUUID().toString().replaceAll("-", "_") + "_" + name;
-    }
-
-    static String prefix(String prefix, String name) {
-        return prefix != null && !prefix.isEmpty() ? prefix + "_" + name : name;
-    }
-
-    static String postfix(String name) {
-        return name + "_" + UUID.randomUUID().toString().replaceAll("-", "_");
-    }
-
-    static String postfix(String name, String postfix) {
-        return postfix != null && !postfix.isEmpty() ? name + "_" + postfix : name;
     }
 }

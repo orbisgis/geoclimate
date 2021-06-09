@@ -1,8 +1,6 @@
-package org.orbisgis.geoclimate.geoindicatorsChain
+package org.orbisgis.geoclimate.workflowGeoIndicators
 
 import groovy.transform.BaseScript
-import groovy.transform.NamedParam
-import groovy.transform.NamedVariant
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
 import org.locationtech.jts.geom.Envelope
@@ -20,12 +18,15 @@ import org.orbisgis.geoclimate.Geoindicators
  *
  * @return
  */
-@NamedVariant
-Map computeBuildingsIndicators( @NamedParam(required = true) String inputBuildingTableName ,
-                                @NamedParam(required = true) String inputRoadTableName ,
-                                @NamedParam indicatorUse  = [ "LCZ", "URBAN_TYPOLOGY", "TEB"],
-                                @NamedParam prefixName = "",
-                                @NamedParam(required = true) JdbcDataSource datasource){
+IProcess computeBuildingsIndicators() {
+    return create {
+        title "Compute the geoindicators at building scale"
+        id "computeBuildingsIndicators"
+        inputs datasource: JdbcDataSource, inputBuildingTableName: String, inputRoadTableName: String,
+                indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], prefixName: ""
+        outputs outputTableName: String
+        run { datasource, inputBuildingTableName, inputRoadTableName, indicatorUse, prefixName ->
+
             info "Start computing building indicators..."
 
             def idColumnBu = "id_build"
@@ -33,7 +34,7 @@ Map computeBuildingsIndicators( @NamedParam(required = true) String inputBuildin
 
             // Maps for intermediate or final joins
             def finalTablesToJoin = [:]
-                               finalTablesToJoin.put(inputBuildingTableName, idColumnBu)
+            finalTablesToJoin.put(inputBuildingTableName, idColumnBu)
 
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
@@ -175,7 +176,10 @@ Map computeBuildingsIndicators( @NamedParam(required = true) String inputBuildin
             finTabNames = finTabNames - inputBuildingTableName
             datasource.execute """DROP TABLE IF EXISTS ${finTabNames.join(",")}, $buildTableJoinNeighbors"""
 
-            return [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+
+        }
+    }
 }
 
 /**
@@ -183,11 +187,14 @@ Map computeBuildingsIndicators( @NamedParam(required = true) String inputBuildin
  *
  * @return
  */
-@NamedVariant
-Map computeBlockIndicators(@NamedParam(required = true) String inputBuildingTableName,
-                           @NamedParam(required = true) String inputBlockTableName,
-                           @NamedParam prefixName= "",
-                           @NamedParam(required = true) JdbcDataSource datasource){
+IProcess computeBlockIndicators() {
+    return create {
+        title "Compute the geoindicators at block scale"
+        id "computeBlockIndicators"
+        inputs datasource: JdbcDataSource, inputBuildingTableName: String, inputBlockTableName: String, prefixName: ""
+        outputs outputTableName: String
+        run { datasource, inputBuildingTableName, inputBlockTableName, prefixName ->
+
             def BASE_NAME = "block_indicators"
 
             info "Start computing block indicators..."
@@ -318,7 +325,9 @@ Map computeBlockIndicators(@NamedParam(required = true) String inputBuildingTabl
             finTabNames = finTabNames - inputBlockTableName
             datasource.execute """DROP TABLE IF EXISTS ${finTabNames.join(",")}"""
 
-            return [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+        }
+    }
 }
 
 /**
@@ -360,7 +369,7 @@ Map computeBlockIndicators(@NamedParam(required = true) String inputBuildingTabl
  * "road", "impervious"]
  * @param buildingAreaTypeAndComposition Building type proportion that should be calculated (default: ["light_industry": ["light_industry"],
  *                                                                                                      "heavy_industry": ["heavy_industry"],
-*                                                                                                       "commercial":["commercial"],
+ *                                                                                                       "commercial":["commercial"],
  *                                                                                                      "residential": ["residential"]])
  * @param floorAreaTypeAndComposition Building floor area type proportion that should be calculated (default: ["residential": ["residential"]])
  * @param urbanTypoSurfFraction Map containing as key the name of the fraction indicators useful for the urban typology classification
@@ -374,73 +383,80 @@ Map computeBlockIndicators(@NamedParam(required = true) String inputBuildingTabl
  *
  * @return
  */
-@NamedVariant
-Map computeRSUIndicators(@NamedParam buildingTable = "",
-                         @NamedParam rsuTable = "",
-                         @NamedParam prefixName = "",
-                         @NamedParam vegetationTable = "",
-                         @NamedParam roadTable = "",
-                         @NamedParam hydrographicTable = "",
-                         @NamedParam imperviousTable = "",
-                         @NamedParam facadeDensListLayersBottom = [0, 10, 20, 30, 40, 50],
-                         @NamedParam int facadeDensNumberOfDirection = 12,
-                         @NamedParam double svfPointDensity = 0.008,
-                         @NamedParam double svfRayLength = 100,
-                         @NamedParam int svfNumberOfDirection = 60,
-                         @NamedParam heightColumnName = "height_roof",
-                         @NamedParam inputFields = ["id_build", "the_geom"],
-                         @NamedParam levelForRoads = [0],
-                         @NamedParam int angleRangeSizeBuDirection = 30,
-                         @NamedParam svfSimplified = false,
-                         @NamedParam indicatorUse = ["LCZ", "URBAN_TYPOLOGY", "TEB"],
-                         @NamedParam surfSuperpositions = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]],
-                         @NamedParam surfPriorities = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"],
-                         @NamedParam buildingAreaTypeAndComposition = ["light_industry": ["light_industry"],
-                                                                       "heavy_industry": ["heavy_industry"],
-                                                                       "commercial"    : ["commercial"],
-                                                                       "residential"   : ["residential"]],
-                         @NamedParam floorAreaTypeAndComposition = ["residential": ["residential"]],
-                         @NamedParam urbanTypoSurfFraction = ["vegetation_fraction_urb"                : ["high_vegetation_fraction",
-                                                                                                          "low_vegetation_fraction",
-                                                                                                          "high_vegetation_low_vegetation_fraction",
-                                                                                                          "high_vegetation_road_fraction",
-                                                                                                          "high_vegetation_impervious_fraction",
-                                                                                                          "high_vegetation_water_fraction",
-                                                                                                          "high_vegetation_building_fraction"],
-                                                              "low_vegetation_fraction_urb"            : ["low_vegetation_fraction"],
-                                                              "high_vegetation_impervious_fraction_urb": ["high_vegetation_road_fraction",
-                                                                                                          "high_vegetation_impervious_fraction"],
-                                                              "high_vegetation_pervious_fraction_urb"  : ["high_vegetation_fraction",
-                                                                                                          "high_vegetation_low_vegetation_fraction",
-                                                                                                          "high_vegetation_water_fraction"],
-                                                              "road_fraction_urb"                      : ["road_fraction",
-                                                                                                          "high_vegetation_road_fraction"],
-                                                              "impervious_fraction_urb"                : ["road_fraction",
-                                                                                                          "high_vegetation_road_fraction",
-                                                                                                          "impervious_fraction",
-                                                                                                          "high_vegetation_impervious_fraction"]],
-                         @NamedParam lczSurfFraction = ["building_fraction_lcz"       : ["building_fraction",
-                                                                                         "high_vegetation_building_fraction"],
-                                                        "pervious_fraction_lcz"       : ["high_vegetation_fraction",
-                                                                                         "low_vegetation_fraction",
-                                                                                         "water_fraction",
-                                                                                         "high_vegetation_low_vegetation_fraction",
-                                                                                         "high_vegetation_water_fraction"],
-                                                        "high_vegetation_fraction_lcz": ["high_vegetation_fraction",
-                                                                                         "high_vegetation_low_vegetation_fraction",
-                                                                                         "high_vegetation_road_fraction",
-                                                                                         "high_vegetation_impervious_fraction",
-                                                                                         "high_vegetation_water_fraction",
-                                                                                         "high_vegetation_building_fraction"],
-                                                        "low_vegetation_fraction_lcz" : ["low_vegetation_fraction"],
-                                                        "impervious_fraction_lcz"     : ["impervious_fraction",
-                                                                                         "road_fraction",
-                                                                                         "high_vegetation_impervious_fraction",
-                                                                                         "high_vegetation_road_fraction"],
-                                                        "water_fraction_lcz"          : ["water_fraction",
-                                                                                         "high_vegetation_water_fraction"]],
-                         @NamedParam buildingFractions = ["high_vegetation_building_fraction", "building_fraction"],
-                         @NamedParam(required = true) JdbcDataSource datasource){
+IProcess computeRSUIndicators() {
+    return create {
+        title "Compute the geoindicators at RSU scale"
+        id "computeRSUIndicators"
+        inputs  datasource                      : JdbcDataSource,   buildingTable               : "",
+                rsuTable                        : "",               prefixName                  : "",
+                vegetationTable                 : "",               roadTable                   : "",
+                hydrographicTable               : "",               imperviousTable             : "",
+                facadeDensListLayersBottom      : [0, 10, 20, 30, 40, 50],
+                facadeDensNumberOfDirection     : 12,               svfPointDensity             : 0.008,
+                svfRayLength                    : 100,              svfNumberOfDirection        : 60,
+                heightColumnName                : "height_roof",
+                inputFields                     : ["id_build", "the_geom"],
+                levelForRoads                   : [0],              angleRangeSizeBuDirection   : 30,
+                svfSimplified                   : false,
+                indicatorUse                    : ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+                surfSuperpositions              : ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]],
+                surfPriorities                  : ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"],
+                buildingAreaTypeAndComposition  : ["light_industry": ["light_industry"],
+                                                   "heavy_industry": ["heavy_industry"],
+                                                   "commercial":["commercial"],
+                                                   "residential": ["residential"]],
+                floorAreaTypeAndComposition     : ["residential": ["residential"]],
+                urbanTypoSurfFraction           : ["vegetation_fraction_urb"                 : ["high_vegetation_fraction",
+                                                                                                "low_vegetation_fraction",
+                                                                                                "high_vegetation_low_vegetation_fraction",
+                                                                                                "high_vegetation_road_fraction",
+                                                                                                "high_vegetation_impervious_fraction",
+                                                                                                "high_vegetation_water_fraction",
+                                                                                                "high_vegetation_building_fraction"],
+                                                   "low_vegetation_fraction_urb"                  : ["low_vegetation_fraction"],
+                                                   "high_vegetation_impervious_fraction_urb"  : ["high_vegetation_road_fraction",
+                                                                                                 "high_vegetation_impervious_fraction"],
+                                                   "high_vegetation_pervious_fraction_urb"    : ["high_vegetation_fraction",
+                                                                                                 "high_vegetation_low_vegetation_fraction",
+                                                                                                 "high_vegetation_water_fraction"],
+                                                   "road_fraction_urb"                        : ["road_fraction",
+                                                                                                 "high_vegetation_road_fraction"],
+                                                   "impervious_fraction_urb"                  : ["road_fraction",
+                                                                                                 "high_vegetation_road_fraction",
+                                                                                                 "impervious_fraction",
+                                                                                                 "high_vegetation_impervious_fraction"]],
+                lczSurfFraction             : ["building_fraction_lcz"                  : ["building_fraction",
+                                                                                           "high_vegetation_building_fraction"],
+                                               "pervious_fraction_lcz"                   : ["high_vegetation_fraction",
+                                                                                            "low_vegetation_fraction",
+                                                                                            "water_fraction",
+                                                                                            "high_vegetation_low_vegetation_fraction",
+                                                                                            "high_vegetation_water_fraction"],
+                                               "high_vegetation_fraction_lcz"            : ["high_vegetation_fraction",
+                                                                                            "high_vegetation_low_vegetation_fraction",
+                                                                                            "high_vegetation_road_fraction",
+                                                                                            "high_vegetation_impervious_fraction",
+                                                                                            "high_vegetation_water_fraction",
+                                                                                            "high_vegetation_building_fraction"],
+                                               "low_vegetation_fraction_lcz"             : ["low_vegetation_fraction"],
+                                               "impervious_fraction_lcz"                 : ["impervious_fraction",
+                                                                                            "road_fraction",
+                                                                                            "high_vegetation_impervious_fraction",
+                                                                                            "high_vegetation_road_fraction"],
+                                               "water_fraction_lcz"                      : ["water_fraction",
+                                                                                            "high_vegetation_water_fraction"]],
+                buildingFractions          : ["high_vegetation_building_fraction","building_fraction"]
+        outputs outputTableName: String
+        run { datasource                , buildingTable                     , rsuTable,
+              prefixName                , vegetationTable                   , roadTable,
+              hydrographicTable         , imperviousTable,
+              facadeDensListLayersBottom, facadeDensNumberOfDirection,
+              svfPointDensity           , svfRayLength                      , svfNumberOfDirection,
+              heightColumnName          , inputFields                       , levelForRoads,
+              angleRangeSizeBuDirection , svfSimplified                     , indicatorUse,
+              surfSuperpositions        , surfPriorities                    , buildingAreaTypeAndComposition,
+              floorAreaTypeAndComposition,
+              urbanTypoSurfFraction     , lczSurfFraction                   , buildingFractions ->
 
             info "Start computing RSU indicators..."
             def to_start = System.currentTimeMillis()
@@ -474,27 +490,27 @@ Map computeRSUIndicators(@NamedParam buildingTable = "",
             //Useful when the building height is estimated.
             def surfaceFractions = getCachedTableName("GEOCLIMATE_TABLE_RSU_SURFACE_FRACTIONS")
             if(!surfaceFractions){
-            // Calculate all surface fractions indicators
-            // Need to create the smallest geometries used as input of the surface fraction process
-            def  computeSmallestGeom =  Geoindicators.RsuIndicators.smallestCommunGeometry()
-            if (!computeSmallestGeom.execute([
-                    rsuTable: rsuTable,buildingTable: buildingTable,roadTable : roadTable, vegetationTable: vegetationTable,waterTable: hydrographicTable,
-                    imperviousTable:imperviousTable,
-                    prefixName: temporaryPrefName, datasource: datasource])){
-                info "Cannot compute the smallest commun geometries"
-                return
-            }
-            def superpositionsTable = computeSmallestGeom.results.outputTableName
-            // Calculate the surface fractions from the commun geom
-            def  computeSurfaceFractions =  Geoindicators.RsuIndicators.surfaceFractions()
-            if (!computeSurfaceFractions.execute([
-                    rsuTable: rsuTable, spatialRelationsTable: superpositionsTable,
-                    superpositions: surfSuperpositions,
-                    priorities: surfPriorities,
-                    prefixName: temporaryPrefName, datasource: datasource])){
-                info "Cannot compute the surface fractions"
-                return
-            }
+                // Calculate all surface fractions indicators
+                // Need to create the smallest geometries used as input of the surface fraction process
+                def  computeSmallestGeom =  Geoindicators.RsuIndicators.smallestCommunGeometry()
+                if (!computeSmallestGeom.execute([
+                        rsuTable: rsuTable,buildingTable: buildingTable,roadTable : roadTable, vegetationTable: vegetationTable,waterTable: hydrographicTable,
+                        imperviousTable:imperviousTable,
+                        prefixName: temporaryPrefName, datasource: datasource])){
+                    info "Cannot compute the smallest commun geometries"
+                    return
+                }
+                def superpositionsTable = computeSmallestGeom.results.outputTableName
+                // Calculate the surface fractions from the commun geom
+                def  computeSurfaceFractions =  Geoindicators.RsuIndicators.surfaceFractions()
+                if (!computeSurfaceFractions.execute([
+                        rsuTable: rsuTable, spatialRelationsTable: superpositionsTable,
+                        superpositions: surfSuperpositions,
+                        priorities: surfPriorities,
+                        prefixName: temporaryPrefName, datasource: datasource])){
+                    info "Cannot compute the surface fractions"
+                    return
+                }
                 surfaceFractions = computeSurfaceFractions.results.outputTableName
             }
             finalTablesToJoin.put(surfaceFractions, columnIdRsu)
@@ -632,7 +648,7 @@ Map computeRSUIndicators(@NamedParam buildingTable = "",
                                                    inputUpperScaleTableName : rsuTable,
                                                    inputIdUp                : columnIdRsu,
                                                    inputVarWeightsOperations: ["height_roof": ["area": ["AVG", "STD"]],
-                                                                                "nb_lev": ["area": ["AVG"]]],
+                                                                               "nb_lev": ["area": ["AVG"]]],
                                                    prefixName               : temporaryPrefName,
                                                    datasource               : datasource])) {
                     info "Cannot compute the weighted indicators mean, std height building and \n\
@@ -854,9 +870,10 @@ Map computeRSUIndicators(@NamedParam buildingTable = "",
             def tObis = System.currentTimeMillis() - to_start
 
             info "Geoindicators calculation time: ${tObis / 1000} s"
-            return [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+        }
+    }
 }
-
 /** The processing chain creates the units used to describe the territory at three scales: Reference Spatial
  * Unit (RSU), block and building. The creation of the RSU needs several layers such as the hydrology,
  * the vegetation, the roads and the rail network and the boundary of the study zone. The blocks are created
@@ -882,20 +899,17 @@ Map computeRSUIndicators(@NamedParam buildingTable = "",
  * @return outputTableBlockName Table name where are stored the blocks and the RSU ID
  * @return outputTableRsuName Table name where are stored the RSU
  */
-@NamedVariant
-Map createUnitsOfAnalysis(@NamedParam(required = true) String zoneTable,
-                          @NamedParam(required = true) String buildingTable,
-                          @NamedParam(required = true) String roadTable,
-                          @NamedParam(required = true) String railTable,
-                          @NamedParam(required = true) String vegetationTable,
-                          @NamedParam(required = true) String hydrographicTable,
-                          @NamedParam seaLandMaskTableName= "",
-                          @NamedParam double surface_vegetation= 10000,
-                          @NamedParam double surface_hydro= 2500,
-                          @NamedParam float  snappingTolerance = 0.01d,
-                          @NamedParam String prefixName= "",
-                          @NamedParam String indicatorUse= ["LCZ", "URBAN_TYPOLOGY", "TEB"],
-                          @NamedParam(required = true) JdbcDataSource datasource){
+IProcess createUnitsOfAnalysis() {
+    return create {
+        title "Create all new spatial units and their relations : building, block and RSU"
+        id "createUnitsOfAnalysis"
+        inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
+                roadTable: String, railTable: String, vegetationTable: String,
+                hydrographicTable: String, seaLandMaskTableName: "", surface_vegetation: 10000, surface_hydro: 2500,
+                snappingTolerance: 0.01d, prefixName: "", indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"]
+        outputs outputTableBuildingName: String, outputTableBlockName: String, outputTableRsuName: String
+        run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
+              seaLandMaskTableName, surface_vegetation, surface_hydro, snappingTolerance, prefixName, indicatorUse ->
             info "Create the units of analysis..."
             // Create the RSU
             def prepareRSUData = Geoindicators.SpatialUnits.prepareRSUData()
@@ -983,9 +997,11 @@ Map createUnitsOfAnalysis(@NamedParam(required = true) String zoneTable,
             }
 
 
-            return  [outputTableBuildingName: createScalesRelationsRsuBlBu.results.outputTableName,
+            [outputTableBuildingName: createScalesRelationsRsuBlBu.results.outputTableName,
              outputTableBlockName   : tableRsuBlocks,
              outputTableRsuName     : createRSU.results.outputTableName]
+        }
+    }
 }
 
 
@@ -1000,28 +1016,30 @@ Map createUnitsOfAnalysis(@NamedParam(required = true) String zoneTable,
  * This table can be empty if the user decides not to calculate it.
  *
  */
-@NamedVariant
-Map computeAllGeoIndicators(@NamedParam(required = true) String zoneTable,
-                            @NamedParam(required = true) String buildingTable,
-                            @NamedParam String roadTable = "",
-                            @NamedParam String railTable = "",
-                            @NamedParam String vegetationTable = "",
-                            @NamedParam String hydrographicTable = "",
-                            @NamedParam String imperviousTable = "",
-                            @NamedParam String buildingEstimateTableName  ="",
-                            @NamedParam String seaLandMaskTableName="",
-                            @NamedParam double surface_vegetation= 10000,
-                            @NamedParam double surface_hydro= 2500,
-                            @NamedParam float snappingTolerance= 0.01,
-                            @NamedParam indicatorUse= ["LCZ", "URBAN_TYPOLOGY", "TEB"],
-                            @NamedParam svfSimplified= false,
-                            @NamedParam String prefixName= "",
-                            @NamedParam  mapOfWeights= ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+IProcess computeAllGeoIndicators() {
+    return create {
+        title "Compute all geoindicators"
+        id "computeAllGeoIndicators"
+        inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
+                roadTable: "", railTable: "", vegetationTable: "",
+                hydrographicTable: "", imperviousTable: "",
+                buildingEstimateTableName :"",seaLandMaskTableName:"",
+                surface_vegetation: 10000, surface_hydro: 2500,
+                snappingTolerance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified: false, prefixName: "",
+                mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
-                            @NamedParam urbanTypoModelName= "",
-                            @NamedParam buildingHeightModelName=  "",
-                            @NamedParam(required = true) JdbcDataSource datasource){
+                urbanTypoModelName: "",
+                buildingHeightModelName: ""
+        outputs outputTableBuildingIndicators: String, outputTableBlockIndicators: String,
+                outputTableRsuIndicators: String, outputTableRsuLcz: String, outputTableZone: String,
+                outputTableRsuUrbanTypoArea: String, outputTableRsuUrbanTypoFloorArea: String,
+                outputTableBuildingUrbanTypo: String, buildingTableName :String
+        run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
+              imperviousTable,buildingEstimateTableName,seaLandMaskTableName,
+              surface_vegetation, surface_hydro, snappingTolerance, indicatorUse, svfSimplified, prefixName, mapOfWeights,
+              urbanTypoModelName, buildingHeightModelName ->
+            //Estimate height
             if (buildingHeightModelName && datasource.getTable(buildingTable).getRowCount()>0) {
                 def start = System.currentTimeMillis()
                 enableTableCache()
@@ -1149,7 +1167,7 @@ Map computeAllGeoIndicators(@NamedParam(required = true) String zoneTable,
                     //We must format only estimated buildings
                     //Apply format on the new abstract table
                     def epsg = datasource."$newEstimatedHeigthWithIndicators".srid;
-                    IProcess formatEstimatedBuilding = formatEstimatedBuilding()
+                    IProcess formatEstimatedBuilding =  formatEstimatedBuilding()
                     formatEstimatedBuilding.execute([
                             datasource    : datasource,
                             inputTableName: newEstimatedHeigthWithIndicators,
@@ -1436,7 +1454,7 @@ Map computeAllGeoIndicators(@NamedParam(required = true) String zoneTable,
 
                 def nbBlock = 0
                 if (blockIndicators) {
-                 nbBlock = datasource.firstRow("select count(*) as count from ${blockIndicators}").count
+                    nbBlock = datasource.firstRow("select count(*) as count from ${blockIndicators}").count
                 }
                 def nbRSU = datasource.firstRow("select count(*) as count from ${computeRSUIndicators.getResults().outputTableName}").count
 
@@ -1484,6 +1502,8 @@ Map computeAllGeoIndicators(@NamedParam(required = true) String zoneTable,
                     return results
                 }
             }
+        }
+    }
 }
 
 /**
@@ -1499,26 +1519,27 @@ Map computeAllGeoIndicators(@NamedParam(required = true) String zoneTable,
  * This table can be empty if the user decides not to calculate it.
  *
  */
-@NamedVariant
-Map computeGeoclimateIndicators(@NamedParam(required = true) String zoneTable,
-                                @NamedParam(required = true) String buildingTable,
-                                @NamedParam roadTable= "",
-                                @NamedParam railTable= "",
-                                @NamedParam vegetationTable= "",
-                                @NamedParam hydrographicTable= "",
-                                @NamedParam imperviousTable= "",
-                                @NamedParam seaLandMaskTableName = "",
-                                @NamedParam double surface_vegetation=  10000,
-                                @NamedParam double surface_hydro= 2500,
-                                @NamedParam float  snappingTolerance= 0.01,
-                                @NamedParam indicatorUse= ["LCZ", "URBAN_TYPOLOGY", "TEB"],
-                                @NamedParam svfSimplified= false,
-                                @NamedParam prefixName= "",
-                                @NamedParam mapOfWeights= ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+IProcess computeGeoclimateIndicators() {
+    return create {
+        title "Compute geoclimate indicators"
+        id "computeGeoclimateIndicators"
+        inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
+                roadTable: "", railTable: "", vegetationTable: "",
+                hydrographicTable: "", imperviousTable: "",
+                seaLandMaskTableName :"", surface_vegetation: 10000, surface_hydro: 2500,
+                snappingTolerance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified: false, prefixName: "",
+                mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
-                                @NamedParam urbanTypoModelName = "",
-                                @NamedParam(required = true) JdbcDataSource datasource){
+                urbanTypoModelName: ""
+        outputs outputTableBuildingIndicators: String, outputTableBlockIndicators: String,
+                outputTableRsuIndicators: String, outputTableRsuLcz: String, outputTableZone: String,
+                outputTableRsuUrbanTypoArea: String, outputTableRsuUrbanTypoFloorArea: String,
+                outputTableBuildingUrbanTypo: String
+        run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
+              imperviousTable,seaLandMaskTableName,
+              surface_vegetation, surface_hydro, snappingTolerance, indicatorUse, svfSimplified, prefixName, mapOfWeights,
+              urbanTypoModelName ->
             info "Start computing the geoindicators..."
             def start =  System.currentTimeMillis()
             // Temporary (and output tables) are created
@@ -1613,41 +1634,41 @@ Map computeGeoclimateIndicators(@NamedParam(required = true) String zoneTable,
             if (indicatorUse.contains("LCZ")) {
                 info """ The LCZ classification is performed """
                 def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"              : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
-                                         "BUILDING_FRACTION_LCZ"             : "BUILDING_SURFACE_FRACTION",
-                                         "ASPECT_RATIO"                      : "ASPECT_RATIO",
-                                         "GROUND_SKY_VIEW_FACTOR"            : "SKY_VIEW_FACTOR",
-                                         "PERVIOUS_FRACTION_LCZ"             : "PERVIOUS_SURFACE_FRACTION",
-                                         "IMPERVIOUS_FRACTION_LCZ"           : "IMPERVIOUS_SURFACE_FRACTION",
-                                         "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH": "TERRAIN_ROUGHNESS_LENGTH"]
+                                     "BUILDING_FRACTION_LCZ"             : "BUILDING_SURFACE_FRACTION",
+                                     "ASPECT_RATIO"                      : "ASPECT_RATIO",
+                                     "GROUND_SKY_VIEW_FACTOR"            : "SKY_VIEW_FACTOR",
+                                     "PERVIOUS_FRACTION_LCZ"             : "PERVIOUS_SURFACE_FRACTION",
+                                     "IMPERVIOUS_FRACTION_LCZ"           : "IMPERVIOUS_SURFACE_FRACTION",
+                                     "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH": "TERRAIN_ROUGHNESS_LENGTH"]
 
-                    // Get into a new table the ID, geometry column and the 7 indicators defined by Stewart and Oke (2012)
-                    // for LCZ classification (rename the indicators with the real names)
-                    def queryReplaceNames = ""
-                    lczIndicNames.each { oldIndic, newIndic ->
-                        queryReplaceNames += "ALTER TABLE $lczIndicTable ALTER COLUMN $oldIndic RENAME TO $newIndic;"
-                    }
-                    datasource.execute """DROP TABLE IF EXISTS $lczIndicTable;
+                // Get into a new table the ID, geometry column and the 7 indicators defined by Stewart and Oke (2012)
+                // for LCZ classification (rename the indicators with the real names)
+                def queryReplaceNames = ""
+                lczIndicNames.each { oldIndic, newIndic ->
+                    queryReplaceNames += "ALTER TABLE $lczIndicTable ALTER COLUMN $oldIndic RENAME TO $newIndic;"
+                }
+                datasource.execute """DROP TABLE IF EXISTS $lczIndicTable;
                                 CREATE TABLE $lczIndicTable 
                                         AS SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, ${lczIndicNames.keySet().join(",")} 
                                         FROM ${rsuIndicators};
                                 $queryReplaceNames"""
 
-                    datasource."$lczIndicTable".reload()
+                datasource."$lczIndicTable".reload()
 
-                    // The classification algorithm is called
-                    def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
-                    if (!classifyLCZ([rsuLczIndicators : lczIndicTable,
-                                      rsuAllIndicators : rsuIndicators,
-                                      normalisationType: "AVG",
-                                      mapOfWeights     : mapOfWeights,
-                                      prefixName       : prefixName,
-                                      datasource       : datasource,
-                                      prefixName       : prefixName])) {
-                        info "Cannot compute the LCZ classification."
-                        return
-                    }
-                    rsuLcz = classifyLCZ.results.outputTableName
-                    datasource.execute "DROP TABLE IF EXISTS $lczIndicTable"
+                // The classification algorithm is called
+                def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
+                if (!classifyLCZ([rsuLczIndicators : lczIndicTable,
+                                  rsuAllIndicators : rsuIndicators,
+                                  normalisationType: "AVG",
+                                  mapOfWeights     : mapOfWeights,
+                                  prefixName       : prefixName,
+                                  datasource       : datasource,
+                                  prefixName       : prefixName])) {
+                    info "Cannot compute the LCZ classification."
+                    return
+                }
+                rsuLcz = classifyLCZ.results.outputTableName
+                datasource.execute "DROP TABLE IF EXISTS $lczIndicTable"
 
             }
             // If the URBAN_TYPOLOGY indicators should be calculated, we only affect a URBAN typo class
@@ -1785,7 +1806,7 @@ Map computeGeoclimateIndicators(@NamedParam(required = true) String zoneTable,
             def nbBuilding = datasource.firstRow("select count(*) as count from ${buildingIndicators} WHERE ID_RSU IS NOT NULL").count
             def nbBlock = 0
             if(blockIndicators){
-             nbBlock = datasource.firstRow("select count(*) as count from ${blockIndicators}").count
+                nbBlock = datasource.firstRow("select count(*) as count from ${blockIndicators}").count
             }
             def nbRSU = datasource.firstRow("select count(*) as count from ${rsuIndicators}").count
             //Alter the zone table to add statics
@@ -1814,6 +1835,8 @@ Map computeGeoclimateIndicators(@NamedParam(required = true) String zoneTable,
                     outputTableRsuUrbanTypoArea     : urbanTypoArea,
                     outputTableRsuUrbanTypoFloorArea: urbanTypoFloorArea,
                     outputTableBuildingUrbanTypo    : urbanTypoBuilding]
+        }
+    }
 }
 
 /**
@@ -1836,24 +1859,22 @@ Map computeGeoclimateIndicators(@NamedParam(required = true) String zoneTable,
  * @param outputTableName the name of grid  table in the output_datasource to save the result
  * @return
  */
-@NamedVariant
-Map rasterizeIndicators(@NamedParam(required = true) Envelope envelope,
-                        @NamedParam(required = true) int x_size ,
-                        @NamedParam(required = true) int y_size,
-                        @NamedParam(required = true) int srid,
-                        @NamedParam rowCol = false,
-                        @NamedParam  list_indicators =[],
-                        @NamedParam buildingTable= "",
-                        @NamedParam roadTable= "",
-                        @NamedParam vegetationTable= "",
-                        @NamedParam hydrographicTable= "",
-                        @NamedParam imperviousTable= "",
-                        @NamedParam rsu_lcz="",
-                        @NamedParam rsu_urban_typo_area="",
-                        @NamedParam rsu_urban_typo_floor_area="",
-                        @NamedParam prefixName="",
-                        @NamedParam JdbcDataSource datasource ){
-             if(!list_indicators){
+IProcess rasterizeIndicators() {
+    return create {
+        title "Aggregate indicators on a grid"
+        id "rasterizeIndicators"
+        inputs datasource: JdbcDataSource,
+                envelope: Envelope,
+                x_size : Integer, y_size : Integer,
+                srid : Integer,rowCol : false, list_indicators :[],
+                buildingTable: "", roadTable: "", vegetationTable: "",
+                hydrographicTable: "", imperviousTable: "", rsu_lcz:"",
+                rsu_urban_typo_area:"",rsu_urban_typo_floor_area:"",
+                prefixName: String
+        outputs outputTableName: String
+        run { datasource, envelope, x_size, y_size,srid,rowCol, list_indicators,buildingTable, roadTable, vegetationTable,
+              hydrographicTable, imperviousTable, rsu_lcz,rsu_urban_typo_area,rsu_urban_typo_floor_area, prefixName ->
+            if(!list_indicators){
                 info "The list of indicator names cannot be null or empty"
                 return
             }
@@ -2017,7 +2038,7 @@ Map rasterizeIndicators(@NamedParam(required = true) Envelope envelope,
                     indicatorTablesToJoin.put(upperScaleAreaStatistics.results.outputTableName, grid_column_identifier)
                 }
 
-                    //Join all indicators at grid scale
+                //Join all indicators at grid scale
                 def joinGrids = Geoindicators.DataUtils.joinTables()
                 if (!joinGrids([inputTableNamesWithId: indicatorTablesToJoin,
                                 outputTableName      : grid_indicators_table,
@@ -2026,7 +2047,9 @@ Map rasterizeIndicators(@NamedParam(required = true) Envelope envelope,
                     return
                 }
             }
-           return  [outputTableName: grid_indicators_table]
+            [outputTableName: grid_indicators_table]
+        }
+    }
 }
 
 
@@ -2040,11 +2063,13 @@ Map rasterizeIndicators(@NamedParam(required = true) Envelope envelope,
  * @param epsg srid code of the output table
  * @return outputTableName The name of the final buildings table
  */
-@NamedVariant
-Map formatEstimatedBuilding(@NamedParam(required = true) String inputTableName,
-                            @NamedParam(required = true) int epsg,
-                            @NamedParam h_lev_min= 3,
-                            @NamedParam(required = true) JdbcDataSource datasource){
+IProcess formatEstimatedBuilding() {
+    return create {
+        title "Format the estimated OSM buildings table into a table that matches the constraints of the GeoClimate input model"
+        id "formatEstimatedBuilding"
+        inputs datasource: JdbcDataSource, inputTableName: String, epsg: int, h_lev_min: 3
+        outputs outputTableName: String
+        run { JdbcDataSource datasource, inputTableName,epsg, h_lev_min ->
             def outputTableName = postfix "INPUT_BUILDING_REFORMATED_"
             info 'Re-formating building layer'
             def outputEstimateTableName = ""
@@ -2086,4 +2111,6 @@ Map formatEstimatedBuilding(@NamedParam(required = true) String inputTableName,
             }
             info 'Re-formating building finishes'
             [outputTableName: outputTableName]
+        }
+    }
 }

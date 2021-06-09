@@ -40,7 +40,7 @@ class InputDataFormattingTest {
 
     @Test
     void inputDataFormatting(){
-        def processImport = BDTopo_V2.importPreprocess
+        def processImport = BDTopo_V2.InputDataLoading.prepareBDTopoData()
         assertTrue processImport.execute([datasource: h2GISDatabase,
                                           tableCommuneName:'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                           tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
@@ -58,7 +58,7 @@ class InputDataFormattingTest {
         ])
         def resultsImport=processImport.results
 
-        def processFormatting = BDTopo_V2.formatInputData
+        def processFormatting = BDTopo_V2.InputDataFormatting.formatData()
         assertTrue processFormatting.execute([datasource: h2GISDatabase,
                                               inputBuilding: resultsImport.outputBuildingName, inputRoad: resultsImport.outputRoadName,
                                               inputRail: resultsImport.outputRailName, inputHydro: resultsImport.outputHydroName,

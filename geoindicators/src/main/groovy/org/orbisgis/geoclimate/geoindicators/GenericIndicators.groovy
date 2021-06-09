@@ -1,18 +1,17 @@
 package org.orbisgis.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
-import groovy.transform.NamedParam
-import groovy.transform.NamedVariant
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
 import org.orbisgis.orbisdata.datamanager.jdbc.*
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 
 @BaseScript Geoindicators geoindicators
 
 /**
  * This process is used to compute basic statistical operations on a specific variable from a lower scale (for
  * example the sum of each building volume constituting a block to calculate the block volume). Note that for
- * surface fractions it is highly recommended to use the surfaceFractions function (since it considers the potential
+ * surface fractions it is highly recommended to use the surfaceFractions IProcess (since it considers the potential
  * layer superpositions (building, high vegetation, low vegetation, etc.).
  *
  * @param inputLowerScaleTableName the table name where are stored low scale objects (e.g. buildings)
@@ -31,19 +30,21 @@ import org.orbisgis.orbisdata.datamanager.jdbc.*
  *          scale area. NOTE THAT FOR THIS ONE, THE MAP KEY WILL BE USED TO CREATE THE PREFIX NAME OF THE INDICATOR
  *          (e.g. "BUILDING_AREA" in the case of the example given above ==> the indicator will be BUILDING_AREA_NUMBER_DENSITY)
  * @param prefixName String use as prefix to name the output table
- * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
- * the resulting database will be stored
  *
  * @return A database table name.
  *
  * @author Jérémy Bernard
  */
-@NamedVariant
-Map unweightedOperationFromLowerScale(
-        @NamedParam(required = true)  String inputLowerScaleTableName, @NamedParam(required = true)  String inputUpperScaleTableName,
-        @NamedParam(required = true)  String inputIdUp, @NamedParam(required = true) String inputIdLow,
-        @NamedParam(required = true)  Map inputVarAndOperations, @NamedParam prefixName ="",
-        @NamedParam(required = true)  JdbcDataSource datasource){
+IProcess unweightedOperationFromLowerScale() {
+    return create {
+        title "Unweighted statistical operations from lower scale"
+        id "unweightedOperationFromLowerScale"
+        inputs inputLowerScaleTableName: String, inputUpperScaleTableName: String, inputIdUp: String,
+                inputIdLow: String, inputVarAndOperations: Map, prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { inputLowerScaleTableName, inputUpperScaleTableName, inputIdUp, inputIdLow, inputVarAndOperations, prefixName,
+              datasource ->
+
             def GEOMETRIC_FIELD_UP = "the_geom"
             def BASE_NAME = "unweighted_operation_from_lower_scale"
             def SUM = "SUM"
@@ -105,7 +106,9 @@ Map unweightedOperationFromLowerScale(
 
             datasource query
 
-            return [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+        }
+    }
 }
 
 /**
@@ -124,16 +127,20 @@ Map unweightedOperationFromLowerScale(
  *           --> "STD": weighted standard deviation
  *           --> "AVG": weighted mean
  *  @param prefixName String use as prefix to name the output table
- *  @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
- * the resulting database will be stored
  *
  * @return A database table name.
  * @author Jérémy Bernard
  */
-@NamedVariant
-Map weightedAggregatedStatistics(@NamedParam(required = true)  String inputLowerScaleTableName, @NamedParam(required = true)  String inputUpperScaleTableName,
-                                 @NamedParam(required = true)  String inputIdUp,@NamedParam(required = true) Map inputVarWeightsOperations,
-                                 @NamedParam prefixName ="", @NamedParam(required = true)  JdbcDataSource datasource){
+IProcess weightedAggregatedStatistics() {
+    return create {
+        title "Weighted statistical operations from lower scale"
+        id "weightedAggregatedStatistics"
+        inputs inputLowerScaleTableName: String, inputUpperScaleTableName: String, inputIdUp: String,
+                inputVarWeightsOperations: Map, prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { inputLowerScaleTableName, inputUpperScaleTableName, inputIdUp, inputVarWeightsOperations, prefixName,
+              datasource ->
+
             def AVG = "AVG"
             def STD = "STD"
             def BASE_NAME = "weighted_aggregated_statistics"
@@ -167,7 +174,7 @@ Map weightedAggregatedStatistics(@NamedParam(required = true)  String inputLower
             datasource weightedMeanQuery
 
             // The weighted std is calculated if needed and only the needed fields are returned
-            def weightedStdQuery = "CREATE INDEX IF NOT EXISTS id_lcorr ON $weighted_mean ($inputIdUp); " +
+            def weightedStdQuery = "CREATE INDEX IF NOT EXISTS id_lcorr ON $weighted_mean USING BTREE($inputIdUp); " +
                     "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT b.$inputIdUp,"
             inputVarWeightsOperations.each { var, weights ->
                 weights.each { weight, operations ->
@@ -189,29 +196,36 @@ Map weightedAggregatedStatistics(@NamedParam(required = true)  String inputLower
 
             // The temporary tables are deleted
             datasource "DROP TABLE IF EXISTS $weighted_mean"
-            return  [outputTableName: outputTableName]
+
+            [outputTableName: outputTableName]
+        }
+    }
 }
 
 /**
  * This process extract geometry properties.
  *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
  * @param inputFields Fields to conserved from the input table in the output table
  * @param inputTableName The name of the input ITable where are stored the geometries to apply the geometry operations
  * @param operations Operations that have to be applied. These operations should be in the following list (see http://www.h2gis.org/docs/dev/functions/):
  * ["st_geomtype","st_srid", "st_length","st_perimeter","st_area", "st_dimension", "st_coorddim", "st_num_geoms",
  * "st_num_pts", "st_issimple", "st_isvalid", "st_isempty"]
  * @param prefixName String use as prefix to name the output table
- * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
- * the resulting database will be stored
  *
  * @return A database table name.
  * @author Erwan Bocher
- * @author Jérémy Bernard
  */
-@NamedVariant
-Map geometryProperties(@NamedParam(required = true)  String inputTableName, @NamedParam(required = true)  def inputFields,
-                       @NamedParam(required = true)  def operations, @NamedParam prefixName="",
-                       @NamedParam(required = true)  JdbcDataSource datasource){
+IProcess geometryProperties() {
+    return create {
+        title "Geometry properties"
+        id "geometryProperties"
+        inputs inputTableName: String, inputFields: String[], operations: String[], prefixName: String,
+                datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { inputTableName, inputFields, operations, prefixName, datasource ->
+
             def GEOMETRIC_FIELD = "the_geom"
             def OPS = ["st_geomtype", "st_srid", "st_length", "st_perimeter", "st_area", "st_dimension",
                        "st_coorddim", "st_num_geoms", "st_num_pts", "st_issimple", "st_isvalid", "st_isempty"]
@@ -235,7 +249,9 @@ Map geometryProperties(@NamedParam(required = true)  String inputTableName, @Nam
 
             datasource query
 
-            return  [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+        }
+    }
 }
 
 /**
@@ -247,6 +263,8 @@ Map geometryProperties(@NamedParam(required = true)  String inputTableName, @Nam
  * The building direction distribution is calculated according to the length of the building SMBR sides (width and length).
  * Note that the distribution has an "angle_range_size" interval that has to be defined by the user (default 15).
  *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
  * @param buildingTableName the name of the input ITable where are stored the geometry field, the building and the block/RSU ID
  * @param tableUp the name of the table where are stored all objects of the upper scale (usually RSU or block)
  * @param inputIdUp the ID of the upper scale
@@ -258,8 +276,6 @@ Map geometryProperties(@NamedParam(required = true)  String inputTableName, @Nam
  *      --> "uniqueness": the weight of the first main direction is divided by
  *                      "the weight of the second main direction + the weight of the first main direction"
  * @param prefixName String use as prefix to name the output table
- * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
- * the resulting database will be stored
  *
  * Reference:
  * -> Perkins, S. E., Pitman, A. J., Holbrook, N. J., & McAneney, J. (2007). Evaluation of the AR4 climate models’
@@ -269,11 +285,15 @@ Map geometryProperties(@NamedParam(required = true)  String inputTableName, @Nam
  * @return A database table name.
  * @author Jérémy Bernard
  */
-@NamedVariant
-Map buildingDirectionDistribution(@NamedParam(required = true)  String buildingTableName, @NamedParam(required = true)  String tableUp,
-                                  @NamedParam(required = true)  String inputIdUp, @NamedParam angleRangeSize= 15,
-                                  @NamedParam prefixName="",@NamedParam  def distribIndicator= ["equality", "uniqueness"],
-                                  @NamedParam(required = true)  JdbcDataSource datasource){
+IProcess buildingDirectionDistribution() {
+    return create {
+        title "Perkins skill score building direction"
+        id "buildingDirectionDistribution"
+        inputs buildingTableName: String, tableUp: String, inputIdUp: String, angleRangeSize: 15, prefixName: String,
+                datasource: JdbcDataSource, distribIndicator: ["equality", "uniqueness"]
+        outputs outputTableName: String
+        run { buildingTableName, tableUp, inputIdUp, angleRangeSize, prefixName, datasource, distribIndicator ->
+
             def GEOMETRIC_FIELD = "the_geom"
             def ID_FIELD_BU = "id_build"
             def INEQUALITY = "BUILDING_DIRECTION_EQUALITY"
@@ -303,7 +323,7 @@ Map buildingDirectionDistribution(@NamedParam(required = true)  String buildingT
                 datasource."$buildingTableName".id_build.createIndex()
 
                 // The length and direction of the smallest and the longest sides of the Minimum rectangle are calculated
-                datasource "CREATE INDEX IF NOT EXISTS id_bua ON $build_min_rec ($ID_FIELD_BU);" +
+                datasource "CREATE INDEX IF NOT EXISTS id_bua ON $build_min_rec USING BTREE($ID_FIELD_BU);" +
                         "DROP TABLE IF EXISTS $build_dir360; CREATE TABLE $build_dir360 AS " +
                         "SELECT a.$inputIdUp, ST_LENGTH(a.the_geom) AS LEN_L, " +
                         "ST_AREA(b.the_geom)/ST_LENGTH(a.the_geom) AS LEN_H, " +
@@ -332,11 +352,17 @@ Map buildingDirectionDistribution(@NamedParam(required = true)  String buildingT
                 datasource sqlQueryDist
 
                 // The main building direction and indicators characterizing the distribution are calculated
-                def computeDistribChar = distributionCharacterization(build_dir_dist,tableUp,
-                                   inputIdUp, distribIndicator, "GREATEST",prefixName, datasource)
-                def resultsDistrib = computeDistribChar.outputTableName
+                def computeDistribChar = distributionCharacterization()
+                computeDistribChar([distribTableName: build_dir_dist,
+                                    initialTable    : tableUp,
+                                    inputId         : inputIdUp,
+                                    distribIndicator: distribIndicator,
+                                    extremum        : "GREATEST",
+                                    prefixName      : prefixName,
+                                    datasource      : datasource])
+                def resultsDistrib = computeDistribChar.results.outputTableName
 
-                // Rename the standard indicators into names consistent with the current function (building direction...)
+                // Rename the standard indicators into names consistent with the current IProcess (building direction...)
                 datasource """DROP TABLE IF EXISTS $outputTableName;
                                     ALTER TABLE $resultsDistrib RENAME TO $outputTableName;
                                     ALTER TABLE $outputTableName RENAME COLUMN EXTREMUM_COL TO $BASENAME;
@@ -354,8 +380,8 @@ Map buildingDirectionDistribution(@NamedParam(required = true)  String buildingT
                     sqlQueryUnique += "$inputIdUp, $col AS SURF FROM $build_dir_dist UNION ALL SELECT "
                 }
                 sqlQueryUnique += """$inputIdUp, ${columnNames[-1]} AS SURF FROM $build_dir_dist;
-                                    CREATE INDEX ON $build_dir_bdd ($inputIdUp);
-                                    CREATE INDEX ON $build_dir_bdd (SURF);"""
+                                    CREATE INDEX ON $build_dir_bdd USING BTREE($inputIdUp);
+                                    CREATE INDEX ON $build_dir_bdd USING BTREE(SURF);"""
                 datasource sqlQueryUnique
 
                 def sqlQueryLast = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
@@ -381,7 +407,10 @@ Map buildingDirectionDistribution(@NamedParam(required = true)  String buildingT
                 // The temporary tables are deleted
                 datasource "DROP TABLE IF EXISTS $build_min_rec, $build_dir360, $build_dir180, " +
                         "$build_dir_dist;"
-                return  [outputTableName: outputTableName]
+
+                [outputTableName: outputTableName]
+            }
+        }
     }
 }
 
@@ -393,6 +422,8 @@ Map buildingDirectionDistribution(@NamedParam(required = true)  String buildingT
  * - an indicator of uniqueness: the weight of the greatest (or the lowest) class is divided by
  * "the weight of the second greatest (or lowest) class + the weight of the greatest (or the lowest) class"
  *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
  * @param distribTableName the name of the input ITable where are stored an ID of the geometry to consider and each column
  * of the distribution to characterize
  * @param initialTable the name of the input ITable where are stored all the objects where the informations of
@@ -409,8 +440,6 @@ Map buildingDirectionDistribution(@NamedParam(required = true)  String buildingT
  * @param keep2ndCol Whether or not the 2nd extremum value should be conserved (default False)
  * @param keepColVal Whether or not the value of the extremum col should be conserved (default False)
  * @param prefixName String use as prefix to name the output table
- * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
- * the resulting database will be stored
  *
  * Reference:
  * -> Perkins, S. E., Pitman, A. J., Holbrook, N. J., & McAneney, J. (2007). Evaluation of the AR4 climate models’
@@ -420,13 +449,16 @@ Map buildingDirectionDistribution(@NamedParam(required = true)  String buildingT
  * @return A database table name.
  * @author Jérémy Bernard
  */
-@NamedVariant
-Map distributionCharacterization(
-        @NamedParam(required = true)  String distribTableName, @NamedParam(required = true)  String initialTable,
-        @NamedParam(required = true)  String inputId, @NamedParam prefixName="",
-        @NamedParam def distribIndicato= ["equality", "uniqueness"], @NamedParam String extremum= "GREATEST",
-        @NamedParam keep2ndCol= false, @NamedParam keepColVal= false,
-        @NamedParam(required = true)  JdbcDataSource datasource){
+IProcess distributionCharacterization() {
+    return create {
+        title "Distribution characterization"
+        id "distributionCharacterization"
+        inputs distribTableName: String, initialTable: String, inputId: String, prefixName: String,
+                datasource: JdbcDataSource, distribIndicator: ["equality", "uniqueness"], extremum: "GREATEST",
+                keep2ndCol: false, keepColVal: false
+        outputs outputTableName: String
+        run { distribTableName, initialTable, inputId, prefixName, datasource, distribIndicator, extremum, keep2ndCol, keepColVal ->
+
             def EQUALITY = "EQUALITY_VALUE"
             def UNIQUENESS = "UNIQUENESS_VALUE"
             def EXTREMUM_COL = "EXTREMUM_COL"
@@ -612,10 +644,12 @@ Map distributionCharacterization(
 
                 datasource.execute """DROP TABLE IF EXISTS $outputTableMissingSomeObjects"""
 
-                return [outputTableName: outputTableName]
+                [outputTableName: outputTableName]
             } else {
                 error """The 'extremum' input parameter should be equal to "GREATEST" or "LEAST"""
             }
+        }
+    }
 }
 
 /**
@@ -650,7 +684,7 @@ static Double getEquality(def myMap, def nbDistCol) {
 /**
  * This process is used to compute the area proportion of a certain type within a given object (e.g. a proportion
  * of industrial buildings within all buildings of a RSU). Note that for surface fractions within a given surface
- * you should use the surfaceFractions function.
+ * you should use the surfaceFractions IProcess.
  *
  * @param inputTableName the table name where are stored the objects having different types to characterize
  * @param idField ID of the scale used for the 'GROUP BY'
@@ -662,21 +696,23 @@ static Double getEquality(def myMap, def nbDistCol) {
  * @param floorAreaTypeAndComposition (ONLY FOR BUILDING OBJECTS) Types that should be calculated and objects included in this type
  * (e.g. for building table could be: ["residential": ["residential", "detached"]])
  * @param prefixName String use as prefix to name the output table
- * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
- * the resulting database will be stored
  *
  * @return A database table name.
  *
  * @author Jérémy Bernard
  */
-@NamedVariant
-Map typeProportion(@NamedParam(required = true) String inputTableName,
-                   @NamedParam(required = true)  String idField,
-                   @NamedParam(required = true)  String inputUpperTableName,
-                   @NamedParam def floorAreaTypeAndComposition= [:],
-                   @NamedParam String typeFieldName, def areaTypeAndComposition= [:],
-                   @NamedParam prefixName="",
-                   @NamedParam(required = true)  JdbcDataSource datasource){
+IProcess typeProportion() {
+    return create {
+        title "Proportion of a certain type within a given object"
+        id "typeProportion"
+        inputs inputTableName: String, idField: String          , inputUpperTableName: String,
+                floorAreaTypeAndComposition: [:],
+                typeFieldName: String, areaTypeAndComposition: [:], prefixName: String,
+                datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { inputTableName, idField, inputUpperTableName, floorAreaTypeAndComposition, typeFieldName, areaTypeAndComposition,
+              prefixName, datasource ->
+
             def GEOMETRIC_FIELD_LOW = "the_geom"
             def BASE_NAME = "type_proportion"
             def NB_LEV = "nb_lev"
@@ -747,12 +783,14 @@ Map typeProportion(@NamedParam(required = true) String inputTableName,
 
                 datasource.execute """DROP TABLE IF EXISTS $outputTableWithNull"""
 
-                return  [outputTableName: outputTableName]
+                [outputTableName: outputTableName]
             }
             else{
                 error "'floorAreaTypeAndComposition' or 'areaTypeAndComposition' arguments should be a Map " +
                         "with at least one combination key-value"
             }
+        }
+    }
 }
 
 
@@ -764,7 +802,7 @@ Map typeProportion(@NamedParam(required = true) String inputTableName,
  * @param blockTable the block table name (default "")
  * @param rsuTable the rsu table name
  * @param targetedScale The scale of the resulting table (either "RSU" or "BUILDING", default "RSU")
- * @param operationsToApply Operations (using 'unweightedOperationFromLowerScale' function) to apply
+ * @param operationsToApply Operations (using 'unweightedOperationFromLowerScale' IProcess) to apply
  * to building and block in case 'targetedScale'="RSU" (default ["AVG", "STD"])
  * @param areaTypeAndComposition Types that should be calculated and objects included in this type
  * (e.g. for building table could be: ["residential": ["residential", "detached"]])
@@ -772,19 +810,22 @@ Map typeProportion(@NamedParam(required = true) String inputTableName,
  * (e.g. for building table could be: ["residential": ["residential", "detached"]])
  * @param prefixName String use as prefix to name the output table
  * @param removeNull If true, remove buildings having no RSU value (null value for id_rsu) (default true)
- * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
- * the resulting database will be stored
  *
  * @return A database table name.
  *
  * @author Jérémy Bernard
  */
-Map gatherScales(@NamedParam(required = true)  String buildingTable, @NamedParam(required = true)  String blockTable= "",
-                 @NamedParam(required = true)  String rsuTable, @NamedParam String targetedScale= "RSU",
-                 @NamedParam def operationsToApply= ["AVG", "STD"],
-                 @NamedParam prefixName="",
-                 @NamedParam removeNull= true,
-                 @NamedParam(required = true)  JdbcDataSource datasource){
+IProcess gatherScales() {
+    return create {
+        title "Proportion of a certain type within a given object"
+        id "typeProportion"
+        inputs buildingTable: String, blockTable: "", rsuTable: String,
+                targetedScale: "RSU", operationsToApply: ["AVG", "STD"], prefixName: String,
+                datasource: JdbcDataSource, removeNull: true
+        outputs outputTableName: String
+        run { buildingTable, blockTable, rsuTable, targetedScale, operationsToApply,
+              prefixName, datasource, removeNull ->
+
             // List of columns to remove from the analysis in building and block tables
             def BLOCK_COL_TO_REMOVE = ["THE_GEOM", "ID_RSU", "ID_BLOCK", "MAIN_BUILDING_DIRECTION"]
             def BUILD_COL_TO_REMOVE = ["THE_GEOM", "ID_RSU", "ID_BUILD", "ID_BLOCK", "ID_ZONE" , "NB_LEV", "ZINDEX", "MAIN_USE", "TYPE", "ID_SOURCE"]
@@ -934,10 +975,12 @@ Map gatherScales(@NamedParam(required = true)  String buildingTable, @NamedParam
                                 FROM $scale1ScaleFin a LEFT JOIN $blockIndicFinalScale b
                                 ON a.$idBlockForMerge = b.$idBlockForMerge;"""
 
-                return  [outputTableName: outputTableName]
+                [outputTableName: outputTableName]
             } else {
                 error """ The 'targetedScale' parameter should either be 'RSU' or 'BUILDING' """
             }
+        }
+    }
 }
 
 /**
@@ -952,20 +995,19 @@ Map gatherScales(@NamedParam(required = true)  String buildingTable, @NamedParam
  * @param prefixName String used as prefix to name the output table
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  *        the resulting database will be stored
- * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
- * the resulting database will be stored
- *
  * @return A database table name.
  *
  * @author Emmanuel Renault, CNRS, 2020
  * @author Erwan Bocher, CNRS, 2020
  */
-@NamedVariant
-Map upperScaleAreaStatistics(@NamedParam(required = true) String upperTableName, @NamedParam(required = true)  String upperColumnId,
-                             @NamedParam(required = true)  String lowerTableName, @NamedParam(required = true)  String lowerColumnName,
-                             @NamedParam prefixName="",
-                             @NamedParam keepGeometry  = true,
-                             @NamedParam(required = true) JdbcDataSource datasource ){
+IProcess upperScaleAreaStatistics() {
+    return create {
+        title "Statistics on gridded area for a given indicator"
+        id "upperScaleStatisticArea"
+        inputs upperTableName: String, upperColumnId: String, lowerTableName: String, lowerColumnName: String,
+                prefixName: String, datasource: JdbcDataSource, keepGeometry : true
+        outputs outputTableName: String
+        run { upperTableName, upperColumnId, lowerTableName, lowerColumnName, prefixName, datasource, keepGeometry ->
             ISpatialTable upperTable = datasource.getSpatialTable(upperTableName)
             def upperGeometryColumn = upperTable.getGeometricColumns().first()
             if(!upperGeometryColumn) {
@@ -1083,5 +1125,7 @@ Map upperScaleAreaStatistics(@NamedParam(required = true) String upperTableName,
             // Drop intermediate tables created during process
             datasource.execute("DROP TABLE IF EXISTS $spatialJoinTable, $pivotTable;")
             debug "The zonal area table have been created"
-            return  [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
         }
+    }
+}

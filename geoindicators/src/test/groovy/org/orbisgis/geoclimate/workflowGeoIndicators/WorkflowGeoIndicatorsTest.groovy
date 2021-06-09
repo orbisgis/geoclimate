@@ -1,4 +1,4 @@
-package org.orbisgis.geoclimate.geoindicatorsChain
+package org.orbisgis.geoclimate.workflowGeoIndicators
 
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -10,11 +10,12 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 
-class GeoIndicatorsChainTest {
+class WorkflowGeoIndicatorsTest {
 
-    public static Logger logger = LoggerFactory.getLogger(GeoIndicatorsChainTest.class)
+    public static Logger logger = LoggerFactory.getLogger(WorkflowGeoIndicatorsTest.class)
 
     // Indicator list (at RSU scale) for each type of use
     public static listNames = [
@@ -56,7 +57,7 @@ class GeoIndicatorsChainTest {
             "LCZ"           : ["BUILDING_FRACTION_LCZ", "ASPECT_RATIO", "GROUND_SKY_VIEW_FACTOR", "PERVIOUS_FRACTION_LCZ",
                                "IMPERVIOUS_FRACTION_LCZ", "GEOM_AVG_HEIGHT_ROOF", "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH", "EFFECTIVE_TERRAIN_ROUGHNESS_CLASS",
                                "HIGH_VEGETATION_FRACTION_LCZ", "LOW_VEGETATION_FRACTION_LCZ", "WATER_FRACTION_LCZ", "AREA_FRACTION_LIGHT_INDUSTRY",
-                                "FLOOR_AREA_FRACTION_RESIDENTIAL"]]
+                               "FLOOR_AREA_FRACTION_RESIDENTIAL"]]
 
     // Basic columns at RSU scale
     public static listColBasic = ["ID_RSU", "THE_GEOM"]
@@ -81,33 +82,33 @@ class GeoIndicatorsChainTest {
                     "BUILDING_DIRECTION_UNIQUENESS", "BUILDING_DIRECTION_EQUALITY", "CLOSINGNESS", "NET_COMPACTNESS",
                     "AVG_HEIGHT_ROOF_AREA_WEIGHTED", "STD_HEIGHT_ROOF_AREA_WEIGHTED"]]
 
-
-    static  H2GIS datasource
-    static def inputTableNames
-
+    public static  H2GIS datasource
+    public static def inputTableNames
     @BeforeAll
-    static  void loadDb(){
-        File directory = new File("./target/geoindicators_chain_test")
-        datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
-        datasource.load(GeoIndicatorsChainTest.class.getResource("BUILDING.geojson"), "BUILDING", true)
-        datasource.load(GeoIndicatorsChainTest.class.getResource("ROAD.geojson"), "ROAD", true)
-        datasource.load(GeoIndicatorsChainTest.class.getResource("RAIL.geojson"), "RAIL", true)
-        datasource.load(GeoIndicatorsChainTest.class.getResource("VEGET.geojson"), "VEGET", true)
-        datasource.load(GeoIndicatorsChainTest.class.getResource("HYDRO.geojson"), "HYDRO", true)
-        datasource.load(GeoIndicatorsChainTest.class.getResource("ZONE.geojson"), "ZONE", true)
-        inputTableNames =  [zoneTable: "ZONE", buildingTable: "BUILDING", roadTable: "ROAD",
+    static void beforeAll(){
+        File directory = new File("./target/geoindicators_workflow")
+        datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_workflow_db;AUTO_SERVER=TRUE")
+        assertNotNull(datasource)
+        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("BUILDING.geojson"), "BUILDING", true)
+        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ROAD.geojson"), "ROAD", true)
+        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("RAIL.geojson"), "RAIL", true)
+        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("VEGET.geojson"), "VEGET", true)
+        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("HYDRO.geojson"), "HYDRO", true)
+        inputTableNames= [zoneTable: "ZONE", buildingTable: "BUILDING", roadTable: "ROAD",
                 railTable: "RAIL", vegetationTable: "VEGET", hydrographicTable: "HYDRO"]
     }
 
+
     @Test
     void GeoIndicatorsTest1() {
+        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
         boolean svfSimplified = false
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                             "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
         def ind_i = ["LCZ", "URBAN_TYPOLOGY", "TEB"]
-        IProcess GeoIndicatorsCompute_i = Geoindicators.GeoIndicatorsChain.computeAllGeoIndicators()
+        IProcess GeoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
@@ -150,7 +151,7 @@ class GeoIndicatorsChainTest {
 
     @Test
     void GeoIndicatorsTest2() {
-        datasource.load(GeoIndicatorsChainTest.class.getResource("ZONE.geojson"), "ZONE", true)
+        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
         boolean svfSimplified = false
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
@@ -159,7 +160,7 @@ class GeoIndicatorsChainTest {
 
         def ind_i = ["URBAN_TYPOLOGY"]
         def modelPath = "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_0.model"
-        IProcess GeoIndicatorsCompute_i = Geoindicators.GeoIndicatorsChain.computeAllGeoIndicators()
+        IProcess GeoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
@@ -225,7 +226,7 @@ class GeoIndicatorsChainTest {
 
     @Test
     void GeoIndicatorsTest3() {
-        datasource.load(GeoIndicatorsChainTest.class.getResource("ZONE.geojson"), "ZONE", true)
+        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
         boolean svfSimplified = false
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
@@ -234,7 +235,7 @@ class GeoIndicatorsChainTest {
 
         def ind_i = ["URBAN_TYPOLOGY", "TEB"]
 
-        IProcess GeoIndicatorsCompute_i = Geoindicators.GeoIndicatorsChain.computeAllGeoIndicators()
+        IProcess GeoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
@@ -268,7 +269,7 @@ class GeoIndicatorsChainTest {
 
     @Test
     void GeoIndicatorsTest4() {
-        datasource.load(GeoIndicatorsChainTest.class.getResource("ZONE.geojson"), "ZONE", true)
+        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
         boolean svfSimplified = false
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
@@ -277,7 +278,7 @@ class GeoIndicatorsChainTest {
 
         def ind_i = ["TEB"]
 
-        IProcess GeoIndicatorsCompute_i = Geoindicators.GeoIndicatorsChain.computeAllGeoIndicators()
+        IProcess GeoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
@@ -311,7 +312,7 @@ class GeoIndicatorsChainTest {
 
     @Test
     void GeoIndicatorsTest5() {
-        datasource.load(GeoIndicatorsChainTest.class.getResource("ZONE.geojson"), "ZONE", true)
+        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
         boolean svfSimplified = false
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
@@ -320,7 +321,7 @@ class GeoIndicatorsChainTest {
 
         def ind_i = ["LCZ", "TEB"]
 
-        IProcess GeoIndicatorsCompute_i = Geoindicators.GeoIndicatorsChain.computeAllGeoIndicators()
+        IProcess GeoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
@@ -354,7 +355,7 @@ class GeoIndicatorsChainTest {
 
     @Test
     void GeoIndicatorsTest6() {
-        datasource.load(GeoIndicatorsChainTest.class.getResource("ZONE.geojson"), "ZONE", true)
+        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
         boolean svfSimplified = false
         def prefixName = ""
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
@@ -363,7 +364,7 @@ class GeoIndicatorsChainTest {
 
         def ind_i = ["URBAN_TYPOLOGY", "LCZ"]
 
-        IProcess GeoIndicatorsCompute_i = Geoindicators.GeoIndicatorsChain.computeAllGeoIndicators()
+        IProcess GeoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
@@ -397,12 +398,12 @@ class GeoIndicatorsChainTest {
 
     @Test
     void GeoIndicatorsTest7() {
-        datasource.load(GeoIndicatorsChainTest.class.getResource("ZONE.geojson"), "ZONE", true)
+        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
         boolean svfSimplified = true
         def prefixName = ""
         def ind_i = ["LCZ"]
 
-        IProcess GeoIndicatorsCompute_i = Geoindicators.GeoIndicatorsChain.computeAllGeoIndicators()
+        IProcess GeoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
                 railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
@@ -442,11 +443,11 @@ class GeoIndicatorsChainTest {
         assertEquals(12, countResult.count)
 
         //Check high_vegetation_water_fraction > 0
-         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_water_fraction>0".toString())
+        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_water_fraction>0".toString())
         assertEquals(0, countResult.count)
 
         //Check high_vegetation_building_fraction > 0
-         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_building_fraction>0".toString())
+        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_building_fraction>0".toString())
         assertEquals(1, countResult.count)
 
         //Check high_vegetation_low_vegetation_fraction > 0

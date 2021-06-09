@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test
 import org.orbisgis.geoclimate.Geoindicators
 
 import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS.open
 
 class BlockIndicatorsTests {
@@ -31,10 +30,13 @@ class BlockIndicatorsTests {
                 DROP TABLE IF EXISTS tempo_block; 
                 CREATE TABLE tempo_block AS SELECT * FROM block_test WHERE id_block = 6
         """
-        assertNotNull Geoindicators.BlockIndicators.holeAreaDensity(
-                 "tempo_block",
-                "test",
-                h2GIS)
+
+        def p = Geoindicators.BlockIndicators.holeAreaDensity()
+        assert p([
+                blockTable : "tempo_block",
+                prefixName : "test",
+                datasource : h2GIS])
+
         def sum = 0
         h2GIS.eachRow("SELECT * FROM test_block_hole_area_density"){sum += it.hole_area_density}
         assertEquals 3.0/47, sum, 0.00001
@@ -48,11 +50,12 @@ class BlockIndicatorsTests {
                 CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 8
         """
 
-        assertNotNull Geoindicators.BuildingIndicators.sizeProperties(
-                "tempo_build",
-                ["volume"],
-                "test",
-                h2GIS)
+        def p = Geoindicators.BuildingIndicators.sizeProperties()
+        assert p([
+                inputBuildingTableName  : "tempo_build",
+                operations              : ["volume"],
+                prefixName              : "test",
+                datasource              : h2GIS])
 
         // The indicators are gathered in a same table
         h2GIS """
@@ -63,8 +66,14 @@ class BlockIndicatorsTests {
                     LEFT JOIN test_building_size_properties b 
                     ON a.id_build = b.id_build
         """
-        assertNotNull Geoindicators.BlockIndicators.netCompactness(
-                 "tempo_build2", "volume", "contiguity", "test", h2GIS)
+
+        p = Geoindicators.BlockIndicators.netCompactness()
+        assert p([
+                buildTable              : "tempo_build2",
+                buildingVolumeField     : "volume",
+                buildingContiguityField : "contiguity",
+                prefixName              : "test",
+                datasource              : h2GIS])
         def sum = 0
         h2GIS.eachRow("SELECT * FROM test_block_net_compactness WHERE id_block = 4") {sum += it.net_compactness}
         assertEquals 0.51195, sum, 0.00001
@@ -79,9 +88,12 @@ class BlockIndicatorsTests {
                 CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_block = 8
         """
 
-        assertNotNull Geoindicators.BlockIndicators.closingness(
-                "tempo_build", "tempo_block",
-                 "test", h2GIS)
+        def p = Geoindicators.BlockIndicators.closingness()
+        p([
+                correlationTableName    : "tempo_build",
+                blockTable              : "tempo_block",
+                prefixName              : "test",
+                datasource              : h2GIS])
         def sum = 0
         h2GIS.eachRow("SELECT * FROM test_block_closingness") {sum += it.closingness}
         assert 450 == sum

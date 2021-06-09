@@ -1,16 +1,19 @@
-package org.orbisgis.orbisprocess.geoclimate.osm
-
+package org.orbisgis.geoclimate.osm
 
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import org.slf4j.LoggerFactory
 
 /**
- * OSM utils
+ * Main class to access to the OSM processes
  *
  */
-abstract class OSM_Utils extends GroovyProcessFactory {
+abstract class OSM  extends GroovyProcessFactory {
 
-    public static def logger = LoggerFactory.getLogger(OSM_Utils.class)
+    public static def logger = LoggerFactory.getLogger(OSM.class)
+
+    public static WorkflowOSM = new WorkflowOSM()
+    public static InputDataLoading = new InputDataLoading()
+    public static InputDataFormatting = new InputDataFormatting()
 
     static def uuid = { UUID.randomUUID().toString().replaceAll("-", "_") }
     static def getUuid() { UUID.randomUUID().toString().replaceAll("-", "_") }

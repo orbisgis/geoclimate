@@ -1,8 +1,6 @@
 package org.orbisgis.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
-import groovy.transform.NamedParam
-import groovy.transform.NamedVariant
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.orbisdata.datamanager.jdbc.*
 import org.orbisgis.orbisdata.processmanager.api.IProcess
@@ -15,23 +13,27 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
  * @param  inputTableNamesWithId list of table names with a identifier column name
  * @param prefixName for the output table
  * @param datasource connection to the database
- * @param prefixWithTabName true to prefix the table
- *
- * @author Jérémy Bernard
- * @author Erwan Bocher
  *
  * @return
  */
-@NamedVariant
-Map joinTables(@NamedParam(required = true)  Map inputTableNamesWithId, @NamedParam(required = true)  String outputTableName,
-               @NamedParam(required = true)  JdbcDataSource datasource, @NamedParam prefixWithTabName = false){
+IProcess joinTables() {
+    create {
+        title "Utility process to join tables in one"
+        id "joinTables"
+        inputs inputTableNamesWithId: Map, outputTableName: String, datasource: JdbcDataSource,
+                prefixWithTabName: false
+        outputs outputTableName: String
+        run { inputTableNamesWithId, outputTableName, datasource, prefixWithTabName ->
+
             debug "Executing Utility process to join tables in one"
 
             def columnKey
             def alias = "a"
             def leftQuery = ""
             def indexes = ""
+
             def columns = []
+
             inputTableNamesWithId.each { key, value ->
                 //Reload cache to be sure that the table is up to date
                 datasource."$key".reload()
@@ -60,7 +62,7 @@ Map joinTables(@NamedParam(required = true)  Map inputTableNamesWithId, @NamedPa
                     }
                     leftQuery += " LEFT JOIN $key as $alias ON $alias.$value = $columnKey "
                 }
-                indexes += "CREATE INDEX IF NOT EXISTS ${key}_ids ON $key ($value);"
+                indexes += "CREATE INDEX IF NOT EXISTS ${key}_ids ON $key USING BTREE($value);"
                 alias++
             }
 
@@ -69,7 +71,10 @@ Map joinTables(@NamedParam(required = true)  Map inputTableNamesWithId, @NamedPa
             datasource "DROP TABLE IF EXISTS $outputTableName"
             datasource indexes
             datasource "CREATE TABLE $outputTableName AS SELECT $columnsAsString $leftQuery"
-            return [outputTableName: outputTableName]
+
+            [outputTableName: outputTableName]
+        }
+    }
 }
 
 /**
@@ -80,14 +85,16 @@ Map joinTables(@NamedParam(required = true)  Map inputTableNamesWithId, @NamedPa
  * @param directory folder to save the tables
  * @param datasource connection to the database
  *
- * @author Jérémy Bernard
- * @author Erwan Bocher
  * @return
  */
-@NamedVariant
-Map saveTablesAsFiles(@NamedParam(required = true)  def inputTableNames, @NamedParam delete=false,
-                      @NamedParam(required = true)  String directory,@NamedParam(required = true)  JdbcDataSource datasource){
-            if (!directory) {
+IProcess saveTablesAsFiles() {
+    return create {
+        title "Utility process to save tables in geojson or csv files"
+        id "saveTablesAsFiles"
+        inputs inputTableNames: String[], delete: false,directory: String, datasource: JdbcDataSource
+        outputs directory: String
+        run { inputTableNames, delete, directory, datasource ->
+            if (directory == null) {
                 error "The directory to save the data cannot be null"
                 return
             }
@@ -111,5 +118,7 @@ Map saveTablesAsFiles(@NamedParam(required = true)  def inputTableNames, @NamedP
                     }
                 }
             }
-            return  [directory: directory]
+            [directory: directory]
+        }
+    }
 }

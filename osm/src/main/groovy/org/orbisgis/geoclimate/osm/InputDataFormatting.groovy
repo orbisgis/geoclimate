@@ -1,4 +1,4 @@
-package org.orbisgis.orbisprocess.geoclimate.osm
+package org.orbisgis.geoclimate.osm
 
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
@@ -10,7 +10,7 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
 
 import java.util.regex.Pattern
 
-@BaseScript OSM_Utils osm_utils
+@BaseScript OSM OSM
 
 /**
  * This process is used to format the OSM buildings table into a table that matches the constraints

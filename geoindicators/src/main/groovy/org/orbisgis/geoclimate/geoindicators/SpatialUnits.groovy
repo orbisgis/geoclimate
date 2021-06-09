@@ -1,8 +1,6 @@
 package org.orbisgis.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
-import groovy.transform.NamedParam
-import groovy.transform.NamedVariant
 import org.h2.value.ValueGeometry
 import org.h2gis.functions.spatial.create.ST_MakeGrid
 import org.locationtech.jts.geom.Geometry
@@ -32,17 +30,19 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
  * @param area RSU less or equals than area are removed
  * @return A database table name and the name of the column ID
  */
-@NamedVariant
-Map createRSU(@NamedParam(required = true) String  inputTableName,
-              @NamedParam inputZoneTableName = "",
-              @NamedParam prefixName = "",
-              @NamedParam double  area = 1d,
-              @NamedParam(required = true)  JdbcDataSource datasource){
-              def COLUMN_ID_NAME = "id_rsu"
-             def BASE_NAME = "rsu"
+IProcess createRSU() {
+    return create {
+        title "Create reference spatial units (RSU)"
+        id "createRSU"
+        inputs inputTableName: String, inputZoneTableName: "", prefixName: "", datasource: JdbcDataSource, area: 1d
+        outputs outputTableName: String, outputIdRsu: String
+        run { inputTableName, inputZoneTableName, prefixName, datasource, area ->
 
-              debug "Creating the reference spatial units"
-              // The name of the outputTableName is constructed
+            def COLUMN_ID_NAME = "id_rsu"
+            def BASE_NAME = "rsu"
+
+            debug "Creating the reference spatial units"
+            // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
 
             if(!inputTableName){
@@ -81,7 +81,9 @@ Map createRSU(@NamedParam(required = true) String  inputTableName,
 
             debug "Reference spatial units table created"
 
-           return  [outputTableName: outputTableName, outputIdRsu: COLUMN_ID_NAME]
+            [outputTableName: outputTableName, outputIdRsu: COLUMN_ID_NAME]
+        }
+    }
 }
 
 /**
@@ -102,17 +104,16 @@ Map createRSU(@NamedParam(required = true) String  inputTableName,
  * @param outputTableName The name of the output table
  * @return A database table name.
  */
-@NamedVariant
-Map prepareRSUData(@NamedParam zoneTable= "",
-                   @NamedParam roadTable = "",
-                   @NamedParam railTable = "",
-                   @NamedParam vegetationTable = "",
-                   @NamedParam hydrographicTable= "",
-                   @NamedParam seaLandMaskTableName = "",
-                   @NamedParam double surface_vegetation = 10000,
-                   @NamedParam double  surface_hydro=  2500,
-                   @NamedParam prefixName= "unified_abstract_model",
-                   @NamedParam(required = true) JdbcDataSource datasource){
+IProcess prepareRSUData() {
+    return create {
+        title "Prepare the abstract model to build the RSU"
+        id "prepareRSUData"
+        inputs zoneTable: "", roadTable: "", railTable: "",
+                vegetationTable: "", hydrographicTable: "", seaLandMaskTableName :"", surface_vegetation: 10000,
+                surface_hydro: 2500, prefixName: "unified_abstract_model", datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { zoneTable, roadTable, railTable, vegetationTable, hydrographicTable, seaLandMaskTableName, surface_vegetation,
+              surface_hydrographic, prefixName, datasource ->
 
             def BASE_NAME = "prepared_rsu_data"
 
@@ -269,7 +270,9 @@ Map prepareRSUData(@NamedParam zoneTable= "",
                 error "Cannot compute the RSU. The input zone table must have one row."
                 outputTableName = null
             }
-            return  [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+        }
+    }
 }
 
 /**
@@ -283,11 +286,13 @@ Map prepareRSUData(@NamedParam zoneTable= "",
  * @param outputTableName The name of the output table
  * @return A database table name and the name of the column ID
  */
-@NamedVariant
-Map createBlocks(@NamedParam(required = true) String inputTableName,
-                 @NamedParam  double snappingTolerance= 0.0d,
-                 @NamedParam prefixName= "block",
-                 @NamedParam(required = true) JdbcDataSource datasource){
+IProcess createBlocks() {
+    return create {
+        title "Merge the geometries that touch each other"
+        id "createBlocks"
+        inputs inputTableName: String, snappingTolerance: 0.0d, prefixName: "block", datasource: JdbcDataSource
+        outputs outputTableName: String, outputIdBlock: String
+        run { inputTableName, snappingTolerance, prefixName, JdbcDataSource datasource ->
 
             def BASE_NAME = "blocks"
 
@@ -360,7 +365,9 @@ Map createBlocks(@NamedParam(required = true) String inputTableName,
                     "$subGraphBlocks, ${subGraphBlocks + "_NODE_CC"};"
 
             debug "The blocks have been created"
-            return  [outputTableName: outputTableName, outputIdBlock: columnIdName]
+            [outputTableName: outputTableName, outputIdBlock: columnIdName]
+        }
+    }
 }
 
 /**
@@ -385,14 +392,17 @@ Map createBlocks(@NamedParam(required = true) String inputTableName,
  * @return outputTableName A table name containing ID from table 1, ID from table 2 and AREA shared by the two objects (if pointOnSurface = false)
  * @return idColumnTarget The ID name of the target table
  */
-@NamedVariant
-Map spatialJoin(@NamedParam(required = true) String sourceTable,
-                @NamedParam(required = true) String targetTable,
-                @NamedParam(required = true) StringidColumnTarget,
-                @NamedParam prefixName="",
-                @NamedParam pointOnSurface= false,
-                @NamedParam(required = true) int nbRelations,
-                @NamedParam(required = true) JdbcDataSource datasource){
+IProcess spatialJoin() {
+    return create {
+        title "Creating the spatial join between two tables of polygons"
+        id "spatialJoin"
+        inputs sourceTable: String, targetTable: String,
+                idColumnTarget: String, prefixName: String, pointOnSurface: false, nbRelations: Integer,
+                datasource: JdbcDataSource
+        outputs outputTableName: String, idColumnTarget: String
+        run { sourceTable, targetTable, idColumnTarget, prefixName, pointOnSurface,
+              nbRelations, datasource ->
+
             def GEOMETRIC_COLUMN_SOURCE = "the_geom"
             def GEOMETRIC_COLUMN_TARGET = "the_geom"
 
@@ -411,7 +421,7 @@ Map spatialJoin(@NamedParam(required = true) String sourceTable,
                                         FROM $sourceTable a, $targetTable b 
                                         WHERE   ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_SOURCE) && b.$GEOMETRIC_COLUMN_TARGET AND 
                                                 ST_INTERSECTS(ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_SOURCE), b.$GEOMETRIC_COLUMN_TARGET)"""
-                }
+            }
             else {
                 if (nbRelations != null) {
                     datasource """  DROP TABLE IF EXISTS $outputTableName;
@@ -443,7 +453,9 @@ Map spatialJoin(@NamedParam(required = true) String sourceTable,
 
             debug "The spatial join have been performed between :  $sourceTable and $targetTable"
 
-            return [outputTableName: outputTableName, idColumnTarget: idColumnTarget]
+            [outputTableName: outputTableName, idColumnTarget: idColumnTarget]
+        }
+    }
 }
 
 /**
@@ -460,14 +472,14 @@ Map spatialJoin(@NamedParam(required = true) String sourceTable,
  *
  * @author Emmanuel Renault, CNRS, 2020
  * */
-@NamedVariant
-Map createGrid(@NamedParam(required = true) Geometry geometry,
-               @NamedParam(required = true) double  deltaX,
-               @NamedParam(required = true) double  deltaY,
-               @NamedParam rowCol = false,
-               @NamedParam prefixName= "",
-               @NamedParam(required = true) JdbcDataSource datasource){
-           if(rowCol){
+IProcess createGrid() {
+    return create {
+        title"Creating a regular grid in meter"
+        id "createGrid"
+        inputs geometry: Geometry, deltaX: double, deltaY: double, rowCol : false, prefixName: "", datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { geometry, deltaX, deltaY, rowCol, prefixName, datasource ->
+            if(rowCol){
                 if(!deltaX ||!deltaY || deltaX<1 || deltaY< 1){
                     debug "Invalid grid size padding. Must be greater or equal than 1"
                     return
@@ -533,5 +545,7 @@ Map createGrid(@NamedParam(required = true) Geometry geometry,
                 }
             }
             debug "The table $outputTableName has been created"
-            return  [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+        }
+    }
 }

@@ -1,8 +1,6 @@
 package org.orbisgis.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
-import groovy.transform.NamedParam
-import groovy.transform.NamedVariant
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.orbisdata.datamanager.jdbc.*
 import org.orbisgis.orbisdata.processmanager.api.IProcess
@@ -10,21 +8,26 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
 @BaseScript Geoindicators geoindicators
 
 
-/**@
+/**
  * This process calculates the ratio between the area of hole within a block and the area of the block.
  *
-
- * @param blockTable the name of the input ITable where are stored the block geometries
- * @param prefixName String use as prefix to name the output table
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
+ * @param blockTable the name of the input ITable where are stored the block geometries
+ * @param prefixName String use as prefix to name the output table
+ *
  * @return outputTableName Table name in which the block id and their corresponding indicator value are stored
  *
  * @author Jérémy Bernard
- * @author Erwan Bocher
  */
-@NamedVariant
-Map holeAreaDensity(@NamedParam(required = true)  String blockTable, @NamedParam prefixName="", @NamedParam(required = true)  JdbcDataSource datasource) {
+IProcess holeAreaDensity() {
+    return create {
+        title "Hole area ratio"
+        id "holeAreaDensity"
+        inputs blockTable: String, prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { blockTable, prefixName, datasource ->
+
             def GEOMETRIC_FIELD = "the_geom"
             def ID_COLUMN_BL = "id_block"
             def BASE_NAME = "hole_area_density"
@@ -40,14 +43,18 @@ Map holeAreaDensity(@NamedParam(required = true)  String blockTable, @NamedParam
                 SELECT $ID_COLUMN_BL, ST_AREA(ST_HOLES($GEOMETRIC_FIELD))/ST_AREA($GEOMETRIC_FIELD) AS $BASE_NAME 
                 FROM $blockTable
         """
+
             datasource query
-            return [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+        }
+    }
 }
 /**
  * The sum of the building free external area composing the block are divided by the sum of the building volume.
  * The sum of the building volume is calculated at the power 2/3 in order to have a ratio of homogeneous quantities (same unit)
  *
-
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
  * @param buildTable the name of the input ITable where are stored the "building_volume", the "building_contiguity",
  * the geometry field and the block id
  * @param correlationTableName the name of the input ITable where are stored the relationships between blocks and buildings
@@ -55,18 +62,20 @@ Map holeAreaDensity(@NamedParam(required = true)  String blockTable, @NamedParam
  * @param buildingContiguityField the name of the input field where are stored the "building_contiguity"
  * values within the "buildTable"
  * @param prefixName String use as prefix to name the output table
- * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
- * the resulting database will be stored
  *
  * @return outputTableName Table name in which the block id and their corresponding indicator value are stored
  *
  * @author Jérémy Bernard
- * @author Erwan Bocher
  */
-@NamedVariant
-Map netCompactness(@NamedParam(required = true) String buildTable, @NamedParam(required = true) String buildingVolumeField,
-                   @NamedParam(required = true) String buildingContiguityField,
-                @NamedParam prefixName ="", @NamedParam(required = true) JdbcDataSource datasource) {
+IProcess netCompactness() {
+    return create {
+        title "Block net compactness"
+        id "netCompactness"
+        inputs buildTable: String, buildingVolumeField: String, buildingContiguityField: String,
+                prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { buildTable, buildingVolumeField, buildingContiguityField, prefixName, datasource ->
+
             def GEOMETRY_FIELD_BU = "the_geom"
             def ID_COLUMN_BL = "id_block"
             def HEIGHT_WALL = "height_wall"
@@ -95,8 +104,11 @@ Map netCompactness(@NamedParam(required = true) String buildTable, @NamedParam(r
                 FROM $buildTable 
                 GROUP BY $ID_COLUMN_BL
         """
+
             datasource query
-            return [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+        }
+    }
 }
 
 
@@ -115,20 +127,23 @@ Map netCompactness(@NamedParam(required = true) String buildTable, @NamedParam(r
  * define a detailed description of buildings for urban climate and building energy consumption simulations."
  * Urban Climate 20 (2017): 75-93.
  *
-
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
  * @param blockTable the name of the input ITable where are stored the geometry field and the block ID
  * @param correlationTableName the name of the input ITable where are stored the relationships between blocks and buildings
  * @param prefixName String use as prefix to name the output table
- * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
- * the resulting database will be stored
  *
  * @return outputTableName Table name in which the block id and their corresponding indicator value are stored
  * @author Jérémy Bernard
- * @author Erwan Bocher
  */
-@NamedVariant
-Map closingness(@NamedParam(required = true)  String correlationTableName,
-                @NamedParam(required = true) String blockTable, @NamedParam prefixName="", @NamedParam(required = true) JdbcDataSource datasource){
+IProcess closingness() {
+    return create {
+        title "Closingness of a block"
+        id "closingness"
+        inputs correlationTableName: String, blockTable: String, prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { correlationTableName, blockTable, prefixName, datasource ->
+
             def GEOMETRY_FIELD_BU = "the_geom"
             def GEOMETRY_FIELD_BL = "the_geom"
             def ID_COLUMN_BL = "id_block"
@@ -155,5 +170,7 @@ Map closingness(@NamedParam(required = true)  String correlationTableName,
                 GROUP BY b.$ID_COLUMN_BL"""
 
             datasource query
-            return  [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+        }
+    }
 }

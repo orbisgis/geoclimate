@@ -1,17 +1,16 @@
-package org.orbisgis.geoclimate.bdtopo_v2
+package org.orbisgis.geoclimate.osm
 
+import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
-import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertTrue
 
-class ChainProcessAbstractTest {
+class WorkflowAbstractTest {
 
-    public static Logger logger = LoggerFactory.getLogger(ChainProcessAbstractTest.class)
+    public static Logger logger = LoggerFactory.getLogger(WorkflowAbstractTest.class)
 
     /**
      * A method to compute geomorphological indicators
@@ -31,7 +30,7 @@ class ChainProcessAbstractTest {
                            String hydrographicTableName, boolean saveResults, boolean svfSimplified = false, def indicatorUse,
                            String prefixName = "") {
         //Create spatial units and relations : building, block, rsu
-        IProcess spatialUnits = ProcessingChain.GeoIndicatorsChain.createUnitsOfAnalysis()
+        IProcess spatialUnits = Geoindicators.WorkflowGeoIndicators.createUnitsOfAnalysis()
         assertTrue spatialUnits.execute([datasource       : datasource, zoneTable: zoneTableName, buildingTable: buildingTableName,
                                          roadTable        : roadTableName, railTable: railTableName, vegetationTable: vegetationTableName,
                                          hydrographicTable: hydrographicTableName, surface_vegetation: 100000,
@@ -58,16 +57,17 @@ class ChainProcessAbstractTest {
         assertEquals(countRSU.count, maxRSUBlocks.max)
 
         //Compute building indicators
-        def computeBuildingsIndicators = ProcessingChain.GeoIndicatorsChain.computeBuildingsIndicators()
+        def computeBuildingsIndicators = Geoindicators.WorkflowGeoIndicators.computeBuildingsIndicators()
         assertTrue computeBuildingsIndicators.execute([datasource            : datasource,
                                                        inputBuildingTableName: relationBuildings,
                                                        inputRoadTableName    : roadTableName,
                                                        indicatorUse          : indicatorUse,
                                                        prefixName            : prefixName])
         String buildingIndicators = computeBuildingsIndicators.getResults().outputTableName
+        assertTrue(datasource.getSpatialTable(buildingIndicators).srid>0)
         if (saveResults) {
             logger.debug("Saving building indicators")
-            datasource.save(buildingIndicators, directory + File.separator + "${buildingIndicators}.geojson", true)
+            datasource.getSpatialTable(buildingIndicators).save(directory + File.separator + "${buildingIndicators}.geojson", true)
         }
 
         //Check we have the same number of buildings
@@ -77,7 +77,7 @@ class ChainProcessAbstractTest {
 
         //Compute block indicators
         if (indicatorUse.contains("URBAN_TYPOLOGY")) {
-            def computeBlockIndicators = ProcessingChain.GeoIndicatorsChain.computeBlockIndicators()
+            def computeBlockIndicators = Geoindicators.WorkflowGeoIndicators.computeBlockIndicators()
             assertTrue computeBlockIndicators.execute([datasource            : datasource,
                                                        inputBuildingTableName: buildingIndicators,
                                                        inputBlockTableName   : relationBlocks,
@@ -85,16 +85,17 @@ class ChainProcessAbstractTest {
             String blockIndicators = computeBlockIndicators.getResults().outputTableName
             if (saveResults) {
                 logger.debug("Saving block indicators")
-                datasource.save(blockIndicators, directory + File.separator + "${blockIndicators}.geojson",true)
+                datasource.getSpatialTable(blockIndicators).save(directory + File.separator + "${blockIndicators}.geojson", true)
             }
             //Check if we have the same number of blocks
             def countRelationBlocks = datasource.firstRow("select count(*) as count from ${relationBlocks}".toString())
             def countBlocksIndicators = datasource.firstRow("select count(*) as count from ${blockIndicators}".toString())
             assertEquals(countRelationBlocks.count, countBlocksIndicators.count)
+            assertTrue(datasource.getSpatialTable(blockIndicators).srid>0)
         }
 
         //Compute RSU indicators
-        def computeRSUIndicators = ProcessingChain.GeoIndicatorsChain.computeRSUIndicators()
+        def computeRSUIndicators = Geoindicators.WorkflowGeoIndicators.computeRSUIndicators()
         assertTrue computeRSUIndicators.execute([datasource       : datasource,
                                                  buildingTable    : buildingIndicators,
                                                  rsuTable         : relationRSU,
@@ -107,12 +108,13 @@ class ChainProcessAbstractTest {
         String rsuIndicators = computeRSUIndicators.getResults().outputTableName
         if (saveResults) {
             logger.debug("Saving RSU indicators")
-            datasource.save(rsuIndicators, directory + File.separator + "${rsuIndicators}.geojson",true)
+            datasource.getSpatialTable(rsuIndicators).save(directory + File.separator + "${rsuIndicators}.geojson", true)
         }
 
         //Check if we have the same number of RSU
         def countRelationRSU = datasource.firstRow("select count(*) as count from ${relationRSU}".toString())
         def countRSUIndicators = datasource.firstRow("select count(*) as count from ${rsuIndicators}".toString())
         assertEquals(countRelationRSU.count, countRSUIndicators.count)
+        assertTrue(datasource.getSpatialTable(rsuIndicators).srid>0)
     }
 }

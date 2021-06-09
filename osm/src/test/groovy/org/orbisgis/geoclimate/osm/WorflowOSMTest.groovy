@@ -1,18 +1,17 @@
-package org.orbisgis.orbisprocess.geoclimate.osm
+package org.orbisgis.geoclimate.osm
 
 import groovy.json.JsonOutput
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.orbisanalysis.osm.utils.Utilities
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
-import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
 
 import static org.junit.jupiter.api.Assertions.*
 
-class ProcessingChainOSMTest extends ChainProcessAbstractTest {
+class WorflowOSMTest extends WorkflowAbstractTest {
 
     @Test
     void osmToRSU() {
@@ -22,7 +21,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         dirFile.mkdir()
         def h2GIS = H2GIS.open(dirFile.absolutePath+File.separator+'osm_chain_db;AUTO_SERVER=TRUE')
         def zoneToExtract = "Pont-de-Veyle"
-        IProcess process = OSM.buildGeoclimateLayers
+        IProcess process = OSM.WorkflowOSM.buildGeoclimateLayers()
 
         process.execute([datasource: h2GIS, zoneToExtract :zoneToExtract, distance: 0])
 
@@ -113,7 +112,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
         //Extract and transform OSM data
         def zoneToExtract = "Pont-de-Veyle"
 
-        IProcess prepareOSMData = OSM.buildGeoclimateLayers
+        IProcess prepareOSMData = OSM.WorkflowOSM.buildGeoclimateLayers()
 
         prepareOSMData.execute([datasource: datasource, zoneToExtract :zoneToExtract, distance: 0])
 
@@ -131,7 +130,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
 
         if(saveResults){
             println("Saving OSM GIS layers")
-            IProcess saveTables = ProcessingChain.DataUtils.saveTablesAsFiles
+            IProcess saveTables = Geoindicators.DataUtils.saveTablesAsFiles()
             saveTables.execute( [inputTableNames: [buildingTableName,roadTableName,railTableName,hydrographicTableName,
                                                    vegetationTableName,zoneTableName]
                                  , directory: dirFile.absolutePath, datasource: datasource])
@@ -184,7 +183,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                             "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
 
-        IProcess geodindicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
+        IProcess geodindicators = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
         assertTrue geodindicators.execute(datasource: datasource, zoneTable: zoneTableName,
                 buildingTable: buildingTableName, roadTable: roadTableName,
                 railTable: railTableName, vegetationTable: vegetationTableName,
@@ -233,7 +232,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                                                    "terrain_roughness_length": 1]]
                         ]
         ]
-        IProcess process = OSM.workflow
+        IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
         H2GIS outputdb = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db_output;AUTO_SERVER=TRUE")
         def rsu_indicatorsTable = outputdb.getTable("rsu_indicators")
@@ -281,7 +280,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                         ]
                         ]
         ]
-        IProcess process = OSM.workflow
+        IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
         def postgis_dbProperties = [databaseName: 'orbisgis_db',
                                            user        : 'orbisgis',
@@ -332,7 +331,7 @@ class ProcessingChainOSMTest extends ChainProcessAbstractTest {
                                           "svfSimplified": true]
                         ]
         ]
-        IProcess process = OSM.workflow
+        IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
         //Test the SRID of all output files
         def geoFiles = []

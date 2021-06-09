@@ -2,8 +2,6 @@ package org.orbisgis.geoclimate.geoindicators
 
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
-import groovy.transform.NamedParam
-import groovy.transform.NamedVariant
 import org.locationtech.jts.geom.Geometry
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
@@ -37,13 +35,13 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
  *
  * @return The name of the road table
  */
-@NamedVariant
-IProcess build_road_traffic(
-         @NamedParam(required = true) String  inputTableName,
-         @NamedParam inputZoneEnvelopeTableName = "",
-         @NamedParam(required = true) int epsg ,
-         @NamedParam String jsonFilename = "",
-         @NamedParam(required = true) JdbcDataSource dataSource){
+IProcess build_road_traffic() {
+    return create {
+        title "Compute a default road traffic data according the WGAEN values"
+        id "road_traffic"
+        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, jsonFilename: ""
+        outputs outputTableName: String
+        run { datasource, inputTableName, inputZoneEnvelopeTableName, epsg, jsonFilename ->
             debug('Create the default traffic data')
             def outputTableName =  "ROAD_TRAFFIC"
             datasource """
@@ -173,7 +171,9 @@ IProcess build_road_traffic(
                 }
             }
             debug('Roads traffic computed')
-            return  [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+        }
+    }
 }
 
 /**

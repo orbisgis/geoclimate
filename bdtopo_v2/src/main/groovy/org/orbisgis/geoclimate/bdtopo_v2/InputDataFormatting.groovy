@@ -4,7 +4,7 @@ import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 
-@BaseScript BDTopo_V2_Utils bdTopo_v2_utils
+@BaseScript BDTopo_V2 BDTopo_V2
 
 /**
  * This process allows to control the quality of input tables and then to format and enrich them
@@ -68,7 +68,7 @@ IProcess formatData() {
             def impervious = 'IMPERVIOUS'
 
             //Run the sql script
-            def success = datasource.executeScript(getClass().getResourceAsStream('inputDataFormattingWithoutStats.sql'),
+            def success = datasource.executeScript(getClass().getResourceAsStream('inputDataFormatting.sql'),
                     [INPUT_BUILDING            : inputBuilding, INPUT_ROAD: inputRoad, INPUT_RAIL: inputRail,
                      INPUT_HYDRO               : inputHydro, INPUT_VEGET: inputVeget, INPUT_IMPERVIOUS: inputImpervious,
                      ZONE                      : inputZone, ZONE_NEIGHBORS: zoneNeighbors,

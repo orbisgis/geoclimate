@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 import org.orbisgis.geoclimate.Geoindicators
 
 import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertNotNull
+import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS.open
 
 class BuildingIndicatorsTests {
@@ -31,28 +31,12 @@ class BuildingIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS tempo_build, test_building_size_properties; " +
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build = 7;"
 
-        assertNotNull(Geoindicators.BuildingIndicators.sizeProperties( "tempo_build",
-                              ["volume", "floor_area", "total_facade_length", "passive_volume_ratio"],
-                              "test",h2GIS))
+        def p =  Geoindicators.BuildingIndicators.sizeProperties()
+        assert p([inputBuildingTableName: "tempo_build",
+                  operations:["volume", "floor_area", "total_facade_length",
+                              "passive_volume_ratio"],
+                  prefixName : "test",datasource:h2GIS])
         h2GIS.getTable("test_building_size_properties").eachRow {
-            row ->
-                assertEquals(141, (int)row.volume)
-                assertEquals(47, row.floor_area)
-                assertEquals(38, row.total_facade_length)
-                assertEquals(0, row.passive_volume_ratio)
-        }
-    }
-
-    @Test
-    void sizePropertiesTest2() {
-        // Only the first 1 first created buildings are selected for the tests
-        h2GIS.execute "DROP TABLE IF EXISTS tempo_build, test_building_size_properties; " +
-                "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build = 7;"
-
-        assertNotNull(Geoindicators.BuildingIndicators.sizeProperties( "tempo_build",
-                ["volume", "floor_area", "total_facade_length", "passive_volume_ratio"]
-                ,h2GIS))
-        h2GIS.getTable("building_size_properties").eachRow {
             row ->
                 assertEquals(141, (int)row.volume)
                 assertEquals(47, row.floor_area)
@@ -67,10 +51,11 @@ class BuildingIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS tempo_build, test_building_neighbors_properties; " +
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 7"
 
-        assertNotNull Geoindicators.BuildingIndicators.neighborsProperties( "tempo_build",
-                              ["contiguity","common_wall_fraction",
+        def  p =  Geoindicators.BuildingIndicators.neighborsProperties()
+        assertTrue p.execute([inputBuildingTableName: "tempo_build",
+                              operations:["contiguity","common_wall_fraction",
                                           "number_building_neighbor"],
-                               "test",h2GIS)
+                              prefixName : "test",datasource:h2GIS])
         def concat = ["", "", ""]
         h2GIS.eachRow("SELECT * FROM test_building_neighbors_properties WHERE id_build = 1 OR id_build = 5 " +
                 "ORDER BY id_build ASC"){
@@ -91,10 +76,11 @@ class BuildingIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS tempo_build, test_building_form_properties; CREATE TABLE tempo_build " +
                 "AS SELECT * FROM building_test WHERE id_build < 8 OR id_build = 30"
 
-        assertNotNull Geoindicators.BuildingIndicators.formProperties( "tempo_build",
-                   ["area_concavity","form_factor",
-                               "raw_compactness", "perimeter_convexity"],
-                    "test",h2GIS)
+        def  p =  Geoindicators.BuildingIndicators.formProperties()
+        assertTrue p.execute([inputBuildingTableName: "tempo_build",
+                              operations:["area_concavity","form_factor",
+                                          "raw_compactness", "perimeter_convexity"],
+                              prefixName : "test",datasource:h2GIS])
         def concat = ["", "", "", ""]
         h2GIS.eachRow("SELECT * FROM test_building_form_properties WHERE id_build = 1 OR id_build = 7 ORDER BY id_build ASC"){
             row ->
@@ -120,8 +106,9 @@ class BuildingIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS tempo_build, test_building_form_properties; CREATE TABLE tempo_build AS " +
                 "SELECT * FROM building_test WHERE id_build < 7"
 
-        assertNotNull Geoindicators.BuildingIndicators.minimumBuildingSpacing("tempo_build",100,
-                "test",h2GIS)
+        def  p =  Geoindicators.BuildingIndicators.minimumBuildingSpacing()
+        assertTrue p.execute([inputBuildingTableName: "tempo_build", bufferDist:100, prefixName : "test",
+                              datasource:h2GIS])
         def concat = ""
         h2GIS.eachRow("SELECT * FROM test_building_minimum_building_spacing WHERE id_build = 2 OR id_build = 4 " +
                 "OR id_build = 6 ORDER BY id_build ASC"){
@@ -136,8 +123,9 @@ class BuildingIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS tempo_road, test_building_road_distance; CREATE TABLE tempo_road " +
                 "AS SELECT * FROM road_test WHERE id_road < 5"
 
-        assertNotNull Geoindicators.BuildingIndicators.roadDistance( "building_test",  "tempo_road", 100,
-                    "test",h2GIS)
+        def  p =  Geoindicators.BuildingIndicators.roadDistance()
+        assertTrue p.execute([inputBuildingTableName: "building_test", inputRoadTableName: "tempo_road", bufferDist:100,
+                              prefixName : "test",datasource:h2GIS])
         def concat = ""
         h2GIS.eachRow("SELECT * FROM test_building_road_distance WHERE id_build = 6 OR id_build = 33 ORDER BY id_build ASC"){
             row -> concat+= "${row.road_distance.round(4)}\n"
@@ -151,16 +139,18 @@ class BuildingIndicatorsTests {
         h2GIS.execute("DROP TABLE IF EXISTS tempo_build, tempo_build2, test_building_neighbors_properties; " +
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 29")
 
-        assertNotNull Geoindicators.BuildingIndicators.neighborsProperties("tempo_build",
-                   ["number_building_neighbor"],
-                  "test", h2GIS)
+        def  pneighb =  Geoindicators.BuildingIndicators.neighborsProperties()
+        assertTrue pneighb.execute([inputBuildingTableName: "tempo_build",
+                                    operations:["number_building_neighbor"],
+                                    prefixName : "test", datasource:h2GIS])
 
         // The number of neighbors are added to the tempo_build table
         h2GIS.execute "CREATE TABLE tempo_build2 AS SELECT a.id_build, a.the_geom, b.number_building_neighbor" +
                 " FROM tempo_build a, test_building_neighbors_properties b WHERE a.id_build = b.id_build"
 
-        assertNotNull Geoindicators.BuildingIndicators.likelihoodLargeBuilding( "tempo_build2",  "number_building_neighbor",
-                  "test", h2GIS)
+        def  p =  Geoindicators.BuildingIndicators.likelihoodLargeBuilding()
+        assertTrue p.execute([inputBuildingTableName: "tempo_build2", nbOfBuildNeighbors: "number_building_neighbor",
+                              prefixName : "test", datasource:h2GIS])
         def concat = ""
         h2GIS.eachRow("SELECT * FROM test_building_likelihood_large_building WHERE id_build = 4 OR id_build = 7 OR " +
                 "id_build = 28 ORDER BY id_build ASC"){

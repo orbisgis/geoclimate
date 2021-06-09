@@ -1,16 +1,17 @@
 package org.orbisgis.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
-import groovy.transform.NamedParam
-import groovy.transform.NamedVariant
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.orbisdata.datamanager.jdbc.*
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 
 @BaseScript Geoindicators geoindicators
 
 /**
  * This process extract building size properties.
  *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
  * @param inputBuildingTableName The name of the input ITable where are stored the building geometries
  * @param operations Operations that have to be applied. These operations should be in the following list:
  *          --> "building_volume": defined as the building area multiplied by the mean of the building
@@ -20,8 +21,6 @@ import org.orbisgis.orbisdata.datamanager.jdbc.*
  *          --> "building_total_facade_length": defined as the total linear of facade (sum of the building perimeter
  *          and the perimeter of the building courtyards)
  * @param prefixName String use as prefix to name the output table
- * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
- * the resulting database will be stored
  *
  * References:
  *   Bocher, E., Petit, G., Bernard, J., & Palominos, S. (2018). A geoprocessing framework to compute
@@ -30,11 +29,15 @@ import org.orbisgis.orbisdata.datamanager.jdbc.*
  * @return A database table name.
  *
  * @author Jérémy Bernard
- * @author Erwan Bocher
  */
-@NamedVariant
-Map sizeProperties(@NamedParam(required = true)  String inputBuildingTableName, @NamedParam(required = true)  def operations,
-                   @NamedParam String prefixName ="", @NamedParam(required = true)  def datasource){
+IProcess sizeProperties() {
+    return create {
+        title "Building size properties"
+        id "sizeProperties"
+        inputs inputBuildingTableName: String, operations: String[], prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { inputBuildingTableName, operations, prefixName, datasource ->
+
             def OP_VOLUME = "volume"
             def OP_FLOOR_AREA = "floor_area"
             def OP_FACADE_LENGTH = "total_facade_length"
@@ -47,6 +50,7 @@ Map sizeProperties(@NamedParam(required = true)  String inputBuildingTableName, 
 
             debug "Executing Building size properties"
 
+            // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
 
             def query = "DROP TABLE IF EXISTS $outputTableName; " +
@@ -73,14 +77,19 @@ Map sizeProperties(@NamedParam(required = true)  String inputBuildingTableName, 
                 }
             }
             query += "$COLUMN_ID_BU FROM $inputBuildingTableName"
+
             datasource query
-            return [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+        }
+    }
 }
 
 
 /**
  * This process extract building interactions properties.
  *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
  * @param inputBuildingTableName The name of the input ITable where are stored the building geometries
  * @param operations Operations that have to be applied. These operations should be in the following list:
  *              --> "building_contiguity": defined as the shared wall area divided by the total building wall area
@@ -90,9 +99,7 @@ Map sizeProperties(@NamedParam(required = true)  String inputBuildingTableName, 
  *              --> "building_number_building_neighbor": defined as the number of building  neighbors in contact with
  *              the building
  *              (cf. Bocher et al. - 2018)
- * @param prefixName String use as prefix to name the output table *
- * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
- * the resulting database will be stored
+ * @param prefixName String use as prefix to name the output table
 
  * References:
  *   Bocher, E., Petit, G., Bernard, J., & Palominos, S. (2018). A geoprocessing framework to compute
@@ -101,17 +108,22 @@ Map sizeProperties(@NamedParam(required = true)  String inputBuildingTableName, 
  * @return A database table name.
  *
  * @author Jérémy Bernard
- * @author Erwan Bocher
  */
-@NamedVariant
-Map neighborsProperties(@NamedParam(required = true)  String inputBuildingTableName, @NamedParam(required = true)  def operations ,
-                        @NamedParam String prefixName="", @NamedParam(required = true)  JdbcDataSource datasource) {
+IProcess neighborsProperties() {
+    return create {
+        title "Building interactions properties"
+        id "neighborsProperties"
+        inputs inputBuildingTableName: String, operations: String[], prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { inputBuildingTableName, operations, prefixName, datasource ->
+
             def GEOMETRIC_FIELD = "the_geom"
             def ID_FIELD = "id_build"
             def HEIGHT_WALL = "height_wall"
             def OP_CONTIGUITY = "contiguity"
             def OP_COMMON_WALL_FRACTION = "common_wall_fraction"
             def OP_NUMBER_BUILDING_NEIGHBOR = "number_building_neighbor"
+            def OPS = [OP_CONTIGUITY, OP_COMMON_WALL_FRACTION, OP_NUMBER_BUILDING_NEIGHBOR]
             def BASE_NAME = "building_neighbors_properties"
 
             debug "Executing Building interactions properties"
@@ -161,7 +173,7 @@ Map neighborsProperties(@NamedParam(required = true)  String inputBuildingTableN
                     AND ST_INTERSECTS(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD) 
                     AND a.$ID_FIELD <> b.$ID_FIELD)
                 GROUP BY $ID_FIELD;
-                CREATE INDEX IF NOT EXISTS buff_id ON $build_intersec ($ID_FIELD);
+                CREATE INDEX IF NOT EXISTS buff_id ON $build_intersec USING BTREE($ID_FIELD);
                 DROP TABLE IF EXISTS $outputTableName; 
                 CREATE TABLE $outputTableName AS 
                     SELECT  ${list.join(",")} ,  a.$ID_FIELD
@@ -171,14 +183,18 @@ Map neighborsProperties(@NamedParam(required = true)  String inputBuildingTableN
 
             // The temporary tables are deleted
             query += "DROP TABLE IF EXISTS $build_intersec"
+
             datasource query
-            return [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+        }
+    }
 }
 
 /**
  * This process extract building form properties.
  *
- *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
  * @param inputBuildingTableName The name of the input ITable where are stored the building geometries
  * @param operations Operations that have to be applied. These operations should be in the following list:
  *              --> "area_concavity": defined as the building area divided by the convex hull area (cf. Bocher et al. - 2018)
@@ -191,8 +207,6 @@ Map neighborsProperties(@NamedParam(required = true)  String inputBuildingTableN
  *              --> "perimeter_convexity": defined as the ratio between building convexhull perimeter and
  *              building perimeter.
  * @param prefixName String use as prefix to name the output table
- * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
- *  * the resulting database will be stored
  *
  * References:
  *   Bocher, E., Petit, G., Bernard, J., & Palominos, S. (2018). A geoprocessing framework to compute
@@ -201,11 +215,15 @@ Map neighborsProperties(@NamedParam(required = true)  String inputBuildingTableN
  * @return A database table name.
  *
  * @author Jérémy Bernard
- * @author Erwan Bocher
  */
-@NamedVariant
-Map formProperties(@NamedParam(required = true)  String inputBuildingTableName, @NamedParam(required = true)  def operations,
-                   @NamedParam String prefixName ="", @NamedParam(required = true)  JdbcDataSource datasource) {
+IProcess formProperties() {
+    return create {
+        title "Building form properties"
+        id "formProperties"
+        inputs inputBuildingTableName: String, operations: String[], prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { inputBuildingTableName, operations, prefixName, datasource ->
+
             def GEOMETRIC_FIELD = "the_geom"
             def ID_FIELD = "id_build"
             def HEIGHT_WALL = "height_wall"
@@ -248,8 +266,11 @@ Map formProperties(@NamedParam(required = true)  String inputBuildingTableName, 
                 }
             }
             query += "$ID_FIELD FROM $inputBuildingTableName"
+
             datasource query
-            return [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+        }
+    }
 }
 
 /**
@@ -257,23 +278,26 @@ Map formProperties(@NamedParam(required = true)  String inputBuildingTableName, 
  * argument, default 100 m) is used to get the buildings within the building of interest and then the minimum distance
  * is calculated.
  *
-
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
  * @param inputBuildingTableName The name of the input ITable where are stored the building geometries
  * @param bufferDist Distance (in meter) used to consider the neighbors of a building. If there is no building within
  * this buffer distance of a building, the minimum distance is set to this value.
  * @param prefixName String use as prefix to name the output table
- * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
- * the resulting database will be stored
  *
  * @return A database table name.
  *
  * @author Jérémy Bernard
  * @author Erwan Bocher
  */
-@NamedVariant
-Map minimumBuildingSpacing(@NamedParam(required = true)  String inputBuildingTableName, @NamedParam bufferDist= 100D,
-                           @NamedParam prefixName="", @NamedParam(required = true)  JdbcDataSource datasource)
-         {
+IProcess minimumBuildingSpacing() {
+    return create {
+        title "Building minimum building spacing"
+        id "minimumBuildingSpacing"
+        inputs inputBuildingTableName: String, bufferDist: 100D, prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { inputBuildingTableName, bufferDist, prefixName, datasource ->
+
             def GEOMETRIC_FIELD = "the_geom"
             def ID_FIELD = "id_build"
             def BASE_NAME = "minimum_building_spacing"
@@ -299,7 +323,7 @@ Map minimumBuildingSpacing(@NamedParam(required = true)  String inputBuildingTab
                     WHERE st_expand(a.$GEOMETRIC_FIELD, $bufferDist) && b.$GEOMETRIC_FIELD 
                     AND a.$ID_FIELD <> b.$ID_FIELD 
                     GROUP BY b.$ID_FIELD;
-                 CREATE INDEX IF NOT EXISTS with_buff_id ON $build_min_distance ($ID_FIELD); """
+                 CREATE INDEX IF NOT EXISTS with_buff_id ON $build_min_distance USING BTREE($ID_FIELD); """
 
             // The minimum distance is calculated (The minimum distance is set to the $inputE value for buildings
             // having no building neighbors in a envelope meters distance
@@ -313,31 +337,36 @@ Map minimumBuildingSpacing(@NamedParam(required = true)  String inputBuildingTab
                     ON a.$ID_FIELD = b.$ID_FIELD """
             // The temporary tables are deleted
             datasource "DROP TABLE IF EXISTS $build_min_distance"
-            return [outputTableName: outputTableName]
+
+            [outputTableName: outputTableName]
+        }
+    }
 }
 
 /**
  * This process extract the building closest distance to a road. A buffer of defined size (bufferDist argument)
  * is used to get the roads within the building of interest and then the minimum distance is calculated.
  *
- *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
  * @param inputBuildingTableName The name of the input ITable where are stored the building geometries
  * @param inputRoadTableName The name of the input ITable where are stored the road geometries
  * @param bufferDist Distance (in meter) used to consider the neighbors of a building. If there is no road within
  * this buffer distance of a building, the minimum distance to a road is set to this value.
  * @param prefixName String use as prefix to name the output table
- * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
- * the resulting database will be stored
  *
  * @return A database table name.
  *
  * @author Jérémy Bernard
- * @author Erwan Bocher
  */
-@NamedVariant
-Map roadDistance(@NamedParam(required = true)  String inputBuildingTableName , @NamedParam(required = true)  String inputRoadTableName,
-                 @NamedParam bufferDist= 100D, @NamedParam prefixName="", @NamedParam(required = true)  JdbcDataSource datasource)
-         {
+IProcess roadDistance() {
+    return create {
+        title "Building road distance"
+        id "roadDistance"
+        inputs inputBuildingTableName: String, inputRoadTableName: String, bufferDist: 100D, prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { inputBuildingTableName, inputRoadTableName, bufferDist, prefixName, datasource ->
+
             def GEOMETRIC_FIELD = "the_geom"
             def ID_FIELD_BU = "id_build"
             def ROAD_WIDTH = "width"
@@ -361,14 +390,14 @@ Map roadDistance(@NamedParam(required = true)  String inputBuildingTableName , @
                 CREATE TABLE $build_buffer AS
                     SELECT $ID_FIELD_BU,  ST_BUFFER($GEOMETRIC_FIELD, $bufferDist) AS $GEOMETRIC_FIELD 
                     FROM $inputBuildingTableName;
-                CREATE SPATIAL INDEX IF NOT EXISTS buff_ids ON $build_buffer ($GEOMETRIC_FIELD)"""
+                CREATE INDEX IF NOT EXISTS buff_ids ON $build_buffer USING RTREE($GEOMETRIC_FIELD)"""
             // The road surfaces are created
             datasource """
                 DROP TABLE IF EXISTS $road_surf;
                 CREATE TABLE $road_surf AS 
                     SELECT ST_BUFFER($GEOMETRIC_FIELD, $ROAD_WIDTH::DOUBLE PRECISION/2,'endcap=flat') AS $GEOMETRIC_FIELD 
                     FROM $inputRoadTableName; 
-                CREATE SPATIAL INDEX IF NOT EXISTS buff_ids ON $road_surf ($GEOMETRIC_FIELD)"""
+                CREATE INDEX IF NOT EXISTS buff_ids ON $road_surf USING RTREE($GEOMETRIC_FIELD)"""
             // The roads located within the buffer are identified
             datasource """
                 DROP TABLE IF EXISTS $road_within_buffer; 
@@ -377,7 +406,7 @@ Map roadDistance(@NamedParam(required = true)  String inputBuildingTableName , @
                     FROM $build_buffer a, $road_surf b 
                     WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD 
                     AND ST_INTERSECTS(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD); 
-                CREATE INDEX IF NOT EXISTS with_buff_id ON $road_within_buffer ($ID_FIELD_BU); """
+                CREATE INDEX IF NOT EXISTS with_buff_id ON $road_within_buffer USING BTREE($ID_FIELD_BU); """
 
             // The minimum distance is calculated between each building and the surrounding roads (the minimum
             // distance is set to the bufferDist value for buildings having no road within a bufferDist meters
@@ -393,7 +422,10 @@ Map roadDistance(@NamedParam(required = true)  String inputBuildingTableName , @
 
             // The temporary tables are deleted
             datasource "DROP TABLE IF EXISTS $build_buffer, $road_within_buffer, $road_surf"
-            return [outputTableName: outputTableName]
+
+            [outputTableName: outputTableName]
+        }
+    }
 }
 
 /**
@@ -406,27 +438,30 @@ Map roadDistance(@NamedParam(required = true)  String inputBuildingTableName , @
  * training data to identify the real size of the buildings classified as larger than 50 m in the
  * subjective training process.
  *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
  * @param buildingTableName The name of the input ITable where are stored the building geometries
  * @param nbOfBuildNeighbors The field name corresponding to the "building_number_building_neighbor" (in the
  * "buildingTableName" ITable)
  * @param prefixName String used as prefix to name the output table
- * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
- * the resulting database will be stored
  *
  * References:
  *   Amossé, A. Identification automatique d'une typologie urbaine des îlots urbains en France. Tech. rep., Laboratoire
  * de recherche en architecture, Laboratoire de recherche en architecture, Toulouse, France, 2015.
  *
  * @return A database table name.
- * @author Erwan Bocher
+ *
  * @author Jérémy Bernard
  *
  */
-@NamedVariant
-Map likelihoodLargeBuilding(@NamedParam(required = true) String inputBuildingTableName,
-                            @NamedParam(required = true)  String nbOfBuildNeighbors,
-                            @NamedParam prefixName="", @NamedParam(required = true)  JdbcDataSource datasource )
-        {
+IProcess likelihoodLargeBuilding() {
+    return create {
+        title "Building closeness to a 50 m wide building"
+        id "likelihoodLargeBuilding"
+        inputs inputBuildingTableName: String, nbOfBuildNeighbors: String, prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { inputBuildingTableName, nbOfBuildNeighbors, prefixName, datasource ->
+
             def GEOMETRIC_FIELD = "the_geom"
             def ID_FIELD_BU = "id_build"
             def BASE_NAME = "likelihood_large_building"
@@ -456,5 +491,8 @@ Map likelihoodLargeBuilding(@NamedParam(required = true) String inputBuildingTab
                  FROM $inputBuildingTableName a 
                  LEFT JOIN $inputBuildingTableName b 
                  ON a.$ID_FIELD_BU = b.$ID_FIELD_BU"""
-            return  [outputTableName: outputTableName]
+
+            [outputTableName: outputTableName]
+        }
+    }
 }

@@ -1,4 +1,4 @@
-package org.orbisgis.orbisprocess.geoclimate.osm
+package org.orbisgis.geoclimate.osm
 
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
@@ -13,7 +13,7 @@ import org.h2gis.utilities.GeographyUtilities
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.orbisgis.orbisanalysis.osm.utils.OSMElement
 
-@BaseScript OSM_Utils osm_utils
+@BaseScript OSM OSM
 
 /**
   * This process is used to create the GIS layers using the Overpass API

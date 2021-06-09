@@ -1,4 +1,4 @@
-package org.orbisgis.orbisprocess.geoclimate.osm
+package org.orbisgis.geoclimate.osm
 
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
@@ -18,15 +18,15 @@ import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisprocess.geoclimate.geoindicators.Geoindicators
-import org.orbisgis.orbisprocess.geoclimate.processingchain.ProcessingChain
 import org.orbisgis.orbisanalysis.osm.OSMTools
 import org.h2gis.functions.io.utility.PRJUtil;
 
 import java.sql.Connection
 import java.sql.SQLException
 
-@BaseScript OSM_Utils osm_utils
+import org.orbisgis.geoclimate.Geoindicators
+
+@BaseScript OSM OSM
 
 /**
  * Extract OSM data and compute geoindicators. The parameters of the processing chain is defined
@@ -490,7 +490,7 @@ IProcess osm_processing() {
 
                     def extract = OSMTools.Loader.extract()
                     if (extract.execute(overpassQuery: query)) {
-                        IProcess createGISLayerProcess = OSM.createGISLayers
+                        IProcess createGISLayerProcess = OSM.InputDataLoading.createGISLayers()
                         if (createGISLayerProcess.execute(datasource: h2gis_datasource, osmFilePath: extract.results.outputFilePath, epsg: srid)) {
                             if(deleteOSMFile){
                                 if( new File(extract.results.outputFilePath).delete()){
@@ -512,7 +512,7 @@ IProcess osm_processing() {
 
                             if(rsu_indicators_params|| grid_indicators_params){
                                 //Format urban areas
-                                IProcess format = OSM.formatUrbanAreas
+                                IProcess format = OSM.InputDataFormatting.formatUrbanAreas()
                                 format.execute([
                                         datasource                : h2gis_datasource,
                                         inputTableName            : gisLayersResults.urbanAreasTableName,
@@ -521,7 +521,7 @@ IProcess osm_processing() {
 
                                 urbanAreasTable = format.results.outputTableName
 
-                                format = OSM.formatBuildingLayer
+                                format = OSM.InputDataFormatting.formatBuildingLayer()
                                 format.execute([
                                         datasource                : h2gis_datasource,
                                         inputTableName            : gisLayersResults.buildingTableName,
@@ -536,7 +536,7 @@ IProcess osm_processing() {
                                 buildingEstimateTableName = format.results.outputEstimateTableName
 
 
-                            format = OSM.formatRailsLayer
+                            format = OSM.InputDataFormatting.formatRailsLayer()
                             format.execute([
                                     datasource                : h2gis_datasource,
                                     inputTableName            : gisLayersResults.railTableName,
@@ -544,7 +544,7 @@ IProcess osm_processing() {
                                     epsg                      : srid])
                              railTableName = format.results.outputTableName
 
-                            format = OSM.formatVegetationLayer
+                            format = OSM.InputDataFormatting.formatVegetationLayer()
                             format.execute([
                                     datasource                : h2gis_datasource,
                                     inputTableName            : gisLayersResults.vegetationTableName,
@@ -552,7 +552,7 @@ IProcess osm_processing() {
                                     epsg                      : srid])
                                 vegetationTableName = format.results.outputTableName
 
-                            format = OSM.formatHydroLayer
+                            format = OSM.InputDataFormatting.formatHydroLayer()
                             format.execute([
                                     datasource                : h2gis_datasource,
                                     inputTableName            : gisLayersResults.hydroTableName,
@@ -560,7 +560,7 @@ IProcess osm_processing() {
                                     epsg                      : srid])
                              hydrographicTableName = format.results.outputTableName
 
-                            format = OSM.formatImperviousLayer
+                            format = OSM.InputDataFormatting.formatImperviousLayer()
                             format.execute([
                                     datasource                : h2gis_datasource,
                                     inputTableName            : gisLayersResults.imperviousTableName,
@@ -569,7 +569,7 @@ IProcess osm_processing() {
                              imperviousTableName = format.results.outputTableName
 
                             //Sea/Land mask
-                            format = OSM.formatSeaLandMask
+                            format = OSM.InputDataFormatting.formatSeaLandMask()
                             format.execute([
                                     datasource                : h2gis_datasource,
                                     inputTableName            : gisLayersResults.coastlineTableName,
@@ -579,7 +579,7 @@ IProcess osm_processing() {
                                 seaLandMaskTableName = format.results.outputTableName
 
                             //Merge the Sea/Land mask with water table
-                            format = OSM.mergeWaterAndSeaLandTables
+                            format = OSM.InputDataFormatting.mergeWaterAndSeaLandTables()
                             format.execute([
                                     datasource           : h2gis_datasource,
                                     inputSeaLandTableName: seaLandMaskTableName, inputWaterTableName: hydrographicTableName,
@@ -590,7 +590,7 @@ IProcess osm_processing() {
                           
                             if(road_traffic || rsu_indicators_params||grid_indicators_params){
 
-                                IProcess format = OSM.formatRoadLayer
+                                IProcess format = OSM.InputDataFormatting.formatRoadLayer()
                                 format.execute([
                                         datasource                : h2gis_datasource,
                                         inputTableName            : gisLayersResults.roadTableName,
@@ -1667,6 +1667,119 @@ def prepareTableOutput(def h2gis_table_to_save, def filter, def inputSRID,def h2
                     error("Cannot export the $h2gis_table_to_save into the table $output_table \n due to inconsistent SRID")
                     return
                 }
+            }
+        }
+    }
+}
+
+/**
+ * This process chains a set of subprocesses to extract and transform the OSM data into
+ * the geoclimate model
+ *
+ * @param datasource a connection to the database where the result files should be stored
+ * @param osmTablesPrefix The prefix used for naming the 11 OSM tables build from the OSM file
+ * @param zoneToExtract A zone to extract. Can be, a name of the place (neighborhood, city, etc. - cf https://wiki.openstreetmap.org/wiki/Key:level)
+ * or a bounding box specified as a JTS envelope
+ * @param distance The integer value to expand the envelope of zone
+ * @return
+ */
+IProcess buildGeoclimateLayers() {
+    return create {
+        title "Extract and transform OSM data to the Geoclimate model"
+        id "buildGeoclimateLayers"
+        inputs datasource: JdbcDataSource,
+                zoneToExtract: Object,
+                distance: 500,
+                hLevMin: 3,
+                hLevMax: 15,
+                hThresholdLev2: 10
+        outputs outputBuilding: String, outputRoad: String, outputRail: String,
+                outputHydro: String, outputVeget: String, outputImpervious: String, outputZone: String, outputZoneEnvelope: String
+        run { datasource, zoneToExtract, distance, hLevMin, hLevMax, hThresholdLev2 ->
+
+            if (datasource == null) {
+                error "Cannot access to the database to store the osm data"
+                return
+            }
+
+            debug "Building OSM GIS layers"
+            IProcess process = OSM.InputDataLoading.extractAndCreateGISLayers()
+            if (process.execute([datasource: datasource, zoneToExtract: zoneToExtract,
+                                 distance  : distance])) {
+
+                debug "OSM GIS layers created"
+
+                Map res = process.getResults()
+
+                def buildingTableName = res.buildingTableName
+                def roadTableName = res.roadTableName
+                def railTableName = res.railTableName
+                def vegetationTableName = res.vegetationTableName
+                def hydroTableName = res.hydroTableName
+                def imperviousTableName = res.imperviousTableName
+                def zoneTableName = res.zoneTableName
+                def zoneEnvelopeTableName = res.zoneEnvelopeTableName
+                def epsg = datasource.getSpatialTable(zoneTableName).srid
+                if (zoneEnvelopeTableName != null) {
+                    debug "Formating OSM GIS layers"
+                    IProcess format = OSM.InputDataFormatting.formatBuildingLayer()
+                    format.execute([
+                            datasource                : datasource,
+                            inputTableName            : buildingTableName,
+                            inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                            epsg                      : epsg])
+                    buildingTableName = format.results.outputTableName
+
+                    format = OSM.InputDataFormatting.formatRoadLayer()
+                    format.execute([
+                            datasource                : datasource,
+                            inputTableName            : roadTableName,
+                            inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                            epsg                      : epsg])
+                    roadTableName = format.results.outputTableName
+
+
+                    format = OSM.InputDataFormatting.formatRailsLayer()
+                    format.execute([
+                            datasource                : datasource,
+                            inputTableName            : railTableName,
+                            inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                            epsg                      : epsg])
+                    railTableName = format.results.outputTableName
+
+                    format = OSM.InputDataFormatting.formatVegetationLayer()
+                    format.execute([
+                            datasource                : datasource,
+                            inputTableName            : vegetationTableName,
+                            inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                            epsg                      : epsg])
+                    vegetationTableName = format.results.outputTableName
+
+                    format = OSM.InputDataFormatting.formatHydroLayer()
+                    format.execute([
+                            datasource                : datasource,
+                            inputTableName            : hydroTableName,
+                            inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                            epsg                      : epsg])
+                    hydroTableName = format.results.outputTableName
+
+                    format = OSM.InputDataFormatting.formatImperviousLayer()
+                    format.execute([
+                            datasource                : datasource,
+                            inputTableName            : imperviousTableName,
+                            inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                            epsg                      : epsg])
+                    imperviousTableName = format.results.outputTableName
+
+                    debug "OSM GIS layers formated"
+
+                }
+
+                return [outputBuilding: buildingTableName, outputRoad: roadTableName,
+                        outputRail    : railTableName, outputHydro: hydroTableName,
+                        outputVeget   : vegetationTableName, outputImpervious: imperviousTableName,
+                        outputZone    : zoneTableName, outputZoneEnvelope: zoneEnvelopeTableName]
+
             }
         }
     }

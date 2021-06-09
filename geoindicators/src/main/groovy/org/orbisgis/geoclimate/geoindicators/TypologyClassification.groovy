@@ -4,8 +4,6 @@ import com.thoughtworks.xstream.XStream
 import com.thoughtworks.xstream.security.*
 import com.thoughtworks.xstream.io.xml.StaxDriver
 import groovy.transform.BaseScript
-import groovy.transform.NamedParam
-import groovy.transform.NamedVariant
 import org.h2gis.utilities.TableLocation
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
@@ -18,6 +16,7 @@ import smile.data.vector.DoubleVector
 import smile.regression.RandomForest as RandomForestRegression
 import smile.data.formula.Formula
 import smile.data.vector.IntVector
+import smile.regression.Regression
 import smile.regression.RegressionTree
 import smile.validation.Accuracy
 import smile.validation.RMSE
@@ -63,20 +62,23 @@ import java.util.zip.GZIPOutputStream
  *
  * @author Jérémy Bernard
  */
-@NamedVariant
-Map identifyLczType(@NamedParam(required = true) String rsuLczIndicators ,
-                         @NamedParam(required = true) String rsuAllIndicators ,
-                         @NamedParam prefixName ="",
-                         @NamedParam(required = true) datasource = JdbcDataSource,
-                         @NamedParam normalisationType = "AVG",
-                         @NamedParam mapOfWeights = [ "sky_view_factor": 1, "aspect_ratio": 1, "building_surface_fraction": 1,
-                         "impervious_surface_fraction": 1, "pervious_surface_fraction": 1,
-                         "height_of_roughness_elements": 1, "terrain_roughness_length" : 1]){
-            def OPS = [ "AVG", "MEDIAN" ]
+IProcess identifyLczType() {
+    return create {
+        title "Set the LCZ type of each RSU"
+        id "identifyLczType"
+        inputs rsuLczIndicators: String, rsuAllIndicators: String, prefixName: String,
+                datasource: JdbcDataSource, normalisationType: "AVG",
+                mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                               "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                               "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
+        outputs outputTableName: String
+        run { rsuLczIndicators, rsuAllIndicators, prefixName, datasource, normalisationType, mapOfWeights ->
+
+            def OPS = ["AVG", "MEDIAN"]
             def ID_FIELD_RSU = "id_rsu"
             def CENTER_NAME = "center"
             def VARIABILITY_NAME = "variability"
-            def BASE_NAME =  "RSU_LCZ"
+            def BASE_NAME = "RSU_LCZ"
             def GEOMETRIC_FIELD = "THE_GEOM"
 
             debug "Set the LCZ type of each RSU"
@@ -416,15 +418,17 @@ Map identifyLczType(@NamedParam(required = true) String rsuLczIndicators ,
                 // Temporary tables are deleted
                 datasource """DROP TABLE IF EXISTS ${prefixName}_distribution_repartition,
                     $LCZ_classes, $normalizedValues, $normalizedRange,
-                    $distribLczTable, $distribLczTableInt, $allLczTable, $pivotedTable, $mainLczTable, 
+                    $distribLczTable, $distribLczTableInt, $allLczTable, $pivotedTable, $mainLczTable,
                     $classifiedLcz, $classifiedUrbanLcz, $classifiedRuralLCZ, $distribLczTableWithoutLcz1;"""
 */
                 debug "The LCZ classification has been performed."
 
-                return [outputTableName: outputTableName]
+                [outputTableName: outputTableName]
             } else {
                 error "The 'normalisationType' argument is not valid."
             }
+        }
+    }
 }
 
 /**
@@ -460,21 +464,17 @@ Map identifyLczType(@NamedParam(required = true) String rsuLczIndicators ,
  *
  * @author Jérémy Bernard
  */
-@NamedVariant
-Map createRandomForestModel(@NamedParam(required = true) String trainingTableName,
-                            @NamedParam(required = true) StringvarToModel ,
-                            @NamedParam explicativeVariables= [],
-                            @NamedParam save =boolean,
-                            @NamedParam(required = true) String pathAndFileName,
-                            @NamedParam(required = true) intntrees,
-                            @NamedParam(required = true) intmtry,
-                            @NamedParam rule=  "GINI",
-                            @NamedParam(required = true) int maxDepth,
-                            @NamedParam(required = true) int maxNodes,
-                            @NamedParam(required = true) int nodeSize,
-                            @NamedParam(required = true) double subsample,
-                            @NamedParam(required = true) JdbcDataSource datasource ,
-                            @NamedParam classif = true){
+IProcess createRandomForestModel() {
+    return create {
+        title "Create a Random Forest model"
+        id "createRandomForest"
+        inputs trainingTableName: String, varToModel: String, explicativeVariables: [], save: boolean, pathAndFileName: String, ntrees: int,
+                mtry: int, rule: "GINI", maxDepth: int, maxNodes: int, nodeSize: int, subsample: double,
+                datasource: JdbcDataSource, classif: true
+        outputs RfModel: RandomForestRegression
+        run { String trainingTableName, String varToModel, explicativeVariables, save, pathAndFileName, ntrees, mtry, rule, maxDepth,
+              maxNodes, nodeSize, subsample, JdbcDataSource datasource, classif ->
+
             def splitRule
             if (rule) {
                 switch (rule.toUpperCase()) {
@@ -556,7 +556,10 @@ Map createRandomForestModel(@NamedParam(required = true) String trainingTableNam
                 error "Cannot save the model", e
                 return
             }
-            return [RfModel: model]
+            [RfModel: model]
+        }
+    }
+
 }
 
 /**
@@ -574,12 +577,16 @@ Map createRandomForestModel(@NamedParam(required = true) String trainingTableNam
  *
  * @author Jérémy Bernard
  */
-@NamedVariant
-Map applyRandomForestModel(@NamedParam(required = true) String explicativeVariablesTableName,
-                           @NamedParam(required = true)  String pathAndFileName,
-                           @NamedParam(required = true) String idName,
-                           @NamedParam(required = true) prefixName="",
-                           @NamedParam(required = true) JdbcDataSource datasource){
+IProcess applyRandomForestModel() {
+    return create {
+        title "Apply a Random Forest classification"
+        id "applyRandomForestModel"
+        inputs explicativeVariablesTableName: String, pathAndFileName: String, idName: String,
+                prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { String explicativeVariablesTableName, String pathAndFileName, String idName,
+              String prefixName, JdbcDataSource datasource ->
+            debug "Apply a Random Forest model"
             def modelName;
             File inputModelFile = new File(pathAndFileName)
             modelName = FilenameUtils.getBaseName(pathAndFileName)
@@ -620,7 +627,7 @@ Map applyRandomForestModel(@NamedParam(required = true) String explicativeVariab
             xs.allowTypesByWildcard(new String[] {
                     TypologyClassification.class.getPackage().getName()+".*",
                     "smile.regression.*","smile.data.formula.*", "smile.data.type.*", "smile.data.measure.*", "smile.data.measure.*",
-             "smile.base.cart.*","smile.classification.*","java.lang.*"
+                    "smile.base.cart.*","smile.classification.*","java.lang.*"
             })
 
             // Load the model and recover the name of the variable to model
@@ -731,7 +738,9 @@ Map applyRandomForestModel(@NamedParam(required = true) String explicativeVariab
                 }
             } catch (SQLException e) {
                 error("Cannot save the dataframe.\n", e);
-                return null
+                return null;
             }
-            return [outputTableName: tableName]
+            [outputTableName: tableName]
+        }
+    }
 }
