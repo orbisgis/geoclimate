@@ -633,7 +633,7 @@ IProcess osm_processing() {
                             //Compute the RSU indicators
                             if(rsuIndicatorsToCompute){
                                 def estimateHeight  = rsu_indicators_params."estimateHeight"
-                                IProcess geoIndicators = ProcessingChain.GeoIndicatorsChain.computeAllGeoIndicators()
+                                IProcess geoIndicators = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
                                 if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
                                         buildingTable: buildingTableName, roadTable: roadTableName,
                                         railTable: railTableName, vegetationTable: vegetationTableName,
@@ -670,7 +670,7 @@ IProcess osm_processing() {
                                 def x_size = grid_indicators_params.x_size
                                 def y_size = grid_indicators_params.y_size
                                 outputGrid = grid_indicators_params.output
-                                IProcess rasterizedIndicators =  ProcessingChain.GeoIndicatorsChain.rasterizeIndicators()
+                                IProcess rasterizedIndicators =  Geoindicators.WorkflowGeoIndicators.rasterizeIndicators()
                                     if(rasterizedIndicators.execute(datasource:h2gis_datasource,envelope: geomEnv,
                                             x_size : x_size, y_size : y_size,
                                             srid : srid,rowCol: grid_indicators_params.rowCol,

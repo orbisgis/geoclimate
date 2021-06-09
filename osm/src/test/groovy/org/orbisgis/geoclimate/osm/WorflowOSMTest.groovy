@@ -370,7 +370,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                           "svfSimplified": true]
                         ]
         ]
-        IProcess process = OSM.workflow
+        IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
 
     }
@@ -394,7 +394,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "output" :[
                         "folder" : "$directory"]
         ]
-        IProcess process = OSM.workflow
+        IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
@@ -416,7 +416,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "output" :[
                         "folder" : "$directory"]
         ]
-        IProcess process = OSM.workflow
+        IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
@@ -438,7 +438,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "output" :[
                         "folder" : "$directory"]
         ]
-        IProcess process = OSM.workflow
+        IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
@@ -477,7 +477,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                   "terrain_roughness_class": 1 ]]
                         ]
         ]
-        IProcess process = OSM.workflow
+        IProcess process = OSM.WorkflowOSM.workflow()
         assertFalse(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
@@ -506,7 +506,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                          "estimateHeight":true]
                         ]
         ]
-        IProcess process = OSM.workflow
+        IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
@@ -536,7 +536,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                          ]
                         ]
         ]
-        IProcess process = OSM.workflow
+        IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
@@ -572,7 +572,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                          ]
                         ]
         ]
-        IProcess process = OSM.workflow
+        IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
@@ -611,7 +611,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                          ]
                         ]
         ]
-        IProcess process = OSM.workflow
+        IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
@@ -651,7 +651,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ]
         ]
 
-        IProcess process = OSM.workflow
+        IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
@@ -694,7 +694,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ]
         ]
 
-        IProcess process = OSM.workflow
+        IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
@@ -741,7 +741,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                 ]
                         ]
         ]
-        IProcess process = OSM.workflow
+        IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
 
@@ -767,7 +767,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters":
                         ["road_traffic" : true]
         ]
-        IProcess process = OSM.workflow
+        IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from road_traffic where road_type is not null").count>0
@@ -795,7 +795,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     void testOSMConfigurationFile() {
         def configFile = getClass().getResource("config/osm_workflow_placename_folderoutput.json").toURI()
         //configFile =getClass().getResource("config/osm_workflow_envelope_folderoutput.json").toURI()
-        IProcess process = OSM.workflow
+        IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(configurationFile: configFile))
     }
 

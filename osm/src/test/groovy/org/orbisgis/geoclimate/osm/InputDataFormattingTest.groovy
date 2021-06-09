@@ -111,7 +111,7 @@ class InputDataFormattingTest {
 
         def formatedRoadTable = format.results.outputTableName
         //Rails
-        format = OSM.formatRailsLayer
+        format = OSM.InputDataFormatting.formatRailsLayer()
         format.execute([
                 datasource    : h2GIS,
                 inputTableName: extractData.results.railTableName,
@@ -237,7 +237,7 @@ class InputDataFormattingTest {
         def epsg = 32629
         def osmBbox = [52.08484801362273, -10.75003575696209, 52.001518013622736, -10.66670575696209]
         def geom = Utilities.geometryFromNominatim(osmBbox)
-        IProcess extractData = OSM.createGISLayers
+        IProcess extractData = OSM.InputDataLoading.createGISLayers()
         extractData.execute([
                 datasource : h2GIS,
                 osmFilePath: new File(this.class.getResource("sea_land_data.osm").toURI()).getAbsolutePath(),
