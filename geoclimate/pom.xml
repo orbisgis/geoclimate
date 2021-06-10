@@ -109,7 +109,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>org.orbisgis.orbisprocess.geoclimate.Geoclimate</mainClass>
+                            <mainClass>org.orbisgis.geoclimate.Geoclimate</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

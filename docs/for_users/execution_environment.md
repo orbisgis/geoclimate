@@ -31,7 +31,7 @@ where
 - -h  shows help information
 - -v  shows the Geoclimate version
 
-Please follow this [link](https://github.com/orbisgis/geoclimate/tree/v1.0.0-RC1/processingchain/src/test/resources/org/orbisgis/orbisprocess/geoclimate/processingchain/config)
+Please follow this [link](https://github.com/orbisgis/geoclimate/tree/v1.0.0-RC1/processingchain/src/test/resources/org/orbisgis/geoclimate/geoindicators/config)
 to find various configuration files.
 
 The Geoclimate.jar is binary distribution that contains all necessary dependencies.

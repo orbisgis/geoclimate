@@ -1,4 +1,4 @@
-package org.orbisgis.orbisprocess.geoclimate
+package org.orbisgis.geoclimate
 
 import org.orbisgis.geoclimate.bdtopo_v2.BDTopo_V2
 import org.orbisgis.geoclimate.osm.OSM
@@ -29,9 +29,6 @@ class Geoclimate implements Callable<Integer> {
     public static final def PROCESS_FAIL_CODE = 1
     public static final def PROCESS_INVALID_CODE = 2
 
-    public static def OSM = new OSM()
-    public static def BDTOPO_V2 = BDTopo_V2
-
     public static def PROPS
 
     /**
@@ -41,7 +38,7 @@ class Geoclimate implements Callable<Integer> {
      */
     static void setLogger(def logger){
         OSM.logger = logger
-        BDTopo_V2_Utils.logger = logger
+        BDTopo_V2.logger = logger
     }
 
     @CommandLine.Option(names = ['-w'],
@@ -59,7 +56,7 @@ class Geoclimate implements Callable<Integer> {
     @Override
     Integer call() {
         if (workflow.trim().equalsIgnoreCase("OSM")) {
-            def success = OSM.workflow.execute(configurationFile: configFile.trim())
+            def success = OSM.WorkflowOSM.workflow().execute(configurationFile: configFile.trim())
             if (success) {
                 println("The OSM workflow has been successfully executed")
                 return SUCCESS_CODE

@@ -1,4 +1,4 @@
-package org.orbisgis.orbisprocess.geoclimate
+package org.orbisgis.geoclimate
 
 import groovy.json.JsonOutput
 import org.junit.jupiter.api.Disabled
