@@ -14,7 +14,7 @@ The distance of each RSU to each of the LCZ types is calculated in the normalize
 
 
 
-![](../../resources/images/common/icons/github.png) The LCZ classification source code is available [here](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/geoindicators/src/main/groovy/org/orbisgis/orbisprocess/geoclimate/geoindicators/TypologyClassification.groovy).
+![](../../resources/images/common/icons/github.png) The LCZ classification source code is available [here](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/geoindicators/src/main/groovy/org/orbisgis/geoclimate/geoindicators/TypologyClassification.groovy).
 
 ## Table definition ![](../../resources/images/common/icons/table.png)
 

@@ -12,7 +12,7 @@ To use the current snapshot add the following lines in the `pom`
 
 ```xml
 <dependency>
-  <groupId>org.orbisgis.orbisprocess</groupId>
+  <groupId>org.orbisgis.geoclimate</groupId>
   <artifactId>geoclimate</artifactId>
   <version>1.0.0-SNAPSHOT</version>
 </dependency>

@@ -67,12 +67,12 @@ To know more about these output tables, read [this page](./outputs.md).
 
 ### The process
 
-The Geoclimate workflow is a groovy file stored [here](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/processingchain/src/main/groovy/org/orbisgis/orbisprocess/geoclimate/processingchain/Workflow.groovy).
+The Geoclimate workflow is a groovy file stored [here](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/processingchain/src/main/groovy/org/orbisgis/geoclimate/processingchain/Workflow.groovy).
 
 In this file, the two dataset use cases are translated into two processes :
 
-- [OSM](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/processingchain/src/main/groovy/org/orbisgis/orbisprocess/geoclimate/processingchain/Workflow.groovy#L1540)
-- [BDTOPO_V2](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/processingchain/src/main/groovy/org/orbisgis/orbisprocess/geoclimate/processingchain/Workflow.groovy#L131)
+- [OSM](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/processingchain/src/main/groovy/org/orbisgis/geoclimate/processingchain/Workflow.groovy#L1540)
+- [BDTOPO_V2](https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/processingchain/src/main/groovy/org/orbisgis/geoclimate/processingchain/Workflow.groovy#L131)
 
 When we will run the geoclimate workflow, we will use one of these two processes.
 
@@ -80,7 +80,7 @@ When we will run the geoclimate workflow, we will use one of these two processes
 
 The parameters, needed by the process, are stored in an independent configuration file. This way, the user has just to adapt this file instead of changing some things in the workflow groovy file, which may be a bit too complex for non-experts.
 
-Currently, there is 9 (`.json`) configuration files, that can be used to run Geoclimate with the two input datasets (see [OSM](https://github.com/orbisgis/geoclimate/tree/master/osm/src/test/resources/org/orbisgis/orbisprocess/geoclimate/osm/config) and [BD Topo V2](https://github.com/orbisgis/geoclimate/tree/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config)).
+Currently, there is 9 (`.json`) configuration files, that can be used to run Geoclimate with the two input datasets (see [OSM](https://github.com/orbisgis/geoclimate/tree/master/osm/src/test/resources/org/orbisgis/geoclimate/osm/config) and [BD Topo V2](https://github.com/orbisgis/geoclimate/tree/master/bdtopo_v2/src/test/resources/org/orbisgis/geoclimate/bdtopo_v2/config)).
 
 Depending on the input dataset, these configuration files allows the user to "play" various scenarios which can be summarized with the illustration below.
 
@@ -92,22 +92,22 @@ Depending on the input dataset, these configuration files allows the user to "pl
 
 In details, below are listed the different possibilities offered by this files:
 
-For [OSM](https://github.com/orbisgis/geoclimate/tree/master/osm/src/test/resources/org/orbisgis/orbisprocess/geoclimate/osm/config)
+For [OSM](https://github.com/orbisgis/geoclimate/tree/master/osm/src/test/resources/org/orbisgis/geoclimate/osm/config)
 
 
-- [osm_workflow_envelope_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/osm/src/test/resources/org/orbisgis/orbisprocess/geoclimate/osm/config/osm_workflow_envelope_folderoutput.json) 
-- [osm_workflow_mixedfilter_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/osm/src/test/resources/org/orbisgis/orbisprocess/geoclimate/osm/config/osm_workflow_mixedfilter_folderoutput.json) 
-- [osm_workflow_placename_dboutput.json](https://github.com/orbisgis/geoclimate/blob/master/osm/src/test/resources/org/orbisgis/orbisprocess/geoclimate/osm/config/osm_workflow_placename_dboutput.json) 
-- [osm_workflow_placename_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/osm/src/test/resources/org/orbisgis/orbisprocess/geoclimate/osm/config/osm_workflow_placename_folderoutput.json)
+- [osm_workflow_envelope_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/osm/src/test/resources/org/orbisgis/geoclimate/osm/config/osm_workflow_envelope_folderoutput.json) 
+- [osm_workflow_mixedfilter_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/osm/src/test/resources/org/orbisgis/geoclimate/osm/config/osm_workflow_mixedfilter_folderoutput.json) 
+- [osm_workflow_placename_dboutput.json](https://github.com/orbisgis/geoclimate/blob/master/osm/src/test/resources/org/orbisgis/geoclimate/osm/config/osm_workflow_placename_dboutput.json) 
+- [osm_workflow_placename_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/osm/src/test/resources/org/orbisgis/geoclimate/osm/config/osm_workflow_placename_folderoutput.json)
 
-For [BD Topo V2](https://github.com/orbisgis/geoclimate/tree/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config)
+For [BD Topo V2](https://github.com/orbisgis/geoclimate/tree/master/bdtopo_v2/src/test/resources/org/orbisgis/geoclimate/bdtopo_v2/config)
 
 
-- [bdtopo_workflow_dbinput_dboutput.json](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_dbinput_dboutput.json)
-- [bdtopo_workflow_folderinput_dboutput.json](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_dboutput.json) 
-- [bdtopo_workflow_folderinput_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_folderoutput.json) 
-- [bdtopo_workflow_folderinput_folderoutput_id_zones.json](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_folderoutput_id_zones.json)
-- [bdtopo_workflow_folderinput_id_zones_folderoutput_tablenames.json](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_id_zones_folderoutput_tablenames.json) 
+- [bdtopo_workflow_dbinput_dboutput.json](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/geoclimate/bdtopo_v2/config/bdtopo_workflow_dbinput_dboutput.json)
+- [bdtopo_workflow_folderinput_dboutput.json](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_dboutput.json) 
+- [bdtopo_workflow_folderinput_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_folderoutput.json) 
+- [bdtopo_workflow_folderinput_folderoutput_id_zones.json](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_folderoutput_id_zones.json)
+- [bdtopo_workflow_folderinput_id_zones_folderoutput_tablenames.json](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_id_zones_folderoutput_tablenames.json) 
 
 
 
@@ -135,7 +135,7 @@ Inside these configuration files, we have the following entries:
 
 #### Example
 
-Below is an example with the configuration file [bdtopo_workflow_folderinput_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_folderoutput.json) 
+Below is an example with the configuration file [bdtopo_workflow_folderinput_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_folderoutput.json) 
 
 ```json
 {
@@ -176,11 +176,11 @@ Once you edited and adapted your configuration file to your needs, you are ready
 @GrabResolver(name='orbisgis', root='https://nexus.orbisgis.org/repository/orbisgis/')
 
 // Declaration of our Nexus repository, where the geoclimate project is stored
-@Grab(group='org.orbisgis.orbisprocess', module='geoclimate', version='1.0.0-SNAPSHOT')
+@Grab(group='org.orbisgis.geoclimate', module='geoclimate', version='1.0.0-SNAPSHOT')
 
 // Importing needed classes
 // In the Geoclimate object, we already have all the classes that allow access to the processes
-import org.orbisgis.orbisprocess.geoclimate.Geoclimate
+import Geoclimate
 
 // We declare the tool that register and display the logs
 Geoclimate.logger = logger

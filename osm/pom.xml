@@ -4,13 +4,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>geoclimate-parent</artifactId>
-        <groupId>org.orbisgis.orbisprocess</groupId>
+        <groupId>org.orbisgis.geoclimate</groupId>
         <version>1.0.0-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>osm</artifactId>
-    <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
+    <groupId>org.orbisgis.geoclimate</groupId>
     <version>1.0.0-SNAPSHOT</version>
 
     <properties>
@@ -59,13 +59,8 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
+            <groupId>org.orbisgis.geoclimate</groupId>
             <artifactId>geoindicators</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.orbisgis.orbisprocess.geoclimate</groupId>
-            <artifactId>processingchain</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
@@ -139,6 +134,5 @@
             <url>file:/var/www/html/${project.parent.artifactId}/${project.artifactId}</url>
         </site>
     </distributionManagement>
-
 
 </project>
