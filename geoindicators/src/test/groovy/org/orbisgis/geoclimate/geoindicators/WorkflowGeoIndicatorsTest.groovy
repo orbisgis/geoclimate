@@ -1,4 +1,4 @@
-package org.orbisgis.geoclimate.workflowGeoIndicators
+package org.orbisgis.geoclimate.geoindicators
 
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test

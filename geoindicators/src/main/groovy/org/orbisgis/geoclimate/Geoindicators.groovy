@@ -8,7 +8,7 @@ import org.orbisgis.geoclimate.geoindicators.RoadIndicators
 import org.orbisgis.geoclimate.geoindicators.RsuIndicators
 import org.orbisgis.geoclimate.geoindicators.SpatialUnits
 import org.orbisgis.geoclimate.geoindicators.TypologyClassification
-import org.orbisgis.geoclimate.workflowGeoIndicators.WorkflowGeoIndicators
+import org.orbisgis.geoclimate.geoindicators.WorkflowGeoIndicators
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import org.slf4j.LoggerFactory
 

@@ -1,4 +1,4 @@
-package org.orbisgis.geoclimate.workflowGeoIndicators
+package org.orbisgis.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
 import org.apache.commons.io.FileUtils
