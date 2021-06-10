@@ -52,28 +52,28 @@ class TypologyClassificationTests {
         h2GIS."$pavg.results.outputTableName".eachRow { row ->
             def id = row.id_rsu
             results[id] = [:]
-            results[id]["LCZ1"] = row.LCZ1
-            results[id]["LCZ2"] = row.LCZ2
+            results[id]["LCZ_PRIMARY"] = row.LCZ_PRIMARY
+            results[id]["LCZ_SECONDARY"] = row.LCZ_SECONDARY
             results[id]["min_distance"] = row.min_distance
             results[id]["PSS"] = row.LCZ_EQUALITY_VALUE
-            assert results[id]["LCZ1"] != results[id]["LCZ2"]
+            assert results[id]["LCZ_PRIMARY"] != results[id]["LCZ_SECONDARY"]
         }
-        assert 1 == results[1]["LCZ1"]
+        assert 1 == results[1]["LCZ_PRIMARY"]
         assert 0 == results[1]["min_distance"]
-        assert 8 == results[2]["LCZ1"]
+        assert 8 == results[2]["LCZ_PRIMARY"]
         assert results[2]["min_distance"] > 0
         assert results[2]["PSS"] < 1
-        assert 107 == results[3]["LCZ1"]
-        assert !results[3]["LCZ2"]
+        assert 107 == results[3]["LCZ_PRIMARY"]
+        assert !results[3]["LCZ_SECONDARY"]
         assert !results[3]["min_distance"]
         assert !results[3]["PSS"]
-        assert 102 == results[4]["LCZ1"]
-        assert 101 == results[5]["LCZ1"]
-        assert 104 == results[6]["LCZ1"]
-        assert 105 == results[7]["LCZ1"]
-        assert 101 == results[18]["LCZ1"]
-        assert 8 == results[19]["LCZ1"]
-        assert 4 == results[20]["LCZ1"]
+        assert 102 == results[4]["LCZ_PRIMARY"]
+        assert 101 == results[5]["LCZ_PRIMARY"]
+        assert 104 == results[6]["LCZ_PRIMARY"]
+        assert 105 == results[7]["LCZ_PRIMARY"]
+        assert 101 == results[18]["LCZ_PRIMARY"]
+        assert 8 == results[19]["LCZ_PRIMARY"]
+        assert 4 == results[20]["LCZ_PRIMARY"]
 
         h2GIS """
                 DROP TABLE IF EXISTS buff_rsu_test_lcz_indics, buff_rsu_test_all_indics_for_lcz;
@@ -107,29 +107,29 @@ class TypologyClassificationTests {
         h2GIS."$pmed.results.outputTableName".eachRow {
             row ->
                 if(row.id_rsu == 1){
-                    assert 1 == row.LCZ1
+                    assert 1 == row.LCZ_PRIMARY
                     assert 0 == row.min_distance
                 }
                 else if(row.id_rsu == 2){
-                    assert 8 == row.LCZ1
+                    assert 8 == row.LCZ_PRIMARY
                     assert row.min_distance > 0
                     assert row.LCZ_EQUALITY_VALUE < 1
                 }
                 else if(row.id_rsu == 8){
-                    assert 104 == row.LCZ1
+                    assert 104 == row.LCZ_PRIMARY
                     assert -1 == row.min_distance
                 }
                 else if(row.id_rsu == 9){
-                    assert 105 == row.LCZ1
+                    assert 105 == row.LCZ_PRIMARY
                 }
                 else if(row.id_rsu == 10){
-                    assert 101 == row.LCZ1
+                    assert 101 == row.LCZ_PRIMARY
                 }
                 else if(row.id_rsu == 10){
-                    assert 102 == row.LCZ1
+                    assert 102 == row.LCZ_PRIMARY
                 }
                 else if(row.id_rsu == 12){
-                    assert 10 == row.LCZ1
+                    assert 10 == row.LCZ_PRIMARY
                 }
         }
         // Test with real indicator values (Montreuil ID_RSU 795), (l'haye les roses ID_RSU 965 and 1026)
@@ -147,12 +147,12 @@ class TypologyClassificationTests {
                                        "terrain_roughness_length"       : 0.5],
                 prefixName          : "test",
                 datasource          : h2GIS])
-        assert 6 == h2GIS.firstRow("SELECT LCZ1 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 13").lcz1
-        assert 6 == h2GIS.firstRow("SELECT LCZ1 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 14").lcz1
-        assert 4 == h2GIS.firstRow("SELECT LCZ1 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 15").lcz1
-        assert 5 == h2GIS.firstRow("SELECT LCZ2 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 15").lcz2
-        assert 6 == h2GIS.firstRow("SELECT LCZ1 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 16").lcz1
-        assert 102 == h2GIS.firstRow("SELECT LCZ1 FROM ${pReal.results.outputTableName} WHERE ID_RSU = 17").lcz1
+        assert 6 == h2GIS.firstRow("SELECT LCZ_PRIMARY FROM ${pReal.results.outputTableName} WHERE ID_RSU = 13").LCZ_PRIMARY
+        assert 6 == h2GIS.firstRow("SELECT LCZ_PRIMARY FROM ${pReal.results.outputTableName} WHERE ID_RSU = 14").LCZ_PRIMARY
+        assert 4 == h2GIS.firstRow("SELECT LCZ_PRIMARY FROM ${pReal.results.outputTableName} WHERE ID_RSU = 15").LCZ_PRIMARY
+        assert 5 == h2GIS.firstRow("SELECT LCZ_SECONDARY FROM ${pReal.results.outputTableName} WHERE ID_RSU = 15").LCZ_SECONDARY
+        assert 6 == h2GIS.firstRow("SELECT LCZ_PRIMARY FROM ${pReal.results.outputTableName} WHERE ID_RSU = 16").LCZ_PRIMARY
+        assert 102 == h2GIS.firstRow("SELECT LCZ_PRIMARY FROM ${pReal.results.outputTableName} WHERE ID_RSU = 17").LCZ_PRIMARY
     }
 
     @Test

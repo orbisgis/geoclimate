@@ -675,9 +675,9 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def user = "ebocher"
-        def password = "k@ndinsky22"
-        def url = "jdbc:postgresql://194.199.60.147:5432/geoclimate"
+        def user = ""
+        def password = ""
+        def url = ""
         def id_zones = ["56223", "44185"]
         def local_database_name="paendora_${System.currentTimeMillis()}"
 

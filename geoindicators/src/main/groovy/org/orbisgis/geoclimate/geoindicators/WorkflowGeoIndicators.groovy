@@ -1897,7 +1897,7 @@ IProcess rasterizeIndicators() {
                 * Make aggregation process with previous grid and current rsu lcz
                 */
                 if (list_indicators*.toUpperCase().contains("LCZ_FRACTION") && rsu_lcz) {
-                    def indicatorName = "LCZ1"
+                    def indicatorName = "LCZ_PRIMARY"
                     def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics()
                     if (upperScaleAreaStatistics.execute(
                             [upperTableName : grid_table_name,

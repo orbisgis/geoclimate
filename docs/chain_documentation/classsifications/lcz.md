@@ -10,7 +10,7 @@ The LCZ, introduced by *Stewart* & *Oke* ([2012](http://journals.ametsoc.org/doi
 
 A LCZ type is assigned to a RSU. This "assignment" is performed according to the 7 indicators used for LCZ classification (`sky_view_factor`, `aspect_ratio`, `building_surface_fraction`, `impervious_surface_fraction`, `pervious_surface_fraction`, `height_of_roughness_elements` and `terrain_roughness_class`). Each LCZ type has a given range for each of the 7 indicators. Then the method to find the LCZ type that is the most appropriate for a given RSU is based on the minimum distance (`MIN_DISTANCE`) to each LCZ (in the 7 dimensions space). In order to calculate this distance, each dimension is normalized according to the mean and the standard deviation (or median and absolute median deviation) of the interval values. Some of the indicators may be more important (or reliable) than the other for the LCZ identification. In order to manage this point, a map containing weights may be passed and will be used to multiply the distance due to a given indicator.
 
-The distance of each RSU to each of the LCZ types is calculated in the normalized interval. The two LCZ types being the closest to the RSU indicators (`LCZ1` and `LCZ2`) are associated to this RSU. An indicator of uncertainty based on the *Perkin Skill Score* (`PSS`) method is also associated to this "assignment".
+The distance of each RSU to each of the LCZ types is calculated in the normalized interval. The two LCZ types being the closest to the RSU indicators (`LCZ_PRIMARY` and `LCZ_SECONDARY`) are associated to this RSU. An indicator of uncertainty based on the *Perkin Skill Score* (`PSS`) method is also associated to this "assignment".
 
 
 
@@ -23,8 +23,8 @@ The distance of each RSU to each of the LCZ types is calculated in the normalize
 | Field name                                                 | Field type       | Definition                   |
 | :--------------------------------------------------------- | :--------------- | ---------------------------- |
 | **ID_RSU** ![](../../resources/images/common/icons/pk.png) | integer          | RSU's unique id              |
-| LCZ1                                                       | integer          | Main LCZ type                |
-| LCZ2                                                       | integer          | Secondary LCZ type           |
+| LCZ_PRIMARY                                                       | integer          | Main LCZ type                |
+| LCZ_SECONDARY                                                       | integer          | Secondary LCZ type           |
 | MIN_DISTANCE                                               | double precision | Minimum distance to each LCZ |
 | PSS                                                        | double precision | *Perkin Skill Score*         |
 
@@ -63,7 +63,7 @@ For each of them, we give the definition and the hexadecimal color code used to 
 
 Two `.sld` style files, based on this classification, are provided in the `/processing_chain/src/main/resources/styles/` folder ([here](https://github.com/orbisgis/geoclimate/tree/v1.0.0-RC1/processingchain/src/main/resources/styles)):
 
-- `lcz1.sld` : the style ready to be applied to the field `LCZ1`
-- `lcz2.sld` : the style ready to be applied to the field `LCZ2`
+- `lcz_primary.sld` : the style ready to be applied to the field `LCZ_PRIMARY`
+- `lcz_secondary.sld` : the style ready to be applied to the field `LCZ_SECONDARY`
 
 ![](../../resources/images/chain_documentation/lcz_legend.png)
