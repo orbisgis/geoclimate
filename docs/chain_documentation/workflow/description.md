@@ -80,7 +80,7 @@ When we will run the geoclimate workflow, we will use one of these two processes
 
 The parameters, needed by the process, are stored in an independent configuration file. This way, the user has just to adapt this file instead of changing some things in the workflow groovy file, which may be a bit too complex for non-experts.
 
-Currently, there is 9 (`.json`) configuration files, that can be used to run Geoclimate with the two input datasets (see [OSM](https://github.com/orbisgis/geoclimate/tree/master/osm/src/test/resources/org/orbisgis/geoclimate/osm/config) and [BD Topo V2](https://github.com/orbisgis/geoclimate/tree/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config)).
+Currently, there is 9 (`.json`) configuration files, that can be used to run Geoclimate with the two input datasets (see [OSM](https://github.com/orbisgis/geoclimate/tree/master/osm/src/test/resources/org/orbisgis/geoclimate/osm/config) and [BD Topo V2](https://github.com/orbisgis/geoclimate/tree/master/bdtopo_v2/src/test/resources/org/orbisgis/geoclimate/bdtopo_v2/config)).
 
 Depending on the input dataset, these configuration files allows the user to "play" various scenarios which can be summarized with the illustration below.
 
@@ -135,7 +135,7 @@ Inside these configuration files, we have the following entries:
 
 #### Example
 
-Below is an example with the configuration file [bdtopo_workflow_folderinput_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/orbisprocess/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_folderoutput.json) 
+Below is an example with the configuration file [bdtopo_workflow_folderinput_folderoutput.json](https://github.com/orbisgis/geoclimate/blob/master/bdtopo_v2/src/test/resources/org/orbisgis/geoclimate/bdtopo_v2/config/bdtopo_workflow_folderinput_folderoutput.json) 
 
 ```json
 {
