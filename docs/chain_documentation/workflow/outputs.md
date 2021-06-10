@@ -211,8 +211,8 @@ This table stores the result of the LCZ classification (described [here](../clas
 | Field name                                                 | Field type       | Definition                   |
 | :--------------------------------------------------------- | :--------------- | ---------------------------- |
 | **ID_RSU** ![](../../resources/images/common/icons/pk.png) | integer          | RSU's unique id              |
-| LCZ1                                                       | integer          | Main LCZ type                |
-| LCZ2                                                       | integer          | Secondary LCZ type           |
+| LCZ_PRIMARY                                                       | integer          | Main LCZ type                |
+| LCZ_SECONDARY                                                       | integer          | Secondary LCZ type           |
 | MIN_DISTANCE                                               | double precision | Minimum distance to each LCZ |
 | PSS                                                        | double precision | *Perkin Skill Score*         |
 

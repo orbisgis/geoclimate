@@ -9,7 +9,7 @@
           <sld:Name>LCZ 1: Compact high-rise</sld:Name>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
-              <ogc:PropertyName>lcz1</ogc:PropertyName>
+              <ogc:PropertyName>LCZ_SECONDARY</ogc:PropertyName>
               <ogc:Literal>1</ogc:Literal>
             </ogc:PropertyIsEqualTo>
           </ogc:Filter>
@@ -23,7 +23,7 @@
           <sld:Name>LCZ 2: Compact mid-rise</sld:Name>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
-              <ogc:PropertyName>lcz1</ogc:PropertyName>
+              <ogc:PropertyName>LCZ_SECONDARY</ogc:PropertyName>
               <ogc:Literal>2</ogc:Literal>
             </ogc:PropertyIsEqualTo>
           </ogc:Filter>
@@ -37,7 +37,7 @@
           <sld:Name>LCZ 3: Compact low-rise</sld:Name>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
-              <ogc:PropertyName>lcz1</ogc:PropertyName>
+              <ogc:PropertyName>LCZ_SECONDARY</ogc:PropertyName>
               <ogc:Literal>3</ogc:Literal>
             </ogc:PropertyIsEqualTo>
           </ogc:Filter>
@@ -51,7 +51,7 @@
           <sld:Name>LCZ 4: Open high-rise</sld:Name>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
-              <ogc:PropertyName>lcz1</ogc:PropertyName>
+              <ogc:PropertyName>LCZ_SECONDARY</ogc:PropertyName>
               <ogc:Literal>4</ogc:Literal>
             </ogc:PropertyIsEqualTo>
           </ogc:Filter>
@@ -65,7 +65,7 @@
           <sld:Name>LCZ 5: Open mid-rise</sld:Name>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
-              <ogc:PropertyName>lcz1</ogc:PropertyName>
+              <ogc:PropertyName>LCZ_SECONDARY</ogc:PropertyName>
               <ogc:Literal>5</ogc:Literal>
             </ogc:PropertyIsEqualTo>
           </ogc:Filter>
@@ -79,7 +79,7 @@
           <sld:Name>LCZ 6: Open low-rise</sld:Name>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
-              <ogc:PropertyName>lcz1</ogc:PropertyName>
+              <ogc:PropertyName>LCZ_SECONDARY</ogc:PropertyName>
               <ogc:Literal>6</ogc:Literal>
             </ogc:PropertyIsEqualTo>
           </ogc:Filter>
@@ -93,7 +93,7 @@
           <sld:Name>LCZ 7: Lightweight low-rise</sld:Name>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
-              <ogc:PropertyName>lcz1</ogc:PropertyName>
+              <ogc:PropertyName>LCZ_SECONDARY</ogc:PropertyName>
               <ogc:Literal>7</ogc:Literal>
             </ogc:PropertyIsEqualTo>
           </ogc:Filter>
@@ -107,7 +107,7 @@
           <sld:Name>LCZ 8: Large low-rise</sld:Name>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
-              <ogc:PropertyName>lcz1</ogc:PropertyName>
+              <ogc:PropertyName>LCZ_SECONDARY</ogc:PropertyName>
               <ogc:Literal>8</ogc:Literal>
             </ogc:PropertyIsEqualTo>
           </ogc:Filter>
@@ -121,7 +121,7 @@
           <sld:Name>LCZ 9: Sparsely built</sld:Name>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
-              <ogc:PropertyName>lcz1</ogc:PropertyName>
+              <ogc:PropertyName>LCZ_SECONDARY</ogc:PropertyName>
               <ogc:Literal>9</ogc:Literal>
             </ogc:PropertyIsEqualTo>
           </ogc:Filter>
@@ -135,7 +135,7 @@
           <sld:Name>LCZ 10: Heavy industry</sld:Name>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
-              <ogc:PropertyName>lcz1</ogc:PropertyName>
+              <ogc:PropertyName>LCZ_SECONDARY</ogc:PropertyName>
               <ogc:Literal>10</ogc:Literal>
             </ogc:PropertyIsEqualTo>
           </ogc:Filter>
@@ -149,7 +149,7 @@
           <sld:Name>LCZ A: Dense trees</sld:Name>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
-              <ogc:PropertyName>lcz1</ogc:PropertyName>
+              <ogc:PropertyName>LCZ_SECONDARY</ogc:PropertyName>
               <ogc:Literal>101</ogc:Literal>
             </ogc:PropertyIsEqualTo>
           </ogc:Filter>
@@ -163,7 +163,7 @@
           <sld:Name>LCZ B: Scattered trees</sld:Name>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
-              <ogc:PropertyName>lcz1</ogc:PropertyName>
+              <ogc:PropertyName>LCZ_SECONDARY</ogc:PropertyName>
               <ogc:Literal>102</ogc:Literal>
             </ogc:PropertyIsEqualTo>
           </ogc:Filter>
@@ -177,7 +177,7 @@
           <sld:Name>LCZ C: Bush,scrub</sld:Name>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
-              <ogc:PropertyName>lcz1</ogc:PropertyName>
+              <ogc:PropertyName>LCZ_SECONDARY</ogc:PropertyName>
               <ogc:Literal>103</ogc:Literal>
             </ogc:PropertyIsEqualTo>
           </ogc:Filter>
@@ -191,7 +191,7 @@
           <sld:Name>LCZ D: Low plants</sld:Name>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
-              <ogc:PropertyName>lcz1</ogc:PropertyName>
+              <ogc:PropertyName>LCZ_SECONDARY</ogc:PropertyName>
               <ogc:Literal>104</ogc:Literal>
             </ogc:PropertyIsEqualTo>
           </ogc:Filter>
@@ -205,7 +205,7 @@
           <sld:Name>LCZ E: Bare rock or paved</sld:Name>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
-              <ogc:PropertyName>lcz1</ogc:PropertyName>
+              <ogc:PropertyName>LCZ_SECONDARY</ogc:PropertyName>
               <ogc:Literal>105</ogc:Literal>
             </ogc:PropertyIsEqualTo>
           </ogc:Filter>
@@ -219,7 +219,7 @@
           <sld:Name>LCZ F: Bare soil or sand</sld:Name>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
-              <ogc:PropertyName>lcz1</ogc:PropertyName>
+              <ogc:PropertyName>LCZ_SECONDARY</ogc:PropertyName>
               <ogc:Literal>106</ogc:Literal>
             </ogc:PropertyIsEqualTo>
           </ogc:Filter>
@@ -233,7 +233,7 @@
           <sld:Name>LCZ G: Water</sld:Name>
           <ogc:Filter>
             <ogc:PropertyIsEqualTo>
-              <ogc:PropertyName>lcz1</ogc:PropertyName>
+              <ogc:PropertyName>LCZ_SECONDARY</ogc:PropertyName>
               <ogc:Literal>107</ogc:Literal>
             </ogc:PropertyIsEqualTo>
           </ogc:Filter>
@@ -248,11 +248,11 @@
           <ogc:Filter>
             <ogc:Or>
               <ogc:PropertyIsEqualTo>
-                <ogc:PropertyName>lcz1</ogc:PropertyName>
+                <ogc:PropertyName>LCZ_SECONDARY</ogc:PropertyName>
                 <ogc:Literal/>
               </ogc:PropertyIsEqualTo>
               <ogc:PropertyIsNull>
-                <ogc:PropertyName>lcz1</ogc:PropertyName>
+                <ogc:PropertyName>LCZ_SECONDARY</ogc:PropertyName>
               </ogc:PropertyIsNull>
             </ogc:Or>
           </ogc:Filter>

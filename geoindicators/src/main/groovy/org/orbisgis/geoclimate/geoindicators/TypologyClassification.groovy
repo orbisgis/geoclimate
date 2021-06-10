@@ -100,7 +100,7 @@ IProcess identifyLczType() {
                 def normalizedValues = postfix "normalizedValues"
                 def normalizedRange = postfix "normalizedRange"
                 def distribLczTable = postfix "distribLczTable"
-                def distribLczTableWithoutLcz1 = postfix "distribLczTableWithoutLcz1"
+                def distribLczTableWithoutLcz1 = postfix "distribLczTableWithout_lcz_primary"
                 def distribLczTableInt = postfix "distribLczTableInt"
                 def ruralLCZ = postfix "ruralLCZ"
                 def classifiedRuralLCZ = postfix "classifiedRuralLCZ"
@@ -365,27 +365,27 @@ IProcess identifyLczType() {
                 def resultsDistrib = computeDistribChar.results.outputTableName
 
                 // Rename the standard indicators into names consistent with the current IProcess (LCZ type...)
-                datasource """  ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_COL TO LCZ1;
+                datasource """  ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_COL TO LCZ_PRIMARY;
                                 ALTER TABLE $resultsDistrib RENAME COLUMN UNIQUENESS_VALUE TO LCZ_UNIQUENESS_VALUE;
                                 ALTER TABLE $resultsDistrib RENAME COLUMN EQUALITY_VALUE TO LCZ_EQUALITY_VALUE;
-                                ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_COL2 TO LCZ2;
+                                ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_COL2 TO LCZ_SECONDARY;
                                 ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_VAL TO MIN_DISTANCE;"""
 
                 // Need to replace the string LCZ values by an integer
-                datasource."$resultsDistrib".lcz1.createIndex()
-                datasource."$resultsDistrib".lcz2.createIndex()
+                datasource."$resultsDistrib".lcz_primary.createIndex()
+                datasource."$resultsDistrib".lcz_secondary.createIndex()
                 def casewhenQuery1 = ""
                 def casewhenQuery2 = ""
                 def parenthesis = ""
                 correspondenceMap.each{lczString, lczInt ->
-                    casewhenQuery1 += "CASEWHEN(LCZ1 = '$lczString', $lczInt, "
-                    casewhenQuery2 += "CASEWHEN(LCZ2 = '$lczString', $lczInt, "
+                    casewhenQuery1 += "CASEWHEN(LCZ_PRIMARY = '$lczString', $lczInt, "
+                    casewhenQuery2 += "CASEWHEN(LCZ_SECONDARY = '$lczString', $lczInt, "
                     parenthesis += ")"
                 }
                 datasource """  DROP TABLE IF EXISTS $distribLczTableInt;
                                 CREATE TABLE $distribLczTableInt
-                                        AS SELECT   $ID_FIELD_RSU, $casewhenQuery1 null$parenthesis AS LCZ1,
-                                                    $casewhenQuery2 null$parenthesis AS LCZ2, 
+                                        AS SELECT   $ID_FIELD_RSU, $casewhenQuery1 null$parenthesis AS LCZ_PRIMARY,
+                                                    $casewhenQuery2 null$parenthesis AS LCZ_SECONDARY, 
                                                     MIN_DISTANCE, LCZ_UNIQUENESS_VALUE, LCZ_EQUALITY_VALUE 
                                         FROM $resultsDistrib"""
 
