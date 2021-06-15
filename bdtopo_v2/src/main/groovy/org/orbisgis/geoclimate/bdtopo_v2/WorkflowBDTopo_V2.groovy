@@ -83,7 +83,7 @@ import java.sql.SQLException
  *     {"distance" : 1000,
  *     "prefixName": "",
  *          rsu_indicators:{
- *         "indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+ *         "indicatorUse": ["LCZ", "UTRF", "TEB"],
  *         "svfSimplified": false, *
  *         "mapOfWeights":
  *         {"sky_view_factor"                : 4,
@@ -104,7 +104,7 @@ import java.sql.SQLException
  *
  * - distance The integer value to expand the envelope of zone when recovering the data
  * (some objects may be badly truncated if they are not within the envelope)
- * - indicatorUse List of geoindicator types to compute (default ["LCZ", "URBAN_TYPOLOGY", "TEB"]
+ * - indicatorUse List of geoindicator types to compute (default ["LCZ", "UTRF", "TEB"]
  *                  --> "LCZ" : compute the indicators needed for the LCZ classification (Stewart et Oke, 2012)
  *                  --> "URBAN TYPOLOGY" : compute the indicators needed for the urban typology classification (Bocher et al., 2017)
  *                  --> "TEB" : compute the indicators needed for the Town Energy Balance model
@@ -1134,10 +1134,10 @@ def extractProcessingParameters(def processing_parameters){
                                                           "pervious_surface_fraction"      : 0,
                                                           "height_of_roughness_elements"   : 6,
                                                           "terrain_roughness_length"       : 0.5],
-                                         urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_1.model"]
+                                         urbanTypoModelName: "UTRF_BDTOPO_V2_RF_2_1.model"]
             def indicatorUseP = rsu_indicators.indicatorUse
             if(indicatorUseP && indicatorUseP in List) {
-                def allowed_rsu_indicators = ["LCZ", "URBAN_TYPOLOGY", "TEB"]
+                def allowed_rsu_indicators = ["LCZ", "UTRF", "TEB"]
                 def allowedOutputRSUIndicators = allowed_rsu_indicators.intersect(indicatorUseP*.toUpperCase())
                 if (allowedOutputRSUIndicators) {
                     rsu_indicators_default.indicatorUse = indicatorUseP
@@ -1328,7 +1328,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
                         indicatorUse: rsu_indicators_params.indicatorUse,
                         svfSimplified: rsu_indicators_params.svfSimplified, prefixName: processing_parameters.prefixName,
                         mapOfWeights: rsu_indicators_params.mapOfWeights,
-                        urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_1.model")) {
+                        urbanTypoModelName: "UTRF_BDTOPO_V2_RF_2_1.model")) {
                     error "Cannot build the geoindicators for the zone $id_zone"
                 } else {
                     results.putAll(geoIndicators.getResults())
