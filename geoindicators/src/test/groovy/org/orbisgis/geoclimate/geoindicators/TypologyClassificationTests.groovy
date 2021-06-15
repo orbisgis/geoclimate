@@ -383,8 +383,8 @@ class TypologyClassificationTests {
     @Test
     void tempoCreateRandomForestClassifTest() {
         // Specify the model and training datat appropriate to the right use
-        def model_name = "URBAN_TYPOLOGY_OSM_RF_2_0"
-        def training_data_name = "TRAINING_DATA_URBAN_TYPOLOGY_OSM_RF_2_0"
+        def model_name = "UTRF_OSM_RF_2_0"
+        def training_data_name = "TRAINING_DATA_UTRF_OSM_RF_2_0"
         // Name of the variable to model
         def var2model = "I_TYPO"
         def var2ModelFinal = "I_TYPO"
@@ -540,10 +540,10 @@ class TypologyClassificationTests {
     //This test is used to create the random forest model to build the urban typology with BDTOPO V2.2
     @Disabled
     @Test
-    void createRandomForestModelURBAN_TYPOLOGY_BDTOPO_V2_RF() {
+    void createRandomForestModelUTRF_BDTOPO_V2_RF() {
         // Specify the model and training datat appropriate to the right use
-        def model_name = "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_1.model"
-        def training_data_name = "TRAINING_DATA_URBAN_TYPOLOGY_BDTOPO_V2_RF_2_1.geojson.gz"
+        def model_name = "UTRF_BDTOPO_V2_RF_2_1.model"
+        def training_data_name = "TRAINING_DATA_UTRF_BDTOPO_V2_RF_2_1.geojson.gz"
         // Name of the variable to model
         def var2model = "I_TYPO"
         def var2ModelFinal = "I_TYPO"
@@ -622,10 +622,10 @@ class TypologyClassificationTests {
     //This test is used to create the random forest model to build the urban typology with OSM
     @Disabled
     @Test
-    void createRandomForestModelURBAN_TYPOLOGY_OSM_RF() {
+    void createRandomForestModelUTRF_OSM_RF() {
         // Specify the model and training datat appropriate to the right use
-        def model_name = "URBAN_TYPOLOGY_OSM_RF_2_1.model"
-        def training_data_name = "TRAINING_DATA_URBAN_TYPOLOGY_OSM_RF_2_1.geojson.gz"
+        def model_name = "UTRF_OSM_RF_2_1.model"
+        def training_data_name = "TRAINING_DATA_UTRF_OSM_RF_2_1.geojson.gz"
         // Name of the variable to model
         def var2model = "I_TYPO"
         def var2ModelFinal = "I_TYPO"
