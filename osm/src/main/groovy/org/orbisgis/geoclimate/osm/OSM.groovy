@@ -15,6 +15,7 @@ abstract class OSM  extends GroovyProcessFactory {
     public static InputDataLoading = new InputDataLoading()
     public static InputDataFormatting = new InputDataFormatting()
 
+
     static def uuid = { UUID.randomUUID().toString().replaceAll("-", "_") }
     static def getUuid() { UUID.randomUUID().toString().replaceAll("-", "_") }
     static def info = { obj -> logger.info(obj.toString()) }

@@ -29,6 +29,23 @@ class Geoclimate implements Callable<Integer> {
     public static final def PROCESS_FAIL_CODE = 1
     public static final def PROCESS_INVALID_CODE = 2
 
+
+    /**
+     * Shortcut to run the OSM workflow
+     */
+    static class OSM {
+        def static workflow = org.orbisgis.geoclimate.osm.OSM.WorkflowOSM.workflow()
+    }
+
+    /**
+     * Shortcut to run the BDTopo_V2 workflow
+     */
+    static class BDTopo_V2 {
+        def static workflow = org.orbisgis.geoclimate.bdtopo_v2.BDTopo_V2.WorkflowBDTopo_V2.workflow()
+    }
+
+
+
     public static def PROPS
 
     /**
