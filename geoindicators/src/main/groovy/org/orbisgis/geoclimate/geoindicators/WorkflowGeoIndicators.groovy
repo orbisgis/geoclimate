@@ -1226,7 +1226,7 @@ IProcess computeAllGeoIndicators() {
                 def rsuLczWithoutGeom = "rsu_lcz_without_geom"
 
                 //Compute building indicators
-                def computeBuildingsIndicators = ProcessingChain.GeoIndicatorsChain.computeBuildingsIndicators()
+                def computeBuildingsIndicators = Geoindicators.WorkflowGeoIndicators.computeBuildingsIndicators()
                 if (!computeBuildingsIndicators.execute([datasource            : datasource,
                                                          inputBuildingTableName: buildingTableName,
                                                          inputRoadTableName    : roadTable,
@@ -1241,7 +1241,7 @@ IProcess computeAllGeoIndicators() {
                 //Compute block indicators
                 def blockIndicators = null
                 if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
-                    def computeBlockIndicators = ProcessingChain.GeoIndicatorsChain.computeBlockIndicators()
+                    def computeBlockIndicators = Geoindicators.WorkflowGeoIndicators.computeBlockIndicators()
                     if (!computeBlockIndicators.execute([datasource            : datasource,
                                                          inputBuildingTableName: buildingIndicators,
                                                          inputBlockTableName   : relationBlocksFiltered,
@@ -1254,7 +1254,7 @@ IProcess computeAllGeoIndicators() {
 
                 //Compute RSU indicators
                 def rsuIndicators = null
-                def computeRSUIndicators = ProcessingChain.GeoIndicatorsChain.computeRSUIndicators()
+                def computeRSUIndicators = Geoindicators.WorkflowGeoIndicators.computeRSUIndicators()
                 if (!computeRSUIndicators.execute([datasource       : datasource,
                                                    buildingTable    : buildingIndicators,
                                                    rsuTable         : rsuRelationFiltered,

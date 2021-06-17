@@ -54,7 +54,7 @@ abstract class Geoindicators  extends GroovyProcessFactory  {
      * @return
      */
     static def isTableCacheEnable(){
-        return System.getProperty("GEOCLIMATE_CACHE")?true:false
+        return Boolean.parseBoolean(System.getProperty("GEOCLIMATE_CACHE"))?true:false
     }
 
     /**
@@ -62,7 +62,7 @@ abstract class Geoindicators  extends GroovyProcessFactory  {
      * @return
      */
     static def enableTableCache(){
-        return System.setProperty("GEOCLIMATE_CACHE",true)
+        return System.setProperty("GEOCLIMATE_CACHE","true")
     }
 
     /**
