@@ -362,7 +362,7 @@ class RsuIndicatorsTests {
         h2GIS.load(SpatialUnitsTests.class.getResource("hydro_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.class.getResource("zone_test.geojson"),true)
 
-        def prepareData = Geoindicators.SpatialUnits.prepareRSUData()
+        def prepareData = Geoindicators.SpatialUnits.prepareTSUData()
         assertTrue prepareData.execute([zoneTable: 'zone_test', roadTable: 'road_test',  railTable: '',
                                         vegetationTable : 'veget_test',
                                         hydrographicTable :'hydro_test',
@@ -372,7 +372,7 @@ class RsuIndicatorsTests {
 
         assertNotNull h2GIS.getTable(outputTableGeoms)
 
-        def rsu = Geoindicators.SpatialUnits.createRSU()
+        def rsu = Geoindicators.SpatialUnits.createTSU()
         assertTrue rsu.execute([inputTableName: outputTableGeoms, prefixName: "rsu", datasource: h2GIS])
         def outputTable = rsu.results.outputTableName
 

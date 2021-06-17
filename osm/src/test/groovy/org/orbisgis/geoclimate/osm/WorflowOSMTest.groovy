@@ -28,7 +28,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def prefixName  = "osm"
 
         // Create the RSU
-        def prepareRSUData = Geoindicators.SpatialUnits.prepareRSUData()
+        def prepareRSUData = Geoindicators.SpatialUnits.prepareTSUData()
         def createRSU = Geoindicators.SpatialUnits.createRSU()
         if (prepareRSUData([datasource        : h2GIS,
                              zoneTable         : process.getResults().outputZone,
@@ -827,7 +827,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
         String zoneTableName = prepareOSMData.getResults().outputZone
 
-        def  prepareData = Geoindicators.SpatialUnits.prepareRSUData()
+        def  prepareData = Geoindicators.SpatialUnits.prepareTSUData()
         assertTrue prepareData.execute([zoneTable: zoneTableName, roadTable: roadTableName,  railTable: '',
                                         vegetationTable : vegetationTableName,
                                         hydrographicTable :hydrographicTableName,

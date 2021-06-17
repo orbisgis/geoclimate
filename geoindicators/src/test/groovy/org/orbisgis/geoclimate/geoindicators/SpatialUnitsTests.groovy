@@ -37,30 +37,30 @@ class SpatialUnitsTests {
     }
 
     @Test
-    void createRSUTest() {
+    void createTSUTest() {
         h2GIS """
-                DROP TABLE IF EXISTS roads_rsu;
-                CREATE TABLE roads_rsu AS SELECT * FROM road_test WHERE id_road <5
+                DROP TABLE IF EXISTS roads_tsu;
+                CREATE TABLE roads_tsu AS SELECT * FROM road_test WHERE id_road <5
         """
-        def rsu = Geoindicators.SpatialUnits.createRSU()
-        assert rsu([
-                inputTableName  : "roads_rsu",
+        def tsu = Geoindicators.SpatialUnits.createTSU()
+        assert tsu([
+                inputTableName  : "roads_tsu",
                 prefixName      : "rsu",
                 datasource      : h2GIS])
-        def outputTable = rsu.results.outputTableName
+        def outputTable = tsu.results.outputTableName
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
         assert 9 == countRows.numberOfRows
     }
 
     @Test
-    void prepareGeometriesForRSUTest() {
+    void prepareGeometriesForTSUTest() {
         h2GIS.load(SpatialUnitsTests.getResource("road_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.getResource("rail_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.getResource("veget_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.getResource("hydro_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.getResource("zone_test.geojson"),true)
 
-        def prepareData = Geoindicators.SpatialUnits.prepareRSUData()
+        def prepareData = Geoindicators.SpatialUnits.prepareTSUData()
         assert prepareData([
                 zoneTable           : 'zone_test',
                 roadTable           : 'road_test',
@@ -76,9 +76,39 @@ class SpatialUnitsTests {
 
         assert h2GIS."$outputTableGeoms"
 
-        def rsu = Geoindicators.SpatialUnits.createRSU()
-        assert rsu([inputTableName: outputTableGeoms, prefixName: "rsu", datasource: h2GIS])
-        def outputTable = rsu.results.outputTableName
+        def tsu = Geoindicators.SpatialUnits.createTSU()
+        assert tsu([inputTableName: outputTableGeoms, prefixName: "tsu", datasource: h2GIS])
+        def outputTable = tsu.results.outputTableName
+        assert h2GIS.getSpatialTable(outputTable).save('./target/tsu.shp',true)
+        def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
+        assert 245 == countRows.numberOfRows
+    }
+
+    @Test
+    void createRsuTest() {
+        h2GIS.load(SpatialUnitsTests.getResource("road_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("rail_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("veget_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("hydro_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("zone_test.geojson"),true)
+
+        def createRSU = Geoindicators.SpatialUnits.createRSU()
+        if (!createRSU([inputZoneTableName  : "zone_test",
+                        prefixName          : "block",
+                        datasource          : h2GIS,
+                        rsuType             : "TSU",
+                        roadTable           : 'road_test',
+                        railTable           : 'rail_test',
+                        vegetationTable     : 'veget_test',
+                        hydrographicTable   :'hydro_test',
+                        seaLandMaskTableName : "",
+                        surface_vegetation: null,
+                        surface_hydro: null])) {
+            info "Cannot compute the RSU."
+            return
+        }
+        def outputTable = createRSU.results.outputTableName
+
         assert h2GIS.getSpatialTable(outputTable).save('./target/rsu.shp',true)
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
         assert 245 == countRows.numberOfRows
@@ -183,7 +213,7 @@ class SpatialUnitsTests {
         h2GIS.load(SpatialUnitsTests.class.class.getResource("hydro_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.class.class.getResource("zone_test.geojson"),true)
 
-        def  prepareData = Geoindicators.SpatialUnits.prepareRSUData()
+        def  prepareData = Geoindicators.SpatialUnits.prepareTSUData()
 
         assert prepareData([
                 zoneTable               : 'zone_test',
@@ -200,9 +230,9 @@ class SpatialUnitsTests {
         def outputTableGeoms = prepareData.results.outputTableName
 
         assert h2GIS."$outputTableGeoms"
-        def rsu = Geoindicators.SpatialUnits.createRSU()
-        assert rsu.execute([inputTableName: outputTableGeoms, prefixName: "rsu", datasource: h2GIS])
-        def outputTable = rsu.results.outputTableName
+        def tsu = Geoindicators.SpatialUnits.createTSU()
+        assert tsu.execute([inputTableName: outputTableGeoms, prefixName: "tsu", datasource: h2GIS])
+        def outputTable = tsu.results.outputTableName
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
 
         assert 245 == countRows.numberOfRows
