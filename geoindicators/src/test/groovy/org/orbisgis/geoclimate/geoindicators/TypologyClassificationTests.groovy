@@ -552,7 +552,7 @@ class TypologyClassificationTests {
 
         // Information about where to find the training dataset for the test
         def trainingTableName = "training_table"
-        String directory = "../geoclimate/models/"
+        String directory = "/home/decide/Code/Intel/geoclimate/models"
         def savePath = directory + File.separator + model_name
 
         if (new File(directory).exists()) {
@@ -624,8 +624,8 @@ class TypologyClassificationTests {
     @Test
     void createRandomForestModelUTRF_OSM_RF() {
         // Specify the model and training datat appropriate to the right use
-        def model_name = "UTRF_OSM_RF_2_1.model"
-        def training_data_name = "TRAINING_DATA_UTRF_OSM_RF_2_1.geojson.gz"
+        def model_name = "UTRF_OSM_RF_2_2.model"
+        def training_data_name = "TRAINING_DATA_UTRF_OSM_RF_2_2.geojson.gz"
         // Name of the variable to model
         def var2model = "I_TYPO"
         def var2ModelFinal = "I_TYPO"
@@ -634,7 +634,7 @@ class TypologyClassificationTests {
 
         // Information about where to find the training dataset for the test
         def trainingTableName = "training_table"
-        String directory = "../geoclimate/models/"
+        String directory = "/home/decide/Code/Intel/geoclimate/models"
         def savePath = directory + File.separator + model_name
 
         if (new File(directory).exists()) {
