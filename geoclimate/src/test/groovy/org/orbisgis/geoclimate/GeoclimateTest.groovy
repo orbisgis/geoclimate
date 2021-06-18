@@ -81,4 +81,47 @@ class GeoclimateTest {
         def exitCode = cmd.execute("-w osm", "-f $configFile")
         assert 2 == exitCode
     }
+
+
+    @Disabled
+    @Test
+    void runWorkflow() {
+        def directory ="./target/geoclimate_cli"
+        def dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osmParameters = [
+                "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
+                "geoclimatedb" : [
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete" :true
+                ],
+                "input" : [
+                        "osm" : ["Pont de veyle"]],
+                "output" :[
+                        "folder" : "$directory"],
+                "parameters":[
+                        "rsu_indicators":[
+                                "indicatorUse": ["LCZ"],
+                                "svfSimplified": false,
+                                "estimateHeight":false
+                        ],
+                        "grid_indicators": [
+                                "x_size": 1000,
+                                "y_size": 1000,
+                                "indicators": ["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
+                                               "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "LCZ_FRACTION"]
+                        ]
+                ]
+        ]
+        def json = JsonOutput.toJson(osmParameters)
+        def configFile = File.createTempFile("osmConfigFile",".json")
+        if(configFile.exists()){
+            configFile.delete()
+        }
+        configFile.write(json)
+
+        Geoclimate.OSM.workflow.execute(configurationFile: configFile.absolutePath)
+    }
 }

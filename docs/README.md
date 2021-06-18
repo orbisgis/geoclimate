@@ -6,7 +6,7 @@
 
  **A geospatial processing toolbox for environmental and climate studies** 
  
-![bandeau_geoclimate](./resources/images/readme/bandeau_geoclimate.png)
+![bandeau_geoclimate](./resources/images/bandeau_geoclimate.png)
 
 
 GeoClimate documentation is available at https://github.com/orbisgis/geoclimate/wiki

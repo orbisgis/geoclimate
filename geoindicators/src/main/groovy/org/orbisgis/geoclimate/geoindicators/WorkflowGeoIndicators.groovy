@@ -1226,7 +1226,7 @@ IProcess computeAllGeoIndicators() {
                 def rsuLczWithoutGeom = "rsu_lcz_without_geom"
 
                 //Compute building indicators
-                def computeBuildingsIndicators = ProcessingChain.GeoIndicatorsChain.computeBuildingsIndicators()
+                def computeBuildingsIndicators = Geoindicators.WorkflowGeoIndicators.computeBuildingsIndicators()
                 if (!computeBuildingsIndicators.execute([datasource            : datasource,
                                                          inputBuildingTableName: buildingTableName,
                                                          inputRoadTableName    : roadTable,
@@ -1242,6 +1242,7 @@ IProcess computeAllGeoIndicators() {
                 def blockIndicators = null
                 if (indicatorUse*.toUpperCase().contains("UTRF")) {
                     def computeBlockIndicators = ProcessingChain.GeoIndicatorsChain.computeBlockIndicators()
+
                     if (!computeBlockIndicators.execute([datasource            : datasource,
                                                          inputBuildingTableName: buildingIndicators,
                                                          inputBlockTableName   : relationBlocksFiltered,
@@ -1254,7 +1255,7 @@ IProcess computeAllGeoIndicators() {
 
                 //Compute RSU indicators
                 def rsuIndicators = null
-                def computeRSUIndicators = ProcessingChain.GeoIndicatorsChain.computeRSUIndicators()
+                def computeRSUIndicators = Geoindicators.WorkflowGeoIndicators.computeRSUIndicators()
                 if (!computeRSUIndicators.execute([datasource       : datasource,
                                                    buildingTable    : buildingIndicators,
                                                    rsuTable         : rsuRelationFiltered,
