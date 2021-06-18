@@ -903,36 +903,27 @@ IProcess createUnitsOfAnalysis() {
     return create {
         title "Create all new spatial units and their relations : building, block and RSU"
         id "createUnitsOfAnalysis"
-        inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
+        inputs datasource: JdbcDataSource, zoneTable: String, rsuType: "TSU", buildingTable: String,
                 roadTable: String, railTable: String, vegetationTable: String,
                 hydrographicTable: String, seaLandMaskTableName: "", surface_vegetation: 10000, surface_hydro: 2500,
                 snappingTolerance: 0.01d, prefixName: "", indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"]
         outputs outputTableBuildingName: String, outputTableBlockName: String, outputTableRsuName: String
-        run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
+        run { datasource, zoneTable, rsuType, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
               seaLandMaskTableName, surface_vegetation, surface_hydro, snappingTolerance, prefixName, indicatorUse ->
             info "Create the units of analysis..."
             // Create the RSU
-            def prepareRSUData = Geoindicators.SpatialUnits.prepareRSUData()
-            if (!prepareRSUData([datasource        : datasource,
-                                 zoneTable         : zoneTable,
-                                 roadTable         : roadTable,
-                                 railTable         : railTable,
-                                 vegetationTable   : vegetationTable,
-                                 hydrographicTable : hydrographicTable,
-                                 seaLandMaskTableName :seaLandMaskTableName,
-                                 surface_vegetation: surface_vegetation,
-                                 surface_hydro     : surface_hydro,
-                                 prefixName        : prefixName])) {
-                info "Cannot prepare the data for RSU calculation."
-                return
-            }
-            def rsuDataPrepared = prepareRSUData.results.outputTableName
-
             def createRSU = Geoindicators.SpatialUnits.createRSU()
-            if (!createRSU([datasource        : datasource,
-                            inputTableName    : rsuDataPrepared,
-                            prefixName        : prefixName,
-                            inputZoneTableName: zoneTable])) {
+            if (!createRSU([inputZoneTableName: zoneTable,
+                            prefixName: prefixName,
+                            datasource: datasource,
+                            rsuType: rsuType,
+                            roadTable: roadTable,
+                            railTable: railTable,
+                            vegetationTable: vegetationTable,
+                            hydrographicTable: hydrographicTable,
+                            seaLandMaskTableName : seaLandMaskTableName,
+                            surface_vegetation: surface_vegetation,
+                            surface_hydro: surface_hydro])) {
                 info "Cannot compute the RSU."
                 return
             }

@@ -22,21 +22,38 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
 /**
  * This process is used to create the reference spatial units (RSU)
  *
- * @param inputTableName The input spatial table to be processed
  * @param inputZoneTableName The zone table to keep the RSU inside
  * Default value is empty so all RSU are kept.
  * @param prefixName A prefix used to name the output table
  * @param datasource A connection to a database
- * @param area RSU less or equals than area are removed
+ * @param rsuType The name of the type of RSU calculated, default "TSU"
+ *          --> "TSU": Topographical Spatial Units are used as RSU
+ *
+ * Optional parameters if 'rsuType' = "TSU" (by default table names are equal to "")
+ * @param area TSU less or equals than area are removed, default 1d
+ * @param roadTable The road table to be processed
+ * @param railTable The rail table to be processed
+ * @param vegetationTable The vegetation table to be processed
+ * @param hydrographicTable The hydrographic table to be processed
+ * @param seaLandMaskTableName The table to distinguish sea from land
+ * @param surface_vegetation A double value to select the vegetation geometry areas.
+ * Expressed in geometry unit of the vegetationTable, default 10000
+ * @param surface_hydro  A double value to select the hydrographic geometry areas.
+ * Expressed in geometry unit of the vegetationTable, default 2500
+ *
  * @return A database table name and the name of the column ID
  */
 IProcess createRSU() {
     return create {
         title "Create reference spatial units (RSU)"
         id "createRSU"
-        inputs inputTableName: String, inputZoneTableName: "", prefixName: "", datasource: JdbcDataSource, area: 1d
+        inputs inputZoneTableName: "", prefixName: "", datasource: JdbcDataSource, rsuType: "TSU",
+                area: 1d, roadTable: "", railTable: "", vegetationTable: "", hydrographicTable: "",
+                seaLandMaskTableName :"", surface_vegetation: 10000, surface_hydro: 2500
         outputs outputTableName: String, outputIdRsu: String
-        run { inputTableName, inputZoneTableName, prefixName, datasource, area ->
+        run { inputZoneTableName, prefixName, datasource, rsuType,
+              area, roadTable, railTable, vegetationTable, hydrographicTable, seaLandMaskTableName,
+              surface_vegetation, surface_hydro ->
 
             def COLUMN_ID_NAME = "id_rsu"
             def BASE_NAME = "rsu"
@@ -44,15 +61,84 @@ IProcess createRSU() {
             debug "Creating the reference spatial units"
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
+            datasource """
+                    DROP TABLE IF EXISTS $outputTableName;"""
+
+            if (rsuType == "TSU"){
+                def prepareTSUData = prepareTSUData()
+                if (!prepareTSUData([datasource        : datasource,
+                                     zoneTable         : inputZoneTableName,
+                                     roadTable         : roadTable,
+                                     railTable         : railTable,
+                                     vegetationTable   : vegetationTable,
+                                     hydrographicTable : hydrographicTable,
+                                     seaLandMaskTableName :seaLandMaskTableName,
+                                     surface_vegetation: surface_vegetation,
+                                     surface_hydro     : surface_hydro,
+                                     prefixName        : prefixName])) {
+                    info "Cannot prepare the data for RSU calculation."
+                    return
+                }
+                def tsuDataPrepared = prepareTSUData.results.outputTableName
+
+                def createTSU = Geoindicators.SpatialUnits.createTSU()
+                if (!createTSU([datasource        : datasource,
+                                inputTableName    : tsuDataPrepared,
+                                prefixName        : prefixName,
+                                inputZoneTableName: inputZoneTableName])) {
+                    info "Cannot compute the RSU."
+                    return
+                }
+                def outputTsuTableName = createTSU.results.outputTableName
+                def outputIdTsu = createTSU.results.outputIdRsu
+
+                datasource """ALTER TABLE $outputTsuTableName ALTER COLUMN $outputIdTsu RENAME TO $COLUMN_ID_NAME;"""
+                datasource."$outputTsuTableName".reload()
+                datasource """ALTER TABLE $outputTsuTableName RENAME TO $outputTableName;"""
+                datasource."$outputTableName".reload()
+            }
+
+            debug "Reference spatial units table created"
+
+            [outputTableName: outputTableName, outputIdRsu: COLUMN_ID_NAME]
+        }
+    }
+}
+
+/**
+ * This process is used to create the Topographical Spatial Units (TSU)
+ *
+ * @param inputTableName The input spatial table to be processed
+ * @param inputZoneTableName The zone table to keep the TSU inside
+ * Default value is empty so all TSU are kept.
+ * @param prefixName A prefix used to name the output table
+ * @param datasource A connection to a database
+ * @param area TSU less or equals than area are removed
+ * @return A database table name and the name of the column ID
+ */
+IProcess createTSU() {
+    return create {
+        title "Create reference spatial units (TSU)"
+        id "createTSU"
+        inputs inputTableName: String, inputZoneTableName: "", prefixName: "", datasource: JdbcDataSource, area: 1d
+        outputs outputTableName: String, outputIdRsu: String
+        run { inputTableName, inputZoneTableName, prefixName, datasource, area ->
+
+            def COLUMN_ID_NAME = "id_rsu"
+            def BASE_NAME = "tsu"
+
+            debug "Creating the reference spatial units"
+            // The name of the outputTableName is constructed
+            def outputTableName = prefix prefixName, BASE_NAME
 
             if(!inputTableName){
-                error "The input data to compute the RSU cannot be null or empty"
+                error "The input data to compute the TSU cannot be null or empty"
                 return null
             }
             def epsg = datasource.getSpatialTable(inputTableName).srid
 
             if (area <= 0) {
-                error "The area value to filter the RSU must be greater to 0"
+                error "The area value to filter the TSU must be greater to 0"
                 return null
             }
 
@@ -88,7 +174,7 @@ IProcess createRSU() {
 
 /**
  * This process is used to prepare the input abstract model
- * in order to compute the reference spatial units (RSU)
+ * in order to compute the Topographical Spatial Units (TSU)
  *
  * @param zoneTable The area of zone to be processed
  * @param roadTable The road table to be processed
@@ -97,6 +183,7 @@ IProcess createRSU() {
  * @param hydrographicTable The hydrographic table to be processed
  * @param surface_vegetation A double value to select the vegetation geometry areas.
  * Expressed in geometry unit of the vegetationTable
+ * @param seaLandMaskTableName The table to distinguish sea from land
  * @param surface_hydro  A double value to select the hydrographic geometry areas.
  * Expressed in geometry unit of the vegetationTable
  * @param prefixName A prefix used to name the output table
@@ -104,10 +191,10 @@ IProcess createRSU() {
  * @param outputTableName The name of the output table
  * @return A database table name.
  */
-IProcess prepareRSUData() {
+IProcess prepareTSUData() {
     return create {
-        title "Prepare the abstract model to build the RSU"
-        id "prepareRSUData"
+        title "Prepare the abstract model to build the TSU"
+        id "prepareTSUData"
         inputs zoneTable: "", roadTable: "", railTable: "",
                 vegetationTable: "", hydrographicTable: "", seaLandMaskTableName :"", surface_vegetation: 10000,
                 surface_hydro: 2500, prefixName: "unified_abstract_model", datasource: JdbcDataSource
@@ -115,9 +202,9 @@ IProcess prepareRSUData() {
         run { zoneTable, roadTable, railTable, vegetationTable, hydrographicTable, seaLandMaskTableName, surface_vegetation,
               surface_hydrographic, prefixName, datasource ->
 
-            def BASE_NAME = "prepared_rsu_data"
+            def BASE_NAME = "prepared_tsu_data"
 
-            debug "Preparing the abstract model to build the RSU"
+            debug "Preparing the abstract model to build the TSU"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
@@ -244,7 +331,7 @@ IProcess prepareRSUData() {
                         queryCreateOutputTable += [rail_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $railTable where zindex=0 or crossing = 'bridge')"]
                     }
                 }
-                // The input table that contains the geometries to be transformed as RSU
+                // The input table that contains the geometries to be transformed as TSU
                 debug "Grouping all tables..."
                 if (queryCreateOutputTable) {
                     datasource """
@@ -264,10 +351,10 @@ IProcess prepareRSUData() {
                 if (dropTableList) {
                     datasource "DROP TABLE IF EXISTS ${dropTableList.join(',')};"
                 }
-                debug "RSU created..."
+                debug "TSU created..."
 
             } else {
-                error "Cannot compute the RSU. The input zone table must have one row."
+                error "Cannot compute the TSU. The input zone table must have one row."
                 outputTableName = null
             }
             [outputTableName: outputTableName]
