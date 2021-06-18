@@ -16,7 +16,6 @@ import smile.data.vector.DoubleVector
 import smile.regression.RandomForest as RandomForestRegression
 import smile.data.formula.Formula
 import smile.data.vector.IntVector
-import smile.regression.Regression
 import smile.regression.RegressionTree
 import smile.validation.Accuracy
 import smile.validation.RMSE
