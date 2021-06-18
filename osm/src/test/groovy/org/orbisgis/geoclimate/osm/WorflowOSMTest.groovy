@@ -66,7 +66,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         boolean saveResults = false
         String directory ="./target/osm_processchain_geoindicators_redon"
         def prefixName = ""
-        def indicatorUse = ["URBAN_TYPOLOGY", "LCZ", "TEB"]
+        def indicatorUse = ["UTRF", "LCZ", "TEB"]
         def svfSimplified = true
 
         File dirFile = new File(directory)
@@ -136,7 +136,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                  , directory: dirFile.absolutePath, datasource: datasource])
         }
 
-        def indicatorUse = ["TEB", "URBAN_TYPOLOGY", "LCZ"]
+        def indicatorUse = ["TEB", "UTRF", "LCZ"]
 
         //Run tests
         geoIndicatorsCalc(dirFile.absolutePath, datasource, zoneTableName, buildingTableName,roadTableName,railTableName,vegetationTableName,
@@ -501,7 +501,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "folder" : "$directory"],
                 "parameters":
                         ["distance" : 0,
-                         rsu_indicators: ["indicatorUse": ["LCZ", "URBAN_TYPOLOGY"],
+                         rsu_indicators: ["indicatorUse": ["LCZ", "UTRF"],
                          "svfSimplified": true,
                          "estimateHeight":true]
                         ]
