@@ -196,10 +196,6 @@ The GeoClimate library has been originally developed within the following resear
 - PAENDORA (2017-2021), funded by ADEME
 - SLIM (2020-2021), a Copernicus project C3S_432 Provisions to Environmental Forecasting Applications (Lot 2)
 
-# Acknowledgements
-
-We acknowledge 
-
 # References
 
 [^teb]: https://github.com/teb-model/teb
