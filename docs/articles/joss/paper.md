@@ -103,7 +103,7 @@ The indicators can also be calculated for each cell of a rectangular grid and th
 
 ![Local Climate zones classified at the TSU scale.\label{fig:LCZ_TSU}](figure2.png){ width=100% }
 
-![Rasterization of the LCZ classification on a regular grid.\label{fig:LCZ_grid}](figure_3_ 1.png){ width=100% }
+![Rasterization of the LCZ classification on a regular grid.\label{fig:LCZ_grid}](figure_3_1.png){ width=100% }
 
 # Coding implementation
 
@@ -182,7 +182,7 @@ The following maps (\autoref{fig:SVF}, \autoref{fig:roughness}, \autoref{fig:den
 
 ![SVF values by TSU.\label{fig:SVF}](figure_5_svf.png){ width=100% }
 
-![Terrain roughness class values by TSU.\label{fig:roughness}](figure_5_ roughness_class.png){ width=100% }
+![Terrain roughness class values by TSU.\label{fig:roughness}](figure_5_roughness_class.png){ width=100% }
 
 ![Building density on a 1X1 km2 regular grid.\label{fig:density}](figure_6_building_density.png){ width=100% }
 
