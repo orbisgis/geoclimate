@@ -13,7 +13,7 @@ authors:
     affiliation: 1
   - name: Jérémy Bernard
     orcid: 0000-0001-7374-5722
-    affiliation: 4
+    affiliation: 3,2
   - name: Elisabeth Le Saux Wiederhold
     orcid:
     affiliation: 2
@@ -34,7 +34,7 @@ affiliations:
    index: 1
  - name: Université Bretagne Sud, Lab-STICC, UMR 6285, Vannes, France
    index: 2
-- name: Independent Name
+- name: University of Gothenburg, Department of Earth Sciences, Sweden
    index: 3
  - name: Université de Lorraine, INRAE, LERMaB, F88000, Epinal, France
    index: 3
