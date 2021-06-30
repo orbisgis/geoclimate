@@ -45,7 +45,7 @@ class WorkflowGeoIndicatorsTest {
                                "NON_VERT_ROOF_AREA_H30_40", "NON_VERT_ROOF_AREA_H40_50", "NON_VERT_ROOF_AREA_H50",
                                "VERT_ROOF_AREA_H0_10", "VERT_ROOF_AREA_H10_20", "VERT_ROOF_AREA_H20_30", "VERT_ROOF_AREA_H30_40",
                                "VERT_ROOF_AREA_H40_50", "VERT_ROOF_AREA_H50", "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH"],
-            "URBAN_TYPOLOGY": ["AREA", "ASPECT_RATIO", "BUILDING_TOTAL_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
+            "UTRF": ["AREA", "ASPECT_RATIO", "BUILDING_TOTAL_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
                                "VEGETATION_FRACTION_URB", "LOW_VEGETATION_FRACTION_URB", "HIGH_VEGETATION_IMPERVIOUS_FRACTION_URB",
                                "HIGH_VEGETATION_PERVIOUS_FRACTION_URB", "ROAD_FRACTION_URB", "IMPERVIOUS_FRACTION_URB",
                                "AVG_NUMBER_BUILDING_NEIGHBOR", "AVG_HEIGHT_ROOF_AREA_WEIGHTED",
@@ -107,7 +107,7 @@ class WorkflowGeoIndicatorsTest {
         def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                             "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
-        def ind_i = ["LCZ", "URBAN_TYPOLOGY", "TEB"]
+        def ind_i = ["LCZ", "UTRF", "TEB"]
         IProcess GeoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
@@ -118,7 +118,7 @@ class WorkflowGeoIndicatorsTest {
 
         checkRSUIndicators(datasource,GeoIndicatorsCompute_i.results.outputTableRsuIndicators, false)
 
-        if (ind_i.contains("URBAN_TYPOLOGY")) {
+        if (ind_i.contains("UTRF")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
             assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
         }
@@ -158,7 +158,7 @@ class WorkflowGeoIndicatorsTest {
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                             "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
 
-        def ind_i = ["URBAN_TYPOLOGY"]
+        def ind_i = ["UTRF"]
         def modelPath = "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_0.model"
         IProcess GeoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
@@ -170,7 +170,7 @@ class WorkflowGeoIndicatorsTest {
 
         checkRSUIndicators(datasource,GeoIndicatorsCompute_i.results.outputTableRsuIndicators, false)
 
-        if (ind_i.contains("URBAN_TYPOLOGY")) {
+        if (ind_i.contains("UTRF")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
             assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
             // Check that the sum of proportion (or building area) for each RSU is equal to 1
@@ -233,7 +233,7 @@ class WorkflowGeoIndicatorsTest {
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                             "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
 
-        def ind_i = ["URBAN_TYPOLOGY", "TEB"]
+        def ind_i = ["UTRF", "TEB"]
 
         IProcess GeoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
@@ -245,7 +245,7 @@ class WorkflowGeoIndicatorsTest {
 
         checkRSUIndicators(datasource,GeoIndicatorsCompute_i.results.outputTableRsuIndicators, false)
 
-        if (ind_i.contains("URBAN_TYPOLOGY")) {
+        if (ind_i.contains("UTRF")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
             assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
         }
@@ -288,7 +288,7 @@ class WorkflowGeoIndicatorsTest {
 
         checkRSUIndicators(datasource,GeoIndicatorsCompute_i.results.outputTableRsuIndicators, false)
 
-        if (ind_i.contains("URBAN_TYPOLOGY")) {
+        if (ind_i.contains("UTRF")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
             assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
         }
@@ -331,7 +331,7 @@ class WorkflowGeoIndicatorsTest {
 
         checkRSUIndicators(datasource,GeoIndicatorsCompute_i.results.outputTableRsuIndicators, false)
 
-        if (ind_i.contains("URBAN_TYPOLOGY")) {
+        if (ind_i.contains("UTRF")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
             assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
         }
@@ -362,7 +362,7 @@ class WorkflowGeoIndicatorsTest {
                             "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                             "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
 
-        def ind_i = ["URBAN_TYPOLOGY", "LCZ"]
+        def ind_i = ["UTRF", "LCZ"]
 
         IProcess GeoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
@@ -374,7 +374,7 @@ class WorkflowGeoIndicatorsTest {
 
         checkRSUIndicators(datasource,GeoIndicatorsCompute_i.results.outputTableRsuIndicators, false)
 
-        if (ind_i.contains("URBAN_TYPOLOGY")) {
+        if (ind_i.contains("UTRF")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().outputTableBuildingIndicators).columns.sort())
             assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.outputTableBlockIndicators).columns.sort())
         }
