@@ -10,40 +10,36 @@ tags:
 authors:
   - name: Erwan Bocher^[corresponding author] # note this makes a footnote saying 'corresponding author'
     orcid: 0000-0002-4936-7079
-    affiliation: "1, 2" # (Multiple affiliations must be quoted)
+    affiliation: 1
   - name: Jérémy Bernard
     orcid: 0000-0001-7374-5722
-    affiliation: 2
+    affiliation: 4
   - name: Elisabeth Le Saux Wiederhold
     orcid:
-    affiliation: 3
+    affiliation: 2
   - name: François Leconte
     orcid: 0000-0003-0167-822X
-    affiliation: 4
+    affiliation: 3
   - name: Gwendall Petit
     orcid: 0000-0002-4750-9600
-    affiliation: 5
+    affiliation: 1
   - name: Sylvain Palominos
     orcid:
-    affiliation: 6
+    affiliation: 2
   - name: Camille Noûs
     orcid:
-    affiliation: 7
+    affiliation: 4
 affiliations:
- - name: Institution Name
+ - name: CNRS, Lab-STICC, UMR 6285, Vannes, France
    index: 1
- - name: Institution Name
+ - name: Université Bretagne Sud, Lab-STICC, UMR 6285, Vannes, France
    index: 2
- - name: Independent Name
+- name: Independent Name
    index: 3
  - name: Université de Lorraine, INRAE, LERMaB, F88000, Epinal, France
+   index: 3
+ - name: Independent Name
    index: 4
- - name: Independent Name
-   index: 5
- - name: Institution Name
-   index: 6
- - name: Independent Name
-   index: 7
 date: 30 June 2021
 bibliography: paper.bib
 ---
@@ -105,7 +101,7 @@ At the third step, classifications use the spatial indicators at the three scale
 
 The indicators can also be calculated for each cell of a rectangular grid and the result of the classification at TSU scale can be rasterized according to the same grid (\autoref{fig:LCZ_TSU} and \autoref{fig:LCZ_grid}).
 
-![Local Climate zones classified at the TSU scale.\label{fig:LCZ_TSU}](LCZ_TSU.png){ width=100% }
+![Local Climate zones classified at the TSU scale.\label{fig:LCZ_TSU}](figure2.png){ width=100% }
 
 ![Rasterization of the LCZ classification on a regular grid.\label{fig:LCZ_grid}](figure_3_ 1.png){ width=100% }
 
@@ -119,7 +115,7 @@ The OSM module extracts and transforms the OSM data to the GeoClimate abstract m
 
 BDTopo_V2 module follows the same logic as the OSM module, except that it is dedicated to version 2.2 of the French IGN BDTopo database[^ign].
 
-![The GeoClimate modules.\label{fig:modules}](modules.png){ width=100% }
+![The GeoClimate modules.\label{fig:modules}](https://raw.githubusercontent.com/orbisgis/geoclimate/master/docs/resources/images/geoclimate_implementation.png){ width=100% }
 
 # A minimal example
 
@@ -184,7 +180,7 @@ The configuration file is structured in four main parts.
 
 The following maps (\autoref{fig:SVF}, \autoref{fig:roughness}, \autoref{fig:density}, \autoref{fig:height}) illustrate some results indicators computed at the TSU scale and aggregated on regular grid.
 
-![SVF values by TSU.\label{fig:SVF}](SVF.png){ width=100% }
+![SVF values by TSU.\label{fig:SVF}](figure_5_svf.png){ width=100% }
 
 ![Terrain roughness class values by TSU.\label{fig:roughness}](figure_5_ roughness_class.png){ width=100% }
 
