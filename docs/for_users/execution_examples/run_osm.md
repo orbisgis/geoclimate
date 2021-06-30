@@ -37,7 +37,7 @@ Download this file : [osm_workflow_placename_folderoutput.json](https://github.c
      "folder" : "/tmp/..."},
     "parameters":
     {"distance" : 1000,
-        "indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+        "indicatorUse": ["LCZ", "UTRF", "TEB"],
         "svfSimplified": false,
         "prefixName": "",
         "mapOfWeights":
@@ -161,7 +161,7 @@ Download this file : [osm_workflow_envelope_folderoutput.json](https://github.co
      "folder" : "/home/geoclimate/osm/"},
   "parameters":
     {"distance" : 0,
-        "indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+        "indicatorUse": ["LCZ", "UTRF", "TEB"],
         "svfSimplified": false,
         "prefixName": "",
         "mapOfWeights":

@@ -25,7 +25,7 @@ The Geoclimate workflow can be executed for 3 types of application:
 
 - `TEB` : all the indicators needed to feed the [TEB](https://opensource.umr-cnrm.fr/projects/teb) model from Météo France
 - `LCZ` : all the indicators needed to compute the LCZ classification
-- `URBAN_TYPOLOGY` : all the indicators needed to compute the urban typology developed by The [LRA](http://lra.toulouse.archi.fr/lra) (Toulouse, France)
+- `UTRF` : all the indicators needed to compute the urban typology developed by The [LRA](http://lra.toulouse.archi.fr/lra) (Toulouse, France)
 
 These options can be inclusive (2 or 3 in the same time) or exclusive (just 1).
 
@@ -51,7 +51,7 @@ When executing the workflow, the user is able to adjust some parameters, that wi
 |   `terrain_roughness_class`    | ... Terrain roughness class parameter ...                    |               `1`                |
 |        `svfSimplified`         |                                                              |             `false`              |
 |          `prefixName`          | Prefix used to name the output tables                        |                                  |
-|         `indicatorUse`         | Specify whether the user want to execute the chain for the LCZ and/or TEB and/or Urban typology | ["LCZ", "URBAN_TYPOLOGY", "TEB"] |
+|         `indicatorUse`         | Specify whether the user want to execute the chain for the LCZ and/or TEB and/or Urban typology | ["LCZ", "UTRF", "TEB"] |
 
 
 
@@ -147,7 +147,7 @@ Below is an example with the configuration file [bdtopo_workflow_folderinput_fol
      "folder" : "/tmp/..."},
     "parameters":
     {"distance" : 1000,
-        "indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+        "indicatorUse": ["LCZ", "UTRF", "TEB"],
         "svfSimplified": false,
         "prefixName": "",
         "mapOfWeights":

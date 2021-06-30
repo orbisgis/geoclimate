@@ -39,7 +39,7 @@ Download [this configuration file](https://github.com/orbisgis/geoclimate/blob/m
 1. In the `geoclimatedb` part, adapt the working database address (*e.g* `"path" : "/home/geoclimate/bdtopo/db/geoclimate_db;AUTO_SERVER=TRUE",`)
 2. In the `input` part, replace `"folder" :"/tmp/..."` by `"folder" :"/home/geoclimate/bdtopo/input/my_project/"`
 3. In the `output` part, replace `"folder" : "/tmp/..."},` by `"folder" : "/home/geoclimate/bdtopo/output/"},`
-4. In the `parameters` part, replace `"indicatorUse": ["TEB"]` by `"indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"]`
+4. In the `parameters` part, replace `"indicatorUse": ["TEB"]` by `"indicatorUse": ["LCZ", "UTRF", "TEB"]`
 5. Save these modifications.
 
 ```json
@@ -56,7 +56,7 @@ Download [this configuration file](https://github.com/orbisgis/geoclimate/blob/m
         "folder" : "/home/geoclimate/bdtopo/output/"},
     "parameters":
     {"distance" : 1000,
-        "indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+        "indicatorUse": ["LCZ", "UTRF", "TEB"],
         "svfSimplified": false,
         "prefixName": "",
         "mapOfWeights":
@@ -157,7 +157,7 @@ Download [this configuration file](https://github.com/orbisgis/geoclimate/blob/m
    1. replace `"path" :"/tmp/..."` by `"path" :"/home/geoclimate/bdtopo/input/44/"`
    2. replace `id_zones":["id zone here"]` by `id_zones":["44109"]`
 3. In the `output` part, replace `"folder" : "/tmp/..."},` by `"folder" : "/home/geoclimate/bdtopo/output/"},`
-4. In the `parameters` part, replace `"indicatorUse": ["TEB"]` by `"indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"]`
+4. In the `parameters` part, replace `"indicatorUse": ["TEB"]` by `"indicatorUse": ["LCZ", "UTRF", "TEB"]`
 5. Save these modifications.
 
 ```json
@@ -175,7 +175,7 @@ Download [this configuration file](https://github.com/orbisgis/geoclimate/blob/m
      "folder" : "/home/geoclimate/bdtopo/output/"},
     "parameters":
     {"distance" : 1000,
-        "indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+        "indicatorUse": ["LCZ", "UTRF", "TEB"],
         "svfSimplified": false,
         "prefixName": "",
         "mapOfWeights":

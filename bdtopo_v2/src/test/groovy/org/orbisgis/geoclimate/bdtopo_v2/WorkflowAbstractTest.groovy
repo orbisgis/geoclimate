@@ -76,7 +76,7 @@ class WorkflowAbstractTest {
         assertEquals(countRelationBuilding.count, countBuildingIndicators.count)
 
         //Compute block indicators
-        if (indicatorUse.contains("URBAN_TYPOLOGY")) {
+        if (indicatorUse.contains("UTRF")) {
             def computeBlockIndicators = Geoindicators.WorkflowGeoIndicators.computeBlockIndicators()
             assertTrue computeBlockIndicators.execute([datasource            : datasource,
                                                        inputBuildingTableName: buildingIndicators,

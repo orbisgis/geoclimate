@@ -131,7 +131,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                     railTable           : "", vegetationTable         : "tempo_veget",    hydrographicTable   : "tempo_hydro",
                     surface_vegetation  : null,         surface_hydro           : null,             buildingTable       : "tempo_build",
                     distance            : 0.0,          prefixName              : "test",           indicatorUse        :["LCZ",
-                                                                                                                          "URBAN_TYPOLOGY",
+                                                                                                                          "UTRF",
                                                                                                                           "TEB"]])
 
         // Test the number of blocks within RSU ID 2, whether id_build 4 and 8 belongs to the same block and are both
@@ -214,7 +214,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         boolean saveResults = true
         def prefixName = ""
         def svfSimplified = true //Fast test
-        def indicatorUse = ["TEB", "URBAN_TYPOLOGY", "LCZ"]
+        def indicatorUse = ["TEB", "UTRF", "LCZ"]
         //Run tests
         geoIndicatorsCalc(dirFile.absolutePath, h2GISDatabase, abstractTables.outputZone, abstractTables.outputBuilding,
                 abstractTables.outputRoad, abstractTables.outputRail, abstractTables.outputVeget,
@@ -306,7 +306,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                          "hLevMax": 15,
                          "hThresholdLev2": 10,
                           rsu_indicators: [
-                         "indicatorUse": ["LCZ", "TEB", "URBAN_TYPOLOGY"],
+                         "indicatorUse": ["LCZ", "TEB", "UTRF"],
                          "svfSimplified": true,
                          "mapOfWeights":
                                  ["sky_view_factor": 1,
@@ -355,7 +355,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                          "hLevMax": 15,
                          "hThresholdLev2": 10,
                          rsu_indicators: [
-                         "indicatorUse": ["LCZ", "TEB", "URBAN_TYPOLOGY"],
+                         "indicatorUse": ["LCZ", "TEB", "UTRF"],
                          "svfSimplified": true,
                          "mapOfWeights":
                                  ["sky_view_factor": 1,
@@ -377,7 +377,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         def inseeCode = communeToTest
         def defaultParameters = [distance: 0,distance_buffer:0,  prefixName: "",
                                  rsu_indicators: [
-                                 indicatorUse: ["LCZ", "URBAN_TYPOLOGY"],
+                                 indicatorUse: ["LCZ", "UTRF"],
                                  svfSimplified:true,
                                  mapOfWeights : ["sky_view_factor" : 2, "aspect_ratio": 1, "building_surface_fraction": 4,
                                                  "impervious_surface_fraction" : 0, "pervious_surface_fraction": 0,
@@ -444,7 +444,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                 "parameters":
                         ["distance" : 0,
                          rsu_indicators: [
-                         "indicatorUse": ["LCZ", "URBAN_TYPOLOGY"],
+                         "indicatorUse": ["LCZ", "UTRF"],
                          "svfSimplified": true
                           ],
                          "grid_indicators": [
@@ -502,7 +502,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                 "parameters":
                         ["distance" : 0,
                          rsu_indicators: [
-                                 "indicatorUse": ["LCZ", "URBAN_TYPOLOGY"],
+                                 "indicatorUse": ["LCZ", "UTRF"],
                                  "svfSimplified": true
                          ],
                          "grid_indicators": [
@@ -551,7 +551,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                                  "indicators": ["WATER_FRACTION"]
                          ],
                          "rsu_indicators":[
-                                 "indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+                                 "indicatorUse": ["LCZ", "UTRF", "TEB"],
                                  "svfSimplified": false,
                          ],
                         ]
@@ -743,7 +743,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                 "output" : output,
                 "parameters": [ "distance" : 1000   ,
                                 "rsu_indicators":[
-                                        "indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+                                        "indicatorUse": ["LCZ", "UTRF", "TEB"],
                                         "svfSimplified": false,
                                 ],
                                 /*"grid_indicators": [

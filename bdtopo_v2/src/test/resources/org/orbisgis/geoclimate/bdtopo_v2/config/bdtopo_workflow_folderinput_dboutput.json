@@ -30,7 +30,7 @@
         "rsu_indicators": {
             "indicatorUse": [
                 "LCZ",
-                "URBAN_TYPOLOGY",
+                "UTRF",
                 "TEB"
             ],
             "svfSimplified": false,

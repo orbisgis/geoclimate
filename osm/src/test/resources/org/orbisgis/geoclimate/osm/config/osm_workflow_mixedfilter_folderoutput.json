@@ -16,7 +16,7 @@
         "hLevMax": 15,
         "hThresholdLev2": 10,
         "rsu_indicators": {
-        "indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+        "indicatorUse": ["LCZ", "UTRF", "TEB"],
         "svfSimplified": false,
         "mapOfWeights":
         {"sky_view_factor": 1,
