@@ -14,7 +14,7 @@ import org.orbisgis.geoclimate.Geoindicators
  * Compute the geoindicators at building scale
  *
  * @param indicatorUse The use defined for the indicator. Depending on this use, only a part of the indicators could
- * be calculated (default is all indicators : ["LCZ", "URBAN_TYPOLOGY", "TEB"])
+ * be calculated (default is all indicators : ["LCZ", "UTRF", "TEB"])
  *
  * @return
  */
@@ -23,7 +23,7 @@ IProcess computeBuildingsIndicators() {
         title "Compute the geoindicators at building scale"
         id "computeBuildingsIndicators"
         inputs datasource: JdbcDataSource, inputBuildingTableName: String, inputRoadTableName: String,
-                indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], prefixName: ""
+                indicatorUse: ["LCZ", "UTRF", "TEB"], prefixName: ""
         outputs outputTableName: String
         run { datasource, inputBuildingTableName, inputRoadTableName, indicatorUse, prefixName ->
 
@@ -43,7 +43,7 @@ IProcess computeBuildingsIndicators() {
 
             // building_area + building_perimeter
             def geometryOperations = ["st_area"]
-            if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
+            if (indicatorUse*.toUpperCase().contains("UTRF")) {
                 geometryOperations = ["st_perimeter", "st_area"]
             }
             def computeGeometryProperties = Geoindicators.GenericIndicators.geometryProperties()
@@ -56,11 +56,11 @@ IProcess computeBuildingsIndicators() {
             def buildTableGeometryProperties = computeGeometryProperties.results.outputTableName
             finalTablesToJoin.put(buildTableGeometryProperties, idColumnBu)
 
-            // For indicators that are useful for urban_typology OR for LCZ classification
-            if (indicatorUse*.toUpperCase().contains("LCZ") || indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
+            // For indicators that are useful for UTRF OR for LCZ classification
+            if (indicatorUse*.toUpperCase().contains("LCZ") || indicatorUse*.toUpperCase().contains("UTRF")) {
                 // building_volume + building_floor_area + building_total_facade_length
                 def sizeOperations = ["volume", "floor_area", "total_facade_length"]
-                if (!indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
+                if (!indicatorUse*.toUpperCase().contains("UTRF")) {
                     sizeOperations = ["total_facade_length"]
                 }
                 def computeSizeProperties = Geoindicators.BuildingIndicators.sizeProperties()
@@ -77,7 +77,7 @@ IProcess computeBuildingsIndicators() {
 
                 // building_contiguity + building_common_wall_fraction + building_number_building_neighbor
                 def neighborOperations = ["contiguity", "common_wall_fraction", "number_building_neighbor"]
-                if (indicatorUse*.toUpperCase().contains("LCZ") && !indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
+                if (indicatorUse*.toUpperCase().contains("LCZ") && !indicatorUse*.toUpperCase().contains("UTRF")) {
                     neighborOperations = ["contiguity"]
                 }
                 def computeNeighborsProperties = Geoindicators.BuildingIndicators.neighborsProperties()
@@ -92,7 +92,7 @@ IProcess computeBuildingsIndicators() {
                 def buildTableComputeNeighborsProperties = computeNeighborsProperties.results.outputTableName
                 finalTablesToJoin.put(buildTableComputeNeighborsProperties, idColumnBu)
 
-                if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
+                if (indicatorUse*.toUpperCase().contains("UTRF")) {
                     // area_concavity + building_form_factor + building_raw_compactness + perimeter_convexity
                     def computeFormProperties = Geoindicators.BuildingIndicators.formProperties()
                     if (!computeFormProperties([inputBuildingTableName: inputBuildingTableName,
@@ -359,7 +359,7 @@ IProcess computeBlockIndicators() {
  * @param prefixName A prefix used to name the output table
  * @param svfSimplified A boolean to use a simplified version of the SVF calculation (default false)
  * @param indicatorUse The use defined for the indicator. Depending on this use, only a part of the indicators could
- * be calculated (default is all indicators : ["LCZ", "URBAN_TYPOLOGY", "TEB"])
+ * be calculated (default is all indicators : ["LCZ", "UTRF", "TEB"])
  * @param surfSuperpositions Map where are stored the overlaying layers as keys and the overlapped
  * layers as values. Note that the priority order for the overlapped layers is taken according to the priority variable
  * name and (default ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]])
@@ -398,7 +398,7 @@ IProcess computeRSUIndicators() {
                 inputFields                     : ["id_build", "the_geom"],
                 levelForRoads                   : [0],              angleRangeSizeBuDirection   : 30,
                 svfSimplified                   : false,
-                indicatorUse                    : ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+                indicatorUse                    : ["LCZ", "UTRF", "TEB"],
                 surfSuperpositions              : ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]],
                 surfPriorities                  : ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"],
                 buildingAreaTypeAndComposition  : ["light_industry": ["light_industry"],
@@ -519,7 +519,7 @@ IProcess computeRSUIndicators() {
             def surfFracList = datasource.getTable(surfaceFractions).getColumns()
 
             // Calculate the surface fractions needed for the urban typology classification
-            if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
+            if (indicatorUse*.toUpperCase().contains("UTRF")) {
                 info """Processing urban typology surface fraction calculation"""
                 // Get all columns needed for the calculations and verify that they exist
                 def neededSurfUrb = urbanTypoSurfFraction.findResults { k, v -> true ? v : null }.flatten()
@@ -562,7 +562,7 @@ IProcess computeRSUIndicators() {
             }
 
             // building type fractions
-            if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY") || indicatorUse*.toUpperCase().contains("LCZ")) {
+            if (indicatorUse*.toUpperCase().contains("UTRF") || indicatorUse*.toUpperCase().contains("LCZ")) {
                 def computeTypeProportion = Geoindicators.GenericIndicators.typeProportion()
                 if (!computeTypeProportion([
                         inputTableName                  : buildingTable,
@@ -581,7 +581,7 @@ IProcess computeRSUIndicators() {
             }
 
             // rsu_area (note that the uuid is used as prefix for intermediate tables - indicator alone in a table)
-            if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
+            if (indicatorUse*.toUpperCase().contains("UTRF")) {
                 def computeGeometryProperties = Geoindicators.GenericIndicators.geometryProperties()
                 if (!computeGeometryProperties([inputTableName: rsuTable, inputFields: [columnIdRsu],
                                                 operations    : ["st_area"], prefixName: temporaryPrefName,
@@ -595,7 +595,7 @@ IProcess computeRSUIndicators() {
 
 
             // Building free external facade density
-            if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY") || indicatorUse*.toUpperCase().contains("LCZ")) {
+            if (indicatorUse*.toUpperCase().contains("UTRF") || indicatorUse*.toUpperCase().contains("LCZ")) {
                 def computeFreeExtDensity = Geoindicators.RsuIndicators.freeExternalFacadeDensity()
                 if (!computeFreeExtDensity([buildingTable            : buildingTable, rsuTable: rsuTable,
                                             buContiguityColumn       : "contiguity",
@@ -616,7 +616,7 @@ IProcess computeRSUIndicators() {
             if (indicatorUse*.toUpperCase().contains("LCZ") || indicatorUse*.toUpperCase().contains("TEB")) {
                 inputVarAndOperations = inputVarAndOperations << [(heightColumnName): ["GEOM_AVG"]]
             }
-            if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
+            if (indicatorUse*.toUpperCase().contains("UTRF")) {
                 inputVarAndOperations = inputVarAndOperations << ["volume"                  : ["DENS", "AVG"],
                                                                   (heightColumnName)        : ["GEOM_AVG"],
                                                                   "number_building_neighbor": ["AVG"],
@@ -642,7 +642,7 @@ IProcess computeRSUIndicators() {
 
 
             // rsu_mean_building_height weighted by their area + rsu_std_building_height weighted by their area.
-            if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY") || indicatorUse*.toUpperCase().contains("LCZ")) {
+            if (indicatorUse*.toUpperCase().contains("UTRF") || indicatorUse*.toUpperCase().contains("LCZ")) {
                 def computeRSUStatisticsWeighted = Geoindicators.GenericIndicators.weightedAggregatedStatistics()
                 if (!computeRSUStatisticsWeighted([inputLowerScaleTableName : buildingTable,
                                                    inputUpperScaleTableName : rsuTable,
@@ -660,7 +660,7 @@ IProcess computeRSUIndicators() {
             }
 
             // rsu_linear_road_density + rsu_road_direction_distribution
-            if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY") || indicatorUse*.toUpperCase().contains("TEB")) {
+            if (indicatorUse*.toUpperCase().contains("UTRF") || indicatorUse*.toUpperCase().contains("TEB")) {
                 def roadOperations = ["linear_road_density"]
                 if (indicatorUse*.toUpperCase().contains("TEB")) {
                     roadOperations = ["road_direction_distribution", "linear_road_density"]
@@ -716,7 +716,7 @@ IProcess computeRSUIndicators() {
             }
 
             // // Need to have the total building fraction in one indicator (by default building alone fraction and building high vegetation fractions are separated)
-            if (indicatorUse*.toUpperCase().contains("LCZ") || indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
+            if (indicatorUse*.toUpperCase().contains("LCZ") || indicatorUse*.toUpperCase().contains("UTRF")) {
                 datasource.execute """DROP TABLE IF EXISTS $preAspectRatioTable;
                                CREATE TABLE $preAspectRatioTable 
                                     AS SELECT $columnIdRsu, ${buildingFractions.join("+")} AS BUILDING_TOTAL_FRACTION 
@@ -737,7 +737,7 @@ IProcess computeRSUIndicators() {
 
 
             // rsu_aspect_ratio
-            if (indicatorUse*.toUpperCase().contains("LCZ") || indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
+            if (indicatorUse*.toUpperCase().contains("LCZ") || indicatorUse*.toUpperCase().contains("UTRF")) {
                 def computeAspectRatio = Geoindicators.RsuIndicators.aspectRatio()
                 if (!computeAspectRatio([rsuTable                          : intermediateJoinTable,
                                          rsuFreeExternalFacadeDensityColumn: "free_external_facade_density",
@@ -817,7 +817,7 @@ IProcess computeRSUIndicators() {
             }
 
             // rsu_perkins_skill_score_building_direction_variability
-            if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
+            if (indicatorUse*.toUpperCase().contains("UTRF")) {
                 def computePerkinsDirection = Geoindicators.GenericIndicators.buildingDirectionDistribution()
                 if (!computePerkinsDirection([buildingTableName: buildingTable,
                                               tableUp          : rsuTable,
@@ -893,7 +893,7 @@ IProcess computeRSUIndicators() {
  * @param prefixName A prefix used to name the output table
  * @param datasource A connection to a database
  * @param indicatorUse The use defined for the indicator. Depending on this use, only a part of the indicators could
- * be calculated (default is all indicators : ["LCZ", "URBAN_TYPOLOGY", "TEB"])
+ * be calculated (default is all indicators : ["LCZ", "UTRF", "TEB"])
  *
  * @return outputTableBuildingName Table name where are stored the buildings and the RSU and block ID
  * @return outputTableBlockName Table name where are stored the blocks and the RSU ID
@@ -906,7 +906,7 @@ IProcess createUnitsOfAnalysis() {
         inputs datasource: JdbcDataSource, zoneTable: String, rsuType: "TSU", buildingTable: String,
                 roadTable: String, railTable: String, vegetationTable: String,
                 hydrographicTable: String, seaLandMaskTableName: "", surface_vegetation: 10000, surface_hydro: 2500,
-                snappingTolerance: 0.01d, prefixName: "", indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"]
+                snappingTolerance: 0.01d, prefixName: "", indicatorUse: ["LCZ", "UTRF", "TEB"]
         outputs outputTableBuildingName: String, outputTableBlockName: String, outputTableRsuName: String
         run { datasource, zoneTable, rsuType, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
               seaLandMaskTableName, surface_vegetation, surface_hydro, snappingTolerance, prefixName, indicatorUse ->
@@ -933,7 +933,7 @@ IProcess createUnitsOfAnalysis() {
             // And the block / RSU table does not exists
             def tableRsuBlocks = null
             // If the urban typology is needed
-            if (indicatorUse.contains("URBAN_TYPOLOGY")) {
+            if (indicatorUse.contains("UTRF")) {
                 // Create the blocks
                 def createBlocks = Geoindicators.SpatialUnits.createBlocks()
                 if (!createBlocks([datasource    : datasource,
@@ -1016,7 +1016,7 @@ IProcess computeAllGeoIndicators() {
                 hydrographicTable: "", imperviousTable: "",
                 buildingEstimateTableName :"",seaLandMaskTableName:"",
                 surface_vegetation: 10000, surface_hydro: 2500,
-                snappingTolerance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified: false, prefixName: "",
+                snappingTolerance: 0.01, indicatorUse: ["LCZ", "UTRF", "TEB"], svfSimplified: false, prefixName: "",
                 mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
@@ -1068,7 +1068,7 @@ IProcess computeAllGeoIndicators() {
                         hydrographicTable: hydrographicTable, imperviousTable: imperviousTable,
                         seaLandMaskTableName :seaLandMaskTableName,
                         surface_vegetation: surface_vegetation, surface_hydro: surface_hydro,
-                        indicatorUse: ["URBAN_TYPOLOGY"],
+                        indicatorUse: ["UTRF"],
                         svfSimplified: true, prefixName: prefixName,
                         mapOfWeights: mapOfWeights,
                         urbanTypoModelName: "")) {
@@ -1231,7 +1231,7 @@ IProcess computeAllGeoIndicators() {
 
                 //Compute block indicators
                 def blockIndicators = null
-                if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
+                if (indicatorUse*.toUpperCase().contains("UTRF")) {
                     def computeBlockIndicators = Geoindicators.WorkflowGeoIndicators.computeBlockIndicators()
                     if (!computeBlockIndicators.execute([datasource            : datasource,
                                                          inputBuildingTableName: buildingIndicators,
@@ -1304,9 +1304,9 @@ IProcess computeAllGeoIndicators() {
                     datasource.execute "DROP TABLE IF EXISTS $lczIndicTable"
 
                 }
-                // If the URBAN_TYPOLOGY indicators should be calculated, we only affect a URBAN typo class
+                // If the UTRF indicators should be calculated, we only affect a URBAN typo class
                 // to each building and then to each RSU
-                if (indicatorUse.contains("URBAN_TYPOLOGY") && urbanTypoModelName) {
+                if (indicatorUse.contains("UTRF") && urbanTypoModelName) {
                     info """ The URBAN TYPOLOGY classification is performed """
                     applygatherScales = Geoindicators.GenericIndicators.gatherScales()
                     applygatherScales.execute([
@@ -1518,7 +1518,7 @@ IProcess computeGeoclimateIndicators() {
                 roadTable: "", railTable: "", vegetationTable: "",
                 hydrographicTable: "", imperviousTable: "",
                 seaLandMaskTableName :"", surface_vegetation: 10000, surface_hydro: 2500,
-                snappingTolerance: 0.01, indicatorUse: ["LCZ", "URBAN_TYPOLOGY", "TEB"], svfSimplified: false, prefixName: "",
+                snappingTolerance: 0.01, indicatorUse: ["LCZ", "UTRF", "TEB"], svfSimplified: false, prefixName: "",
                 mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
@@ -1590,7 +1590,7 @@ IProcess computeGeoclimateIndicators() {
 
             //Compute block indicators
             def blockIndicators = null
-            if (indicatorUse*.toUpperCase().contains("URBAN_TYPOLOGY")) {
+            if (indicatorUse*.toUpperCase().contains("UTRF")) {
                 def computeBlockIndicators = computeBlockIndicators()
                 if (!computeBlockIndicators.execute([datasource            : datasource,
                                                      inputBuildingTableName: buildingIndicators,
@@ -1662,9 +1662,9 @@ IProcess computeGeoclimateIndicators() {
                 datasource.execute "DROP TABLE IF EXISTS $lczIndicTable"
 
             }
-            // If the URBAN_TYPOLOGY indicators should be calculated, we only affect a URBAN typo class
+            // If the UTRF indicators should be calculated, we only affect a URBAN typo class
             // to each building and then to each RSU
-            if (indicatorUse.contains("URBAN_TYPOLOGY") && urbanTypoModelName) {
+            if (indicatorUse.contains("UTRF") && urbanTypoModelName) {
                 info """ The URBAN TYPOLOGY classification is performed """
                 def applygatherScales = Geoindicators.GenericIndicators.gatherScales()
                 applygatherScales.execute([

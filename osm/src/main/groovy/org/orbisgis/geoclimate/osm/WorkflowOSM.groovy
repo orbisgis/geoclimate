@@ -72,7 +72,7 @@ import org.orbisgis.geoclimate.Geoindicators
  *  *     {"distance" : 1000,
  *  *         "prefixName": "",
  *  *        rsu_indicators:{
- *  *         "indicatorUse": ["LCZ", "URBAN_TYPOLOGY", "TEB"],
+ *  *         "indicatorUse": ["LCZ", "UTRF", "TEB"],
  *  *         "svfSimplified": false,
  *  *         "mapOfWeights":
  *  *         {"sky_view_factor": 1,
@@ -94,7 +94,7 @@ import org.orbisgis.geoclimate.Geoindicators
  * - distance The integer value to expand the envelope of zone when recovering the data
  * - distance The integer value to expand the envelope of zone when recovering the data
  * (some objects may be badly truncated if they are not within the envelope)
- * - indicatorUse List of geoindicator types to compute (default ["LCZ", "URBAN_TYPOLOGY", "TEB"]
+ * - indicatorUse List of geoindicator types to compute (default ["LCZ", "UTRF", "TEB"]
  *                  --> "LCZ" : compute the indicators needed for the LCZ classification (Stewart et Oke, 2012)
  *                  --> "URBAN TYPOLOGY" : compute the indicators needed for the urban typology classification (Bocher et al., 2017)
  *                  --> "TEB" : compute the indicators needed for the Town Energy Balance model
@@ -952,7 +952,7 @@ def extractProcessingParameters(def processing_parameters){
                                          urbanTypoModelName: "URBAN_TYPOLOGY_OSM_RF_2_1.model"]
             def indicatorUseP = rsu_indicators.indicatorUse
             if(indicatorUseP && indicatorUseP in List) {
-                def allowed_rsu_indicators = ["LCZ", "URBAN_TYPOLOGY", "TEB"]
+                def allowed_rsu_indicators = ["LCZ", "UTRF", "TEB"]
                 def allowedOutputRSUIndicators = allowed_rsu_indicators.intersect(indicatorUseP*.toUpperCase())
                 if (allowedOutputRSUIndicators) {
                     rsu_indicators_default.indicatorUse = indicatorUseP
