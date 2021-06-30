@@ -13,7 +13,7 @@ authors:
     affiliation: 1
   - name: Jérémy Bernard
     orcid: 0000-0001-7374-5722
-    affiliation: 3,2
+    affiliation: "3, 1" # (Multiple affiliations must be quoted)
   - name: Elisabeth Le Saux Wiederhold
     orcid:
     affiliation: 2
