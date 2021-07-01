@@ -26,7 +26,7 @@ authors:
   - name: Sylvain Palominos
     orcid:
     affiliation: 2
-  - name: Camille Noûs (C. Noûs), camille.nous@cogitamus.fr
+  - name: Camille Noûs (C. Noûs)
     orcid:
     affiliation: 4
 affiliations:
