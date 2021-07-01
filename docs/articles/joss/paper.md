@@ -26,7 +26,7 @@ authors:
   - name: Sylvain Palominos
     orcid:
     affiliation: 2
-  - name: Camille Noûs
+  - name: Camille Noûs (C. Noûs), camille.nous@cogitamus.fr
     orcid:
     affiliation: 4
 affiliations:
@@ -38,7 +38,7 @@ affiliations:
    index: 3
  - name: Université de Lorraine, INRAE, LERMaB, F88000, Epinal, France
    index: 3
- - name: Independent Name
+ - name: Laboratoire Cogitamus, https://www.cogitamus.fr/
    index: 4
 date: 30 June 2021
 bibliography: paper.bib
