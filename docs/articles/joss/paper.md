@@ -15,7 +15,7 @@ authors:
     orcid: 0000-0001-7374-5722
     affiliation: "3, 1" # (Multiple affiliations must be quoted)
   - name: Elisabeth Le Saux Wiederhold
-    orcid:
+    orcid: 0000-0002-2079-8633
     affiliation: 2
   - name: François Leconte
     orcid: 0000-0003-0167-822X
