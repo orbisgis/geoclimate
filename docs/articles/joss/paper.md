@@ -131,7 +131,7 @@ The f option is used to set the path of the configuration file and the w option 
 
 The configuration file sets the main parameters of the calculation, e.g.:
 
-```groovy
+```json
 {
     "description": "Processing OSM data for the Washington DC area",
     "input": {
@@ -175,7 +175,7 @@ The configuration file is structured in four main parts.
 - "input" specifies the input data. In this example, the OpenStreetMap chain is run for Washington DC.
 - "output" specifies the expected format (here "folder") and path (here "/tmp").
 - "parameters" specifies the calculated parameters based on  reference spatial units ("rsu_indicators") and then rasterized using a grid ("grid_indicators"). 
-  - At RSU scale, the LCZ, the TEB inputs and the UTRF are calculated 	("indicatorUse": ["LCZ", "TEB","UTRF"]). A simplified method is used to calculate the 	sky view factor ("svfSimplified": true) and the method to estimate the height of buildings in OSM ("estimateHeight" : true).
+  - At RSU scale, the LCZ, the TEB inputs and the UTRF are calculated 	("indicatorUse": ["LCZ","TEB","UTRF"]). A simplified method is used to calculate the 	sky view factor ("svfSimplified": true) and the method to estimate the height of buildings in OSM ("estimateHeight" : true).
   - With the grid approach, the grid dimensions in meters are specified ("x_size" and "y_size")). Then, output 	indicators are calculated  for each cell of  the grid 	("BUILDING_FRACTION", "BUILDING_HEIGHT", "WATER_FRACTION", "VEGETATION_FRACTION", "ROAD_FRACTION", "IMPERVIOUS_FRACTION","LCZ_FRACTION").
 
 The following maps (\autoref{fig:SVF}, \autoref{fig:roughness}, \autoref{fig:density}, \autoref{fig:height}) illustrate some results indicators computed at the TSU scale and aggregated on regular grid.
@@ -200,7 +200,7 @@ The GeoClimate library has been originally developed within the following resear
 
 [^teb]: https://github.com/teb-model/teb
 
-[^obs]: Few examples: (i) the lower the Sky View Factor (SVF): the higher solar radiation are trapped by the urban canopy [@bernabe2015], the higher the urban air temperature [@lindberg2007], the lower the wind speed [@johansson2016] (ii) the higher the density of projected building facade in a given direction, the lower the wind speed within the urban canopy [@hanna2002].
+[^obs]: Few examples: (i) the lower the Sky View Factor (SVF): the higher solar radiation are trapped by the urban canopy `[@bernabe2015]`, the higher the urban air temperature `[@lindberg2007]`, the lower the wind speed `[@johansson2016]` (ii) the higher the density of projected building facade in a given direction, the lower the wind speed within the urban canopy `[@hanna2002]`.
 [^osm]: https://www.openstreetmap.org
 [^umep]: https://umep-docs.readthedocs.io/en/latest/
 [^lczgen]: https://lcz-generator.rub.de/
