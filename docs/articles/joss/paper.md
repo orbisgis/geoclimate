@@ -8,25 +8,25 @@ tags:
   - cities
   - geography
 authors:
-  - name: Erwan Bocher^[corresponding author] # note this makes a footnote saying 'corresponding author'
+  - name: Erwan Bocher^[corresponding author] 
     orcid: 0000-0002-4936-7079
     affiliation: 1
   - name: Jérémy Bernard
     orcid: 0000-0001-7374-5722
-    affiliation: "3, 1" # (Multiple affiliations must be quoted)
+    affiliation: "3, 1" 
   - name: Elisabeth Le Saux Wiederhold
     orcid: 0000-0002-2079-8633
     affiliation: 2
   - name: François Leconte
     orcid: 0000-0003-0167-822X
-    affiliation: 3
+    affiliation: 4
   - name: Gwendall Petit
     orcid: 0000-0002-4750-9600
     affiliation: 1
   - name: Sylvain Palominos
     affiliation: 2
   - name: Camille Noûs
-    affiliation: 4
+    affiliation: 5
 affiliations:
  - name: CNRS, Lab-STICC, UMR 6285, Vannes, France
    index: 1
@@ -35,9 +35,9 @@ affiliations:
  - name: University of Gothenburg, Department of Earth Sciences, Sweden
    index: 3
  - name: Université de Lorraine, INRAE, LERMaB, F88000, Epinal, France
-   index: 3
- - name: Laboratoire Cogitamus, https://www.cogitamus.fr/
    index: 4
+ - name: Laboratoire Cogitamus, https://www.cogitamus.fr/
+   index: 5
 date: 30 June 2021
 bibliography: paper.bib
 ---
