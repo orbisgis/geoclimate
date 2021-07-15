@@ -24,17 +24,15 @@ authors:
     orcid: 0000-0002-4750-9600
     affiliation: 1
   - name: Sylvain Palominos
-    orcid:
     affiliation: 2
-  - name: Camille Noûs (C. Noûs)
-    orcid:
+  - name: Camille Noûs
     affiliation: 4
 affiliations:
  - name: CNRS, Lab-STICC, UMR 6285, Vannes, France
    index: 1
  - name: Université Bretagne Sud, Lab-STICC, UMR 6285, Vannes, France
    index: 2
-- name: University of Gothenburg, Department of Earth Sciences, Sweden
+ - name: University of Gothenburg, Department of Earth Sciences, Sweden
    index: 3
  - name: Université de Lorraine, INRAE, LERMaB, F88000, Epinal, France
    index: 3
