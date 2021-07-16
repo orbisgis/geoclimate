@@ -8,25 +8,25 @@ tags:
   - cities
   - geography
 authors:
-  - name: Erwan Bocher^[corresponding author] # note this makes a footnote saying 'corresponding author'
+  - name: Erwan Bocher^[corresponding author] 
     orcid: 0000-0002-4936-7079
     affiliation: 1
   - name: Jérémy Bernard
     orcid: 0000-0001-7374-5722
-    affiliation: "3, 1" # (Multiple affiliations must be quoted)
+    affiliation: "3, 1" 
   - name: Elisabeth Le Saux Wiederhold
     orcid: 0000-0002-2079-8633
     affiliation: 2
   - name: François Leconte
     orcid: 0000-0003-0167-822X
-    affiliation: 3
+    affiliation: 4
   - name: Gwendall Petit
     orcid: 0000-0002-4750-9600
     affiliation: 1
   - name: Sylvain Palominos
     affiliation: 2
   - name: Camille Noûs
-    affiliation: 4
+    affiliation: 5
 affiliations:
  - name: CNRS, Lab-STICC, UMR 6285, Vannes, France
    index: 1
@@ -35,9 +35,9 @@ affiliations:
  - name: University of Gothenburg, Department of Earth Sciences, Sweden
    index: 3
  - name: Université de Lorraine, INRAE, LERMaB, F88000, Epinal, France
-   index: 3
- - name: Laboratoire Cogitamus, https://www.cogitamus.fr/
    index: 4
+ - name: Laboratoire Cogitamus, https://www.cogitamus.fr/
+   index: 5
 date: 30 June 2021
 bibliography: paper.bib
 ---
@@ -50,18 +50,18 @@ GeoClimate provides georeferenced morphological indicators as well as urban clas
 
 # Statement of need
 
-Urban spatial properties are useful to study the urban climate: (i) basic parameters such as building fraction or building height are needed as input of parametric urban climate models such as the Town Energy Balance [^teb] `[@masson2000]`, (ii) more sophisticated ones are clearly correlated to urban climate observations [^obs] and (iii) local climate classifications, useful for international comparisons, are mostly defined from urban spatial properties `[@stewart2012]`. Thus there is a need for tools dedicated to the calculation of urban spatial metrics.
+Urban spatial properties are useful to study the urban climate: (i) basic parameters such as building fraction or building height are needed as input of parametric urban climate models such as the Town Energy Balance teb^[https://github.com/teb-model/teb] [@masson2000], (ii) more sophisticated ones are clearly correlated to urban climate observations^[Few examples: (i) the lower the Sky View Factor (SVF): the higher solar radiation are trapped by the urban canopy [@bernabe2015], the higher the urban air temperature [@lindberg2007], the lower the wind speed [@johansson2016] (ii) the higher the density of projected building facade in a given direction, the lower the wind speed within the urban canopy [@hanna2002].] and (iii) local climate classifications, useful for international comparisons, are mostly defined from urban spatial properties [@stewart2012]. Thus there is a need for tools dedicated to the calculation of urban spatial metrics.
 
-In previous researches, scripts were developed to automatically calculate numerous indicators useful for urban climate applications `[@bocher2018]`. These scripts have been organized, improved and have been implemented within a Groovy library called GeoClimate. New urban properties and classifications algorithms have been added. GeoClimate also simplifies the access to geospatial data since it automatically downloads and organizes data from the world-wide OpenStreetMap database [^osm]. One of the current major limitations for the climate community to use this data is its lack of building height information `[@masson2020]`. Thus we have also added an algorithm to roughly estimate the height of each building missing this information.
+In previous researches, scripts were developed to automatically calculate numerous indicators useful for urban climate applications [@bocher2018]. These scripts have been organized, improved and have been implemented within a Groovy library called GeoClimate. New urban properties and classifications algorithms have been added. GeoClimate also simplifies the access to geospatial data since it automatically downloads and organizes data from the world-wide OpenStreetMap database^[https://www.openstreetmap.org]. One of the current major limitations for the climate community to use this data is its lack of building height information [@masson2020]. Thus we have also added an algorithm to roughly estimate the height of each building missing this information.
 
-This tool is first dedicated to urban climate researchers for modeling purpose: the output of GeoClimate can be directly used by urban climate models or by simple empirical models `[@bernard2017]`. It is also useful for any investigation dealing with urban climate issues (the calculation of the Local Climate Zone is for example of major interest as metadata for any urban climate study). The indicators calculated by GeoClimate can also be used for territory diagnostic and planning purpose for any spatial related question (climate, energy, biodiversity, pollution, socio-economy, etc.).
+This tool is first dedicated to urban climate researchers for modeling purpose: the output of GeoClimate can be directly used by urban climate models or by simple empirical models [@bernard2017]. It is also useful for any investigation dealing with urban climate issues (the calculation of the Local Climate Zone is for example of major interest as metadata for any urban climate study). The indicators calculated by GeoClimate can also be used for territory diagnostic and planning purpose for any spatial related question (climate, energy, biodiversity, pollution, socio-economy, etc.).
 
 # State of the field and features comparison
 
 There is currently no software specifically designed for the calculation of geospatial indicators dedicated to urban climate. However, two softwares can currently be used to automatically perform some of the GeoClimate’s features:
 
-- Urban Multi-Scale Environment Predictor [^umep], available as a plugin in the free and open-source QGIS software, can be used for a variety of applications related to outdoor thermal comfort, urban energy consumption, climate change mitigation `[@lindberg2018]`
-- Local Climate Zone Generator [^lczgen] (LCZ Generator), available as an online tool, produces the LCZ classification of a given area `[@demuzere2021]`.
+- Urban Multi-Scale Environment Predictor (UMEP^[https://umep-docs.readthedocs.io/en/latest/]), available as a plugin in the free and open-source QGIS software, can be used for a variety of applications related to outdoor thermal comfort, urban energy consumption, climate change mitigation [@lindberg2018]
+- Local Climate Zone Generator (LCZ Generator^[https://lcz-generator.rub.de/]), available as an online tool, produces the LCZ classification of a given area [@demuzere2021].
 
 Table 1 shows the features covered by GeoClimate and for each feature the differences with UMEP and LCZ Generator.
 
@@ -93,9 +93,9 @@ GeoClimate output data consists in both a set of indicators and classifications.
 
 The first step of the GeoClimate chain concerns the construction of two new spatial units (block and RSU). In the default case described here, Topographical Spatial Units (TSU) are used as RSU. They are defined as a continuous and homogeneous way to divide the space using topographic constraints based on road and railway center lines, vegetation and water surface boundaries, administrative boundaries. Only 2D is considered for partitioning, therefore underground elements (such as tunnels), or overground (such as bridges) are excluded from the input. Water and vegetation surfaces are also not considered for partitioning when they are smaller than a certain threshold, set by default to 2,500 m² for water and 10,000 m² for vegetation. 
 
-The second step is the calculation of spatial indicators. GeoClimate indicators are used to measure morphological properties (e.g the form factor) and describe spatial organizations (e.g. distance measurements, patch metrics, shape index, spatial density). They quantify the shape and pattern of urban and landscape structures. The spatial indicators are computed at three scales : building, block and RSU. Buildings are characterized by their location in a geographical space (e.g distance to the nearest road, average distance to other buildings, number of building neighbors). Building and blocks are characterized by morphological indicators (e.g. a form factor), RSU are characterized by fractions of land type (e.g. vegetation, water, impervious fractions) and specific climate-oriented indicators (e.g. aspect ratio, mean sky view factor). Some of the building indicators are also aggregated at block scale (e.g. mean block height) and some of the building and block indicators are aggregated at RSU scale (e.g. mean number of neighbors per building, mean building height). In the end, more than 100 indicators are calculated[^indicators].
+The second step is the calculation of spatial indicators. GeoClimate indicators are used to measure morphological properties (e.g the form factor) and describe spatial organizations (e.g. distance measurements, patch metrics, shape index, spatial density). They quantify the shape and pattern of urban and landscape structures. The spatial indicators are computed at three scales : building, block and RSU. Buildings are characterized by their location in a geographical space (e.g distance to the nearest road, average distance to other buildings, number of building neighbors). Building and blocks are characterized by morphological indicators (e.g. a form factor), RSU are characterized by fractions of land type (e.g. vegetation, water, impervious fractions) and specific climate-oriented indicators (e.g. aspect ratio, mean sky view factor). Some of the building indicators are also aggregated at block scale (e.g. mean block height) and some of the building and block indicators are aggregated at RSU scale (e.g. mean number of neighbors per building, mean building height). In the end, more than 100 indicators are calculated^[For further details about the available indicators and their calculation, please refer to the online documentation, since the number of indicators will probably increase with the new GeoClimate versions: https://github.com/orbisgis/geoclimate/wiki/Output-data].
 
-At the third step, classifications use the spatial indicators at the three scales and specific statistical models / algorithms to calculate Urban Typology by Random Forest (UTRF) `[@bocher2018]` and LCZ at RSU scale. 
+At the third step, classifications use the spatial indicators at the three scales and specific statistical models / algorithms to calculate Urban Typology by Random Forest (UTRF) [@bocher2018] and LCZ at RSU scale. 
 
 The indicators can also be calculated for each cell of a rectangular grid and the result of the classification at TSU scale can be rasterized according to the same grid (\autoref{fig:LCZ_TSU} and \autoref{fig:LCZ_grid}).
 
@@ -111,7 +111,7 @@ GeoIndicators is the main module. It contains all the algorithms to build the un
 
 The OSM module extracts and transforms the OSM data to the GeoClimate abstract model. Those data processings are specified in the two scripts InputDataLoading and InputDataFormating. The WorkflowOSM script chains algorithms (blue arrow \autoref{fig:modules}): it triggers the 2 scripts dedicated to the OSM data preparation and then the WorkflowGeoIndicators script. It is the main entry to specify the area to be processed, the indicators and the classifications to compute.
 
-BDTopo_V2 module follows the same logic as the OSM module, except that it is dedicated to version 2.2 of the French IGN BDTopo database[^ign].
+BDTopo_V2 module follows the same logic as the OSM module, except that it is dedicated to version 2.2 of the French IGN BDTopo database^[https://ign.fr/].
 
 ![The GeoClimate modules.\label{fig:modules}](https://raw.githubusercontent.com/orbisgis/geoclimate/master/docs/resources/images/geoclimate_implementation.png){ width=100% }
 
@@ -195,13 +195,4 @@ The GeoClimate library has been originally developed within the following resear
 - SLIM (2020-2021), a Copernicus project C3S_432 Provisions to Environmental Forecasting Applications (Lot 2)
 
 # References
-
-[^teb]: https://github.com/teb-model/teb
-
-[^obs]: Few examples: (i) the lower the Sky View Factor (SVF): the higher solar radiation are trapped by the urban canopy `[@bernabe2015]`, the higher the urban air temperature `[@lindberg2007]`, the lower the wind speed `[@johansson2016]` (ii) the higher the density of projected building facade in a given direction, the lower the wind speed within the urban canopy `[@hanna2002]`.
-[^osm]: https://www.openstreetmap.org
-[^umep]: https://umep-docs.readthedocs.io/en/latest/
-[^lczgen]: https://lcz-generator.rub.de/
-[^indicators]: For further details about the available indicators and their calculation, please refer to the online documentation, since the number of indicators will probably increase with the new GeoClimate versions: https://github.com/orbisgis/geoclimate/wiki/Output-data
-[^ign]: https://ign.fr/
 
