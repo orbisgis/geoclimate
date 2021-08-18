@@ -1123,7 +1123,6 @@ IProcess computeAllGeoIndicators() {
                 }
                 else{
                     info "Start estimating the building height"
-
                     //Apply RF model
                     def applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
                     if (!applyRF.execute([
@@ -1887,7 +1886,7 @@ IProcess rasterizeIndicators() {
                 /*
                 * Make aggregation process with previous grid and current rsu lcz
                 */
-                if (list_indicators*.toUpperCase().contains("LCZ_FRACTION") && rsu_lcz) {
+                if (list_indicators.findAll {it.toUpperCase() in["LCZ_FRACTION", "LCZ_PRIMARY"]} && rsu_lcz) {
                     def indicatorName = "LCZ_PRIMARY"
                     def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics()
                     if (upperScaleAreaStatistics.execute(
@@ -1899,6 +1898,55 @@ IProcess rasterizeIndicators() {
                              prefixName     : "lcz",
                              datasource     : datasource])) {
                         indicatorTablesToJoin.put(upperScaleAreaStatistics.results.outputTableName, grid_column_identifier)
+
+                        if(list_indicators*.toUpperCase().contains("LCZ_PRIMARY")) {
+                            def computeDistribChar = Geoindicators.GenericIndicators.distributionCharacterization()
+                            def distribLczTable = upperScaleAreaStatistics.results.outputTableName
+                            computeDistribChar([distribTableName: distribLczTable,
+                                                inputId         : grid_column_identifier,
+                                                initialTable    : distribLczTable,
+                                                distribIndicator: ["equality", "uniqueness"],
+                                                extremum        : "LEAST",
+                                                keep2ndCol      : true,
+                                                keepColVal      : true,
+                                                prefixName      : "lcz",
+                                                datasource      : datasource])
+                            def resultsDistrib = computeDistribChar.results.outputTableName
+
+                            // Rename the standard indicators into names consistent with the current IProcess (LCZ type...)
+                            datasource """  ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_COL TO LCZ_PRIMARY;
+                                ALTER TABLE $resultsDistrib RENAME COLUMN UNIQUENESS_VALUE TO LCZ_UNIQUENESS_VALUE;
+                                ALTER TABLE $resultsDistrib RENAME COLUMN EQUALITY_VALUE TO LCZ_EQUALITY_VALUE;
+                                ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_COL2 TO LCZ_SECONDARY;
+                                ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_VAL TO MIN_DISTANCE;"""
+
+                            // Need to replace the string LCZ values by an integer
+                            datasource."$resultsDistrib".lcz_primary.createIndex()
+                            datasource."$resultsDistrib".lcz_secondary.createIndex()
+                            def casewhenQuery1 = ""
+                            def casewhenQuery2 = ""
+                            def parenthesis = ""
+                            // LCZ types need to be String when using the IProcess 'distributionCHaracterization',
+                            // thus need to define a correspondence table
+                            def correspondenceMap = [1,  2, 3, 4, 5, 6, 7, 8, 9, 10, 101, 102, 103,104,105, 106,107]
+
+                            correspondenceMap.each { lczInt ->
+                                casewhenQuery1 += "CASEWHEN(LCZ_PRIMARY = 'LCZ_PRIMARY_$lczInt', $lczInt, "
+                                casewhenQuery2 += "CASEWHEN(LCZ_SECONDARY = 'LCZ_SECONDARY_$lczInt', $lczInt, "
+                                parenthesis += ")"
+                            }
+                            def distribLczTableInt = postfix "distribLczTableInt"
+
+                            datasource """  DROP TABLE IF EXISTS $distribLczTableInt;
+                                CREATE TABLE $distribLczTableInt
+                                        AS SELECT   $grid_column_identifier, $casewhenQuery1 null$parenthesis AS LCZ_PRIMARY,
+                                                    $casewhenQuery2 null$parenthesis AS LCZ_SECONDARY, 
+                                                    MIN_DISTANCE, LCZ_UNIQUENESS_VALUE, LCZ_EQUALITY_VALUE 
+                                        FROM $resultsDistrib;
+                                DROP TABLE IF EXISTS $resultsDistrib"""
+                            indicatorTablesToJoin.put(distribLczTableInt, grid_column_identifier)
+                        }
+
                     } else {
                         info "Cannot aggregate the LCZ at grid scale"
                     }

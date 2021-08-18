@@ -598,6 +598,41 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
     }
 
     @Test
+    void testWorkFlowGridLCZPrimary() {
+        String directory ="./target/bdtopo_chain_grid_lcz_primary"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        String dataFolder = getDataFolderPath()
+        def bdTopoParameters = [
+                "description" :"Example of configuration file to run the grid indicators",
+                "geoclimatedb" : [
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete" :false
+                ],
+                "input" :["bdtopo_v2":  [
+                        "folder": ["path" :dataFolder,
+                                   "id_zones":["Olemps"]]]],
+                "output" :[
+                        "folder" : ["path": "$directory",
+                                    "tables": ["grid_indicators"]]],
+                "parameters":
+                        ["distance" : 0,
+                         "grid_indicators": [
+                                 "x_size": 1000,
+                                 "y_size": 1000,
+                                 "indicators": ["LCZ_PRIMARY"]
+                         ]
+                        ]
+        ]
+        IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
+        assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
+        H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
+        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where LCZ_PRIMARY is not null").count>0
+    }
+
+    @Test
     void testWorkFlowGridWithBbox() {
         String directory ="./target/bdtopo_chain_grid_bbox"
         File dirFile = new File(directory)
