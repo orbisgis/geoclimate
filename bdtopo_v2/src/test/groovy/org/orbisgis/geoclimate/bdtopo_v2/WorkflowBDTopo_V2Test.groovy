@@ -563,6 +563,41 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
     }
 
     @Test
+    void testWorkFlowWithoutDBConfig() {
+        String directory ="./target/bdtopo_chain_grid_without_db"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        String dataFolder = getDataFolderPath()
+        def bdTopoParameters = [
+                "description" :"Example of configuration file to run the grid indicators",
+                "input" :["bdtopo_v2":  [
+                        "folder": ["path" :dataFolder,
+                                   "id_zones":[communeToTest]]]],
+                "output" :[
+                        "folder" : ["path": "$directory",
+                                    "tables": ["grid_indicators"]]],
+                "parameters":
+                        ["distance" : 0,
+                         "grid_indicators": [
+                                 "x_size": 1000,
+                                 "y_size": 1000,
+                                 "indicators": ["WATER_FRACTION"]
+                         ],
+                         "rsu_indicators":[
+                                 "indicatorUse": ["LCZ", "UTRF", "TEB"],
+                                 "svfSimplified": true,
+                         ],
+                        ]
+        ]
+        IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
+        assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
+        H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
+        h2gis.load(directory+File.separator+"bdtopo_v2_"+communeToTest+File.separator+"grid_indicators.geojson")
+        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
+    }
+
+    @Test
     void testWorkFlowGridWithName() {
         String directory ="./target/bdtopo_chain_grid"
         File dirFile = new File(directory)

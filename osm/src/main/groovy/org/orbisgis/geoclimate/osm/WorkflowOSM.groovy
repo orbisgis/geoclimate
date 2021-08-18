@@ -152,8 +152,8 @@ IProcess workflow() {
                 def output = parameters.get("output")
                 //Default H2GIS database properties
                 def databaseFolder = System.getProperty("java.io.tmpdir")
-                def databaseName = "osm"
-                def databasePath = postfix databaseFolder + File.separator + databaseName
+                def databaseName = "osm"+UUID.randomUUID().toString().replaceAll("-", "_")
+                def databasePath = databaseFolder + File.separator + databaseName
                 def h2gis_properties = ["databaseName": databasePath, "user": "sa", "password": ""]
                 def delete_h2gis = true
                 def geoclimatedb = parameters.get("geoclimatedb")

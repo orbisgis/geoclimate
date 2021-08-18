@@ -163,9 +163,9 @@ IProcess workflow() {
                 //Default H2GIS database properties
                 //Default H2GIS database properties
                 def databaseFolder = System.getProperty("java.io.tmpdir")
-                def databaseName = "bdtopo_v2_2"
-                def databasePath = postfix databaseFolder + File.separator + databaseName
-                def h2gis_properties = ["databaseName": databaseName, "user": "sa", "password": ""]
+                def databaseName = "bdtopo_v2_2"+UUID.randomUUID().toString().replaceAll("-", "_")
+                def databasePath =  databaseFolder + File.separator + databaseName
+                def h2gis_properties = ["databaseName": databasePath, "user": "sa", "password": ""]
                 def delete_h2gis = true
                 def geoclimatedb = parameters.geoclimatedb
                 if (geoclimatedb) {
