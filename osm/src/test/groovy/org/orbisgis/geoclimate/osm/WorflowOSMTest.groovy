@@ -542,7 +542,6 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
     }
 
-
     @Test
     void testGrid_Indicators() {
         String directory ="./target/geoclimate_chain_grid"
@@ -557,8 +556,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "osm" : ["Pont-de-Veyle"],
-                        "delete":true],
+                        "osm" : ["Pont-de-Veyle"]],
                 "output" :[
                 "folder" : ["path": "$directory",
                     "tables": ["grid_indicators", "zones"]]],
@@ -579,6 +577,39 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def  grid_file = new File("${directory+File.separator}osm_Pont-de-Veyle${File.separator}grid_indicators_water_fraction.asc")
         h2gis.execute("DROP TABLE IF EXISTS water_grid; CALL ASCREAD('${grid_file.getAbsolutePath()}', 'water_grid')")
         assertTrue h2gis.firstRow("select count(*) as count from water_grid").count==6
+    }
+
+    @Test
+    void testGrid_LCZ_PRIMARY() {
+        String directory ="./target/geoclimate_chain_grid_lcz_primary"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "description" :"Example of configuration file to run the grid indicators",
+                "geoclimatedb" : [
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete" :false
+                ],
+                "input" : [
+                        "osm" : ["Pont-de-Veyle"]],
+                "output" :[
+                        "folder" : ["path": "$directory",
+                                    "tables": ["grid_indicators", "zones", "rsu_lcz"]]],
+                "parameters":
+                        ["distance" : 0,
+                         "grid_indicators": [
+                                 "x_size": 1000,
+                                 "y_size": 1000,
+                                 "indicators": ["LCZ_PRIMARY"]
+                         ]
+                        ]
+        ]
+        IProcess process = OSM.WorkflowOSM.workflow()
+        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
+        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where LCZ_PRIMARY is not null").count>0
     }
 
     @Test

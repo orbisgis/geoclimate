@@ -1906,7 +1906,7 @@ IProcess rasterizeIndicators() {
                                                 inputId         : grid_column_identifier,
                                                 initialTable    : distribLczTable,
                                                 distribIndicator: ["equality", "uniqueness"],
-                                                extremum        : "LEAST",
+                                                extremum        : "GREATEST",
                                                 keep2ndCol      : true,
                                                 keepColVal      : true,
                                                 prefixName      : "lcz",

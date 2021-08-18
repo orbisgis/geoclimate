@@ -510,7 +510,7 @@ IProcess osm_processing() {
                             //Add the GIS layers to the list of results
                             def results = [:]
 
-                            if(rsu_indicators_params|| grid_indicators_params){
+                            if(rsu_indicators_params.indicatorUse|| grid_indicators_params){
                                 //Format urban areas
                                 IProcess format = OSM.InputDataFormatting.formatUrbanAreas()
                                 format.execute([
@@ -588,7 +588,7 @@ IProcess osm_processing() {
                             hydrographicTableName = format.results.outputTableName
                             }
                           
-                            if(road_traffic || rsu_indicators_params||grid_indicators_params){
+                            if(road_traffic || rsu_indicators_params.indicatorUse||grid_indicators_params){
 
                                 IProcess format = OSM.InputDataFormatting.formatRoadLayer()
                                 format.execute([
@@ -622,16 +622,8 @@ IProcess osm_processing() {
                                 results.put("road_traffic", format.results.outputTableName)
                             }
 
-                            def rsuIndicatorsToCompute = false
-                            if(grid_indicators_params){
-                                rsuIndicatorsToCompute = grid_indicators_params.indicators.findAll{element -> element.toUpperCase() in["LCZ_FRACTION", "URBAN_TYPO_AREA_FRACTION"]}
-                            }
-                            if(rsu_indicators_params){
-                                rsuIndicatorsToCompute =true
-                            }
-
                             //Compute the RSU indicators
-                            if(rsuIndicatorsToCompute){
+                            if(rsu_indicators_params.indicatorUse){
                                 def estimateHeight  = rsu_indicators_params."estimateHeight"
                                 IProcess geoIndicators = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
                                 if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
@@ -911,6 +903,20 @@ def updateDriverURL(def input_database_properties){
 def extractProcessingParameters(def processing_parameters){
     def defaultParameters = [distance: 0, prefixName: "",
                              hLevMin : 3, hLevMax: 15, hThresholdLev2: 10]
+    def rsu_indicators_default =[indicatorUse: [],
+                                 svfSimplified:false,
+                                 surface_vegetation: 10000,
+                                 surface_hydro: 2500,
+                                 snappingTolerance :0.01,
+                                 mapOfWeights :  ["sky_view_factor"                : 4,
+                                                  "aspect_ratio"                   : 3,
+                                                  "building_surface_fraction"      : 8,
+                                                  "impervious_surface_fraction"    : 0,
+                                                  "pervious_surface_fraction"      : 0,
+                                                  "height_of_roughness_elements"   : 6,
+                                                  "terrain_roughness_length"       : 0.5],
+                                 estimateHeight:false,
+                                 urbanTypoModelName: "URBAN_TYPOLOGY_OSM_RF_2_1.model"]
     if(processing_parameters){
         def distanceP =  processing_parameters.distance
         if(distanceP && distanceP in Number){
@@ -936,20 +942,6 @@ def extractProcessingParameters(def processing_parameters){
         //Check for rsu indicators
         def  rsu_indicators = processing_parameters.rsu_indicators
         if(rsu_indicators){
-            def rsu_indicators_default =[indicatorUse: [],
-                                         svfSimplified:false,
-                                         surface_vegetation: 10000,
-                                         surface_hydro: 2500,
-                                         snappingTolerance :0.01,
-                                         mapOfWeights :  ["sky_view_factor"                : 4,
-                                                          "aspect_ratio"                   : 3,
-                                                          "building_surface_fraction"      : 8,
-                                                          "impervious_surface_fraction"    : 0,
-                                                          "pervious_surface_fraction"      : 0,
-                                                          "height_of_roughness_elements"   : 6,
-                                                          "terrain_roughness_length"       : 0.5],
-                                         estimateHeight:false,
-                                         urbanTypoModelName: "URBAN_TYPOLOGY_OSM_RF_2_1.model"]
             def indicatorUseP = rsu_indicators.indicatorUse
             if(indicatorUseP && indicatorUseP in List) {
                 def allowed_rsu_indicators = ["LCZ", "UTRF", "TEB"]
@@ -995,6 +987,9 @@ def extractProcessingParameters(def processing_parameters){
                 }
             }
             defaultParameters.put("rsu_indicators", rsu_indicators_default)
+        }else{
+            rsu_indicators=rsu_indicators_default
+            defaultParameters.put("rsu_indicators", rsu_indicators_default)
         }
 
         //Check for grid indicators
@@ -1013,9 +1008,17 @@ def extractProcessingParameters(def processing_parameters){
                     return
                 }
                 def allowed_grid_indicators=["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
-                          "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "URBAN_TYPO_AREA_FRACTION", "LCZ_FRACTION"]
+                          "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "URBAN_TYPO_AREA_FRACTION", "LCZ_FRACTION", "LCZ_PRIMARY"]
                 def allowedOutputIndicators = allowed_grid_indicators.intersect(list_indicators*.toUpperCase())
                 if(allowedOutputIndicators){
+                    //Update the RSU indicators list according the grid indicators
+                    list_indicators.each { val ->
+                        if(val.trim().toUpperCase() in ["LCZ_FRACTION","LCZ_PRIMARY"]){
+                            rsu_indicators.indicatorUse<<"LCZ"
+                        }else if (val.trim().toUpperCase() in ["URBAN_TYPO_AREA_FRACTION"]){
+                            rsu_indicators.indicatorUse<<"UTRF"
+                        }
+                    }
                 def grid_indicators_tmp =  [
                         "x_size": x_size,
                         "y_size": y_size,
