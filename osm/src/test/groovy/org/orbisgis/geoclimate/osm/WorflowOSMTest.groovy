@@ -383,7 +383,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
         def osm_parmeters = [
-                "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
+                "description" :"Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb" : [
                         "folder" : "${dirFile.absolutePath}",
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
@@ -609,7 +609,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
-        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where LCZ_PRIMARY is not null").count>0
+        assertEquals(5, h2gis.firstRow("select count(*) as count from grid_indicators where LCZ_PRIMARY is not null").count)
+        assertEquals(1,h2gis.firstRow("select count(*) as count from grid_indicators where LCZ_PRIMARY is null").count)
     }
 
     @Test

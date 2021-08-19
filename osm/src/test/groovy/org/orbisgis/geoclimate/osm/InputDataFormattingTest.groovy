@@ -1,6 +1,7 @@
 package org.orbisgis.geoclimate.osm
 
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.orbisgis.geoclimate.Geoindicators
@@ -265,7 +266,7 @@ class InputDataFormattingTest {
 
     }
 
-    //@Disabled
+    @Disabled
     @Test
     //enable it to test data extraction from the overpass api
     void extractCreateFormatGISLayers() {

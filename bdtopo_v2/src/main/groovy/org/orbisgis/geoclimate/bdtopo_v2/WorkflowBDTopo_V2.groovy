@@ -163,9 +163,9 @@ IProcess workflow() {
                 //Default H2GIS database properties
                 //Default H2GIS database properties
                 def databaseFolder = System.getProperty("java.io.tmpdir")
-                def databaseName = "bdtopo_v2_2"
-                def databasePath = postfix databaseFolder + File.separator + databaseName
-                def h2gis_properties = ["databaseName": databaseName, "user": "sa", "password": ""]
+                def databaseName = "bdtopo_v2_2"+UUID.randomUUID().toString().replaceAll("-", "_")
+                def databasePath =  databaseFolder + File.separator + databaseName
+                def h2gis_properties = ["databaseName": databasePath, "user": "sa", "password": ""]
                 def delete_h2gis = true
                 def geoclimatedb = parameters.geoclimatedb
                 if (geoclimatedb) {
@@ -1106,6 +1106,8 @@ def extractProcessingParameters(def processing_parameters){
                                                   "height_of_roughness_elements"   : 6,
                                                   "terrain_roughness_length"       : 0.5],
                                  urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_1.model"]
+    defaultParameters.put("rsu_indicators", rsu_indicators_default)
+
     if(processing_parameters){
         def distanceP =  processing_parameters.distance
         if(distanceP && distanceP in Number){
@@ -1176,10 +1178,8 @@ def extractProcessingParameters(def processing_parameters){
                     rsu_indicators_default.mapOfWeights = mapOfWeightsP
                 }
             }
-            defaultParameters.put("rsu_indicators", rsu_indicators_default)
         }else{
             rsu_indicators=rsu_indicators_default
-            defaultParameters.put("rsu_indicators", rsu_indicators_default)
         }
         //Check for grid indicators
         def  grid_indicators = processing_parameters.grid_indicators
