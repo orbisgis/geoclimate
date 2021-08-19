@@ -609,7 +609,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
-        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where LCZ_PRIMARY is not null").count>0
+        assertEquals(5, h2gis.firstRow("select count(*) as count from grid_indicators where LCZ_PRIMARY is not null").count)
+        assertEquals(1,h2gis.firstRow("select count(*) as count from grid_indicators where LCZ_PRIMARY is null").count)
     }
 
     @Test

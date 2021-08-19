@@ -1112,7 +1112,7 @@ IProcess upperScaleAreaStatistics() {
             listValues.each {
                 def aliasColumn = "${lowerColumnName}_${it.val.toString().replace('.','_')}"
                 qjoin += """
-                         , NVL($aliasColumn, 0) / ST_AREA(b.$upperGeometryColumn)
+                         , CASE WHEN $aliasColumn IS NULL THEN NULL ELSE $aliasColumn / ST_AREA(b.$upperGeometryColumn) END
                          AS $aliasColumn
                          """
             }
