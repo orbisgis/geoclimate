@@ -585,7 +585,7 @@ class GenericIndicatorsTests {
         h2GIS.execute query
 
         def values= h2GIS.firstRow "select count(*) as nb from babeth_zone where sum_indic=0"
-        assertEquals(2, values.NB)
+        assertEquals(1, values.NB)
 
         values= h2GIS.firstRow "select sum_indic as nb from babeth_zone where id=3"
         assertEquals(0.11, values.NB)
