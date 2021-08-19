@@ -1099,7 +1099,7 @@ IProcess upperScaleAreaStatistics() {
             datasource "CREATE INDEX ON $pivotTable ($upperColumnId)"
 
             // Creation of a table which is built from
-            // the union of the grid and pivot tables based on the same cell 'id'
+            // the union of the upperTable and pivot tables based on the same cell 'id'
             def outputTableName = prefix prefixName, "upper_scale_statistics_area"
             def qjoin = """
                         DROP TABLE IF EXISTS $outputTableName;

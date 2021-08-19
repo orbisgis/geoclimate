@@ -917,6 +917,8 @@ def extractProcessingParameters(def processing_parameters){
                                                   "terrain_roughness_length"       : 0.5],
                                  estimateHeight:false,
                                  urbanTypoModelName: "URBAN_TYPOLOGY_OSM_RF_2_1.model"]
+    defaultParameters.put("rsu_indicators", rsu_indicators_default)
+
     if(processing_parameters){
         def distanceP =  processing_parameters.distance
         if(distanceP && distanceP in Number){
@@ -986,10 +988,8 @@ def extractProcessingParameters(def processing_parameters){
                     rsu_indicators_default.mapOfWeights = mapOfWeightsP
                 }
             }
-            defaultParameters.put("rsu_indicators", rsu_indicators_default)
         }else{
             rsu_indicators=rsu_indicators_default
-            defaultParameters.put("rsu_indicators", rsu_indicators_default)
         }
 
         //Check for grid indicators
