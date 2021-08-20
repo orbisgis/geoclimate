@@ -1094,7 +1094,7 @@ def extractProcessingParameters(def processing_parameters){
                              distance_buffer:500,prefixName: "",
                              hLevMin : 3, hLevMax: 15, hThresholdLev2: 10]
     def rsu_indicators_default =[indicatorUse: [],
-                                 svfSimplified:false,
+                                 svfSimplified:true,
                                  surface_vegetation: 10000,
                                  surface_hydro: 2500,
                                  snappingTolerance :0.01,
