@@ -250,7 +250,7 @@ IProcess workflow() {
                                 return null
                             }
                             def outputSRID = output.get("srid")
-                            if(outputSRID && outputSRID>=0){
+                            if(!outputSRID && outputSRID>=0){
                                 error "The ouput srid must be greater or equal than 0"
                                 return null
                             }
