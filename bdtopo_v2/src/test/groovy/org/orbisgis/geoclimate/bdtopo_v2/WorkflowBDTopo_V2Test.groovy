@@ -830,6 +830,65 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         assertTrue(process.execute(configurationFile: createConfigFile(workflow_parameters, directory)))
     }
 
+    @Disabled //Use it for integration test with a postgis database
+    @org.junit.jupiter.api.Test
+    void testIntegrationPostGISInput() {
+        def user = ""
+        def password = ""
+        def url = "jdbc:postgresql://x:5432/x"
+
+        def id_zones = [[6785161.292786511,346264.052218681,6794396.60947986,356288.94475984486], "56223"]
+        String directory ="./target/bdtopo_workflow_postgis_input"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def bdTopoParameters = [
+                "description" :"Example of configuration file to run the BDTopo workflow and store the results in a folder",
+                "geoclimatedb" : [
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "bdtopo_workflow_db;AUTO_SERVER=TRUE",
+                        "delete" :true
+                ],
+                "input" : ["bdtopo_v2": [
+                        "database": [
+                                "user":user,
+                                "password": password,
+                                "url": url,
+                                "id_zones":id_zones,
+                                "tables": ["commune":"ign_bdtopo_2017.commune",
+                                           "bati_indifferencie":"ign_bdtopo_2017.bati_indifferencie",
+                                           "bati_industriel":"ign_bdtopo_2017.bati_industriel",
+                                           "bati_remarquable":"ign_bdtopo_2017.bati_remarquable",
+                                           "route":"ign_bdtopo_2017.route",
+                                           "troncon_voie_ferree":"ign_bdtopo_2017.troncon_voie_ferree",
+                                           "surface_eau":"ign_bdtopo_2017.surface_eau",
+                                           "zone_vegetation":"ign_bdtopo_2017.zone_vegetation",
+                                           "terrain_sport":"ign_bdtopo_2017.terrain_sport",
+                                           "construction_surfacique":"ign_bdtopo_2017.construction_surfacique",
+                                           "surface_route":"ign_bdtopo_2017.surface_route",
+                                           "surface_activite":"ign_bdtopo_2017.surface_activite",
+                                           "piste_aerodrome":"ign_bdtopo_2017.piste_aerodrome"]
+                        ]]],
+                "output" :[
+                        "folder" : ["path": "$directory"]],
+                "parameters":
+                        ["distance" : 0,
+                         rsu_indicators: [
+                                 "indicatorUse": ["LCZ", "UTRF"],
+                                 "svfSimplified": true
+                         ],
+                         "grid_indicators": [
+                                 "x_size": 1000,
+                                 "y_size": 1000,
+                                 "indicators": ["LCZ_FRACTION"]
+                         ]
+                        ]
+        ]
+        IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
+        assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
+
+    }
+
 
     /**
      * Check if the table exist and contains at least one row

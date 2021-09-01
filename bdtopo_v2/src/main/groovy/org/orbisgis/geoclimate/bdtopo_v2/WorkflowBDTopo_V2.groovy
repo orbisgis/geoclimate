@@ -250,9 +250,9 @@ IProcess workflow() {
                                 return null
                             }
                             def outputSRID = output.get("srid")
-                            if(outputSRID && outputSRID>=0){
-                                error "The ouput srid must be greater or equal than 0"
-                                return null
+                            if(outputSRID && outputSRID <= 0) {
+                                    error "The ouput srid must be greater or equal than 0"
+                                    return null
                             }
                             if (outputDataBase && outputFolder) {
                                 def outputFolderProperties = outputFolderProperties(outputFolder)
@@ -541,7 +541,7 @@ IProcess workflow() {
                                     return null
                                 }
                                 if (file_outputFolder.canWrite()) {
-                                    def codes = inputDataBase.id_zones*.trim()
+                                    def codes = inputDataBase.id_zones
                                     if (codes && codes in Collection) {
                                         def inputTableNames = inputDataBase.tables
                                         def h2gis_datasource = H2GIS.open(h2gis_properties)
@@ -580,7 +580,7 @@ IProcess workflow() {
                                         allowedOutputTableNames.size()
                                 if (allowedOutputTableNames && !notSameTableNames) {
                                     def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
-                                    def codes = inputDataBase.id_zones*.trim()
+                                    def codes = inputDataBase.id_zones
                                     if (codes && codes in Collection) {
                                         def inputTableNames = inputDataBase.tables
                                         def h2gis_datasource = H2GIS.open(h2gis_properties)
@@ -1263,10 +1263,15 @@ def extractProcessingParameters(def processing_parameters){
  */
 def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zones, def outputFolder, def outputFiles, def output_datasource, def outputTableNames, def outputSRID, def deleteOutputData=true){
     def  srid =  h2gis_datasource.getSpatialTable("COMMUNE").srid
-    if(!(id_zones in Collection)){
-        id_zones = [id_zones]
+    def id_zone
+    if(id_zones in Collection){
+        id_zone =  id_zones.join("-")
+    }else if (id_zones instanceof String){
+        id_zone = id_zones
     }
-    int nbAreas = id_zones.size();
+    if(!id_zone){
+        error "Invalid id_zones input"
+    }
 
     def reproject =false
     if(outputSRID){
@@ -1276,8 +1281,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
     }else{
         outputSRID =srid
     }
-    //Let's run the BDTopo process for each insee code
-    id_zones.eachWithIndex { id_zone, index->
+    //Let's run the BDTopo process for the id_zone
         def start  = System.currentTimeMillis()
         info "Starting to process insee id_zone $id_zone"
         //Load and format the BDTopo data
@@ -1377,11 +1381,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
 
             }
             info "${id_zone} has been processed"
-
-
         }
-        info "Number of areas processed ${index+1} on $nbAreas"
-    }
 }
 
 /**
