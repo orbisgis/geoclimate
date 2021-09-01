@@ -112,6 +112,8 @@
                             <mainClass>org.orbisgis.geoclimate.Geoclimate</mainClass>
                         </manifest>
                     </archive>
+                    <finalName>${project.build.finalName}</finalName>
+                    <appendAssemblyId>false</appendAssemblyId>
                 </configuration>
             </plugin>
         </plugins>
