@@ -44,9 +44,9 @@ bibliography: paper.bib
 
 # Summary
 
-Human activities induce changes on land use and land cover. These changes are most significant in urban areas where topographic features (e.g. building, road) affect the density of impervious surface areas and introduce a range of urban morphological patterns. Those characteristics impact the energy balance and modify the climate locally (e.g. inducing the so-called Urban Heat Island phenomenon).
+Human activities induce changes on land use and land cover. These changes are most significant in urban areas where topographic features (e.g. building, road) affect the density of impervious surface areas and introduce a range of urban morphological patterns. Those characteristics impact the energy balance and modify the climate locally (e.g. inducing the so-called Urban Heat Island phenomenon). 
 
-GeoClimate provides georeferenced morphological indicators as well as urban classifications (such as Local Climate Zones) that can be used as climate models inputs and/or to build maps of some of the environmental characteristics of a territory (vegetation fractions, main building forms, main wall directions, density of isolated areas, etc.). GeoClimate can therefore be used for other diagnostic or planning purposes than climate issue: studying the territory fragmentation, the influence of the urban fabric on pollution (noise or air chemical transport), the energy consumption, etc. GeoClimate is available as a free and open source geospatial software. 
+Therefore, there is a need of georeferenced morphological indicators as well as urban classifications (such as Local Climate Zones) that can be directly used for planning or as inputs of climate models. GeoClimate is dedicated to this purpose: it converts raw data into indicators useful for climate applications (sky view factor, vegetation fraction, etc.). However, its application is not limited to the climate field. The indicators calculated in Geoclimate can also be used for other diagnostic or planning purposes: studying the territory fragmentation, the influence of the urban fabric on pollution (noise or air chemical transport), the energy consumption, etc. GeoClimate is available as a free and open source geospatial software. 
 
 # Statement of need
 
