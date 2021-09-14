@@ -50,7 +50,7 @@ Therefore, there is a need of georeferenced morphological indicators as well as 
 
 # Statement of need
 
-Urban spatial properties are useful to study the urban climate: (i) basic parameters such as building fraction or building height are needed as input of parametric urban climate models such as the Town Energy Balance teb^[https://github.com/teb-model/teb] [@masson2000], (ii) more sophisticated ones are clearly correlated to urban climate observations^[Few examples: (i) the lower the Sky View Factor (SVF): the higher solar radiation are trapped by the urban canopy [@bernabe2015], the higher the urban air temperature [@lindberg2007], the lower the wind speed [@johansson2016] (ii) the higher the density of projected building facade in a given direction, the lower the wind speed within the urban canopy [@hanna2002].] and (iii) local climate classifications, useful for international comparisons, are mostly defined from urban spatial properties [@stewart2012]. Thus there is a need for tools dedicated to the calculation of urban spatial metrics.
+Urban spatial properties are useful to study the urban climate: (i) basic parameters such as building fraction or building height are needed as input of parametric urban climate models such as the Town Energy Balance (TEB)^[https://github.com/teb-model/teb] [@masson2000], (ii) more sophisticated parameters are clearly correlated to urban climate observations^[Few examples: (i) the lower the sky view factor: the higher solar radiation are trapped by the urban canopy [@bernabe2015], the higher the urban air temperature [@lindberg2007], the lower the wind speed [@johansson2016] (ii) the higher the density of projected building facade in a given direction, the lower the wind speed within the urban canopy [@hanna2002].] and (iii) local climate classifications, useful for international comparisons, are mostly defined from urban spatial properties [@stewart2012]. Thus there is a need for tools dedicated to the calculation of urban spatial metrics.
 
 In previous researches, scripts were developed to automatically calculate numerous indicators useful for urban climate applications [@bocher2018]. These scripts have been organized, improved and have been implemented within a Groovy library called GeoClimate. New urban properties and classifications algorithms have been added. GeoClimate also simplifies the access to geospatial data since it automatically downloads and organizes data from the world-wide OpenStreetMap database^[https://www.openstreetmap.org]. One of the current major limitations for the climate community to use this data is its lack of building height information [@masson2020]. Thus we have also added an algorithm to roughly estimate the height of each building missing this information.
 
@@ -60,7 +60,7 @@ This tool is first dedicated to urban climate researchers for modeling purpose: 
 
 There is currently no software specifically designed for the calculation of geospatial indicators dedicated to urban climate. However, two softwares can currently be used to automatically perform some of the GeoClimate’s features:
 
-- Urban Multi-Scale Environment Predictor (UMEP^[https://umep-docs.readthedocs.io/en/latest/]), available as a plugin in the free and open-source QGIS software, can be used for a variety of applications related to outdoor thermal comfort, urban energy consumption, climate change mitigation [@lindberg2018]
+- Urban Multi-Scale Environment Predictor [@lindberg2019], available as a plugin in the free and open-source QGIS software, can be used for a variety of applications related to outdoor thermal comfort, urban energy consumption, climate change mitigation [@lindberg2018]
 - Local Climate Zone Generator (LCZ Generator^[https://lcz-generator.rub.de/]), available as an online tool, produces the LCZ classification of a given area [@demuzere2021].
 
 Table 1 shows the features covered by GeoClimate and for each feature the differences with UMEP and LCZ Generator.
@@ -178,7 +178,7 @@ The configuration file is structured in four main parts.
 
 The following maps (\autoref{fig:SVF}, \autoref{fig:roughness}, \autoref{fig:density}, \autoref{fig:height}) illustrate some results indicators computed at the TSU scale and aggregated on regular grid.
 
-![SVF values by TSU.\label{fig:SVF}](figure_5_svf.png){ width=100% }
+![Sky view factor values by TSU.\label{fig:SVF}](figure_5_svf.png){ width=100% }
 
 ![Terrain roughness class values by TSU.\label{fig:roughness}](figure_5_roughness_class.png){ width=100% }
 
