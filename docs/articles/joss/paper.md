@@ -60,7 +60,7 @@ This tool is first dedicated to urban climate researchers for modeling purpose: 
 
 There is currently no software specifically designed for the calculation of geospatial indicators dedicated to urban climate. However, two softwares can currently be used to automatically perform some of the GeoClimate’s features:
 
-- Urban Multi-Scale Environment Predictor (UMEP^[https://umep-docs.readthedocs.io/en/latest/]), available as a plugin in the free and open-source QGIS software, can be used for a variety of applications related to outdoor thermal comfort, urban energy consumption, climate change mitigation [@lindberg2018]
+- Urban Multi-Scale Environment Predictor [@lindberg2019], available as a plugin in the free and open-source QGIS software, can be used for a variety of applications related to outdoor thermal comfort, urban energy consumption, climate change mitigation [@lindberg2018]
 - Local Climate Zone Generator (LCZ Generator^[https://lcz-generator.rub.de/]), available as an online tool, produces the LCZ classification of a given area [@demuzere2021].
 
 Table 1 shows the features covered by GeoClimate and for each feature the differences with UMEP and LCZ Generator.
