@@ -915,7 +915,7 @@ def extractProcessingParameters(def processing_parameters){
                                                   "pervious_surface_fraction"      : 0,
                                                   "height_of_roughness_elements"   : 6,
                                                   "terrain_roughness_length"       : 0.5],
-                                 estimateHeight:false,
+                                 estimateHeight:true,
                                  urbanTypoModelName: "URBAN_TYPOLOGY_OSM_RF_2_1.model"]
     defaultParameters.put("rsu_indicators", rsu_indicators_default)
 
