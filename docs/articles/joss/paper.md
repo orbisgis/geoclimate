@@ -81,9 +81,9 @@ Table 1: GeoClimate features description and differences with similar commonly-u
 
 GeoClimate performs indicators computation at three spatial unit scales, a spatial unit being a POLYGON or MULTIPOLYGON geometry:
 
-1. Building scale, defined as a collection of features represented by 2.5 geometries with attributes as measures for walls and roof, 
-2. Block scale, defined as a set of buildings touching each other (at least one point in common) or as an isolated building, 
-3. Reference Spatial Unit (RSU) scale, being the elementary unit to characterize all the characteristics of a piece of land (not only related to buildings but also to vegetation, water). 
+1. Building scale, defined as a collection of features represented by 2D geometries with attributes as measures for walls and roof. 
+2. Block scale, defined as the union of the geometries of buildings touching each other (at least one point in common). Note that an isolated building is then also consider as a block. 
+3. Reference Spatial Unit (RSU) scale, being the elementary unit to characterize all the characteristics of a piece of land. The RSU are calculated according to several geographic informations that describe the territory and could have an impact on the urban climate: the road and rail network as well as the vegetation area and water surfaces (when they are sufficiently large to be considered as climatically important – default values are respectively 100’000 m² and 2’500 m²).  
 
 The indicators in GeoClimate are calculated from vector GIS layers that represent the main topographic features: zone layer, building layer, road layer, railway layer, vegetation layer, water layer and impervious layer (depending on the use of GeoClimate, only some of the inputs may be needed). To guarantee the use of the algorithms and their outputs, the GIS layers must follow a set of specifications. These specifications are defined for each layer. They include notably the name and the datatype of the columns, the values used by the attributes, the dimension of the geometry.
 
