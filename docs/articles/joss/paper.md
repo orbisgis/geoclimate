@@ -1,5 +1,5 @@
 ---
-title: 'GeoClimate : a Geospatial processing toolbox for environmental and climate studies'
+title: 'GeoClimate: a Geospatial processing toolbox for environmental and climate studies'
 tags:
   - climate
   - environment
