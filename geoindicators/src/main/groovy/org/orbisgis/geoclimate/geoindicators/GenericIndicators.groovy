@@ -601,10 +601,7 @@ IProcess distributionCharacterization() {
                         datasource.eachRow("SELECT * FROM $distribTableNameNoNull".toString()) { row ->
                             def rowMap = row.toRowResult()
                             def id_rsu = rowMap."$inputId"
-                            rowMap.remove(inputId)
-                            def sortedMap = rowMap.sort { it.value }
-                            // We want to get rid of some of the values identified as -9999.99
-                            while (sortedMap.values().remove(-9999.99 as double));
+                            def sortedMap =  rowMap.findAll {it.key.toLowerCase()!=inputId && (it.value!=-9999.99)}.sort{it.value}
                             def queryInsert = """INSERT INTO $outputTableMissingSomeObjects 
                                                 VALUES ($id_rsu, ${getEquality(sortedMap, nbDistCol)},
                                                         ${getUniqueness(sortedMap, idxExtrem, idxExtrem_1)},
