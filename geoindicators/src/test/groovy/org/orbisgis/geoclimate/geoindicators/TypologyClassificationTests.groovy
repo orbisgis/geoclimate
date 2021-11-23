@@ -26,7 +26,7 @@ class TypologyClassificationTests {
 
     @BeforeAll
     static void beforeAll() {
-        h2GIS = open "./target/${randomDbName()};AUTO_SERVER=TRUE"
+        h2GIS = open "./target/${randomDbName()};AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE"
     }
 
     @BeforeEach

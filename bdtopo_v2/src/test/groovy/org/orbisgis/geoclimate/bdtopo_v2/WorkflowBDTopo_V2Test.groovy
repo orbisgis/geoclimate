@@ -444,8 +444,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                 "parameters":
                         ["distance" : 0,
                          rsu_indicators: [
-                         "indicatorUse": ["LCZ", "UTRF"],
-                         "svfSimplified": true
+                         "indicatorUse": ["LCZ", "UTRF"]
                           ],
                          "grid_indicators": [
                                  "x_size": 1000,
@@ -739,7 +738,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
     }
 
     @Disabled //Use it for integration test with a postgis database
-    @org.junit.jupiter.api.Test
+    @Test
     void testIntegrationPostGIS() {
         String directory ="./target/geoclimate_postgis_integration"
         File dirFile = new File(directory)
@@ -831,7 +830,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
     }
 
     @Disabled //Use it for integration test with a postgis database
-    @org.junit.jupiter.api.Test
+    @Test
     void testIntegrationPostGISInput() {
         def user = ""
         def password = ""

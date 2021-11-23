@@ -134,7 +134,7 @@ class RsuIndicatorsTests {
                 }
 
         }
-        assertEquals("637.1\n637.1\n32.53\n32.53\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n", concat)
+        assertEquals("637.10\n637.10\n32.53\n32.53\n0.00\n0.00\n0.00\n0.00\n0.00\n0.00\n0.00\n0.00\n", concat)
     }
 
     @Test
@@ -167,7 +167,7 @@ class RsuIndicatorsTests {
                     }
                 }
         }
-        assertEquals("0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n", concat)
+        assertEquals("0.00\n0.00\n0.00\n0.00\n0.00\n0.00\n0.00\n0.00\n0.00\n0.00\n0.00\n0.00\n", concat)
     }
 
     @Test
@@ -213,9 +213,9 @@ class RsuIndicatorsTests {
                     }
                 }
         }
-        assertEquals("405.25\n56.48\n289.27\n45.64\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n0.0\n",
+        assertEquals("405.25\n56.48\n289.27\n45.64\n0.00\n0.00\n0.00\n0.00\n0.00\n0.00\n0.00\n0.00\n",
                 concat1)
-        assertEquals("355.02\n163.23\n404.01\n141.88\n244.92\n235.5\n48.98\n6.73\n0.0\n0.0\n0.0\n0.0\n",
+        assertEquals("355.02\n163.23\n404.01\n141.88\n244.92\n235.50\n48.98\n6.73\n0.00\n0.00\n0.00\n0.00\n",
                 concat2)
 
         // Test the optionally calculated roof densities
@@ -510,7 +510,7 @@ class RsuIndicatorsTests {
         assertEquals(1.0/10, result2["building_low_vegetation_fraction"])
         assertEquals(3.0/20, result2["low_vegetation_fraction"])
         assertEquals(1.0/4, result2["water_fraction"])
-        assertEquals(0, result2["building_fraction"])
+        assertEquals(0d, result2["building_fraction"])
     }
 
     @Test
@@ -565,7 +565,7 @@ class RsuIndicatorsTests {
                 priorities: priorities0,
                 prefixName: "test", datasource: h2GIS])
         def result0 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName} WHERE ID_RSU=1")
-        assertEquals(0.0, result0["building_fraction"])
+        assertEquals(0d, result0["building_fraction"])
     }
 
     @Test
