@@ -26,7 +26,7 @@ class InputDataFormattingTest {
                                          "ROAD_BD_TOPO_TYPE", "VEGET_ABSTRACT_PARAMETERS", "VEGET_ABSTRACT_TYPE",
                                          "VEGET_BD_TOPO_TYPE"]
 
-        h2GISDatabase = H2GIS.open("./target/h2gis_input_data_formating;AUTO_SERVER=TRUE", "sa", "")
+        h2GISDatabase = H2GIS.open("./target/h2gis_input_data_formating;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE", "sa", "")
 
         // Load parameter files
         paramTables.each{
