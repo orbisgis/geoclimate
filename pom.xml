@@ -6,12 +6,12 @@
     <parent>
         <groupId>org.orbisgis</groupId>
         <artifactId>orbisparent</artifactId>
-        <version>1.0.3-SNAPSHOT</version>
+        <version>1.0.4-SNAPSHOT</version>
     </parent>
     <groupId>org.orbisgis.geoclimate</groupId>
     <artifactId>geoclimate-parent</artifactId>
     <packaging>pom</packaging>
-    <version>0.0.1</version>
+    <version>0.0.2-SNAPSHOT</version>
     <modules>
         <module>geoindicators</module>
         <module>bdtopo_v2</module>
@@ -27,6 +27,11 @@
         <buildNumber>${maven.build.timestamp}</buildNumber>
         <site.basedir>${project.basedir}</site.basedir>
         <log4j-version>2.14.0</log4j-version>
+        <orbisanalysis-version>1.0.0-SNAPSHOT</orbisanalysis-version>
+        <h2gis-version>2.0.0-SNAPSHOT</h2gis-version>
+        <orbisparent-version>1.0.4-SNAPSHOT</orbisparent-version>
+        <cts-version>1.6.0-SNAPSHOT</cts-version>
+        <orbisdata-version>1.0.1-SNAPSHOT</orbisdata-version>
     </properties>
 
     <licenses>
@@ -50,10 +55,6 @@
             <organization>UBS, Lab-STICC UMR 6285</organization>
         </developer>
         <developer>
-            <name>Jonathan Lao</name>
-            <organization>UBS, Lab-STICC UMR 6285</organization>
-        </developer>
-        <developer>
             <name>Sylvain Palominos</name>
             <organization>UBS, Lab-STICC UMR 6285</organization>
         </developer>
@@ -66,6 +67,71 @@
     <!-- Dependencies -->
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.orbisgis.orbisanalysis</groupId>
+                <artifactId>osm</artifactId>
+                <version>${osm-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.orbisgis</groupId>
+                <artifactId>commons</artifactId>
+                <version>${orbisparent-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.orbisgis</groupId>
+                <artifactId>h2gis</artifactId>
+                <version>${h2gis-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.orbisgis</groupId>
+                <artifactId>h2gis-utilities</artifactId>
+                <version>${h2gis-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.orbisgis</groupId>
+                <artifactId>h2gis-network</artifactId>
+                <version>${h2gis-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.orbisgis</groupId>
+                <artifactId>postgis-jts</artifactId>
+                <version>${h2gis-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.orbisgis</groupId>
+                <artifactId>postgis-jts-osgi</artifactId>
+                <version>${h2gis-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.orbisgis</groupId>
+                <artifactId>cts</artifactId>
+                <version>${cts-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.orbisgis.orbisdata.datamanager</groupId>
+                <artifactId>api</artifactId>
+                <version>${orbisdata-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.orbisgis.orbisdata.datamanager</groupId>
+                <artifactId>jdbc</artifactId>
+                <version>${orbisdata-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.orbisgis.orbisdata.processmanager</groupId>
+                <artifactId>api</artifactId>
+                <version>${orbisdata-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.orbisgis.orbisdata.processmanager</groupId>
+                <artifactId>process</artifactId>
+                <version>${orbisdata-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.orbisgis.orbisdata.datamanager</groupId>
+                <artifactId>dataframe</artifactId>
+                <version>${orbisdata-version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.orbisgis.geoclimate</groupId>
                 <artifactId>osm</artifactId>
@@ -147,18 +213,11 @@
         <system>Github</system>
         <url>https://github.com/orbisgis/geoclimate/issues</url>
     </issueManagement>
-    <ciManagement>
-        <system>Travis CI</system>
-        <url>https://travis-ci.com/orbisgis/geoclimate</url>
-    </ciManagement>
-    <scm>
-        <connection>scm:git:git://github.com/orbisgis/geoclimate</connection>
-    </scm>
 
     <repositories>
         <repository>
             <id>orbisgis-release</id>
-            <url>https://nexus.orbisgis.org/repository/orbisgis-release</url>
+            <url>https://oss.sonatype.org/content/repositories/releases/</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
@@ -168,10 +227,10 @@
         </repository>
         <repository>
             <id>orbisgis-snapshot</id>
-            <url>https://nexus.orbisgis.org/repository/orbisgis-snapshot</url>
+            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
             <snapshots>
-                <enabled>true</enabled>
                 <updatePolicy>always</updatePolicy>
+                <enabled>true</enabled>
             </snapshots>
             <releases>
                 <enabled>false</enabled>
@@ -210,10 +269,13 @@
     </reporting>
 
     <distributionManagement>
-        <site>
-            <id>orbisgis-devs-website</id>
-            <name>Devs Website</name>
-            <url>file:/var/www/html/${project.artifactId}</url>
-        </site>
+    <snapshotRepository>
+        <id>ossrh</id>
+        <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+    <repository>
+        <id>ossrh</id>
+        <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
     </distributionManagement>
-</project>
+    </project>
