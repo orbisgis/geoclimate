@@ -214,7 +214,7 @@ IProcess identifyLczType() {
 
                 // 0. Set as industrial areas or large low-rise (commercial) having more of industrial or commercial than residential
                 // and at least 1/3 of fraction
-                if (datasource."$urbanLCZ".columns.contains("AREA_FRACTION_HEAVY_INDUSTRY")) {
+                if (datasource."$urbanLCZ".hasColumn("AREA_FRACTION_HEAVY_INDUSTRY")) {
                     datasource """DROP TABLE IF EXISTS $classifiedIndustrialCommercialLcz;
                                 CREATE TABLE $classifiedIndustrialCommercialLcz
                                         AS SELECT   $ID_FIELD_RSU,
@@ -256,7 +256,8 @@ IProcess identifyLczType() {
                 // (or median and median of the variability)
 
                 // For each LCZ indicator...
-                datasource."$urbanLCZExceptIndus".columns.collect { indicCol ->
+                def urbanLCZExceptIndusColumns = datasource."$urbanLCZExceptIndus".columns
+                urbanLCZExceptIndusColumns.collect { indicCol ->
                     if (!indicCol.equalsIgnoreCase(ID_FIELD_RSU) && !indicCol.equalsIgnoreCase(GEOMETRIC_FIELD)) {
                         // The values used for normalization ("mean" and "standard deviation") are calculated
                         // (for each column) and stored into maps
@@ -305,7 +306,7 @@ IProcess identifyLczType() {
                 datasource.eachRow("SELECT * FROM $normalizedRange") { LCZ ->
                     queryLczDistance += "SQRT("
                     // For each indicator...
-                    datasource."$urbanLCZExceptIndus".columns.collect { indic ->
+                    urbanLCZExceptIndusColumns.collect { indic ->
                         if (!indic.equalsIgnoreCase(ID_FIELD_RSU) && !indic.equalsIgnoreCase(GEOMETRIC_FIELD)) {
                             // Define columns names where are stored lower and upper range values of the current LCZ
                             // and current indicator
@@ -396,14 +397,14 @@ IProcess identifyLczType() {
                                         UNION ALL   SELECT * FROM $ruralAndIndustrialCommercialLCZ b;"""
 
                 // If the input tables contain a geometric field, we add it to the output table
-                if (datasource."$rsuAllIndicators".columns.contains(GEOMETRIC_FIELD)) {
+                if (datasource."$rsuAllIndicators".hasColumn(GEOMETRIC_FIELD)) {
                     datasource """DROP TABLE IF EXISTS $outputTableName;
                                     CREATE TABLE $outputTableName
                                             AS SELECT   a.*, b.$GEOMETRIC_FIELD
                                             FROM        $classifiedLcz a
                                             LEFT JOIN   $rsuAllIndicators b
                                             ON          a.$ID_FIELD_RSU=b.$ID_FIELD_RSU"""
-                } else if (datasource."$rsuLczIndicators".columns.contains(GEOMETRIC_FIELD)) {
+                } else if (datasource."$rsuLczIndicators".hasColumn(GEOMETRIC_FIELD)) {
                     datasource """DROP TABLE IF EXISTS $outputTableName;
                                     CREATE TABLE $outputTableName
                                             AS SELECT   a.*, b.$GEOMETRIC_FIELD

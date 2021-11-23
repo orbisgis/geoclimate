@@ -639,7 +639,7 @@ IProcess distributionCharacterization() {
                                         ON a.$inputId = b.$inputId;
                                         """
 
-                datasource.execute """DROP TABLE IF EXISTS $outputTableMissingSomeObjects"""
+                datasource.execute """DROP TABLE IF EXISTS $outputTableMissingSomeObjects, $distribTableNameNoNull"""
 
                 [outputTableName: outputTableName]
             } else {
@@ -778,7 +778,7 @@ IProcess typeProportion() {
                                         ON a.$idField = b.$idField;
                                         """
 
-                datasource.execute """DROP TABLE IF EXISTS $outputTableWithNull"""
+                datasource.execute """DROP TABLE IF EXISTS $outputTableWithNull, $caseWhenTab"""
 
                 [outputTableName: outputTableName]
             }
