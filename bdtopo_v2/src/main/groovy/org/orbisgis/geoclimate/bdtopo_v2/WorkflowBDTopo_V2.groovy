@@ -985,7 +985,7 @@ def loadDataFromFolder(def inputFolder, def h2gis_datasource, def id_zones){
             }
         }
         //Looking for commune shape file
-        def commune_file = geoFiles.find{ it.toLowerCase().endsWith("commune.shp")}
+        def commune_file = geoFiles.find{ it.toLowerCase().endsWith("commune.shp")?it:null}
         if(commune_file) {
             //Load commune and check if there is some id_zones inside
             h2gis_datasource.load(commune_file, "COMMUNE_TMP", true)
