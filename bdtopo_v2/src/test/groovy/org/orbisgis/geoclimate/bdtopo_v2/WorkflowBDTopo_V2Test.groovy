@@ -245,23 +245,6 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         assertTrue h2GISDatabase.firstRow("select count(*) as count from ${road_traffic.results.outputTableName} where road_type is not null").count==813
     }
 
-    // Test the workflow on the commune INSEE 01306 only for TEB in order to verify that only RSU_INDICATORS and BUILDING_INDICATORS are saved
-    @Test
-    @Disabled
-    void testBDTOPO_V2Workflow() {
-        String directory ="./target/geoclimate_chain/bdtopo_config/"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
-        IProcess processBDTopo = BDTopo_V2.WorkflowBDTopo_V2.workflow()
-        assertTrue(processBDTopo.execute(configurationFile: getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()))
-        assertNotNull(processBDTopo.getResults().outputFolder)
-        def baseNamePathAndFileOut = processBDTopo.getResults().outputFolder + File.separator + "zone_" + communeToTest + "_"
-        assertTrue(new File(baseNamePathAndFileOut + "rsu_indicators.geojson").exists())
-        assertFalse(new File(baseNamePathAndFileOut + "rsu_lcz.geojson").exists())
-        assertFalse(new File(baseNamePathAndFileOut + "block_indicators.geojson").exists())
-        assertTrue(new File(baseNamePathAndFileOut + "building_indicators.geojson").exists())
-    }
 
     @Test //Integration tests
     @Disabled
@@ -410,6 +393,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         }
     }
 
+    @Disabled
     @EnabledIfSystemProperty(named = "test.postgis", matches = "true")
     @Test
     void workflowPostGIS() {
@@ -551,7 +535,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                          ],
                          "rsu_indicators":[
                                  "indicatorUse": ["LCZ", "UTRF", "TEB"],
-                                 "svfSimplified": false,
+                                 "svfSimplified": true,
                          ],
                         ]
         ]
@@ -568,11 +552,15 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         dirFile.delete()
         dirFile.mkdir()
         String dataFolder = getDataFolderPath()
+        WKTReader wktReader = new WKTReader()
+        Geometry geom = wktReader.read("POLYGON ((664540 6359900, 665430 6359900, 665430 6359110, 664540 6359110, 664540 6359900))")
+        Envelope env = geom.getEnvelopeInternal()
+
         def bdTopoParameters = [
                 "description" :"Example of configuration file to run the grid indicators",
                 "input" :["bdtopo_v2":  [
                         "folder": ["path" :dataFolder,
-                                   "id_zones":[communeToTest]]]],
+                                   "id_zones":[[env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]]]]],
                 "output" :[
                         "folder" : ["path": "$directory",
                                     "tables": ["grid_indicators"]]],
@@ -592,7 +580,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE")
-        h2gis.load(directory+File.separator+"bdtopo_v2_"+communeToTest+File.separator+"grid_indicators.geojson")
+
         assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
     }
 

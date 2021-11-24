@@ -361,7 +361,7 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, distance: 1000, idZone: communeToTest,
+                                    distBuffer: 0, distance: 0, idZone: communeToTest,
                                     building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
                                     road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
                                     road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
@@ -379,7 +379,7 @@ class InputDataLoadingTest {
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(8, table.columnCount)
-        assertEquals(3201, table.rowCount)
+        assertEquals(1688, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
         assertEquals('CHARACTER VARYING', table.getColumnType('ID_SOURCE'))
@@ -823,7 +823,7 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, distance: 1000, idZone: communeToTest,
+                                    distBuffer: 0, distance: 0, idZone: communeToTest,
                                     building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
                                     road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
                                     road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
