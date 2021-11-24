@@ -555,12 +555,12 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         WKTReader wktReader = new WKTReader()
         Geometry geom = wktReader.read("POLYGON ((664540 6359900, 665430 6359900, 665430 6359110, 664540 6359110, 664540 6359900))")
         Envelope env = geom.getEnvelopeInternal()
-
+        def envCoords = [env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]
         def bdTopoParameters = [
                 "description" :"Example of configuration file to run the grid indicators",
                 "input" :["bdtopo_v2":  [
                         "folder": ["path" :dataFolder,
-                                   "id_zones":[[env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]]]]],
+                                   "id_zones":[envCoords]]]],
                 "output" :[
                         "folder" : ["path": "$directory",
                                     "tables": ["grid_indicators"]]],
@@ -580,7 +580,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE")
-
+        h2gis.load(directory+File.separator+"bdtopo_v2_"+envCoords.join("-")+File.separator+"grid_indicators.geojson")
         assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
     }
 
