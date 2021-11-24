@@ -146,7 +146,7 @@ IProcess prepareBDTopoData() {
                         } else {
                             //This is due because the import table does'nt transfert the SRID constraint when the
                             //table has no rows
-                            if(currentSrid==0 && table.getRowCount()>0 ){
+                            if(currentSrid==0 && table.getRowCount()==0 ){
                                 error "The process has been stopped since the table $name has a no SRID"
                                 return
                             }
