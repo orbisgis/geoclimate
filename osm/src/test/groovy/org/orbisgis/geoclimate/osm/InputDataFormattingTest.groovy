@@ -401,34 +401,17 @@ class InputDataFormattingTest {
         }
     }
 
-    @Test
-    void apiOSMGISBuildingCheckHeight1() {
-        //OSM URL https://www.openstreetmap.org/way/227927910
-        def zoneToExtract = [48.87644088590647, 2.3938433825969696, 48.877258515821225, 2.3952582478523254]
-        createGISLayersCheckHeight(zoneToExtract)
-    }
 
     @Test
-    void apiOSMGISBuildingCheckHeight2() {
+    void osmFileGISBuildingCheckHeight2() {
         //OSM URL https://www.openstreetmap.org/way/79083537
         //negative building:levels
-        def zoneToExtract = [48.82043541804379, 2.364395409822464, 48.82125396297273, 2.36581027507782]
-        createGISLayersCheckHeight(zoneToExtract)
-    }
-
-
-    /**
-     * Method to check value from  the building layer
-     * @param zoneToExtract
-     */
-    void createGISLayersCheckHeight(def zoneToExtract) {
-        IProcess extractData = OSM.InputDataLoading.extractAndCreateGISLayers()
+        def epsg = 2154
+        IProcess extractData = OSM.InputDataLoading.createGISLayers()
         extractData.execute([
-                datasource   : h2GIS,
-                zoneToExtract: zoneToExtract])
-
-        if (extractData.results.zoneTableName != null) {
-            def epsg = h2GIS.getSpatialTable(extractData.results.zoneTableName).srid
+                datasource : h2GIS,
+                osmFilePath: new File(this.class.getResource("osmBuildingCheckHeigh.osm").toURI()).getAbsolutePath(),
+                epsg       : epsg])
 
             //Buildings
             IProcess format = OSM.InputDataFormatting.formatBuildingLayer()
@@ -446,9 +429,6 @@ class InputDataFormattingTest {
             assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF is null").count == 0
             assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0").count == 0
 
-        } else {
-            assertTrue(false)
-        }
     }
 
     @Test

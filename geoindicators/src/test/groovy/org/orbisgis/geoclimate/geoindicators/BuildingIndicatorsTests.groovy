@@ -65,8 +65,8 @@ class BuildingIndicatorsTests {
                 concat[2]+= "${row.number_building_neighbor}\n"
 
         }
-        assertEquals("0.0\n${(50/552).round(5)}\n".toString(),concat[0].toString())
-        assertEquals("0.0\n${(10/46).round(5)}\n".toString(), concat[1].toString())
+        assertEquals("0.00000\n${(50/552).round(5)}\n".toString(),concat[0].toString())
+        assertEquals("0.00000\n${(10/46).round(5)}\n".toString(), concat[1].toString())
         assertEquals("0\n1\n".toString(),  concat[2].toString())
     }
 
@@ -156,7 +156,7 @@ class BuildingIndicatorsTests {
                 "id_build = 28 ORDER BY id_build ASC"){
             row -> concat+= "${row.likelihood_large_building.round(2)}\n"
         }
-        assertEquals("0.0\n0.02\n1.0\n", concat)
+        assertEquals("0.00\n0.02\n1.00\n", concat)
     }
 
 }

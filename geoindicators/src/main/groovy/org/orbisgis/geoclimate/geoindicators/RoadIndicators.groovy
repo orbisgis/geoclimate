@@ -47,7 +47,7 @@ IProcess build_road_traffic() {
             datasource """
                 DROP TABLE IF EXISTS $outputTableName;
                 CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_ROAD SERIAL, ID_SOURCE VARCHAR, 
-                ROAD_TYPE VARCHAR, SURFACE VARCHAR, DIRECTION INTEGER, SLOPE DOUBLE PRECISION,PAVEMENT VARCHAR,
+                ROAD_TYPE VARCHAR, SOURCE_ROAD_TYPE VARCHAR, SURFACE VARCHAR, DIRECTION INTEGER, SLOPE DOUBLE PRECISION,PAVEMENT VARCHAR,
                 DAY_LV_HOUR INTEGER, DAY_HV_HOUR INTEGER, DAY_LV_SPEED INTEGER ,DAY_HV_SPEED INTEGER, 
                 NIGHT_LV_HOUR INTEGER, NIGHT_HV_HOUR INTEGER, NIGHT_LV_SPEED INTEGER, NIGHT_HV_SPEED INTEGER, 
                 EV_LV_HOUR INTEGER,EV_HV_HOUR INTEGER, EV_LV_SPEED INTEGER, EV_HV_SPEED INTEGER);
@@ -118,7 +118,8 @@ IProcess build_road_traffic() {
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             //Find road type
-                            def road_type = getTrafficRoadType(road_types,  row."type")
+                            def source_road_type = row."type"
+                            def road_type = getTrafficRoadType(road_types,  source_road_type)
                             //Set a default road
                             if (road_type) {
                                 int maxspeed_value = row."maxspeed"
@@ -137,12 +138,12 @@ IProcess build_road_traffic() {
                                 if (geom) {
                                     //Explode geometries
                                     for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                        stmt.addBatch """insert into $outputTableName (THE_GEOM, ID_SOURCE, ROAD_TYPE,
+                                        stmt.addBatch """insert into $outputTableName (THE_GEOM, ID_SOURCE, ROAD_TYPE, SOURCE_ROAD_TYPE,
                                         SURFACE, DIRECTION, SLOPE ,PAVEMENT,
                                         DAY_LV_HOUR, DAY_HV_HOUR , DAY_LV_SPEED  ,DAY_HV_SPEED , 
                                         NIGHT_LV_HOUR , NIGHT_HV_HOUR , NIGHT_LV_SPEED , NIGHT_HV_SPEED , 
                                         EV_LV_HOUR ,EV_HV_HOUR , EV_LV_SPEED , EV_HV_SPEED ) 
-                                        values(ST_GEOMFROMTEXT('${geom.getGeometryN(i)}',$epsg), '${row.id_road}','${road_type}',
+                                        values(ST_GEOMFROMTEXT('${geom.getGeometryN(i)}',$epsg), '${row.id_road}','${road_type}','${source_road_type}',
                                         '${surface}',${direction},null, '${pavement_value}',
                                         ${traffic_data.day_lv_hour},${traffic_data.day_hv_hour},${maxspeed_value},${maxspeed_value},
                                         ${traffic_data.night_lv_hour},${traffic_data.night_hv_hour},${maxspeed_value},${maxspeed_value},

@@ -1346,9 +1346,11 @@ IProcess smallestCommunGeometry() {
                 datasource."$final_polygonize"."${id_rsu}".createIndex()
 
                 def finalMerge = []
+                def tmpTablesToDrop = []
                 tablesToMerge.each { entry ->
                     debug "Processing table $entry.key"
                     def tmptableName = "tmp_stats_$entry.key"
+                    tmpTablesToDrop<<tmptableName
                     if (entry.key.startsWith("high_vegetation")) {
                         datasource."$entry.key".the_geom.createSpatialIndex()
                         datasource."$entry.key"."${id_rsu}".createIndex()
@@ -1403,7 +1405,7 @@ IProcess smallestCommunGeometry() {
                                                         MAX(HIGH_VEGETATION) AS HIGH_VEGETATION, MAX(WATER) AS WATER,
                                                         MAX(IMPERVIOUS) AS IMPERVIOUS, MAX(ROAD) AS ROAD, 
                                                         MAX(BUILDING) AS BUILDING, ${id_rsu} FROM $allInfoTableName GROUP BY ${ID_COLUMN_NAME}, ${id_rsu};
-                                      DROP TABLE IF EXISTS ${tablesToMerge.keySet().join(' , ')}, ${allInfoTableName}"""
+                                      DROP TABLE IF EXISTS ${tablesToMerge.keySet().join(' , ')}, ${allInfoTableName}, ${tmpTablesToDrop.join(",")}"""
                 }
 
             } else {

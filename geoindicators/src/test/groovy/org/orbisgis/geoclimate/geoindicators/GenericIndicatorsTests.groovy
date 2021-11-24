@@ -84,33 +84,26 @@ class GenericIndicatorsTests {
                 inputVarAndOperations       : ["number_building_neighbor":["STD"]],
                 prefixName                  : "fifth",
                 datasource                  : h2GIS])
-        def concat = ["", "", 0, ""]
 
-        h2GIS.eachRow("SELECT * FROM first_unweighted_operation_from_lower_scale WHERE id_block = 1 OR id_block = 4 ORDER BY id_block ASC"){
-            row -> concat[0]+= "${row.sum_area}\n"
-        }
-        h2GIS.eachRow("SELECT * FROM second_unweighted_operation_from_lower_scale WHERE id_rsu = 1 OR id_rsu = 2 ORDER BY id_rsu ASC"){
-            row -> concat[1]+= "${row.avg_number_building_neighbor}\n"
-        }
-        h2GIS.eachRow("SELECT * FROM third_unweighted_operation_from_lower_scale WHERE id_rsu = 1"){
-            row -> concat[2]+= row.geom_avg_height_roof
-        }
-        h2GIS.eachRow("SELECT * FROM fourth_unweighted_operation_from_lower_scale WHERE id_rsu = 1"){
-            row ->
-                concat[3]+= "${row.avg_number_building_neighbor}\n"
-                concat[3]+= "${row.sum_area}\n"
-                concat[3]+= "${row.area_density}\n"
-                concat[3]+= "${row.building_number_density}\n"
-        }
-        concat[4] = h2GIS.firstRow("SELECT std_number_building_neighbor FROM fifth_unweighted_operation_from_lower_scale WHERE id_rsu = 1")
+        def values = h2GIS.rows("SELECT sum_area FROM first_unweighted_operation_from_lower_scale WHERE id_block = 1 OR id_block = 4 ORDER BY id_block ASC")
+        assert [156,310] == values.collect{it.values()}.flatten()
+        values = h2GIS.rows("SELECT avg_number_building_neighbor FROM second_unweighted_operation_from_lower_scale WHERE id_rsu = 1 OR id_rsu = 2 ORDER BY id_rsu ASC")
+        assert [0.4,0.0] == values.collect{it.values()}.flatten()
+
+        def value = h2GIS.firstRow("SELECT geom_avg_height_roof FROM third_unweighted_operation_from_lower_scale WHERE id_rsu = 1")
+
+        assertEquals 10.69, value.geom_avg_height_roof, 0.01
+
+        values = h2GIS.rows("SELECT avg_number_building_neighbor, sum_area, area_density, area_density FROM fourth_unweighted_operation_from_lower_scale WHERE id_rsu = 1")
+
+        assert [0.4,606,0.303]== values.collect{it.values()}.flatten()
+
+        value = h2GIS.firstRow("SELECT std_number_building_neighbor FROM fifth_unweighted_operation_from_lower_scale WHERE id_rsu = 1")
+        assertEquals 0.490, value.std_number_building_neighbor, 0.001
 
         def nb_rsu = h2GIS.firstRow "SELECT COUNT(*) AS NB FROM ${pgeom_avg.results.outputTableName}"
         def val_zero = h2GIS.firstRow "SELECT area_density AS val FROM ${pdens.results.outputTableName} WHERE id_rsu = 14"
-        assert "156.0\n310.0\n" == concat[0]
-        assert "0.4\n0.0\n" == concat[1]
-        assertEquals 10.69, concat[2], 0.01
-        assert "0.4\n606.0\n0.303\n0.0025\n"== concat[3]
-        assertEquals 0.490, concat[4]["STD_NUMBER_BUILDING_NEIGHBOR"], 0.001
+
         assert 16 == nb_rsu.nb
         assert 0 == val_zero.val
         // Test the fix concerning nb_dens_building (initially >0 while no building in RSU...)

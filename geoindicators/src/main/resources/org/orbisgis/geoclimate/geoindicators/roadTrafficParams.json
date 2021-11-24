@@ -140,12 +140,12 @@
     ,
     "Collecting roads": [
         "tertiary",
-        "tertiary_link",
-        "unclassified"
+        "tertiary_link"
       ],
     "Service roads": [
         "residential",
-        "roundabout"
+        "roundabout",
+        "unclassified"
       ]
     ,
     "Dead-end roads":  [

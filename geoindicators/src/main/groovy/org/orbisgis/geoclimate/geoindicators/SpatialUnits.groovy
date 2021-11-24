@@ -449,7 +449,7 @@ IProcess createBlocks() {
 
             // Temporary tables are deleted
             datasource "DROP TABLE IF EXISTS  $graphTable, ${graphTable + "_EDGE_CC"}, " +
-                    "$subGraphBlocks, ${subGraphBlocks + "_NODE_CC"};"
+                    "$subGraphBlocks, ${subGraphBlocks + "_NODE_CC"}, $subGraphTableNodes;"
 
             debug "The blocks have been created"
             [outputTableName: outputTableName, outputIdBlock: columnIdName]

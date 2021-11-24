@@ -35,8 +35,8 @@ class GeoclimateTest {
 
     @Test
     void propertiesTest() {
-        assert "0.0.1" == Geoclimate.version
-        assert Pattern.compile("\\d\\d\\d\\d(-\\d\\d){5}").matcher(Geoclimate.build).matches()
+        assert "0.0.2-SNAPSHOT" == Geoclimate.version
+        assert Pattern.compile("^\\d{4}-\\d{2}-\\d{2}").matcher(Geoclimate.build).matches()
     }
 
     @Disabled
@@ -50,7 +50,7 @@ class GeoclimateTest {
                 "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
                 "geoclimatedb" : [
                         "folder" : "${dirFile.absolutePath}",
-                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE",
                         "delete" :true
                 ],
                 "input" : [
@@ -94,7 +94,7 @@ class GeoclimateTest {
                 "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
                 "geoclimatedb" : [
                         "folder" : "${dirFile.absolutePath}",
-                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE",
                         "delete" :true
                 ],
                 "input" : [

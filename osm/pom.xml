@@ -5,18 +5,16 @@
     <parent>
         <artifactId>geoclimate-parent</artifactId>
         <groupId>org.orbisgis.geoclimate</groupId>
-        <version>0.0.1</version>
+        <version>0.0.2-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>osm</artifactId>
     <groupId>org.orbisgis.geoclimate</groupId>
-    <version>0.0.1</version>
+    <version>0.0.2-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.build.timestamp.format>YYYY-MM-dd</maven.build.timestamp.format>
-        <buildNumber>${maven.build.timestamp}</buildNumber>
     </properties>
 
     <dependencies>

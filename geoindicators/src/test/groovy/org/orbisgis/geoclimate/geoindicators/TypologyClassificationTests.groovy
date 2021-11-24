@@ -26,7 +26,7 @@ class TypologyClassificationTests {
 
     @BeforeAll
     static void beforeAll() {
-        h2GIS = open "./target/${randomDbName()};AUTO_SERVER=TRUE"
+        h2GIS = open "./target/${randomDbName()};AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE"
     }
 
     @BeforeEach
@@ -41,13 +41,6 @@ class TypologyClassificationTests {
                 rsuLczIndicators : "rsu_test_lcz_indics",
                 rsuAllIndicators : "rsu_test_all_indics_for_lcz",
                 normalisationType: "AVG",
-                mapOfWeights     : ["sky_view_factor"             : 1,
-                                    "aspect_ratio"                : 1,
-                                    "building_surface_fraction"   : 1,
-                                    "impervious_surface_fraction" : 1,
-                                    "pervious_surface_fraction"   : 1,
-                                    "height_of_roughness_elements": 1,
-                                    "terrain_roughness_length"    : 1],
                 prefixName       : "test",
                 datasource       : h2GIS])
         def results = [:]
