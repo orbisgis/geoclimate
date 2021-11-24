@@ -1583,8 +1583,10 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
                         if (diffCols) {
                             inputColumns.each { entry ->
                                 if (diffCols.contains(entry.key)) {
-                                    alterTable += "ALTER TABLE $output_table ADD COLUMN $entry.key ${entry.value.equalsIgnoreCase("double") ? "DOUBLE PRECISION" : entry.value};"
-                                    outputColumns.put(entry.key, entry.value)
+                                    //DECFLOAT is not supported by POSTSGRESQL
+                                    def dataType = entry.value.equalsIgnoreCase("decfloat")?"FLOAT":entry.value
+                                    alterTable += "ALTER TABLE $output_table ADD COLUMN $entry.key $dataType;"
+                                    outputColumns.put(entry.key, dataType)
                                 }
                             }
                             output_datasource.execute(alterTable)
@@ -1703,8 +1705,10 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                             if(diffCols){
                                 inputColumns.each { entry ->
                                     if (diffCols.contains(entry.key)){
-                                        alterTable += "ALTER TABLE $output_table ADD COLUMN $entry.key ${entry.value.equalsIgnoreCase("double")?"DOUBLE PRECISION":entry.value};"
-                                        outputColumns.put(entry.key, entry.value)
+                                        //DECFLOAT is not supported by POSTSGRESQL
+                                        def dataType = entry.value.equalsIgnoreCase("decfloat")?"FLOAT":entry.value
+                                        alterTable += "ALTER TABLE $output_table ADD COLUMN $entry.key $dataType;"
+                                        outputColumns.put(entry.key, dataType)
                                     }
                                 }
                                 output_datasource.execute(alterTable)

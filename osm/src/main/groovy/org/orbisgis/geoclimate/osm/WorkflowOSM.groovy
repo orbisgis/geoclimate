@@ -1390,8 +1390,10 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
                         if (diffCols) {
                             inputColumns.each { entry ->
                                 if (diffCols.contains(entry.key)) {
-                                    alterTable += "ALTER TABLE $output_table ADD COLUMN $entry.key ${entry.value.equalsIgnoreCase("double") ? "DOUBLE PRECISION" : entry.value};"
-                                    outputColumns.put(entry.key, entry.value)
+                                    //DECFLOAT is not supported by POSTSGRESQL
+                                    def dataType = entry.value.equalsIgnoreCase("decfloat")?"FLOAT":entry.value
+                                    alterTable += "ALTER TABLE $output_table ADD COLUMN $entry.key $dataType;"
+                                    outputColumns.put(entry.key, dataType)
                                 }
                             }
                             output_datasource.execute(alterTable)
@@ -1508,8 +1510,10 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                         if(diffCols){
                             inputColumns.each { entry ->
                                 if (diffCols.contains(entry.key)){
-                                    alterTable += "ALTER TABLE $output_table ADD COLUMN $entry.key ${entry.value.equalsIgnoreCase("double")?"DOUBLE PRECISION":entry.value};"
-                                    outputColumns.put(entry.key, entry.value)
+                                    //DECFLOAT is not supported by POSTSGRESQL
+                                    def dataType = entry.value.equalsIgnoreCase("decfloat")?"FLOAT":entry.value
+                                    alterTable += "ALTER TABLE $output_table ADD COLUMN $entry.key $dataType;"
+                                    outputColumns.put(entry.key, dataType)
                                 }
                             }
                             output_datasource.execute(alterTable)
@@ -1607,7 +1611,7 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
  * @param output_datasource
  * @return
  */
-def prepareTableOutput(def h2gis_table_to_save, def filter, def inputSRID,def h2gis_datasource, def output_table, def outputSRID,def output_datasource){
+def prepareTableOutput(def h2gis_table_to_save, def filter, def inputSRID,H2GIS h2gis_datasource, def output_table, def outputSRID,def output_datasource){
     def targetTableSrid = output_datasource.getSpatialTable(output_table).srid
     if (filter) {
         if(outputSRID==0){
