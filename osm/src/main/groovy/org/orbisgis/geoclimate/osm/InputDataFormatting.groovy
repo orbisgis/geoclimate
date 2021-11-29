@@ -695,7 +695,7 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
                 estimated = true
             }
             else {
-                heightWall = h_lev_min*nbLevels+h_lev_min
+                heightWall = h_lev_min*nbLevels
             }
         }
         else {
