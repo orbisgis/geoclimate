@@ -29,17 +29,17 @@ IProcess formatBuildingLayer() {
     return create {
         title "Transform OSM buildings table into a table that matches the constraints of the GeoClimate input model"
         id "formatBuildingLayer"
-        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, h_lev_min: 3, h_lev_max: 15, hThresholdLev2: 10, jsonFilename: "",  urbanAreasTableName : ""
+        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, h_lev_min: 3, h_lev_max: 15, hThresholdLev2: 10, jsonFilename: "", urbanAreasTableName: ""
         outputs outputTableName: String, outputEstimateTableName: String
         run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, epsg, h_lev_min, h_lev_max, hThresholdLev2, jsonFilename, urbanAreasTableName ->
 
-            if(!h_lev_min){
-                h_lev_min=3
+            if (!h_lev_min) {
+                h_lev_min = 3
             }
-            if(!h_lev_max){
+            if (!h_lev_max) {
                 h_lev_max = 15
             }
-            if(!hThresholdLev2){
+            if (!hThresholdLev2) {
                 hThresholdLev2 = 10
             }
 
@@ -82,14 +82,14 @@ IProcess formatBuildingLayer() {
                     }
 
                     def heightPattern = Pattern.compile("((?:\\d+\\/|(?:\\d+|^|\\s)\\.)?\\d+)\\s*([^\\s\\d+\\-.,:;^\\/]+(?:\\^\\d+(?:\$|(?=[\\s:;\\/])))?(?:\\/[^\\s\\d+\\-.,:;^\\/]+(?:\\^\\d+(?:\$|(?=[\\s:;\\/])))?)*)?", Pattern.CASE_INSENSITIVE)
-                    def id_build=1;
+                    def id_build = 1;
                     datasource.withBatch(2000) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             String height = row.height
                             String roof_height = row.'roof:height'
                             String b_lev = row.'building:levels'
                             String roof_lev = row.'roof:levels'
-                            def heightRoof = getHeightRoof(height,heightPattern)
+                            def heightRoof = getHeightRoof(height, heightPattern)
                             def heightWall = getHeightWall(heightRoof, roof_height)
 
                             def nbLevels = getNbLevels(b_lev, roof_lev)
@@ -142,14 +142,14 @@ IProcess formatBuildingLayer() {
                         }
                     }
                     //Improve building type using the urban areas table
-                    if(urbanAreasTableName){
+                    if (urbanAreasTableName) {
                         datasource."$outputTableName".the_geom.createSpatialIndex()
                         datasource."$outputTableName".id_build.createIndex()
                         datasource."$outputTableName".type.createIndex()
                         datasource."$urbanAreasTableName".the_geom.createSpatialIndex()
-                        def buildinType= "BUILDING_TYPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+                        def buildinType = "BUILDING_TYPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
 
-                        datasource.execute"""create table $buildinType as SELECT max(b.type) as type, max(b.main_use) as main_use, a.id_build FROM $outputTableName a, $urbanAreasTableName b 
+                        datasource.execute """create table $buildinType as SELECT max(b.type) as type, max(b.main_use) as main_use, a.id_build FROM $outputTableName a, $urbanAreasTableName b 
                         WHERE ST_POINTONSURFACE(a.the_geom) && b.the_geom and st_intersects(ST_POINTONSURFACE(a.the_geom), b.the_geom) AND  a.TYPE ='building' group by a.id_build""";
 
                         datasource.getTable(buildinType).id_build.createIndex()
@@ -230,37 +230,42 @@ IProcess formatRoadLayer() {
                     } else {
                         queryMapper += ", st_force2D(st_makevalid(a.the_geom)) as the_geom FROM $inputTableName  as a"
                     }
-                    int rowcount =1
+                    int rowcount = 1
                     def speedPattern = Pattern.compile("([0-9]+)( ([a-zA-Z]+))?", Pattern.CASE_INSENSITIVE)
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             def processRow = true
                             def road_access = row.'access'
                             def road_service = row.'service'
-                            if(road_service && road_service=="parking_aisle"){
+                            if (road_service && road_service in ["parking_aisle", "alley", "slipway", "drive-through", "driveway"]) {
                                 processRow = false;
                             }
-                            if(road_access && road_access=="permissive"){
+                            if (road_access && road_access in ["agricultural", "forestry"]) {
                                 processRow = false;
-                            }
-                            if(processRow){
-                            def width = getWidth(row.'width')
-                            String type = getTypeValue(row, columnNames, mappingForRoadType)
-                            if (!type) {
-                                type = 'unclassified'
-                            }
-                            def widthFromType = typeAndWidth[type]
-                            if (width <= 0 && widthFromType) {
-                                width = widthFromType
-                            }
-                            def crossing = row.'bridge'
-                            if (crossing) {
-                                crossing = crossingValues.bridge.contains(crossing) ? "'bridge'" : null
                             }
 
-                            String surface = getTypeValue(row, columnNames, mappingForSurface)
-                            String sidewalk = getSidewalk(row.'sidewalk')
-                            def zIndex = getZIndex(row.'layer')
+                            if (processRow) {
+                                String type = getTypeValue(row, columnNames, mappingForRoadType)
+
+                                if(row.id=='w39367046'){
+                                    println 'stop'
+                                }
+                                def width = getWidth(row.'width')
+                                if (!type) {
+                                    type = 'unclassified'
+                                }
+                                def widthFromType = typeAndWidth[type]
+                                if (width <= 0 && widthFromType) {
+                                    width = widthFromType
+                                }
+                                def crossing = row.'bridge'
+                                if (crossing) {
+                                    crossing = crossingValues.bridge.contains(crossing) ? "'bridge'" : null
+                                }
+
+                                String surface = getTypeValue(row, columnNames, mappingForSurface)
+                                String sidewalk = getSidewalk(row.'sidewalk')
+                                def zIndex = getZIndex(row.'layer')
                                 //maxspeed value
                                 int maxspeed_value = getSpeedInKmh(speedPattern, row."maxspeed")
 
@@ -270,10 +275,10 @@ IProcess formatRoadLayer() {
                                     direction = 1
                                 }
 
-                            if (zIndex >= 0 && type) {
-                                Geometry geom = row.the_geom
-                                for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                    stmt.addBatch """
+                                if (zIndex >= 0 && type) {
+                                    Geometry geom = row.the_geom
+                                    for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                        stmt.addBatch """
                                     INSERT INTO $outputTableName VALUES(ST_GEOMFROMTEXT(
                                         '${geom.getGeometryN(i)}',$epsg), 
                                         ${rowcount++}, 
@@ -288,8 +293,8 @@ IProcess formatRoadLayer() {
                                         ${zIndex})
                                 """.toString()
 
+                                    }
                                 }
-                            }
                             }
                         }
                     }
@@ -349,7 +354,7 @@ IProcess formatRailsLayer() {
                         queryMapper += ", st_force2D(st_makevalid(a.the_geom)) as the_geom FROM $inputTableName  as a"
 
                     }
-                    int rowcount =1
+                    int rowcount = 1
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             def type = getTypeValue(row, columnNames, mappingType)
@@ -435,7 +440,7 @@ IProcess formatVegetationLayer() {
                     } else {
                         queryMapper += ", st_force2D(st_makevalid(a.the_geom)) as the_geom FROM $inputTableName  as a"
                     }
-                    int rowcount=1
+                    int rowcount = 1
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             def type = getTypeValue(row, columnNames, mappingType)
@@ -503,7 +508,7 @@ IProcess formatHydroLayer() {
                         query = "select id,  st_force2D(st_makevalid(a.the_geom)) as the_geom FROM $inputTableName  as a"
 
                     }
-                    int rowcount=1
+                    int rowcount = 1
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(query) { row ->
                             Geometry geom = row.the_geom
@@ -565,7 +570,7 @@ IProcess formatImperviousLayer() {
                     } else {
                         queryMapper += ", st_force2D(st_makevalid(a.the_geom)) as the_geom FROM $inputTableName  as a"
                     }
-                    int rowcount=1
+                    int rowcount = 1
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             def toAdd = true
@@ -602,50 +607,50 @@ IProcess formatImperviousLayer() {
  * @param myMap A map between the target values in the model and the associated key/value tags retrieved from OSM
  * @return A list of Strings : first value is for "type" and second for "use"
  */
-static String[] getTypeAndUse(def row,def columnNames, def myMap) {
+static String[] getTypeAndUse(def row, def columnNames, def myMap) {
     String strType = null
     String strUse = null
     myMap.each { finalVal ->
         def type_use = finalVal.key.split(":")
         def type
         def use
-        if(type_use.size()==2){
-            type =  type_use[0]
-            use =type_use[1]
-        }else{
+        if (type_use.size() == 2) {
+            type = type_use[0]
+            use = type_use[1]
+        } else {
             type = finalVal.key;
             use = type
         }
         finalVal.value.each { osmVals ->
-            if(columnNames.contains(osmVals.key.toUpperCase())){
-                def  columnValue = row.getString(osmVals.key)
-            if(columnValue!=null){
-            osmVals.value.each { osmVal ->
-                if (osmVal.startsWith("!")) {
-                    osmVal = osmVal.replace("! ","")
-                    if ((columnValue != osmVal) && (columnValue != null)) {
-                        if (strType == null) {
-                            strType = type
-                            strUse =use
-                        }
-                    }
-                } else {
-                    if (columnValue == osmVal) {
-                        if (strType == null) {
-                            strType = type
-                            strUse =use
+            if (columnNames.contains(osmVals.key.toUpperCase())) {
+                def columnValue = row.getString(osmVals.key)
+                if (columnValue != null) {
+                    osmVals.value.each { osmVal ->
+                        if (osmVal.startsWith("!")) {
+                            osmVal = osmVal.replace("! ", "")
+                            if ((columnValue != osmVal) && (columnValue != null)) {
+                                if (strType == null) {
+                                    strType = type
+                                    strUse = use
+                                }
+                            }
+                        } else {
+                            if (columnValue == osmVal) {
+                                if (strType == null) {
+                                    strType = type
+                                    strUse = use
+                                }
+                            }
                         }
                     }
                 }
             }
-            }
-            }
         }
     }
-    if (strUse==null) {
-            strUse = strType
+    if (strUse == null) {
+        strUse = strType
     }
-    return [strType,strUse]
+    return [strType, strUse]
 }
 
 /**
@@ -657,13 +662,13 @@ static String[] getTypeAndUse(def row,def columnNames, def myMap) {
 
 static float getHeightWall(height, r_height) {
     float result = 0
-       if (r_height != null && r_height.isFloat())  {
-           if (r_height.toFloat()<height) {
-               result = height - r_height.toFloat()
-           }
-       } else {
-           result = height
-       }
+    if (r_height != null && r_height.isFloat()) {
+        if (r_height.toFloat() < height) {
+            result = height - r_height.toFloat()
+        }
+    } else {
+        result = height
+    }
     return result
 }
 
@@ -680,59 +685,57 @@ static float getHeightWall(height, r_height) {
  * @return a map with the new values
  */
 static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels, def h_lev_min,
-                                   def h_lev_max,def hThresholdLev2, def nbLevFromType){
+                                    def h_lev_max, def hThresholdLev2, def nbLevFromType) {
     //Use the OSM values
-    if(heightWall!=0 && heightRoof!=0 && nbLevels!=0){
-        return [heightWall:heightWall, heightRoof:heightRoof, nbLevels:nbLevels, estimated:false]
+    if (heightWall != 0 && heightRoof != 0 && nbLevels != 0) {
+        return [heightWall: heightWall, heightRoof: heightRoof, nbLevels: nbLevels, estimated: false]
     }
     //Initialisation of heights and number of levels
     // Update height_wall
-    boolean estimated =false
-    if(heightWall==0){
-        if(heightRoof==0){
-            if(nbLevels==0){
+    boolean estimated = false
+    if (heightWall == 0) {
+        if (heightRoof == 0) {
+            if (nbLevels == 0) {
                 heightWall = h_lev_min
                 estimated = true
+            } else {
+                heightWall = h_lev_min * nbLevels
             }
-            else {
-                heightWall = h_lev_min*nbLevels
-            }
-        }
-        else {
+        } else {
             heightWall = heightRoof
         }
     }
     // Update heightRoof
-    if(heightRoof==0){
+    if (heightRoof == 0) {
         heightRoof = heightWall
     }
     // Update nbLevels
     // If the nb_lev parameter (in the abstract table) is equal to 1 or 2
     // (and height_wall > 10m) then apply the rule. Else, the nb_lev is equal to 1
-    if(nbLevels==0) {
+    if (nbLevels == 0) {
         nbLevels = 1
         if (nbLevFromType == 1 || (nbLevFromType == 2 && heightWall > hThresholdLev2)) {
             nbLevels = Math.floor(heightWall / h_lev_min)
         }
     }
 
-   // Control of heights and number of levels
-   // Check if height_roof is lower than height_wall. If yes, then correct height_roof
-    if(heightWall>heightRoof){
+    // Control of heights and number of levels
+    // Check if height_roof is lower than height_wall. If yes, then correct height_roof
+    if (heightWall > heightRoof) {
         heightRoof = heightWall
     }
-    def tmpHmin=  nbLevels*h_lev_min
+    def tmpHmin = nbLevels * h_lev_min
     // Check if there is a high difference between the "real" and "theorical (based on the level number) roof heights
-    if(tmpHmin>heightRoof){
+    if (tmpHmin > heightRoof) {
         heightRoof = tmpHmin
     }
-    def tmpHmax=  nbLevels*h_lev_max
-    if(nbLevFromType==1 || nbLevFromType==2 && heightWall> hThresholdLev2){
-        if(tmpHmax<heightWall){
-            nbLevels = Math.floor(heightWall/h_lev_max)
+    def tmpHmax = nbLevels * h_lev_max
+    if (nbLevFromType == 1 || nbLevFromType == 2 && heightWall > hThresholdLev2) {
+        if (tmpHmax < heightWall) {
+            nbLevels = Math.floor(heightWall / h_lev_max)
+        }
     }
-    }
-    return [heightWall:heightWall, heightRoof:heightRoof, nbLevels:nbLevels, estimated:estimated]
+    return [heightWall: heightWall, heightRoof: heightRoof, nbLevels: nbLevels, estimated: estimated]
 
 }
 
@@ -742,7 +745,7 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
  * @param row The row of the raw table to examine
  * @return The calculated value of height_roof (default value : 0)
  */
-static float getHeightRoof(height,heightPattern) {
+static float getHeightRoof(height, heightPattern) {
     if (!height) return 0
     def matcher = heightPattern.matcher(height)
     if (!matcher.find()) {
@@ -755,34 +758,34 @@ static float getHeightRoof(height,heightPattern) {
     if (matcher.find()) {
         def match2_group1 = matcher.group(1)
         def match2_group2 = matcher.group(2)
-        if(match1_group1){
-            new_h = Float.parseFloat(match1_group1)*12
+        if (match1_group1) {
+            new_h = Float.parseFloat(match1_group1) * 12
         }
-        if(match2_group2=="''"){
-            new_h +=Float.parseFloat(match2_group1)
+        if (match2_group2 == "''") {
+            new_h += Float.parseFloat(match2_group1)
         }
-        return new_h*0.0254
+        return new_h * 0.0254
 
-    }else{
-    if(match1_group1 && match1_group2==null) {
-        return Float.parseFloat(match1_group1)
-    }
-    //next mach for feet, inch matcher.find();
-    else {
-        def type = match1_group2.toLowerCase()
-        switch (type) {
-            case "m":
-                return Float.parseFloat(match1_group1)
-            case "foot":
-                return Float.parseFloat(match1_group1) * 0.3048
-            case "'":
-                return Float.parseFloat(match1_group1) *12*0.0254
-            case "''":
-                return Float.parseFloat(match1_group1) *0.0254
-            default:
-                return 0
+    } else {
+        if (match1_group1 && match1_group2 == null) {
+            return Float.parseFloat(match1_group1)
         }
-    }
+        //next mach for feet, inch matcher.find();
+        else {
+            def type = match1_group2.toLowerCase()
+            switch (type) {
+                case "m":
+                    return Float.parseFloat(match1_group1)
+                case "foot":
+                    return Float.parseFloat(match1_group1) * 0.3048
+                case "'":
+                    return Float.parseFloat(match1_group1) * 12 * 0.0254
+                case "''":
+                    return Float.parseFloat(match1_group1) * 0.0254
+                default:
+                    return 0
+            }
+        }
     }
 }
 
@@ -791,7 +794,7 @@ static float getHeightRoof(height,heightPattern) {
  * @param row The row of the raw table to examine
  * @return The calculated value of nb_lev (default value : 0)
  */
-static int getNbLevels (b_lev ,r_lev) {
+static int getNbLevels(b_lev, r_lev) {
     int result = 0
     if (b_lev != null && b_lev.isFloat()) {
         if (r_lev != null && r_lev.isFloat()) {
@@ -808,7 +811,7 @@ static int getNbLevels (b_lev ,r_lev) {
  * @param width The original width value
  * @return the calculated value of width (default value : null)
  */
-static Float getWidth (String width){
+static Float getWidth(String width) {
     return (width != null && width.isFloat()) ? width.toFloat() : 0
 }
 
@@ -817,7 +820,7 @@ static Float getWidth (String width){
  * @param width The original zindex value
  * @return The calculated value of zindex (default value : null)
  */
-static int getZIndex (String zindex){
+static int getZIndex(String zindex) {
     return (zindex != null && zindex.isInteger()) ? zindex.toInteger() : 0
 }
 
@@ -866,7 +869,7 @@ static String getTypeValue(def row, def columnNames, def myMap) {
  */
 static String getSidewalk(String sidewalk) {
     String result
-    switch(sidewalk){
+    switch (sidewalk) {
         case 'both':
             result = 'two'
             break
@@ -890,15 +893,15 @@ static String getSidewalk(String sidewalk) {
  * @param columnsToMap right list
  * @return a flat list with escaped elements
  */
-static String columnsMapper(def inputColumns, def columnsToMap){
+static String columnsMapper(def inputColumns, def columnsToMap) {
     //def flatList = "\"${inputColumns.join("\",\"")}\""
-    def flatList =  inputColumns.inject([]) { result, iter ->
-        result+= "a.\"$iter\""
+    def flatList = inputColumns.inject([]) { result, iter ->
+        result += "a.\"$iter\""
     }.join(",")
 
-    columnsToMap.each {it ->
-        if(!inputColumns*.toLowerCase().contains(it)){
-            flatList+= ", null as \"${it}\""
+    columnsToMap.each { it ->
+        if (!inputColumns*.toLowerCase().contains(it)) {
+            flatList += ", null as \"${it}\""
         }
     }
     return flatList
@@ -928,72 +931,72 @@ static Map parametersMapping(def file, def altResourceStream) {
 }
 
 
-    /**
-     * This process is used to transform the urban areas  table into a table that matches the constraints
-     * of the geoClimate Input Model
-     * @param datasource A connexion to a DB containing the raw urban areas table
-     * @param inputTableName The name of the raw hydro table in the DB
-     * @return outputTableName The name of the final urban areas table
-     */
-    IProcess formatUrbanAreas() {
-        return create {
-            title "Format the urban areas table into a table that matches the constraints of the GeoClimate Input Model"
-            id "formatUrbanAreas"
-            inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, jsonFilename: ""
-            outputs outputTableName: String
-            run { datasource, inputTableName, inputZoneEnvelopeTableName, epsg, jsonFilename->
-                debug('Urban areas transformation starts')
-                def outputTableName = "INPUT_URBAN_AREAS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-                datasource.execute """Drop table if exists $outputTableName;
+/**
+ * This process is used to transform the urban areas  table into a table that matches the constraints
+ * of the geoClimate Input Model
+ * @param datasource A connexion to a DB containing the raw urban areas table
+ * @param inputTableName The name of the raw hydro table in the DB
+ * @return outputTableName The name of the final urban areas table
+ */
+IProcess formatUrbanAreas() {
+    return create {
+        title "Format the urban areas table into a table that matches the constraints of the GeoClimate Input Model"
+        id "formatUrbanAreas"
+        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, jsonFilename: ""
+        outputs outputTableName: String
+        run { datasource, inputTableName, inputZoneEnvelopeTableName, epsg, jsonFilename ->
+            debug('Urban areas transformation starts')
+            def outputTableName = "INPUT_URBAN_AREAS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+            datasource.execute """Drop table if exists $outputTableName;
                     CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_urban serial, ID_SOURCE VARCHAR, TYPE VARCHAR, MAIN_USE VARCHAR);"""
 
-                if (inputTableName != null) {
-                    def paramsDefaultFile = this.class.getResourceAsStream("urbanAreasParams.json")
-                    def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
-                    def mappingType = parametersMap.type
-                    def queryMapper = "SELECT "
-                    def columnToMap = parametersMap.columns
-                    ISpatialTable inputSpatialTable = datasource.getSpatialTable(inputTableName)
-                    if (inputSpatialTable.rowCount > 0) {
-                        def columnNames = inputSpatialTable.columns
-                        columnNames.remove("THE_GEOM")
-                        queryMapper += columnsMapper(columnNames, columnToMap)
-                        if (inputZoneEnvelopeTableName) {
-                            inputSpatialTable.the_geom.createSpatialIndex()
-                            queryMapper += ", CASE WHEN st_overlaps(st_makevalid(a.the_geom), b.the_geom) " +
-                                    "THEN st_force2D(st_intersection(st_makevalid(a.the_geom), st_makevalid(b.the_geom))) " +
-                                    "ELSE st_force2D(st_makevalid(a.the_geom)) " +
-                                    "END AS the_geom " +
-                                    "FROM " +
-                                    "$inputTableName AS a, $inputZoneEnvelopeTableName AS b " +
-                                    "WHERE " +
-                                    "a.the_geom && b.the_geom "
-                        } else {
-                            queryMapper += ",  st_force2D(st_makevalid(a.the_geom)) as the_geom FROM $inputTableName  as a"
+            if (inputTableName != null) {
+                def paramsDefaultFile = this.class.getResourceAsStream("urbanAreasParams.json")
+                def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
+                def mappingType = parametersMap.type
+                def queryMapper = "SELECT "
+                def columnToMap = parametersMap.columns
+                ISpatialTable inputSpatialTable = datasource.getSpatialTable(inputTableName)
+                if (inputSpatialTable.rowCount > 0) {
+                    def columnNames = inputSpatialTable.columns
+                    columnNames.remove("THE_GEOM")
+                    queryMapper += columnsMapper(columnNames, columnToMap)
+                    if (inputZoneEnvelopeTableName) {
+                        inputSpatialTable.the_geom.createSpatialIndex()
+                        queryMapper += ", CASE WHEN st_overlaps(st_makevalid(a.the_geom), b.the_geom) " +
+                                "THEN st_force2D(st_intersection(st_makevalid(a.the_geom), st_makevalid(b.the_geom))) " +
+                                "ELSE st_force2D(st_makevalid(a.the_geom)) " +
+                                "END AS the_geom " +
+                                "FROM " +
+                                "$inputTableName AS a, $inputZoneEnvelopeTableName AS b " +
+                                "WHERE " +
+                                "a.the_geom && b.the_geom "
+                    } else {
+                        queryMapper += ",  st_force2D(st_makevalid(a.the_geom)) as the_geom FROM $inputTableName  as a"
 
-                        }
-                        int rowcount=1
-                        datasource.withBatch(1000) { stmt ->
-                            datasource.eachRow(queryMapper) { row ->
-                                def typeAndUseValues = getTypeAndUse(row, columnNames, mappingType)
-                                def use = typeAndUseValues[1]
-                                def type = typeAndUseValues[0]
-                                Geometry geom = row.the_geom
-                                for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                    Geometry subGeom = geom.getGeometryN(i)
-                                    if (subGeom instanceof Polygon) {
-                                        stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', '${type}','${use}')"
-                                    }
+                    }
+                    int rowcount = 1
+                    datasource.withBatch(1000) { stmt ->
+                        datasource.eachRow(queryMapper) { row ->
+                            def typeAndUseValues = getTypeAndUse(row, columnNames, mappingType)
+                            def use = typeAndUseValues[1]
+                            def type = typeAndUseValues[0]
+                            Geometry geom = row.the_geom
+                            for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                Geometry subGeom = geom.getGeometryN(i)
+                                if (subGeom instanceof Polygon) {
+                                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', '${type}','${use}')"
                                 }
                             }
                         }
                     }
                 }
-                debug('Urban areas transformation finishes')
-                [outputTableName: outputTableName]
             }
+            debug('Urban areas transformation finishes')
+            [outputTableName: outputTableName]
         }
     }
+}
 
 /**
  * This process is used to build a sea-land mask layer from the coastline and zone table
@@ -1010,14 +1013,14 @@ IProcess formatSeaLandMask() {
                 inputZoneEnvelopeTableName: String, epsg: int
         outputs outputTableName: String
         run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, epsg ->
-         def outputTableName = postfix "INPUT_SEA_LAND_MASK_"
+            def outputTableName = postfix "INPUT_SEA_LAND_MASK_"
             debug 'Computing sea/land mask table'
             datasource """ 
                 DROP TABLE if exists ${outputTableName};
                 CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id serial, TYPE VARCHAR);
             """
             if (inputTableName) {
-               def inputSpatialTable = datasource."$inputTableName"
+                def inputSpatialTable = datasource."$inputTableName"
                 if (inputSpatialTable.rowCount > 0) {
                     if (inputZoneEnvelopeTableName) {
                         inputSpatialTable.the_geom.createSpatialIndex()
@@ -1064,18 +1067,18 @@ IProcess formatSeaLandMask() {
 
                         datasource.execute("drop table if exists $mergingDataTable, $coastLinesIntersects, $coastLinesIntersectsPoints, $coastLinesPoints," +
                                 "$islands_mark")
-                    }else{
+                    } else {
                         debug "A zone table must be provided to compute the sea/land mask"
                     }
-                }else{
+                } else {
                     debug "The sea/land mask table is empty"
                 }
-                }
+            }
             debug 'The sea/land mask has been computed'
             [outputTableName: outputTableName]
-            }
         }
     }
+}
 
 
 /**
@@ -1130,7 +1133,7 @@ IProcess mergeWaterAndSeaLandTables() {
  * @param maxspeedValue from OSM
  * @return
  */
-static int getSpeedInKmh(def speedPattern, String maxspeedValue){
+static int getSpeedInKmh(def speedPattern, String maxspeedValue) {
     if (!maxspeedValue) return -1
     def matcher = speedPattern.matcher(maxspeedValue)
     if (!matcher.matches()) return -1
