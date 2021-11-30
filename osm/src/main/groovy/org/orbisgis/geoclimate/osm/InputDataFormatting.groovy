@@ -246,10 +246,6 @@ IProcess formatRoadLayer() {
 
                             if (processRow) {
                                 String type = getTypeValue(row, columnNames, mappingForRoadType)
-
-                                if(row.id=='w39367046'){
-                                    println 'stop'
-                                }
                                 def width = getWidth(row.'width')
                                 if (!type) {
                                     type = 'unclassified'
@@ -488,7 +484,7 @@ IProcess formatHydroLayer() {
             debug('Hydro transformation starts')
             def outputTableName = "INPUT_HYDRO_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             datasource.execute """Drop table if exists $outputTableName;
-                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_hydro serial, ID_SOURCE VARCHAR);"""
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_hydro serial, ID_SOURCE VARCHAR, TYPE VARCHAR);"""
 
             if (inputTableName != null) {
                 ISpatialTable inputSpatialTable = datasource.getSpatialTable(inputTableName)
@@ -499,23 +495,24 @@ IProcess formatHydroLayer() {
                         query = "select id , CASE WHEN st_overlaps(st_makevalid(a.the_geom), b.the_geom) " +
                                 "THEN st_force2D(st_intersection(st_makevalid(a.the_geom), st_makevalid(b.the_geom))) " +
                                 "ELSE st_force2D(st_makevalid(a.the_geom)) " +
-                                "END AS the_geom " +
+                                "END AS the_geom , a.\"NATURAL\"" +
                                 "FROM " +
                                 "$inputTableName AS a, $inputZoneEnvelopeTableName AS b " +
                                 "WHERE " +
                                 "a.the_geom && b.the_geom "
                     } else {
-                        query = "select id,  st_force2D(st_makevalid(a.the_geom)) as the_geom FROM $inputTableName  as a"
+                        query = "select id,  st_force2D(st_makevalid(the_geom)) as the_geom, \"NATURAL\" FROM $inputTableName "
 
                     }
                     int rowcount = 1
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(query) { row ->
+                            def water_type = row.natural in ['bay', 'strait"'] ? 'sea' : 'water'
                             Geometry geom = row.the_geom
                             for (int i = 0; i < geom.getNumGeometries(); i++) {
                                 Geometry subGeom = geom.getGeometryN(i)
                                 if (subGeom instanceof Polygon) {
-                                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}')"
+                                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', '${water_type}')"
                                 }
                             }
                         }
@@ -1003,6 +1000,8 @@ IProcess formatUrbanAreas() {
  *
  * @param datasource A connexion to a DB containing the raw buildings table
  * @param inputTableName The name of the coastlines table in the DB
+ * @param inputZoneEnvelopeTableName The name of the zone table to limit the area
+ * @param inputWaterTableName The name of the input water table to improve sea extraction
  * @return outputTableName The name of the final buildings table
  */
 IProcess formatSeaLandMask() {
@@ -1010,9 +1009,9 @@ IProcess formatSeaLandMask() {
         title "Extract the sea/land mask"
         id "formatSeaLandMask"
         inputs datasource: JdbcDataSource, inputTableName: String,
-                inputZoneEnvelopeTableName: String, epsg: int
+                inputZoneEnvelopeTableName: String, inputWaterTableName: "", epsg: int
         outputs outputTableName: String
-        run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, epsg ->
+        run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, inputWaterTableName, epsg ->
             def outputTableName = postfix "INPUT_SEA_LAND_MASK_"
             debug 'Computing sea/land mask table'
             datasource """ 
@@ -1036,12 +1035,27 @@ IProcess formatSeaLandMask() {
                         CREATE TABLE $coastLinesIntersects AS SELECT a.the_geom
                         from $inputTableName  AS  a,  $inputZoneEnvelopeTableName  AS b WHERE
                         a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom);     
-                        
-                        CREATE TABLE $islands_mark (the_geom GEOMETRY, ID SERIAL) AS 
-                       SELECT the_geom, NULL FROM st_explode('(  
-                       SELECT ST_LINEMERGE(st_accum(THE_GEOM)) AS the_geom, NULL FROM $coastLinesIntersects)')
-                        ;                   
+                        """;
 
+                        if (inputWaterTableName) {
+                            datasource.getSpatialTable(inputWaterTableName).the_geom.createSpatialIndex()
+                            def islands_mark_filtered = "islands_mark_filtered${UUID.randomUUID().toString().replaceAll("-", "_")}"
+                            datasource.execute """ DROP TABLE IF EXISTS $islands_mark_filtered;
+                        CREATE TABLE $islands_mark_filtered (the_geom GEOMETRY, ID SERIAL) AS 
+                       SELECT the_geom, CAST((row_number() over()) as Integer)  FROM st_explode('(  
+                       SELECT ST_LINEMERGE(st_accum(THE_GEOM)) AS the_geom, NULL FROM $coastLinesIntersects)');
+                        CREATE SPATIAL INDEX ON $islands_mark_filtered(the_geom);
+                        CREATE TABLE  $islands_mark AS select * from $islands_mark_filtered where id not in( SELECT a.id from $islands_mark_filtered as a,  $inputWaterTableName as b
+                        where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) and b.type = 'water')"""
+
+                        } else {
+                            datasource.execute """
+                        CREATE TABLE $islands_mark (the_geom GEOMETRY, ID SERIAL) AS 
+                       SELECT the_geom, CAST((row_number() over()) as Integer)  FROM st_explode('(  
+                       SELECT ST_LINEMERGE(st_accum(THE_GEOM)) AS the_geom, NULL FROM $coastLinesIntersects)');"""
+                        }
+
+                        datasource.execute """  
                         CREATE TABLE $mergingDataTable  AS
                         SELECT  THE_GEOM FROM $coastLinesIntersects 
                         UNION ALL
@@ -1057,8 +1071,8 @@ IProcess formatSeaLandMask() {
     
                         CREATE TABLE $coastLinesIntersectsPoints as  SELECT the_geom FROM st_explode('$coastLinesPoints'); 
 
-                        CREATE INDEX IF NOT EXISTS ${outputTableName}_the_geom_idx ON $outputTableName USING RTREE(THE_GEOM);
-                        CREATE INDEX IF NOT EXISTS ${coastLinesIntersectsPoints}_the_geom_idx ON $coastLinesIntersectsPoints USING RTREE(THE_GEOM);
+                        CREATE SPATIAL INDEX IF NOT EXISTS ${outputTableName}_the_geom_idx ON $outputTableName (THE_GEOM);
+                        CREATE SPATIAL INDEX IF NOT EXISTS ${coastLinesIntersectsPoints}_the_geom_idx ON $coastLinesIntersectsPoints (THE_GEOM);
 
                         UPDATE $outputTableName SET TYPE='sea' WHERE ID IN(SELECT DISTINCT(a.ID)
                                 FROM $outputTableName a, $coastLinesIntersectsPoints b WHERE a.THE_GEOM && b.THE_GEOM AND
@@ -1108,10 +1122,11 @@ IProcess mergeWaterAndSeaLandTables() {
                     //This method is used to merge the SEA mask with the water table
                     def queryMergeWater = """DROP  TABLE IF EXISTS $outputTableName, $tmp_water_not_in_sea;
                 CREATE TABLE $tmp_water_not_in_sea AS SELECT a.the_geom, a.ID_SOURCE FROM $inputWaterTableName AS a, $inputSeaLandTableName  AS b
-                WHERE b."TYPE"= 'land' AND a.the_geom && b.the_geom AND st_contains(b.THE_GEOM, st_pointonsurface(a.THE_GEOM));
-                CREATE TABLE $outputTableName(the_geom GEOMETRY, ID_HYDRO SERIAL, ID_SOURCE VARCHAR) AS SELECT the_geom, NULL, id_source FROM $tmp_water_not_in_sea UNION ALL 
-                SELECT THE_GEOM, NULL, '-1' FROM $inputSeaLandTableName  WHERE
-                "TYPE" ='sea';"""
+                WHERE b."TYPE"= 'land' AND a.the_geom && b.the_geom AND st_contains(b.THE_GEOM, st_pointonsurface(a.THE_GEOM)) and a.type='water';
+                CREATE TABLE $outputTableName(the_geom GEOMETRY, ID_HYDRO SERIAL, ID_SOURCE VARCHAR) AS SELECT THE_GEOM, CAST((row_number() over()) as Integer) , id_source
+            FROM (SELECT the_geom,  id_source FROM $tmp_water_not_in_sea UNION ALL 
+                SELECT THE_GEOM,  '-1' FROM $inputSeaLandTableName  WHERE
+                "TYPE" ='sea') AS foo;"""
                     //Check indexes before executing the query
                     datasource.getSpatialTable(inputWaterTableName).the_geom.createSpatialIndex()
                     datasource.getSpatialTable(inputSeaLandTableName).the_geom.createSpatialIndex()

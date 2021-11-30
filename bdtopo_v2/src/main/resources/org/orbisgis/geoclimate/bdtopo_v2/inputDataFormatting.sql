@@ -157,8 +157,8 @@ DROP TABLE IF EXISTS $INPUT_RAIL;
 ---------------------------------------------------------------------------------
 
 DROP TABLE IF EXISTS $HYDRO;
-CREATE TABLE $HYDRO (THE_GEOM geometry, ID_HYDRO serial, ID_SOURCE varchar(24))
-	AS SELECT ST_FORCE2D(ST_MAKEVALID(THE_GEOM)) as the_geom, CAST((row_number() over()) as Integer), ID_SOURCE FROM ST_EXPLODE('$INPUT_HYDRO');
+CREATE TABLE $HYDRO (THE_GEOM geometry, ID_HYDRO serial, ID_SOURCE varchar(24), TYPE varchar)
+	AS SELECT ST_FORCE2D(ST_MAKEVALID(THE_GEOM)) as the_geom, CAST((row_number() over()) as Integer), ID_SOURCE, 'water' FROM ST_EXPLODE('$INPUT_HYDRO');
 
 -- Clean not needed layers
 DROP TABLE IF EXISTS $INPUT_HYDRO;
