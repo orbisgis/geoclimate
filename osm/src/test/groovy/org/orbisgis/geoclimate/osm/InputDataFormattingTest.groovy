@@ -146,6 +146,7 @@ class InputDataFormattingTest {
                 epsg          : epsg])
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_hydro_formated.shp", true)
         assertEquals 10, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertTrue   h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where type = 'sea'").count==0
 
         //Impervious surfaces
         format = OSM.InputDataFormatting.formatImperviousLayer()
@@ -347,7 +348,7 @@ class InputDataFormattingTest {
     @Test
     //enable it to test data extraction from the overpass api
     void extractCreateFormatGISLayers() {
-        def h2GIS = H2GIS.open('./target/osmdb_gislayers;AUTO_SERVER=TRUE')
+        def h2GIS = H2GIS.open('./target/osmdb_gislayers;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE')
 
         //def zoneToExtract ="Shanghai, Chine"
         def zoneToExtract = "École Lycée Joliot-Curie,Rennes"
@@ -361,12 +362,13 @@ class InputDataFormattingTest {
         //zoneToExtract="rezé"
         //zoneToExtract = "Brest"
 
+        zoneToExtract =[57.634008, 11.774940, 57.761517, 12.099724]
         IProcess extractData = OSM.InputDataLoading.extractAndCreateGISLayers()
         extractData.execute([
                 datasource   : h2GIS,
                 zoneToExtract: zoneToExtract])
 
-        String formatedPlaceName = zoneToExtract.trim().split("\\s*(,|\\s)\\s*").join("_");
+        String formatedPlaceName = zoneToExtract.join("-").trim().split("\\s*(,|\\s)\\s*").join("_");
 
 
         if (extractData.results.zoneTableName != null) {
@@ -376,10 +378,10 @@ class InputDataFormattingTest {
 
             //Zone envelope
             h2GIS.getTable(extractData.results.zoneEnvelopeTableName).save("./target/osm_zone_envelope_${formatedPlaceName}.geojson", true)
-
+            IProcess format
 
             //Urban Areas
-            IProcess format = OSM.InputDataFormatting.formatUrbanAreas()
+            format = OSM.InputDataFormatting.formatUrbanAreas()
             format.execute([
                     datasource                : h2GIS,
                     inputTableName            : extractData.results.urbanAreasTableName,
@@ -432,7 +434,7 @@ class InputDataFormattingTest {
                     inputTableName            : extractData.results.vegetationTableName,
                     inputZoneEnvelopeTableName: extractData.results.zoneEnvelopeTableName,
                     epsg                      : epsg])
-            h2GIS.getTable(format.results.outputTableName).save("./target/osm_vegetation_${formatedPlaceName}.geojson", true)
+            h2GIS.getTable(format.results.outputTableName).save("./target/osm_vegetation_${formatedPlaceName}.geojson", true)*/
 
 
             //Hydrography
@@ -461,6 +463,7 @@ class InputDataFormattingTest {
                     datasource                : h2GIS,
                     inputTableName            : extractData.results.coastlineTableName,
                     inputZoneEnvelopeTableName: extractData.results.zoneEnvelopeTableName,
+                    inputWaterTableName : inputWaterTableName,
                     epsg                      : epsg])
             def inputSeaLandTableName = format.results.outputTableName;
             h2GIS.getTable(inputSeaLandTableName).save("./target/osm_sea_land_${formatedPlaceName}.geojson", true)
