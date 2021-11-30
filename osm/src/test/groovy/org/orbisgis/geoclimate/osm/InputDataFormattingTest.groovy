@@ -454,7 +454,7 @@ class InputDataFormattingTest {
                     inputTableName            : extractData.results.imperviousTableName,
                     inputZoneEnvelopeTableName: extractData.results.zoneEnvelopeTableName,
                     epsg                      : epsg])
-            h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_${formatedPlaceName}.geojson", true)*/
+            h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_${formatedPlaceName}.geojson", true)
 
 
             //Sea/Land mask
