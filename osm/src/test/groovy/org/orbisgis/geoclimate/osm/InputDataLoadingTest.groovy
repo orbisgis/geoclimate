@@ -64,4 +64,29 @@ class InputDataLoadingTest {
         //h2GIS.getTable(process.results.imperviousTableName).save("./target/osm_hydro.shp")
         assertEquals 6, h2GIS.getTable(process.results.urbanAreasTableName).rowCount
     }
+
+    //This test is used for debug purpose
+    @Test
+    @Disabled
+    void createGISLayersTestIntegration() {
+        IProcess process = OSM.InputDataLoading.createGISLayers()
+        def osmfile = "/tmp/map.osm"
+        process.execute([
+                datasource : h2GIS,
+                osmFilePath: osmfile,
+                epsg :2154])
+        //h2GIS.getTable(process.results.buildingTableName).save("./target/osm_building.shp")
+
+        //h2GIS.getTable(process.results.vegetationTableName).save("./target/osm_vegetation.shp")
+
+        h2GIS.getTable(process.results.roadTableName).save("/tmp/osm_road.shp")
+
+        //h2GIS.getTable(process.results.railTableName).save("./target/osm_rails.shp")
+
+        //h2GIS.getTable(process.results.hydroTableName).save("./target/osm_hydro.shp")
+
+        //h2GIS.getTable(process.results.imperviousTableName).save("./target/osm_hydro.shp")
+
+        //h2GIS.getTable(process.results.imperviousTableName).save("./target/osm_hydro.shp")
+    }
 }
