@@ -497,7 +497,7 @@ IProcess formatHydroLayer() {
                                 "THEN st_force2D(st_intersection(st_makevalid(a.the_geom), st_makevalid(b.the_geom))) " +
                                 "ELSE st_force2D(st_makevalid(a.the_geom)) " +
                                 "END AS the_geom , a.\"NATURAL\", a.layer" +
-                                "FROM " +
+                                " FROM " +
                                 "$inputTableName AS a, $inputZoneEnvelopeTableName AS b " +
                                 "WHERE " +
                                 "a.the_geom && b.the_geom "
