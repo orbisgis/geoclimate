@@ -23,8 +23,8 @@ CREATE TABLE block_build_corr (id_block int, id_build int);
 CREATE TABLE rsu_test (id_rsu int, the_geom geometry, rsu_area float, rsu_building_density float, rsu_free_external_facade_density float);
 CREATE TABLE rsu_build_corr (id_rsu int, id_build int, rsu_mean_building_height float);
 CREATE TABLE road_test (id_road int, the_geom geometry, width float, zindex int, crossing varchar(30), type varchar(30) );
-CREATE TABLE veget_test (id_veget int, the_geom geometry, height_class varchar);
-CREATE TABLE hydro_test (id_hydro int, the_geom geometry);
+CREATE TABLE veget_test (id_veget int, the_geom geometry, height_class varchar, zindex int);
+CREATE TABLE hydro_test (id_hydro int, the_geom geometry,zindex int);
 CREATE TABLE rsu_test_all_indics_for_lcz(id_rsu int, sky_view_factor float, aspect_ratio float, BUILDING_FRACTION_LCZ float,
                                         IMPERVIOUS_FRACTION_LCZ float, PERVIOUS_FRACTION_LCZ float, GEOM_AVG_HEIGHT_ROOF float,
                                         EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH float, HIGH_VEGETATION_FRACTION_LCZ float,
@@ -110,13 +110,13 @@ INSERT INTO road_test VALUES (1, 'LINESTRING(120 60, 120 -10)'::GEOMETRY, 10, 0,
 (4, 'LINESTRING (85 60, 85 -1, 155 1, 148 54, 92 50, 96 -12, 119 -11, 117 -4, 78 -5)'::GEOMETRY, 10, 0, null,  'highway'),
 (5, 'LINESTRING (20 100, 25 100, 25 120, 20 120)'::GEOMETRY, 6, 0, null,  'highway'),
 (6, 'LINESTRING (50 105, 47 99)'::GEOMETRY, 6, -1, null,  'highway');
-INSERT INTO veget_test VALUES (1, 'POLYGON((35 98, 36 98, 36 104, 35 104, 35 98))'::GEOMETRY, 'low'),
-(2, 'POLYGON((20 140, 25 140, 25 145, 20 145, 20 140))'::GEOMETRY, 'high'),
-(3, 'POLYGON((45 130, 55 130, 55 135, 45 135, 45 130))'::GEOMETRY, 'high'),
-(4, 'POLYGON((1000 1050, 1100 1050, 1100 1100, 1000 1100, 1000 1050))'::GEOMETRY, 'high'),
-(5, 'POLYGON((1000 1000, 1050 1000, 1050 1100, 1000 1100, 1000 1000))'::GEOMETRY, 'low');
-INSERT INTO hydro_test VALUES (1, 'POLYGON((-2 95, 2 95, 2 105, -2 105, -2 95))'::GEOMETRY),
-(2, 'POLYGON((1050 1000, 1100 1000, 1100 1050, 1050 1050, 1050 1000))'::GEOMETRY);
+INSERT INTO veget_test VALUES (1, 'POLYGON((35 98, 36 98, 36 104, 35 104, 35 98))'::GEOMETRY, 'low', 0),
+(2, 'POLYGON((20 140, 25 140, 25 145, 20 145, 20 140))'::GEOMETRY, 'high', 0),
+(3, 'POLYGON((45 130, 55 130, 55 135, 45 135, 45 130))'::GEOMETRY, 'high', 0),
+(4, 'POLYGON((1000 1050, 1100 1050, 1100 1100, 1000 1100, 1000 1050))'::GEOMETRY, 'high', 0),
+(5, 'POLYGON((1000 1000, 1050 1000, 1050 1100, 1000 1100, 1000 1000))'::GEOMETRY, 'low', 0);
+INSERT INTO hydro_test VALUES (1, 'POLYGON((-2 95, 2 95, 2 105, -2 105, -2 95))'::GEOMETRY, 0),
+(2, 'POLYGON((1050 1000, 1100 1000, 1100 1050, 1050 1050, 1050 1000))'::GEOMETRY, 0);
 INSERT INTO rsu_test_all_indics_for_lcz VALUES  (1, 0.3, 4, 0.5, 0.5, 0.05, 30, 3, 0, 0, 0, 0.5, 0, 0.3, 0.7, 11.2,0.3, 0.0),
                                                 (2, 0.9, 0.4, 0.4, 0.45, 0.1, 5.5, 0.250, 0, 0, 0, 0.45, 0, 0.1, 0.9, null,0.6, 0.3),
                                                 (3, 0.9, 0.08, 0.09, 0.1, 0.9, 30, 3, 0.2, 0.2, 0.5, 0.1, 0, 0, 1.0, 5.1,0.9, 0.0),
