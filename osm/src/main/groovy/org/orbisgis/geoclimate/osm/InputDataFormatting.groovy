@@ -410,7 +410,7 @@ IProcess formatVegetationLayer() {
             def outputTableName = postfix "INPUT_VEGET"
             datasource """ 
                 DROP TABLE IF EXISTS $outputTableName;
-                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_veget serial, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4));"""
+                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_veget serial, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4), ZINDEX INTEGER);"""
             if (inputTableName) {
                 def paramsDefaultFile = this.class.getResourceAsStream("vegetParams.json")
                 def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
@@ -440,8 +440,9 @@ IProcess formatVegetationLayer() {
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             def type = getTypeValue(row, columnNames, mappingType)
-                            def height_class = typeAndVegClass[type]
                             if (type) {
+                                def height_class = typeAndVegClass[type]
+                                def zindex = getZIndex(row."layer")
                                 Geometry geom = row.the_geom
                                 for (int i = 0; i < geom.getNumGeometries(); i++) {
                                     Geometry subGeom = geom.getGeometryN(i)
@@ -452,7 +453,7 @@ IProcess formatVegetationLayer() {
                                                 ${rowcount++}, 
                                                 '${row.id}',
                                                 '${type}', 
-                                                '${height_class}')
+                                                '${height_class}', ${zindex})
                                     """
                                     }
                                 }
@@ -484,7 +485,7 @@ IProcess formatHydroLayer() {
             debug('Hydro transformation starts')
             def outputTableName = "INPUT_HYDRO_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             datasource.execute """Drop table if exists $outputTableName;
-                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_hydro serial, ID_SOURCE VARCHAR, TYPE VARCHAR);"""
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_hydro serial, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);"""
 
             if (inputTableName != null) {
                 ISpatialTable inputSpatialTable = datasource.getSpatialTable(inputTableName)
@@ -495,24 +496,25 @@ IProcess formatHydroLayer() {
                         query = "select id , CASE WHEN st_overlaps(st_makevalid(a.the_geom), b.the_geom) " +
                                 "THEN st_force2D(st_intersection(st_makevalid(a.the_geom), st_makevalid(b.the_geom))) " +
                                 "ELSE st_force2D(st_makevalid(a.the_geom)) " +
-                                "END AS the_geom , a.\"NATURAL\"" +
+                                "END AS the_geom , a.\"NATURAL\", a.layer" +
                                 "FROM " +
                                 "$inputTableName AS a, $inputZoneEnvelopeTableName AS b " +
                                 "WHERE " +
                                 "a.the_geom && b.the_geom "
                     } else {
-                        query = "select id,  st_force2D(st_makevalid(the_geom)) as the_geom, \"NATURAL\" FROM $inputTableName "
+                        query = "select id,  st_force2D(st_makevalid(the_geom)) as the_geom, \"NATURAL\", layer FROM $inputTableName "
 
                     }
                     int rowcount = 1
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(query) { row ->
                             def water_type = row.natural in ['bay', 'strait"'] ? 'sea' : 'water'
+                            def zIndex = getZIndex(row.'layer')
                             Geometry geom = row.the_geom
                             for (int i = 0; i < geom.getNumGeometries(); i++) {
                                 Geometry subGeom = geom.getGeometryN(i)
                                 if (subGeom instanceof Polygon) {
-                                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', '${water_type}')"
+                                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', '${water_type}', ${zIndex})"
                                 }
                             }
                         }
@@ -932,7 +934,7 @@ static Map parametersMapping(def file, def altResourceStream) {
  * This process is used to transform the urban areas  table into a table that matches the constraints
  * of the geoClimate Input Model
  * @param datasource A connexion to a DB containing the raw urban areas table
- * @param inputTableName The name of the raw hydro table in the DB
+ * @param inputTableName The name of the urban areas table
  * @return outputTableName The name of the final urban areas table
  */
 IProcess formatUrbanAreas() {

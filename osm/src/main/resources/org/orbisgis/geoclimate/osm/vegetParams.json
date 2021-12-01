@@ -10,7 +10,7 @@
     "columns":["natural", "landuse", "landcover",
         "vegetation", "barrier", "fence_type",
         "hedge", "wetland", "vineyard",
-        "trees", "crop", "produce"
+        "trees", "crop", "produce","layer"
     ],
     "type": {
         "farmland": {

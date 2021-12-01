@@ -22,8 +22,8 @@ CREATE TABLE block_build_corr (id_block int, id_build int);
 CREATE TABLE rsu_test (id_rsu int, the_geom geometry, rsu_area float, rsu_building_density float, rsu_free_external_facade_density float);
 CREATE TABLE rsu_build_corr (id_rsu int, id_build int, rsu_mean_building_height float);
 CREATE TABLE road_test (id_road int, the_geom geometry, width float, zindex int, crossing varchar(30), type varchar(30));
-CREATE TABLE veget_test (id_veget int, the_geom geometry, height_class varchar);
-CREATE TABLE hydro_test (id_hydro int, the_geom geometry);
+CREATE TABLE veget_test (id_veget int, the_geom geometry, height_class varchar, zindex int);
+CREATE TABLE hydro_test (id_hydro int, the_geom geometry,zindex int);
 CREATE TABLE zone_test(the_geom geometry);
 
 INSERT INTO building_test VALUES (1, 0, 'POLYGON((4 4, 10 4, 10 30, 4 30, 4 4))'::GEOMETRY, 8, 8, 156, 64, 2, 64, 0, 0),
@@ -95,9 +95,9 @@ INSERT INTO road_test VALUES (1, 'LINESTRING(120 60, 120 -10)'::GEOMETRY, 10, 0,
 (8, 'MULTILINESTRING((50 0, 55 0, 55 30, 50 30, 50 0))'::GEOMETRY, 6, 0, null,  'highway'),
 (9, 'MULTILINESTRING((0 0, 0 -15, 25 -15, 25 0, 0 0))'::GEOMETRY, 6, 0, null,  'highway'),
 (10, 'MULTILINESTRING((1000 1000, 1100 1000, 1100 1100, 1000 1100, 1000 1000))'::GEOMETRY, 6, 0, null,  'highway');
-INSERT INTO veget_test VALUES (1, 'POLYGON((35 98, 36 98, 36 104, 35 104, 35 98))'::GEOMETRY, 'low'),
-(2, 'POLYGON((20 140, 25 140, 25 145, 20 145, 20 140))'::GEOMETRY, 'high'),
-(3, 'POLYGON((45 130, 55 130, 55 135, 45 135, 45 130))'::GEOMETRY, 'high'),
-(4, 'POLYGON((40 30, 45 30, 45 35, 40 35, 40 30))'::GEOMETRY, 'low');
-INSERT INTO hydro_test VALUES (1, 'POLYGON((-2 95, 2 95, 2 105, -2 105, -2 95))'::GEOMETRY);
+INSERT INTO veget_test VALUES (1, 'POLYGON((35 98, 36 98, 36 104, 35 104, 35 98))'::GEOMETRY, 'low', 0),
+(2, 'POLYGON((20 140, 25 140, 25 145, 20 145, 20 140))'::GEOMETRY, 'high', 0),
+(3, 'POLYGON((45 130, 55 130, 55 135, 45 135, 45 130))'::GEOMETRY, 'high', 0),
+(4, 'POLYGON((40 30, 45 30, 45 35, 40 35, 40 30))'::GEOMETRY, 'low', 0);
+INSERT INTO hydro_test VALUES (1, 'POLYGON((-2 95, 2 95, 2 105, -2 105, -2 95))'::GEOMETRY, 0);
 INSERT INTO zone_test VALUES ('POLYGON((-2000 -2000, 2000 -2000, 2000 2000, -2000 2000, -2000 -2000))'::GEOMETRY);
