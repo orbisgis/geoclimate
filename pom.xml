@@ -17,6 +17,7 @@
         <module>bdtopo_v2</module>
         <module>osm</module>
         <module>geoclimate</module>
+        <module>osmtools</module>
     </modules>
 
     <properties>
