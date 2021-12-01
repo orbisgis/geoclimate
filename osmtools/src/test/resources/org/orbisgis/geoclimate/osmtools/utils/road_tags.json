@@ -1,0 +1,9 @@
+{
+    "tags" : [
+        "highway", "cycleway", "biclycle_road", "cyclestreet", "route", "junction"
+    ],
+    "columns":["width","highway", "surface", "sidewalk",
+        "lane","layer","maxspeed","oneway",
+        "h_ref","route","cycleway",
+        "biclycle_road","cyclestreet","junction"]
+}
