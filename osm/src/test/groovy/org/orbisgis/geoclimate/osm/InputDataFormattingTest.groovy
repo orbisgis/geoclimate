@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.orbisanalysis.osm.utils.Utilities
+import org.orbisgis.geoclimate.osmtools.utils.Utilities
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 

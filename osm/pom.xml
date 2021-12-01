@@ -19,8 +19,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.orbisgis.orbisanalysis</groupId>
-            <artifactId>osm</artifactId>
+            <groupId>org.orbisgis.geoclimate</groupId>
+            <artifactId>osmtools</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>

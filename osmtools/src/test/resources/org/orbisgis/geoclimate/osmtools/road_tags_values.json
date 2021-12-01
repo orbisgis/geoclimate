@@ -1,0 +1,14 @@
+{
+    "tags" : {
+        "highway": [
+            "motorway", "trunk","primary"
+        ],
+        "cycleway" : [
+            ""
+        ]
+    },
+    "columns":["width","highway", "surface", "sidewalk",
+        "lane","layer","maxspeed","oneway",
+        "h_ref","route","cycleway",
+        "biclycle_road","cyclestreet","junction"]
+}

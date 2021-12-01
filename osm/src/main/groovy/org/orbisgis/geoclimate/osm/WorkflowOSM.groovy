@@ -11,14 +11,14 @@ import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
-import org.orbisgis.orbisanalysis.osm.utils.Utilities
-import org.orbisgis.orbisanalysis.osm.utils.OSMElement
+import org.orbisgis.geoclimate.osmtools.utils.Utilities
+import org.orbisgis.geoclimate.osmtools.utils.OSMElement
 import org.orbisgis.orbisdata.datamanager.api.dataset.ITable
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisanalysis.osm.OSMTools
+import org.orbisgis.geoclimate.osmtools.OSMTools
 import org.h2gis.functions.io.utility.PRJUtil;
 
 import java.sql.Connection

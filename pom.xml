@@ -69,11 +69,6 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>org.orbisgis.orbisanalysis</groupId>
-                <artifactId>osm</artifactId>
-                <version>${osm-version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.orbisgis</groupId>
                 <artifactId>commons</artifactId>
                 <version>${orbisparent-version}</version>
@@ -146,6 +141,11 @@
             <dependency>
                 <groupId>org.orbisgis.geoclimate</groupId>
                 <artifactId>geoindicators</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.orbisgis.geoclimate</groupId>
+                <artifactId>osmtools</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
