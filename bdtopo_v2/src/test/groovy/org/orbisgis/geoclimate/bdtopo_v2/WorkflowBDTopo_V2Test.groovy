@@ -124,8 +124,8 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 9; CREATE TABLE " +
                 "tempo_road AS SELECT id_road, the_geom, zindex, crossing, type FROM road_test WHERE id_road < 5 OR id_road > 6;" +
                 "CREATE TABLE tempo_zone AS SELECT * FROM zone_test;" +
-                "CREATE TABLE tempo_veget AS SELECT id_veget, the_geom FROM veget_test WHERE id_veget < 4;" +
-                "CREATE TABLE tempo_hydro AS SELECT id_hydro, the_geom FROM hydro_test WHERE id_hydro < 2;")
+                "CREATE TABLE tempo_veget AS SELECT id_veget, the_geom, zindex FROM veget_test WHERE id_veget < 4;" +
+                "CREATE TABLE tempo_hydro AS SELECT id_hydro, the_geom,zindex FROM hydro_test WHERE id_hydro < 2;")
         IProcess pm =  Geoindicators.WorkflowGeoIndicators.createUnitsOfAnalysis()
         pm.execute([datasource          : h2GIS,        zoneTable               : "tempo_zone",     roadTable           : "tempo_road",
                     railTable           : "", vegetationTable         : "tempo_veget",    hydrographicTable   : "tempo_hydro",

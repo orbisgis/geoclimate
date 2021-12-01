@@ -4,5 +4,6 @@
         "water":[],
         "waterway":[],
         "landuse":["basin", " salt_pond"]
-    }
+    },
+    "columns":["natural", "layer"]
 }

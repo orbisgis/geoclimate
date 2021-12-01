@@ -225,9 +225,10 @@ IProcess createGISLayers() {
                 paramsDefaultFile = this.class.getResourceAsStream("waterParams.json")
                 parametersMap = readJSONParameters(paramsDefaultFile)
                 tags = parametersMap.get("tags")
+                columnsToKeep = parametersMap.get("columns")
                 transform = OSMTools.Transform.toPolygons()
                 debug "Create the water layer"
-                if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags)) {
+                if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags,columnsToKeep: columnsToKeep)) {
                     outputHydroTableName = postfix("OSM_WATER")
                     datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputHydroTableName")
                     debug "Water layer created"

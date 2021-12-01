@@ -241,7 +241,7 @@ IProcess prepareTSUData() {
                         datasource "DROP TABLE IF EXISTS $vegetation_indice"
                         datasource "CREATE TABLE $vegetation_indice(THE_GEOM geometry, ID serial," +
                                 " CONTACT integer) AS (SELECT ST_MAKEVALID(THE_GEOM) AS the_geom, CAST((row_number() over()) as Integer), 0 FROM ST_EXPLODE('" +
-                                "(SELECT * FROM $vegetationTable)') " +
+                                "(SELECT * FROM $vegetationTable WHERE ZINDEX=0)') " +
                                 " WHERE ST_DIMENSION(the_geom)>0 AND ST_ISEMPTY(the_geom)=FALSE)"
                         datasource "CREATE INDEX IF NOT EXISTS veg_indice_idx ON $vegetation_indice USING RTREE(THE_GEOM)"
                         datasource "UPDATE $vegetation_indice SET CONTACT=1 WHERE ID IN(SELECT DISTINCT(a.ID)" +
@@ -282,10 +282,10 @@ IProcess prepareTSUData() {
                         datasource "DROP TABLE IF EXISTS $hydrographic_indice"
                         datasource "CREATE TABLE $hydrographic_indice(THE_GEOM geometry, ID serial," +
                                 " CONTACT integer) AS (SELECT st_makevalid(THE_GEOM) AS the_geom, CAST((row_number() over()) as Integer) , 0 FROM " +
-                                "ST_EXPLODE('(SELECT * FROM $hydrographicTable)')" +
+                                "ST_EXPLODE('(SELECT * FROM $hydrographicTable WHERE ZINDEX=0)')" +
                                 " WHERE ST_DIMENSION(the_geom)>0 AND ST_ISEMPTY(the_geom)=false)"
 
-                        datasource "CREATE INDEX IF NOT EXISTS hydro_indice_idx ON $hydrographic_indice USING RTREE(THE_GEOM)"
+                        datasource "CREATE SPATIAL INDEX IF NOT EXISTS hydro_indice_idx ON $hydrographic_indice (THE_GEOM)"
 
 
                         datasource "UPDATE $hydrographic_indice SET CONTACT=1 WHERE ID IN(SELECT DISTINCT(a.ID)" +
@@ -303,7 +303,7 @@ IProcess prepareTSUData() {
                                 " st_area(the_geom)> $surface_hydrographic)"
 
 
-                        datasource "CREATE INDEX IF NOT EXISTS hydro_unified_idx ON $hydrographic_unified USING RTREE(THE_GEOM)"
+                        datasource "CREATE SPATIAL INDEX IF NOT EXISTS hydro_unified_idx ON $hydrographic_unified (THE_GEOM)"
 
 
                         datasource "DROP TABLE IF EXISTS $hydrographic_tmp"

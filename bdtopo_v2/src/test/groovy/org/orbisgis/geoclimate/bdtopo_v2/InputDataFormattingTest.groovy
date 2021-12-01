@@ -392,7 +392,7 @@ class InputDataFormattingTest {
         assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
-        assertEquals(4, table.columnCount)
+        assertEquals(5, table.columnCount)
         assertEquals(3, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.the_geom.spatial)
@@ -406,6 +406,7 @@ class InputDataFormattingTest {
             assertNotEquals('', row.ID_HYDRO)
             assertNotNull(row.ID_SOURCE)
             assertNotEquals('', row.ID_SOURCE)
+            assertEquals(0, row.ZINDEX as int)
         }
         
         // Specific cases
@@ -431,7 +432,7 @@ class InputDataFormattingTest {
         assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
-        assertEquals(5, table.columnCount)
+        assertEquals(6, table.columnCount)
         assertEquals(7, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.the_geom.spatial)
@@ -451,6 +452,7 @@ class InputDataFormattingTest {
             assertNotEquals('', row.TYPE)
             assertNotNull(row.HEIGHT_CLASS)
             assertNotEquals('', row.HEIGHT_CLASS)
+            assertEquals(0, row.ZINDEX as int)
         }
         
         // Specific cases

@@ -157,8 +157,8 @@ DROP TABLE IF EXISTS $INPUT_RAIL;
 ---------------------------------------------------------------------------------
 
 DROP TABLE IF EXISTS $HYDRO;
-CREATE TABLE $HYDRO (THE_GEOM geometry, ID_HYDRO serial, ID_SOURCE varchar(24), TYPE varchar)
-	AS SELECT ST_FORCE2D(ST_MAKEVALID(THE_GEOM)) as the_geom, CAST((row_number() over()) as Integer), ID_SOURCE, 'water' FROM ST_EXPLODE('$INPUT_HYDRO');
+CREATE TABLE $HYDRO (THE_GEOM geometry, ID_HYDRO serial, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer)
+	AS SELECT ST_FORCE2D(ST_MAKEVALID(THE_GEOM)) as the_geom, CAST((row_number() over()) as Integer), ID_SOURCE, 'water', zindex FROM ST_EXPLODE('$INPUT_HYDRO');
 
 -- Clean not needed layers
 DROP TABLE IF EXISTS $INPUT_HYDRO;
@@ -171,8 +171,8 @@ DROP TABLE IF EXISTS $INPUT_HYDRO;
 
 
 DROP TABLE IF EXISTS $VEGET;
-CREATE TABLE $VEGET (THE_GEOM geometry, ID_VEGET serial, ID_SOURCE varchar(24), TYPE varchar, HEIGHT_CLASS varchar)
-	AS SELECT ST_FORCE2D(ST_MAKEVALID(THE_GEOM)) as the_geom, CAST((row_number() over()) as Integer), ID_SOURCE, TYPE, null FROM ST_EXPLODE('$INPUT_VEGET');
+CREATE TABLE $VEGET (THE_GEOM geometry, ID_VEGET serial, ID_SOURCE varchar(24), TYPE varchar, HEIGHT_CLASS varchar, ZINDEX integer)
+	AS SELECT ST_FORCE2D(ST_MAKEVALID(THE_GEOM)) as the_geom, CAST((row_number() over()) as Integer), ID_SOURCE, TYPE, null, ZINDEX FROM ST_EXPLODE('$INPUT_VEGET');
 
 -- Update the vegetation height class (high or low)
 UPDATE $VEGET SET HEIGHT_CLASS = (SELECT b.HEIGHT_CLASS FROM $VEGET_ABSTRACT_PARAMETERS b WHERE b.TERM=TYPE);

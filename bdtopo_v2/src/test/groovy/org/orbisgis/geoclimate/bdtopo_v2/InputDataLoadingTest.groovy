@@ -171,7 +171,7 @@ class InputDataLoadingTest {
         assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
-        assertEquals(2, table.columnCount)
+        assertEquals(3, table.columnCount)
         assertEquals(92, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
@@ -189,7 +189,7 @@ class InputDataLoadingTest {
         assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
-        assertEquals(3, table.columnCount)
+        assertEquals(4, table.columnCount)
         assertEquals(2325, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
@@ -537,7 +537,7 @@ class InputDataLoadingTest {
         assertNotNull(tableName)
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
-        assertEquals(2, table.columnCount)
+        assertEquals(3, table.columnCount)
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
@@ -582,7 +582,7 @@ class InputDataLoadingTest {
         assertNotNull(tableName)
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
-        assertEquals(3, table.columnCount)
+        assertEquals(4, table.columnCount)
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
