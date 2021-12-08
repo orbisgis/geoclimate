@@ -808,7 +808,7 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
         def tmp_insee = code.join("-")
         h2gis_datasource.execute("""DROP TABLE IF EXISTS ${outputTableName};
         CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(GEOMETRY),CODE_INSEE VARCHAR);
-        INSERT INTO ${outputTableName} VALUES(ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, ${commune_srid}), ${tmp_insee})""")
+        INSERT INTO ${outputTableName} VALUES(ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, ${commune_srid}), ${tmp_insee})""".toString())
     }else if (code instanceof String) {
         //input_database_properties =updateDriverURL(input_database_properties)
         String inputTableName = "(SELECT THE_GEOM, CODE_INSEE FROM $commune_location WHERE CODE_INSEE='$code' or nom='$code')"
@@ -1030,7 +1030,7 @@ def findIDZones(JdbcDataSource h2gis_datasource, def id_zones, def srid){
     def inseeCodes = []
     if(h2gis_datasource.hasTable("COMMUNE_TMP")) {
         h2gis_datasource.execute("""DROP TABLE IF EXISTS COMMUNE;
-            CREATE TABLE COMMUNE (THE_GEOM GEOMETRY(GEOMETRY, ${srid}), CODE_INSEE VARCHAR)""")
+            CREATE TABLE COMMUNE (THE_GEOM GEOMETRY(GEOMETRY, ${srid}), CODE_INSEE VARCHAR)""".toString())
         if (id_zones) {
             def id_zones_tmp =[]
             id_zones.eachWithIndex { id_zone, index ->
@@ -1565,7 +1565,7 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
     if(output_table) {
         if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
             if (output_datasource.hasTable(output_table)) {
-                output_datasource.execute("DELETE FROM $output_table WHERE id_zone=?", id_zone.toString());
+                output_datasource.execute("DELETE FROM $output_table WHERE id_zone= $id_zone.toString()".toString());
                 //If the table exists we populate it with the last result
                 debug "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
                 int BATCH_MAX_SIZE = 1000;
@@ -1589,7 +1589,7 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
                                     outputColumns.put(entry.key, dataType)
                                 }
                             }
-                            output_datasource.execute(alterTable)
+                            output_datasource.execute(alterTable.toString())
                         }
                         def finalOutputColumns = outputColumns.keySet();
 
@@ -1638,12 +1638,12 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
                         //Because the select query reproject doesn't contain any geometry metadata
                         output_datasource.execute("""ALTER TABLE $output_table
                             ALTER COLUMN the_geom TYPE geometry(geometry, $outputSRID)
-                            USING ST_SetSRID(the_geom,$outputSRID);""");
+                            USING ST_SetSRID(the_geom,$outputSRID);""".toString());
 
                     }
                     if(tmpTable){
                     //Workarround to update the SRID on resulset
-                    output_datasource.execute"""ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);"""
+                    output_datasource.execute"""ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);""".toString()
                     }
                 } else {
                     if(!reproject){
@@ -1653,13 +1653,13 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
                         //Because the select query reproject doesn't contain any geometry metadata
                         output_datasource.execute("""ALTER TABLE $output_table
                             ALTER COLUMN the_geom TYPE geometry(geometry, $outputSRID)
-                            USING ST_SetSRID(the_geom,$outputSRID);""");
+                            USING ST_SetSRID(the_geom,$outputSRID);""".toString());
 
                     }
                 }
                 if(tmpTable) {
-                    output_datasource.execute("UPDATE $output_table SET id_zone= ?", id_zone);
-                    output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""")
+                    output_datasource.execute("UPDATE $output_table SET id_zone= $id_zone".toString());
+                    output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""".toString())
                     debug "The table $h2gis_table_to_save has been exported into the table $output_table"
                 }else{
                     warn "The table $h2gis_table_to_save hasn't been exported into the table $output_table"
@@ -1686,7 +1686,7 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
         if(h2gis_table_to_save) {
             if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
                 if (output_datasource.hasTable(output_table)) {
-                    output_datasource.execute("DELETE FROM $output_table WHERE id_zone=?", id_zone.toString());
+                    output_datasource.execute("DELETE FROM $output_table WHERE id_zone=$id_zone.toString()".toString());
                     //If the table exists we populate it with the last result
                     info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
                     int BATCH_MAX_SIZE = 1000;
@@ -1711,7 +1711,7 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                                         outputColumns.put(entry.key, dataType)
                                     }
                                 }
-                                output_datasource.execute(alterTable)
+                                output_datasource.execute(alterTable.toString())
                             }
                             def finalOutputColumns = outputColumns.keySet();
 
@@ -1756,13 +1756,13 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                             tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().save(output_datasource, output_table, true);
                             if (tmpTable) {
                                 //Workaround to update the SRID on resulset
-                                output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $outputSRID) USING ST_SetSRID(the_geom,$outputSRID);"""
+                                output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $outputSRID) USING ST_SetSRID(the_geom,$outputSRID);""".toString()
                             }
                         } else {
                             tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true);
                             if (tmpTable) {
                                 //Workaround to update the SRID on resulset
-                                output_datasource.execute"""ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $outputSRID) USING ST_SetSRID(the_geom,$outputSRID);"""
+                                output_datasource.execute"""ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $outputSRID) USING ST_SetSRID(the_geom,$outputSRID);""".toString()
                             }
                         }
                     } else {
@@ -1774,16 +1774,16 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                                 //Because the select query reproject doesn't contain any geometry metadata
                                 output_datasource.execute("""ALTER TABLE $output_table 
                             ALTER COLUMN the_geom TYPE geometry(geometry, $outputSRID) 
-                            USING ST_SetSRID(the_geom,$outputSRID);""")
+                            USING ST_SetSRID(the_geom,$outputSRID);""".toString())
                             }
                         }
                     }
                     if (tmpTable){
                         if(!output_datasource.getTable(output_table).hasColumn("id_zone")) {
-                            output_datasource.execute("ALTER TABLE $output_table ADD COLUMN id_zone VARCHAR");
+                            output_datasource.execute("ALTER TABLE $output_table ADD COLUMN id_zone VARCHAR".toString());
                         }
-                        output_datasource.execute("UPDATE $output_table SET id_zone= ?", id_zone);
-                        output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""")
+                        output_datasource.execute("UPDATE $output_table SET id_zone= $id_zone".toString());
+                        output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""".toString())
                         info "The table $h2gis_table_to_save has been exported into the table $output_table"
                     }
                     else{

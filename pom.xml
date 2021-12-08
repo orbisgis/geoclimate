@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.orbisgis</groupId>
         <artifactId>orbisparent</artifactId>
-        <version>1.0.4-SNAPSHOT</version>
+        <version>1.1.1-SNAPSHOT</version>
     </parent>
     <groupId>org.orbisgis.geoclimate</groupId>
     <artifactId>geoclimate-parent</artifactId>
@@ -23,14 +23,11 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>YYYY-MM-dd</maven.build.timestamp.format>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <maven.compiler.source>1.8</maven.compiler.source>
         <buildNumber>${maven.build.timestamp}</buildNumber>
         <site.basedir>${project.basedir}</site.basedir>
         <log4j-version>2.14.0</log4j-version>
-        <orbisanalysis-version>1.0.0-SNAPSHOT</orbisanalysis-version>
         <h2gis-version>2.0.0-SNAPSHOT</h2gis-version>
-        <orbisparent-version>1.0.4-SNAPSHOT</orbisparent-version>
+        <orbisparent-version>1.1.1-SNAPSHOT</orbisparent-version>
         <cts-version>1.6.0-SNAPSHOT</cts-version>
         <orbisdata-version>1.0.1-SNAPSHOT</orbisdata-version>
     </properties>
@@ -68,6 +65,10 @@
     <!-- Dependencies -->
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2</artifactId>
+            </dependency>
             <dependency>
                 <groupId>org.orbisgis</groupId>
                 <artifactId>commons</artifactId>

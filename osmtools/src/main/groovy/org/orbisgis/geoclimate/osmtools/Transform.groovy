@@ -178,18 +178,18 @@ def extractWaysAsPolygons () {
             def columnsSelector = getColumnSelector(osmTableTag, tags, columnsToKeep)
             def tagsFilter = createWhereFilter(tags)
 
-            if (datasource.firstRow(countTagsQuery).count <= 0) {
+            if (datasource.firstRow(countTagsQuery.toString()).count <= 0) {
                 debug "No keys or values found to extract ways. An empty table will be returned."
                 datasource """ 
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
-            """
+            """.toString()
                 return [outputTableName: outputTableName]
             }
 
-            info "Build way polygons"
+            debug "Build way polygons"
             def waysPolygonTmp = postfix "WAYS_POLYGONS_TMP"
-            datasource "DROP TABLE IF EXISTS $waysPolygonTmp;"
+            datasource "DROP TABLE IF EXISTS $waysPolygonTmp;".toString()
 
             if (tagsFilter) {
                 datasource """
@@ -199,7 +199,7 @@ def extractWaysAsPolygons () {
                         FROM $osmTableTag
                         WHERE $tagsFilter;
                     CREATE INDEX ON $idWaysPolygons(id_way);
-            """
+            """.toString()
             } else {
                 datasource """
                     DROP TABLE IF EXISTS $idWaysPolygons;
@@ -207,7 +207,7 @@ def extractWaysAsPolygons () {
                         SELECT DISTINCT id_way
                         FROM $osmTableTag;
                     CREATE INDEX ON $idWaysPolygons(id_way);
-            """
+            """.toString()
             }
 
             if (columnsToKeep) {
@@ -215,12 +215,12 @@ def extractWaysAsPolygons () {
                     SELECT count(*) AS count 
                     FROM $idWaysPolygons AS a, ${osmTablesPrefix}_WAY_TAG AS b 
                     WHERE a.ID_WAY = b.ID_WAY AND b.TAG_KEY IN ('${columnsToKeep.join("','")}')
-            """)[0] < 1) {
+            """.toString())[0] < 1) {
                     debug "Any columns to keep. Cannot create any geometry polygons. An empty table will be returned."
                     datasource """
                         DROP TABLE IF EXISTS $outputTableName;
                         CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
-                """
+                """.toString()
                     return [outputTableName: outputTableName]
                 }
             }
@@ -244,7 +244,7 @@ def extractWaysAsPolygons () {
                     WHERE ST_GEOMETRYN(the_geom, 1) = ST_GEOMETRYN(the_geom, ST_NUMGEOMETRIES(the_geom)) 
                     AND ST_NUMGEOMETRIES(the_geom) > 3;
                 CREATE INDEX ON $waysPolygonTmp(id_way);
-        """
+        """.toString()
 
             datasource """
                 DROP TABLE IF EXISTS $outputTableName; 
@@ -253,12 +253,12 @@ def extractWaysAsPolygons () {
                     FROM $waysPolygonTmp AS a, $osmTableTag b
                     WHERE a.id_way=b.id_way
                     GROUP BY a.id_way;
-        """
+        """.toString()
 
             datasource """
                 DROP TABLE IF EXISTS $waysPolygonTmp;
                 DROP TABLE IF EXISTS $idWaysPolygons;
-        """
+        """.toString()
 
             [outputTableName: outputTableName]
         }
@@ -301,15 +301,15 @@ def extractRelationsAsPolygons () {
             def columnsSelector = getColumnSelector(osmTableTag, tags, columnsToKeep)
             def tagsFilter = createWhereFilter(tags)
 
-            if (datasource.firstRow(countTagsQuery).count <= 0) {
+            if (datasource.firstRow(countTagsQuery.toString()).count <= 0) {
                 debug "No keys or values found in the relations. An empty table will be returned."
                 datasource """
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
-            """
+            """.toString()
                 return [outputTableName: outputTableName]
             }
-            info "Build outer polygons"
+            debug "Build outer polygons"
             def relationsPolygonsOuter = postfix "RELATIONS_POLYGONS_OUTER"
             def relationFilteredKeys = postfix "RELATION_FILTERED_KEYS"
             def outer_condition
@@ -325,19 +325,19 @@ def extractRelationsAsPolygons () {
                         FROM ${osmTablesPrefix}_relation_tag wt 
                         WHERE $tagsFilter;
                     CREATE INDEX ON $relationFilteredKeys(id_relation);
-            """
+            """.toString()
 
                 if (columnsToKeep) {
                     if (datasource.firstRow("""
                         SELECT count(*) AS count 
                         FROM $relationFilteredKeys AS a, ${osmTablesPrefix}_RELATION_TAG AS b 
                         WHERE a.ID_RELATION = b.ID_RELATION AND b.TAG_KEY IN ('${columnsToKeep.join("','")}')
-                """)[0] < 1) {
+                """.toString())[0] < 1) {
                         debug "Any columns to keep. Cannot create any geometry polygons. An empty table will be returned."
                         datasource """
                             DROP TABLE IF EXISTS $outputTableName;
                             CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
-                    """
+                    """.toString()
                         return [outputTableName: outputTableName]
                     }
                 }
@@ -371,9 +371,9 @@ def extractRelationsAsPolygons () {
                         FROM ${osmTablesPrefix}_way w, ${osmTablesPrefix}_way_member br $outer_condition) geom_table
                         WHERE st_numgeometries(the_geom)>=2) 
                 GROUP BY id_relation;
-        """
+        """.toString()
 
-            info "Build inner polygons"
+            debug "Build inner polygons"
             def relationsPolygonsInner = postfix "RELATIONS_POLYGONS_INNER"
             datasource """
                 DROP TABLE IF EXISTS $relationsPolygonsInner;
@@ -392,7 +392,7 @@ def extractRelationsAsPolygons () {
                         FROM ${osmTablesPrefix}_way w, ${osmTablesPrefix}_way_member br ${inner_condition}) geom_table 
                         WHERE st_numgeometries(the_geom)>=2) 
                 GROUP BY id_relation;
-        """
+        """.toString()
 
             debug "Explode outer polygons"
             def relationsPolygonsOuterExploded = postfix "RELATIONS_POLYGONS_OUTER_EXPLODED"
@@ -403,7 +403,7 @@ def extractRelationsAsPolygons () {
                     FROM st_explode('$relationsPolygonsOuter') 
                     WHERE ST_STARTPOINT(the_geom) = ST_ENDPOINT(the_geom)
                     AND ST_NPoints(the_geom)>=4;
-        """
+        """.toString()
 
             debug "Explode inner polygons"
             def relationsPolygonsInnerExploded = postfix "RELATIONS_POLYGONS_INNER_EXPLODED"
@@ -414,13 +414,13 @@ def extractRelationsAsPolygons () {
                     FROM st_explode('$relationsPolygonsInner') 
                     WHERE ST_STARTPOINT(the_geom) = ST_ENDPOINT(the_geom)
                     AND ST_NPoints(the_geom)>=4; 
-        """
+        """.toString()
 
             debug "Build all polygon relations"
             def relationsMpHoles = postfix "RELATIONS_MP_HOLES"
             datasource """
-                CREATE INDEX ON $relationsPolygonsOuterExploded USING RTREE (the_geom);
-                CREATE INDEX ON $relationsPolygonsInnerExploded USING RTREE (the_geom);
+                CREATE SPATIAL INDEX ON $relationsPolygonsOuterExploded (the_geom);
+                CREATE SPATIAL INDEX ON $relationsPolygonsInnerExploded (the_geom);
                 CREATE INDEX ON $relationsPolygonsOuterExploded(id_relation);
                 CREATE INDEX ON $relationsPolygonsInnerExploded(id_relation);       
                 DROP TABLE IF EXISTS $relationsMpHoles;
@@ -434,22 +434,22 @@ def extractRelationsAsPolygons () {
                         AND a.ID_RELATION=b.ID_RELATION)
                     GROUP BY a.the_geom, a.id_relation)
                 UNION(
-                    SELECT a.the_geom, a.ID_RELATION 
+                    SELECT a.the_geom as the_geom , a.ID_RELATION 
                     FROM $relationsPolygonsOuterExploded AS a 
                     LEFT JOIN  $relationsPolygonsInnerExploded AS b 
                     ON a.id_relation=b.id_relation 
                     WHERE b.id_relation IS NULL);
                 CREATE INDEX ON $relationsMpHoles(id_relation);
-        """
+        """.toString()
 
             datasource """
                 DROP TABLE IF EXISTS $outputTableName;     
                 CREATE TABLE $outputTableName AS 
-                    SELECT 'r'||a.id_relation AS id, a.the_geom ${createTagList(datasource, columnsSelector)}
+                    SELECT 'r'||a.id_relation AS id, st_normalize(a.the_geom) as the_geom ${createTagList(datasource, columnsSelector)}
                     FROM $relationsMpHoles AS a, ${osmTablesPrefix}_relation_tag  b 
                     WHERE a.id_relation=b.id_relation 
                     GROUP BY a.the_geom, a.id_relation;
-        """
+        """.toString()
 
             datasource """
                 DROP TABLE IF EXISTS    $relationsPolygonsOuter, 
@@ -458,7 +458,7 @@ def extractRelationsAsPolygons () {
                                         $relationsPolygonsInnerExploded, 
                                         $relationsMpHoles, 
                                         $relationFilteredKeys;
-        """
+        """.toString()
             [outputTableName: outputTableName]
         }
     }
@@ -502,12 +502,12 @@ def extractWaysAsLines () {
             def columnsSelector = getColumnSelector(osmTableTag, tags, columnsToKeep)
             def tagsFilter = createWhereFilter(tags)
 
-            if (datasource.firstRow(countTagsQuery).count <= 0) {
+            if (datasource.firstRow(countTagsQuery.toString()).count <= 0) {
                 debug "No keys or values found in the ways. An empty table will be returned."
                 datasource """ 
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
-            """
+            """.toString()
                 return [outputTableName: outputTableName]
             }
             debug "Build ways as lines"
@@ -523,7 +523,7 @@ def extractWaysAsLines () {
                         FROM ${osmTablesPrefix}_way_tag
                         WHERE $tagsFilter;
                     CREATE INDEX ON $idWaysTable(id_way);
-            """
+            """.toString()
             }
 
             if (columnsToKeep) {
@@ -531,12 +531,12 @@ def extractWaysAsLines () {
                     SELECT count(*) AS count 
                     FROM $idWaysTable AS a, ${osmTablesPrefix}_WAY_TAG AS b 
                     WHERE a.ID_WAY = b.ID_WAY AND b.TAG_KEY IN ('${columnsToKeep.join("','")}')
-            """)[0] < 1) {
+            """.toString())[0] < 1) {
                     debug "Any columns to keep. Cannot create any geometry lines. An empty table will be returned."
                     datasource """
                         DROP TABLE IF EXISTS $outputTableName;
                         CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
-                """
+                """.toString()
                     return [outputTableName: outputTableName]
                 }
             }
@@ -560,7 +560,7 @@ def extractWaysAsLines () {
                         WHERE w.id_way = b.id_way) geom_table 
                     WHERE ST_NUMGEOMETRIES(the_geom) >= 2;
                 CREATE INDEX ON $waysLinesTmp(ID_WAY);
-        """
+        """.toString()
 
             datasource """
                 DROP TABLE IF EXISTS $outputTableName;
@@ -570,7 +570,7 @@ def extractWaysAsLines () {
                     WHERE a.id_way=b.id_way 
                     GROUP BY a.id_way;
                 DROP TABLE IF EXISTS $waysLinesTmp, $idWaysTable;
-        """
+        """.toString()
             [outputTableName: outputTableName]
         }
     }
@@ -612,12 +612,12 @@ def extractRelationsAsLines() {
             def columnsSelector = getColumnSelector(osmTableTag, tags, columnsToKeep)
             def tagsFilter = createWhereFilter(tags)
 
-            if (datasource.firstRow(countTagsQuery).count <= 0) {
+            if (datasource.firstRow(countTagsQuery.toString()).count <= 0) {
                 warn "No keys or values found in the relations. An empty table will be returned."
                 datasource """
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
-            """
+            """.toString()
                 return [outputTableName: outputTableName]
             }
             def relationsLinesTmp = postfix "RELATIONS_LINES_TMP"
@@ -633,7 +633,7 @@ def extractRelationsAsLines() {
                         FROM ${osmTablesPrefix}_relation_tag wt
                         WHERE $tagsFilter;
                     CREATE INDEX ON $relationsFilteredKeys(id_relation);
-            """
+            """.toString()
             }
 
             if (columnsToKeep) {
@@ -641,12 +641,12 @@ def extractRelationsAsLines() {
                     SELECT count(*) AS count 
                     FROM $relationsFilteredKeys AS a, ${osmTablesPrefix}_RELATION_TAG AS b 
                     WHERE a.ID_RELATION = b.ID_RELATION AND b.TAG_KEY IN ('${columnsToKeep.join("','")}')
-            """)[0] < 1) {
+            """.toString())[0] < 1) {
                     debug "Any columns to keep. Cannot create any geometry lines. An empty table will be returned."
                     datasource """ 
                         DROP TABLE IF EXISTS $outputTableName;
                         CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
-                """
+                """.toString()
                     return [outputTableName: outputTableName]
                 }
             }
@@ -676,7 +676,7 @@ def extractRelationsAsLines() {
                         WHERE st_numgeometries(the_geom)>=2)
                     GROUP BY id_relation;
                 CREATE INDEX ON $relationsLinesTmp(id_relation);
-        """
+        """.toString()
 
             datasource """
                 DROP TABLE IF EXISTS $outputTableName;
@@ -686,8 +686,9 @@ def extractRelationsAsLines() {
                     WHERE a.id_relation=b.id_relation
                     GROUP BY a.id_relation;
                 DROP TABLE IF EXISTS $relationsLinesTmp, $relationsFilteredKeys;
-        """
+        """.toString()
             [outputTableName: outputTableName]
         }
     }
+
 }

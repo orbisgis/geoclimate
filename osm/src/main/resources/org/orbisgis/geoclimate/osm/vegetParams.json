@@ -5,12 +5,12 @@
     "leisure":["park", "garden"],
     "vegetation":["grass"],"barrier":["hedge"],"fence_type":["hedge", "wood"],
     "hedge":[],"wetland":[],"vineyard":[],
-    "trees":[],"crop":[],"produce":[]
+    "trees":[],"crop":[],"produce":[], "surface": ["grass"]
 },
     "columns":["natural", "landuse", "landcover",
         "vegetation", "barrier", "fence_type",
         "hedge", "wetland", "vineyard",
-        "trees", "crop", "produce","layer"
+        "trees", "crop", "produce","layer","surface"
     ],
     "type": {
         "farmland": {
@@ -62,7 +62,8 @@
             "landuse": [
                 "village_green",
                 "grass"
-            ]
+            ],
+            "surface": ["grass"]
         },
         "grassland": {
             "landcover": [
@@ -161,7 +162,16 @@
             "wetland": [
                 "marsh"
             ]
-        }
+        },
+        "saltmarsh": {
+            "wetland": [
+                "saltmarsh"
+            ]},
+            "wetland": {
+                "landuse": [
+                    "wetland"
+                ]
+            }
     },
     "class" :{
         "tree": "high",

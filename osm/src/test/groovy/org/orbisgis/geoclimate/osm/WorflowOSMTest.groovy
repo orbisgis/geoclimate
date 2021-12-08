@@ -7,6 +7,7 @@ import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.slf4j.Logger
 
 import static org.junit.jupiter.api.Assertions.*
 
@@ -649,19 +650,19 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Disabled //Use it for debug
     @Test
     void testIntegration() {
-        String directory ="./target/geoclimate_chain_integration"
+        String directory ="/tmp/geoclimate"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
         def osm_parmeters = [
-                "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
+                "description" :"Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb" : [
                         "folder" : "${dirFile.absolutePath}",
-                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "name" : "geoclimate_test_integration;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE",
                         "delete" :false
                 ],
                 "input" : [
-                        "osm" : ["Angers"]],
+                        "osm" : ["Vannes"]],
                 "output" :[
                         "folder" :"$directory"]
                 ,
@@ -672,8 +673,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                  "svfSimplified": true,
                                  "estimateHeight":true
                          ],"grid_indicators": [
-                                "x_size": 10,
-                                "y_size": 10,
+                                "x_size": 100,
+                                "y_size": 100,
                                 "rowCol": true,
                                 "output" : "geojson",
                                 "indicators": ["BUILDING_FRACTION","BUILDING_HEIGHT","WATER_FRACTION","VEGETATION_FRACTION",
@@ -681,7 +682,6 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ]
                         ]
         ]
-
         IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
     }
