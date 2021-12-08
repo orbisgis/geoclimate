@@ -426,7 +426,7 @@ class TransformTest extends AbstractOSMTest {
     @Test
     void extractRelationsAsPolygonsTest(){
         def extractRelationsAsPolygons = OSMTools.Transform.extractRelationsAsPolygons()
-        H2GIS ds = H2GIS.open("/tmp/geoclimate;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE");//RANDOM_DS()
+        H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = [building:"house"]
@@ -682,8 +682,7 @@ class TransformTest extends AbstractOSMTest {
 
     @Test
     void buildGISLayersTest () {
-        def h2GIS = H2GIS.open('/tmp/geoclimate;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE')
-        //def h2GIS = H2GIS.open('./target/osmtools_read_file;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE')
+        def h2GIS = H2GIS.open('./target/osmtools_read_file;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE')
         IProcess loader = OSMTools.Loader.load()
         def prefix = "OSM_REDON"
         assertTrue loader.execute(datasource : h2GIS, osmTablesPrefix : prefix,
