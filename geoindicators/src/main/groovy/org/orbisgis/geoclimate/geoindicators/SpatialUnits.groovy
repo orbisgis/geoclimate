@@ -596,7 +596,7 @@ IProcess createGrid() {
                     def createTable = "CREATE TABLE $outputTableName(THE_GEOM GEOMETRY(POLYGON), ID INT, ID_COL INT, ID_ROW INT);"
                     def insertTable = "INSERT INTO $outputTableName VALUES (?, ?, ?, ?);"
                     datasource.execute(createTable.toString())
-                    preparedStatement = outputConnection.prepareStatement(insertTable)
+                    preparedStatement = outputConnection.prepareStatement(insertTable.toString())
                     def result = ST_MakeGrid.createGrid(outputConnection, ValueGeometry.getFromGeometry(geometry), deltaX, deltaY, rowCol)
                     long batch_size = 0
                     int batchSize = 1000

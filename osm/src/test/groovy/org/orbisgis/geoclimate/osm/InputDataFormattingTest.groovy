@@ -246,7 +246,7 @@ class InputDataFormattingTest {
 
         def zoneEnvelopeTableName = "zone_envelope_sea_land"
         h2GIS.execute("""drop table if exists $zoneEnvelopeTableName;
-         create table $zoneEnvelopeTableName as select st_transform(st_geomfromtext('$geom', ${geom.getSRID()}), $epsg) as the_geom""")
+         create table $zoneEnvelopeTableName as select st_transform(st_geomfromtext('$geom', ${geom.getSRID()}), $epsg) as the_geom""".toString())
 
         //Test coastline
         assertEquals(1, h2GIS.getTable(extractData.results.coastlineTableName).getRowCount())

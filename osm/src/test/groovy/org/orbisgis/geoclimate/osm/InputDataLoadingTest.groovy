@@ -44,10 +44,10 @@ class InputDataLoadingTest {
                 osmFilePath: osmfile,
                 epsg :2154])
         //h2GIS.getTable(process.results.buildingTableName).save("./target/osm_building.shp")
-        assertEquals 1039, h2GIS.getTable(process.results.buildingTableName).rowCount
+        assertEquals 1038, h2GIS.getTable(process.results.buildingTableName).rowCount
 
         //h2GIS.getTable(process.results.vegetationTableName).save("./target/osm_vegetation.shp")
-        assertEquals 136, h2GIS.getTable(process.results.vegetationTableName).rowCount
+        assertEquals 135, h2GIS.getTable(process.results.vegetationTableName).rowCount
 
         //h2GIS.getTable(process.results.roadTableName).save("./target/osm_road.shp")
         assertEquals 211, h2GIS.getTable(process.results.roadTableName).rowCount

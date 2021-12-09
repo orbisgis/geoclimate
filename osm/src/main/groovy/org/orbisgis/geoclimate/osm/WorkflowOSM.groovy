@@ -644,7 +644,7 @@ IProcess osm_processing() {
 
                                     error "Cannot build the geoindicators for the zone $id_zone"
 
-                                    h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error computing geoindicators')"
+                                    h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error computing geoindicators')".toString()
 
                                     return
                                 }
@@ -677,7 +677,7 @@ IProcess osm_processing() {
                                         results.put("grid_indicators", rasterizedIndicators.results.outputTableName)
                                     }
                             }else{
-                                h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error computing the grid indicators')"
+                                h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error computing the grid indicators')".toString()
                             }
                             if (outputFolder  && ouputTableFiles) {
                                 saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject, deleteOutputData, outputGrid)
@@ -688,13 +688,13 @@ IProcess osm_processing() {
                             }
 
                         } else {
-                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error loading the OSM file')"
+                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error loading the OSM file')".toString()
                             error "Cannot load the OSM file ${extract.results.outputFilePath}"
                             return
                         }
                     } else {
                         //Log in table
-                        h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error to extract the data with OverPass')"
+                        h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error to extract the data with OverPass')".toString()
                         error "Cannot execute the overpass query $query"
                         return
                     }
@@ -703,13 +703,13 @@ IProcess osm_processing() {
                     if (id_zone in Collection) {
                         def geom = Utilities.geometryFromOverpass(id_zone)
                         if (!geom) {
-                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(null,'$id_zone', 'Error to extract the zone with Nominatim')"
+                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(null,'$id_zone', 'Error to extract the zone with Nominatim')".toString()
                         }
                         else{
-                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('$geom',4326) ,'$id_zone', 'Error to extract the zone with Nominatim')"
+                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('$geom',4326) ,'$id_zone', 'Error to extract the zone with Nominatim')".toString()
                         }
                     } else if (id_zone instanceof String) {
-                        h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(null,'$id_zone', 'Error to extract the zone with Nominatim')"
+                        h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(null,'$id_zone', 'Error to extract the zone with Nominatim')".toString()
                     }
                     error "Cannot calculate a bounding box to extract OSM data"
                     return
@@ -1161,7 +1161,7 @@ def saveTableToAsciiGrid(def outputTable , def subFolder,def filePrefix, def h2g
         if (!reproject) {
             env = h2gis_datasource.getSpatialTable(outputTable).getExtent().getEnvelopeInternal();
         } else {
-            def geom = h2gis_datasource.firstRow("SELECT st_transform(ST_EXTENT(the_geom), $outputSRID) as geom from $outputTable").geom
+            def geom = h2gis_datasource.firstRow("SELECT st_transform(ST_EXTENT(the_geom), $outputSRID) as geom from $outputTable".toString()).geom
             if (geom) {
                 env = geom.getEnvelopeInternal();
             }
@@ -1411,7 +1411,7 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
                         def ouputValues = finalOutputColumns.collectEntries { [it.toLowerCase(), null] }
                         ouputValues.put("id_zone", id_zone)
                         outputconnection.setAutoCommit(false);
-                        output_datasource.withBatch(BATCH_MAX_SIZE, insertTable) { ps ->
+                        output_datasource.withBatch(BATCH_MAX_SIZE, insertTable.toString()) { ps ->
                             inputRes.eachRow { row ->
                                 //Fill the value
                                 inputColumns.keySet().each { columnName ->
@@ -1531,7 +1531,7 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                         def ouputValues = finalOutputColumns.collectEntries {[it.toLowerCase(), null]}
                         ouputValues.put("id_zone", id_zone)
                         outputconnection.setAutoCommit(false);
-                            output_datasource.withBatch(BATCH_MAX_SIZE, insertTable) { ps ->
+                            output_datasource.withBatch(BATCH_MAX_SIZE, insertTable.toString()) { ps ->
                                 inputRes.eachRow{ row ->
                                     //Fill the value
                                     inputColumns.keySet().each{columnName ->

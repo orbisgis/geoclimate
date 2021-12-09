@@ -448,7 +448,7 @@ IProcess formatVegetationLayer() {
                                                 '${row.id}',
                                                 '${type}', 
                                                 '${height_class}', ${zindex})
-                                    """
+                                    """.toString()
                                     }
                                 }
                             }
@@ -508,7 +508,7 @@ IProcess formatHydroLayer() {
                             for (int i = 0; i < geom.getNumGeometries(); i++) {
                                 Geometry subGeom = geom.getGeometryN(i)
                                 if (subGeom instanceof Polygon) {
-                                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', '${water_type}', ${zIndex})"
+                                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', '${water_type}', ${zIndex})".toString()
                                 }
                             }
                         }
@@ -578,7 +578,7 @@ IProcess formatImperviousLayer() {
                                 for (int i = 0; i < geom.getNumGeometries(); i++) {
                                     Geometry subGeom = geom.getGeometryN(i)
                                     if (subGeom instanceof Polygon) {
-                                        stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}')"
+                                        stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}')".toString()
                                     }
                                 }
                             }
@@ -978,7 +978,7 @@ IProcess formatUrbanAreas() {
                             for (int i = 0; i < geom.getNumGeometries(); i++) {
                                 Geometry subGeom = geom.getGeometryN(i)
                                 if (subGeom instanceof Polygon) {
-                                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', '${type}','${use}')"
+                                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', '${type}','${use}')".toString()
                                 }
                             }
                         }

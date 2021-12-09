@@ -1604,7 +1604,7 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
                         def ouputValues = finalOutputColumns.collectEntries { [it.toLowerCase(), null] }
                         ouputValues.put("id_zone", id_zone)
                         outputconnection.setAutoCommit(false);
-                        output_datasource.withBatch(BATCH_MAX_SIZE, insertTable) { ps ->
+                        output_datasource.withBatch(BATCH_MAX_SIZE, insertTable.toString()) { ps ->
                             inputRes.eachRow { row ->
                                 //Fill the value
                                 inputColumns.keySet().each { columnName ->
@@ -1726,7 +1726,7 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                             def ouputValues = finalOutputColumns.collectEntries {[it.toLowerCase(), null]}
                             ouputValues.put("id_zone", id_zone)
                             outputconnection.setAutoCommit(false);
-                            output_datasource.withBatch(BATCH_MAX_SIZE, insertTable) { ps ->
+                            output_datasource.withBatch(BATCH_MAX_SIZE, insertTable.toString()) { ps ->
                                 inputRes.eachRow{ row ->
                                     //Fill the value
                                     inputColumns.keySet().each{columnName ->
