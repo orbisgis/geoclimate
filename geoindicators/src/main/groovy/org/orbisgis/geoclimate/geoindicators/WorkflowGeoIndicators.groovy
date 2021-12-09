@@ -1455,7 +1455,7 @@ IProcess computeAllGeoIndicators() {
                 nb_block =  ${nbBlock},
                 nb_rsu = ${nbRSU},
                 computation_time = ${(System.currentTimeMillis()-start)/1000},
-                last_update = CAST(now() AS VARCHAR)"""
+                last_update = CAST(now() AS VARCHAR)""".toString()
 
                 //Clean the System properties that stores intermediate table names
                 clearTablesCache()
