@@ -20,12 +20,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      # Setup the jdk using version 8 of adoptOpenJDK
-      - name: Setup java 8 using adoptOpenJDK
+      # Setup the jdk using version 11 of adoptOpenJDK
+      - name: Setup java 11 using adoptOpenJDK
         uses: actions/setup-java@v2
         with:
           distribution: adopt
-          java-version: 8
+          java-version: 11
 
       # Set up the postgis database
       - name: Postigs install
