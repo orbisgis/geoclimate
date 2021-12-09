@@ -1790,7 +1790,6 @@ IProcess computeGeoclimateIndicators() {
                 urbanTypoBuilding = null
             }
 
-            datasource.execute "DROP TABLE IF EXISTS $rsuLczWithoutGeom;"
 
             //Populate reporting
             def nbBuilding = datasource.firstRow("select count(*) as count from ${buildingIndicators} WHERE ID_RSU IS NOT NULL".toString()).count

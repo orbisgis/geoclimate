@@ -45,10 +45,10 @@ class InputDataFormattingTest {
                 osmFilePath: new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath(),
                 epsg       : epsg])
 
-        assertEquals 1039, h2GIS.getTable(extractData.results.buildingTableName).rowCount
+        assertEquals 1038, h2GIS.getTable(extractData.results.buildingTableName).rowCount
         assertEquals 211, h2GIS.getTable(extractData.results.roadTableName).rowCount
         assertEquals 44, h2GIS.getTable(extractData.results.railTableName).rowCount
-        assertEquals 136, h2GIS.getTable(extractData.results.vegetationTableName).rowCount
+        assertEquals 135, h2GIS.getTable(extractData.results.vegetationTableName).rowCount
         assertEquals 10, h2GIS.getTable(extractData.results.hydroTableName).rowCount
         assertEquals 45, h2GIS.getTable(extractData.results.imperviousTableName).rowCount
         assertEquals 6, h2GIS.getTable(extractData.results.urbanAreasTableName).rowCount
@@ -62,13 +62,13 @@ class InputDataFormattingTest {
                 epsg          : epsg,
                 jsonFilename  : null])
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated.shp", true)
-        assertEquals 1039, h2GIS.getTable(format.results.outputTableName).rowCount
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count == 0
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count == 0
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL is null").count == 0
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL<0").count == 0
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF is null").count == 0
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0").count == 0
+        assertEquals 1038, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null".toString()).count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0".toString()).count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL is null".toString()).count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL<0".toString()).count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF is null".toString()).count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0".toString()).count == 0
 
         //Format urban areas
         format = OSM.InputDataFormatting.formatUrbanAreas()
@@ -121,7 +121,7 @@ class InputDataFormattingTest {
 
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_rails_formated.shp", true)
         assertEquals 41, h2GIS.getTable(format.results.outputTableName).rowCount
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where CROSSING IS NOT NULL").count == 8
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where CROSSING IS NOT NULL".toString()).count == 8
 
 
         //Vegetation
@@ -133,9 +133,9 @@ class InputDataFormattingTest {
                 jsonFilename  : null
         ])
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_vegetation_formated.shp", true)
-        assertEquals 141, h2GIS.getTable(format.results.outputTableName).rowCount
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where type is null").count == 0
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_CLASS is null").count == 0
+        assertEquals 140, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where type is null".toString()).count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_CLASS is null".toString()).count == 0
 
         //Hydrography
         format = OSM.InputDataFormatting.formatHydroLayer()
@@ -304,10 +304,10 @@ class InputDataFormattingTest {
                 osmFilePath: new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath(),
                 epsg       : epsg])
 
-        assertEquals 1039, h2GIS.getTable(extractData.results.buildingTableName).rowCount
+        assertEquals 1038, h2GIS.getTable(extractData.results.buildingTableName).rowCount
         assertEquals 211, h2GIS.getTable(extractData.results.roadTableName).rowCount
         assertEquals 44, h2GIS.getTable(extractData.results.railTableName).rowCount
-        assertEquals 136, h2GIS.getTable(extractData.results.vegetationTableName).rowCount
+        assertEquals 135, h2GIS.getTable(extractData.results.vegetationTableName).rowCount
         assertEquals 10, h2GIS.getTable(extractData.results.hydroTableName).rowCount
         assertEquals 45, h2GIS.getTable(extractData.results.imperviousTableName).rowCount
 
@@ -320,17 +320,17 @@ class InputDataFormattingTest {
                 jsonFilename  : null,
                 estimateHeight: true])
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated.shp", true)
-        assertEquals 1039, h2GIS.getTable(format.results.outputTableName).rowCount
-        assertEquals 1039, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertEquals 1038, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertEquals 1038, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL is null").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL<0").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF is null").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0").count == 0
-        assertEquals 1039, h2GIS.getTable(format.results.outputEstimateTableName).rowCount
+        assertEquals 1038, h2GIS.getTable(format.results.outputEstimateTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputEstimateTableName} where ESTIMATED = false").count == 4
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} join ${format.results.outputEstimateTableName} using (id_build, id_source) where 1=1").count == 1039
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} join ${format.results.outputEstimateTableName} using (id_build, id_source) where 1=1").count == 1038
 
         //Buildings without estimation state
         format = OSM.InputDataFormatting.formatBuildingLayer()
@@ -339,8 +339,8 @@ class InputDataFormattingTest {
                 inputTableName: extractData.results.buildingTableName,
                 epsg          : epsg,
                 jsonFilename  : null])
-        assertEquals 1039, h2GIS.getTable(format.results.outputTableName).rowCount
-        assertEquals 1039, h2GIS.getTable(format.results.outputEstimateTableName).rowCount
+        assertEquals 1038, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertEquals 1038, h2GIS.getTable(format.results.outputEstimateTableName).rowCount
     }
 
 

@@ -179,7 +179,7 @@ IProcess createGISLayers() {
                 def columnsToKeep = parametersMap.get("columns")
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
                     outputBuildingTableName = postfix("OSM_BUILDING")
-                    datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputBuildingTableName")
+                    datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputBuildingTableName".toString())
                     debug "Building layer created"
                 }
 
@@ -192,7 +192,7 @@ IProcess createGISLayers() {
                 columnsToKeep = parametersMap.get("columns")
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
                     outputRoadTableName = postfix("OSM_ROAD")
-                    datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputRoadTableName")
+                    datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputRoadTableName".toString())
                     debug "Road layer created"
                 }
 
@@ -205,7 +205,7 @@ IProcess createGISLayers() {
                 columnsToKeep = parametersMap.get("columns")
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
                     outputRailTableName = postfix("OSM_RAIL")
-                    datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputRailTableName")
+                    datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputRailTableName".toString())
                     debug "Rail layer created"
                 }
                 //Create vegetation layer
@@ -217,7 +217,7 @@ IProcess createGISLayers() {
                 debug "Create the vegetation layer"
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
                     outputVegetationTableName = postfix("OSM_VEGETATION")
-                    datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputVegetationTableName")
+                    datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputVegetationTableName".toString())
                     debug "Vegetation layer created"
                 }
 
@@ -230,7 +230,7 @@ IProcess createGISLayers() {
                 debug "Create the water layer"
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags,columnsToKeep: columnsToKeep)) {
                     outputHydroTableName = postfix("OSM_WATER")
-                    datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputHydroTableName")
+                    datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputHydroTableName".toString())
                     debug "Water layer created"
                 }
 
@@ -243,7 +243,7 @@ IProcess createGISLayers() {
                 debug "Create the impervious layer"
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
                     outputImperviousTableName = postfix("OSM_IMPERVIOUS")
-                    datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputImperviousTableName")
+                    datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputImperviousTableName".toString())
                     debug "Impervious layer created"
                 }
 
@@ -256,7 +256,7 @@ IProcess createGISLayers() {
                 debug "Create the urban areas layer"
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
                     outputUrbanAreasTableName = postfix("OSM_URBAN_AREAS")
-                    datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputUrbanAreasTableName")
+                    datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputUrbanAreasTableName".toString())
                     debug "Urban areas layer created"
                 }
 
@@ -268,7 +268,7 @@ IProcess createGISLayers() {
                 tags = parametersMap.get("tags")
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags)) {
                     outputCoastlineTableName = postfix("OSM_COASTLINE")
-                    datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputCoastlineTableName")
+                    datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputCoastlineTableName".toString())
                     debug "Coastline layer created"
                 }
 

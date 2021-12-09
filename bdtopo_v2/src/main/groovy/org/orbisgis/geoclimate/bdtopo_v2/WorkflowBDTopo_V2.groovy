@@ -818,7 +818,7 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
     def count = h2gis_datasource."$outputTableName".rowCount
     if (count > 0) {
         //Compute the envelope of the extracted area to extract the thematic tables
-        def geomToExtract = h2gis_datasource.firstRow("SELECT ST_EXPAND(ST_UNION(ST_ACCUM(the_geom)), ${distance}) AS THE_GEOM FROM $outputTableName").THE_GEOM
+        def geomToExtract = h2gis_datasource.firstRow("SELECT ST_EXPAND(ST_UNION(ST_ACCUM(the_geom)), ${distance}) AS THE_GEOM FROM $outputTableName".toString()).THE_GEOM
         def outputTableNameBatiInd = "BATI_INDIFFERENCIE"
         if(inputTableNames.bati_indifferencie){
             //Extract bati_indifferencie
