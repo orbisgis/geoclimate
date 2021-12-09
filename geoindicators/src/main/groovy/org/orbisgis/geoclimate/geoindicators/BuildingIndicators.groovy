@@ -78,7 +78,7 @@ IProcess sizeProperties() {
             }
             query += "$COLUMN_ID_BU FROM $inputBuildingTableName"
 
-            datasource query
+            datasource query.toString()
             [outputTableName: outputTableName]
         }
     }
@@ -179,12 +179,10 @@ IProcess neighborsProperties() {
                     SELECT  ${list.join(",")} ,  a.$ID_FIELD
                     FROM $inputBuildingTableName a 
                     LEFT JOIN $build_intersec b 
-                    ON a.$ID_FIELD = b.$ID_FIELD;"""
+                    ON a.$ID_FIELD = b.$ID_FIELD;
+                DROP TABLE IF EXISTS $build_intersec"""
 
-            // The temporary tables are deleted
-            query += "DROP TABLE IF EXISTS $build_intersec"
-
-            datasource query
+            datasource query.toString()
             [outputTableName: outputTableName]
         }
     }
@@ -267,7 +265,7 @@ IProcess formProperties() {
             }
             query += "$ID_FIELD FROM $inputBuildingTableName"
 
-            datasource query
+            datasource query.toString()
             [outputTableName: outputTableName]
         }
     }
@@ -323,7 +321,7 @@ IProcess minimumBuildingSpacing() {
                     WHERE st_expand(a.$GEOMETRIC_FIELD, $bufferDist) && b.$GEOMETRIC_FIELD 
                     AND a.$ID_FIELD <> b.$ID_FIELD 
                     GROUP BY b.$ID_FIELD;
-                 CREATE INDEX IF NOT EXISTS with_buff_id ON $build_min_distance USING BTREE($ID_FIELD); """
+                 CREATE INDEX IF NOT EXISTS with_buff_id ON $build_min_distance USING BTREE($ID_FIELD); """.toString()
 
             // The minimum distance is calculated (The minimum distance is set to the $inputE value for buildings
             // having no building neighbors in a envelope meters distance
@@ -334,9 +332,9 @@ IProcess minimumBuildingSpacing() {
                             THEN b.min_distance 
                             ELSE 100 END 
                     FROM $inputBuildingTableName a LEFT JOIN $build_min_distance b 
-                    ON a.$ID_FIELD = b.$ID_FIELD """
+                    ON a.$ID_FIELD = b.$ID_FIELD """.toString()
             // The temporary tables are deleted
-            datasource "DROP TABLE IF EXISTS $build_min_distance"
+            datasource "DROP TABLE IF EXISTS $build_min_distance".toString()
 
             [outputTableName: outputTableName]
         }
@@ -390,14 +388,14 @@ IProcess roadDistance() {
                 CREATE TABLE $build_buffer AS
                     SELECT $ID_FIELD_BU,  ST_BUFFER($GEOMETRIC_FIELD, $bufferDist) AS $GEOMETRIC_FIELD 
                     FROM $inputBuildingTableName;
-                CREATE INDEX IF NOT EXISTS buff_ids ON $build_buffer USING RTREE($GEOMETRIC_FIELD)"""
+                CREATE INDEX IF NOT EXISTS buff_ids ON $build_buffer USING RTREE($GEOMETRIC_FIELD)""".toString()
             // The road surfaces are created
             datasource """
                 DROP TABLE IF EXISTS $road_surf;
                 CREATE TABLE $road_surf AS 
                     SELECT ST_BUFFER($GEOMETRIC_FIELD, $ROAD_WIDTH::DOUBLE PRECISION/2,'endcap=flat') AS $GEOMETRIC_FIELD 
                     FROM $inputRoadTableName; 
-                CREATE INDEX IF NOT EXISTS buff_ids ON $road_surf USING RTREE($GEOMETRIC_FIELD)"""
+                CREATE INDEX IF NOT EXISTS buff_ids ON $road_surf USING RTREE($GEOMETRIC_FIELD)""".toString()
             // The roads located within the buffer are identified
             datasource """
                 DROP TABLE IF EXISTS $road_within_buffer; 
@@ -406,7 +404,7 @@ IProcess roadDistance() {
                     FROM $build_buffer a, $road_surf b 
                     WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD 
                     AND ST_INTERSECTS(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD); 
-                CREATE INDEX IF NOT EXISTS with_buff_id ON $road_within_buffer USING BTREE($ID_FIELD_BU); """
+                CREATE INDEX IF NOT EXISTS with_buff_id ON $road_within_buffer USING BTREE($ID_FIELD_BU); """.toString()
 
             // The minimum distance is calculated between each building and the surrounding roads (the minimum
             // distance is set to the bufferDist value for buildings having no road within a bufferDist meters
@@ -418,10 +416,10 @@ IProcess roadDistance() {
                     FROM $road_within_buffer b 
                     RIGHT JOIN $inputBuildingTableName a 
                     ON a.$ID_FIELD_BU = b.$ID_FIELD_BU 
-                    GROUP BY a.$ID_FIELD_BU)"""
+                    GROUP BY a.$ID_FIELD_BU)""".toString()
 
             // The temporary tables are deleted
-            datasource "DROP TABLE IF EXISTS $build_buffer, $road_within_buffer, $road_surf"
+            datasource "DROP TABLE IF EXISTS $build_buffer, $road_within_buffer, $road_surf".toString()
 
             [outputTableName: outputTableName]
         }
@@ -490,7 +488,7 @@ IProcess likelihoodLargeBuilding() {
                         AS $BASE_NAME 
                  FROM $inputBuildingTableName a 
                  LEFT JOIN $inputBuildingTableName b 
-                 ON a.$ID_FIELD_BU = b.$ID_FIELD_BU"""
+                 ON a.$ID_FIELD_BU = b.$ID_FIELD_BU""".toString()
 
             [outputTableName: outputTableName]
         }

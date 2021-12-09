@@ -41,7 +41,7 @@ class SpatialUnitsTests {
         h2GIS """
                 DROP TABLE IF EXISTS roads_tsu;
                 CREATE TABLE roads_tsu AS SELECT * FROM road_test WHERE id_road <5
-        """
+        """.toString()
         def tsu = Geoindicators.SpatialUnits.createTSU()
         assert tsu([
                 inputTableName  : "roads_tsu",
@@ -120,7 +120,7 @@ class SpatialUnitsTests {
         h2GIS """
                 DROP TABLE IF EXISTS build_tempo; 
                 CREATE TABLE build_tempo AS SELECT * FROM building_test WHERE id_build <27
-        """
+        """.toString()
         def blockP = Geoindicators.SpatialUnits.createBlocks()
         assert blockP([inputTableName: "build_tempo",distance:0.01,prefixName: "block", datasource: h2GIS])
         def outputTable = blockP.results.outputTableName

@@ -44,7 +44,7 @@ IProcess holeAreaDensity() {
                 FROM $blockTable
         """
 
-            datasource query
+            datasource query.toString()
             [outputTableName: outputTableName]
         }
     }
@@ -105,7 +105,7 @@ IProcess netCompactness() {
                 GROUP BY $ID_COLUMN_BL
         """
 
-            datasource query
+            datasource query.toString()
             [outputTableName: outputTableName]
         }
     }
@@ -169,7 +169,7 @@ IProcess closingness() {
                 WHERE a.$ID_COLUMN_BL = b.$ID_COLUMN_BL 
                 GROUP BY b.$ID_COLUMN_BL"""
 
-            datasource query
+            datasource query.toString()
             [outputTableName: outputTableName]
         }
     }

@@ -166,15 +166,15 @@ IProcess computeBuildingsIndicators() {
             }
 
             // Rename the last table to the right output table name
-            datasource.execute "DROP TABLE IF EXISTS $outputTableName;" +
-                    "ALTER TABLE ${buildingTableJoin.results.outputTableName} RENAME TO $outputTableName"
+            datasource.execute """DROP TABLE IF EXISTS $outputTableName;
+                    ALTER TABLE ${buildingTableJoin.results.outputTableName} RENAME TO $outputTableName""".toString()
 
             // Remove all intermediate tables (indicators alone in one table)
             // Recover all created tables in an array
             def finTabNames = finalTablesToJoin.keySet().toArray()
             // Remove the block table from the list of "tables to remove" (since it needs to be conserved)
             finTabNames = finTabNames - inputBuildingTableName
-            datasource.execute """DROP TABLE IF EXISTS ${finTabNames.join(",")}, $buildTableJoinNeighbors"""
+            datasource.execute """DROP TABLE IF EXISTS ${finTabNames.join(",")}, $buildTableJoinNeighbors""".toString()
 
             [outputTableName: outputTableName]
 
@@ -301,8 +301,8 @@ IProcess computeBlockIndicators() {
             }
 
             // Rename the last table to the right output table name
-            datasource.execute "DROP TABLE IF EXISTS $outputTableName;" +
-                    "ALTER TABLE ${blockTableJoin.results.outputTableName} RENAME TO $outputTableName"
+            datasource.execute """DROP TABLE IF EXISTS $outputTableName;
+                    ALTER TABLE ${blockTableJoin.results.outputTableName} RENAME TO $outputTableName""".toString()
 
             // Modify all indicators which do not have the expected name
             def listColumnNames = datasource.getTable(outputTableName).columns
@@ -315,7 +315,7 @@ IProcess computeBlockIndicators() {
                 }
             }
             if (query2ModifyNames != "") {
-                datasource.execute query2ModifyNames
+                datasource.execute query2ModifyNames.toString()
             }
 
             // Remove all intermediate tables (indicators alone in one table)
@@ -323,7 +323,7 @@ IProcess computeBlockIndicators() {
             def finTabNames = finalTablesToJoin.keySet().toArray()
             // Remove the block table from the list of "tables to remove" (since it needs to be conserved)
             finTabNames = finTabNames - inputBlockTableName
-            datasource.execute """DROP TABLE IF EXISTS ${finTabNames.join(",")}"""
+            datasource.execute """DROP TABLE IF EXISTS ${finTabNames.join(",")}""".toString()
 
             [outputTableName: outputTableName]
         }
@@ -531,7 +531,7 @@ IProcess computeRSUIndicators() {
                         queryUrbSurfFrac += "${indicatorList.join("+")} AS $urbIndicator, "
                     }
                     queryUrbSurfFrac += " FROM $surfaceFractions"
-                    datasource.execute queryUrbSurfFrac
+                    datasource.execute queryUrbSurfFrac.toString()
                     finalTablesToJoin.put(urbanTypoFractionIndic, columnIdRsu)
                 } else {
                     error """'urbanTypoSurfFraction' and 'surfSuperpositions' parameters given by the user are not consistent.
@@ -553,7 +553,7 @@ IProcess computeRSUIndicators() {
                         querylczSurfFrac += "${indicatorList.join("+")} AS $urbIndicator, "
                     }
                     querylczSurfFrac += " FROM $surfaceFractions"
-                    datasource.execute querylczSurfFrac
+                    datasource.execute querylczSurfFrac.toString()
                     finalTablesToJoin.put(lczFractionIndic, columnIdRsu)
                 } else {
                     error """'lczSurfFraction' and 'surfSuperpositions' parameters given by the user are not consistent.
@@ -720,7 +720,7 @@ IProcess computeRSUIndicators() {
                 datasource.execute """DROP TABLE IF EXISTS $preAspectRatioTable;
                                CREATE TABLE $preAspectRatioTable 
                                     AS SELECT $columnIdRsu, ${buildingFractions.join("+")} AS BUILDING_TOTAL_FRACTION 
-                                    FROM $surfaceFractions"""
+                                    FROM $surfaceFractions""".toString()
                 intermediateJoin.put(preAspectRatioTable, columnIdRsu)
             }
 
@@ -764,9 +764,9 @@ IProcess computeRSUIndicators() {
                         info "Cannot compute the SVF calculation. "
                         return
                     }
-                    datasource.execute "DROP TABLE IF EXISTS $SVF; CREATE TABLE SVF " +
-                            "AS SELECT 1-extended_free_facade_fraction AS GROUND_SKY_VIEW_FACTOR, $columnIdRsu " +
-                            "FROM ${computeExtFF.results.outputTableName}"
+                    datasource.execute """DROP TABLE IF EXISTS $SVF; CREATE TABLE SVF 
+                            AS SELECT 1-extended_free_facade_fraction AS GROUND_SKY_VIEW_FACTOR, $columnIdRsu 
+                            FROM ${computeExtFF.results.outputTableName}""".toString()
                 } else {
                     def computeSVF = Geoindicators.RsuIndicators.groundSkyViewFactor()
                     if (!computeSVF([rsuTable                : intermediateJoinTable,
@@ -833,7 +833,7 @@ IProcess computeRSUIndicators() {
 
             // Merge all in one table
             // To avoid duplicate the_geom in the join table, remove it from the intermediate table
-            datasource.execute("ALTER TABLE $intermediateJoinTable DROP COLUMN the_geom;")
+            datasource.execute("ALTER TABLE $intermediateJoinTable DROP COLUMN the_geom;".toString())
             def rsuTableJoin = Geoindicators.DataUtils.joinTables()
             if (!rsuTableJoin([inputTableNamesWithId: finalTablesToJoin,
                                outputTableName      : outputTableName,
@@ -854,7 +854,7 @@ IProcess computeRSUIndicators() {
                 }
             }
             if (query2ModifyNames != "") {
-                datasource.execute query2ModifyNames
+                datasource.execute query2ModifyNames.toString()
             }
 
             // Remove all intermediate tables (indicators alone in one table)
@@ -865,7 +865,7 @@ IProcess computeRSUIndicators() {
             interTabNames = interTabNames - rsuTable
             finTabNames = finTabNames - rsuTable
             datasource.execute """DROP TABLE IF EXISTS ${interTabNames.join(",")}, 
-                                                ${finTabNames.join(",")}, $SVF"""
+                                                ${finTabNames.join(",")}, $SVF""".toString()
 
             def tObis = System.currentTimeMillis() - to_start
 
@@ -1092,7 +1092,7 @@ IProcess computeAllGeoIndicators() {
                                                     FROM $buildingIndicatorsTableName a 
                                                         RIGHT JOIN $buildingEstimateTableName b 
                                                         ON a.id_build=b.id_build
-                                                    WHERE b.ESTIMATED = true AND a.ID_RSU IS NOT NULL;"""
+                                                    WHERE b.ESTIMATED = true AND a.ID_RSU IS NOT NULL;""".toString()
 
                 info "Collect building indicators to estimate the height"
 
@@ -1119,7 +1119,7 @@ IProcess computeAllGeoIndicators() {
                     datasource.execute """DROP TABLE IF EXISTS $buildingTableName;
                                        CREATE TABLE $buildingTableName 
                                             AS SELECT  THE_GEOM, ID_BUILD, ID_SOURCE, HEIGHT_WALL ,
-                                                HEIGHT_ROOF, NB_LEV, TYPE, MAIN_USE, ZINDEX, ID_BLOCK, ID_RSU from $buildingIndicatorsTableName"""
+                                                HEIGHT_ROOF, NB_LEV, TYPE, MAIN_USE, ZINDEX, ID_BLOCK, ID_RSU from $buildingIndicatorsTableName""".toString()
                 }
                 else{
                     info "Start estimating the building height"
@@ -1139,7 +1139,7 @@ IProcess computeAllGeoIndicators() {
                     info "Replace the input building table by the estimated height"
                     def buildEstimatedHeight = applyRF.results.outputTableName
 
-                    nbBuildingEstimated = datasource.firstRow("select count(*) as count from $buildEstimatedHeight").count
+                    nbBuildingEstimated = datasource.firstRow("select count(*) as count from $buildEstimatedHeight".toString()).count
 
                     datasource.getTable(buildEstimatedHeight).id_build.createIndex()
 
@@ -1152,7 +1152,7 @@ IProcess computeAllGeoIndicators() {
                                         CASE WHEN b.HEIGHT_ROOF IS NULL THEN a.HEIGHT_WALL ELSE 0 END AS HEIGHT_WALL ,
                                                 COALESCE(b.HEIGHT_ROOF, a.HEIGHT_ROOF) AS HEIGHT_ROOF,
                                                 CASE WHEN b.HEIGHT_ROOF IS NULL THEN a.NB_LEV ELSE 0 END AS NB_LEV, a.TYPE,a.MAIN_USE, a.ZINDEX, a.ID_BLOCK, a.ID_RSU from $buildingIndicatorsTableName
-                                        a LEFT JOIN $buildEstimatedHeight b on a.id_build=b.id_build"""
+                                        a LEFT JOIN $buildEstimatedHeight b on a.id_build=b.id_build""".toString()
 
                     //We must format only estimated buildings
                     //Apply format on the new abstract table
@@ -1183,19 +1183,19 @@ IProcess computeAllGeoIndicators() {
                     //Drop tables
                     datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators,
                                         $newEstimatedHeigthWithIndicators, $buildEstimatedHeight,
-                                        $gatheredScales"""
+                                        $gatheredScales""".toString()
                 }
 
                 //The spatial relation tables RSU and BLOCK  must be filtered to keep only necessary columns
                 def rsuRelationFiltered = prefix prefixName, "RSU_RELATION_"
                 datasource.execute """DROP TABLE IF EXISTS $rsuRelationFiltered;
             CREATE TABLE $rsuRelationFiltered AS SELECT ID_RSU, THE_GEOM FROM $relationRSU;
-            DROP TABLE $relationRSU;"""
+            DROP TABLE $relationRSU;""".toString()
 
                 def relationBlocksFiltered = prefix prefixName, "BLOCK_RELATION_"
                 datasource.execute """DROP TABLE IF EXISTS $relationBlocksFiltered;
             CREATE TABLE $relationBlocksFiltered AS SELECT ID_BLOCK,  THE_GEOM,ID_RSU FROM $relationBlocks;
-            DROP TABLE $relationBlocks;"""
+            DROP TABLE $relationBlocks;""".toString()
 
                 // Temporary (and output tables) are created
                 def lczIndicTable = postfix "LCZ_INDIC_TABLE"
@@ -1283,7 +1283,7 @@ IProcess computeAllGeoIndicators() {
                                 CREATE TABLE $lczIndicTable 
                                         AS SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, ${lczIndicNames.keySet().join(",")} 
                                         FROM ${computeRSUIndicators.results.outputTableName};
-                                $queryReplaceNames"""
+                                $queryReplaceNames""".toString()
 
                     datasource."$lczIndicTable".reload()
 
@@ -1300,7 +1300,7 @@ IProcess computeAllGeoIndicators() {
                         return
                     }
                     rsuLcz = classifyLCZ.results.outputTableName
-                    datasource.execute "DROP TABLE IF EXISTS $lczIndicTable"
+                    datasource.execute "DROP TABLE IF EXISTS $lczIndicTable".toString()
 
                 }
                 // If the UTRF indicators should be calculated, we only affect a URBAN typo class
@@ -1360,7 +1360,7 @@ IProcess computeAllGeoIndicators() {
                                                 $queryCaseWhenReplace AS I_TYPO
                                     FROM $buildingIndicators a LEFT JOIN $urbanTypoBuild b
                                     ON a.$COLUMN_ID_BUILD = b.$COLUMN_ID_BUILD
-                                    WHERE a.$COLUMN_ID_RSU IS NOT NULL"""
+                                    WHERE a.$COLUMN_ID_RSU IS NOT NULL""".toString()
 
                     // Create a distribution table (for each RSU, contains the % area OR floor area of each urban typo)
                     def queryCasewhen = [:]
@@ -1383,7 +1383,7 @@ IProcess computeAllGeoIndicators() {
                                                 ON a.$COLUMN_ID_BUILD = b.$COLUMN_ID_BUILD
                                                 WHERE b.$COLUMN_ID_RSU IS NOT NULL 
                                                 GROUP BY b.$COLUMN_ID_RSU
-                                                """
+                                                """.toString()
                         // Calculates the frequency by RSU
                         datasource."$distribNotPercent"."$COLUMN_ID_RSU".createIndex()
                         datasource."$rsuIndicators"."$COLUMN_ID_RSU".createIndex()
@@ -1392,7 +1392,7 @@ IProcess computeAllGeoIndicators() {
                                                 AS SELECT   a.$COLUMN_ID_RSU, a.the_geom,
                                                             ${querySum[0..-2]} 
                                                 FROM $rsuIndicators a LEFT JOIN $distribNotPercent b
-                                                ON a.$COLUMN_ID_RSU = b.$COLUMN_ID_RSU"""
+                                                ON a.$COLUMN_ID_RSU = b.$COLUMN_ID_RSU""".toString()
 
                         // Characterize the distribution to identify the most frequent type within a RSU
                         def computeDistribChar = Geoindicators.GenericIndicators.distributionCharacterization()
@@ -1421,32 +1421,32 @@ IProcess computeAllGeoIndicators() {
                                                     THEN        NULL
                                                     ELSE        LOWER(SUBSTRING(b.EXTREMUM_COL FROM 6)) END AS $nameColTypoMaj
                                         FROM    TEMPO_DISTRIB a LEFT JOIN $resultsDistrib b
-                                        ON a.$COLUMN_ID_RSU=b.$COLUMN_ID_RSU"""
+                                        ON a.$COLUMN_ID_RSU=b.$COLUMN_ID_RSU""".toString()
                     }
                     // Drop temporary tables
-                    datasource """DROP TABLE IF EXISTS $urbanTypoBuild, $gatheredScales, $distribNotPercent, TEMPO_DISTRIB"""
+                    datasource """DROP TABLE IF EXISTS $urbanTypoBuild, $gatheredScales, $distribNotPercent, TEMPO_DISTRIB""".toString()
                 } else {
                     urbanTypoArea = null
                     urbanTypoFloorArea = null
                     urbanTypoBuilding = null
                 }
 
-                datasource.execute "DROP TABLE IF EXISTS $rsuLczWithoutGeom;"
+                datasource.execute "DROP TABLE IF EXISTS $rsuLczWithoutGeom;".toString()
                 //Drop all cached tables
                 def cachedTableNames = getCachedTableNames()
                 if (cachedTableNames) {
-                    datasource.execute "DROP TABLE IF EXISTS ${cachedTableNames.join(",")}"
+                    datasource.execute "DROP TABLE IF EXISTS ${cachedTableNames.join(",")}".toString()
                 }
 
                 //Populate reporting
 
-                def nbBuilding = datasource.firstRow("select count(*) as count from ${computeBuildingsIndicators.getResults().outputTableName} WHERE ID_RSU IS NOT NULL").count
+                def nbBuilding = datasource.firstRow("select count(*) as count from ${computeBuildingsIndicators.getResults().outputTableName} WHERE ID_RSU IS NOT NULL".toString()).count
 
                 def nbBlock = 0
                 if (blockIndicators) {
-                    nbBlock = datasource.firstRow("select count(*) as count from ${blockIndicators}").count
+                    nbBlock = datasource.firstRow("select count(*) as count from ${blockIndicators}".toString()).count
                 }
-                def nbRSU = datasource.firstRow("select count(*) as count from ${computeRSUIndicators.getResults().outputTableName}").count
+                def nbRSU = datasource.firstRow("select count(*) as count from ${computeRSUIndicators.getResults().outputTableName}".toString()).count
 
                 //Update reporting to the zone table
                 datasource.execute"""update ${zoneTable} 
@@ -1641,7 +1641,7 @@ IProcess computeGeoclimateIndicators() {
                                 CREATE TABLE $lczIndicTable 
                                         AS SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, ${lczIndicNames.keySet().join(",")} 
                                         FROM ${rsuIndicators};
-                                $queryReplaceNames"""
+                                $queryReplaceNames""".toString()
 
                 datasource."$lczIndicTable".reload()
 
@@ -1658,7 +1658,7 @@ IProcess computeGeoclimateIndicators() {
                     return
                 }
                 rsuLcz = classifyLCZ.results.outputTableName
-                datasource.execute "DROP TABLE IF EXISTS $lczIndicTable"
+                datasource.execute "DROP TABLE IF EXISTS $lczIndicTable".toString()
 
             }
             // If the UTRF indicators should be calculated, we only affect a URBAN typo class
@@ -1718,7 +1718,7 @@ IProcess computeGeoclimateIndicators() {
                                                 $queryCaseWhenReplace AS I_TYPO
                                     FROM $buildingIndicators a LEFT JOIN $urbanTypoBuild b
                                     ON a.$COLUMN_ID_BUILD = b.$COLUMN_ID_BUILD
-                                    WHERE a.$COLUMN_ID_RSU IS NOT NULL"""
+                                    WHERE a.$COLUMN_ID_RSU IS NOT NULL""".toString()
 
                 // Create a distribution table (for each RSU, contains the % area OR floor area of each urban typo)
                 def queryCasewhen = [:]
@@ -1741,7 +1741,7 @@ IProcess computeGeoclimateIndicators() {
                                                 ON a.$COLUMN_ID_BUILD = b.$COLUMN_ID_BUILD
                                                 WHERE b.$COLUMN_ID_RSU IS NOT NULL 
                                                 GROUP BY b.$COLUMN_ID_RSU
-                                                """
+                                                """.toString()
                     // Calculates the frequency by RSU
                     datasource."$distribNotPercent"."$COLUMN_ID_RSU".createIndex()
                     datasource."$rsuIndicators"."$COLUMN_ID_RSU".createIndex()
@@ -1750,7 +1750,7 @@ IProcess computeGeoclimateIndicators() {
                                                 AS SELECT   a.$COLUMN_ID_RSU, a.the_geom,
                                                             ${querySum[0..-2]} 
                                                 FROM $rsuIndicators a LEFT JOIN $distribNotPercent b
-                                                ON a.$COLUMN_ID_RSU = b.$COLUMN_ID_RSU"""
+                                                ON a.$COLUMN_ID_RSU = b.$COLUMN_ID_RSU""".toString()
 
                     // Characterize the distribution to identify the most frequent type within a RSU
                     def computeDistribChar = Geoindicators.GenericIndicators.distributionCharacterization()
@@ -1779,7 +1779,7 @@ IProcess computeGeoclimateIndicators() {
                                                     THEN        NULL
                                                     ELSE        LOWER(SUBSTRING(b.EXTREMUM_COL FROM 6)) END AS $nameColTypoMaj
                                         FROM    TEMPO_DISTRIB a LEFT JOIN $resultsDistrib b
-                                        ON a.$COLUMN_ID_RSU=b.$COLUMN_ID_RSU"""
+                                        ON a.$COLUMN_ID_RSU=b.$COLUMN_ID_RSU""".toString()
                 }
 
                 // Drop temporary tables
@@ -1793,12 +1793,12 @@ IProcess computeGeoclimateIndicators() {
             datasource.execute "DROP TABLE IF EXISTS $rsuLczWithoutGeom;"
 
             //Populate reporting
-            def nbBuilding = datasource.firstRow("select count(*) as count from ${buildingIndicators} WHERE ID_RSU IS NOT NULL").count
+            def nbBuilding = datasource.firstRow("select count(*) as count from ${buildingIndicators} WHERE ID_RSU IS NOT NULL".toString()).count
             def nbBlock = 0
             if(blockIndicators){
-                nbBlock = datasource.firstRow("select count(*) as count from ${blockIndicators}").count
+                nbBlock = datasource.firstRow("select count(*) as count from ${blockIndicators}".toString()).count
             }
-            def nbRSU = datasource.firstRow("select count(*) as count from ${rsuIndicators}").count
+            def nbRSU = datasource.firstRow("select count(*) as count from ${rsuIndicators}".toString()).count
             //Alter the zone table to add statics
             datasource.execute"""ALTER TABLE ${zoneTable} ADD COLUMN (
                 NB_BUILDING INTEGER,
@@ -1807,7 +1807,7 @@ IProcess computeGeoclimateIndicators() {
                 NB_RSU INTEGER,
                 COMPUTATION_TIME INTEGER,
                 LAST_UPDATE VARCHAR
-                )"""
+                )""".toString()
             //Update reporting to the zone table
             datasource.execute"""update ${zoneTable} 
             set nb_estimated_building = 0, 
@@ -1815,7 +1815,7 @@ IProcess computeGeoclimateIndicators() {
             nb_block =  ${nbBlock},
             nb_rsu = ${nbRSU},
             computation_time = ${(System.currentTimeMillis()-start)/1000},
-            last_update = CAST(now() AS VARCHAR)"""
+            last_update = CAST(now() AS VARCHAR)""".toString()
 
             return [outputTableBuildingIndicators   : buildingIndicators,
                     outputTableBlockIndicators      : blockIndicators,
@@ -1878,7 +1878,7 @@ IProcess rasterizeIndicators() {
                 if(envelope.getSRID()==4326){
                     def reprojectedGrid =  postfix("grid")
                     datasource.execute """drop table if exists $reprojectedGrid; 
-                    create table $reprojectedGrid as  select st_transform(the_geom, $srid) as the_geom, id, id_col, id_row from $grid_table_name""";
+                    create table $reprojectedGrid as  select st_transform(the_geom, $srid) as the_geom, id, id_col, id_row from $grid_table_name""".toString()
                     grid_table_name = reprojectedGrid
                 }
                 def indicatorTablesToJoin = [:]
@@ -1918,7 +1918,7 @@ IProcess rasterizeIndicators() {
                                 ALTER TABLE $resultsDistrib RENAME COLUMN UNIQUENESS_VALUE TO LCZ_UNIQUENESS_VALUE;
                                 ALTER TABLE $resultsDistrib RENAME COLUMN EQUALITY_VALUE TO LCZ_EQUALITY_VALUE;
                                 ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_COL2 TO LCZ_SECONDARY;
-                                ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_VAL TO MIN_DISTANCE;"""
+                                ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_VAL TO MIN_DISTANCE;""".toString()
 
                             // Need to replace the string LCZ values by an integer
                             datasource."$resultsDistrib".lcz_primary.createIndex()
@@ -1943,7 +1943,7 @@ IProcess rasterizeIndicators() {
                                                     $casewhenQuery2 null$parenthesis AS LCZ_SECONDARY, 
                                                     MIN_DISTANCE, LCZ_UNIQUENESS_VALUE, LCZ_EQUALITY_VALUE 
                                         FROM $resultsDistrib;
-                                DROP TABLE IF EXISTS $resultsDistrib"""
+                                DROP TABLE IF EXISTS $resultsDistrib""".toString()
                             indicatorTablesToJoin.put(distribLczTableInt, grid_column_identifier)
                         }
 
