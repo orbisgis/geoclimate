@@ -1265,7 +1265,6 @@ def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource,def o
  */
 def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_datasource, def outputTableNames, def h2gis_tables, def id_zone,def inputSRID, def outputSRID, def reproject){
     Connection con = output_datasource.getConnection()
-    con.setAutoCommit(true);
     //Export building indicators
     indicatorTableBatchExportTable(output_datasource, outputTableNames.building_indicators,id_zone,h2gis_datasource, h2gis_tables.outputTableBuildingIndicators
             , "WHERE ID_RSU IS NOT NULL", inputSRID, outputSRID,reproject)
@@ -1349,9 +1348,6 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
                     output_datasource.getConnection(), output_table, 2, 1000);
         }
     }
-
-
-    con.setAutoCommit(false)
 }
 
 
@@ -1367,7 +1363,7 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
  * @param outputSRID srid code used to reproject the output table
  * @return
  */
-def abstractModelTableBatchExportTable(def output_datasource, def output_table, def id_zone, def h2gis_datasource, h2gis_table_to_save, def filter,def inputSRID,def outputSRID, def reproject){
+def abstractModelTableBatchExportTable(JdbcDataSource output_datasource, def output_table, def id_zone, def h2gis_datasource, h2gis_table_to_save, def filter,def inputSRID,def outputSRID, def reproject){
     if(output_table) {
         if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
             if (output_datasource.hasTable(output_table)) {

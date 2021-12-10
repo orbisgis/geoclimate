@@ -1448,13 +1448,14 @@ IProcess computeAllGeoIndicators() {
                 }
                 def nbRSU = datasource.firstRow("select count(*) as count from ${computeRSUIndicators.getResults().outputTableName}".toString()).count
 
+                def computation_time =(System.currentTimeMillis()-start)/1000;
                 //Update reporting to the zone table
                 datasource.execute"""update ${zoneTable} 
                 set nb_estimated_building = ${nbBuildingEstimated}, 
                 nb_building = ${nbBuilding}, 
                 nb_block =  ${nbBlock},
                 nb_rsu = ${nbRSU},
-                computation_time = ${(System.currentTimeMillis()-start)/1000},
+                computation_time = ${computation_time},
                 last_update = CAST(now() AS VARCHAR)""".toString()
 
                 //Clean the System properties that stores intermediate table names

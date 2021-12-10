@@ -97,7 +97,7 @@ IProcess prepareBDTopoData() {
               rail_bd_topo_type, rail_abstract_type, rail_bd_topo_crossing, rail_abstract_crossing,
               veget_bd_topo_type, veget_abstract_type ->
 
-            debug('Import the BD Topo data')
+            debug('Import the BDTopo data')
             def zone = postfix 'ZONE'
             def zoneBuffer = postfix 'ZONE_BUFFER_'
             def zoneExtended = postfix 'ZONE_EXTENDED_'
