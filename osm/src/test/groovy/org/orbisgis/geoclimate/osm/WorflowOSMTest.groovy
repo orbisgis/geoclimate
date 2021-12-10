@@ -662,7 +662,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "osm" : ["Vannes"]],
+                        "osm" : ["Lorient"]],
                 "output" :[
                         "folder" :"$directory"]
                 ,

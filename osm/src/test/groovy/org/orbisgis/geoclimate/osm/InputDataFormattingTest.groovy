@@ -88,11 +88,11 @@ class InputDataFormattingTest {
                 epsg               : epsg,
                 urbanAreasTableName: urbanAreas])
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated_type.shp", true)
-        def rows = h2GIS.rows("select type from ${format.results.outputTableName} where id_build=158 or id_build=982")
+        def rows = h2GIS.rows("select type from ${format.results.outputTableName} where id_build=158 or id_build=982".toString())
         assertEquals(2, rows.size())
         assertTrue(rows.type == ['residential', 'residential'])
 
-        rows = h2GIS.rows("select type from ${format.results.outputTableName} where id_build=881 or id_build=484 or id_build=610")
+        rows = h2GIS.rows("select type from ${format.results.outputTableName} where id_build=881 or id_build=484 or id_build=610".toString())
         assertEquals(3, rows.size())
         assertTrue(rows.type == ['light_industry', 'light_industry', 'light_industry'])
 
@@ -106,9 +106,9 @@ class InputDataFormattingTest {
                 jsonFilename  : null])
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_formated.shp", true)
         assertEquals 152, h2GIS.getTable(format.results.outputTableName).rowCount
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH is null").count == 0
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH<=0").count == 0
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where CROSSING IS NOT NULL").count == 7
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH is null".toString()).count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH<=0".toString()).count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where CROSSING IS NOT NULL".toString()).count == 7
 
         def formatedRoadTable = format.results.outputTableName
         //Rails
