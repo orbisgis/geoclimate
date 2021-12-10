@@ -1465,7 +1465,9 @@ def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource,def o
         if(!reproject){
             h2gis_datasource.save(outputTable, filePath, deleteOutputData)
         }else{
-            h2gis_datasource.getSpatialTable(outputTable).reproject(outputSRID).save(filePath,deleteOutputData)
+            if(h2gis_datasource.getTable(outputTable).getRowCount()>0){
+            h2gis_datasource.getSpatialTable(outputTable).reproject(outputSRID).save(filePath, deleteOutputData)
+            }
         }
         info "${outputTable} has been saved in ${filePath}."
     }
@@ -1567,7 +1569,7 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
             if (output_datasource.hasTable(output_table)) {
                 output_datasource.execute("DELETE FROM $output_table WHERE id_zone= $id_zone.toString()".toString());
                 //If the table exists we populate it with the last result
-                debug "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
+                info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
                 int BATCH_MAX_SIZE = 1000;
                 ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource)
                 if (inputRes) {

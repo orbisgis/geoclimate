@@ -354,7 +354,7 @@ def extractRelationsAsPolygons () {
             """
             }
 
-            datasource """
+            datasource.execute( """
                 DROP TABLE IF EXISTS $relationsPolygonsOuter;
                 CREATE TABLE $relationsPolygonsOuter AS 
                 SELECT ST_LINEMERGE(ST_ACCUM(the_geom)) as the_geom, id_relation 
@@ -371,7 +371,7 @@ def extractRelationsAsPolygons () {
                         FROM ${osmTablesPrefix}_way w, ${osmTablesPrefix}_way_member br $outer_condition) geom_table
                         WHERE st_numgeometries(the_geom)>=2) 
                 GROUP BY id_relation;
-        """.toString()
+        """.toString())
 
             debug "Build inner polygons"
             def relationsPolygonsInner = postfix "RELATIONS_POLYGONS_INNER"

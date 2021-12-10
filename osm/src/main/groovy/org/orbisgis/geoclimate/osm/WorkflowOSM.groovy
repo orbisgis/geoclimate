@@ -1367,7 +1367,7 @@ def abstractModelTableBatchExportTable(JdbcDataSource output_datasource, def out
     if(output_table) {
         if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
             if (output_datasource.hasTable(output_table)) {
-                output_datasource.execute("DELETE FROM $output_table WHERE id_zone=?", id_zone.toString());
+                output_datasource.execute("DELETE FROM $output_table WHERE id_zone= $id_zone.toString()".toString())
                 //If the table exists we populate it with the last result
                 info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
                 int BATCH_MAX_SIZE = 1000;
@@ -1546,7 +1546,6 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                         error("Cannot save the table $output_table.\n", e);
                         return false;
                     } finally {
-                        outputconnection.setAutoCommit(true);
                         info "The table $h2gis_table_to_save has been exported into the table $output_table"
                     }
                 }

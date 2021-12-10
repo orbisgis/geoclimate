@@ -658,11 +658,11 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "description" :"Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb" : [
                         "folder" : "${dirFile.absolutePath}",
-                        "name" : "geoclimate_test_integration;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE",
+                        "name" : "geoclimate_test_integration;AUTO_SERVER=TRUE;",
                         "delete" :false
                 ],
                 "input" : [
-                        "osm" : ["Lorient"]],
+                        "osm" : ["Rennes"]],
                 "output" :[
                         "folder" :"$directory"]
                 ,
