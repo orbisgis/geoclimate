@@ -62,13 +62,13 @@ class InputDataFormattingTest {
                 epsg          : epsg,
                 jsonFilename  : null])
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated.shp", true)
-        assertEquals 1040, h2GIS.getTable(format.results.outputTableName).rowCount
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count == 0
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count == 0
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL is null").count == 0
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL<0").count == 0
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF is null").count == 0
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0").count == 0
+        assertEquals 1038, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null".toString()).count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0".toString()).count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL is null".toString()).count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL<0".toString()).count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF is null".toString()).count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0".toString()).count == 0
 
         //Format urban areas
         format = OSM.InputDataFormatting.formatUrbanAreas()
@@ -88,11 +88,11 @@ class InputDataFormattingTest {
                 epsg               : epsg,
                 urbanAreasTableName: urbanAreas])
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated_type.shp", true)
-        def rows = h2GIS.rows("select type from ${format.results.outputTableName} where id_build=158 or id_build=982")
+        def rows = h2GIS.rows("select type from ${format.results.outputTableName} where id_build=158 or id_build=982".toString())
         assertEquals(2, rows.size())
         assertTrue(rows.type == ['residential', 'residential'])
 
-        rows = h2GIS.rows("select type from ${format.results.outputTableName} where id_build=881 or id_build=484 or id_build=610")
+        rows = h2GIS.rows("select type from ${format.results.outputTableName} where id_build=881 or id_build=484 or id_build=610".toString())
         assertEquals(3, rows.size())
         assertTrue(rows.type == ['light_industry', 'light_industry', 'light_industry'])
 
@@ -106,9 +106,9 @@ class InputDataFormattingTest {
                 jsonFilename  : null])
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_formated.shp", true)
         assertEquals 152, h2GIS.getTable(format.results.outputTableName).rowCount
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH is null").count == 0
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH<=0").count == 0
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where CROSSING IS NOT NULL").count == 7
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH is null".toString()).count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH<=0".toString()).count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where CROSSING IS NOT NULL".toString()).count == 7
 
         def formatedRoadTable = format.results.outputTableName
         //Rails
@@ -121,7 +121,7 @@ class InputDataFormattingTest {
 
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_rails_formated.shp", true)
         assertEquals 41, h2GIS.getTable(format.results.outputTableName).rowCount
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where CROSSING IS NOT NULL").count == 8
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where CROSSING IS NOT NULL".toString()).count == 8
 
 
         //Vegetation
@@ -134,9 +134,8 @@ class InputDataFormattingTest {
         ])
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_vegetation_formated.shp", true)
         assertEquals 140, h2GIS.getTable(format.results.outputTableName).rowCount
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where type is null").count == 0
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_CLASS is null").count == 0
-
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where type is null".toString()).count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_CLASS is null".toString()).count == 0
 
         //Hydrography
         format = OSM.InputDataFormatting.formatHydroLayer()
@@ -247,7 +246,7 @@ class InputDataFormattingTest {
 
         def zoneEnvelopeTableName = "zone_envelope_sea_land"
         h2GIS.execute("""drop table if exists $zoneEnvelopeTableName;
-         create table $zoneEnvelopeTableName as select st_transform(st_geomfromtext('$geom', ${geom.getSRID()}), $epsg) as the_geom""")
+         create table $zoneEnvelopeTableName as select st_transform(st_geomfromtext('$geom', ${geom.getSRID()}), $epsg) as the_geom""".toString())
 
         //Test coastline
         assertEquals(1, h2GIS.getTable(extractData.results.coastlineTableName).getRowCount())
@@ -321,16 +320,17 @@ class InputDataFormattingTest {
                 jsonFilename  : null,
                 estimateHeight: true])
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated.shp", true)
-        assertEquals 1040, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertEquals 1038, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertEquals 1038, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL is null").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL<0").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF is null").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0").count == 0
-        assertEquals 1040, h2GIS.getTable(format.results.outputEstimateTableName).rowCount
+        assertEquals 1038, h2GIS.getTable(format.results.outputEstimateTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputEstimateTableName} where ESTIMATED = false").count == 4
-        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} join ${format.results.outputEstimateTableName} using (id_build, id_source) where 1=1").count == 1040
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} join ${format.results.outputEstimateTableName} using (id_build, id_source) where 1=1").count == 1038
 
         //Buildings without estimation state
         format = OSM.InputDataFormatting.formatBuildingLayer()
@@ -339,8 +339,8 @@ class InputDataFormattingTest {
                 inputTableName: extractData.results.buildingTableName,
                 epsg          : epsg,
                 jsonFilename  : null])
-        assertEquals 1040, h2GIS.getTable(format.results.outputTableName).rowCount
-        assertEquals 1040, h2GIS.getTable(format.results.outputEstimateTableName).rowCount
+        assertEquals 1038, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertEquals 1038, h2GIS.getTable(format.results.outputEstimateTableName).rowCount
     }
 
 

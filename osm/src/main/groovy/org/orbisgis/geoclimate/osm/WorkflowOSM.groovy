@@ -445,11 +445,11 @@ IProcess osm_processing() {
                 outputFolder: "", ouputTableFiles: "", output_datasource: "", outputTableNames: "", outputSRID : Integer, downloadAllOSMData : true,
                 deleteOutputData:true, deleteOSMFile:false, logTableZones:String
         outputs outputMessage: String
-        run { h2gis_datasource, processing_parameters, id_zones, outputFolder, ouputTableFiles, output_datasource, outputTableNames,
+        run { H2GIS h2gis_datasource, processing_parameters, id_zones, outputFolder, ouputTableFiles, output_datasource, outputTableNames,
               outputSRID, downloadAllOSMData,deleteOutputData, deleteOSMFile,logTableZones ->
             //Create the table to log on the processed zone
              h2gis_datasource.execute """DROP TABLE IF EXISTS $logTableZones;
-            CREATE TABLE $logTableZones (the_geom GEOMETRY(GEOMETRY, 4326), request VARCHAR, info VARCHAR)"""
+            CREATE TABLE $logTableZones (the_geom GEOMETRY(GEOMETRY, 4326), request VARCHAR, info VARCHAR);""".toString()
             int nbAreas = id_zones.size();
             info "$nbAreas osm areas will be processed"
             id_zones.eachWithIndex { id_zone, index ->
@@ -644,7 +644,7 @@ IProcess osm_processing() {
 
                                     error "Cannot build the geoindicators for the zone $id_zone"
 
-                                    h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error computing geoindicators')"
+                                    h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error computing geoindicators')".toString()
 
                                     return
                                 }
@@ -677,7 +677,7 @@ IProcess osm_processing() {
                                         results.put("grid_indicators", rasterizedIndicators.results.outputTableName)
                                     }
                             }else{
-                                h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error computing the grid indicators')"
+                                h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error computing the grid indicators')".toString()
                             }
                             if (outputFolder  && ouputTableFiles) {
                                 saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject, deleteOutputData, outputGrid)
@@ -688,13 +688,13 @@ IProcess osm_processing() {
                             }
 
                         } else {
-                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error loading the OSM file')"
+                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error loading the OSM file')".toString()
                             error "Cannot load the OSM file ${extract.results.outputFilePath}"
                             return
                         }
                     } else {
                         //Log in table
-                        h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error to extract the data with OverPass')"
+                        h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error to extract the data with OverPass')".toString()
                         error "Cannot execute the overpass query $query"
                         return
                     }
@@ -703,13 +703,13 @@ IProcess osm_processing() {
                     if (id_zone in Collection) {
                         def geom = Utilities.geometryFromOverpass(id_zone)
                         if (!geom) {
-                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(null,'$id_zone', 'Error to extract the zone with Nominatim')"
+                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(null,'$id_zone', 'Error to extract the zone with Nominatim')".toString()
                         }
                         else{
-                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('$geom',4326) ,'$id_zone', 'Error to extract the zone with Nominatim')"
+                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('$geom',4326) ,'$id_zone', 'Error to extract the zone with Nominatim')".toString()
                         }
                     } else if (id_zone instanceof String) {
-                        h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(null,'$id_zone', 'Error to extract the zone with Nominatim')"
+                        h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(null,'$id_zone', 'Error to extract the zone with Nominatim')".toString()
                     }
                     error "Cannot calculate a bounding box to extract OSM data"
                     return
@@ -777,12 +777,12 @@ def extractOSMZone(def datasource, def zoneToExtract, def processing_parameters)
 
         datasource.execute """drop table if exists ${outputZoneTable}; 
         create table ${outputZoneTable} (the_geom GEOMETRY(${GEOMETRY_TYPE}, $epsg), ID_ZONE VARCHAR);
-        INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT('${geomUTM.toString()}', ${epsg}), '${zoneToExtract.toString()}');"""
+        INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT('${geomUTM.toString()}', ${epsg}), '${zoneToExtract.toString()}');""".toString()
 
         datasource.execute """drop table if exists ${outputZoneEnvelopeTable}; 
          create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
         INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${ST_Transform.ST_Transform(con, tmpGeomEnv, epsg).toString()}',${epsg}), '${zoneToExtract.toString()}');
-        """
+        """.toString()
 
         return [outputZoneTable: outputZoneTable,
                 outputZoneEnvelopeTable: outputZoneEnvelopeTable,
@@ -1161,7 +1161,7 @@ def saveTableToAsciiGrid(def outputTable , def subFolder,def filePrefix, def h2g
         if (!reproject) {
             env = h2gis_datasource.getSpatialTable(outputTable).getExtent().getEnvelopeInternal();
         } else {
-            def geom = h2gis_datasource.firstRow("SELECT st_transform(ST_EXTENT(the_geom), $outputSRID) as geom from $outputTable").geom
+            def geom = h2gis_datasource.firstRow("SELECT st_transform(ST_EXTENT(the_geom), $outputSRID) as geom from $outputTable".toString()).geom
             if (geom) {
                 env = geom.getEnvelopeInternal();
             }
@@ -1169,7 +1169,7 @@ def saveTableToAsciiGrid(def outputTable , def subFolder,def filePrefix, def h2g
         if (env) {
             def xmin = env.getMinX()
             def ymin = env.getMinY()
-            def nbColsRowS = h2gis_datasource.firstRow("select max(id_col) as cmax, max(id_row) as rmax from $outputTable")
+            def nbColsRowS = h2gis_datasource.firstRow("select max(id_col) as cmax, max(id_row) as rmax from $outputTable".toString())
             def nbcols = nbColsRowS.cmax
             def nbrows = nbColsRowS.rmax
 
@@ -1197,7 +1197,7 @@ def saveTableToAsciiGrid(def outputTable , def subFolder,def filePrefix, def h2g
                     stream << "ncols $nbcols\nnrows $nbrows\nxllcorner $xmin\nyllcorner $ymin\ncellsize $x_size\nnodata_value -9999\n"
                     def query = "select id_row, id_col, case when $it is not null then cast($it as decimal(18, 3)) else $it end as $it from $outputTable order by id_row desc, id_col"
                     def rowData = ""
-                    h2gis_datasource.eachRow(query) { row ->
+                    h2gis_datasource.eachRow(query.toString()) { row ->
                         rowData += row.getString(it) + " "
                         if (row.getInt("id_col") == nbcols) {
                             rowData += "\n"
@@ -1265,7 +1265,6 @@ def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource,def o
  */
 def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_datasource, def outputTableNames, def h2gis_tables, def id_zone,def inputSRID, def outputSRID, def reproject){
     Connection con = output_datasource.getConnection()
-    con.setAutoCommit(true);
     //Export building indicators
     indicatorTableBatchExportTable(output_datasource, outputTableNames.building_indicators,id_zone,h2gis_datasource, h2gis_tables.outputTableBuildingIndicators
             , "WHERE ID_RSU IS NOT NULL", inputSRID, outputSRID,reproject)
@@ -1341,17 +1340,14 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
     if(output_table) {
         if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
             if (output_datasource.hasTable(output_table)) {
-                output_datasource.execute("DELETE FROM $output_table WHERE id_zone=?", id_zone.toString());
+                output_datasource.execute("DELETE FROM $output_table WHERE id_zone= '$id_zone'".toString());
             }else{
-                output_datasource.execute """CREATE TABLE $output_table(ID_BUILD INTEGER, ID_SOURCE VARCHAR, ID_ZONE VARCHAR)"""
+                output_datasource.execute """CREATE TABLE $output_table(ID_BUILD INTEGER, ID_SOURCE VARCHAR, ID_ZONE VARCHAR)""".toString()
             }
             IOMethods.exportToDataBase(h2gis_datasource.getConnection(),"(SELECT ID_BUILD, ID_SOURCE, '$id_zone' as ID_ZONE from $h2gis_table_to_save where estimated=true)".toString(),
                     output_datasource.getConnection(), output_table, 2, 1000);
         }
     }
-
-
-    con.setAutoCommit(false)
 }
 
 
@@ -1367,11 +1363,11 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
  * @param outputSRID srid code used to reproject the output table
  * @return
  */
-def abstractModelTableBatchExportTable(def output_datasource, def output_table, def id_zone, def h2gis_datasource, h2gis_table_to_save, def filter,def inputSRID,def outputSRID, def reproject){
+def abstractModelTableBatchExportTable(JdbcDataSource output_datasource, def output_table, def id_zone, def h2gis_datasource, h2gis_table_to_save, def filter,def inputSRID,def outputSRID, def reproject){
     if(output_table) {
         if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
             if (output_datasource.hasTable(output_table)) {
-                output_datasource.execute("DELETE FROM $output_table WHERE id_zone=?", id_zone.toString());
+                output_datasource.execute("DELETE FROM $output_table WHERE id_zone= '$id_zone'".toString())
                 //If the table exists we populate it with the last result
                 info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
                 int BATCH_MAX_SIZE = 1000;
@@ -1396,7 +1392,7 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
                                     outputColumns.put(entry.key, dataType)
                                 }
                             }
-                            output_datasource.execute(alterTable)
+                            output_datasource.execute(alterTable.toString())
                         }
                         def finalOutputColumns = outputColumns.keySet();
 
@@ -1411,7 +1407,7 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
                         def ouputValues = finalOutputColumns.collectEntries { [it.toLowerCase(), null] }
                         ouputValues.put("id_zone", id_zone)
                         outputconnection.setAutoCommit(false);
-                        output_datasource.withBatch(BATCH_MAX_SIZE, insertTable) { ps ->
+                        output_datasource.withBatch(BATCH_MAX_SIZE, insertTable.toString()) { ps ->
                             inputRes.eachRow { row ->
                                 //Fill the value
                                 inputColumns.keySet().each { columnName ->
@@ -1445,11 +1441,11 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
                         //Because the select query reproject doesn't contain any geometry metadata
                         output_datasource.execute("""ALTER TABLE $output_table
                             ALTER COLUMN the_geom TYPE geometry(geometry, $outputSRID)
-                            USING ST_SetSRID(the_geom,$outputSRID);""");
+                            USING ST_SetSRID(the_geom,$outputSRID);""".toString());
                     }
                     if(tmpTable){
                     //Workarround to update the SRID on resulset
-                    output_datasource.execute"""ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);"""
+                    output_datasource.execute"""ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);""".toString()
                     }
                 } else {
                     if(!reproject){
@@ -1459,12 +1455,12 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
                         //Because the select query reproject doesn't contain any geometry metadata
                         output_datasource.execute("""ALTER TABLE $output_table
                             ALTER COLUMN the_geom TYPE geometry(geometry, $outputSRID)
-                            USING ST_SetSRID(the_geom,$outputSRID);""");
+                            USING ST_SetSRID(the_geom,$outputSRID);""".toString());
                     }
                 }
                 if(tmpTable) {
-                    output_datasource.execute("UPDATE $output_table SET id_zone= ?", id_zone);
-                    output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""")
+                    output_datasource.execute("UPDATE $output_table SET id_zone= '$id_zone'".toString());
+                    output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""".toString())
                     info "The table $h2gis_table_to_save has been exported into the table $output_table"
                 }else{
                     warn  "The table $h2gis_table_to_save hasn't been exported into the table $output_table"
@@ -1491,7 +1487,7 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
     if(h2gis_table_to_save) {
         if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
             if (output_datasource.hasTable(output_table)) {
-                output_datasource.execute("DELETE FROM $output_table WHERE id_zone=?", id_zone.toString());
+                output_datasource.execute("DELETE FROM $output_table WHERE id_zone='$id_zone'".toString())
                 //If the table exists we populate it with the last result
                 info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
                 int BATCH_MAX_SIZE = 1000;
@@ -1516,7 +1512,7 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                                     outputColumns.put(entry.key, dataType)
                                 }
                             }
-                            output_datasource.execute(alterTable)
+                            output_datasource.execute(alterTable.toString())
                         }
                         def finalOutputColumns = outputColumns.keySet();
 
@@ -1531,7 +1527,7 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                         def ouputValues = finalOutputColumns.collectEntries {[it.toLowerCase(), null]}
                         ouputValues.put("id_zone", id_zone)
                         outputconnection.setAutoCommit(false);
-                            output_datasource.withBatch(BATCH_MAX_SIZE, insertTable) { ps ->
+                            output_datasource.withBatch(BATCH_MAX_SIZE, insertTable.toString()) { ps ->
                                 inputRes.eachRow{ row ->
                                     //Fill the value
                                     inputColumns.keySet().each{columnName ->
@@ -1550,7 +1546,6 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                         error("Cannot save the table $output_table.\n", e);
                         return false;
                     } finally {
-                        outputconnection.setAutoCommit(true);
                         info "The table $h2gis_table_to_save has been exported into the table $output_table"
                     }
                 }
@@ -1562,14 +1557,14 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                             tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().save(output_datasource, output_table, true);
                             if(tmpTable) {
                                 //Workarround to update the SRID on resultset
-                                output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);"""
+                                output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);""".toString()
                             }
 
                         } else {
                             tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true);
                             if(tmpTable) {
                                 //Workarround to update the SRID on resultset
-                                output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $outputSRID) USING ST_SetSRID(the_geom,$outputSRID);"""
+                                output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $outputSRID) USING ST_SetSRID(the_geom,$outputSRID);""".toString()
                             }
                         }
 
@@ -1581,15 +1576,15 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                             //Because the select query reproject doesn't contain any geometry metadata
                             output_datasource.execute("""ALTER TABLE $output_table
                             ALTER COLUMN the_geom TYPE geometry(geometry, $outputSRID)
-                            USING ST_SetSRID(the_geom,$outputSRID);""")
+                            USING ST_SetSRID(the_geom,$outputSRID);""".toString())
                         }
                     }
                     if(tmpTable){
                     if(!output_datasource.getTable(output_table).hasColumn("id_zone")) {
-                        output_datasource.execute("ALTER TABLE $output_table ADD COLUMN id_zone VARCHAR");
+                        output_datasource.execute("ALTER TABLE $output_table ADD COLUMN id_zone VARCHAR".toString());
                     }
                     output_datasource.execute("UPDATE $output_table SET id_zone= ?", id_zone);
-                    output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""")
+                    output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""".toString())
                     info "The table $h2gis_table_to_save has been exported into the table $output_table"
                     }
                     else{

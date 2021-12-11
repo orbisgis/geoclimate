@@ -300,7 +300,7 @@ class TypologyClassificationTests {
                 CREATE TABLE $lczIndicTable AS 
                     SELECT id_rsu, the_geom, ${lczIndicNames.keySet().join(",")} FROM $indicatorsTable;
                 $queryReplaceNames
-        """
+        """.toString()
 
 
         // The classification algorithm is called

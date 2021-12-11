@@ -314,7 +314,7 @@ class TransformUtilsTest extends AbstractOSMTest {
             CREATE TABLE ${osmTablesPrefix}_way_member(id_relation varchar);
             CREATE TABLE ${osmTablesPrefix}_way_not_taken_into_account(id_way varchar);
             CREATE TABLE ${osmTablesPrefix}_relation_not_taken_into_account(id_relation varchar);
-        """
+        """.toString()
 
         TransformUtils.buildIndexes(h2gis, osmTablesPrefix)
 
@@ -442,43 +442,43 @@ class TransformUtilsTest extends AbstractOSMTest {
     }
 
     private static loadDataForNodeExtraction(def ds, def prefix){
-        ds.execute "CREATE TABLE ${prefix}_node (id_node int, the_geom geometry)"
-        ds.execute "INSERT INTO ${prefix}_node VALUES (1, 'POINT(0 0)')"
-        ds.execute "INSERT INTO ${prefix}_node VALUES (2, 'POINT(1 1)')"
-        ds.execute "INSERT INTO ${prefix}_node VALUES (3, 'POINT(2 2)')"
-        ds.execute "INSERT INTO ${prefix}_node VALUES (4, 'POINT(56.23 78.23)')"
-        ds.execute "INSERT INTO ${prefix}_node VALUES (5, 'POINT(-5.3 -45.23)')"
-        ds.execute "INSERT INTO ${prefix}_node VALUES (6, 'POINT(-5.3 -45.23)')"
-        ds.execute "INSERT INTO ${prefix}_node VALUES (7, 'POINT(-5.3 -45.23)')"
-        ds.execute "INSERT INTO ${prefix}_node VALUES (8, 'POINT(-5.3 -45.23)')"
-        ds.execute "INSERT INTO ${prefix}_node VALUES (9, 'POINT(-5.3 -45.23)')"
-        ds.execute "INSERT INTO ${prefix}_node VALUES (10, 'POINT(-5.3 -45.23)')"
-        ds.execute "INSERT INTO ${prefix}_node VALUES (11, 'POINT(-5.3 -45.23)')"
-        ds.execute "INSERT INTO ${prefix}_node VALUES (12, 'POINT(-5.3 -45.23)')"
-        ds.execute "INSERT INTO ${prefix}_node VALUES (13, 'POINT(-5.3 -45.23)')"
-        ds.execute "INSERT INTO ${prefix}_node VALUES (14, 'POINT(-5.3 -45.23)')"
-        ds.execute "INSERT INTO ${prefix}_node VALUES (15, 'POINT(-5.3 -45.23)')"
+        ds.execute """CREATE TABLE ${prefix}_node (id_node int, the_geom geometry);
+        INSERT INTO ${prefix}_node VALUES (1, 'POINT(0 0)'),
+         (2, 'POINT(1 1)'),
+         (3, 'POINT(2 2)'),
+         (4, 'POINT(56.23 78.23)'),
+         (5, 'POINT(-5.3 -45.23)'),
+         (6, 'POINT(-5.3 -45.23)'),
+         (7, 'POINT(-5.3 -45.23)'),
+         (8, 'POINT(-5.3 -45.23)'),
+         (9, 'POINT(-5.3 -45.23)'),
+         (10, 'POINT(-5.3 -45.23)'),
+         (11, 'POINT(-5.3 -45.23)'),
+         (12, 'POINT(-5.3 -45.23)'),
+         (13, 'POINT(-5.3 -45.23)'),
+         (14, 'POINT(-5.3 -45.23)'),
+         (15, 'POINT(-5.3 -45.23)');
 
-        ds.execute "CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar)"
-        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (1, 'building', 'house')"
-        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (1, 'house', 'true')"
-        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (1, 'material', 'concrete')"
-        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (2, 'water', 'pound')"
-        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (3, 'material', 'concrete')"
-        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (4, 'build', 'house')"
-        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (5, 'material', 'brick')"
-        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (6, 'material', null)"
-        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (7, null, 'value1')"
-        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (8, 'key', null)"
-        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (8, 'key1', null)"
-        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (9, 'key2', null)"
-        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (10, 'values', 'value1')"
-        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (11, 'key3', null)"
-        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (12, 'key3', 'val1')"
-        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (13, 'road', 'service')"
-        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (14, 'key4', 'service')"
-        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (15, 'road', 'service')"
-        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (16, 'material', 'concrete')"
+        CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar);
+        INSERT INTO ${prefix}_node_tag VALUES (1, 'building', 'house'),
+        (1, 'house', 'true'),
+        (1, 'material', 'concrete'),
+        (2, 'water', 'pound'),
+        (3, 'material', 'concrete'),
+        (4, 'build', 'house'),
+        (5, 'material', 'brick'),
+        (6, 'material', null),
+        (7, null, 'value1'),
+        (8, 'key', null),
+        (8, 'key1', null),
+        (9, 'key2', null),
+        (10, 'values', 'value1'),
+        (11, 'key3', null),
+        (12, 'key3', 'val1'),
+        (13, 'road', 'service'),
+        (14, 'key4', 'service'),
+        (15, 'road', 'service'),
+        (16, 'material', 'concrete');""".toString()
     }
 
     /**
@@ -1012,8 +1012,8 @@ class TransformUtilsTest extends AbstractOSMTest {
         }
 
         //Test no way tags
-        ds.execute "DROP TABLE ${prefix}_way_tag"
-        ds.execute "CREATE TABLE ${prefix}_way_tag (id_way int, tag_key varchar, tag_value varchar)"
+        ds.execute """DROP TABLE ${prefix}_way_tag;
+        CREATE TABLE ${prefix}_way_tag (id_way int, tag_key varchar, tag_value varchar);""".toString()
         result = TransformUtils.toPolygonOrLine(polygonType, ds, prefix, epsgCode, tags, columnsToKeep)
         assertNotNull result
         assertTrue result.containsKey("outputTableName")
@@ -1048,13 +1048,13 @@ class TransformUtilsTest extends AbstractOSMTest {
         }
 
         //Test no relation tags
-        ds.execute "DROP TABLE ${prefix}_way_tag"
-        ds.execute "CREATE TABLE ${prefix}_way_tag (id_way int, tag_key varchar, tag_value varchar)"
-        ds.execute "INSERT INTO ${prefix}_way_tag VALUES(1, 'building', 'house')"
-        ds.execute "INSERT INTO ${prefix}_way_tag VALUES(1, 'material', 'concrete')"
-        ds.execute "INSERT INTO ${prefix}_way_tag VALUES(1, 'water', 'lake')"
-        ds.execute "DROP TABLE ${prefix}_relation_tag"
-        ds.execute "CREATE TABLE ${prefix}_relation_tag (id_relation int, tag_key varchar, tag_value varchar)"
+        ds.execute """DROP TABLE ${prefix}_way_tag;
+        CREATE TABLE ${prefix}_way_tag (id_way int, tag_key varchar, tag_value varchar);
+        INSERT INTO ${prefix}_way_tag VALUES(1, 'building', 'house'),
+        (1, 'material', 'concrete'),(1, 'water', 'lake');
+        DROP TABLE ${prefix}_relation_tag;
+        CREATE TABLE ${prefix}_relation_tag (id_relation int, tag_key varchar, tag_value varchar)""".toString()
+
         result = TransformUtils.toPolygonOrLine(polygonType, ds, prefix, epsgCode, tags, columnsToKeep)
         assertNotNull result
         assertTrue result.containsKey("outputTableName")
@@ -1089,10 +1089,10 @@ class TransformUtilsTest extends AbstractOSMTest {
         }
 
         //Test no tags
-        ds.execute "DROP TABLE ${prefix}_way_tag"
-        ds.execute "CREATE TABLE ${prefix}_way_tag (id_way int, tag_key varchar, tag_value varchar)"
-        ds.execute "DROP TABLE ${prefix}_relation_tag"
-        ds.execute "CREATE TABLE ${prefix}_relation_tag (id_relation int, tag_key varchar, tag_value varchar)"
+        ds.execute """DROP TABLE ${prefix}_way_tag;
+        CREATE TABLE ${prefix}_way_tag (id_way int, tag_key varchar, tag_value varchar);
+        DROP TABLE ${prefix}_relation_tag;
+        CREATE TABLE ${prefix}_relation_tag (id_relation int, tag_key varchar, tag_value varchar);""".toString()
 
         result = TransformUtils.toPolygonOrLine(polygonType, ds, prefix, epsgCode, tags, columnsToKeep)
         assertNotNull result

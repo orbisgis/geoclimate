@@ -460,7 +460,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                            "rsu_lcz":"rsu_lcz",
                            "zones":"zones", "grid_indicators":"grid_indicators" ]
         //Drop all output tables if exist
-        postGIS.execute("DROP TABLE IF EXISTS ${outputTables.values().join(",")};");
+        postGIS.execute("DROP TABLE IF EXISTS ${outputTables.values().join(",")};".toString());
         String directory ="./target/bdtopo_workflow_postgis_bbox"
         File dirFile = new File(directory)
         dirFile.delete()

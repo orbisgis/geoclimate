@@ -30,7 +30,7 @@ class DataUtilsTests {
                 INSERT INTO tablec VALUES(1,'Vannes');
                 CREATE TABLE tablegeom (idb integer, the_geom geometry);
                 INSERT INTO tablegeom values(1,'POINT(10 10)'::GEOMETRY);
-        """
+        """.toString()
     }
 
     @Test

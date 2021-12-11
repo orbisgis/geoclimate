@@ -588,6 +588,11 @@
                 "! no"
             ]
         },
+        "building:public": {
+            "building": [
+                "public"
+            ]
+        },
         "building": {
             "building": [
                 "yes"

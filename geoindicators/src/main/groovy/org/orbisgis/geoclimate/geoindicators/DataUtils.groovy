@@ -68,9 +68,9 @@ IProcess joinTables() {
 
             def columnsAsString = columns.join(",")
 
-            datasource "DROP TABLE IF EXISTS $outputTableName"
-            datasource indexes
-            datasource "CREATE TABLE $outputTableName AS SELECT $columnsAsString $leftQuery"
+            datasource "DROP TABLE IF EXISTS $outputTableName".toString()
+            datasource indexes.toString()
+            datasource "CREATE TABLE $outputTableName AS SELECT $columnsAsString $leftQuery".toString()
 
             [outputTableName: outputTableName]
         }

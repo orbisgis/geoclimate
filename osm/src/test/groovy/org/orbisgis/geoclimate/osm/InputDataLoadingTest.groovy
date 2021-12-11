@@ -68,7 +68,7 @@ class InputDataLoadingTest {
     //This test is used for debug purpose
     @Test
     @Disabled
-    void createGISLayersTestIntegration() {
+    void createGISLayersFromFileTestIntegration() {
         IProcess process = OSM.InputDataLoading.createGISLayers()
         def osmfile = "/tmp/map.osm"
         process.execute([

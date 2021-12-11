@@ -103,14 +103,14 @@ def fromArea() {
             datasource """
                 CREATE TABLE $outputZoneTable (the_geom GEOMETRY(POLYGON, $epsg));
                 INSERT INTO $outputZoneTable VALUES (ST_GEOMFROMTEXT('${geom}', $epsg));
-        """
+        """.toString()
 
             def geometryFactory = new GeometryFactory()
             def geomEnv = geometryFactory.toGeometry(env)
 
-            datasource.execute "CREATE TABLE $outputZoneEnvelopeTable (the_geom GEOMETRY(POLYGON, $epsg));" +
-                    "INSERT INTO $outputZoneEnvelopeTable VALUES " +
-                    "(ST_GEOMFROMTEXT('$geomEnv',$epsg));"
+            datasource.execute """CREATE TABLE $outputZoneEnvelopeTable (the_geom GEOMETRY(POLYGON, $epsg));
+                    INSERT INTO $outputZoneEnvelopeTable VALUES 
+                    (ST_GEOMFROMTEXT('$geomEnv',$epsg));""".toString()
 
             def query = Utilities.buildOSMQuery(geomEnv, [], NODE, WAY, RELATION)
             def extract = extract()

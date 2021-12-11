@@ -39,6 +39,7 @@ package org.orbisgis.geoclimate.osmtools
 import org.junit.jupiter.api.*
 import org.locationtech.jts.geom.*
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.orbisgis.geoclimate.osmtools.utils.OSMElement
@@ -139,8 +140,8 @@ class TransformTest extends AbstractOSMTest {
 
         //Test no points
         toPoints = OSMTools.Transform.toPoints()
-        ds.execute "DROP TABLE ${prefix}_node_tag"
-        ds.execute "CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar)"
+        ds.execute """DROP TABLE ${prefix}_node_tag;
+        CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar);""".toString()
         assertFalse toPoints(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
         assertTrue toPoints.results.isEmpty()
     }
@@ -216,10 +217,10 @@ class TransformTest extends AbstractOSMTest {
 
         //Test no lines
         toLines = OSMTools.Transform.toLines()
-        ds.execute "DROP TABLE ${prefix}_way_tag"
-        ds.execute "CREATE TABLE ${prefix}_way_tag (id_way int, tag_key varchar, tag_value varchar)"
-        ds.execute "DROP TABLE ${prefix}_relation_tag"
-        ds.execute "CREATE TABLE ${prefix}_relation_tag (id_relation int, tag_key varchar, tag_value varchar)"
+        ds.execute """DROP TABLE ${prefix}_way_tag;
+        CREATE TABLE ${prefix}_way_tag (id_way int, tag_key varchar, tag_value varchar);
+        DROP TABLE ${prefix}_relation_tag;
+        CREATE TABLE ${prefix}_relation_tag (id_relation int, tag_key varchar, tag_value varchar);""".toString()
         assertTrue toLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
         assertTrue ds.getTable(toLines.results.outputTableName).isEmpty()
     }
@@ -295,10 +296,10 @@ class TransformTest extends AbstractOSMTest {
 
         //Test no polygons
         toPolygons = OSMTools.Transform.toPolygons()
-        ds.execute "DROP TABLE ${prefix}_relation"
-        ds.execute "CREATE TABLE ${prefix}_relation(id_relation int)"
-        ds.execute "DROP TABLE ${prefix}_way"
-        ds.execute "CREATE TABLE ${prefix}_way(id_way int)"
+        ds.execute """DROP TABLE ${prefix}_relation;
+        CREATE TABLE ${prefix}_relation(id_relation int);
+        DROP TABLE ${prefix}_way;
+        CREATE TABLE ${prefix}_way(id_way int);""".toString()
         assertTrue toPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
         assertTrue ds.getTable(toPolygons.results.outputTableName).isEmpty()
     }
@@ -368,8 +369,8 @@ class TransformTest extends AbstractOSMTest {
 
         //Test no tags
         extractWaysAsPolygons = OSMTools.Transform.extractWaysAsPolygons()
-        ds.execute "DROP TABLE ${prefix}_node_tag"
-        ds.execute "CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar)"
+        ds.execute """DROP TABLE ${prefix}_node_tag;
+        CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar);""".toString()
         assertTrue extractWaysAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[], columnsToKeep:[])
         table = ds.getTable(extractWaysAsPolygons.results.outputTableName)
         assertEquals 1, table.rowCount
@@ -455,8 +456,8 @@ class TransformTest extends AbstractOSMTest {
 
         //Test no tags
         extractRelationsAsPolygons = OSMTools.Transform.extractRelationsAsPolygons()
-        ds.execute "DROP TABLE ${prefix}_node_tag"
-        ds.execute "CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar)"
+        ds.execute """DROP TABLE ${prefix}_node_tag;
+        CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar);""".toString()
         assertTrue extractRelationsAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[], columnsToKeep:[])
         table = ds.getTable(extractRelationsAsPolygons.results.outputTableName)
         assertEquals 1, table.rowCount
@@ -548,8 +549,8 @@ class TransformTest extends AbstractOSMTest {
 
         //Test no tags
         extractWaysAsLines = OSMTools.Transform.extractWaysAsLines()
-        ds.execute "DROP TABLE ${prefix}_node_tag"
-        ds.execute "CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar)"
+        ds.execute """DROP TABLE ${prefix}_node_tag;
+        CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar);""".toString()
         assertTrue extractWaysAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[], columnsToKeep:[])
         table = ds.getTable(extractWaysAsLines.results.outputTableName)
         assertEquals 1, table.rowCount
@@ -631,8 +632,8 @@ class TransformTest extends AbstractOSMTest {
 
         //Test no tags
         extractRelationsAsLines = OSMTools.Transform.extractRelationsAsLines()
-        ds.execute "DROP TABLE ${prefix}_node_tag"
-        ds.execute "CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar)"
+        ds.execute """DROP TABLE ${prefix}_node_tag;
+        CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar);""".toString()
         assertTrue extractRelationsAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[], columnsToKeep:[])
         table = ds.getTable(extractRelationsAsLines.results.outputTableName)
         assertEquals 1, table.rowCount
@@ -679,29 +680,135 @@ class TransformTest extends AbstractOSMTest {
     }
 
 
+    @Test
+    void buildGISLayersTest () {
+        def h2GIS = H2GIS.open('./target/osmtools_read_file;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE')
+        IProcess loader = OSMTools.Loader.load()
+        def prefix = "OSM_REDON"
+        assertTrue loader.execute(datasource : h2GIS, osmTablesPrefix : prefix,
+                osmFilePath : new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath())
+        //Create building layer
+        def tags = ["building"]
+        IProcess transform = OSMTools.Transform.toPolygons()
+        transform.execute(datasource: h2GIS, osmTablesPrefix: prefix, tags: tags)
+        def outputTableName = transform.results.outputTableName
+        assertEquals 6, h2GIS.firstRow("select count(*) as count from ${outputTableName} where ST_NumInteriorRings(the_geom)  > 0").count as int
+        assertEquals 1032, h2GIS.firstRow("select count(*) as count from ${outputTableName} where ST_NumInteriorRings(the_geom)  = 0").count as int
+
+        //Create landuse layer
+        tags = ["landuse":["farmland", "forest", "grass", "meadow", "orchard", "vineyard", "village_green", "allotments"],]
+        transform.execute(datasource: h2GIS, osmTablesPrefix: prefix, tags: tags)
+        outputTableName = transform.results.outputTableName
+        assertEquals 131, h2GIS.firstRow("select count(*) as count from ${outputTableName}").count as int
+        assertEquals 123, h2GIS.firstRow("select count(*) as count from ${outputTableName} where landuse='grass'").count as int
+
+    }
+
+
+
     /**
      * It uses for test purpose
      */
     @Disabled
     @Test
-    void dev() {
-        H2GIS h2GIS = RANDOM_DS()
+    void testIntegrationForAPlaceName() {
+        H2GIS h2GIS = H2GIS.open("/tmp/geoclimate;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE")
+
+        def  keysValues = ["building", "railway", "amenity",
+                           "leisure", "highway", "natural",
+                           "landuse", "landcover",
+                           "vegetation","waterway"]
+
         Geometry geom = Utilities.getAreaFromPlace("Redon");
-        def query = Utilities.buildOSMQuery(geom.getEnvelopeInternal(), [], OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+
+        def query =  "[maxsize:1073741824]"+ Utilities.buildOSMQueryWithAllData(geom.getEnvelopeInternal(), keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+
+
         def extract = OSMTools.Loader.extract()
         if (!query.isEmpty()) {
             if (extract.execute(overpassQuery: query)) {
                 def prefix = "OSM_FILE_${OSMTools.Utilities.uuid()}"
                 def load = OSMTools.Loader.load()
                 if (load(datasource: h2GIS, osmTablesPrefix: prefix, osmFilePath:extract.results.outputFilePath)) {
-                    def tags = ['building']
-                    def transform = OSMTools.Transform.toPolygons()
+                    def transform
+                    //Extract water
+                    def tags = ["natural":["water","waterway","bay", "strait"],
+                    "water":[],
+                    "waterway":[],
+                    "landuse":["basin", " salt_pond"]]
+                    def columns = ["natural", "layer"]
+                    transform = OSMTools.Transform.toPolygons()
+                    transform.execute(datasource: h2GIS, osmTablesPrefix: prefix, tags: tags, columnsToKeep:columns)
+                    assertNotNull(transform.results.outputTableName)
+                    h2GIS.getTable(transform.results.outputTableName).save("/tmp/water.shp", true)
+
+                    //Extract buildings
+                    tags = ["building"]
+                    transform = OSMTools.Transform.toPolygons()
                     transform.execute(datasource: h2GIS, osmTablesPrefix: prefix, tags: tags)
                     assertNotNull(transform.results.outputTableName)
-                    h2GIS.getTable(transform.results.outputTableName).save("/tmp/${transform.results.outputTableName}.shp")
+                    h2GIS.getTable(transform.results.outputTableName).save("/tmp/building.shp", true)
+
+                    //Extract impervious areas
+                    tags = ["highway": [
+                            "residential",
+                            "pedestrian"
+                    ],
+                    "amenity": [
+                            "parking",
+                            "bicycle_parking",
+                            "car_sharing",
+                            "parking_place"
+                    ],
+                    "leisure": ["pitch"],
+                    "railway": ["platform"],
+                    "landuse": ["railway","construction"]]
+                    columns = [
+                            "highway",
+                            "surface",
+                            "amenity",
+                            "area",
+                            "leisure",
+                            "parking",
+                            "landuse"
+                    ]
+                    transform = OSMTools.Transform.toPolygons()
+                    transform.execute(datasource: h2GIS, osmTablesPrefix: prefix, tags: tags, columnsToKeep: columns)
+                    assertNotNull(transform.results.outputTableName)
+                    h2GIS.getTable(transform.results.outputTableName).save("/tmp/impervious.shp", true)
+
                 }
             }
         }
     }
 
+    /**
+     * It uses for test purpose
+     */
+    @Disabled
+    @Test
+    void testIntegrationForOSMFile() {
+        H2GIS h2GIS = H2GIS.open("/tmp/geoclimate;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE")
+                def prefix = "OSM_FILE_${OSMTools.Utilities.uuid()}"
+                def load = OSMTools.Loader.load()
+                if (load(datasource: h2GIS, osmTablesPrefix: prefix, osmFilePath:"/tmp/map.osm")) {
+                    //Extract building
+                    /*def tags = ["natural":["water","waterway","bay", "strait"],
+                                "water":[],
+                                "waterway":[],
+                                "landuse":["basin", " salt_pond"]]
+                    def columns = ["natural", "layer"]
+                    def transform = OSMTools.Transform.toPolygons()
+                    transform.execute(datasource: h2GIS, osmTablesPrefix: prefix, tags: tags, columnsToKeep:columns)
+                    assertNotNull(transform.results.outputTableName)
+                    h2GIS.getTable(transform.results.outputTableName).save("/tmp/water.shp", true)*/
+
+                    //Extract buildings
+                    def tags = ["building"]
+                    def transform = OSMTools.Transform.toPolygons()
+                    transform.execute(datasource: h2GIS, osmTablesPrefix: prefix, tags: tags)
+                    assertNotNull(transform.results.outputTableName)
+                    h2GIS.getTable(transform.results.outputTableName).save("/tmp/building.shp", true)
+                }
+    }
 }

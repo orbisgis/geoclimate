@@ -97,7 +97,7 @@ IProcess prepareBDTopoData() {
               rail_bd_topo_type, rail_abstract_type, rail_bd_topo_crossing, rail_abstract_crossing,
               veget_bd_topo_type, veget_abstract_type ->
 
-            debug('Import the BD Topo data')
+            debug('Import the BDTopo data')
             def zone = postfix 'ZONE'
             def zoneBuffer = postfix 'ZONE_BUFFER_'
             def zoneExtended = postfix 'ZONE_EXTENDED_'
@@ -171,56 +171,56 @@ IProcess prepareBDTopoData() {
             // If the following tables does not exists, we create corresponding empty tables
             if ( !tablesExist.contains(tableBuildIndifName)) {
                 tableBuildIndifName ="BATI_INDIFFERENCIE"
-                datasource.execute("DROP TABLE IF EXISTS $tableBuildIndifName; CREATE TABLE $tableBuildIndifName (THE_GEOM geometry(polygon, $srid), ID varchar, HAUTEUR integer);")
+                datasource.execute("DROP TABLE IF EXISTS $tableBuildIndifName; CREATE TABLE $tableBuildIndifName (THE_GEOM geometry(polygon, $srid), ID varchar, HAUTEUR integer);".toString())
             }
             if (!tablesExist.contains(tableBuildIndusName)) {
                 tableBuildIndusName="BATI_INDUSTRIEL"
-                datasource.execute("DROP TABLE IF EXISTS $tableBuildIndusName; CREATE TABLE $tableBuildIndusName (THE_GEOM geometry(polygon, $srid), ID varchar, HAUTEUR integer, NATURE varchar);")
+                datasource.execute("DROP TABLE IF EXISTS $tableBuildIndusName; CREATE TABLE $tableBuildIndusName (THE_GEOM geometry(polygon, $srid), ID varchar, HAUTEUR integer, NATURE varchar);".toString())
             }
             if (!tablesExist.contains(tableBuildRemarqName)) {
                 tableBuildRemarqName="BATI_REMARQUABLE"
-                datasource.execute("DROP TABLE IF EXISTS $tableBuildRemarqName;  CREATE TABLE $tableBuildRemarqName (THE_GEOM geometry(polygon, $srid), ID varchar, HAUTEUR integer, NATURE varchar);")
+                datasource.execute("DROP TABLE IF EXISTS $tableBuildRemarqName;  CREATE TABLE $tableBuildRemarqName (THE_GEOM geometry(polygon, $srid), ID varchar, HAUTEUR integer, NATURE varchar);".toString())
             }
             if (!tablesExist.contains(tableRoadName)) {
                 tableRoadName ="ROUTE"
-                datasource.execute("DROP TABLE IF EXISTS $tableRoadName;  CREATE TABLE $tableRoadName (THE_GEOM geometry(linestring, $srid), ID varchar, LARGEUR DOUBLE PRECISION, NATURE varchar, POS_SOL integer, FRANCHISST varchar, SENS varchar);")
+                datasource.execute("DROP TABLE IF EXISTS $tableRoadName;  CREATE TABLE $tableRoadName (THE_GEOM geometry(linestring, $srid), ID varchar, LARGEUR DOUBLE PRECISION, NATURE varchar, POS_SOL integer, FRANCHISST varchar, SENS varchar);".toString())
             }
             if (!tablesExist.contains(tableRailName)) {
                 tableRailName = "TRONCON_VOIE_FERREE"
-                datasource.execute("DROP TABLE IF EXISTS $tableRailName;  CREATE TABLE $tableRailName (THE_GEOM geometry(linestring, $srid), ID varchar, NATURE varchar, POS_SOL integer, FRANCHISST varchar);")
+                datasource.execute("DROP TABLE IF EXISTS $tableRailName;  CREATE TABLE $tableRailName (THE_GEOM geometry(linestring, $srid), ID varchar, NATURE varchar, POS_SOL integer, FRANCHISST varchar);".toString())
             }
             if (!tablesExist.contains(tableHydroName)) {
                 tableHydroName ="SURFACE_EAU"
-                datasource.execute("DROP TABLE IF EXISTS $tableHydroName;  CREATE TABLE $tableHydroName (THE_GEOM geometry(polygon, $srid), ID varchar);")
+                datasource.execute("DROP TABLE IF EXISTS $tableHydroName;  CREATE TABLE $tableHydroName (THE_GEOM geometry(polygon, $srid), ID varchar);".toString())
             }
             if (!tablesExist.contains(tableVegetName)) {
                 tableVegetName ="ZONE_VEGETATION"
-                datasource.execute("DROP TABLE IF EXISTS $tableVegetName; CREATE TABLE $tableVegetName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);")
+                datasource.execute("DROP TABLE IF EXISTS $tableVegetName; CREATE TABLE $tableVegetName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);".toString())
             }
             if (!tablesExist.contains(tableImperviousSportName)) {
                 tableImperviousSportName = "TERRAIN_SPORT"
-                datasource.execute("DROP TABLE IF EXISTS $tableImperviousSportName; CREATE TABLE $tableImperviousSportName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);")
+                datasource.execute("DROP TABLE IF EXISTS $tableImperviousSportName; CREATE TABLE $tableImperviousSportName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);".toString())
             }
             if (!tablesExist.contains(tableImperviousBuildSurfName)) {
                 tableImperviousBuildSurfName ="CONSTRUCTION_SURFACIQUE"
-                datasource.execute("DROP TABLE IF EXISTS $tableImperviousBuildSurfName; CREATE TABLE $tableImperviousBuildSurfName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);")
+                datasource.execute("DROP TABLE IF EXISTS $tableImperviousBuildSurfName; CREATE TABLE $tableImperviousBuildSurfName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);".toString())
             }
             if (!tablesExist.contains(tableImperviousRoadSurfName)) {
                 tableImperviousRoadSurfName = "SURFACE_ROUTE"
-                datasource.execute("DROP TABLE IF EXISTS $tableImperviousRoadSurfName; CREATE TABLE $tableImperviousRoadSurfName (THE_GEOM geometry(polygon, $srid), ID varchar);")
+                datasource.execute("DROP TABLE IF EXISTS $tableImperviousRoadSurfName; CREATE TABLE $tableImperviousRoadSurfName (THE_GEOM geometry(polygon, $srid), ID varchar);".toString())
             }
             if (!tablesExist.contains(tableImperviousActivSurfName)) {
                 tableImperviousActivSurfName = "SURFACE_ACTIVITE"
-                datasource.execute("DROP TABLE IF EXISTS $tableImperviousActivSurfName; CREATE TABLE $tableImperviousActivSurfName (THE_GEOM geometry(polygon, $srid), ID varchar, CATEGORIE varchar);")
+                datasource.execute("DROP TABLE IF EXISTS $tableImperviousActivSurfName; CREATE TABLE $tableImperviousActivSurfName (THE_GEOM geometry(polygon, $srid), ID varchar, CATEGORIE varchar);".toString())
             }
             if (!tablesExist.contains(tablePiste_AerodromeName)) {
                 tablePiste_AerodromeName= "PISTE_AERODROME"
-                datasource.execute("DROP TABLE IF EXISTS $tablePiste_AerodromeName; CREATE TABLE $tablePiste_AerodromeName (THE_GEOM geometry(polygon, $srid), ID varchar,  NATURE varchar);")
+                datasource.execute("DROP TABLE IF EXISTS $tablePiste_AerodromeName; CREATE TABLE $tablePiste_AerodromeName (THE_GEOM geometry(polygon, $srid), ID varchar,  NATURE varchar);".toString())
             }
 
             if (!tablesExist.contains(tableReservoirName)) {
                 tableReservoirName= "RESERVOIR"
-                datasource.execute("DROP TABLE IF EXISTS $tableReservoirName; CREATE TABLE $tableReservoirName (THE_GEOM geometry(polygon, $srid), ID varchar,  NATURE varchar, HAUTEUR integer);")
+                datasource.execute("DROP TABLE IF EXISTS $tableReservoirName; CREATE TABLE $tableReservoirName (THE_GEOM geometry(polygon, $srid), ID varchar,  NATURE varchar, HAUTEUR integer);".toString())
             }
 
             // -------------------------------------------------------------------------------

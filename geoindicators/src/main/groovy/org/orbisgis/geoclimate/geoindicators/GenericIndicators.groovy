@@ -104,7 +104,7 @@ IProcess unweightedOperationFromLowerScale() {
             query += "b.$inputIdUp FROM $inputLowerScaleTableName a RIGHT JOIN $inputUpperScaleTableName b " +
                     "ON a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp"
 
-            datasource query
+            datasource query.toString()
 
             [outputTableName: outputTableName]
         }
@@ -171,7 +171,7 @@ IProcess weightedAggregatedStatistics() {
             weightedMeanQuery += nameAndType[0..-2] + ") AS (SELECT b.$inputIdUp, ${weightedMean[0..-2]}" +
                     " FROM $inputLowerScaleTableName a RIGHT JOIN $inputUpperScaleTableName b " +
                     "ON a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp)"
-            datasource weightedMeanQuery
+            datasource weightedMeanQuery.toString()
 
             // The weighted std is calculated if needed and only the needed fields are returned
             def weightedStdQuery = "CREATE INDEX IF NOT EXISTS id_lcorr ON $weighted_mean USING BTREE($inputIdUp); " +
@@ -192,10 +192,10 @@ IProcess weightedAggregatedStatistics() {
             weightedStdQuery = weightedStdQuery[0..-2] + " FROM $inputLowerScaleTableName a RIGHT JOIN $weighted_mean b " +
                     "ON a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp"
 
-            datasource weightedStdQuery
+            datasource weightedStdQuery.toString()
 
             // The temporary tables are deleted
-            datasource "DROP TABLE IF EXISTS $weighted_mean"
+            datasource "DROP TABLE IF EXISTS $weighted_mean".toString()
 
             [outputTableName: outputTableName]
         }
@@ -247,7 +247,7 @@ IProcess geometryProperties() {
             }
             query += "${inputFields.join(",")} from $inputTableName"
 
-            datasource query
+            datasource query.toString()
 
             [outputTableName: outputTableName]
         }
@@ -316,28 +316,28 @@ IProcess buildingDirectionDistribution() {
                 def build_dir_dist = postfix "build_dir_dist"
 
                 // The minimum diameter of the minimum rectangle is created for each building
-                datasource "DROP TABLE IF EXISTS $build_min_rec; CREATE TABLE $build_min_rec AS " +
-                        "SELECT $ID_FIELD_BU, $inputIdUp, ST_MINIMUMDIAMETER(ST_MINIMUMRECTANGLE($GEOMETRIC_FIELD)) " +
-                        "AS the_geom FROM $buildingTableName"
+                datasource """DROP TABLE IF EXISTS $build_min_rec; CREATE TABLE $build_min_rec AS 
+                        SELECT $ID_FIELD_BU, $inputIdUp, ST_MINIMUMDIAMETER(ST_MINIMUMRECTANGLE($GEOMETRIC_FIELD)) 
+                        AS the_geom FROM $buildingTableName;""".toString()
 
                 datasource."$buildingTableName".id_build.createIndex()
 
                 // The length and direction of the smallest and the longest sides of the Minimum rectangle are calculated
-                datasource "CREATE INDEX IF NOT EXISTS id_bua ON $build_min_rec USING BTREE($ID_FIELD_BU);" +
-                        "DROP TABLE IF EXISTS $build_dir360; CREATE TABLE $build_dir360 AS " +
-                        "SELECT a.$inputIdUp, ST_LENGTH(a.the_geom) AS LEN_L, " +
-                        "ST_AREA(b.the_geom)/ST_LENGTH(a.the_geom) AS LEN_H, " +
-                        "ROUND(DEGREES(ST_AZIMUTH(ST_STARTPOINT(a.the_geom), ST_ENDPOINT(a.the_geom)))) AS ANG_L, " +
-                        "ROUND(DEGREES(ST_AZIMUTH(ST_STARTPOINT(ST_ROTATE(a.the_geom, pi()/2)), " +
-                        "ST_ENDPOINT(ST_ROTATE(a.the_geom, pi()/2))))) AS ANG_H FROM $build_min_rec a  " +
-                        "LEFT JOIN $buildingTableName b ON a.$ID_FIELD_BU=b.$ID_FIELD_BU"
+                datasource """CREATE INDEX IF NOT EXISTS id_bua ON $build_min_rec USING BTREE($ID_FIELD_BU);
+                        DROP TABLE IF EXISTS $build_dir360; CREATE TABLE $build_dir360 AS 
+                        SELECT a.$inputIdUp, ST_LENGTH(a.the_geom) AS LEN_L, 
+                        ST_AREA(b.the_geom)/ST_LENGTH(a.the_geom) AS LEN_H, 
+                        ROUND(DEGREES(ST_AZIMUTH(ST_STARTPOINT(a.the_geom), ST_ENDPOINT(a.the_geom)))) AS ANG_L, 
+                        ROUND(DEGREES(ST_AZIMUTH(ST_STARTPOINT(ST_ROTATE(a.the_geom, pi()/2)), 
+                        ST_ENDPOINT(ST_ROTATE(a.the_geom, pi()/2))))) AS ANG_H FROM $build_min_rec a  
+                        LEFT JOIN $buildingTableName b ON a.$ID_FIELD_BU=b.$ID_FIELD_BU""".toString()
 
                 // The angles are transformed in the [0, 180]° interval
-                datasource "DROP TABLE IF EXISTS $build_dir180; CREATE TABLE $build_dir180 AS " +
-                        "SELECT $inputIdUp, LEN_L, LEN_H, CASEWHEN(ANG_L>=180, ANG_L-180, ANG_L) AS ANG_L, " +
-                        "CASEWHEN(ANG_H>180, ANG_H-180, ANG_H) AS ANG_H FROM $build_dir360"
+                datasource """DROP TABLE IF EXISTS $build_dir180; CREATE TABLE $build_dir180 AS 
+                        SELECT $inputIdUp, LEN_L, LEN_H, CASEWHEN(ANG_L>=180, ANG_L-180, ANG_L) AS ANG_L, 
+                        CASEWHEN(ANG_H>180, ANG_H-180, ANG_H) AS ANG_H FROM $build_dir360""".toString()
 
-                datasource "CREATE INDEX ON $build_dir180 ($inputIdUp)"
+                datasource "CREATE INDEX ON $build_dir180 ($inputIdUp)".toString()
 
                 // The query aiming to create the building direction distribution is created
                 def sqlQueryDist = "DROP TABLE IF EXISTS $build_dir_dist; CREATE TABLE $build_dir_dist AS SELECT "
@@ -349,7 +349,7 @@ IProcess buildingDirectionDistribution() {
                 sqlQueryDist += "$inputIdUp FROM $build_dir180 GROUP BY $inputIdUp;"
 
                 // The query is executed
-                datasource sqlQueryDist
+                datasource sqlQueryDist.toString()
 
                 // The main building direction and indicators characterizing the distribution are calculated
                 def computeDistribChar = distributionCharacterization()
@@ -367,7 +367,7 @@ IProcess buildingDirectionDistribution() {
                                     ALTER TABLE $resultsDistrib RENAME TO $outputTableName;
                                     ALTER TABLE $outputTableName RENAME COLUMN EXTREMUM_COL TO $BASENAME;
                                     ALTER TABLE $outputTableName RENAME COLUMN UNIQUENESS_VALUE TO $UNIQUENESS;
-                                    ALTER TABLE $outputTableName RENAME COLUMN EQUALITY_VALUE TO $INEQUALITY;"""
+                                    ALTER TABLE $outputTableName RENAME COLUMN EQUALITY_VALUE TO $INEQUALITY;""".toString()
 
                 /*
             if (distribIndicator.contains("uniqueness")){
@@ -405,8 +405,8 @@ IProcess buildingDirectionDistribution() {
             }
             */
                 // The temporary tables are deleted
-                datasource "DROP TABLE IF EXISTS $build_min_rec, $build_dir360, $build_dir180, " +
-                        "$build_dir_dist;"
+                datasource """DROP TABLE IF EXISTS $build_min_rec, $build_dir360, $build_dir180, 
+                        $build_dir_dist;""".toString()
 
                 [outputTableName: outputTableName]
             }
@@ -500,7 +500,7 @@ IProcess distributionCharacterization() {
                                 CREATE TABLE $distribTableNameNoNull 
                                     AS SELECT ${allColumns.join(",")} 
                                     FROM $distribTableName 
-                                    WHERE ${distribColumns.join(" IS NOT NULL AND ")} IS NOT NULL"""
+                                    WHERE ${distribColumns.join(" IS NOT NULL AND ")} IS NOT NULL""".toString()
 
                 if (distribIndicator.contains("equality") && !distribIndicator.contains("uniqueness")) {
                     def queryCreateTable = """CREATE TABLE $outputTableMissingSomeObjects($inputId integer, 
@@ -514,7 +514,7 @@ IProcess distributionCharacterization() {
                     if(keepColVal){
                         queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_VAL DOUBLE PRECISION)"
                     }
-                    datasource queryCreateTable
+                    datasource queryCreateTable.toString()
                     // Will insert values by batch of 1000 in the table
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow("SELECT * FROM $distribTableNameNoNull".toString()) { row ->
@@ -535,7 +535,7 @@ IProcess distributionCharacterization() {
                             if(keepColVal){
                                 queryInsert = "${queryInsert[0..-2]}, ${sortedMap.values()[idxExtrem]})"
                             }
-                            stmt.addBatch queryInsert
+                            stmt.addBatch queryInsert.toString()
                         }
                     }
                     queryCoalesce += """    COALESCE(a.$EQUALITY, -1) AS $EQUALITY,
@@ -554,7 +554,7 @@ IProcess distributionCharacterization() {
                         queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_VAL DOUBLE PRECISION)"
                     }
 
-                    datasource queryCreateTable
+                    datasource queryCreateTable.toString()
                     // Will insert values by batch of 1000 in the table
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow("SELECT * FROM $distribTableNameNoNull".toString()) { row ->
@@ -575,7 +575,7 @@ IProcess distributionCharacterization() {
                             if(keepColVal){
                                 queryInsert = "${queryInsert[0..-2]}, ${sortedMap.values()[idxExtrem]})"
                             }
-                            stmt.addBatch queryInsert
+                            stmt.addBatch queryInsert.toString()
                         }
                     }
                     queryCoalesce += """    COALESCE(a.$UNIQUENESS, -1) AS $UNIQUENESS,
@@ -594,7 +594,7 @@ IProcess distributionCharacterization() {
                         queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_VAL DOUBLE PRECISION)"
                     }
 
-                    datasource queryCreateTable
+                    datasource queryCreateTable.toString()
 
                     // Will insert values by batch of 1000 in the table
                     datasource.withBatch(1000) { stmt ->
@@ -614,7 +614,7 @@ IProcess distributionCharacterization() {
                             if(keepColVal){
                                 queryInsert = "${queryInsert[0..-2]}, ${sortedMap.values()[idxExtrem]})"
                             }
-                            stmt.addBatch queryInsert
+                            stmt.addBatch queryInsert.toString()
                         }
                     }
                     queryCoalesce += """    COALESCE(a.$EQUALITY, -1) AS $EQUALITY,
@@ -637,9 +637,9 @@ IProcess distributionCharacterization() {
                                                     b.$inputId 
                                         FROM $outputTableMissingSomeObjects a RIGHT JOIN $initialTable b
                                         ON a.$inputId = b.$inputId;
-                                        """
+                                        """.toString()
 
-                datasource.execute """DROP TABLE IF EXISTS $outputTableMissingSomeObjects, $distribTableNameNoNull"""
+                datasource.execute """DROP TABLE IF EXISTS $outputTableMissingSomeObjects, $distribTableNameNoNull""".toString()
 
                 [outputTableName: outputTableName]
             } else {
@@ -751,7 +751,7 @@ IProcess typeProportion() {
                                     CREATE TABLE $caseWhenTab 
                                             AS SELECT $idField,
                                                         ${queryCaseWh[0..-2]} 
-                                            FROM $inputTableName"""
+                                            FROM $inputTableName""".toString()
 
                 datasource."$caseWhenTab"."$idField".createIndex()
 
@@ -759,7 +759,7 @@ IProcess typeProportion() {
                 datasource.execute """DROP TABLE IF EXISTS $outputTableWithNull;
                                     CREATE TABLE $outputTableWithNull 
                                             AS SELECT $idField, ${queryCalc[0..-2]}
-                                            FROM $caseWhenTab GROUP BY $idField"""
+                                            FROM $caseWhenTab GROUP BY $idField""".toString()
 
                 // Set 0 as default value (for example if we characterize the building type in a RSU having no building...)
                 def allFinalCol = datasource."$outputTableWithNull".getColumns()
@@ -776,9 +776,9 @@ IProcess typeProportion() {
                                                     b.$idField 
                                         FROM $outputTableWithNull a RIGHT JOIN $inputUpperTableName b
                                         ON a.$idField = b.$idField;
-                                        """
+                                        """.toString()
 
-                datasource.execute """DROP TABLE IF EXISTS $outputTableWithNull, $caseWhenTab"""
+                datasource.execute """DROP TABLE IF EXISTS $outputTableWithNull, $caseWhenTab""".toString()
 
                 [outputTableName: outputTableName]
             }
@@ -934,7 +934,7 @@ IProcess gatherScales() {
                                 CREATE TABLE $finalScaleTableName 
                                     AS SELECT ${listRsuRename.join(', ')}, ${listBuildRename.join(', ')} 
                                     FROM $rsuTable a LEFT JOIN $buildingTable b
-                                    ON a.id_rsu = b.id_rsu;"""
+                                    ON a.id_rsu = b.id_rsu;""".toString()
 
                     // To avoid crashes of the join due to column duplicate, need to prefix some names
                     def blockCol2Rename = datasource.getTable(blockTable).getColumns()
@@ -963,14 +963,15 @@ IProcess gatherScales() {
                                 AS SELECT ${listBuildRsuRename.join(', ')}, b.*
                                 FROM $buildIndicRsuScale a RIGHT JOIN $finalScaleTableName b
                                 ON a.$idbuildForMerge = b.$idbuildForMerge 
-                                $queryRemoveNull;"""
+                                $queryRemoveNull;""".toString()
+
                 datasource.getTable(blockIndicFinalScale)."$idBlockForMerge".createIndex()
                 datasource.getTable(scale1ScaleFin)."$idBlockForMerge".createIndex()
                 datasource.execute """ DROP TABLE IF EXISTS $outputTableName;
                             CREATE TABLE $outputTableName 
                                 AS SELECT a.*, ${listblockFinalRename.join(', ')}
                                 FROM $scale1ScaleFin a LEFT JOIN $blockIndicFinalScale b
-                                ON a.$idBlockForMerge = b.$idBlockForMerge;"""
+                                ON a.$idBlockForMerge = b.$idBlockForMerge;""".toString()
 
                 [outputTableName: outputTableName]
             } else {
@@ -1032,9 +1033,9 @@ IProcess upperScaleAreaStatistics() {
                               WHERE a.$lowerGeometryColumn && b.$upperGeometryColumn AND 
                               ST_INTERSECTS(st_force2d(a.$lowerGeometryColumn), st_force2d(b.$upperGeometryColumn));
                               """
-            datasource.execute(spatialJoin)
-            datasource "CREATE INDEX ON $spatialJoinTable ($lowerColumnName)"
-            datasource "CREATE INDEX ON $spatialJoinTable ($upperColumnId)"
+            datasource.execute(spatialJoin.toString())
+            datasource """CREATE INDEX ON $spatialJoinTable ($lowerColumnName);
+            CREATE INDEX ON $spatialJoinTable ($upperColumnId)""".toString()
 
 
             // Creation of a list which contains all indicators of distinct values
@@ -1042,7 +1043,7 @@ IProcess upperScaleAreaStatistics() {
                              SELECT DISTINCT $lowerColumnName 
                              AS val FROM $spatialJoinTable
                              """
-            def listValues = datasource.rows(qIndicator)
+            def listValues = datasource.rows(qIndicator.toString())
 
             def isString = datasource.getTable(spatialJoinTable).getColumnType(lowerColumnName)=="VARCHAR"
 
@@ -1091,9 +1092,9 @@ IProcess upperScaleAreaStatistics() {
                      GROUP BY $upperColumnId, $lowerColumnName)
                      GROUP BY $upperColumnId;
                      """
-            datasource.execute(query)
+            datasource.execute(query.toString())
             //Build indexes
-            datasource "CREATE INDEX ON $pivotTable ($upperColumnId)"
+            datasource "CREATE INDEX ON $pivotTable ($upperColumnId)".toString()
 
             // Creation of a table which is built from
             // the union of the upperTable and pivot tables based on the same cell 'id'
@@ -1118,9 +1119,9 @@ IProcess upperScaleAreaStatistics() {
                      LEFT JOIN $pivotTable a
                      ON (a.$upperColumnId = b.$upperColumnId);
                      """
-            datasource.execute(qjoin)
+            datasource.execute(qjoin.toString())
             // Drop intermediate tables created during process
-            datasource.execute("DROP TABLE IF EXISTS $spatialJoinTable, $pivotTable;")
+            datasource.execute("DROP TABLE IF EXISTS $spatialJoinTable, $pivotTable;".toString())
             debug "The zonal area table have been created"
             [outputTableName: outputTableName]
         }

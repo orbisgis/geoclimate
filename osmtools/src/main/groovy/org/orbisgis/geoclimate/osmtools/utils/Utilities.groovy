@@ -37,7 +37,6 @@
 package org.orbisgis.geoclimate.osmtools.utils
 
 import groovy.json.JsonSlurper
-import groovy.transform.Field
 import org.cts.util.UTMUtils
 import org.locationtech.jts.geom.*
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
@@ -561,9 +560,9 @@ class Utilities {
             error "The data source should not be null"
             return false
         }
-        datasource.execute("DROP TABLE IF EXISTS ${prefix}_NODE, ${prefix}_NODE_MEMBER, ${prefix}_NODE_TAG," +
-                "${prefix}_RELATION,${prefix}_RELATION_MEMBER,${prefix}_RELATION_TAG, ${prefix}_WAY," +
-                "${prefix}_WAY_MEMBER,${prefix}_WAY_NODE,${prefix}_WAY_TAG")
+        datasource.execute("""DROP TABLE IF EXISTS ${prefix}_NODE, ${prefix}_NODE_MEMBER, ${prefix}_NODE_TAG,
+                ${prefix}_RELATION,${prefix}_RELATION_MEMBER,${prefix}_RELATION_TAG, ${prefix}_WAY,
+                ${prefix}_WAY_MEMBER,${prefix}_WAY_NODE,${prefix}_WAY_TAG""".toString())
         return true
     }
 

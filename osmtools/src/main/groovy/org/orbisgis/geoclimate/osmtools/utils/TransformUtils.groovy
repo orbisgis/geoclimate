@@ -203,13 +203,13 @@ class TransformUtils {
                                 SELECT $rightSelect
                                 FROM $outputRelation;
                             DROP TABLE IF EXISTS $outputWay, $outputRelation;
-            """
+            """.toString()
             info "The way and relation ${type.name()} have been built."
         } else if (outputWay) {
-            datasource.execute "ALTER TABLE $outputWay RENAME TO $outputTableName"
+            datasource.execute "ALTER TABLE $outputWay RENAME TO $outputTableName".toString()
             info "The way ${type.name()} have been built."
         } else if (outputRelation) {
-            datasource.execute "ALTER TABLE $outputRelation RENAME TO $outputTableName"
+            datasource.execute "ALTER TABLE $outputRelation RENAME TO $outputTableName".toString()
             info "The relation ${type.name()} have been built."
         } else {
             warn "Cannot extract any ${type.name()}."
@@ -311,7 +311,7 @@ class TransformUtils {
             datasource.execute """
                     DROP TABLE IF EXISTS $outputNodesPoints;
                     CREATE TABLE $outputNodesPoints (the_geom GEOMETRY(POINT,4326));
-            """
+            """.toString()
             return false
         }
         info "Build nodes as points"
@@ -322,7 +322,7 @@ class TransformUtils {
                     datasource.execute """
                             DROP TABLE IF EXISTS $outputNodesPoints;
                             CREATE TABLE $outputNodesPoints (the_geom GEOMETRY(POINT,4326));
-                    """
+                    """.toString()
                     return true
                 }
             }
@@ -332,7 +332,7 @@ class TransformUtils {
                     SELECT a.id_node,ST_TRANSFORM(ST_SETSRID(a.THE_GEOM, 4326), $epsgCode) AS the_geom $tagList
                     FROM $tableNode AS a, $tableNodeTag b
                     WHERE a.id_node = b.id_node GROUP BY a.id_node;
-            """
+            """.toString()
 
         } else {
             if(columnsToKeep){
@@ -340,7 +340,7 @@ class TransformUtils {
                     datasource.execute """
                             DROP TABLE IF EXISTS $outputNodesPoints;
                             CREATE TABLE $outputNodesPoints (the_geom GEOMETRY(POINT,4326));
-                    """
+                    """.toString()
                     return true
                 }
             }
@@ -356,7 +356,7 @@ class TransformUtils {
                     WHERE a.id_node=b.id_node
                     AND a.id_node=c.id_node
                     GROUP BY a.id_node;
-            """
+            """.toString()
         }
         return true
     }
@@ -429,7 +429,7 @@ class TransformUtils {
             error "The datasource should not be null."
             return null
         }
-        def rowskeys = datasource.rows(selectTableQuery)
+        def rowskeys = datasource.rows(selectTableQuery.toString())
         def list = []
         rowskeys.tag_key.each { it ->
             if(it != null)
@@ -477,7 +477,7 @@ class TransformUtils {
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_relation_tag_tag_value_index   ON ${osmTablesPrefix}_relation_tag(tag_value);
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_way_member_id_relation_index   ON ${osmTablesPrefix}_way_member(id_relation);
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_way_id_way                     ON ${osmTablesPrefix}_way(id_way);
-        """
+        """.toString()
         return true
     }
 

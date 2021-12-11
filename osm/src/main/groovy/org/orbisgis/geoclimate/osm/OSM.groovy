@@ -1,6 +1,7 @@
 package org.orbisgis.geoclimate.osm
 
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 /**
@@ -9,7 +10,7 @@ import org.slf4j.LoggerFactory
  */
 abstract class OSM  extends GroovyProcessFactory {
 
-    public static def logger = LoggerFactory.getLogger(OSM.class)
+    public static Logger logger = LoggerFactory.getLogger(OSM.class)
 
     public static WorkflowOSM = new WorkflowOSM()
     public static InputDataLoading = new InputDataLoading()
@@ -37,5 +38,4 @@ abstract class OSM  extends GroovyProcessFactory {
             return prefixName + "_" + baseName
         }
     }
-
 }

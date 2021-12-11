@@ -53,13 +53,13 @@ IProcess formatBuildingLayer() {
                         id_build INTEGER,
                         ID_SOURCE VARCHAR,
                         estimated boolean)
-                """
+                """.toString()
 
             datasource """ 
                 DROP TABLE if exists ${outputTableName};
                 CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id_build INTEGER, ID_SOURCE VARCHAR, 
                     HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT, NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER);
-            """
+            """.toString()
             if (inputTableName) {
                 def paramsDefaultFile = this.class.getResourceAsStream("buildingParams.json")
                 def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
@@ -89,32 +89,26 @@ IProcess formatBuildingLayer() {
                             String roof_height = row.'roof:height'
                             String b_lev = row.'building:levels'
                             String roof_lev = row.'roof:levels'
-                            def heightRoof = getHeightRoof(height, heightPattern)
-                            def heightWall = getHeightWall(heightRoof, roof_height)
+                            def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
+                            def use = typeAndUseValues[1]
+                            def type = typeAndUseValues[0]
+                            if(type) {
+                                def heightRoof = getHeightRoof(height, heightPattern)
+                                def heightWall = getHeightWall(heightRoof, roof_height)
+                                def nbLevels = getNbLevels(b_lev, roof_lev)
+                                if (nbLevels >= 0) {
+                                    def nbLevelsFromType = typeAndLevel[type]
+                                    def formatedHeight = formatHeightsAndNbLevels(heightWall, heightRoof, nbLevels, h_lev_min,
+                                            h_lev_max, hThresholdLev2, nbLevelsFromType == null ? 0 : nbLevelsFromType)
 
-                            def nbLevels = getNbLevels(b_lev, roof_lev)
+                                    def zIndex = getZIndex(row.'layer')
 
-                            if (nbLevels >= 0) {
-                                def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
-                                def use = typeAndUseValues[1]
-                                def type = typeAndUseValues[0]
-                                if (!type) {
-                                    type = 'building'
-                                }
-
-                                def nbLevelsFromType = typeAndLevel[type]
-
-                                def formatedHeight = formatHeightsAndNbLevels(heightWall, heightRoof, nbLevels, h_lev_min,
-                                        h_lev_max, hThresholdLev2, nbLevelsFromType == null ? 0 : nbLevelsFromType)
-
-                                def zIndex = getZIndex(row.'layer')
-
-                                if (formatedHeight.nbLevels > 0 && zIndex >= 0 && type) {
-                                    Geometry geom = row.the_geom
-                                    for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                        Geometry subGeom = geom.getGeometryN(i)
-                                        if (subGeom instanceof Polygon) {
-                                            stmt.addBatch """
+                                    if (formatedHeight.nbLevels > 0 && zIndex >= 0 && type) {
+                                        Geometry geom = row.the_geom
+                                        for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                            Geometry subGeom = geom.getGeometryN(i)
+                                            if (subGeom instanceof Polygon) {
+                                                stmt.addBatch """
                                                 INSERT INTO ${outputTableName} values(
                                                     ST_GEOMFROMTEXT('${subGeom}',$epsg), 
                                                     $id_build, 
@@ -127,14 +121,15 @@ IProcess formatBuildingLayer() {
                                                     ${zIndex})
                                             """.toString()
 
-                                            stmt.addBatch """
+                                                stmt.addBatch """
                                                 INSERT INTO ${outputEstimateTableName} values(
                                                     $id_build, 
                                                     '${row.id}',
                                                     ${formatedHeight.estimated})
                                                 """.toString()
 
-                                            id_build++
+                                                id_build++
+                                            }
                                         }
                                     }
                                 }
@@ -150,7 +145,7 @@ IProcess formatBuildingLayer() {
                         def buildinType = "BUILDING_TYPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
 
                         datasource.execute """create table $buildinType as SELECT max(b.type) as type, max(b.main_use) as main_use, a.id_build FROM $outputTableName a, $urbanAreasTableName b 
-                        WHERE ST_POINTONSURFACE(a.the_geom) && b.the_geom and st_intersects(ST_POINTONSURFACE(a.the_geom), b.the_geom) AND  a.TYPE ='building' group by a.id_build""";
+                        WHERE ST_POINTONSURFACE(a.the_geom) && b.the_geom and st_intersects(ST_POINTONSURFACE(a.the_geom), b.the_geom) AND  a.TYPE ='building' group by a.id_build""".toString()
 
                         datasource.getTable(buildinType).id_build.createIndex()
 
@@ -165,11 +160,10 @@ IProcess formatBuildingLayer() {
                                                COALESCE(b.TYPE, a.TYPE) AS TYPE ,
                                                COALESCE(b.MAIN_USE, a.MAIN_USE) AS MAIN_USE
                                                , a.ZINDEX from $outputTableName
-                                        a LEFT JOIN $buildinType b on a.id_build=b.id_build"""
+                                        a LEFT JOIN $buildinType b on a.id_build=b.id_build""".toString()
 
-                        datasource.execute """DROP TABLE IF EXISTS $buildinType, $outputTableName""";
-
-                        datasource.execute """ALTER TABLE $newBuildingWithType RENAME TO $outputTableName""";
+                        datasource.execute """DROP TABLE IF EXISTS $buildinType, $outputTableName;
+                        ALTER TABLE $newBuildingWithType RENAME TO $outputTableName;""".toString()
                     }
                 }
             }
@@ -201,7 +195,7 @@ IProcess formatRoadLayer() {
             DROP TABLE IF EXISTS $outputTableName;
             CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_road serial, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR, CROSSING VARCHAR(30),
                 SURFACE VARCHAR, SIDEWALK VARCHAR, MAXSPEED INTEGER, DIRECTION INTEGER, ZINDEX INTEGER);
-        """
+        """.toString()
             if (inputTableName) {
                 //Define the mapping between the values in OSM and those used in the abstract model
                 def paramsDefaultFile = this.class.getResourceAsStream("roadParams.json")
@@ -321,7 +315,7 @@ IProcess formatRailsLayer() {
             debug('Rails transformation starts')
             def outputTableName = "INPUT_RAILS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             datasource.execute """ drop table if exists $outputTableName;
-                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_rail serial,ID_SOURCE VARCHAR, TYPE VARCHAR,CROSSING VARCHAR(30), ZINDEX INTEGER);"""
+                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_rail serial,ID_SOURCE VARCHAR, TYPE VARCHAR,CROSSING VARCHAR(30), ZINDEX INTEGER);""".toString()
 
             if (inputTableName != null) {
                 def paramsDefaultFile = this.class.getResourceAsStream("railParams.json")
@@ -410,7 +404,7 @@ IProcess formatVegetationLayer() {
             def outputTableName = postfix "INPUT_VEGET"
             datasource """ 
                 DROP TABLE IF EXISTS $outputTableName;
-                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_veget serial, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4), ZINDEX INTEGER);"""
+                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_veget serial, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4), ZINDEX INTEGER);""".toString()
             if (inputTableName) {
                 def paramsDefaultFile = this.class.getResourceAsStream("vegetParams.json")
                 def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
@@ -454,7 +448,7 @@ IProcess formatVegetationLayer() {
                                                 '${row.id}',
                                                 '${type}', 
                                                 '${height_class}', ${zindex})
-                                    """
+                                    """.toString()
                                     }
                                 }
                             }
@@ -485,7 +479,7 @@ IProcess formatHydroLayer() {
             debug('Hydro transformation starts')
             def outputTableName = "INPUT_HYDRO_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             datasource.execute """Drop table if exists $outputTableName;
-                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_hydro serial, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);"""
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_hydro serial, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);""".toString()
 
             if (inputTableName != null) {
                 ISpatialTable inputSpatialTable = datasource.getSpatialTable(inputTableName)
@@ -514,7 +508,7 @@ IProcess formatHydroLayer() {
                             for (int i = 0; i < geom.getNumGeometries(); i++) {
                                 Geometry subGeom = geom.getGeometryN(i)
                                 if (subGeom instanceof Polygon) {
-                                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', '${water_type}', ${zIndex})"
+                                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', '${water_type}', ${zIndex})".toString()
                                 }
                             }
                         }
@@ -544,7 +538,7 @@ IProcess formatImperviousLayer() {
             debug('Impervious transformation starts')
             def outputTableName = "INPUT_IMPERVIOUS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             datasource.execute """Drop table if exists $outputTableName;
-                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_impervious serial, ID_SOURCE VARCHAR);"""
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_impervious serial, ID_SOURCE VARCHAR);""".toString()
             debug(inputTableName)
             if (inputTableName) {
                 def paramsDefaultFile = this.class.getResourceAsStream("imperviousParams.json")
@@ -584,7 +578,7 @@ IProcess formatImperviousLayer() {
                                 for (int i = 0; i < geom.getNumGeometries(); i++) {
                                     Geometry subGeom = geom.getGeometryN(i)
                                     if (subGeom instanceof Polygon) {
-                                        stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}')"
+                                        stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}')".toString()
                                     }
                                 }
                             }
@@ -947,7 +941,7 @@ IProcess formatUrbanAreas() {
             debug('Urban areas transformation starts')
             def outputTableName = "INPUT_URBAN_AREAS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             datasource.execute """Drop table if exists $outputTableName;
-                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_urban serial, ID_SOURCE VARCHAR, TYPE VARCHAR, MAIN_USE VARCHAR);"""
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_urban serial, ID_SOURCE VARCHAR, TYPE VARCHAR, MAIN_USE VARCHAR);""".toString()
 
             if (inputTableName != null) {
                 def paramsDefaultFile = this.class.getResourceAsStream("urbanAreasParams.json")
@@ -984,7 +978,7 @@ IProcess formatUrbanAreas() {
                             for (int i = 0; i < geom.getNumGeometries(); i++) {
                                 Geometry subGeom = geom.getGeometryN(i)
                                 if (subGeom instanceof Polygon) {
-                                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', '${type}','${use}')"
+                                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', '${type}','${use}')".toString()
                                 }
                             }
                         }
@@ -1019,7 +1013,7 @@ IProcess formatSeaLandMask() {
             datasource """ 
                 DROP TABLE if exists ${outputTableName};
                 CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id serial, TYPE VARCHAR);
-            """
+            """.toString()
             if (inputTableName) {
                 def inputSpatialTable = datasource."$inputTableName"
                 if (inputSpatialTable.rowCount > 0) {
@@ -1037,7 +1031,7 @@ IProcess formatSeaLandMask() {
                         CREATE TABLE $coastLinesIntersects AS SELECT a.the_geom
                         from $inputTableName  AS  a,  $inputZoneEnvelopeTableName  AS b WHERE
                         a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom);     
-                        """;
+                        """.toString()
 
                         if (inputWaterTableName) {
                             datasource.getSpatialTable(inputWaterTableName).the_geom.createSpatialIndex()
@@ -1048,13 +1042,13 @@ IProcess formatSeaLandMask() {
                        SELECT ST_LINEMERGE(st_accum(THE_GEOM)) AS the_geom, NULL FROM $coastLinesIntersects)');
                         CREATE SPATIAL INDEX ON $islands_mark_filtered(the_geom);
                         CREATE TABLE  $islands_mark AS select * from $islands_mark_filtered where id not in( SELECT a.id from $islands_mark_filtered as a,  $inputWaterTableName as b
-                        where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) and b.type = 'water')"""
+                        where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) and b.type = 'water' and b.zindex=0)""".toString()
 
                         } else {
                             datasource.execute """
                         CREATE TABLE $islands_mark (the_geom GEOMETRY, ID SERIAL) AS 
                        SELECT the_geom, CAST((row_number() over()) as Integer)  FROM st_explode('(  
-                       SELECT ST_LINEMERGE(st_accum(THE_GEOM)) AS the_geom, NULL FROM $coastLinesIntersects)');"""
+                       SELECT ST_LINEMERGE(st_accum(THE_GEOM)) AS the_geom, NULL FROM $coastLinesIntersects)');""".toString()
                         }
 
                         datasource.execute """  
@@ -1064,7 +1058,7 @@ IProcess formatSeaLandMask() {
                         SELECT st_tomultiline(the_geom)
                         from $inputZoneEnvelopeTableName ;
 
-                        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY,ID serial, TYPE VARCHAR) AS SELECT THE_GEOM, CAST((row_number() over()) as Integer), 'land' FROM
+                        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY,ID serial, TYPE VARCHAR, ZINDEX INTEGER) AS SELECT THE_GEOM, CAST((row_number() over()) as Integer), 'land', 0 AS ZINDEX FROM
                         st_explode('(SELECT st_polygonize(st_union(ST_NODE(st_accum(the_geom)))) AS the_geom FROM $mergingDataTable)');                
                         
                         CREATE TABLE $coastLinesPoints as  SELECT ST_LocateAlong(the_geom, 0.5, -0.01) AS the_geom FROM 
@@ -1079,10 +1073,10 @@ IProcess formatSeaLandMask() {
                         UPDATE $outputTableName SET TYPE='sea' WHERE ID IN(SELECT DISTINCT(a.ID)
                                 FROM $outputTableName a, $coastLinesIntersectsPoints b WHERE a.THE_GEOM && b.THE_GEOM AND
                                 st_contains(a.THE_GEOM, b.THE_GEOM));                                
-                                """
+                                """.toString()
 
-                        datasource.execute("drop table if exists $mergingDataTable, $coastLinesIntersects, $coastLinesIntersectsPoints, $coastLinesPoints," +
-                                "$islands_mark")
+                        datasource.execute("""drop table if exists $mergingDataTable, $coastLinesIntersects, $coastLinesIntersectsPoints, $coastLinesPoints,
+                                $islands_mark""".toString())
                     } else {
                         debug "A zone table must be provided to compute the sea/land mask"
                     }
@@ -1100,7 +1094,7 @@ IProcess formatSeaLandMask() {
 /**
  * This process is used to merge the water and the sea-land mask layers
  *
- * @param datasource A connexion to a DB containing the raw buildings table
+ * @param datasource A connexion to a DB  that contains the tables
  * @param inputSeaLandTableName The name of the sea/land table
  * @param inputWaterTableName The name of the water table
  * @return outputTableName The name of the final water table
@@ -1116,24 +1110,25 @@ IProcess mergeWaterAndSeaLandTables() {
             debug 'Merging sea/land mask and water table'
             datasource """ 
                 DROP TABLE if exists ${outputTableName};
-                CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id_hydro serial, id_source VARCHAR);
-            """
+                CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id_hydro serial, id_source VARCHAR, ZINDEX INTEGER);
+            """.toString()
             if (inputSeaLandTableName && inputWaterTableName) {
                 if (datasource.firstRow("select count(*) as count from $inputSeaLandTableName where TYPE ='sea'").count > 0) {
                     def tmp_water_not_in_sea = "WATER_NOT_IN_SEA${UUID.randomUUID().toString().replaceAll("-", "_")}"
                     //This method is used to merge the SEA mask with the water table
                     def queryMergeWater = """DROP  TABLE IF EXISTS $outputTableName, $tmp_water_not_in_sea;
-                CREATE TABLE $tmp_water_not_in_sea AS SELECT a.the_geom, a.ID_SOURCE FROM $inputWaterTableName AS a, $inputSeaLandTableName  AS b
+                CREATE TABLE $tmp_water_not_in_sea AS SELECT a.the_geom, a.ID_SOURCE, a.zindex FROM $inputWaterTableName AS a, $inputSeaLandTableName  AS b
                 WHERE b."TYPE"= 'land' AND a.the_geom && b.the_geom AND st_contains(b.THE_GEOM, st_pointonsurface(a.THE_GEOM)) and a.type='water';
-                CREATE TABLE $outputTableName(the_geom GEOMETRY, ID_HYDRO SERIAL, ID_SOURCE VARCHAR) AS SELECT THE_GEOM, CAST((row_number() over()) as Integer) , id_source
-            FROM (SELECT the_geom,  id_source FROM $tmp_water_not_in_sea UNION ALL 
-                SELECT THE_GEOM,  '-1' FROM $inputSeaLandTableName  WHERE
+                CREATE TABLE $outputTableName(the_geom GEOMETRY, ID_HYDRO SERIAL, ID_SOURCE VARCHAR, ZINDEX INTEGER) AS SELECT THE_GEOM, CAST((row_number() over()) as Integer) , 
+            id_source, zindex 
+            FROM (SELECT the_geom,  id_source, zindex FROM $tmp_water_not_in_sea UNION ALL 
+                SELECT THE_GEOM,  '-1', 0 FROM $inputSeaLandTableName  WHERE
                 "TYPE" ='sea') AS foo;"""
                     //Check indexes before executing the query
                     datasource.getSpatialTable(inputWaterTableName).the_geom.createSpatialIndex()
                     datasource.getSpatialTable(inputSeaLandTableName).the_geom.createSpatialIndex()
-                    datasource.execute queryMergeWater
-                    datasource.execute("drop table if exists $tmp_water_not_in_sea;")
+                    datasource.execute queryMergeWater.toString()
+                    datasource.execute("drop table if exists $tmp_water_not_in_sea;".toString())
                 } else {
                     return [outputTableName: inputWaterTableName]
                 }

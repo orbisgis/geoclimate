@@ -61,8 +61,7 @@ IProcess createRSU() {
             debug "Creating the reference spatial units"
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
-            datasource """
-                    DROP TABLE IF EXISTS $outputTableName;"""
+            datasource """DROP TABLE IF EXISTS $outputTableName;""".toString()
 
             if (rsuType == "TSU"){
                 def prepareTSUData = prepareTSUData()
@@ -92,9 +91,9 @@ IProcess createRSU() {
                 def outputTsuTableName = createTSU.results.outputTableName
                 def outputIdTsu = createTSU.results.outputIdRsu
 
-                datasource """ALTER TABLE $outputTsuTableName ALTER COLUMN $outputIdTsu RENAME TO $COLUMN_ID_NAME;"""
+                datasource """ALTER TABLE $outputTsuTableName ALTER COLUMN $outputIdTsu RENAME TO $COLUMN_ID_NAME;""".toString()
                 datasource."$outputTsuTableName".reload()
-                datasource """ALTER TABLE $outputTsuTableName RENAME TO $outputTableName;"""
+                datasource """ALTER TABLE $outputTsuTableName RENAME TO $outputTableName;""".toString()
                 datasource."$outputTableName".reload()
             }
 
@@ -154,7 +153,7 @@ IProcess createTSU() {
                             $inputZoneTableName AS b
                         WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(ST_POINTONSURFACE(a.THE_GEOM), b.the_geom) and st_area(a.the_geom) > $area
-            """
+            """.toString()
             } else {
                 datasource """
                     DROP TABLE IF EXISTS $outputTableName;
@@ -162,7 +161,7 @@ IProcess createTSU() {
                         SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(ST_FORCE2D(the_geom), $epsg) AS the_geom 
                         FROM ST_EXPLODE('(
                                 SELECT ST_POLYGONIZE(ST_UNION(ST_PRECISIONREDUCER(ST_NODE(ST_ACCUM(the_geom)), 3))) AS the_geom 
-                                FROM $inputTableName)') where st_area(the_geom) > $area"""
+                                FROM $inputTableName)') where st_area(the_geom) > $area""".toString()
             }
 
             debug "Reference spatial units table created"
@@ -220,7 +219,7 @@ IProcess prepareTSUData() {
             def queryCreateOutputTable = [:]
             def dropTableList = []
 
-            def numberZone = datasource.firstRow("SELECT COUNT(*) AS nb FROM $zoneTable").nb
+            def numberZone = datasource.firstRow("SELECT COUNT(*) AS nb FROM $zoneTable".toString()).nb
 
             if (numberZone == 1) {
                 def epsg = datasource."$zoneTable".srid
@@ -238,31 +237,31 @@ IProcess prepareTSUData() {
                         vegetation_unified = postfix "vegetation_unified"
                         vegetation_tmp = postfix "vegetation_tmp"
 
-                        datasource "DROP TABLE IF EXISTS $vegetation_indice"
-                        datasource "CREATE TABLE $vegetation_indice(THE_GEOM geometry, ID serial," +
+                        datasource "DROP TABLE IF EXISTS "+ vegetation_indice
+                        datasource "CREATE TABLE "+vegetation_indice+"(THE_GEOM geometry, ID serial," +
                                 " CONTACT integer) AS (SELECT ST_MAKEVALID(THE_GEOM) AS the_geom, CAST((row_number() over()) as Integer), 0 FROM ST_EXPLODE('" +
-                                "(SELECT * FROM $vegetationTable WHERE ZINDEX=0)') " +
+                                "(SELECT * FROM "+vegetationTable+" WHERE ZINDEX=0)') " +
                                 " WHERE ST_DIMENSION(the_geom)>0 AND ST_ISEMPTY(the_geom)=FALSE)"
-                        datasource "CREATE INDEX IF NOT EXISTS veg_indice_idx ON $vegetation_indice USING RTREE(THE_GEOM)"
-                        datasource "UPDATE $vegetation_indice SET CONTACT=1 WHERE ID IN(SELECT DISTINCT(a.ID)" +
-                                " FROM $vegetation_indice a, $vegetation_indice b WHERE a.THE_GEOM && b.THE_GEOM AND " +
-                                "ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM) AND a.ID<>b.ID)"
+                        datasource """CREATE SPATIAL INDEX IF NOT EXISTS veg_indice_idx ON $vegetation_indice (THE_GEOM);
+                        UPDATE $vegetation_indice SET CONTACT=1 WHERE ID IN(SELECT DISTINCT(a.ID)
+                                 FROM $vegetation_indice a, $vegetation_indice b WHERE a.THE_GEOM && b.THE_GEOM AND 
+                                ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM) AND a.ID<>b.ID)""".toString()
 
-                        datasource "DROP TABLE IF EXISTS $vegetation_unified"
-                        datasource "CREATE TABLE $vegetation_unified AS " +
-                                "(SELECT ST_SETSRID(the_geom, $epsg) AS the_geom FROM ST_EXPLODE('(SELECT ST_UNION(ST_ACCUM(THE_GEOM))" +
-                                " AS THE_GEOM FROM $vegetation_indice WHERE CONTACT=1)') " +
+                        datasource "DROP TABLE IF EXISTS "+vegetation_unified
+                        datasource "CREATE TABLE "+vegetation_unified+" AS " +
+                                "(SELECT ST_SETSRID(the_geom,"+ epsg+") AS the_geom FROM ST_EXPLODE('(SELECT ST_UNION(ST_ACCUM(THE_GEOM))" +
+                                " AS THE_GEOM FROM "+ vegetation_indice+" WHERE CONTACT=1)') " +
                                 "WHERE ST_DIMENSION(the_geom)>0 AND ST_ISEMPTY(the_geom)=FALSE AND " +
-                                "ST_AREA(the_geom)> $surface_vegetation) " +
-                                "UNION ALL (SELECT THE_GEOM FROM $vegetation_indice WHERE contact=0 AND " +
-                                "ST_AREA(the_geom)> $surface_vegetation)"
+                                "ST_AREA(the_geom)> "+surface_vegetation+") " +
+                                "UNION ALL (SELECT THE_GEOM FROM "+vegetation_indice+" WHERE contact=0 AND " +
+                                "ST_AREA(the_geom)> "+surface_vegetation+")"
 
-                        datasource "CREATE INDEX IF NOT EXISTS veg_unified_idx ON $vegetation_unified USING RTREE(THE_GEOM)"
+                        datasource "CREATE SPATIAL INDEX IF NOT EXISTS veg_unified_idx ON $vegetation_unified (THE_GEOM)"
 
-                        datasource "DROP TABLE IF EXISTS $vegetation_tmp"
-                        datasource "CREATE TABLE $vegetation_tmp AS SELECT a.the_geom AS THE_GEOM FROM " +
-                                "$vegetation_unified AS a, $zoneTable AS b WHERE a.the_geom && b.the_geom " +
-                                "AND ST_INTERSECTS(a.the_geom, b.the_geom)"
+                        datasource """DROP TABLE IF EXISTS $vegetation_tmp;
+                        CREATE TABLE $vegetation_tmp AS SELECT a.the_geom AS THE_GEOM FROM 
+                                $vegetation_unified AS a, $zoneTable AS b WHERE a.the_geom && b.the_geom 
+                                AND ST_INTERSECTS(a.the_geom, b.the_geom)""".toString()
 
                         queryCreateOutputTable += [vegetation_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) AS THE_GEOM FROM $vegetation_tmp)"]
                         dropTableList.addAll([vegetation_indice,
@@ -279,37 +278,33 @@ IProcess prepareTSUData() {
                         hydrographic_unified = postfix "hydrographic_unified"
                         hydrographic_tmp = postfix "hydrographic_tmp"
 
-                        datasource "DROP TABLE IF EXISTS $hydrographic_indice"
-                        datasource "CREATE TABLE $hydrographic_indice(THE_GEOM geometry, ID serial," +
+                        datasource "DROP TABLE IF EXISTS "+ hydrographic_indice
+                        datasource "CREATE TABLE "+hydrographic_indice+"(THE_GEOM geometry, ID serial," +
                                 " CONTACT integer) AS (SELECT st_makevalid(THE_GEOM) AS the_geom, CAST((row_number() over()) as Integer) , 0 FROM " +
-                                "ST_EXPLODE('(SELECT * FROM $hydrographicTable WHERE ZINDEX=0)')" +
+                                "ST_EXPLODE('(SELECT * FROM "+hydrographicTable+" WHERE ZINDEX=0)')" +
                                 " WHERE ST_DIMENSION(the_geom)>0 AND ST_ISEMPTY(the_geom)=false)"
 
-                        datasource "CREATE SPATIAL INDEX IF NOT EXISTS hydro_indice_idx ON $hydrographic_indice (THE_GEOM)"
+                        datasource """CREATE SPATIAL INDEX IF NOT EXISTS hydro_indice_idx ON $hydrographic_indice (THE_GEOM);
+                         UPDATE $hydrographic_indice SET CONTACT=1 WHERE ID IN(SELECT DISTINCT(a.ID)
+                                 FROM $hydrographic_indice a, $hydrographic_indice b WHERE a.THE_GEOM && b.THE_GEOM
+                                 AND ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM) AND a.ID<>b.ID);
+                        CREATE INDEX ON $hydrographic_indice USING BTREE(contact)""".toString()
 
 
-                        datasource "UPDATE $hydrographic_indice SET CONTACT=1 WHERE ID IN(SELECT DISTINCT(a.ID)" +
-                                " FROM $hydrographic_indice a, $hydrographic_indice b WHERE a.THE_GEOM && b.THE_GEOM" +
-                                " AND ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM) AND a.ID<>b.ID)"
-                        datasource "CREATE INDEX ON $hydrographic_indice USING BTREE(contact)"
+                        datasource """DROP TABLE IF EXISTS $hydrographic_unified;
+                        CREATE TABLE $hydrographic_unified AS (SELECT ST_SETSRID(the_geom, $epsg) as the_geom FROM 
+                                ST_EXPLODE('(SELECT ST_UNION(ST_ACCUM(THE_GEOM)) AS THE_GEOM FROM
+                                 $hydrographic_indice  WHERE CONTACT=1)') where st_dimension(the_geom)>0
+                                 AND st_isempty(the_geom)=false AND st_area(the_geom)> $surface_hydrographic) 
+                                 UNION ALL (SELECT  the_geom FROM $hydrographic_indice WHERE contact=0 AND 
+                                 st_area(the_geom)> $surface_hydrographic)""".toString()
 
 
-                        datasource "DROP TABLE IF EXISTS $hydrographic_unified"
-                        datasource "CREATE TABLE $hydrographic_unified AS (SELECT ST_SETSRID(the_geom, $epsg) as the_geom FROM " +
-                                "ST_EXPLODE('(SELECT ST_UNION(ST_ACCUM(THE_GEOM)) AS THE_GEOM FROM" +
-                                " $hydrographic_indice  WHERE CONTACT=1)') where st_dimension(the_geom)>0" +
-                                " AND st_isempty(the_geom)=false AND st_area(the_geom)> $surface_hydrographic) " +
-                                " UNION ALL (SELECT  the_geom FROM $hydrographic_indice WHERE contact=0 AND " +
-                                " st_area(the_geom)> $surface_hydrographic)"
-
-
-                        datasource "CREATE SPATIAL INDEX IF NOT EXISTS hydro_unified_idx ON $hydrographic_unified (THE_GEOM)"
-
-
-                        datasource "DROP TABLE IF EXISTS $hydrographic_tmp"
-                        datasource "CREATE TABLE $hydrographic_tmp AS SELECT a.the_geom" +
-                                " AS THE_GEOM FROM $hydrographic_unified AS a, $zoneTable AS b " +
-                                "WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)"
+                        datasource """CREATE SPATIAL INDEX IF NOT EXISTS hydro_unified_idx ON $hydrographic_unified (THE_GEOM);
+                        DROP TABLE IF EXISTS $hydrographic_tmp;
+                        CREATE TABLE $hydrographic_tmp AS SELECT a.the_geom 
+                                 AS THE_GEOM FROM $hydrographic_unified AS a, $zoneTable AS b 
+                                WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)""".toString()
 
                         queryCreateOutputTable += [hydrographic_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) as the_geom FROM $hydrographic_tmp)"]
                         dropTableList.addAll([hydrographic_indice,
@@ -342,14 +337,14 @@ IProcess prepareTSUData() {
                                 FROM $zoneTable) 
                             UNION ${queryCreateOutputTable.values().join(' union ')};
                         DROP TABLE IF EXISTS ${queryCreateOutputTable.keySet().join(' , ')}
-                """
+                """.toString()
                 } else {
                     datasource """DROP TABLE if exists $outputTableName;
             CREATE TABLE $outputTableName(the_geom GEOMETRY) AS (SELECT st_setsrid(ST_ToMultiLine(THE_GEOM),$epsg) 
-            FROM $zoneTable);"""
+            FROM $zoneTable);""".toString()
                 }
                 if (dropTableList) {
-                    datasource "DROP TABLE IF EXISTS ${dropTableList.join(',')};"
+                    datasource "DROP TABLE IF EXISTS ${dropTableList.join(',')};".toString()
                 }
                 debug "TSU created..."
 
@@ -410,9 +405,9 @@ IProcess createBlocks() {
                     FROM $inputTableName AS a, $inputTableName AS b 
                     WHERE a.id_build<>b.id_build AND a.the_geom && b.the_geom 
                     AND ST_DWITHIN(b.the_geom,a.the_geom, $snappingTolerance);
-        """
+        """.toString()
 
-            datasource "DROP TABLE IF EXISTS $subGraphTableEdges, $subGraphTableNodes;"
+            datasource "DROP TABLE IF EXISTS $subGraphTableEdges, $subGraphTableNodes;".toString()
 
             getConnectedComponents(datasource.getConnection(), graphTable, "undirected")
 
@@ -427,7 +422,7 @@ IProcess createBlocks() {
                         SELECT ST_UNION(ST_ACCUM(ST_buffer(A.THE_GEOM, $snappingTolerance))) AS THE_GEOM
                         FROM $inputTableName A, $subGraphTableNodes B
                         WHERE A.id_build=B.NODE_ID GROUP BY B.CONNECTED_COMPONENT;
-            """
+            """.toString()
             } else {
                 datasource """
         CREATE INDEX ON $subGraphTableNodes (NODE_ID);
@@ -435,7 +430,7 @@ IProcess createBlocks() {
         CREATE TABLE $subGraphBlocks
         AS SELECT ST_UNION(ST_ACCUM(ST_MAKEVALID(A.THE_GEOM))) AS THE_GEOM
         FROM $inputTableName A, $subGraphTableNodes B
-        WHERE A.id_build=B.NODE_ID GROUP BY B.CONNECTED_COMPONENT;"""
+        WHERE A.id_build=B.NODE_ID GROUP BY B.CONNECTED_COMPONENT;""".toString()
             }
             //Create the blocks
             debug "Creating the block table..."
@@ -445,11 +440,11 @@ IProcess createBlocks() {
         AS SELECT CAST((row_number() over()) as Integer), the_geom FROM 
         ((SELECT st_force2d(ST_MAKEVALID(THE_GEOM)) as the_geom FROM $subGraphBlocks) 
         UNION ALL (SELECT  st_force2d(ST_MAKEVALID(a.the_geom)) as the_geom FROM $inputTableName a 
-        LEFT JOIN $subGraphTableNodes b ON a.id_build = b.NODE_ID WHERE b.NODE_ID IS NULL));"""
+        LEFT JOIN $subGraphTableNodes b ON a.id_build = b.NODE_ID WHERE b.NODE_ID IS NULL));""".toString()
 
             // Temporary tables are deleted
-            datasource "DROP TABLE IF EXISTS  $graphTable, ${graphTable + "_EDGE_CC"}, " +
-                    "$subGraphBlocks, ${subGraphBlocks + "_NODE_CC"}, $subGraphTableNodes;"
+            datasource """DROP TABLE IF EXISTS  $graphTable, ${graphTable + "_EDGE_CC"}, 
+                    $subGraphBlocks, ${subGraphBlocks + "_NODE_CC"}, $subGraphTableNodes;""".toString()
 
             debug "The blocks have been created"
             [outputTableName: outputTableName, outputIdBlock: columnIdName]
@@ -507,7 +502,7 @@ IProcess spatialJoin() {
                                 CREATE TABLE $outputTableName AS SELECT a.*, b.$idColumnTarget 
                                         FROM $sourceTable a, $targetTable b 
                                         WHERE   ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_SOURCE) && b.$GEOMETRIC_COLUMN_TARGET AND 
-                                                ST_INTERSECTS(ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_SOURCE), b.$GEOMETRIC_COLUMN_TARGET)"""
+                                                ST_INTERSECTS(ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_SOURCE), b.$GEOMETRIC_COLUMN_TARGET)""".toString()
             }
             else {
                 if (nbRelations != null) {
@@ -522,7 +517,7 @@ IProcess spatialJoin() {
                                                         ORDER BY ST_AREA(ST_INTERSECTION(ST_BUFFER(ST_PRECISIONREDUCER(a.$GEOMETRIC_COLUMN_SOURCE, 3),0),
                                                                                          ST_BUFFER(ST_PRECISIONREDUCER(b.$GEOMETRIC_COLUMN_TARGET,3),0)))
                                                         DESC LIMIT $nbRelations) AS $idColumnTarget 
-                                            FROM $sourceTable a"""
+                                            FROM $sourceTable a""".toString()
                 } else {
                     def sourceColumns = sourceSpatialTable.getColumnsTypes().findAll {
                         it.value.toLowerCase() != 'geometry'
@@ -534,7 +529,7 @@ IProcess spatialJoin() {
                                                         ST_PRECISIONREDUCER(b.$GEOMETRIC_COLUMN_TARGET,3))) AS AREA
                                             FROM    $sourceTable a, $targetTable b
                                             WHERE   a.$GEOMETRIC_COLUMN_SOURCE && b.$GEOMETRIC_COLUMN_TARGET AND 
-                                                    ST_INTERSECTS(a.$GEOMETRIC_COLUMN_SOURCE, b.$GEOMETRIC_COLUMN_TARGET);"""
+                                                    ST_INTERSECTS(a.$GEOMETRIC_COLUMN_SOURCE, b.$GEOMETRIC_COLUMN_TARGET);""".toString()
                 }
             }
 
@@ -591,7 +586,7 @@ IProcess createGrid() {
                 datasource """
                            CREATE TABLE $outputTableName AS SELECT * FROM 
                            ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY,$rowCol);
-                           """
+                           """.toString()
             }
             else if (datasource instanceof POSTGIS) {
                 debug "Creating grid with POSTGIS"
@@ -600,8 +595,8 @@ IProcess createGrid() {
                 try {
                     def createTable = "CREATE TABLE $outputTableName(THE_GEOM GEOMETRY(POLYGON), ID INT, ID_COL INT, ID_ROW INT);"
                     def insertTable = "INSERT INTO $outputTableName VALUES (?, ?, ?, ?);"
-                    datasource.execute(createTable)
-                    preparedStatement = outputConnection.prepareStatement(insertTable)
+                    datasource.execute(createTable.toString())
+                    preparedStatement = outputConnection.prepareStatement(insertTable.toString())
                     def result = ST_MakeGrid.createGrid(outputConnection, ValueGeometry.getFromGeometry(geometry), deltaX, deltaY, rowCol)
                     long batch_size = 0
                     int batchSize = 1000
