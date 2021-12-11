@@ -1169,7 +1169,7 @@ def saveTableToAsciiGrid(def outputTable , def subFolder,def filePrefix, def h2g
         if (env) {
             def xmin = env.getMinX()
             def ymin = env.getMinY()
-            def nbColsRowS = h2gis_datasource.firstRow("select max(id_col) as cmax, max(id_row) as rmax from $outputTable")
+            def nbColsRowS = h2gis_datasource.firstRow("select max(id_col) as cmax, max(id_row) as rmax from $outputTable".toString())
             def nbcols = nbColsRowS.cmax
             def nbrows = nbColsRowS.rmax
 
@@ -1197,7 +1197,7 @@ def saveTableToAsciiGrid(def outputTable , def subFolder,def filePrefix, def h2g
                     stream << "ncols $nbcols\nnrows $nbrows\nxllcorner $xmin\nyllcorner $ymin\ncellsize $x_size\nnodata_value -9999\n"
                     def query = "select id_row, id_col, case when $it is not null then cast($it as decimal(18, 3)) else $it end as $it from $outputTable order by id_row desc, id_col"
                     def rowData = ""
-                    h2gis_datasource.eachRow(query) { row ->
+                    h2gis_datasource.eachRow(query.toString()) { row ->
                         rowData += row.getString(it) + " "
                         if (row.getInt("id_col") == nbcols) {
                             rowData += "\n"
@@ -1342,7 +1342,7 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
             if (output_datasource.hasTable(output_table)) {
                 output_datasource.execute("DELETE FROM $output_table WHERE id_zone= '$id_zone'".toString());
             }else{
-                output_datasource.execute """CREATE TABLE $output_table(ID_BUILD INTEGER, ID_SOURCE VARCHAR, ID_ZONE VARCHAR)"""
+                output_datasource.execute """CREATE TABLE $output_table(ID_BUILD INTEGER, ID_SOURCE VARCHAR, ID_ZONE VARCHAR)""".toString()
             }
             IOMethods.exportToDataBase(h2gis_datasource.getConnection(),"(SELECT ID_BUILD, ID_SOURCE, '$id_zone' as ID_ZONE from $h2gis_table_to_save where estimated=true)".toString(),
                     output_datasource.getConnection(), output_table, 2, 1000);
@@ -1459,7 +1459,7 @@ def abstractModelTableBatchExportTable(JdbcDataSource output_datasource, def out
                     }
                 }
                 if(tmpTable) {
-                    output_datasource.execute("UPDATE $output_table SET id_zone= ?", id_zone);
+                    output_datasource.execute("UPDATE $output_table SET id_zone= '$id_zone'".toString());
                     output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""".toString())
                     info "The table $h2gis_table_to_save has been exported into the table $output_table"
                 }else{
