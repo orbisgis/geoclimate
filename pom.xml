@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.orbisgis</groupId>
         <artifactId>orbisparent</artifactId>
-        <version>1.1.1-SNAPSHOT</version>
+        <version>1.2.0-SNAPSHOT</version>
     </parent>
     <groupId>org.orbisgis.geoclimate</groupId>
     <artifactId>geoclimate-parent</artifactId>
@@ -27,7 +27,7 @@
         <site.basedir>${project.basedir}</site.basedir>
         <log4j-version>2.15.0</log4j-version>
         <h2gis-version>2.0.0-SNAPSHOT</h2gis-version>
-        <orbisparent-version>1.1.1-SNAPSHOT</orbisparent-version>
+        <orbisparent-version>1.2.0-SNAPSHOT</orbisparent-version>
         <cts-version>1.6.0-SNAPSHOT</cts-version>
         <orbisdata-version>1.0.1-SNAPSHOT</orbisdata-version>
     </properties>
@@ -66,7 +66,7 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>com.h2database</groupId>
+                <groupId>org.orbisgis</groupId>
                 <artifactId>h2</artifactId>
             </dependency>
             <dependency>
