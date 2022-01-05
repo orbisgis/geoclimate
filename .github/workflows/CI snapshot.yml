@@ -55,3 +55,16 @@ jobs:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.OSSRH_GPG_PASSWORD }}
+
+      # Build jar with dependencies
+      - name: Build jar with dependencies
+        run: mvn package -pl geoclimate
+
+      # Upload the jar with dependencies
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: dist-without-markdown
+          path: |
+            geoclimate/target/geoclimate-*.*.*-SNAPSHOT-with-dependencies.jar
+            geoclimate/target/geoclimate-*.*.*-SNAPSHOT.jar
