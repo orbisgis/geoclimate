@@ -62,7 +62,7 @@ jobs:
 
       # Export the last git tag into env.
       - name: Export env values
-      run: echo "VERSION=$(mvn help:evaluate -Dexpression=project.version)" >> $GITHUB_ENV
+        run: echo "VERSION=$(mvn help:evaluate -Dexpression=project.version)" >> $GITHUB_ENV
 
       # Upload the jar with dependencies
       - name: Archive production artifacts
