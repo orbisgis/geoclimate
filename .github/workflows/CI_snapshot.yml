@@ -60,10 +60,14 @@ jobs:
       - name: Build jar with dependencies
         run: mvn package -pl geoclimate
 
+      # Export the last git tag into env.
+      - name: Export env values
+      run: echo "VERSION=$(mvn help:evaluate -Dexpression=project.version)" >> $GITHUB_ENV
+
       # Upload the jar with dependencies
       - name: Archive production artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: jar with dependencies
+          name: geoclimate-${{ env.VERSION }}
           path: |
             geoclimate/target/geoclimate-*.*.*-SNAPSHOT.jar
