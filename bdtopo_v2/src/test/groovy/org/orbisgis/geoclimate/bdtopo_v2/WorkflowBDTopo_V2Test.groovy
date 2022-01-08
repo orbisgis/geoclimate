@@ -721,7 +721,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
-        assertEquals(3,  process.getResults().outputTableNames[communeToTest].size())
+        assertEquals(8,  process.getResults().outputTableNames[communeToTest].size())
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from road_traffic where road_type is null").count==0
     }

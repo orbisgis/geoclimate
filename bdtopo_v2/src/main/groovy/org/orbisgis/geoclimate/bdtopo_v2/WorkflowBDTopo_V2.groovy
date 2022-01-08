@@ -119,7 +119,8 @@ import java.sql.SQLException
  * - hLevMax Maximum building level height
  * - hThresholdLev2 Threshold on the building height, used to determine the number of levels
  *
- * @return a map with the name of zone and a list of the output tables computed and stored in the local database,
+ * @return
+ * a map with the name of zone and a list of the output tables computed and stored in the local database,
  * otherwise throw an error.
  *
  *
@@ -135,7 +136,7 @@ import java.sql.SQLException
  */
 IProcess workflow() {
     return create {
-        title "Create all geoindicators from BDTopo data"
+        title "Create all Geoindicators from BDTopo data"
         id "workflow"
         inputs configurationFile: String
         outputs outputTableNames: Map
@@ -151,7 +152,7 @@ IProcess workflow() {
                 }
                 if(!FileUtilities.isExtensionWellFormated(configFile, "json")){
                     error "The configuration file must be a json file"
-                    return null
+                    return
                 }
             } else {
                 error "The file parameters cannot be null or empty"
@@ -181,7 +182,6 @@ IProcess workflow() {
                     if(h2gis_name){
                         def dbName = h2gis_name.split(";")
                         databaseName=dbName[0]
-
                         databasePath =  databaseFolder + File.separator + h2gis_name
                     }
                     def delete_h2gis_db = geoclimatedb.delete
@@ -289,9 +289,14 @@ IProcess workflow() {
                                 }
                                 id_zones = loadDataFromFolder(inputFolderPath, h2gis_datasource, id_zones)
                                 if (id_zones) {
-                                    def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, id_zones,
+                                    id_zones.each { id_zone ->
+                                    def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, id_zone,
                                             file_outputFolder, outputFolderProperties.tables, output_datasource,
-                                            finalOutputTables,outputSRID)
+                                            finalOutputTables, outputSRID)
+                                        if(bdtopo_results) {
+                                            outputTableNamesResult.put(id_zone, bdtopo_results.findAll { it.value != null })
+                                        }
+                                    }
                                     if (delete_h2gis) {
                                         def localCon = h2gis_datasource.getConnection()
                                         if(localCon){
@@ -303,7 +308,7 @@ IProcess workflow() {
                                             error "Cannot delete the local H2GIS database : ${databasePath} "
                                         }
                                     }
-                                    return [outputTableNames: [id_zones: bdtopo_results.findAll{ it.value!=null }]]
+                                    return [outputTableNames: outputTableNamesResult]
                                 } else {
                                     error "Cannot load the files from the folder $inputFolder"
                                     return
@@ -325,8 +330,14 @@ IProcess workflow() {
                                     }
                                     id_zones = loadDataFromFolder(inputFolderPath, h2gis_datasource, id_zones)
                                     if (id_zones) {
-                                        def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, id_zones,
+                                        id_zones.each { id_zone ->
+                                        def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, id_zone,
                                                 file_outputFolder, outputFolderProperties.tables, null, null, outputSRID)
+                                            if(bdtopo_results) {
+                                                outputTableNamesResult.put(id_zone, bdtopo_results.findAll { it.value != null })
+                                            }
+
+                                        }
                                         //Delete database
                                         if (delete_h2gis) {
                                             def localCon = h2gis_datasource.getConnection()
@@ -339,7 +350,7 @@ IProcess workflow() {
                                                 error "Cannot delete the local H2GIS database : ${databasePath} "
                                             }
                                         }
-                                        return [outputTableNames: [id_zones: bdtopo_results.findAll{ it.value!=null }]]
+                                        return [outputTableNames: outputTableNamesResult]
                                     } else {
                                         error "Cannot load the files from the folder $inputFolder"
                                         return
@@ -368,8 +379,13 @@ IProcess workflow() {
                                     }
                                     id_zones = loadDataFromFolder(inputFolderPath, h2gis_datasource, id_zones)
                                     if (id_zones) {
-                                        def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, id_zones, null,
-                                                null, output_datasource, finalOutputTables, outputSRID)
+                                        id_zones.each {id_zone->
+                                            def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, id_zone, null,
+                                                    null, output_datasource, finalOutputTables, outputSRID)
+                                            if(bdtopo_results) {
+                                                outputTableNamesResult.put(id_zone, bdtopo_results.findAll { it.value != null })
+                                            }
+                                        }
                                         if (delete_h2gis) {
                                             def localCon = h2gis_datasource.getConnection()
                                             if(localCon){
@@ -381,7 +397,7 @@ IProcess workflow() {
                                                 error "Cannot delete the local H2GIS database : ${databasePath} "
                                             }
                                         }
-                                        return [outputTableNames: [id_zones: bdtopo_results.findAll{ it.value!=null }]]
+                                        return [outputTableNames:outputTableNamesResult]
                                     } else {
                                         error "Cannot load the files from the folder $inputFolder"
                                         return
@@ -1345,7 +1361,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
             def grid_indicators_params = processing_parameters.grid_indicators
 
 
-            results.put("outputTableZone", zoneTableName)
+            results.put("zoneTableName", zoneTableName)
             results.put("roadTableName", roadTableName)
             results.put("railTableName", railTableName)
             results.put("hydrographicTableName", hydrographicTableName)
@@ -1388,7 +1404,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
                         rsu_urban_typo_area:results.outputTableRsuUrbanTypoArea,
                         prefixName: processing_parameters.prefixName
                 )){
-                    results.put("grid_indicators", rasterizedIndicators.results.outputTableName)
+                    results.put("gridIndicatorsTableName", rasterizedIndicators.results.outputTableName)
                 }
             }
 
@@ -1399,7 +1415,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
                         datasource : h2gis_datasource,
                         inputTableName: roadTableName,
                         epsg: srid])
-                results.put("road_traffic", format.results.outputTableName)
+                results.put("roadTrafficTableName", format.results.outputTableName)
             }
 
 
@@ -1450,7 +1466,7 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
             saveTableAsGeojson(results.outputTableRsuLcz,  "${subFolder.getAbsolutePath()+File.separator+"rsu_lcz"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else if(it.equals("zones")){
-            saveTableAsGeojson(results.outputTableZone,  "${subFolder.getAbsolutePath()+File.separator+"zones"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
+            saveTableAsGeojson(results.zoneTableName,  "${subFolder.getAbsolutePath()+File.separator+"zones"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         //Save input GIS tables
         else  if(it.equals("building")){
@@ -1477,9 +1493,9 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
         }else if(it.equals("building_urban_typo")){
             saveTableAsGeojson(results.outputTableBuildingUrbanTypo, "${subFolder.getAbsolutePath()+File.separator+"building_urban_typo"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }else if(it.equals("grid_indicators")){
-            saveTableAsGeojson(results.grid_indicators, "${subFolder.getAbsolutePath()+File.separator+"grid_indicators"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+            saveTableAsGeojson(results.gridIndicatorsTableName, "${subFolder.getAbsolutePath()+File.separator+"grid_indicators"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }else if(it == "road_traffic"){
-            saveTableAsGeojson(results.road_traffic,  "${subFolder.getAbsolutePath()+File.separator+"road_traffic"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
+            saveTableAsGeojson(results.roadTrafficTableName,  "${subFolder.getAbsolutePath()+File.separator+"road_traffic"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
     }
 }
@@ -1548,15 +1564,15 @@ def saveTablesInDatabase(def output_datasource, def h2gis_datasource, def output
             , "",inputSRID,outputSRID,reproject)
 
     //Export grid_indicators
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.grid_indicators,id_zone,h2gis_datasource, h2gis_tables.grid_indicators
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.grid_indicators,id_zone,h2gis_datasource, h2gis_tables.gridIndicatorsTableName
             , "",inputSRID,outputSRID,reproject)
 
     //Export road_traffic
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.road_traffic, id_zone,h2gis_datasource, h2gis_tables.road_traffic
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.road_traffic, id_zone,h2gis_datasource, h2gis_tables.roadTrafficTableName
             , "", inputSRID,outputSRID,reproject)
 
     //Export zone
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.zones, id_zone, h2gis_datasource, h2gis_tables.outputTableZone
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.zones, id_zone, h2gis_datasource, h2gis_tables.zoneTableName
             ,  "",  inputSRID, outputSRID,reproject)
 
     //Export building
