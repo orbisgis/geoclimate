@@ -28,6 +28,7 @@ import org.orbisgis.geoclimate.Geoindicators
 
 @BaseScript OSM OSM
 
+
 /**
  * Extract OSM data and compute geoindicators. The parameters of the processing chain is defined
  * from a configuration file.
@@ -109,7 +110,8 @@ import org.orbisgis.geoclimate.Geoindicators
  * - hLevMax Maximum building level height
  * - hThresholdLev2 Threshold on the building height, used to determine the number of levels
  *
- * @return a message if the geoclimate chain has been executed, otherwise throw an error.
+ * @return
+ * a map with the name of zone and a list of the output tables computed and stored in the local database, otherwise throw an error.
  *
  * References:
  * --> Bocher, E., Petit, G., Bernard, J., & Palominos, S. (2018). A geoprocessing framework to compute
@@ -126,7 +128,7 @@ IProcess workflow() {
         title "Create all Geoindicators from OSM data"
         id "workflow"
         inputs configurationFile: ""
-        outputs outputMessage: String
+        outputs outputTableNames:Map
         run { configurationFile ->
             def configFile
             if (configurationFile) {
@@ -298,6 +300,7 @@ IProcess workflow() {
                                         error "Cannot delete the local H2GIS database : ${databasePath} "
                                     }
                                 }
+                                return [outputTableNames: osmprocessing.getResults().outputTableNames]
                             } else {
                                 error "Cannot find any OSM filters"
                                 return null
@@ -339,10 +342,11 @@ IProcess workflow() {
                                         else{
                                             error "Cannot delete the local H2GIS database : ${databasePath} "
                                         }
-                                        return [outputMessage: "The ${osmFilters.join(",")} have been processed"]
-                                    }
+                                     }
+                                    return [outputTableNames: osmprocessing.getResults().outputTableNames]
+
                                 } else {
-                                    error "Cannot load the files from the folder $inputFolder"
+                                    error "Cannot find any the OSM area from :  $inputFolder"
                                     return null
                                 }
                             } else {
@@ -392,8 +396,10 @@ IProcess workflow() {
                                             error "Cannot delete the local H2GIS database : ${databasePath} "
                                         }
                                     }
+                                    return [outputTableNames: osmprocessing.getResults().outputTableNames]
+
                                 } else {
-                                    error "Cannot load the files from the folder $inputFolder"
+                                    error "Cannot find any OSM area from : $inputFolder"
                                     return null
                                 }
 
@@ -419,7 +425,7 @@ IProcess workflow() {
                 error "Empty parameters"
             }
 
-            return [outputMessage: "The process has been done"]
+            return null;
 
         }
     }
@@ -435,7 +441,7 @@ IProcess workflow() {
  * @param ouputTableFiles the name of the tables that will be saved
  * @param output_datasource a connexion to a database to save the results
  * @param outputTableNames the name of the tables in the output_datasource to save the results
- * @return
+ * @return the identifier of the zone and the list of the output tables computed and stored in the local database for this zone
  */
 IProcess osm_processing() {
     return create {
@@ -444,9 +450,11 @@ IProcess osm_processing() {
         inputs h2gis_datasource: JdbcDataSource, processing_parameters: Map, id_zones: Map,
                 outputFolder: "", ouputTableFiles: "", output_datasource: "", outputTableNames: "", outputSRID : Integer, downloadAllOSMData : true,
                 deleteOutputData:true, deleteOSMFile:false, logTableZones:String
-        outputs outputMessage: String
+        outputs outputTableNamesZone: Map
         run { H2GIS h2gis_datasource, processing_parameters, id_zones, outputFolder, ouputTableFiles, output_datasource, outputTableNames,
               outputSRID, downloadAllOSMData,deleteOutputData, deleteOSMFile,logTableZones ->
+            //Store the zone identifier and the names of the tables
+            def outputTableNamesResult = [:]
             //Create the table to log on the processed zone
              h2gis_datasource.execute """DROP TABLE IF EXISTS $logTableZones;
             CREATE TABLE $logTableZones (the_geom GEOMETRY(GEOMETRY, 4326), request VARCHAR, info VARCHAR);""".toString()
@@ -484,7 +492,7 @@ IProcess osm_processing() {
                                            "leisure", "highway", "natural",
                                            "landuse", "landcover",
                                            "vegetation","waterway"]
-                        //TODO : Remove unecessary keys according the output tables set in the config file
+                        //TODO : Remove unnecessary keys according the output tables set in the config file
                         query =  "[maxsize:1073741824]"+ Utilities.buildOSMQueryWithAllData(zoneTableNames.envelope, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
                     }
 
@@ -507,8 +515,7 @@ IProcess osm_processing() {
                             def urbanAreasTable ,buildingTableName,buildingEstimateTableName,  roadTableName,
                                     railTableName,vegetationTableName, hydrographicTableName, imperviousTableName,
                              seaLandMaskTableName
-                            //Add the GIS layers to the list of results
-                            def results = [:]
+
 
                             if(rsu_indicators_params.indicatorUse|| grid_indicators_params){
                                 //Format urban areas
@@ -600,7 +607,8 @@ IProcess osm_processing() {
                                 roadTableName = format.results.outputTableName
                             }
                             debug "OSM GIS layers formated"
-
+                            //Add the GIS layers to the list of results
+                            def results = [:]
                             results.put("outputTableZone", zoneTableName)
                             results.put("roadTableName", roadTableName)
                             results.put("railTableName", railTableName)
@@ -687,6 +695,8 @@ IProcess osm_processing() {
                                 saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone, srid, outputSRID, reproject)
                             }
 
+                            outputTableNamesResult.put(id_zone in Map?id_zone.join("_"):id_zone, results.findAll{ it.value!=null })
+
                         } else {
                             h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error loading the OSM file')".toString()
                             error "Cannot load the OSM file ${extract.results.outputFilePath}"
@@ -717,7 +727,7 @@ IProcess osm_processing() {
 
                 info "Number of areas processed ${index + 1} on $nbAreas"
             }
-            return [outputMessage: "The OSM workflow has been executed"]
+            return [outputTableNames: outputTableNamesResult]
         }
     }
 }

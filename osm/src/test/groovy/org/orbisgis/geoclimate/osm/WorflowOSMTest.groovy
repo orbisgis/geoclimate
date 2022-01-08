@@ -7,7 +7,6 @@ import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.slf4j.Logger
 
 import static org.junit.jupiter.api.Assertions.*
 
@@ -784,6 +783,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        assertEquals(3,  process.getResults().outputTableNames["Pont-de-Veyle"].size())
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from road_traffic where road_type is not null").count>0
     }

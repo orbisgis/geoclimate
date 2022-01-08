@@ -119,7 +119,8 @@ import java.sql.SQLException
  * - hLevMax Maximum building level height
  * - hThresholdLev2 Threshold on the building height, used to determine the number of levels
  *
- * @return a message if the geoclimate chain has been executed, otherwise throw an error.
+ * @return a map with the name of zone and a list of the output tables computed and stored in the local database,
+ * otherwise throw an error.
  *
  *
  * References:
@@ -137,8 +138,10 @@ IProcess workflow() {
         title "Create all geoindicators from BDTopo data"
         id "workflow"
         inputs configurationFile: String
-        outputs outputMessage: String
+        outputs outputTableNames: Map
         run { configurationFile ->
+            //Store the zone identifier and the names of the tables
+            def outputTableNamesResult = [:]
             def configFile
             if (configurationFile) {
                 configFile = new File(configurationFile)
@@ -286,7 +289,7 @@ IProcess workflow() {
                                 }
                                 id_zones = loadDataFromFolder(inputFolderPath, h2gis_datasource, id_zones)
                                 if (id_zones) {
-                                    bdtopo_processing(h2gis_datasource, processing_parameters, id_zones,
+                                    def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, id_zones,
                                             file_outputFolder, outputFolderProperties.tables, output_datasource,
                                             finalOutputTables,outputSRID)
                                     if (delete_h2gis) {
@@ -300,6 +303,7 @@ IProcess workflow() {
                                             error "Cannot delete the local H2GIS database : ${databasePath} "
                                         }
                                     }
+                                    return [outputTableNames: [id_zones: bdtopo_results.findAll{ it.value!=null }]]
                                 } else {
                                     error "Cannot load the files from the folder $inputFolder"
                                     return
@@ -321,7 +325,7 @@ IProcess workflow() {
                                     }
                                     id_zones = loadDataFromFolder(inputFolderPath, h2gis_datasource, id_zones)
                                     if (id_zones) {
-                                        bdtopo_processing(h2gis_datasource, processing_parameters, id_zones,
+                                        def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, id_zones,
                                                 file_outputFolder, outputFolderProperties.tables, null, null, outputSRID)
                                         //Delete database
                                         if (delete_h2gis) {
@@ -334,8 +338,8 @@ IProcess workflow() {
                                             else{
                                                 error "Cannot delete the local H2GIS database : ${databasePath} "
                                             }
-                                            return [outputMessage: "The $id_zones have been processed"]
                                         }
+                                        return [outputTableNames: [id_zones: bdtopo_results.findAll{ it.value!=null }]]
                                     } else {
                                         error "Cannot load the files from the folder $inputFolder"
                                         return
@@ -364,7 +368,7 @@ IProcess workflow() {
                                     }
                                     id_zones = loadDataFromFolder(inputFolderPath, h2gis_datasource, id_zones)
                                     if (id_zones) {
-                                        bdtopo_processing(h2gis_datasource, processing_parameters, id_zones, null,
+                                        def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, id_zones, null,
                                                 null, output_datasource, finalOutputTables, outputSRID)
                                         if (delete_h2gis) {
                                             def localCon = h2gis_datasource.getConnection()
@@ -377,6 +381,7 @@ IProcess workflow() {
                                                 error "Cannot delete the local H2GIS database : ${databasePath} "
                                             }
                                         }
+                                        return [outputTableNames: [id_zones: bdtopo_results.findAll{ it.value!=null }]]
                                     } else {
                                         error "Cannot load the files from the folder $inputFolder"
                                         return
@@ -463,9 +468,13 @@ IProcess workflow() {
                                     for (code in codes) {
                                         nbzones++
                                         if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]), code, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
-                                            bdtopo_processing(h2gis_datasource, processing_parameters, code,
+                                            def bdtopo_results =  bdtopo_processing(h2gis_datasource, processing_parameters, code,
                                                     file_outputFolder, outputFolderProperties.tables, output_datasource,
                                                     finalOutputTables, outputSRID)
+                                            if(bdtopo_results){
+                                                outputTableNamesResult.put(code, bdtopo_results.findAll{ it.value!=null })
+                                            }
+
                                         } else {
                                             return
                                         }
@@ -482,6 +491,8 @@ IProcess workflow() {
                                             error "Cannot delete the local H2GIS database : ${databasePath} "
                                         }
                                     }
+
+                                    return [outputTableNames: outputTableNamesResult]
 
                                 } else if (codes) {
                                     def inputTableNames = inputDataBase.tables
@@ -505,9 +516,12 @@ IProcess workflow() {
                                             nbzones++
                                             if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]),
                                                     id_zone, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
-                                                if (!bdtopo_processing(h2gis_datasource, processing_parameters, id_zone,
+                                                def bdtopo_results  = bdtopo_processing(h2gis_datasource, processing_parameters, id_zone,
                                                         file_outputFolder, outputFolderProperties.tables,
-                                                        output_datasource, finalOutputTables, outputSRID)) {
+                                                        output_datasource, finalOutputTables, outputSRID)
+                                                if(bdtopo_results){
+                                                    outputTableNamesResult.put(id_zone, bdtopo_results.findAll{ it.value!=null })
+                                                }else{
                                                     error "Cannot execute the geoclimate processing chain on $id_zone"
                                                     return
                                                 }
@@ -555,8 +569,14 @@ IProcess workflow() {
                                             nbzones++
                                             if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]),
                                                     code, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
-                                                bdtopo_processing(h2gis_datasource, processing_parameters,
+                                                def bdtopo_results  = bdtopo_processing(h2gis_datasource, processing_parameters,
                                                         code, file_outputFolder, outputFolderProperties.tables, null, null, outputSRID)
+                                                if(bdtopo_results){
+                                                    outputTableNamesResult.put(id_zone, bdtopo_results.findAll{ it.value!=null })
+                                                }else{
+                                                    error "Cannot execute the geoclimate processing chain on $code"
+                                                    return
+                                                }
                                             } else {
                                                 return
                                             }
@@ -597,7 +617,13 @@ IProcess workflow() {
                                         for (code in codes) {
                                             nbzones++
                                             if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]), code, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
-                                                bdtopo_processing(h2gis_datasource, processing_parameters, code, null, null, output_datasource, finalOutputTables, outputSRID)
+                                                def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, code, null, null, output_datasource, finalOutputTables, outputSRID)
+                                                if(bdtopo_results){
+                                                    outputTableNamesResult.put(code, bdtopo_results.findAll{ it.value!=null })
+                                                }else{
+                                                    error "Cannot execute the geoclimate processing chain on $code"
+                                                    return
+                                                }
                                             } else {
                                                 return null
                                             }
@@ -636,7 +662,10 @@ IProcess workflow() {
                                             for (id_zone in id_zones) {
                                                 nbzones++
                                                 if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]), id_zone, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
-                                                    if (!bdtopo_processing(h2gis_datasource, processing_parameters, id_zone, null, null, output_datasource, finalOutputTables, outputSRID)) {
+                                                    def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, id_zone, null, null, output_datasource, finalOutputTables, outputSRID)
+                                                    if(bdtopo_results){
+                                                        outputTableNamesResult.put(id_zone, bdtopo_results.findAll{ it.value!=null })
+                                                    }else{
                                                         error "Cannot execute the geoclimate processing chain on $id_zone"
                                                         return
                                                     }
@@ -1262,6 +1291,8 @@ def extractProcessingParameters(def processing_parameters){
  * @return
  */
 def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zones, def outputFolder, def outputFiles, def output_datasource, def outputTableNames, def outputSRID, def deleteOutputData=true){
+    //Add the GIS layers to the list of results
+    def results = [:]
     def  srid =  h2gis_datasource.getSpatialTable("COMMUNE").srid
     def id_zone
     if(id_zones in Collection){
@@ -1313,8 +1344,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
             def rsu_indicators_params = processing_parameters.rsu_indicators
             def grid_indicators_params = processing_parameters.grid_indicators
 
-            //Add the GIS layers to the list of results
-            def results = [:]
+
             results.put("outputTableZone", zoneTableName)
             results.put("roadTableName", roadTableName)
             results.put("railTableName", railTableName)
@@ -1381,6 +1411,8 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
 
             }
             info "${id_zone} has been processed"
+
+            return results
         }
 }
 
