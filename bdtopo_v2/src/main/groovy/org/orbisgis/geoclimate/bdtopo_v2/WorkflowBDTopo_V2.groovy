@@ -24,12 +24,15 @@ import java.sql.SQLException
 @BaseScript BDTopo_V2 BDTopo_V2
 
 /**
- * Load the BDTopo layers from a configuration file and compute the geoclimate indicators.
+ * BDTopo workflow processing chain.
+ *
+ * The parameters of the processing chain is defined
+ * from a configuration file or a Map.
  * The configuration file is stored in a json format
  *
- * @param configurationFile The path of the configuration file
+ * @param input The path of the configuration file or a Map
  *
- * The configuration file supports the following entries
+ * The input file or the Map supports the following entries *
  *
  * {
  * [OPTIONAL ENTRY] "description" :"A description for the configuration file"
@@ -138,33 +141,39 @@ IProcess workflow() {
     return create {
         title "Create all Geoindicators from BDTopo data"
         id "workflow"
-        inputs configurationFile: String
-        outputs outputTableNames: Map
-        run { configurationFile ->
-            //Store the zone identifier and the names of the tables
-            def outputTableNamesResult = [:]
-            def configFile
-            if (configurationFile) {
-                configFile = new File(configurationFile)
-                if (!configFile.isFile()) {
-                    error "The configuration file doesn't exist"
-                    return
+        inputs input: Object
+        outputs output: Map
+        run { input ->
+              Map parameters =null
+            if(input) {
+                if (input instanceof String){
+                    //Check if it's a path to a file
+                    def configFile = new File(input)
+                    if (!configFile.isFile()) {
+                        error "The configuration file doesn't exist"
+                        return
+                    }
+                    if(!FileUtilities.isExtensionWellFormated(configFile, "json")){
+                        error "The configuration file must be a json file"
+                        return
+                    }
+                    parameters = readJSONParameters(configFile)
+                }else if(input instanceof Map){
+                    parameters =input
                 }
-                if(!FileUtilities.isExtensionWellFormated(configFile, "json")){
-                    error "The configuration file must be a json file"
-                    return
-                }
-            } else {
-                error "The file parameters cannot be null or empty"
+            }
+            else {
+                error "The input parameters cannot be null or empty.\n Please set a path to a configuration file or " +
+                        "a map with all required parameters"
                 return
             }
-            Map parameters = readJSONParameters(configFile)
+            //Store the zone identifier and the names of the tables
+            def outputTableNamesResult = [:]
             if (parameters) {
-                debug "Reading file parameters from $configFile"
+                debug "Reading file parameters"
                 debug parameters.description
-                def input = parameters.input
+                def inputParameters = parameters.input
                 def output = parameters.output
-                //Default H2GIS database properties
                 //Default H2GIS database properties
                 def databaseFolder = System.getProperty("java.io.tmpdir")
                 def databaseName = "bdtopo_v2_2"+UUID.randomUUID().toString().replaceAll("-", "_")
@@ -199,8 +208,8 @@ IProcess workflow() {
                         h2gis_properties = ["databaseName": databasePath, "user": "sa", "password": ""]
                     }
                 }
-                if (input) {
-                    def isbdTopo_v2 = input.bdtopo_v2
+                if (inputParameters) {
+                    def isbdTopo_v2 = inputParameters.bdtopo_v2
                     if(!isbdTopo_v2){
                         error "The input datasource must be defined with the name bdtopo_v2"
                         return
@@ -308,7 +317,7 @@ IProcess workflow() {
                                             error "Cannot delete the local H2GIS database : ${databasePath} "
                                         }
                                     }
-                                    return [outputTableNames: outputTableNamesResult]
+                                    return [output: outputTableNamesResult]
                                 } else {
                                     error "Cannot load the files from the folder $inputFolder"
                                     return
@@ -350,7 +359,7 @@ IProcess workflow() {
                                                 error "Cannot delete the local H2GIS database : ${databasePath} "
                                             }
                                         }
-                                        return [outputTableNames: outputTableNamesResult]
+                                        return [output: outputTableNamesResult]
                                     } else {
                                         error "Cannot load the files from the folder $inputFolder"
                                         return
@@ -397,7 +406,7 @@ IProcess workflow() {
                                                 error "Cannot delete the local H2GIS database : ${databasePath} "
                                             }
                                         }
-                                        return [outputTableNames:outputTableNamesResult]
+                                        return [output:outputTableNamesResult]
                                     } else {
                                         error "Cannot load the files from the folder $inputFolder"
                                         return
@@ -508,7 +517,7 @@ IProcess workflow() {
                                         }
                                     }
 
-                                    return [outputTableNames: outputTableNamesResult]
+                                    return [output: outputTableNamesResult]
 
                                 } else if (codes) {
                                     def inputTableNames = inputDataBase.tables

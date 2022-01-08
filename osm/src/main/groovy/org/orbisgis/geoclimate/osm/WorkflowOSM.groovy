@@ -30,13 +30,15 @@ import org.orbisgis.geoclimate.Geoindicators
 
 
 /**
- * Extract OSM data and compute geoindicators. The parameters of the processing chain is defined
- * from a configuration file.
+ * Extract OSM data and compute geoindicators.
+ *
+ * The parameters of the processing chain is defined
+ * from a configuration file or a Map.
  * The configuration file is stored in a json format
  *
- * @param configurationFile The path of the configuration file
+ * @param input The path of the configuration file or a Map
  *
- * The configuration file supports the following entries
+ * The input file or the Map supports the following entries
  *
  * * {
  *  * [OPTIONAL ENTRY] "description" :"A description for the configuration file"
@@ -127,29 +129,38 @@ IProcess workflow() {
     return create {
         title "Create all Geoindicators from OSM data"
         id "workflow"
-        inputs configurationFile: ""
-        outputs outputTableNames:Map
-        run { configurationFile ->
-            def configFile
-            if (configurationFile) {
-                configFile = new File(configurationFile)
-                if (!configFile.isFile()) {
-                    error "The configuration file doesn't exist"
-                    return
+        inputs input: Object
+        outputs output:Map
+        run { input ->
+            //OSM workflow parameters
+            Map parameters =null
+            if(input) {
+                if (input instanceof String){
+                    //Check if it's a path to a file
+                    def configFile = new File(input)
+                    if (!configFile.isFile()) {
+                        error "The configuration file doesn't exist"
+                        return
+                    }
+                    if(!FileUtilities.isExtensionWellFormated(configFile, "json")){
+                        error "The configuration file must be a json file"
+                        return
+                    }
+                    parameters = readJSONParameters(configFile)
+                }else if(input instanceof Map){
+                    parameters =input
                 }
-                if(!FileUtilities.isExtensionWellFormated(configFile, "json")){
-                    error "The configuration file must be a json file"
-                    return
-                }
-            } else {
-                error "The file parameters cannot be null or empty"
+            }
+            else {
+                error "The input parameters cannot be null or empty.\n Please set a path to a configuration file or " +
+                        "a map with all required parameters"
                 return
             }
-            Map parameters = readJSONParameters(configFile)
+
             if (parameters) {
-                debug "Reading file parameters from $configFile"
+                debug "Reading file parameters"
                 debug parameters.get("description")
-                def input = parameters.get("input")
+                def inputParameter = parameters.get("input")
                 def output = parameters.get("output")
                 //Default H2GIS database properties
                 def databaseFolder = System.getProperty("java.io.tmpdir")
@@ -185,16 +196,16 @@ IProcess workflow() {
                         h2gis_properties = ["databaseName": databasePath, "user": "sa", "password": ""]
                     }
                 }
-                if (input) {
-                    def osmFilters = input.get("osm")
-                    def downloadAllOSMData = input.get("all")
+                if (inputParameter) {
+                    def osmFilters = inputParameter.get("osm")
+                    def downloadAllOSMData = inputParameter.get("all")
                     if(!downloadAllOSMData){
                         downloadAllOSMData = true
                     }else if(!downloadAllOSMData in Boolean){
                         error "The all parameter must be a boolean value"
                         return null
                     }
-                    def deleteOSMFile = input.get("delete")
+                    def deleteOSMFile = inputParameter.get("delete")
                     if(!deleteOSMFile){
                         deleteOSMFile=false
                     }
@@ -298,7 +309,7 @@ IProcess workflow() {
                                         error "Cannot delete the local H2GIS database : ${databasePath} "
                                     }
                                 }
-                                return [outputTableNames: osmprocessing.getResults().outputTableNames]
+                                return [output: osmprocessing.getResults().outputTableNames]
                             } else {
                                 error "Cannot find any OSM filters"
                                 return null
@@ -341,7 +352,7 @@ IProcess workflow() {
                                             error "Cannot delete the local H2GIS database : ${databasePath} "
                                         }
                                      }
-                                    return [outputTableNames: osmprocessing.getResults().outputTableNames]
+                                    return [output: osmprocessing.getResults().outputTableNames]
 
                                 } else {
                                     error "Cannot find any the OSM area from :  $inputFolder"
@@ -394,7 +405,7 @@ IProcess workflow() {
                                             error "Cannot delete the local H2GIS database : ${databasePath} "
                                         }
                                     }
-                                    return [outputTableNames: osmprocessing.getResults().outputTableNames]
+                                    return [output: osmprocessing.getResults().outputTableNames]
 
                                 } else {
                                     error "Cannot find any OSM area from : $inputFolder"
