@@ -438,7 +438,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "folder" : directory]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
-        assertTrue(process.execute(input: osm_parmeters, directory))
+        assertTrue(process.execute(input: osm_parmeters))
     }
 
     @Test
