@@ -220,15 +220,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters":
                         ["distance" : 0,
                          rsu_indicators: ["indicatorUse": ["LCZ"],
-                                          "svfSimplified": true,
-                                          "mapOfWeights":
-                                                  ["sky_view_factor": 1,
-                                                   "aspect_ratio": 1,
-                                                   "building_surface_fraction": 1,
-                                                   "impervious_surface_fraction" : 1,
-                                                   "pervious_surface_fraction": 1,
-                                                   "height_of_roughness_elements": 1,
-                                                   "terrain_roughness_length": 1]]
+                                          "svfSimplified": true]
                         ]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
@@ -252,8 +244,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "description" :"Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb" : [
                         "folder" : dirFile.absolutePath,
-                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE",
-                        "delete" :true
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete" :false
                 ],
                 "input" : [
                         "osm" : ["Pont-de-Veyle"]],

@@ -1425,7 +1425,6 @@ def abstractModelTableBatchExportTable(JdbcDataSource output_datasource, def out
                         //Collect all values
                         def ouputValues = finalOutputColumns.collectEntries { [it.toLowerCase(), null] }
                         ouputValues.put("id_zone", id_zone)
-                        outputconnection.setAutoCommit(false);
                         output_datasource.withBatch(BATCH_MAX_SIZE, insertTable.toString()) { ps ->
                             inputRes.eachRow { row ->
                                 //Fill the value
@@ -1444,7 +1443,6 @@ def abstractModelTableBatchExportTable(JdbcDataSource output_datasource, def out
                         error("Cannot save the table $output_table.\n", e);
                         return false;
                     } finally {
-                        outputconnection.setAutoCommit(true);
                         info "The table $h2gis_table_to_save has been exported into the table $output_table"
                     }
                 }
@@ -1545,7 +1543,6 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                         //Collect all values
                         def ouputValues = finalOutputColumns.collectEntries {[it.toLowerCase(), null]}
                         ouputValues.put("id_zone", id_zone)
-                        outputconnection.setAutoCommit(false);
                             output_datasource.withBatch(BATCH_MAX_SIZE, insertTable.toString()) { ps ->
                                 inputRes.eachRow{ row ->
                                     //Fill the value
