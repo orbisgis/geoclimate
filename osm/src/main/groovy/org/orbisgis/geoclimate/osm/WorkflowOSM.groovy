@@ -1353,7 +1353,7 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
             , "",inputSRID,outputSRID,reproject)
 
     //Export building_height_missing table
-    def output_table = outputTableNames.buildingHeightMissingTableName
+    def output_table = outputTableNames.building_height_missing
     def h2gis_table_to_save= h2gis_tables.buildingHeightMissingTableName
 
     if(output_table) {
