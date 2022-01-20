@@ -147,7 +147,7 @@ IProcess groundSkyViewFactor() {
             datasource """
                 DROP TABLE IF EXISTS $rsuDiff, $multiptsRSU, $multiptsRSUtot, $rsuDiffTot,$pts_RANG,$pts_order,$ptsRSUtot, $svfPts, $outputTableName;
                 CREATE TABLE $rsuDiff 
-                AS (SELECT  CASE WHEN   st_difference(a.$GEOMETRIC_COLUMN_RSU, st_makevalid(ST_ACCUM(b.$GEOMETRIC_COLUMN_BU)))='POLYGON EMPTY'
+                AS (SELECT  CASE WHEN   ST_ISEMPTY(st_difference(a.$GEOMETRIC_COLUMN_RSU, st_makevalid(ST_ACCUM(b.$GEOMETRIC_COLUMN_BU))))
                             THEN        ST_EXTERIORRING(ST_NORMALIZE(a.$GEOMETRIC_COLUMN_RSU))
                             ELSE        st_difference(a.$GEOMETRIC_COLUMN_RSU, st_makevalid(ST_ACCUM(b.$GEOMETRIC_COLUMN_BU)))
                             END         AS the_geom, a.$ID_COLUMN_RSU
@@ -157,7 +157,7 @@ IProcess groundSkyViewFactor() {
                 GROUP BY    a.$ID_COLUMN_RSU);
             """.toString()
             datasource """
-                CREATE INDEX ON $rsuDiff USING BTREE($ID_COLUMN_RSU);
+                CREATE INDEX ON $rsuDiff ($ID_COLUMN_RSU);
                 CREATE TABLE $rsuDiffTot AS 
                 SELECT b.$ID_COLUMN_RSU, case when a.$ID_COLUMN_RSU is null then b.the_geom else a.the_geom end as the_geom 
                 FROM $rsuTable as b left join $rsuDiff as a on a.$ID_COLUMN_RSU=b.$ID_COLUMN_RSU;
@@ -193,7 +193,7 @@ IProcess groundSkyViewFactor() {
             datasource """
                 CREATE TABLE $svfPts 
                 AS SELECT   a.$ID_COLUMN_RSU, 
-                            ST_SVF(ST_GEOMETRYN(a.the_geom,1), ST_ACCUM(ST_UPDATEZ(st_force3D(b.$GEOMETRIC_COLUMN_BU), b.$HEIGHT_WALL)), 
+                            ST_SVF(ST_GEOMETRYN(a.the_geom,1), ST_ACCUM(ST_UPDATEZ(b.$GEOMETRIC_COLUMN_BU, b.$HEIGHT_WALL)), 
                                    $rayLength, $numberOfDirection, 5) AS SVF
                 FROM        $multiptsRSUtot AS a, $correlationBuildingTable AS b 
                 WHERE       ST_EXPAND(a.the_geom, $rayLength) && b.$GEOMETRIC_COLUMN_BU AND 
@@ -210,12 +210,10 @@ IProcess groundSkyViewFactor() {
                 ON          a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU
                 GROUP BY    a.$ID_COLUMN_RSU)""".toString()
 
-            def tObis = System.currentTimeMillis() - to_start
-
-            debug "SVF calculation time: ${tObis / 1000} s"
+            debug "SVF calculation time: ${(System.currentTimeMillis() - to_start) / 1000} s"
 
             // The temporary tables are deleted
-            datasource "DROP TABLE IF EXISTS $rsuDiff, $ptsRSUtot, $multiptsRSU, $rsuDiffTot,$pts_order,$multiptsRSUtot, $svfPts".toString()
+            //datasource "DROP TABLE IF EXISTS $rsuDiff, $ptsRSUtot, $multiptsRSU, $rsuDiffTot,$pts_order,$multiptsRSUtot, $svfPts".toString()
 
             [outputTableName: outputTableName]
         }

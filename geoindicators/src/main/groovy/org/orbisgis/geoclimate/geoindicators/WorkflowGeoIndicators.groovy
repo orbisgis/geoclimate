@@ -1023,7 +1023,7 @@ IProcess computeAllGeoIndicators() {
                 urbanTypoModelName: "",
                 buildingHeightModelName: ""
         outputs outputTableBuildingIndicators: String, outputTableBlockIndicators: String,
-                outputTableRsuIndicators: String, outputTableRsuLcz: String, outputTableZone: String,
+                outputTableRsuIndicators: String, outputTableRsuLcz: String, zoneTableName: String,
                 outputTableRsuUrbanTypoArea: String, outputTableRsuUrbanTypoFloorArea: String,
                 outputTableBuildingUrbanTypo: String, buildingTableName :String
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
@@ -1173,7 +1173,7 @@ IProcess computeAllGeoIndicators() {
                                 outputTableBlockIndicators      : relationBlocks,
                                 outputTableRsuIndicators        : relationRSU,
                                 outputTableRsuLcz               : null,
-                                outputTableZone                 : zoneTable,
+                                zoneTableName                   : zoneTable,
                                 outputTableRsuUrbanTypoArea     : null,
                                 outputTableRsuUrbanTypoFloorArea: null,
                                 outputTableBuildingUrbanTypo    : null,
@@ -1464,7 +1464,7 @@ IProcess computeAllGeoIndicators() {
                         outputTableBlockIndicators      : blockIndicators,
                         outputTableRsuIndicators        : computeRSUIndicators.getResults().outputTableName,
                         outputTableRsuLcz               : rsuLcz,
-                        outputTableZone                 : zoneTable,
+                        zoneTableName                   : zoneTable,
                         outputTableRsuUrbanTypoArea     : urbanTypoArea,
                         outputTableRsuUrbanTypoFloorArea: urbanTypoFloorArea,
                         outputTableBuildingUrbanTypo    : urbanTypoBuilding,
@@ -1503,7 +1503,7 @@ IProcess computeAllGeoIndicators() {
  * The LCZ classification  and the urban typology
  *
  * @return 8 tables outputTableBuildingIndicators, outputTableBlockIndicators, outputTableRsuIndicators,
- * outputTableRsuLcz, outputTableZone ,
+ * outputTableRsuLcz, zoneTableName ,
  * outputTableRsuUrbanTypoArea, outputTableRsuUrbanTypoFloorArea,
  * outputTableBuildingUrbanTypo.
  * The first three tables contains the geoindicators and the last tables the LCZ and urban typology classifications.
@@ -1524,7 +1524,7 @@ IProcess computeGeoclimateIndicators() {
                                "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
                 urbanTypoModelName: ""
         outputs outputTableBuildingIndicators: String, outputTableBlockIndicators: String,
-                outputTableRsuIndicators: String, outputTableRsuLcz: String, outputTableZone: String,
+                outputTableRsuIndicators: String, outputTableRsuLcz: String, zoneTableName: String,
                 outputTableRsuUrbanTypoArea: String, outputTableRsuUrbanTypoFloorArea: String,
                 outputTableBuildingUrbanTypo: String
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
@@ -1821,7 +1821,7 @@ IProcess computeGeoclimateIndicators() {
                     outputTableBlockIndicators      : blockIndicators,
                     outputTableRsuIndicators        : rsuIndicators,
                     outputTableRsuLcz               : rsuLcz,
-                    outputTableZone                 : zoneTable,
+                    zoneTableName                   : zoneTable,
                     outputTableRsuUrbanTypoArea     : urbanTypoArea,
                     outputTableRsuUrbanTypoFloorArea: urbanTypoFloorArea,
                     outputTableBuildingUrbanTypo    : urbanTypoBuilding]

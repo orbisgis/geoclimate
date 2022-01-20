@@ -7,7 +7,6 @@ import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.slf4j.Logger
 
 import static org.junit.jupiter.api.Assertions.*
 
@@ -204,7 +203,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the result into a database",
                 "geoclimatedb" : [
-                        "folder" : "${dirFile.absolutePath}",
+                        "folder" : dirFile.absolutePath,
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :false
                 ],
@@ -214,26 +213,18 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "database" :
                                 ["user" : "sa",
                                 "password":"",
-                                 "url": "jdbc:h2://${dirFile.absolutePath+File.separator+"geoclimate_chain_db_output;AUTO_SERVER=TRUE"}",
+                                 "url": "jdbc:h2://"+dirFile.absolutePath+File.separator+"geoclimate_chain_db_output;AUTO_SERVER=TRUE",
                                  "tables": [
                                           "rsu_indicators":"rsu_indicators",
                                           "rsu_lcz":"rsu_lcz" ]]],
                 "parameters":
                         ["distance" : 0,
                          rsu_indicators: ["indicatorUse": ["LCZ"],
-                                          "svfSimplified": true,
-                                          "mapOfWeights":
-                                                  ["sky_view_factor": 1,
-                                                   "aspect_ratio": 1,
-                                                   "building_surface_fraction": 1,
-                                                   "impervious_surface_fraction" : 1,
-                                                   "pervious_surface_fraction": 1,
-                                                   "height_of_roughness_elements": 1,
-                                                   "terrain_roughness_length": 1]]
+                                          "svfSimplified": true]
                         ]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
-        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        assertTrue(process.execute(input: osm_parmeters))
         H2GIS outputdb = H2GIS.open(dirFile.absolutePath+File.separator+"geoclimate_chain_db_output;AUTO_SERVER=TRUE")
         def rsu_indicatorsTable = outputdb.getTable("rsu_indicators")
         assertNotNull(rsu_indicatorsTable)
@@ -252,9 +243,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb" : [
-                        "folder" : "${dirFile.absolutePath}",
-                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE",
-                        "delete" :true
+                        "folder" : dirFile.absolutePath,
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete" :false
                 ],
                 "input" : [
                         "osm" : ["Pont-de-Veyle"]],
@@ -281,7 +272,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
-        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        assertTrue(process.execute(input: osm_parmeters))
         def postgis_dbProperties = [databaseName: 'orbisgis_db',
                                            user        : 'orbisgis',
                                            password    : 'orbisgis',
@@ -316,14 +307,14 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the results in a folder",
                 "geoclimatedb" : [
-                        "folder" : "${dirFile.absolutePath}",
+                        "folder" : dirFile.absolutePath,
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :false
                 ],
                 "input" : [
                         "osm" : ["Pont-de-Veyle"]],
                 "output" :[
-                        "folder" : "${directory}",
+                        "folder" : directory,
                         "srid":4326],
                 "parameters":
                         ["distance" : 0,
@@ -332,7 +323,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
-        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        assertTrue(process.execute(input: osm_parmeters))
         //Test the SRID of all output files
         def geoFiles = []
         def  folder = new File("${directory+File.separator}osm_Pont-de-Veyle")
@@ -357,21 +348,21 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
                 "geoclimatedb" : [
-                        "folder" : "${dirFile.absolutePath}",
+                        "folder" : dirFile.absolutePath,
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" : [
                         "osm" : ["Pont-de-Veyle"]],
                 "output" :[
-                        "folder" : "$directory"],
+                        "folder" : directory],
                 "parameters":
                         [rsu_indicators: ["indicatorUse": ["LCZ"],
                                           "svfSimplified": true]
                         ]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
-        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
 
     }
 
@@ -385,17 +376,17 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb" : [
-                        "folder" : "${dirFile.absolutePath}",
+                        "folder" : dirFile.absolutePath,
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" : [
                         "osm" : [[38.89557963573336,-77.03930318355559,38.89944983078282,-77.03364372253417]]],
                 "output" :[
-                        "folder" : "$directory"]
+                        "folder" : directory]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
-        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        assertTrue(process.execute(input: osm_parmeters))
     }
 
     @Test
@@ -407,17 +398,17 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
                 "geoclimatedb" : [
-                        "folder" : "${dirFile.absolutePath}",
+                        "folder" : dirFile.absolutePath,
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" : [
                         "osm" : [[38.89557963573336,-77.03930318355559,38.89944983078282,-77.03364372253417]]],
                 "output" :[
-                        "folder" : "$directory"]
+                        "folder" : directory]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
-        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
     }
 
     @Test
@@ -429,17 +420,17 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
                 "geoclimatedb" : [
-                        "folder" : "${dirFile.absolutePath}",
+                        "folder" : dirFile.absolutePath,
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" : [
                         "osm" : ["", [-3.0961382389068604, -3.1055688858032227,48.77155634881654,]]],
                 "output" :[
-                        "folder" : "$directory"]
+                        "folder" : directory]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
-        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        assertTrue(process.execute(input: osm_parmeters))
     }
 
     @Test
@@ -451,14 +442,14 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
                 "geoclimatedb" : [
-                        "folder" : "${dirFile.absolutePath}",
+                        "folder" : dirFile.absolutePath,
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" : [
                         "osm" : ["Pont-de-Veyle"]],
                 "output" :[
-                        "folder" : "$directory"],
+                        "folder" : directory],
                 "parameters":
                         ["distance" : 100,
                          "hLevMin": 3,
@@ -478,7 +469,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
-        assertFalse(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        assertFalse(process.execute(input: osm_parmeters))
     }
 
     @Disabled
@@ -491,14 +482,14 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the results in a folder",
                 "geoclimatedb" : [
-                        "folder" : "${dirFile.absolutePath}",
+                        "folder" : dirFile.absolutePath,
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" : [
                         "osm" : ["Pont-de-Veyle"]],
                 "output" :[
-                        "folder" : "$directory"],
+                        "folder" : directory],
                 "parameters":
                         ["distance" : 0,
                          rsu_indicators: ["indicatorUse": ["LCZ", "UTRF"],
@@ -507,7 +498,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
-        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
     }
 
     @Test
@@ -519,14 +510,14 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run only the estimated height model",
                 "geoclimatedb" : [
-                        "folder" : "${dirFile.absolutePath}",
+                        "folder" : dirFile.absolutePath,
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :false
                 ],
                 "input" : [
                         "osm" : ["Pont-de-Veyle"]],
                 "output" :[
-                        "folder" : ["path": "$directory",
+                        "folder" : ["path": directory,
                                     "tables": ["building"]]],
                 "parameters":
                         ["distance" : 0,
@@ -537,7 +528,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
-        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
     }
@@ -551,14 +542,14 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the grid indicators",
                 "geoclimatedb" : [
-                        "folder" : "${dirFile.absolutePath}",
+                        "folder" : dirFile.absolutePath,
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :false
                 ],
                 "input" : [
                         "osm" : ["Pont-de-Veyle"]],
                 "output" :[
-                "folder" : ["path": "$directory",
+                "folder" : ["path": directory,
                     "tables": ["grid_indicators", "zones"]]],
                 "parameters":
                         ["distance" : 0,
@@ -571,7 +562,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
-        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
         def  grid_file = new File("${directory+File.separator}osm_Pont-de-Veyle${File.separator}grid_indicators_water_fraction.asc")
@@ -588,14 +579,14 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the grid indicators",
                 "geoclimatedb" : [
-                        "folder" : "${dirFile.absolutePath}",
+                        "folder" : dirFile.absolutePath,
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :false
                 ],
                 "input" : [
                         "osm" : ["Pont-de-Veyle"]],
                 "output" :[
-                        "folder" : ["path": "$directory",
+                        "folder" : ["path": directory,
                                     "tables": ["grid_indicators", "zones", "rsu_lcz"]]],
                 "parameters":
                         ["distance" : 0,
@@ -607,7 +598,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
-        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertEquals(5, h2gis.firstRow("select count(*) as count from grid_indicators where LCZ_PRIMARY is not null").count)
         assertEquals(1,h2gis.firstRow("select count(*) as count from grid_indicators where LCZ_PRIMARY is null").count)
@@ -622,7 +613,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the grid indicators",
                 "geoclimatedb" : [
-                        "folder" : "${dirFile.absolutePath}",
+                        "folder" : dirFile.absolutePath,
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :false
                 ],
@@ -630,7 +621,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "osm" : [[48.49749,5.25349,48.58082,5.33682]],
                         "delete":true],
                 "output" :[
-                        "folder" : ["path": "$directory",
+                        "folder" : ["path": directory,
                                     "tables": ["grid_indicators", "zones"]]],
                 "parameters":
                         ["distance" : 0,
@@ -644,7 +635,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
-        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
     }
 
     @Disabled //Use it for debug
@@ -657,14 +648,14 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb" : [
-                        "folder" : "${dirFile.absolutePath}",
+                        "folder" : dirFile.absolutePath,
                         "name" : "geoclimate_test_integration;AUTO_SERVER=TRUE;",
                         "delete" :false
                 ],
                 "input" : [
                         "osm" : ["Rennes"]],
                 "output" :[
-                        "folder" :"$directory"]
+                        "folder" :directory]
                 ,
                 "parameters":
                         ["distance" : 0,
@@ -683,7 +674,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
-        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
     }
 
 
@@ -697,7 +688,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
                 "geoclimatedb" : [
-                        "folder" : "${dirFile.absolutePath}",
+                        "folder" : dirFile.absolutePath,
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :false
                 ],
@@ -705,7 +696,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "osm" : [[
                                          53.83061, 9.83664, 53.91394, 9.91997
                                  ]]],
-                "output" :["folder" : "$directory",srid: 4326]
+                "output" :["folder" : directory,srid: 4326]
                 ,
                 "parameters":
                         ["distance" : 0,
@@ -726,7 +717,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         ]
 
         IProcess process = OSM.WorkflowOSM.workflow()
-        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
     }
 
 
@@ -739,14 +730,14 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb" : [
-                        "folder" : "${dirFile.absolutePath}",
+                        "folder" : dirFile.absolutePath,
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" : [
                         "osm" : ["Pont-de-Veyle"]],
                 "output" :[
-                        "folder" : "$directory"],
+                        "folder" : directory],
                 "parameters":
                         [
                                 rsu_indicators:[
@@ -757,7 +748,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
-        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
     }
 
 
@@ -770,20 +761,21 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def osm_parmeters = [
                 "description" :"Example of configuration file to run only the road traffic estimation",
                 "geoclimatedb" : [
-                        "folder" : "${dirFile.absolutePath}",
+                        "folder" : dirFile.absolutePath,
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :false
                 ],
                 "input" : [
                         "osm" : ["Pont-de-Veyle"]],
                 "output" :[
-                        "folder" : ["path": "$directory",
+                        "folder" : ["path": directory,
                                     "tables": ["road_traffic"]]],
                 "parameters":
                         ["road_traffic" : true]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
-        assertTrue(process.execute(configurationFile: createOSMConfigFile(osm_parmeters, directory)))
+        assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
+        assertEquals(3,  process.getResults().output["Pont-de-Veyle"].size())
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from road_traffic where road_type is not null").count>0
     }
@@ -811,6 +803,6 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def configFile = getClass().getResource("config/osm_workflow_placename_folderoutput.json").toURI()
         //configFile =getClass().getResource("config/osm_workflow_envelope_folderoutput.json").toURI()
         IProcess process = OSM.WorkflowOSM.workflow()
-        assertTrue(process.execute(configurationFile: configFile))
+        assertTrue(process.execute(input: configFile))
     }
 }

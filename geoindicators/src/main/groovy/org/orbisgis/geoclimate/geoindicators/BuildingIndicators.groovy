@@ -388,14 +388,14 @@ IProcess roadDistance() {
                 CREATE TABLE $build_buffer AS
                     SELECT $ID_FIELD_BU,  ST_BUFFER($GEOMETRIC_FIELD, $bufferDist) AS $GEOMETRIC_FIELD 
                     FROM $inputBuildingTableName;
-                CREATE INDEX IF NOT EXISTS buff_ids ON $build_buffer USING RTREE($GEOMETRIC_FIELD)""".toString()
+                CREATE SPATIAL INDEX IF NOT EXISTS buff_ids ON $build_buffer ($GEOMETRIC_FIELD)""".toString()
             // The road surfaces are created
             datasource """
                 DROP TABLE IF EXISTS $road_surf;
                 CREATE TABLE $road_surf AS 
                     SELECT ST_BUFFER($GEOMETRIC_FIELD, $ROAD_WIDTH::DOUBLE PRECISION/2,'endcap=flat') AS $GEOMETRIC_FIELD 
                     FROM $inputRoadTableName; 
-                CREATE INDEX IF NOT EXISTS buff_ids ON $road_surf USING RTREE($GEOMETRIC_FIELD)""".toString()
+                CREATE SPATIAL INDEX IF NOT EXISTS buff_ids ON $road_surf ($GEOMETRIC_FIELD)""".toString()
             // The roads located within the buffer are identified
             datasource """
                 DROP TABLE IF EXISTS $road_within_buffer; 
@@ -404,7 +404,7 @@ IProcess roadDistance() {
                     FROM $build_buffer a, $road_surf b 
                     WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD 
                     AND ST_INTERSECTS(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD); 
-                CREATE INDEX IF NOT EXISTS with_buff_id ON $road_within_buffer USING BTREE($ID_FIELD_BU); """.toString()
+                CREATE INDEX IF NOT EXISTS with_buff_id ON $road_within_buffer ($ID_FIELD_BU); """.toString()
 
             // The minimum distance is calculated between each building and the surrounding roads (the minimum
             // distance is set to the bufferDist value for buildings having no road within a bufferDist meters

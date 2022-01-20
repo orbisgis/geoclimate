@@ -302,7 +302,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         ]
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
-        assertFalse(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
+        assertFalse(process.execute(input: createConfigFile(bdTopoParameters, directory)))
     }
 
     @Disabled
@@ -351,7 +351,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         ]
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
-        assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
+        assertTrue(process.execute(input: createConfigFile(bdTopoParameters, directory)))
     }
 
 
@@ -438,7 +438,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         ]
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
-        assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
+        assertTrue(process.execute(input: createConfigFile(bdTopoParameters, directory)))
         //Check if the tables exist and contains at least one row
         outputTables.values().each {it->
             def spatialTable = postGIS.getSpatialTable(it)
@@ -497,7 +497,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         ]
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
-        assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
+        assertTrue(process.execute(input: createConfigFile(bdTopoParameters, directory)))
         //Check if the tables exist and contains at least one row
         outputTables.values().each {it->
             def spatialTable = postGIS.getSpatialTable(it)
@@ -540,7 +540,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         ]
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
-        assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
+        assertTrue(process.execute(input: createConfigFile(bdTopoParameters, directory)))
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
     }
@@ -578,7 +578,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         ]
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
-        assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
+        assertTrue(process.execute(input: createConfigFile(bdTopoParameters, directory)))
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE")
         h2gis.load(directory+File.separator+"bdtopo_v2_"+envCoords.join("-")+File.separator+"grid_indicators.geojson")
         assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
@@ -614,7 +614,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         ]
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
-        assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
+        assertTrue(process.execute(input: createConfigFile(bdTopoParameters, directory)))
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
     }
@@ -649,7 +649,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         ]
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
-        assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
+        assertTrue(process.execute(input: createConfigFile(bdTopoParameters, directory)))
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where LCZ_PRIMARY is not null").count>0
     }
@@ -688,7 +688,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         ]
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
-        assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
+        assertTrue(process.execute(input: createConfigFile(bdTopoParameters, directory)))
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where BUILDING_FRACTION>0").count>0
     }
@@ -704,7 +704,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         def bdTopoParameters = [
                 "description" :"Example of configuration file to build the road traffic",
                 "geoclimatedb" : [
-                        "folder" : "${dirFile.absolutePath}",
+                        "folder" : dirFile.absolutePath,
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :false
                 ],
@@ -720,7 +720,8 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         ]
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
-        assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
+        assertTrue(process.execute(input: bdTopoParameters))
+        assertEquals(8,  process.getResults().output[communeToTest].size())
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from road_traffic where road_type is null").count==0
     }
@@ -814,7 +815,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         ]
 
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
-        assertTrue(process.execute(configurationFile: createConfigFile(workflow_parameters, directory)))
+        assertTrue(process.execute(input: createConfigFile(workflow_parameters, directory)))
     }
 
     @Disabled //Use it for integration test with a postgis database
@@ -872,7 +873,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         ]
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
-        assertTrue(process.execute(configurationFile: createConfigFile(bdTopoParameters, directory)))
+        assertTrue(process.execute(input: createConfigFile(bdTopoParameters, directory)))
 
     }
 

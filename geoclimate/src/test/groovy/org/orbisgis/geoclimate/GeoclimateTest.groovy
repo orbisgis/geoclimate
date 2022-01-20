@@ -93,14 +93,14 @@ class GeoclimateTest {
         def osmParameters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
                 "geoclimatedb" : [
-                        "folder" : "${dirFile.absolutePath}",
+                        "folder" : dirFile.absolutePath,
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE",
                         "delete" :true
                 ],
                 "input" : [
                         "osm" : ["Pont de veyle"]],
                 "output" :[
-                        "folder" : "$directory"],
+                        "folder" : directory],
                 "parameters":[
                         "rsu_indicators":[
                                 "indicatorUse": ["LCZ"],
@@ -115,13 +115,6 @@ class GeoclimateTest {
                         ]
                 ]
         ]
-        def json = JsonOutput.toJson(osmParameters)
-        def configFile = File.createTempFile("osmConfigFile",".json")
-        if(configFile.exists()){
-            configFile.delete()
-        }
-        configFile.write(json)
-
-        Geoclimate.OSM.workflow.execute(configurationFile: configFile.absolutePath)
+        Geoclimate.OSM.workflow.execute(input: osmParameters)
     }
 }

@@ -1,19 +1,18 @@
 package org.orbisgis.geoclimate.bdtopo_v2
 
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInfo
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 
 import static org.junit.jupiter.api.Assertions.*
 
 class InputDataLoadingTest {
-    
-    def h2GISDatabase
+
 
     public static communeToTest = "12174"
 
-    @BeforeEach
-    void beforeEach(){
+
+    H2GIS createH2GIS(String dbPath){
         def dataFolderInseeCode = "sample_$communeToTest"
         def listFilesBDTopo = ["COMMUNE", "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL", "BATI_REMARQUABLE",
                                "ROUTE", "SURFACE_EAU", "ZONE_VEGETATION", "ZONE_VEGETATION",
@@ -27,7 +26,7 @@ class InputDataLoadingTest {
                            "ROAD_BD_TOPO_TYPE", "VEGET_ABSTRACT_PARAMETERS", "VEGET_ABSTRACT_TYPE",
                            "VEGET_BD_TOPO_TYPE"]
 
-        h2GISDatabase = H2GIS.open("./target/h2gis_input_data_formating;AUTO_SERVER=TRUE", "sa", "")
+        H2GIS h2GISDatabase = H2GIS.open("./target/${dbPath};AUTO_SERVER=TRUE", "sa", "")
 
         // Load parameter files
         paramTables.each{
@@ -37,10 +36,12 @@ class InputDataLoadingTest {
         listFilesBDTopo.each{
             h2GISDatabase.load(getClass().getResource("$dataFolderInseeCode/${it}.shp"), it, true)
         }
+        return h2GISDatabase
     }
 
     @Test
     void prepareBDTopoDataTest() {
+        def h2GISDatabase =  createH2GIS("prepareBDTopoDataTest")
         def process = BDTopo_V2.InputDataLoading.prepareBDTopoData()
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableCommuneName: 'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
@@ -247,6 +248,7 @@ class InputDataLoadingTest {
     // Check whether the INPUT_BUILDING table is well produced, despite the absence of the BATI_INDIFFERENCIE table
     @Test
     void importPreprocessBuildIndifTest() {
+        def h2GISDatabase =  createH2GIS("importPreprocessBuildIndifTest")
         h2GISDatabase.execute ("""DROP TABLE IF EXISTS BATI_INDIFFERENCIE""")
         def process = BDTopo_V2.InputDataLoading.prepareBDTopoData()
         assertTrue process.execute([datasource: h2GISDatabase,
@@ -299,6 +301,7 @@ class InputDataLoadingTest {
     // Check whether the INPUT_BUILDING table is well produced, despite the absence of the BATI_INDUSTRIEL table
     @Test
     void importPreprocessBuildIndusTest() {
+        def h2GISDatabase =  createH2GIS("importPreprocessBuildIndusTest")
         h2GISDatabase.execute ("""DROP TABLE IF EXISTS BATI_INDUSTRIEL""")
         def process = BDTopo_V2.InputDataLoading.prepareBDTopoData()
         assertTrue process.execute([datasource: h2GISDatabase,
@@ -352,6 +355,7 @@ class InputDataLoadingTest {
     // Check whether the INPUT_BUILDING table is well produced, despite the absence of the BATI_REMARQUABLE table
     @Test
     void importPreprocessBuildRemarqTest() {
+        def h2GISDatabase = createH2GIS("importPreprocessBuildRemarqTest")
         h2GISDatabase.execute ("""DROP TABLE IF EXISTS BATI_REMARQUABLE """)
         def process = BDTopo_V2.InputDataLoading.prepareBDTopoData()
         assertTrue process.execute([datasource: h2GISDatabase,
@@ -405,6 +409,7 @@ class InputDataLoadingTest {
     // Check whether the INPUT_ROAD table is well produced, despite the absence of the ROUTE table
     @Test
     void importPreprocessRoadTest() {
+        def h2GISDatabase = createH2GIS("importPreprocessRoadTest")
         h2GISDatabase.execute ("""DROP TABLE IF EXISTS ROUTE""")
         def process = BDTopo_V2.InputDataLoading.prepareBDTopoData()
         assertTrue process.execute([datasource: h2GISDatabase,
@@ -460,6 +465,7 @@ class InputDataLoadingTest {
     // Check whether the INPUT_RAIL table is well produced, despite the absence of the TRONCON_VOIE_FERREE table
     @Test
     void importPreprocessRailTest() {
+        def h2GISDatabase = createH2GIS("importPreprocessRailTest")
         h2GISDatabase.execute ("DROP TABLE IF EXISTS TRONCON_VOIE_FERREE;")
         def process = BDTopo_V2.InputDataLoading.prepareBDTopoData()
         assertTrue process.execute([datasource: h2GISDatabase,
@@ -511,6 +517,7 @@ class InputDataLoadingTest {
     // Check whether the INPUT_HYDRO table is well produced, despite the absence of the SURFACE_EAU table
     @Test
     void importPreprocessHydroTest() {
+        def h2GISDatabase = createH2GIS("importPreprocessHydroTest")
         h2GISDatabase.execute ("DROP TABLE IF EXISTS SURFACE_EAU;")
         def process = BDTopo_V2.InputDataLoading.prepareBDTopoData()
         assertTrue process.execute([datasource: h2GISDatabase,
@@ -556,6 +563,7 @@ class InputDataLoadingTest {
     // Check whether the INPUT_VEGET table is well produced, despite the absence of the ZONE_VEGETATION table
     @Test
     void importPreprocessVegetTest() {
+        def h2GISDatabase = createH2GIS("importPreprocessVegetTest")
         h2GISDatabase.execute ("DROP TABLE IF EXISTS ZONE_VEGETATION;")
         def process = BDTopo_V2.InputDataLoading.prepareBDTopoData()
         assertTrue process.execute([datasource: h2GISDatabase,
@@ -603,6 +611,7 @@ class InputDataLoadingTest {
     // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the SURFACE_ACTIVITE table
     @Test
     void importPreprocessImperviousSurfActTest() {
+        def h2GISDatabase =  createH2GIS("importPreprocessImperviousSurfActTest")
         h2GISDatabase.execute ("DROP TABLE IF EXISTS SURFACE_ACTIVITE;")
         def process = BDTopo_V2.InputDataLoading.prepareBDTopoData()
         assertTrue process.execute([datasource: h2GISDatabase,
@@ -656,6 +665,7 @@ class InputDataLoadingTest {
     // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the TERRAIN_SPORT table
     @Test
     void importPreprocessImperviousSportTest() {
+        def h2GISDatabase =  createH2GIS("importPreprocessImperviousSportTest")
         h2GISDatabase.execute ("DROP TABLE IF EXISTS TERRAIN_SPORT;")
         def process = BDTopo_V2.InputDataLoading.prepareBDTopoData()
         assertTrue process.execute([datasource: h2GISDatabase,
@@ -709,6 +719,7 @@ class InputDataLoadingTest {
     // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the CONSTRUCTION_SURFACIQUE table
     @Test
     void importPreprocessImperviousConstrSurfTest() {
+        def h2GISDatabase = createH2GIS("importPreprocessImperviousConstrSurfTest")
         h2GISDatabase.execute ("DROP TABLE IF EXISTS CONSTRUCTION_SURFACIQUE;")
         def process = BDTopo_V2.InputDataLoading.prepareBDTopoData()
         assertTrue process.execute([datasource: h2GISDatabase,
@@ -762,6 +773,7 @@ class InputDataLoadingTest {
     // Check whether the INPUT_IMPERVIOUS table is well produced, despite the absence of the SURFACE_ROUTE table
     @Test
     void importPreprocessImperviousSurfRoadTest() {
+        def h2GISDatabase =  createH2GIS("importPreprocessImperviousSurfRoadTest")
         h2GISDatabase.execute ("DROP TABLE IF EXISTS SURFACE_ROUTE;")
         def process = BDTopo_V2.InputDataLoading.prepareBDTopoData()
         assertTrue process.execute([datasource: h2GISDatabase,
@@ -815,6 +827,7 @@ class InputDataLoadingTest {
     // Check that the conversion (to valid) of an invalid building (ID = BATIMENT0000000290122667 from BATI_INDIFFERENCIE) is well done
     @Test
     void checkMakeValidBuildingIndif() {
+        def h2GISDatabase =  createH2GIS("checkMakeValidBuildingIndif")
         def process = BDTopo_V2.InputDataLoading.prepareBDTopoData()
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableCommuneName: 'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
@@ -840,6 +853,7 @@ class InputDataLoadingTest {
 
     @Test
     void initTypes() {
+        def h2GISDatabase = createH2GIS("initTypes")
         def process = BDTopo_V2.InputDataLoading.initTypes()
         assertTrue process.execute([datasource       : h2GISDatabase, buildingAbstractUseType: 'BUILDING_ABSTRACT_USE_TYPE',
                                     roadAbstractType: 'ROAD_ABSTRACT_TYPE', roadAbstractCrossing: 'ROAD_ABSTRACT_CROSSING',
@@ -984,8 +998,8 @@ class InputDataLoadingTest {
     }
 
     @Test
-    void initParametersAbstract(){
-        H2GIS h2GISDatabase = H2GIS.open("./target/h2gis_abstract_tables_${UUID.randomUUID()};AUTO_SERVER=TRUE", "sa", "")
+    void initParametersAbstract() {
+        def h2GISDatabase =  createH2GIS("initParametersAbstract")
         def process = BDTopo_V2.InputDataLoading.initParametersAbstract()
         assertTrue process.execute([datasource: h2GISDatabase])
         process.getResults().each {entry ->
