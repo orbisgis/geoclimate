@@ -780,6 +780,41 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         assertTrue h2gis.firstRow("select count(*) as count from road_traffic where road_type is not null").count>0
     }
 
+
+    @Test
+    void osmWrongAreaSiz() {
+        String directory ="./target/geoclimate_chain_db"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "description" :"Example of configuration file to run the OSM workflow and store the result into a database",
+                "geoclimatedb" : [
+                        "folder" : dirFile.absolutePath,
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete" :false
+                ],
+                "input" : [
+                        "osm" : ["Pont-de-Veyle"],
+                        "area" : -1],
+                "output" :[
+                        "database" :
+                                ["user" : "sa",
+                                 "password":"",
+                                 "url": "jdbc:h2://"+dirFile.absolutePath+File.separator+"geoclimate_chain_db_output;AUTO_SERVER=TRUE",
+                                 "tables": [
+                                         "rsu_indicators":"rsu_indicators",
+                                         "rsu_lcz":"rsu_lcz" ]]],
+                "parameters":
+                        ["distance" : 0,
+                         rsu_indicators: ["indicatorUse": ["LCZ"],
+                                          "svfSimplified": true]
+                        ]
+        ]
+        IProcess process = OSM.WorkflowOSM.workflow()
+        assertFalse(process.execute(input: osm_parmeters))
+    }
+
     /**
      * Create a configuration file
      * @param osmParameters
