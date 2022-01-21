@@ -54,6 +54,7 @@ import org.orbisgis.geoclimate.Geoindicators
  *                                  // e.g "osm" : ["oran", "plourivo"]
  *                                  // or bbox expressed as "osm" : [[38.89557963573336,-77.03930318355559,38.89944983078282,-77.03364372253417]]
  *  *           "all":true //optional value if the user wants to download a limited set of data. Default is true to download all OSM elements
+ *  *            "area" : 2000 //optional value to control the area ov the OSM BBox, default is 1000 km²
  *              }
  *  *             ,
  *  *  [OPTIONAL ENTRY]  "output" :{ //If not ouput is set the results are keep in the local database
@@ -205,6 +206,17 @@ IProcess workflow() {
                         error "The all parameter must be a boolean value"
                         return null
                     }
+                    def  osm_size_area = inputParameter.get("area")
+
+                    if(!osm_size_area){
+                        //Default size in km²
+                        osm_size_area = 1000
+                    }
+                    else if(osm_size_area<0){
+                        error "The area of the bounding box to be extracted from OSM must be greater than 0 km²"
+                        return null
+                    }
+
                     def deleteOSMFile = inputParameter.get("delete")
                     if(!deleteOSMFile){
                         deleteOSMFile=false
@@ -294,7 +306,7 @@ IProcess workflow() {
                                         processing_parameters: processing_parameters,
                                         id_zones: osmFilters, outputFolder: file_outputFolder, ouputTableFiles: outputFolderProperties.tables,
                                         output_datasource: output_datasource, outputTableNames: finalOutputTables, outputSRID :outputSRID, downloadAllOSMData:downloadAllOSMData, deleteOutputData: deleteOutputData,
-                                        deleteOSMFile:deleteOSMFile, logTableZones:logTableZones)) {
+                                        deleteOSMFile:deleteOSMFile, logTableZones:logTableZones, bbox_size : osm_size_area)) {
                                     h2gis_datasource.getSpatialTable(logTableZones).save("${databaseFolder+File.separator}logzones.geojson")
                                     return null
                                 }
@@ -336,7 +348,7 @@ IProcess workflow() {
                                             processing_parameters: processing_parameters,
                                             id_zones: osmFilters, outputFolder: file_outputFolder, ouputTableFiles: outputFolderProperties.tables,
                                             output_datasource: null, outputTableNames: null, outputSRID :outputSRID, downloadAllOSMData:downloadAllOSMData, deleteOutputData: deleteOutputData,
-                                            deleteOSMFile:deleteOSMFile, logTableZones: logTableZones)) {
+                                            deleteOSMFile:deleteOSMFile, logTableZones: logTableZones, bbox_size : osm_size_area)) {
                                         h2gis_datasource.getSpatialTable(logTableZones).save("${databaseFolder+File.separator}logzones.geojson")
                                         return null
                                     }
@@ -390,7 +402,7 @@ IProcess workflow() {
                                             processing_parameters: processing_parameters,
                                             id_zones: osmFilters, outputFolder: null, ouputTableFiles: null,
                                             output_datasource: output_datasource, outputTableNames: finalOutputTables,outputSRID :outputSRID,downloadAllOSMData:downloadAllOSMData,
-                                            deleteOutputData: deleteOutputData,deleteOSMFile:deleteOSMFile,logTableZones: logTableZones)) {
+                                            deleteOutputData: deleteOutputData,deleteOSMFile:deleteOSMFile,logTableZones: logTableZones, bbox_size : osm_size_area)) {
                                         h2gis_datasource.getSpatialTable(logTableZones).save("${databaseFolder+File.separator}logzones.geojson")
                                         return null
                                     }
@@ -450,6 +462,7 @@ IProcess workflow() {
  * @param ouputTableFiles the name of the tables that will be saved
  * @param output_datasource a connexion to a database to save the results
  * @param outputTableNames the name of the tables in the output_datasource to save the results
+ * @param bbox_size the size of OSM BBox in km²
  * @return the identifier of the zone and the list of the output tables computed and stored in the local database for this zone
  */
 IProcess osm_processing() {
@@ -458,10 +471,10 @@ IProcess osm_processing() {
         id "osm_processing"
         inputs h2gis_datasource: JdbcDataSource, processing_parameters: Map, id_zones: Map,
                 outputFolder: "", ouputTableFiles: "", output_datasource: "", outputTableNames: "", outputSRID : Integer, downloadAllOSMData : true,
-                deleteOutputData:true, deleteOSMFile:false, logTableZones:String
+                deleteOutputData:true, deleteOSMFile:false, logTableZones:String, bbox_size : 1000
         outputs outputTableNames: Map
         run { H2GIS h2gis_datasource, processing_parameters, id_zones, outputFolder, ouputTableFiles, output_datasource, outputTableNames,
-              outputSRID, downloadAllOSMData,deleteOutputData, deleteOSMFile,logTableZones ->
+              outputSRID, downloadAllOSMData,deleteOutputData, deleteOSMFile,logTableZones, bbox_size ->
             //Store the zone identifier and the names of the tables
             def outputTableNamesResult = [:]
             //Create the table to log on the processed zone
@@ -472,7 +485,7 @@ IProcess osm_processing() {
             id_zones.eachWithIndex { id_zone, index ->
                 def start = System.currentTimeMillis();
                 //Extract the zone table and read its SRID
-                def zoneTableNames = extractOSMZone(h2gis_datasource, id_zone, processing_parameters)
+                def zoneTableNames = extractOSMZone(h2gis_datasource, id_zone, processing_parameters.distance, bbox_size)
                 if (zoneTableNames) {
                     id_zone = id_zone in Map ? "bbox_" + id_zone.join('_') : id_zone
                     def zoneTableName = zoneTableNames.outputZoneTable
@@ -746,10 +759,10 @@ IProcess osm_processing() {
  *
  * @param datasource a connexion to the local H2GIS database
  * @param zoneToExtract the osm filter : place or bbox
- * @param processing_parameters geoclimate parameters
+ * @param distance to expand the OSM bbox
  * @return
  */
-def extractOSMZone(def datasource, def zoneToExtract, def processing_parameters) {
+def extractOSMZone(def datasource, def zoneToExtract, def distance, def bbox_size) {
     def outputZoneTable = "ZONE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
     def outputZoneEnvelopeTable = "ZONE_ENVELOPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
     if (zoneToExtract) {
@@ -781,9 +794,9 @@ def extractOSMZone(def datasource, def zoneToExtract, def processing_parameters)
         }
 
         /**
-         * Extract the OSM file from the envelope of the geometry
+         * Create the OSM BBOX to be extracted
          */
-        def envelope = GeographyUtilities.expandEnvelopeByMeters(geom.getEnvelopeInternal(), processing_parameters.distance)
+        def envelope = GeographyUtilities.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance)
 
         //Find the best utm zone
         //Reproject the geometry and its envelope to the UTM zone
@@ -791,6 +804,13 @@ def extractOSMZone(def datasource, def zoneToExtract, def processing_parameters)
         def interiorPoint = envelope.centre()
         def epsg = GeographyUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
         def geomUTM = ST_Transform.ST_Transform(con, geom, epsg)
+
+        //Check the size of the bbox
+        if((geomUTM.getEnvelopeInternal().getArea()/1.0E+6)>=bbox_size){
+            error("The size of the OSM BBOX is greated than the limit : ${bbox_size} in km².\n" +
+                    "Please increase the area parameter if you want to skip this limit.")
+            return null
+        }
         def tmpGeomEnv = geom.getFactory().toGeometry(envelope)
         tmpGeomEnv.setSRID(4326)
 
@@ -887,30 +907,6 @@ def createDatasource(def database_properties){
     }
 }
 
-/**
- * Workaround to change the postgresql URL when a linked table is created with H2GIS
- * @param input_database_properties
- * @return the input_database_properties with the h2 url
- */
-def updateDriverURL(def input_database_properties){
-    def db_output_url = input_database_properties.get("url")
-    if(db_output_url){
-        if (db_output_url.startsWith("jdbc:")) {
-            String url = db_output_url.substring("jdbc:".length())
-            if (url.startsWith("postgresql")) {
-                input_database_properties.put("url", "jdbc:postgresql_h2"+db_output_url.substring("jdbc:postgresql".length()))
-                return input_database_properties
-            }
-            else{
-                return input_database_properties
-            }
-        }
-    }
-    else {
-        error"Invalid output database url"
-        return null
-    }
-}
 
 /**
  * Read the file parameters and create a new map of parameters
@@ -1283,7 +1279,6 @@ def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource,def o
  * @return
  */
 def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_datasource, def outputTableNames, def h2gis_tables, def id_zone,def inputSRID, def outputSRID, def reproject){
-    Connection con = output_datasource.getConnection()
     //Export building indicators
     indicatorTableBatchExportTable(output_datasource, outputTableNames.building_indicators,id_zone,h2gis_datasource, h2gis_tables.outputTableBuildingIndicators
             , "WHERE ID_RSU IS NOT NULL", inputSRID, outputSRID,reproject)
@@ -1359,7 +1354,7 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
     if(output_table) {
         if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
             if (output_datasource.hasTable(output_table)) {
-                output_datasource.execute("DELETE FROM $output_table WHERE id_zone= '$id_zone'".toString());
+                output_datasource.execute("DELETE FROM $output_table WHERE id_zone= '$id_zone'".toString())
             }else{
                 output_datasource.execute """CREATE TABLE $output_table(ID_BUILD INTEGER, ID_SOURCE VARCHAR, ID_ZONE VARCHAR)""".toString()
             }
@@ -1425,6 +1420,7 @@ def abstractModelTableBatchExportTable(JdbcDataSource output_datasource, def out
                         //Collect all values
                         def ouputValues = finalOutputColumns.collectEntries { [it.toLowerCase(), null] }
                         ouputValues.put("id_zone", id_zone)
+                        outputconnection.setAutoCommit(false);
                         output_datasource.withBatch(BATCH_MAX_SIZE, insertTable.toString()) { ps ->
                             inputRes.eachRow { row ->
                                 //Fill the value
@@ -1443,6 +1439,7 @@ def abstractModelTableBatchExportTable(JdbcDataSource output_datasource, def out
                         error("Cannot save the table $output_table.\n", e);
                         return false;
                     } finally {
+                        outputconnection.setAutoCommit(true);
                         info "The table $h2gis_table_to_save has been exported into the table $output_table"
                     }
                 }
@@ -1543,6 +1540,7 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                         //Collect all values
                         def ouputValues = finalOutputColumns.collectEntries {[it.toLowerCase(), null]}
                         ouputValues.put("id_zone", id_zone)
+                        outputconnection.setAutoCommit(false);
                             output_datasource.withBatch(BATCH_MAX_SIZE, insertTable.toString()) { ps ->
                                 inputRes.eachRow{ row ->
                                     //Fill the value
@@ -1562,6 +1560,7 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                         error("Cannot save the table $output_table.\n", e);
                         return false;
                     } finally {
+                        outputconnection.setAutoCommit(true);
                         info "The table $h2gis_table_to_save has been exported into the table $output_table"
                     }
                 }
