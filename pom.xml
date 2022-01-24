@@ -27,6 +27,7 @@
         <site.basedir>${project.basedir}</site.basedir>
         <log4j-version>2.15.0</log4j-version>
         <h2gis-version>2.0.0-SNAPSHOT</h2gis-version>
+        <h2-version>2.1.210</h2-version>
         <orbisparent-version>1.2.0-SNAPSHOT</orbisparent-version>
         <cts-version>1.6.0-SNAPSHOT</cts-version>
         <orbisdata-version>1.0.1-SNAPSHOT</orbisdata-version>
@@ -68,6 +69,7 @@
             <dependency>
                 <groupId>com.h2database</groupId>
                 <artifactId>h2</artifactId>
+                <version>${h2-version}</version>
             </dependency>
             <dependency>
                 <groupId>org.orbisgis</groupId>
