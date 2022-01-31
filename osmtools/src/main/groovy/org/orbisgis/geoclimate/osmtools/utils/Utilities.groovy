@@ -154,10 +154,10 @@ class Utilities {
             error e.getMessage()
             return null
         }
-        if (coordinates.size == 1) {
+        if (coordinates.size() == 1) {
             return geometryFactory.createPolygon(ring)
         } else {
-            def holes = coordinates[1..coordinates.size - 1].collect { it ->
+            def holes = coordinates[1..coordinates.size() - 1].collect { it ->
                 geometryFactory.createLinearRing(arrayToCoordinate(it))
             }.toArray(new LinearRing[0])
             return geometryFactory.createPolygon(ring, holes)
@@ -173,10 +173,10 @@ class Utilities {
      */
     static Coordinate[] arrayToCoordinate(def coordinates) {
         coordinates.collect { it ->
-            if (it.size == 2) {
+            if (it.size() == 2) {
                 def (x, y) = it
                 new Coordinate(x, y)
-            } else if (it.size == 3) {
+            } else if (it.size() == 3) {
                 def (x, y, z) = it
                 new Coordinate(x, y, z)
             }

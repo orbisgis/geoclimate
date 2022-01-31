@@ -480,7 +480,7 @@ IProcess distributionCharacterization() {
                 }
                 // Get the distribution columns and the number of columns
                 def distribColumns = allColumns.minus(inputId.toUpperCase())
-                def nbDistCol = distribColumns.size
+                def nbDistCol = distribColumns.size()
 
                 def idxExtrem = nbDistCol - 1
                 def idxExtrem_1 = nbDistCol - 2
