@@ -63,7 +63,7 @@ CREATE TABLE $BUILD_OUTER_ZONE_MATRIX (ID_BUILD integer primary key, ID_ZONE var
 -- 4- Merge into one single table these information
 DROP TABLE IF EXISTS $BUILD_ZONE_MATRIX ;
 CREATE TABLE $BUILD_ZONE_MATRIX (ID_BUILD integer primary key, ID_ZONE varchar) AS SELECT * FROM $BUILD_WITHIN_ZONE UNION SELECT * FROM $BUILD_OUTER_ZONE_MATRIX;
-CREATE INDEX ON $BUILD_ZONE_MATRIX USING BTREE(ID_BUILD);
+CREATE INDEX ON $BUILD_ZONE_MATRIX (ID_BUILD);
 
 -- Join this "matrix" to the initial table (with all building information) (FC = First Control)
 DROP TABLE IF EXISTS $BUILDING_FC ;

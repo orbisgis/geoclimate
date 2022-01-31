@@ -74,7 +74,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                     def filePath = getClass().getResource(relativePath + File.separator + it + ".shp")
                     // If some layers are missing, do not try to load them...
                     if (filePath) {
-                        h2GISDatabase.load(filePath, it, true)
+                        h2GISDatabase.link(filePath, it, true)
                     }
                 }
             }

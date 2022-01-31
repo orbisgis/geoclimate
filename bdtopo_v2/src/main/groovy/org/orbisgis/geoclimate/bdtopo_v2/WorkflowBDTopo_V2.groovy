@@ -1042,7 +1042,7 @@ def loadDataFromFolder(def inputFolder, def h2gis_datasource, def id_zones){
         def commune_file = geoFiles.find{ it.toLowerCase().endsWith("commune.shp")?it:null}
         if(commune_file) {
             //Load commune and check if there is some id_zones inside
-            h2gis_datasource.load(commune_file, "COMMUNE_TMP", true)
+            h2gis_datasource.link(commune_file, "COMMUNE_TMP", true)
             int srid = h2gis_datasource.getSpatialTable("COMMUNE_TMP").srid
             if(srid==-1){
                 error "The commune file doesn't have any srid"
@@ -1055,7 +1055,7 @@ def loadDataFromFolder(def inputFolder, def h2gis_datasource, def id_zones){
                 def numberFiles = geoFiles.size()
                 geoFiles.eachWithIndex { geoFile , index->
                     debug "Loading file $geoFile $index on $numberFiles"
-                    h2gis_datasource.load(geoFile, true)
+                    h2gis_datasource.link(geoFile, true)
                 }
                 return id_zones
 
