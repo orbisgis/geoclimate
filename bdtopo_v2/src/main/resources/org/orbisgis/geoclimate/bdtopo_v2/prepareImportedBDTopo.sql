@@ -6,7 +6,7 @@
 --			  to feed (at the end of this script) the GeoClimate model.	                        --
 --																								--
 -- Author : Gwendall Petit (DECIDE Team, Lab-STICC CNRS UMR 6285)								--
--- Last update : 17/12/2019																		--
+-- Last update : 12/11/2020																	--
 -- Licence : GPLv3 (https://www.gnu.org/licenses/gpl-3.0.html)                                  --
 -- Comments :																					--
 --   - Input layers : COMMUNE,BATI_INDIFFERENCIE, BATI_INDUSTRIEL, BATI_REMARQUABLE,            --
@@ -169,10 +169,6 @@ CREATE TABLE $INPUT_IMPERVIOUS (THE_GEOM geometry, ID_SOURCE varchar(24))
  UNION ALL SELECT THE_GEOM, ID_SOURCE FROM ST_EXPLODE('$TMP_IMPERV_SURFACE_ACTIVITE')
   UNION ALL SELECT THE_GEOM, ID_SOURCE FROM ST_EXPLODE('$TMP_IMPERV_PISTE_AERODROME');
 
-DROP TABLE IF EXISTS $TMP_IMPERV_TERRAIN_SPORT, $TMP_IMPERV_CONSTRUCTION_SURFACIQUE, $TMP_IMPERV_SURFACE_ROUTE, $TMP_IMPERV_SURFACE_ACTIVITE,$TMP_IMPERV_PISTE_AERODROME;
 
-
---------------------------------------------------------------------------------------------------
--- Clear not needed tables
---------------------------------------------------------------------------------------------------
-DROP TABLE $ZONE_BUFFER, $ZONE_EXTENDED, $BU_ZONE_INDIF, $BU_ZONE_INDUS, $BU_ZONE_REMARQ, $BU_ZONE_RESERVOIR;
+DROP TABLE IF EXISTS $TMP_IMPERV_TERRAIN_SPORT, $TMP_IMPERV_CONSTRUCTION_SURFACIQUE, $TMP_IMPERV_SURFACE_ROUTE, $TMP_IMPERV_SURFACE_ACTIVITE,$TMP_IMPERV_PISTE_AERODROME,
+$ZONE_BUFFER, $ZONE_EXTENDED, $BU_ZONE_INDIF, $BU_ZONE_INDUS, $BU_ZONE_REMARQ, $BU_ZONE_RESERVOIR;

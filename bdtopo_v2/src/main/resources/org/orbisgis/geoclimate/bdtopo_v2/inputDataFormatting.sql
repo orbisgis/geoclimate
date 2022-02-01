@@ -6,7 +6,7 @@
 --																								--
 -- Author : Gwendall Petit (DECIDE Team, Lab-STICC CNRS UMR 6285)
 -- Author : Erwan Bocher (DECIDE Team, Lab-STICC CNRS UMR 6285)	                                --
--- Last update : 12/11/2020 - remove statistics																		--
+-- Last update : 02/02/2022 - remove statistics																		--
 -- Licence : GPLv3 (https://www.gnu.org/licenses/gpl-3.0.html)                                  --
 -- 																					            --
 -- Parameters, to be used in this script:                                                       --

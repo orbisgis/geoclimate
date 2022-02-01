@@ -226,8 +226,10 @@ IProcess prepareBDTopoData() {
             // -------------------------------------------------------------------------------
 
             def success = datasource.executeScript(getClass().getResourceAsStream('prepareImportedBDTopo.sql'),
-                    [ID_ZONE                           : idZone, DIST_BUFFER: distBuffer, EXPAND: distance,
-                     COMMUNE                           :  tableCommuneName,
+                    [ID_ZONE                           : idZone,
+                     DIST_BUFFER                       : distBuffer,
+                     EXPAND                            : distance,
+                     COMMUNE                           : tableCommuneName,
                      BATI_INDIFFERENCIE                : tableBuildIndifName,
                      BATI_INDUSTRIEL                   : tableBuildIndusName, BATI_REMARQUABLE: tableBuildRemarqName,
                      ROUTE                             : tableRoadName, TRONCON_VOIE_FERREE: tableRailName,
