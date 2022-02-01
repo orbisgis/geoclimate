@@ -383,7 +383,7 @@ IProcess workflow() {
                                 return
                             }
                             def allowedOutputTableNames = geoclimateTableNames.intersect(outputTableNames.keySet())
-                            def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size() != allowedOutputTableNames.size()
+                            def notSameTableNames = allowedOutputTableNames.groupBy { it}.size() != allowedOutputTableNames.size()
                             if (allowedOutputTableNames && !notSameTableNames) {
                                 def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
                                 def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
