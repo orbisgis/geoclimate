@@ -1042,7 +1042,7 @@ def loadDataFromFolder(def inputFolder, def h2gis_datasource, def id_zones){
         def commune_file = geoFiles.find{ it.toLowerCase().endsWith("commune.shp")?it:null}
         if(commune_file) {
             //Load commune and check if there is some id_zones inside
-            h2gis_datasource.load(commune_file, "COMMUNE_TMP", true)
+            h2gis_datasource.link(commune_file, "COMMUNE_TMP", true)
             int srid = h2gis_datasource.getSpatialTable("COMMUNE_TMP").srid
             if(srid==-1){
                 error "The commune file doesn't have any srid"
@@ -1055,7 +1055,7 @@ def loadDataFromFolder(def inputFolder, def h2gis_datasource, def id_zones){
                 def numberFiles = geoFiles.size()
                 geoFiles.eachWithIndex { geoFile , index->
                     debug "Loading file $geoFile $index on $numberFiles"
-                    h2gis_datasource.load(geoFile, true)
+                    h2gis_datasource.link(geoFile, true)
                 }
                 return id_zones
 
@@ -1343,17 +1343,26 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
         //Load and format the BDTopo data
         IProcess loadAndFormatData = loadAndFormatData()
         if(loadAndFormatData.execute([datasource                 : h2gis_datasource,
-                              tableCommuneName           : 'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
-                              tableBuildIndusName        : 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
-                              tableRoadName              : 'ROUTE', tableRailName: 'TRONCON_VOIE_FERREE',
-                              tableHydroName             : 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
-                              tableImperviousSportName   : 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
-                              tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                              tablePiste_AerodromeName   : 'PISTE_AERODROME',
-                              tableReservoirName         : 'RESERVOIR',
-                              distBuffer                 : processing_parameters.distance_buffer, distance: processing_parameters.distance, idZone: id_zone,
-                              hLevMin                    : processing_parameters.hLevMin,
-                              hLevMax                    : processing_parameters.hLevMax, hThresholdLev2: processing_parameters.hThresholdLev2
+                                      tableCommuneName            : 'COMMUNE',
+                                      tableBuildIndifName         : 'BATI_INDIFFERENCIE',
+                                      tableBuildIndusName         : 'BATI_INDUSTRIEL',
+                                      tableBuildRemarqName        : 'BATI_REMARQUABLE',
+                                      tableRoadName               : 'ROUTE',
+                                      tableRailName               : 'TRONCON_VOIE_FERREE',
+                                      tableHydroName              : 'SURFACE_EAU',
+                                      tableVegetName              : 'ZONE_VEGETATION',
+                                      tableImperviousSportName    : 'TERRAIN_SPORT',
+                                      tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
+                                      tableImperviousRoadSurfName : 'SURFACE_ROUTE',
+                                      tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
+                                      tablePiste_AerodromeName    : 'PISTE_AERODROME',
+                                      tableReservoirName          : 'RESERVOIR',
+                                      distBuffer                  : processing_parameters.distance_buffer,
+                                      distance                    : processing_parameters.distance,
+                                      idZone                      : id_zone,
+                                      hLevMin                     : processing_parameters.hLevMin,
+                                      hLevMax                     : processing_parameters.hLevMax,
+                                      hThresholdLev2              : processing_parameters.hThresholdLev2
         ])){
 
             def buildingTableName = loadAndFormatData.results.outputBuilding
@@ -2035,7 +2044,7 @@ IProcess loadAndFormatData() {
             //Prepare the existing bdtopo data in the local database
             def importPreprocess = BDTopo_V2.InputDataLoading.prepareBDTopoData()
             if (!importPreprocess([datasource                  : datasource,
-                                   tableCommuneName               : tableCommuneName,
+                                   tableCommuneName            : tableCommuneName,
                                    tableBuildIndifName         : tableBuildIndifName,
                                    tableBuildIndusName         : tableBuildIndusName,
                                    tableBuildRemarqName        : tableBuildRemarqName,
@@ -2049,7 +2058,9 @@ IProcess loadAndFormatData() {
                                    tableImperviousActivSurfName: tableImperviousActivSurfName,
                                    tablePiste_AerodromeName    : tablePiste_AerodromeName,
                                    tableReservoirName          : tableReservoirName,
-                                   distBuffer                  : distBuffer, distance: distance, idZone: idZone,
+                                   distBuffer                  : distBuffer,
+                                   distance                    : distance,
+                                   idZone                      : idZone,
                                    building_bd_topo_use_type   : initTables.outputBuildingBDTopoUseType,
                                    building_abstract_use_type  : abstractTables.outputBuildingAbstractUseType,
                                    road_bd_topo_type           : initTables.outputroadBDTopoType,

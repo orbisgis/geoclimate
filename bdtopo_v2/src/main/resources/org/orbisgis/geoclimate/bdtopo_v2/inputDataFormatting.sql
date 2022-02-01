@@ -6,7 +6,7 @@
 --																								--
 -- Author : Gwendall Petit (DECIDE Team, Lab-STICC CNRS UMR 6285)
 -- Author : Erwan Bocher (DECIDE Team, Lab-STICC CNRS UMR 6285)	                                --
--- Last update : 12/11/2020 - remove statistics																		--
+-- Last update : 02/02/2022 - remove statistics																		--
 -- Licence : GPLv3 (https://www.gnu.org/licenses/gpl-3.0.html)                                  --
 -- 																					            --
 -- Parameters, to be used in this script:                                                       --
@@ -63,7 +63,7 @@ CREATE TABLE $BUILD_OUTER_ZONE_MATRIX (ID_BUILD integer primary key, ID_ZONE var
 -- 4- Merge into one single table these information
 DROP TABLE IF EXISTS $BUILD_ZONE_MATRIX ;
 CREATE TABLE $BUILD_ZONE_MATRIX (ID_BUILD integer primary key, ID_ZONE varchar) AS SELECT * FROM $BUILD_WITHIN_ZONE UNION SELECT * FROM $BUILD_OUTER_ZONE_MATRIX;
-CREATE INDEX ON $BUILD_ZONE_MATRIX USING BTREE(ID_BUILD);
+CREATE INDEX ON $BUILD_ZONE_MATRIX (ID_BUILD);
 
 -- Join this "matrix" to the initial table (with all building information) (FC = First Control)
 DROP TABLE IF EXISTS $BUILDING_FC ;
