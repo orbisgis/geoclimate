@@ -45,12 +45,12 @@ import java.sql.SQLException
  *     },
  * [ONE ENTRY REQUIRED]   "input" : {
  *         "folder": {"path" :"path of the folder that contains the BD Topo layers as shapefile",
- *             "id_zones":["56260"]}, //list of insee code, with a comma separator
+ *             "locations":["56260"]}, //list of insee code, with a comma separator
  *          "database": {
  *             "user": "-",
  *             "password": "-",
  *             "url": "jdbc:postgresql://", //JDBC url to connect with the database
- *             "id_zones":["56220"], //list of insee code, with a comma separator
+ *             "locations":["56220"], //list of insee code, with a comma separator
  *             //List of BDTOPO tables required to compute the geoclimate indicators
  *             //Pattern :  Catalog.Schema.Table
  *             "tables": {
@@ -209,13 +209,8 @@ IProcess workflow() {
                     }
                 }
                 if (inputParameters) {
-                    def isbdTopo_v2 = inputParameters.bdtopo_v2
-                    if(!isbdTopo_v2){
-                        error "The input datasource must be defined with the name bdtopo_v2"
-                        return
-                    }
-                    def inputDataBase = isbdTopo_v2.database
-                    def inputFolder = isbdTopo_v2.folder
+                    def inputDataBase = inputParameters.database
+                    def inputFolder = inputParameters.folder
                     def id_zones = []
                     if (inputFolder && inputDataBase) {
                         error "Please set only one input data provider"
@@ -227,7 +222,7 @@ IProcess workflow() {
                                 error "The input folder $inputFolderPath cannot be null or empty"
                                 return
                             }
-                            id_zones = inputFolder.id_zones
+                            id_zones = inputFolder.locations
                         }
                         if (output) {
                             def geoclimateTableNames = ["building_indicators",
@@ -476,7 +471,7 @@ IProcess workflow() {
                                     outputTableNames = null
                                 }
                                 def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
-                                def codes = inputDataBase.id_zones
+                                def codes = inputDataBase.locations
                                 if (codes && codes in Collection) {
                                     def inputTableNames = inputDataBase.tables
                                     def h2gis_datasource = H2GIS.open(h2gis_properties)
@@ -580,7 +575,7 @@ IProcess workflow() {
                                     return null
                                 }
                                 if (file_outputFolder.canWrite()) {
-                                    def codes = inputDataBase.id_zones
+                                    def codes = inputDataBase.locations
                                     if (codes && codes in Collection) {
                                         def inputTableNames = inputDataBase.tables
                                         def h2gis_datasource = H2GIS.open(h2gis_properties)
@@ -625,7 +620,7 @@ IProcess workflow() {
                                         allowedOutputTableNames.size()
                                 if (allowedOutputTableNames && !notSameTableNames) {
                                     def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
-                                    def codes = inputDataBase.id_zones
+                                    def codes = inputDataBase.locations
                                     if (codes && codes in Collection) {
                                         def inputTableNames = inputDataBase.tables
                                         def h2gis_datasource = H2GIS.open(h2gis_properties)

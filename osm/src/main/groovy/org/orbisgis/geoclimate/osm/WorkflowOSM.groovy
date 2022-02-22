@@ -50,7 +50,7 @@ import org.orbisgis.geoclimate.Geoindicators
  *  *         "delete" :false
  *  *     },
  *  * [REQUIRED]   "input" : {
- *  *            "location" : ["filter"] // OSM filter to extract the data. Can be a place name supported by nominatim
+ *  *            "locations" : ["filter"] // OSM filter to extract the data. Can be a place name supported by nominatim
  *                                  // e.g "osm" : ["oran", "plourivo"]
  *                                  // or bbox expressed as "osm" : [[38.89557963573336,-77.03930318355559,38.89944983078282,-77.03364372253417]]
  *  *           "all":true //optional value if the user wants to download a limited set of data. Default is true to download all OSM elements
@@ -198,7 +198,7 @@ IProcess workflow() {
                     }
                 }
                 if (inputParameter) {
-                    def osmFilters = inputParameter.get("location")
+                    def osmFilters = inputParameter.get("locations")
                     def downloadAllOSMData = inputParameter.get("all")
                     if(!downloadAllOSMData){
                         downloadAllOSMData = true
