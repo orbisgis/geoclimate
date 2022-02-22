@@ -1551,7 +1551,6 @@ IProcess surfaceFractions() {
             }
             //Cache the table name to re-use it
             cacheTableName(BASE_TABLE_NAME, outputTableName)
-
             [outputTableName: outputTableName]
         }
     }

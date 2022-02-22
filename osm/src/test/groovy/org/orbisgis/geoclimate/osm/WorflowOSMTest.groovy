@@ -208,7 +208,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "osm" : ["Pont-de-Veyle"]],
+                        "location" : ["Pont-de-Veyle"]],
                 "output" :[
                         "database" :
                                 ["user" : "sa",
@@ -248,7 +248,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "osm" : ["Pont-de-Veyle"]],
+                        "location" : ["Pont-de-Veyle"]],
                 "output" :[
                         "database" :
                                 ["user" : "orbisgis",
@@ -312,7 +312,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "osm" : ["Pont-de-Veyle"]],
+                        "location" : ["Pont-de-Veyle"]],
                 "output" :[
                         "folder" : directory,
                         "srid":4326],
@@ -353,7 +353,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["Pont-de-Veyle"]],
+                        "location" : ["Pont-de-Veyle"]],
                 "output" :[
                         "folder" : directory],
                 "parameters":
@@ -381,7 +381,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : [[38.89557963573336,-77.03930318355559,38.89944983078282,-77.03364372253417]]],
+                        "location" : [[38.89557963573336,-77.03930318355559,38.89944983078282,-77.03364372253417]]],
                 "output" :[
                         "folder" : directory]
         ]
@@ -403,7 +403,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : [[38.89557963573336,-77.03930318355559,38.89944983078282,-77.03364372253417]]],
+                        "location" : [[38.89557963573336,-77.03930318355559,38.89944983078282,-77.03364372253417]]],
                 "output" :[
                         "folder" : directory]
         ]
@@ -425,7 +425,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["", [-3.0961382389068604, -3.1055688858032227,48.77155634881654,]]],
+                        "location" : ["", [-3.0961382389068604, -3.1055688858032227,48.77155634881654,]]],
                 "output" :[
                         "folder" : directory]
         ]
@@ -447,7 +447,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["Pont-de-Veyle"]],
+                        "location" : ["Pont-de-Veyle"]],
                 "output" :[
                         "folder" : directory],
                 "parameters":
@@ -487,7 +487,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["Pont-de-Veyle"]],
+                        "location" : ["Pont-de-Veyle"]],
                 "output" :[
                         "folder" : directory],
                 "parameters":
@@ -515,7 +515,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "osm" : ["Pont-de-Veyle"]],
+                        "location" : ["Pont-de-Veyle"]],
                 "output" :[
                         "folder" : ["path": directory,
                                     "tables": ["building"]]],
@@ -547,7 +547,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "osm" : ["Pont-de-Veyle"]],
+                        "location" : ["Pont-de-Veyle"]],
                 "output" :[
                 "folder" : ["path": directory,
                     "tables": ["grid_indicators", "zones"]]],
@@ -584,7 +584,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "osm" : ["Pont-de-Veyle"]],
+                        "location" : ["Pont-de-Veyle"]],
                 "output" :[
                         "folder" : ["path": directory,
                                     "tables": ["grid_indicators", "zones", "rsu_lcz"]]],
@@ -618,7 +618,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "osm" : [[48.49749,5.25349,48.58082,5.33682]],
+                        "location" : [[48.49749,5.25349,48.58082,5.33682]],
                         "delete":true],
                 "output" :[
                         "folder" : ["path": directory,
@@ -653,7 +653,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "osm" : ["Rennes"]],
+                        "location" : ["Pont-de-Veyle"]],
                 "output" :[
                         "folder" :directory]
                 ,
@@ -693,7 +693,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "osm" : [[
+                        "location" : [[
                                          53.83061, 9.83664, 53.91394, 9.91997
                                  ]]],
                 "output" :["folder" : directory,srid: 4326]
@@ -735,7 +735,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["Pont-de-Veyle"]],
+                        "location" : ["Pont-de-Veyle"]],
                 "output" :[
                         "folder" : directory],
                 "parameters":
@@ -766,7 +766,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "osm" : ["Pont-de-Veyle"]],
+                        "location" : ["Pont-de-Veyle"]],
                 "output" :[
                         "folder" : ["path": directory,
                                     "tables": ["road_traffic"]]],
@@ -795,7 +795,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "osm" : ["Pont-de-Veyle"],
+                        "location" : ["Pont-de-Veyle"],
                         "area" : -1],
                 "output" :[
                         "database" :
