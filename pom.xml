@@ -18,6 +18,7 @@
         <module>osm</module>
         <module>geoclimate</module>
         <module>osmtools</module>
+        <module>worldpoptools</module>
     </modules>
 
     <properties>
