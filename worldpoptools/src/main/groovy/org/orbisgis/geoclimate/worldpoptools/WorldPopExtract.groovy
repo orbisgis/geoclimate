@@ -38,15 +38,95 @@ package org.orbisgis.geoclimate.worldpoptools
 
 import groovy.transform.BaseScript
 import org.cts.util.UTMUtils
+import org.h2gis.utilities.FileUtilities
+import org.orbisgis.orbisdata.processmanager.api.IProcess
+
 
 @BaseScript WorldPopTools pf
 
 
 /**
+ * This process is used to extract a grid population data from  https://www.worldpop.org
+ * The grid is stored in a OS tmp dir.
+ * If the grid already exists the file is reused.
+ * @return
+ */
+IProcess extractWorldPopLayer() {
+    return create {
+        title "Extract the estimated world population data on 100 X 100 m grid"
+        id "extractWorldPop"
+        inputs  coverageId:String,  bbox :[], epsg :int
+        outputs outputFilePath: String
+        run { coverageId, bbox, epsg ->
+            info "Extract the world population grid"
+            def gridRequest =  createGridRequest(coverageId, bbox, epsg)
+            //hash the query to cache it
+            def queryHash = gridRequest.digest('SHA-256')
+            def outputGridFile=new File(System.getProperty("java.io.tmpdir")+File.separator+"${queryHash}.asc")
+            def popGridFilePath = outputGridFile.absolutePath
+            if(outputGridFile.exists()){
+                if(outputGridFile.length()==0){
+                    outputGridFile.delete()
+                    if(outputGridFile.createNewFile()) {
+                        if ( grid(gridRequest, outputGridFile)) {
+                            info "The grid file has been downloaded at ${popGridFilePath}."
+                        } else {
+                            outputGridFile.delete()
+                            error "Cannot extract the grid data for the query $gridRequest"
+                            return
+                        }
+                    }
+                }
+                else {
+                    debug "\nThe cached grid file ${popGridFilePath} will be re-used for the query :  \n$gridRequest."
+                }
+            }
+            else{
+                if(outputGridFile.createNewFile()){
+                    if (Utilities.executeOverPassQuery(overpassQuery, outputGridFile)) {
+                        info "The OSM file has been downloaded at ${popGridFilePath}."
+                    } else {
+                        outputGridFile.delete()
+                        error "Cannot extract the OSM data for the query $overpassQuery"
+                        return
+                    }}
+            }
+            [outputFilePath: popGridFilePath]
+        }
+    }
+}
+
+/**
+ * A method to create the WCS grid request
+ * @param coverageId
+ * @param bbox
+ * @param epsg
+ * @return
+ */
+String createGridRequest(String coverageId, def bbox, int epsg =4326) {
+    if(!coverageId){
+        error "The coverageId cannot be null or empty"
+        return
+    }
+    def subset = buildSubset(bbox)
+
+    if(!subset){
+        error "Cannot create the subset WCS filter"
+        return
+    }
+    def crsOutPut =  "outputCRS=http://www.opengis.net/def/crs/EPSG/0/$epsg"
+
+    def WCS_SERVER = """https://ogc.worldpop.org/geoserver/ows?service=WCS&version=2.0.1&request=GetCoverage&coverageId=$coverageId&format=ArcGrid&$subset&$crsOutPut""".toString()
+
+    return WCS_SERVER
+}
+/**
  * Method to execute a query on the WorldPop Web Coverage Service and
- * return grid coverage a a geotiff file
+ * return grid coverage in ascii format
  *
- * @param query the Overpass query
+ * @param coverageId the name of the layer on the WCS service
+ * @param bbox to extract the data
+ * @param epsg output epsg code, default is 4326
  * @param outputGridFile the output file
  *
  * @return True if the query has been successfully executed, false otherwise.
@@ -54,22 +134,44 @@ import org.cts.util.UTMUtils
  * @author Erwan Bocher (CNRS LAB-STICC)
  */
  boolean grid(String coverageId, def bbox, int epsg =4326, File outputGridFile) {
-    if(!coverageId){
-        error "The coverageId cannot be null or empty"
+     def queryUrl = createGridRequest(coverageId,bbox, epsg)
+     if(!queryUrl){
+         error "The request to the server cannot be null or empty"
+         return false
+     }
+     if(!outputGridFile){
+         error "The output Grid File cannot be null or empty"
+         return false
+     }
+     if(!FileUtilities.isExtensionWellFormated(outputGridFile, "asc")){
+         error "Only support asc (ArcGrid format) as output Grid File"
+         return false
+     }
+    return grid(queryUrl, outputGridFile)
+}
+
+/**
+ * Method to execute a query on the WorldPop Web Coverage Service and
+ * return grid coverage in ascii format
+ *
+ * @param wcsRequest the worldpop WCS request
+ * @param outputGridFile the output file
+ *
+ * @return True if the query has been successfully executed, false otherwise.
+ *
+ * @author Erwan Bocher (CNRS LAB-STICC)
+ */
+boolean grid(String wcsRequest,  File outputGridFile) {
+    def queryUrl = new URL(wcsRequest)
+
+    if(!wcsRequest){
+        error "The request cannot be null or empty"
         return false
     }
-    def subset = buildSubset(bbox)
-
-    if(!subset){
-        error "Cannot create the subset WCS filter"
+    if(!FileUtilities.isExtensionWellFormated(outputGridFile, "asc")){
+        error "Only support asc (ArcGrid format) as output Grid File"
         return false
     }
-
-    def crsOutPut =  "outputCRS=http://www.opengis.net/def/crs/EPSG/0/$epsg"
-
-    def WCS_SERVER = """https://ogc.worldpop.org/geoserver/ows?service=WCS&version=2.0.1&request=GetCoverage&coverageId=$coverageId&format=image/tiff&$subset&$crsOutPut""".toString()
-
-    def queryUrl = new URL(WCS_SERVER)// URLEncoder.encode(utf8, UTF_8.toString())
 
     final String proxyHost = System.getProperty("http.proxyHost");
     final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));

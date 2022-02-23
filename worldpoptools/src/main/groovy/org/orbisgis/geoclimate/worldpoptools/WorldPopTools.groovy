@@ -50,6 +50,7 @@ import org.slf4j.LoggerFactory
  */
 
 abstract class WorldPopTools extends GroovyProcessFactory {
+
     def static Extract = new WorldPopExtract()
 
     public static def logger = LoggerFactory.getLogger(WorldPopTools.class)

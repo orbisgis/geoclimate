@@ -154,6 +154,11 @@
             </dependency>
             <dependency>
                 <groupId>org.orbisgis.geoclimate</groupId>
+                <artifactId>worldpoptools</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.orbisgis.geoclimate</groupId>
                 <artifactId>geoclimate</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -218,7 +223,6 @@
         <system>Github</system>
         <url>https://github.com/orbisgis/geoclimate/issues</url>
     </issueManagement>
-
     <repositories>
         <repository>
             <id>orbisgis-release</id>

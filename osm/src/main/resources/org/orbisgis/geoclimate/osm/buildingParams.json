@@ -51,7 +51,8 @@
         "townhall": 1,
         "office": 1,
         "heavy_industry": 0,
-        "light_industry": 0
+        "light_industry": 0,
+        "emergency": 0
     },
     "type" : {
         "terminal:transportation": {
@@ -591,6 +592,11 @@
         "building:public": {
             "building": [
                 "public"
+            ]
+        },
+        "emergency": {
+            "building": [
+                "fire_station"
             ]
         },
         "building": {

@@ -531,6 +531,7 @@ IProcess osm_processing() {
                             def rsu_indicators_params = processing_parameters.rsu_indicators
                             def grid_indicators_params = processing_parameters.grid_indicators
                             def road_traffic = processing_parameters.road_traffic
+                            def worldpop_indicators = processing_parameters.worldpop_indicators
 
                             debug "Formating OSM GIS layers"
                             //Process only the required table
@@ -538,8 +539,7 @@ IProcess osm_processing() {
                                     railTableName,vegetationTableName, hydrographicTableName, imperviousTableName,
                              seaLandMaskTableName
 
-
-                            if(rsu_indicators_params.indicatorUse|| grid_indicators_params){
+                            if(rsu_indicators_params.indicatorUse|| grid_indicators_params || worldpop_indicators){
                                 //Format urban areas
                                 IProcess format = OSM.InputDataFormatting.formatUrbanAreas()
                                 format.execute([
@@ -641,6 +641,11 @@ IProcess osm_processing() {
                             results.put("buildingTableName", buildingTableName)
                             results.put("seaLandMaskTableName", seaLandMaskTableName)
                             results.put("buildingHeightMissingTableName", buildingEstimateTableName)
+
+                            //Extract and compute population indicators for the specified year
+                            if(worldpop_indicators){
+
+                            }
 
                             //Compute traffic flow
                             if(road_traffic){
@@ -1065,6 +1070,12 @@ def extractProcessingParameters(def processing_parameters){
         def  road_traffic = processing_parameters.road_traffic
         if(road_traffic && road_traffic in Boolean){
             defaultParameters.put("road_traffic", road_traffic)
+        }
+
+        //Check if the pop indicators must be computed
+        def  pop_indics = processing_parameters.worldpop_indicators
+        if(pop_indics && pop_indics in Boolean){
+            defaultParameters.put("worldpop_indicators", pop_indics)
         }
 
         return defaultParameters

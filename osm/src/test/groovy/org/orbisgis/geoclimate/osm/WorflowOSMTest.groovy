@@ -782,7 +782,36 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
 
     @Test
-    void osmWrongAreaSiz() {
+    void testPopulation_Indicators() {
+        String directory ="./target/geoclimate_chain_grid"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "description" :"Example of configuration file to run only the road traffic estimation",
+                "geoclimatedb" : [
+                        "folder" : dirFile.absolutePath,
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete" :false
+                ],
+                "input" : [
+                        "osm" : ["Pont-de-Veyle"]],
+                "output" :[
+                        "folder" : ["path": directory,
+                                    "tables": ["road_traffic"]]],
+                "parameters":
+                        ["worldpop_indicators" : true]
+        ]
+        IProcess process = OSM.WorkflowOSM.workflow()
+        assertTrue(process.execute(input: osm_parmeters))
+        assertEquals(3,  process.getResults().output["Pont-de-Veyle"].size())
+        H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
+        assertTrue h2gis.firstRow("select count(*) as count from population_grid_2020 is not null").count>0
+    }
+
+
+    @Test
+    void osmWrongAreaSize() {
         String directory ="./target/geoclimate_chain_db"
         File dirFile = new File(directory)
         dirFile.delete()
