@@ -85,5 +85,6 @@ class WorldPopExtractTest {
         assertTrue importAscGrid.execute([worldPopFilePath:extractWorldPopLayer.results.outputFilePath,
                                epsg: epsg, datasource: h2GIS])
         assertEquals(720, h2GIS.getSpatialTable(importAscGrid.results.outputTableWorldPopName).rowCount)
+        assertEquals(["ID_POP", "THE_GEOM", "POP"], h2GIS.getTable(importAscGrid.results.outputTableWorldPopName).columns)
     }
 }

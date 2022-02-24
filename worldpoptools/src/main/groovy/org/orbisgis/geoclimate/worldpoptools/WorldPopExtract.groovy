@@ -112,11 +112,13 @@ IProcess importAscGrid() {
         run { worldPopFilePath,epsg,datasource ->
             info "Import the the world pop asc file"
             // The name of the outputTableName is constructed
-            def outputTableWorldPopName = prefix "world_pop"
+            def outputTableWorldPopName = postfix "world_pop"
             AscReaderDriver ascReaderDriver = new AscReaderDriver()
             ascReaderDriver.setAs3DPoint(false)
             ascReaderDriver.setEncoding("UTF-8")
             ascReaderDriver.read(datasource.getConnection(),new File(worldPopFilePath), new EmptyProgressVisitor(), outputTableWorldPopName, epsg)
+            datasource.execute("""ALTER TABLE $outputTableWorldPopName RENAME COLUMN PK TO ID_POP;
+                                ALTER TABLE $outputTableWorldPopName RENAME COLUMN Z TO POP;""".toString())
             [outputTableWorldPopName: outputTableWorldPopName]
         }
     }
