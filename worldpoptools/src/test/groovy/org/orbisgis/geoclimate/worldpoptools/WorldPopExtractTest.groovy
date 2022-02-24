@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -54,5 +55,35 @@ class WorldPopExtractTest {
         ascReaderDriver.setDeleteTable(true)
         ascReaderDriver.read(h2GIS.getConnection(),outputGridFile, new EmptyProgressVisitor(), "grid", 4326)
         assertEquals(720, h2GIS.getSpatialTable("grid").rowCount)
+    }
+
+    /**
+     * Test to extract a grid from process
+     */
+    @Test
+    void extractGridProcess(){
+        IProcess process = WorldPopTools.Extract.extractWorldPopLayer()
+        def coverageId = "wpGlobal:ppp_2018"
+        def bbox =[ 47.63324, -2.78087,47.65749, -2.75979]
+        def epsg = 4326
+        assertTrue process.execute([coverageId:coverageId, bbox:bbox, epsg:epsg])
+        assertTrue new File(process.results.outputFilePath).exists()
+    }
+
+    /**
+     * Test to extract a grid and load it in database
+     */
+    @Test
+    void extractLoadGridProcess(){
+        IProcess extractWorldPopLayer = WorldPopTools.Extract.extractWorldPopLayer()
+        def coverageId = "wpGlobal:ppp_2018"
+        def bbox =[ 47.63324, -2.78087,47.65749, -2.75979]
+        def epsg = 4326
+        assertTrue extractWorldPopLayer.execute([coverageId:coverageId, bbox:bbox, epsg:epsg])
+        assertTrue new File(extractWorldPopLayer.results.outputFilePath).exists()
+        IProcess importAscGrid =  WorldPopTools.Extract.importAscGrid()
+        assertTrue importAscGrid.execute([worldPopFilePath:extractWorldPopLayer.results.outputFilePath,
+                               epsg: epsg, datasource: h2GIS])
+        assertEquals(720, h2GIS.getSpatialTable(importAscGrid.results.outputTableWorldPopName).rowCount)
     }
 }

@@ -38,7 +38,10 @@ package org.orbisgis.geoclimate.worldpoptools
 
 import groovy.transform.BaseScript
 import org.cts.util.UTMUtils
+import org.h2gis.api.EmptyProgressVisitor
+import org.h2gis.functions.io.asc.AscReaderDriver
 import org.h2gis.utilities.FileUtilities
+import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 
 
@@ -83,7 +86,7 @@ IProcess extractWorldPopLayer() {
             }
             else{
                 if(outputGridFile.createNewFile()){
-                    if (Utilities.executeOverPassQuery(overpassQuery, outputGridFile)) {
+                    if (grid(gridRequest, outputGridFile)) {
                         info "The OSM file has been downloaded at ${popGridFilePath}."
                     } else {
                         outputGridFile.delete()
@@ -95,6 +98,31 @@ IProcess extractWorldPopLayer() {
         }
     }
 }
+
+/**
+ * Process to import and asc grid into the database
+ * @return
+ */
+IProcess importAscGrid() {
+    return create {
+        title "Import an asc grid into the database"
+        id "importAscGrid"
+        inputs  worldPopFilePath:String, epsg: 4326, datasource: JdbcDataSource
+        outputs outputTableWorldPopName: String
+        run { worldPopFilePath,epsg,datasource ->
+            info "Import the the world pop asc file"
+            // The name of the outputTableName is constructed
+            def outputTableWorldPopName = prefix "world_pop"
+            AscReaderDriver ascReaderDriver = new AscReaderDriver()
+            ascReaderDriver.setAs3DPoint(false)
+            ascReaderDriver.setEncoding("UTF-8")
+            ascReaderDriver.read(datasource.getConnection(),new File(worldPopFilePath), new EmptyProgressVisitor(), outputTableWorldPopName, epsg)
+            [outputTableWorldPopName: outputTableWorldPopName]
+        }
+    }
+}
+
+
 
 /**
  * A method to create the WCS grid request
