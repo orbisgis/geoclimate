@@ -13,6 +13,7 @@ import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.geoclimate.osmtools.utils.Utilities
 import org.orbisgis.geoclimate.osmtools.utils.OSMElement
+import org.orbisgis.geoclimate.worldpoptools.WorldPopTools
 import org.orbisgis.orbisdata.datamanager.api.dataset.ITable
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
@@ -249,7 +250,8 @@ IProcess workflow() {
                                                     "grid_indicators",
                                                     "sea_land_mask",
                                                     "building_height_missing",
-                                                    "road_traffic"]
+                                                    "road_traffic",
+                                                    "population"]
                         //Get processing parameters
                         def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
                         if(!processing_parameters){
@@ -642,10 +644,6 @@ IProcess osm_processing() {
                             results.put("seaLandMaskTableName", seaLandMaskTableName)
                             results.put("buildingHeightMissingTableName", buildingEstimateTableName)
 
-                            //Extract and compute population indicators for the specified year
-                            if(worldpop_indicators){
-
-                            }
 
                             //Compute traffic flow
                             if(road_traffic){
@@ -687,6 +685,37 @@ IProcess osm_processing() {
                                      results.putAll(geoIndicators.getResults())
                                 }
                             }
+
+                            //Extract and compute population indicators for the specified year
+                            //This data can be used by the grid_indicators process
+                            if(worldpop_indicators){
+                                IProcess extractWorldPopLayer = WorldPopTools.Extract.extractWorldPopLayer()
+                                def coverageId = "wpGlobal:ppp_2020"
+                                def bbox = [zoneTableNames.envelope.getMinY() as Float,zoneTableNames.envelope.getMinX()as Float,
+                                            zoneTableNames.envelope.getMaxY()as Float,zoneTableNames.envelope.getMaxX()as Float]
+                                if(extractWorldPopLayer.execute([coverageId:coverageId,  bbox :bbox])){
+                                    IProcess importAscGrid = WorldPopTools.Extract.importAscGrid()
+                                    if(importAscGrid.execute([worldPopFilePath:extractWorldPopLayer.results.outputFilePath,
+                                                              epsg: srid, tableName : coverageId.replaceAll(":", "_"),  datasource: h2gis_datasource, epsg:srid])){
+                                        results.put("populationTableName", importAscGrid.results.outputTableWorldPopName)
+
+                                        IProcess process = Geoindicators.PopulationIndicators.buildingPopulation()
+                                        if(!process.execute([inputBuildingTableName: results.buildingTableName,
+                                                             inputPopulationTableName: importAscGrid.results.outputTableWorldPopName,  datasource: h2gis_datasource])) {
+                                            info "Cannot compute any population data at building level"
+                                        }
+                                        //Update the building table with the population data
+                                        results.put("buildingTableName", process.results.buildingTableName)
+
+                                    }else {
+                                        info "Cannot import the worldpop asc file $extractWorldPopLayer.results.outputFilePath"
+                                    }
+
+                                }else {
+                                    info "Cannot find the population grid $coverageId"
+                                }
+                            }
+
                             //Default
                             def outputGrid = "geojson"
                             //Compute the grid indicators based on the original extent in WGS84
@@ -714,6 +743,7 @@ IProcess osm_processing() {
                             }else{
                                 h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error computing the grid indicators')".toString()
                             }
+
                             if (outputFolder  && ouputTableFiles) {
                                 saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject, deleteOutputData, outputGrid)
 
@@ -863,7 +893,8 @@ def outputFolderProperties(def outputFolder){
                         "grid_indicators",
                         "sea_land_mask",
                         "building_height_missing",
-                        "road_traffic"]
+                        "road_traffic",
+                        "population"]
     if(outputFolder in Map){
         def outputPath = outputFolder.get("path")
         def outputTables = outputFolder.get("tables")
@@ -1169,6 +1200,8 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
         }
         else if(it == "road_traffic"){
             saveTableAsGeojson(results.roadTrafficTableName,  "${subFolder.getAbsolutePath()+File.separator+"road_traffic"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        }else  if(it == "population"){
+            saveTableAsGeojson(results.populationTableName, "${subFolder.getAbsolutePath()+File.separator+"population"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
     }
 }
@@ -1357,6 +1390,10 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
     //Export sea land mask table
     abstractModelTableBatchExportTable(output_datasource, outputTableNames.sea_land_mask, id_zone,h2gis_datasource, h2gis_tables.seaLandMaskTableName
             , "",inputSRID,outputSRID,reproject)
+
+    //Export population table
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.population, id_zone,h2gis_datasource, h2gis_tables.populationTableName
+            , "", inputSRID,outputSRID,reproject)
 
     //Export building_height_missing table
     def output_table = outputTableNames.building_height_missing

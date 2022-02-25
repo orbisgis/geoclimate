@@ -58,11 +58,11 @@ IProcess extractWorldPopLayer() {
     return create {
         title "Extract the estimated world population data on 100 X 100 m grid"
         id "extractWorldPop"
-        inputs  coverageId:String,  bbox :[], epsg :int
+        inputs  coverageId:String,  bbox :[]
         outputs outputFilePath: String
-        run { coverageId, bbox, epsg ->
+        run { coverageId, bbox ->
             info "Extract the world population grid"
-            def gridRequest =  createGridRequest(coverageId, bbox, epsg)
+            def gridRequest =  createGridRequest(coverageId, bbox)
             //hash the query to cache it
             def queryHash = gridRequest.digest('SHA-256')
             def outputGridFile=new File(System.getProperty("java.io.tmpdir")+File.separator+"${queryHash}.asc")
@@ -107,18 +107,27 @@ IProcess importAscGrid() {
     return create {
         title "Import an asc grid into the database"
         id "importAscGrid"
-        inputs  worldPopFilePath:String, epsg: 4326, datasource: JdbcDataSource
+        inputs  worldPopFilePath:String, epsg: 4326, tableName : "world_pop", datasource: JdbcDataSource
         outputs outputTableWorldPopName: String
-        run { worldPopFilePath,epsg,datasource ->
+        run { worldPopFilePath,epsg,tableName, datasource ->
             info "Import the the world pop asc file"
             // The name of the outputTableName is constructed
-            def outputTableWorldPopName = postfix "world_pop"
+            def outputTableWorldPopName = postfix tableName
             AscReaderDriver ascReaderDriver = new AscReaderDriver()
             ascReaderDriver.setAs3DPoint(false)
             ascReaderDriver.setEncoding("UTF-8")
-            ascReaderDriver.read(datasource.getConnection(),new File(worldPopFilePath), new EmptyProgressVisitor(), outputTableWorldPopName, epsg)
-            datasource.execute("""ALTER TABLE $outputTableWorldPopName RENAME COLUMN PK TO ID_POP;
+            if(epsg!=4326) {
+                def importTable =  postfix "imported_grid"
+                ascReaderDriver.read(datasource.getConnection(),new File(worldPopFilePath), new EmptyProgressVisitor(), importTable, 4326)
+                datasource.execute("""drop table if exists $outputTableWorldPopName;
+                    create table $outputTableWorldPopName as select ST_TRANSFORM(THE_GEOM, $epsg) as the_geom,
+                PK AS ID_POP, Z as POP from $importTable;
+                drop table if exists $importTable""".toString())
+            }else {
+                ascReaderDriver.read(datasource.getConnection(),new File(worldPopFilePath), new EmptyProgressVisitor(), outputTableWorldPopName, 4326)
+                datasource.execute("""ALTER TABLE $outputTableWorldPopName RENAME COLUMN PK TO ID_POP;
                                 ALTER TABLE $outputTableWorldPopName RENAME COLUMN Z TO POP;""".toString())
+            }
             [outputTableWorldPopName: outputTableWorldPopName]
         }
     }
@@ -130,10 +139,9 @@ IProcess importAscGrid() {
  * A method to create the WCS grid request
  * @param coverageId
  * @param bbox
- * @param epsg
  * @return
  */
-String createGridRequest(String coverageId, def bbox, int epsg =4326) {
+String createGridRequest(String coverageId, def bbox) {
     if(!coverageId){
         error "The coverageId cannot be null or empty"
         return
@@ -144,7 +152,7 @@ String createGridRequest(String coverageId, def bbox, int epsg =4326) {
         error "Cannot create the subset WCS filter"
         return
     }
-    def crsOutPut =  "outputCRS=http://www.opengis.net/def/crs/EPSG/0/$epsg"
+    def crsOutPut =  "outputCRS=http://www.opengis.net/def/crs/EPSG/0/4326"
 
     def WCS_SERVER = """https://ogc.worldpop.org/geoserver/ows?service=WCS&version=2.0.1&request=GetCoverage&coverageId=$coverageId&format=ArcGrid&$subset&$crsOutPut""".toString()
 
@@ -163,8 +171,8 @@ String createGridRequest(String coverageId, def bbox, int epsg =4326) {
  *
  * @author Erwan Bocher (CNRS LAB-STICC)
  */
- boolean grid(String coverageId, def bbox, int epsg =4326, File outputGridFile) {
-     def queryUrl = createGridRequest(coverageId,bbox, epsg)
+ boolean grid(String coverageId, def bbox, File outputGridFile) {
+     def queryUrl = createGridRequest(coverageId,bbox)
      if(!queryUrl){
          error "The request to the server cannot be null or empty"
          return false

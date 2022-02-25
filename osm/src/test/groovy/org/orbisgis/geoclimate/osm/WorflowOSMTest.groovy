@@ -783,7 +783,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
     @Test
     void testPopulation_Indicators() {
-        String directory ="./target/geoclimate_chain_grid"
+        String directory ="/tmp/geoclimate"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
@@ -791,14 +791,14 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "description" :"Example of configuration file to run only the road traffic estimation",
                 "geoclimatedb" : [
                         "folder" : dirFile.absolutePath,
-                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "name" : "geoclimate_test_integration;AUTO_SERVER=TRUE",
                         "delete" :false
                 ],
                 "input" : [
                         "osm" : ["Pont-de-Veyle"]],
                 "output" :[
                         "folder" : ["path": directory,
-                                    "tables": ["road_traffic"]]],
+                                    "tables": ["building", "population"]]],
                 "parameters":
                         ["worldpop_indicators" : true]
         ]

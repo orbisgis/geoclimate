@@ -47,7 +47,7 @@ class WorldPopExtractTest {
         }
         def coverageId = "wpGlobal:ppp_2018"
         def bbox =[ 47.63324, -2.78087,47.65749, -2.75979]
-        assertTrue WorldPopTools.Extract.grid(coverageId, bbox,4326, outputGridFile)
+        assertTrue WorldPopTools.Extract.grid(coverageId, bbox, outputGridFile)
 
         AscReaderDriver ascReaderDriver = new AscReaderDriver()
         ascReaderDriver.setAs3DPoint(false)
@@ -66,7 +66,7 @@ class WorldPopExtractTest {
         def coverageId = "wpGlobal:ppp_2018"
         def bbox =[ 47.63324, -2.78087,47.65749, -2.75979]
         def epsg = 4326
-        assertTrue process.execute([coverageId:coverageId, bbox:bbox, epsg:epsg])
+        assertTrue process.execute([coverageId:coverageId, bbox:bbox])
         assertTrue new File(process.results.outputFilePath).exists()
     }
 
@@ -78,8 +78,9 @@ class WorldPopExtractTest {
         IProcess extractWorldPopLayer = WorldPopTools.Extract.extractWorldPopLayer()
         def coverageId = "wpGlobal:ppp_2018"
         def bbox =[ 47.63324, -2.78087,47.65749, -2.75979]
+        [46.257614, 4.866568, 46.271828, 4.8969374]
         def epsg = 4326
-        assertTrue extractWorldPopLayer.execute([coverageId:coverageId, bbox:bbox, epsg:epsg])
+        assertTrue extractWorldPopLayer.execute([coverageId:coverageId, bbox:bbox])
         assertTrue new File(extractWorldPopLayer.results.outputFilePath).exists()
         IProcess importAscGrid =  WorldPopTools.Extract.importAscGrid()
         assertTrue importAscGrid.execute([worldPopFilePath:extractWorldPopLayer.results.outputFilePath,

@@ -2018,6 +2018,7 @@ IProcess rasterizeIndicators() {
                     }
                 }
                 def  createScalesRelationsGridBl
+                //TODO improve this to aggregate any kind of values in one pass
                 // Compute the building height avg and std
                 if(list_indicators*.toUpperCase().contains("BUILDING_HEIGHT") && buildingTable){
                     // Create the relations between grid cells and buildings
