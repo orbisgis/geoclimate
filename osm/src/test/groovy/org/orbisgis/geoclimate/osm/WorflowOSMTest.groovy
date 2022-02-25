@@ -783,7 +783,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
     @Test
     void testPopulation_Indicators() {
-        String directory ="/tmp/geoclimate"
+        String directory ="./target/geoclimate_population"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
@@ -791,7 +791,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "description" :"Example of configuration file to run only the road traffic estimation",
                 "geoclimatedb" : [
                         "folder" : dirFile.absolutePath,
-                        "name" : "geoclimate_test_integration;AUTO_SERVER=TRUE",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :false
                 ],
                 "input" : [
@@ -804,9 +804,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(input: osm_parmeters))
-        assertEquals(3,  process.getResults().output["Pont-de-Veyle"].size())
+        assertEquals(10,  process.getResults().output["Pont-de-Veyle"].size())
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
-        assertTrue h2gis.firstRow("select count(*) as count from population_grid_2020 is not null").count>0
+        assertTrue h2gis.firstRow("select count(*) as count from ${process.results.output["Pont-de-Veyle"].populationTableName} where pop is not null").count>0
     }
 
 
