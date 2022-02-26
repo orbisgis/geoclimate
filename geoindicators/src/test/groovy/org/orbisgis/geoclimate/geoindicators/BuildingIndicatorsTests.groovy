@@ -165,7 +165,7 @@ class BuildingIndicatorsTests {
         h2GIS.execute("""DROP TABLE if exists population_grid, building;
         CREATE TABLE population_grid (ID_POP integer, POP float, THE_GEOM GEOMETRY);
         INSERT INTO population_grid VALUES(1, 10, 'POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))'::GEOMETRY);
-        CREATE TABLE building (ID_BUILD integer, NB_LEV integer,MAIN_USE varchar, THE_GEOM GEOMETRY);
+        CREATE TABLE building (ID_BUILD integer, NB_LEV integer,TYPE varchar, THE_GEOM GEOMETRY);
         INSERT INTO building VALUES(1,1, 'residential', 'POLYGON ((3 6, 6 6, 6 3, 3 3, 3 6))'::GEOMETRY);
         """.toString())
         IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
@@ -178,7 +178,7 @@ class BuildingIndicatorsTests {
         h2GIS.execute("""DROP TABLE if exists population_grid, building;
         CREATE TABLE population_grid (ID_POP integer, POP float, THE_GEOM GEOMETRY);
         INSERT INTO population_grid VALUES(1, 10, 'POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))'::GEOMETRY);
-        CREATE TABLE building (ID_BUILD integer, NB_LEV integer,MAIN_USE varchar, THE_GEOM GEOMETRY);
+        CREATE TABLE building (ID_BUILD integer, NB_LEV integer,TYPE varchar, THE_GEOM GEOMETRY);
         INSERT INTO building VALUES(1,1, 'residential', 'POLYGON ((12 6, 8 6, 8 3, 12 3, 12 6))'::GEOMETRY);
         """.toString())
         IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
@@ -191,7 +191,7 @@ class BuildingIndicatorsTests {
         h2GIS.execute("""DROP TABLE if exists population_grid, building;
         CREATE TABLE population_grid (ID_POP integer, POP float, THE_GEOM GEOMETRY);
         INSERT INTO population_grid VALUES(1, 10, 'POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))'::GEOMETRY);
-        CREATE TABLE building (ID_BUILD integer, NB_LEV integer,MAIN_USE varchar, THE_GEOM GEOMETRY);
+        CREATE TABLE building (ID_BUILD integer, NB_LEV integer,TYPE varchar, THE_GEOM GEOMETRY);
         INSERT INTO building VALUES(1,1, 'residential', 'POLYGON ((3 6, 1 6, 1 3, 3 3, 3 6))'::GEOMETRY);
         INSERT INTO building VALUES(2,1, 'residential', 'POLYGON ((8 6, 6 6, 6 3, 8 3, 8 6))'::GEOMETRY);
         """.toString())
@@ -206,7 +206,7 @@ class BuildingIndicatorsTests {
         h2GIS.execute("""DROP TABLE if exists population_grid, building;
         CREATE TABLE population_grid (ID_POP integer, POP float, THE_GEOM GEOMETRY);
         INSERT INTO population_grid VALUES(1, 10, 'POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))'::GEOMETRY);
-        CREATE TABLE building (ID_BUILD integer, NB_LEV integer,MAIN_USE varchar, THE_GEOM GEOMETRY);
+        CREATE TABLE building (ID_BUILD integer, NB_LEV integer,TYPE varchar, THE_GEOM GEOMETRY);
         INSERT INTO building VALUES(1,1, 'residential', 'POLYGON ((3 6, 1 6, 1 3, 3 3, 3 6))'::GEOMETRY);
         INSERT INTO building VALUES(2,2, 'residential', 'POLYGON ((8 6, 6 6, 6 3, 8 3, 8 6))'::GEOMETRY);
         """.toString())
@@ -223,7 +223,7 @@ class BuildingIndicatorsTests {
         CREATE TABLE population_grid (ID_POP integer, POP float, THE_GEOM GEOMETRY);
         INSERT INTO population_grid VALUES(1, 10, 'POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))'::GEOMETRY);
         INSERT INTO population_grid VALUES(2, 10, 'POLYGON ((10 10, 20 10, 20 0, 10 0, 10 10))'::GEOMETRY);
-        CREATE TABLE building (ID_BUILD integer, NB_LEV integer,MAIN_USE varchar, THE_GEOM GEOMETRY);
+        CREATE TABLE building (ID_BUILD integer, NB_LEV integer,TYPE varchar, THE_GEOM GEOMETRY);
         INSERT INTO building VALUES(1,1, 'residential', 'POLYGON ((12 6, 8 6, 8 3, 12 3, 12 6))'::GEOMETRY);
         INSERT INTO building VALUES(2,1, 'residential', 'POLYGON ((5 6, 1 6, 1 3, 5 3, 5 6))'::GEOMETRY);
         """.toString())
@@ -240,7 +240,7 @@ class BuildingIndicatorsTests {
         CREATE TABLE population_grid (ID_POP integer, POP float, THE_GEOM GEOMETRY);
         INSERT INTO population_grid VALUES(1, 10, 'POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))'::GEOMETRY);
         INSERT INTO population_grid VALUES(2, 10, 'POLYGON ((10 10, 20 10, 20 0, 10 0, 10 10))'::GEOMETRY);
-        CREATE TABLE building (ID_BUILD integer, NB_LEV integer,MAIN_USE varchar, THE_GEOM GEOMETRY);
+        CREATE TABLE building (ID_BUILD integer, NB_LEV integer,TYPE varchar, THE_GEOM GEOMETRY);
         INSERT INTO building VALUES(1,2, 'residential', 'POLYGON ((12 6, 8 6, 8 3, 12 3, 12 6))'::GEOMETRY);
         INSERT INTO building VALUES(2,1, 'residential', 'POLYGON ((5 6, 1 6, 1 3, 5 3, 5 6))'::GEOMETRY);
         """.toString())
@@ -257,7 +257,7 @@ class BuildingIndicatorsTests {
         CREATE TABLE population_grid (ID_POP integer, POP float, THE_GEOM GEOMETRY);
         INSERT INTO population_grid VALUES(1, 10, 'POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))'::GEOMETRY);
         INSERT INTO population_grid VALUES(2, 10, 'POLYGON ((10 10, 20 10, 20 0, 10 0, 10 10))'::GEOMETRY);
-        CREATE TABLE building (ID_BUILD integer, NB_LEV integer,MAIN_USE varchar, THE_GEOM GEOMETRY);
+        CREATE TABLE building (ID_BUILD integer, NB_LEV integer,TYPE varchar, THE_GEOM GEOMETRY);
         INSERT INTO building VALUES(1,1, 'residential', 'POLYGON ((12 6, 8 6, 8 3, 12 3, 12 6))'::GEOMETRY);
         INSERT INTO building VALUES(2,2, 'residential', 'POLYGON ((5 6, 1 6, 1 3, 5 3, 5 6))'::GEOMETRY);
         """.toString())
