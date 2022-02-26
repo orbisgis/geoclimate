@@ -1978,6 +1978,7 @@ IProcess rasterizeIndicators() {
                 def columnFractionsList = [:]
                 def priorities = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
 
+                def unweightedBuildingIndicators = [:]
                 list_indicators.each{
                     if(it.equalsIgnoreCase("BUILDING_FRACTION")){
                         columnFractionsList.put( priorities.indexOf("building"),"building")
@@ -1992,6 +1993,13 @@ IProcess rasterizeIndicators() {
                     }else if(it.equalsIgnoreCase("IMPERVIOUS_FRACTION")){
                         columnFractionsList.put( priorities.indexOf("impervious"),"impervious")
                     }
+                    else if(it.equalsIgnoreCase("BUILDING_HEIGHT")&& buildingTable){
+                        unweightedBuildingIndicators.put("height_roof", ["AVG","STD"])
+                    }
+                    else if(it.equalsIgnoreCase("BUILDING_POP")&& buildingTable){
+                        unweightedBuildingIndicators.put("pop", ["SUM"])
+                    }
+
                 }
                 if(columnFractionsList){
                     def priorities_tmp = columnFractionsList.sort().values()
@@ -2018,9 +2026,7 @@ IProcess rasterizeIndicators() {
                     }
                 }
                 def  createScalesRelationsGridBl
-                //TODO improve this to aggregate any kind of values in one pass
-                // Compute the building height avg and std
-                if(list_indicators*.toUpperCase().contains("BUILDING_HEIGHT") && buildingTable){
+                if(unweightedBuildingIndicators){
                     // Create the relations between grid cells and buildings
                     createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
                     if (!createScalesRelationsGridBl([datasource              : datasource,
@@ -2037,7 +2043,7 @@ IProcess rasterizeIndicators() {
                                                inputUpperScaleTableName: grid_table_name,
                                                inputIdUp               : grid_column_identifier,
                                                inputIdLow              : grid_column_identifier,
-                                               inputVarAndOperations   : ["height_roof": ["AVG","STD"]],
+                                               inputVarAndOperations   : unweightedBuildingIndicators,
                                                prefixName              : prefixName,
                                                datasource              : datasource])) {
                         info "Cannot compute the building statistics on grid cells."

@@ -22,7 +22,6 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.geoclimate.osmtools.OSMTools
 import org.h2gis.functions.io.utility.PRJUtil;
 
-import java.sql.Connection
 import java.sql.SQLException
 
 import org.orbisgis.geoclimate.Geoindicators
@@ -699,7 +698,7 @@ IProcess osm_processing() {
                                                               epsg: srid, tableName : coverageId.replaceAll(":", "_"),  datasource: h2gis_datasource, epsg:srid])){
                                         results.put("populationTableName", importAscGrid.results.outputTableWorldPopName)
 
-                                        IProcess process = Geoindicators.PopulationIndicators.buildingPopulation()
+                                        IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
                                         if(!process.execute([inputBuildingTableName: results.buildingTableName,
                                                              inputPopulationTableName: importAscGrid.results.outputTableWorldPopName,  datasource: h2gis_datasource])) {
                                             info "Cannot compute any population data at building level"
@@ -1058,7 +1057,7 @@ def extractProcessingParameters(def processing_parameters){
                     error "The list of indicator names cannot be null or empty"
                     return
                 }
-                def allowed_grid_indicators=["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
+                def allowed_grid_indicators=["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_POP", "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
                           "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "URBAN_TYPO_AREA_FRACTION", "LCZ_FRACTION", "LCZ_PRIMARY"]
                 def allowedOutputIndicators = allowed_grid_indicators.intersect(list_indicators*.toUpperCase())
                 if(allowedOutputIndicators){

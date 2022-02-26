@@ -653,7 +653,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "osm" : ["Rennes"]],
+                        "osm" : ["Allaire"]],
                 "output" :[
                         "folder" :directory]
                 ,
@@ -668,9 +668,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                 "y_size": 100,
                                 "rowCol": true,
                                 "output" : "geojson",
-                                "indicators": ["BUILDING_FRACTION","BUILDING_HEIGHT","WATER_FRACTION","VEGETATION_FRACTION",
+                                "indicators": ["BUILDING_FRACTION","BUILDING_HEIGHT","BUILDING_POP", "WATER_FRACTION","VEGETATION_FRACTION",
                                                "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "LCZ_FRACTION"]
-                        ]
+                        ],    "worldpop_indicators" : true
                         ]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()

@@ -59,6 +59,10 @@
             <artifactId>geoindicators</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.orbisgis.geoclimate</groupId>
+            <artifactId>worldpoptools</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>

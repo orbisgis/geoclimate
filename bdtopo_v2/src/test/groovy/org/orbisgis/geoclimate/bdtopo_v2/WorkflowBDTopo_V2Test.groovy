@@ -656,7 +656,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
 
     @Test
     void testWorkFlowGridWithBbox() {
-        String directory ="./target/bdtopo_chain_grid_bbox"
+        String directory ="./target/bdtopo_chain_bbox"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
@@ -668,7 +668,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                 "description" :"Example of configuration file to run the grid indicators",
                 "geoclimatedb" : [
                         "folder" : "${dirFile.absolutePath}",
-                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "name" : "geoclimate_db;AUTO_SERVER=TRUE",
                         "delete" :false
                 ],
                 "input" :["bdtopo_v2":  [
@@ -676,21 +676,25 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                                    "id_zones":[[env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]]]]],
                 "output" :[
                         "folder" : ["path": "$directory",
-                                    "tables": ["grid_indicators"]]],
+                                    "tables": ["grid_indicators", "population"]]],
                 "parameters":
                         ["distance" : 0,
                          "grid_indicators": [
-                                 "x_size": 10,
-                                 "y_size": 10,
+                                 "x_size": 100,
+                                 "y_size": 100,
                                  "rowCol": true,
-                                 "indicators": ["BUILDING_FRACTION"]
-                         ]
+                                 "indicators": ["BUILDING_FRACTION", "BUILDING_POP"]
+                         ],
+                         "worldpop_indicators" : true
                         ]
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(input: createConfigFile(bdTopoParameters, directory)))
-        H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
-        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where BUILDING_FRACTION>0").count>0
+        def tableNames =process.results.output.values();
+        H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_db;AUTO_SERVER=TRUE")
+        assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.gridIndicatorsTableName[0]} where BUILDING_FRACTION>0").count>0
+        assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.populationTableName[0]} where pop is not null").count>0
+
     }
 
 
