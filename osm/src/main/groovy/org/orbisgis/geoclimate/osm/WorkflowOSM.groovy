@@ -50,11 +50,11 @@ import org.orbisgis.geoclimate.Geoindicators
  *  *         "delete" :false
  *  *     },
  *  * [REQUIRED]   "input" : {
- *  *            "osm" : ["filter"] // OSM filter to extract the data. Can be a place name supported by nominatim
+ *  *            "locations" : ["filter"] // OSM filter to extract the data. Can be a place name supported by nominatim
  *                                  // e.g "osm" : ["oran", "plourivo"]
  *                                  // or bbox expressed as "osm" : [[38.89557963573336,-77.03930318355559,38.89944983078282,-77.03364372253417]]
  *  *           "all":true //optional value if the user wants to download a limited set of data. Default is true to download all OSM elements
- *  *            "area" : 2000 //optional value to control the area ov the OSM BBox, default is 1000 km²
+ *  *           "area" : 2000 //optional value to control the area ov the OSM BBox, default is 1000 km²
  *              }
  *  *             ,
  *  *  [OPTIONAL ENTRY]  "output" :{ //If not ouput is set the results are keep in the local database
@@ -198,7 +198,7 @@ IProcess workflow() {
                     }
                 }
                 if (inputParameter) {
-                    def osmFilters = inputParameter.get("osm")
+                    def osmFilters = inputParameter.get("locations")
                     def downloadAllOSMData = inputParameter.get("all")
                     if(!downloadAllOSMData){
                         downloadAllOSMData = true
@@ -216,6 +216,26 @@ IProcess workflow() {
                         error "The area of the bounding box to be extracted from OSM must be greater than 0 km²"
                         return null
                     }
+
+                    def  overpass_timeout = inputParameter.get("timeout")
+                    if(!overpass_timeout){
+                        overpass_timeout = 900
+                    }
+                    else if(overpass_timeout<=180){
+                        error "The timeout value must be greater than the default value : 180 s"
+                        return null
+                    }
+
+                    def  overpass_maxsize = inputParameter.get("maxsize")
+
+                    if(!overpass_maxsize){
+                        overpass_maxsize = 1073741824
+                    }
+                    else if(overpass_maxsize<=536870912){
+                        error "The maxsize value must be greater than the default value :  536870912 (512 MB)"
+                        return null
+                    }
+
 
                     def deleteOSMFile = inputParameter.get("delete")
                     if(!deleteOSMFile){
@@ -307,7 +327,8 @@ IProcess workflow() {
                                         processing_parameters: processing_parameters,
                                         id_zones: osmFilters, outputFolder: file_outputFolder, ouputTableFiles: outputFolderProperties.tables,
                                         output_datasource: output_datasource, outputTableNames: finalOutputTables, outputSRID :outputSRID, downloadAllOSMData:downloadAllOSMData, deleteOutputData: deleteOutputData,
-                                        deleteOSMFile:deleteOSMFile, logTableZones:logTableZones, bbox_size : osm_size_area)) {
+                                        deleteOSMFile:deleteOSMFile, logTableZones:logTableZones, bbox_size : osm_size_area,
+                                        overpass_timeout :overpass_timeout, overpass_maxsize:overpass_maxsize)) {
                                     h2gis_datasource.getSpatialTable(logTableZones).save("${databaseFolder+File.separator}logzones.geojson")
                                     return null
                                 }
@@ -349,7 +370,8 @@ IProcess workflow() {
                                             processing_parameters: processing_parameters,
                                             id_zones: osmFilters, outputFolder: file_outputFolder, ouputTableFiles: outputFolderProperties.tables,
                                             output_datasource: null, outputTableNames: null, outputSRID :outputSRID, downloadAllOSMData:downloadAllOSMData, deleteOutputData: deleteOutputData,
-                                            deleteOSMFile:deleteOSMFile, logTableZones: logTableZones, bbox_size : osm_size_area)) {
+                                            deleteOSMFile:deleteOSMFile, logTableZones: logTableZones, bbox_size : osm_size_area,
+                                            overpass_timeout :overpass_timeout, overpass_maxsize:overpass_maxsize)) {
                                         h2gis_datasource.getSpatialTable(logTableZones).save("${databaseFolder+File.separator}logzones.geojson")
                                         return null
                                     }
@@ -403,7 +425,9 @@ IProcess workflow() {
                                             processing_parameters: processing_parameters,
                                             id_zones: osmFilters, outputFolder: null, ouputTableFiles: null,
                                             output_datasource: output_datasource, outputTableNames: finalOutputTables,outputSRID :outputSRID,downloadAllOSMData:downloadAllOSMData,
-                                            deleteOutputData: deleteOutputData,deleteOSMFile:deleteOSMFile,logTableZones: logTableZones, bbox_size : osm_size_area)) {
+                                            deleteOutputData: deleteOutputData,deleteOSMFile:deleteOSMFile,
+                                            logTableZones: logTableZones, bbox_size : osm_size_area,
+                                            overpass_timeout :overpass_timeout, overpass_maxsize:overpass_maxsize)) {
                                         h2gis_datasource.getSpatialTable(logTableZones).save("${databaseFolder+File.separator}logzones.geojson")
                                         return null
                                     }
@@ -472,10 +496,11 @@ IProcess osm_processing() {
         id "osm_processing"
         inputs h2gis_datasource: JdbcDataSource, processing_parameters: Map, id_zones: Map,
                 outputFolder: "", ouputTableFiles: "", output_datasource: "", outputTableNames: "", outputSRID : Integer, downloadAllOSMData : true,
-                deleteOutputData:true, deleteOSMFile:false, logTableZones:String, bbox_size : 1000
+                deleteOutputData:true, deleteOSMFile:false, logTableZones:String, bbox_size : 1000,
+                overpass_timeout :180, overpass_maxsize:536870912
         outputs outputTableNames: Map
         run { H2GIS h2gis_datasource, processing_parameters, id_zones, outputFolder, ouputTableFiles, output_datasource, outputTableNames,
-              outputSRID, downloadAllOSMData,deleteOutputData, deleteOSMFile,logTableZones, bbox_size ->
+              outputSRID, downloadAllOSMData,deleteOutputData, deleteOSMFile,logTableZones, bbox_size, overpass_timeout, overpass_maxsize ->
             //Store the zone identifier and the names of the tables
             def outputTableNamesResult = [:]
             //Create the table to log on the processed zone
@@ -506,7 +531,7 @@ IProcess osm_processing() {
                     }
                     //Prepare OSM extraction
                     //TODO set key values ?
-                    def query = "[maxsize:1073741824]" + Utilities.buildOSMQuery(zoneTableNames.envelope, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+                    def query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]" + Utilities.buildOSMQuery(zoneTableNames.envelope, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
 
                     if(downloadAllOSMData){
                         //Create a custom OSM query to download all requiered data. It will take more time and resources
@@ -516,7 +541,7 @@ IProcess osm_processing() {
                                            "landuse", "landcover",
                                            "vegetation","waterway"]
                         //TODO : Remove unnecessary keys according the output tables set in the config file
-                        query =  "[maxsize:1073741824]"+ Utilities.buildOSMQueryWithAllData(zoneTableNames.envelope, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+                        query =  "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]"+ Utilities.buildOSMQueryWithAllData(zoneTableNames.envelope, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
                     }
 
                     def extract = OSMTools.Loader.extract()
