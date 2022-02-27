@@ -781,6 +781,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     }
 
 
+    @Disabled
     @Test
     void testPopulation_Indicators() {
         String directory ="./target/geoclimate_population"
