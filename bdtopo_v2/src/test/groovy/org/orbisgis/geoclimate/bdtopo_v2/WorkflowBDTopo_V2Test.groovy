@@ -270,9 +270,9 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         "name" : "bdtopo_workflow_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
-                "input" : ["bdtopo_v2": [
+                "input" : [
                         "folder": ["path" :".../processingChain",
-                                   "id_zones":["56350"]]]],
+                                   "locations":["56350"]]],
                 "output" :[
                         "database" :
                                 ["user" : "sa",
@@ -319,9 +319,9 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         "name" : "bdtopo_workflow_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
-                "input" :["bdtopo_v2":  [
+                "input" :[
                         "folder": ["path" :".../processingChain",
-                            "id_zones":["-", "-"]]]],
+                            "locations":["-", "-"]]],
                 "output" :[
                         "database" :
                                 ["user" : "sa",
@@ -416,9 +416,9 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         "name" : "bdtopo_workflow_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
-                "input" : ["bdtopo_v2": [
+                "input" : [
                         "folder": ["path" :dataFolder,
-                                   "id_zones":[communeToTest]]]],
+                                   "locations":[communeToTest]]],
                 "output" :[
                         "database" :
                                 ["user" : postgis_dbProperties.user,
@@ -473,9 +473,9 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         "name" : "bdtopo_workflow_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
-                "input" : ["bdtopo_v2": [
+                "input" : [
                         "folder": ["path" :dataFolder,
-                                   "id_zones":[[env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]]]]],
+                                   "locations":[[env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]]]],
                 "output" :[
                         "database" :
                                 ["user" : postgis_dbProperties.user,
@@ -520,9 +520,9 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :false
                 ],
-                "input" :["bdtopo_v2":  [
+                "input" :[
                         "folder": ["path" :dataFolder,
-                                   "id_zones":[communeToTest]]]],
+                                   "locations":[communeToTest]]],
                 "output" :[
                         "folder" : ["path": "$directory",
                                     "tables": ["grid_indicators"]]],
@@ -558,9 +558,9 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         def envCoords = [env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]
         def bdTopoParameters = [
                 "description" :"Example of configuration file to run the grid indicators",
-                "input" :["bdtopo_v2":  [
+                "input" :[
                         "folder": ["path" :dataFolder,
-                                   "id_zones":[envCoords]]]],
+                                   "locations":[envCoords]]],
                 "output" :[
                         "folder" : ["path": "$directory",
                                     "tables": ["grid_indicators"]]],
@@ -598,9 +598,9 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :false
                 ],
-                "input" :["bdtopo_v2":  [
+                "input" :[
                         "folder": ["path" :dataFolder,
-                                   "id_zones":["Olemps"]]]],
+                                   "locations":["Olemps"]]],
                 "output" :[
                         "folder" : ["path": "$directory",
                                     "tables": ["grid_indicators"]]],
@@ -633,9 +633,9 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :false
                 ],
-                "input" :["bdtopo_v2":  [
+                "input" :[
                         "folder": ["path" :dataFolder,
-                                   "id_zones":["Olemps"]]]],
+                                   "locations":["Olemps"]]],
                 "output" :[
                         "folder" : ["path": "$directory",
                                     "tables": ["grid_indicators"]]],
@@ -671,9 +671,9 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         "name" : "geoclimate_db;AUTO_SERVER=TRUE",
                         "delete" :false
                 ],
-                "input" :["bdtopo_v2":  [
+                "input" :[
                         "folder": ["path" :dataFolder,
-                                   "id_zones":[[env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]]]]],
+                                   "locations":[[env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]]]],
                 "output" :[
                         "folder" : ["path": "$directory",
                                     "tables": ["grid_indicators", "population"]]],
@@ -712,9 +712,9 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :false
                 ],
-                "input" :["bdtopo_v2":  [
+                "input" :[
                         "folder": ["path" :dataFolder,
-                                   "id_zones":[communeToTest]]]],
+                                   "locations":[communeToTest]]],
                 "output" :[
                         "folder" : ["path": "$directory",
                                     "tables": ["road_traffic"]]],
@@ -740,18 +740,18 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         def user = ""
         def password = ""
         def url = ""
-        def id_zones = ["56223", "44185"]
+        def locations = ["56223", "44185"]
         def local_database_name="paendora_${System.currentTimeMillis()}"
 
         /*================================================================================
         * Input database and tables
         */
-        def  input = ["bdtopo_v2": [
+        def  input = [
                 "database": [
                         "user":user,
                         "password": password,
                         "url": url,
-                        "id_zones":id_zones,
+                        "locations":locations,
                         "tables": ["commune":"ign_bdtopo_2017.commune",
                                    "bati_indifferencie":"ign_bdtopo_2017.bati_indifferencie",
                                    "bati_industriel":"ign_bdtopo_2017.bati_industriel",
@@ -765,7 +765,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                                    "surface_route":"ign_bdtopo_2017.surface_route",
                                    "surface_activite":"ign_bdtopo_2017.surface_activite",
                                    "piste_aerodrome":"ign_bdtopo_2017.piste_aerodrome"]
-                ]]]
+                ]]
 
 
         /*================================================================================
@@ -829,7 +829,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         def password = ""
         def url = "jdbc:postgresql://x:5432/x"
 
-        def id_zones = [[6785161.292786511,346264.052218681,6794396.60947986,356288.94475984486], "56223"]
+        def locations = [[6785161.292786511,346264.052218681,6794396.60947986,356288.94475984486], "56223"]
         String directory ="./target/bdtopo_workflow_postgis_input"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -841,12 +841,12 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         "name" : "bdtopo_workflow_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
-                "input" : ["bdtopo_v2": [
+                "input" : [
                         "database": [
                                 "user":user,
                                 "password": password,
                                 "url": url,
-                                "id_zones":id_zones,
+                                "locations":locations,
                                 "tables": ["commune":"ign_bdtopo_2017.commune",
                                            "bati_indifferencie":"ign_bdtopo_2017.bati_indifferencie",
                                            "bati_industriel":"ign_bdtopo_2017.bati_industriel",
@@ -860,7 +860,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                                            "surface_route":"ign_bdtopo_2017.surface_route",
                                            "surface_activite":"ign_bdtopo_2017.surface_activite",
                                            "piste_aerodrome":"ign_bdtopo_2017.piste_aerodrome"]
-                        ]]],
+                        ]],
                 "output" :[
                         "folder" : ["path": "$directory"]],
                 "parameters":

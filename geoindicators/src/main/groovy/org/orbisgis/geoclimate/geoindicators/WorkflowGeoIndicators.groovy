@@ -1972,9 +1972,9 @@ IProcess rasterizeIndicators() {
                     }
                 }
 
-
                 // Calculate all surface fractions indicators on the GRID cell
                 // Need to create the smallest geometries used as input of the surface fraction process
+
                 def columnFractionsList = [:]
                 def priorities = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
 
