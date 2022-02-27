@@ -668,9 +668,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                 "y_size": 100,
                                 "rowCol": true,
                                 "output" : "geojson",
-                                "indicators": ["BUILDING_FRACTION","BUILDING_HEIGHT","WATER_FRACTION","VEGETATION_FRACTION",
+                                "indicators": ["BUILDING_FRACTION","BUILDING_HEIGHT","BUILDING_POP", "WATER_FRACTION","VEGETATION_FRACTION",
                                                "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "LCZ_FRACTION"]
-                        ]
+                        ],    "worldpop_indicators" : true
                         ]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
@@ -781,8 +781,38 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     }
 
 
+    @Disabled
     @Test
-    void osmWrongAreaSiz() {
+    void testPopulation_Indicators() {
+        String directory ="./target/geoclimate_population"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "description" :"Example of configuration file to run only the road traffic estimation",
+                "geoclimatedb" : [
+                        "folder" : dirFile.absolutePath,
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete" :false
+                ],
+                "input" : [
+                        "osm" : ["Pont-de-Veyle"]],
+                "output" :[
+                        "folder" : ["path": directory,
+                                    "tables": ["building", "population"]]],
+                "parameters":
+                        ["worldpop_indicators" : true]
+        ]
+        IProcess process = OSM.WorkflowOSM.workflow()
+        assertTrue(process.execute(input: osm_parmeters))
+        assertEquals(10,  process.getResults().output["Pont-de-Veyle"].size())
+        H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
+        assertTrue h2gis.firstRow("select count(*) as count from ${process.results.output["Pont-de-Veyle"].populationTableName} where pop is not null").count>0
+    }
+
+
+    @Test
+    void osmWrongAreaSize() {
         String directory ="./target/geoclimate_chain_db"
         File dirFile = new File(directory)
         dirFile.delete()

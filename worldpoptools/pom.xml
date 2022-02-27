@@ -9,7 +9,7 @@
         <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>osm</artifactId>
+    <artifactId>worldpoptools</artifactId>
     <groupId>org.orbisgis.geoclimate</groupId>
     <version>0.0.2-SNAPSHOT</version>
 
@@ -19,32 +19,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.orbisgis.geoclimate</groupId>
-            <artifactId>worldpoptools</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-simple</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.orbisgis.geoclimate</groupId>
-            <artifactId>osmtools</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-simple</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
             <groupId>org.codehaus.groovy</groupId>
             <artifactId>groovy</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.codehaus.groovy</groupId>
-            <artifactId>groovy-json</artifactId>
         </dependency>
         <dependency>
             <groupId>org.orbisgis.orbisdata.datamanager</groupId>
@@ -57,6 +33,10 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>org.orbisgis.orbisdata.datamanager</groupId>
+            <artifactId>api</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.orbisgis.orbisdata.processmanager</groupId>
             <artifactId>process</artifactId>
             <exclusions>
@@ -65,15 +45,6 @@
                     <artifactId>slf4j-simple</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.orbisgis.geoclimate</groupId>
-            <artifactId>geoindicators</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
@@ -87,6 +58,7 @@
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
         </dependency>
+
         <!-- Test dependencies -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>

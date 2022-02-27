@@ -15,6 +15,7 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.geoclimate.Geoindicators
 import org.h2gis.functions.io.utility.IOMethods
 import org.osgi.service.jdbc.DataSourceFactory
+import org.orbisgis.geoclimate.worldpoptools.WorldPopTools
 
 import javax.sql.DataSource
 import java.sql.Connection
@@ -241,7 +242,8 @@ IProcess workflow() {
                                                          "rsu_urban_typo_floor_area",
                                                          "building_urban_typo",
                                                          "grid_indicators",
-                                                          "road_traffic"]
+                                                         "road_traffic",
+                                                         "population"]
                             //Get processing parameters
                             def processing_parameters = extractProcessingParameters(parameters.parameters)
                             if(!processing_parameters){
@@ -757,7 +759,8 @@ def outputFolderProperties(def outputFolder){
                         "rsu_urban_typo_floor_area",
                         "building_urban_typo",
                         "grid_indicators",
-                        "road_traffic"]
+                        "road_traffic",
+                        "population"]
 
     if(outputFolder in Map){
         def outputPath = outputFolder.path
@@ -1245,7 +1248,7 @@ def extractProcessingParameters(def processing_parameters){
                     error "The list of indicator names cannot be null or empty"
                     return
                 }
-                def allowed_grid_indicators=["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
+                def allowed_grid_indicators=["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_POP","BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
                                              "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "URBAN_TYPO_AREA_FRACTION", "LCZ_FRACTION", "LCZ_PRIMARY"]
                 def allowedOutputIndicators = allowed_grid_indicators.intersect(list_indicators*.toUpperCase())
                 if(allowedOutputIndicators){
@@ -1288,6 +1291,12 @@ def extractProcessingParameters(def processing_parameters){
         def  road_traffic = processing_parameters.road_traffic
         if(road_traffic && road_traffic in Boolean){
             defaultParameters.put("road_traffic", road_traffic)
+        }
+
+        //Check if the pop indicators must be computed
+        def  pop_indics = processing_parameters.worldpop_indicators
+        if(pop_indics && pop_indics in Boolean){
+            defaultParameters.put("worldpop_indicators", pop_indics)
         }
 
         return defaultParameters
@@ -1372,6 +1381,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
 
             def rsu_indicators_params = processing_parameters.rsu_indicators
             def grid_indicators_params = processing_parameters.grid_indicators
+            def worldpop_indicators = processing_parameters.worldpop_indicators
 
 
             results.put("zoneTableName", zoneTableName)
@@ -1401,6 +1411,39 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
                     results.putAll(geoIndicators.getResults())
                 }
             }
+
+            //Extract and compute population indicators for the specified year
+            //This data can be used by the grid_indicators process
+            if(worldpop_indicators){
+                IProcess extractWorldPopLayer = WorldPopTools.Extract.extractWorldPopLayer()
+                def coverageId = "wpGlobal:ppp_2018"
+                def envelope = h2gis_datasource.firstRow("select st_transform(the_geom, 4326) as geom from $zoneTableName".toString()).geom.getEnvelopeInternal()
+                def bbox = [envelope.getMinY() as Float,envelope.getMinX()as Float,
+                            envelope.getMaxY()as Float,envelope.getMaxX()as Float]
+                if(extractWorldPopLayer.execute([coverageId:coverageId,  bbox :bbox])){
+                    IProcess importAscGrid = WorldPopTools.Extract.importAscGrid()
+                    if(importAscGrid.execute([worldPopFilePath:extractWorldPopLayer.results.outputFilePath,
+                                              epsg: srid, tableName : coverageId.replaceAll(":", "_"),  datasource: h2gis_datasource, epsg:srid])){
+                        results.put("populationTableName", importAscGrid.results.outputTableWorldPopName)
+
+                        IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
+                        if(!process.execute([inputBuildingTableName: results.buildingTableName,
+                                             inputPopulationTableName: importAscGrid.results.outputTableWorldPopName,  datasource: h2gis_datasource])) {
+                            info "Cannot compute any population data at building level"
+                        }
+                        //Update the building table with the population data
+                        buildingTableName =process.results.buildingTableName
+                        results.put("buildingTableName", buildingTableName)
+
+                    }else {
+                        info "Cannot import the worldpop asc file $extractWorldPopLayer.results.outputFilePath"
+                    }
+
+                }else {
+                    info "Cannot find the population grid $coverageId"
+                }
+            }
+
             //Compute the grid indicators
             if(grid_indicators_params) {
                 def x_size = grid_indicators_params.x_size
@@ -1466,49 +1509,54 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
     }
     outputFiles.each{
         //Save indicators
-        if(it.equals("building_indicators")){
-            saveTableAsGeojson(results.outputTableBuildingIndicators, "${subFolder.getAbsolutePath()+File.separator+"building_indicators"}.geojson",h2gis_datasource,outputSRID, reproject,deleteOutputData)
+        if(it == "building_indicators"){
+            saveTableAsGeojson(results.outputTableBuildingIndicators, "${subFolder.getAbsolutePath()+File.separator+"building_indicators"}.geojson",h2gis_datasource,outputSRID, reproject, deleteOutputData)
         }
-        else if(it.equals("block_indicators")){
+        else if(it == "block_indicators"){
             saveTableAsGeojson(results.outputTableBlockIndicators, "${subFolder.getAbsolutePath()+File.separator+"block_indicators"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }subFolder
-        else if(it.equals("rsu_indicators")){
+        }
+        else  if(it == "rsu_indicators"){
             saveTableAsGeojson(results.outputTableRsuIndicators, "${subFolder.getAbsolutePath()+File.separator+"rsu_indicators"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
-        else if(it.equals("rsu_lcz")){
+        else  if(it == "rsu_lcz"){
             saveTableAsGeojson(results.outputTableRsuLcz,  "${subFolder.getAbsolutePath()+File.separator+"rsu_lcz"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
-        else if(it.equals("zones")){
+        else  if(it == "zones"){
             saveTableAsGeojson(results.zoneTableName,  "${subFolder.getAbsolutePath()+File.separator+"zones"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         //Save input GIS tables
-        else  if(it.equals("building")){
+        else  if(it == "building"){
             saveTableAsGeojson(results.buildingTableName, "${subFolder.getAbsolutePath()+File.separator+"building"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
-        else if(it.equals("road")){
+        else if(it == "road"){
             saveTableAsGeojson(results.roadTableName,  "${subFolder.getAbsolutePath()+File.separator+"road"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
-        else if(it.equals("rail")){
+        else if(it == "rail"){
             saveTableAsGeojson(results.railTableName,  "${subFolder.getAbsolutePath()+File.separator+"rail"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
-        if(it.equals("water")){
+        if(it == "water"){
             saveTableAsGeojson(results.hydrographicTableName, "${subFolder.getAbsolutePath()+File.separator+"water"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
-        else if(it.equals("vegetation")){
+        else if(it == "vegetation"){
             saveTableAsGeojson(results.vegetationTableName,  "${subFolder.getAbsolutePath()+File.separator+"vegetation"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
-        else if(it.equals("impervious")){
+        else if(it == "impervious"){
             saveTableAsGeojson(results.imperviousTableName, "${subFolder.getAbsolutePath()+File.separator+"impervious"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }else if(it.equals("rsu_urban_typo_area")){
+        }
+        else if(it == "urban_areas"){
+            saveTableAsGeojson(results.urbanAreasTableName, "${subFolder.getAbsolutePath()+File.separator+"urban_areas"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        }else if(it == "rsu_urban_typo_area"){
             saveTableAsGeojson(results.outputTableRsuUrbanTypoArea, "${subFolder.getAbsolutePath()+File.separator+"rsu_urban_typo_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }else if(it.equals("rsu_urban_typo_floor_area")){
+        }else if(it == "rsu_urban_typo_floor_area"){
             saveTableAsGeojson(results.outputTableRsuUrbanTypoFloorArea, "${subFolder.getAbsolutePath()+File.separator+"rsu_urban_typo_floor_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }else if(it.equals("building_urban_typo")){
+        }else if(it == "building_urban_typo"){
             saveTableAsGeojson(results.outputTableBuildingUrbanTypo, "${subFolder.getAbsolutePath()+File.separator+"building_urban_typo"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }else if(it.equals("grid_indicators")){
+        }else if(it == "grid_indicators"){
             saveTableAsGeojson(results.gridIndicatorsTableName, "${subFolder.getAbsolutePath()+File.separator+"grid_indicators"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }else if(it == "road_traffic"){
             saveTableAsGeojson(results.roadTrafficTableName,  "${subFolder.getAbsolutePath()+File.separator+"road_traffic"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        }else  if(it == "population"){
+            saveTableAsGeojson(results.populationTableName, "${subFolder.getAbsolutePath()+File.separator+"population"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
     }
 }
@@ -1607,6 +1655,11 @@ def saveTablesInDatabase(def output_datasource, def h2gis_datasource, def output
     //Export impervious
     abstractModelTableBatchExportTable(output_datasource, outputTableNames.impervious, id_zone, h2gis_datasource, h2gis_tables.imperviousTableName
             ,  "",inputSRID, outputSRID,reproject)
+
+    //Export population table
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.population, id_zone,h2gis_datasource, h2gis_tables.populationTableName
+            , "", inputSRID,outputSRID,reproject)
+
 
     con.setAutoCommit(false);
 

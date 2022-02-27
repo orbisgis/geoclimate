@@ -174,7 +174,7 @@ IProcess weightedAggregatedStatistics() {
             datasource weightedMeanQuery.toString()
 
             // The weighted std is calculated if needed and only the needed fields are returned
-            def weightedStdQuery = "CREATE INDEX IF NOT EXISTS id_lcorr ON $weighted_mean USING BTREE($inputIdUp); " +
+            def weightedStdQuery = "CREATE INDEX IF NOT EXISTS id_lcorr ON $weighted_mean ($inputIdUp); " +
                     "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT b.$inputIdUp,"
             inputVarWeightsOperations.each { var, weights ->
                 weights.each { weight, operations ->
