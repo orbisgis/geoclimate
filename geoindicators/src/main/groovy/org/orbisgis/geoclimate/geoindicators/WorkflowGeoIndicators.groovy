@@ -1806,8 +1806,10 @@ IProcess computeGeoclimateIndicators() {
                 NB_BLOCK INTEGER,
                 NB_RSU INTEGER,
                 COMPUTATION_TIME INTEGER,
-                LAST_UPDATE VARCHAR
+                LAST_UPDATE VARCHAR, VERSION VARCHAR, BUILD_NUMBER VARCHAR
                 )""".toString()
+
+
             //Update reporting to the zone table
             datasource.execute"""update ${zoneTable} 
             set nb_estimated_building = 0, 
@@ -1815,7 +1817,9 @@ IProcess computeGeoclimateIndicators() {
             nb_block =  ${nbBlock},
             nb_rsu = ${nbRSU},
             computation_time = ${(System.currentTimeMillis()-start)/1000},
-            last_update = CAST(now() AS VARCHAR)""".toString()
+            last_update = CAST(now() AS VARCHAR),
+            version = '${Geoindicators.version()}',
+            build_number = '${Geoindicators.buildNumber()}'""".toString()
 
             return [outputTableBuildingIndicators   : buildingIndicators,
                     outputTableBlockIndicators      : blockIndicators,
