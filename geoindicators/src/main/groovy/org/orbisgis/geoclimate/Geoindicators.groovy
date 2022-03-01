@@ -27,6 +27,7 @@ abstract class Geoindicators  extends GroovyProcessFactory  {
 
     //The whole chain to run the geoindicators
     public static WorkflowGeoIndicators = new WorkflowGeoIndicators()
+    static Properties GEOCLIMATE_PROPERTIES
 
     //Utility methods
     static def getUuid(){
@@ -111,5 +112,34 @@ abstract class Geoindicators  extends GroovyProcessFactory  {
      */
     static  void clearTablesCache(){
         System.properties.removeAll {it.key.startsWith("GEOCLIMATE")}
+    }
+
+    /**
+     * Return the current GeoClimate version
+     * @return
+     */
+    static def version() {
+        return geoclimate_property("version")
+    }
+
+    /**
+     * Return the current GeoClimate build number
+     * @return
+     */
+    static def buildNumber() {
+        return geoclimate_property("build")
+    }
+
+    /**
+     * Return geoclimate properties
+     * @param name
+     * @return
+     */
+    static def geoclimate_property(String name) {
+        if(!GEOCLIMATE_PROPERTIES) {
+            GEOCLIMATE_PROPERTIES = new Properties()
+            GEOCLIMATE_PROPERTIES.load(Geoindicators.getResourceAsStream("geoclimate.properties"))
+        }
+        return GEOCLIMATE_PROPERTIES.get(name)
     }
 }

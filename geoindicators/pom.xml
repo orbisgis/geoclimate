@@ -150,6 +150,23 @@
                 <artifactId>maven-javadoc-plugin</artifactId>
             </plugin>
         </plugins>
+
+        <resources>
+            <resource>
+                <directory>src/main/resources/</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/geoclimate.properties</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources/</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>**/geoclimate.properties</exclude>
+                </excludes>
+            </resource>
+        </resources>
     </build>
 
     <distributionManagement>
