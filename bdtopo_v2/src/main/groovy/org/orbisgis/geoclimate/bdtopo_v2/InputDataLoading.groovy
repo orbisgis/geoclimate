@@ -138,22 +138,22 @@ IProcess prepareBDTopoData() {
             for (String name : list) {
                 if(name) {
                     def table = datasource.getTable(name)
-                    if(table){
-                        tablesExist<<name
-                        def currentSrid =table.srid
+                    if(table) {
+                        def hasRow = datasource.firstRow("select 1 as id from ${name} limit 1".toString())
+                        if (hasRow) {
+                        tablesExist << name
+                        def currentSrid = table.srid
                         if (srid == -1) {
                             srid = currentSrid
                         } else {
-                            //This is due because the import table does'nt transfert the SRID constraint when the
-                            //table has no rows
-                            if(currentSrid==0 && table.getRowCount()==0 ){
+                            if (currentSrid == 0) {
                                 error "The process has been stopped since the table $name has a no SRID"
                                 return
-                            }
-                            else if (currentSrid>0 && srid != currentSrid) {
+                            } else if (currentSrid > 0 && srid != currentSrid) {
                                 error "The process has been stopped since the table $name has a different SRID from the others"
                                 return
                             }
+                        }
                         }
                     }
                 }
