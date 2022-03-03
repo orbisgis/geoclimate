@@ -1,6 +1,7 @@
 package org.orbisgis.geoclimate.bdtopo_v2
 
 import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
 import org.h2gis.utilities.FileUtilities
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
@@ -733,15 +734,19 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
     @Disabled //Use it for integration test with a postgis database
     @Test
     void testIntegrationPostGIS() {
-        String directory ="./target/geoclimate_postgis_integration"
+        def db_config = new File("/tmp/postgis_config.json")
+        if(db_config.exists()){
+        String directory ="/tmp/geoclimate/"
+        def jsonSlurper = new JsonSlurper()
+        def postgis_b = jsonSlurper.parse(new File("/tmp/postgis_config.json"))
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def user = ""
-        def password = ""
-        def url = ""
-        def locations = ["56223", "44185"]
-        def local_database_name="paendora_${System.currentTimeMillis()}"
+        def user = postgis_b.user
+        def password = postgis_b.password
+        def url = postgis_b.url
+        def locations = ["Allaire"]
+        def local_database_name="geoclimate_test_integration;AUTO_SERVER=TRUE"
 
         /*================================================================================
         * Input database and tables
@@ -752,19 +757,19 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         "password": password,
                         "url": url,
                         "locations":locations,
-                        "tables": ["commune":"ign_bdtopo_2017.commune",
-                                   "bati_indifferencie":"ign_bdtopo_2017.bati_indifferencie",
-                                   "bati_industriel":"ign_bdtopo_2017.bati_industriel",
-                                   "bati_remarquable":"ign_bdtopo_2017.bati_remarquable",
-                                   "route":"ign_bdtopo_2017.route",
-                                   "troncon_voie_ferree":"ign_bdtopo_2017.troncon_voie_ferree",
-                                   "surface_eau":"ign_bdtopo_2017.surface_eau",
-                                   "zone_vegetation":"ign_bdtopo_2017.zone_vegetation",
-                                   "terrain_sport":"ign_bdtopo_2017.terrain_sport",
-                                   "construction_surfacique":"ign_bdtopo_2017.construction_surfacique",
-                                   "surface_route":"ign_bdtopo_2017.surface_route",
-                                   "surface_activite":"ign_bdtopo_2017.surface_activite",
-                                   "piste_aerodrome":"ign_bdtopo_2017.piste_aerodrome"]
+                        "tables": ["commune":"ign_bdtopo_2018.commune",
+                                   "bati_indifferencie":"ign_bdtopo_2018.bati_indifferencie",
+                                   "bati_industriel":"ign_bdtopo_2018.bati_industriel",
+                                   "bati_remarquable":"ign_bdtopo_2018.bati_remarquable",
+                                   "route":"ign_bdtopo_2018.route",
+                                   "troncon_voie_ferree":"ign_bdtopo_2018.troncon_voie_ferree",
+                                   "surface_eau":"ign_bdtopo_2018.surface_eau",
+                                   "zone_vegetation":"ign_bdtopo_2018.zone_vegetation",
+                                   "terrain_sport":"ign_bdtopo_2018.terrain_sport",
+                                   "construction_surfacique":"ign_bdtopo_2018.construction_surfacique",
+                                   "surface_route":"ign_bdtopo_2018.surface_route",
+                                   "surface_activite":"ign_bdtopo_2018.surface_activite",
+                                   "piste_aerodrome":"ign_bdtopo_2018.piste_aerodrome"]
                 ]]
 
 
@@ -777,16 +782,16 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         "password": password,
                         "url": url,
                         "tables": [
-                                "building_indicators":"paendora.building_indicators_2154",
-                                "block_indicators":"paendora.block_indicators_2154",
-                                "rsu_indicators":"paendora.rsu_indicators_2154",
-                                "rsu_lcz":"paendora.rsu_lcz_2154",
-                                "zones":"paendora.zones_2154",
-                                "building_urban_typo":"paendora.building_urban_typo_2154",
-                                "rsu_urban_typo_area":"paendora.rsu_urban_typo_area_2154",
-                                "rsu_urban_typo_floor_area":"paendora.rsu_urban_typo_floor_area_2154",
-                                "grid_indicators":"paendora.grid_indicators_2154",
-                                "road_traffic" : "paendora.road_traffic_2154"]
+                                "building_indicators":"building_indicators_2154",
+                                "block_indicators":"block_indicators_2154",
+                                "rsu_indicators":"rsu_indicators_2154",
+                                "rsu_lcz":"rsu_lcz_2154",
+                                "zones":"zones_2154",
+                                "building_urban_typo":"building_urban_typo_2154",
+                                "rsu_urban_typo_area":"rsu_urban_typo_area_2154",
+                                "rsu_urban_typo_floor_area":"rsu_urban_typo_floor_area_2154",
+                                "grid_indicators":"grid_indicators_2154",
+                                "road_traffic" : "road_traffic_2154"]
                 ]
         ]
 
@@ -820,6 +825,10 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
 
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(input: createConfigFile(workflow_parameters, directory)))
+        }
+        else{
+            println("The configuration file for the input database doesn't exist")
+        }
     }
 
     @Disabled //Use it for integration test with a postgis database
