@@ -1774,7 +1774,7 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
                     }
                 }
                 if(tmpTable) {
-                    output_datasource.execute("UPDATE $output_table SET id_zone= $id_zone".toString());
+                    output_datasource.execute("UPDATE $output_table SET id_zone= '$id_zone'".toString());
                     output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""".toString())
                     debug "The table $h2gis_table_to_save has been exported into the table $output_table"
                 }else{
