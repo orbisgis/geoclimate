@@ -118,8 +118,8 @@ IProcess freeExternalFacadeDensityExact() {
             def snap_tolerance = 0.01
 
             // 1. Convert the building polygons into lines and create the intersection with RSU polygons
-            datasource."$buildingTable"."$GEOMETRIC_FIELD_RSU".createSpatialIndex()
-            datasource."$rsuTable"."$GEOMETRIC_FIELD_RSU".createSpatialIndex()
+            datasource."$buildingTable"."$ID_FIELD_RSU".createIndex()
+            datasource."$rsuTable"."$ID_FIELD_RSU".createIndex()
             datasource """
                 DROP TABLE IF EXISTS $buildLine;
                 CREATE TABLE $buildLine
