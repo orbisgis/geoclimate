@@ -118,15 +118,27 @@ IProcess importAscGrid() {
             ascReaderDriver.setEncoding("UTF-8")
             if(epsg!=4326) {
                 def importTable =  postfix "imported_grid"
-                ascReaderDriver.read(datasource.getConnection(),new File(worldPopFilePath), new EmptyProgressVisitor(), importTable, 4326)
-                datasource.execute("""drop table if exists $outputTableWorldPopName;
+                try {
+                    ascReaderDriver.read(datasource.getConnection(), new File(worldPopFilePath), new EmptyProgressVisitor(), importTable, 4326)
+                    datasource.execute("""drop table if exists $outputTableWorldPopName;
                     create table $outputTableWorldPopName as select ST_TRANSFORM(THE_GEOM, $epsg) as the_geom,
                 PK AS ID_POP, Z as POP from $importTable;
                 drop table if exists $importTable""".toString())
+                }catch(Exception ex){
+                    info "Cannot find any worldpop data on the requested area"
+                    datasource.execute("""drop table if exists $outputTableWorldPopName;
+                    create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $epsg), ID_POP INTEGER, POP FLOAT);""".toString())
+                }
             }else {
+                try {
                 ascReaderDriver.read(datasource.getConnection(),new File(worldPopFilePath), new EmptyProgressVisitor(), outputTableWorldPopName, 4326)
                 datasource.execute("""ALTER TABLE $outputTableWorldPopName RENAME COLUMN PK TO ID_POP;
                                 ALTER TABLE $outputTableWorldPopName RENAME COLUMN Z TO POP;""".toString())
+                }catch(Exception ex){
+                    info "Cannot find any worldpop data on the requested area"
+                    datasource.execute("""drop table if exists $outputTableWorldPopName;
+                    create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $epsg), ID_POP INTEGER, POP FLOAT);""".toString())
+                }
             }
             [outputTableWorldPopName: outputTableWorldPopName]
         }
