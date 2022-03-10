@@ -669,7 +669,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                 "rowCol": true,
                                 "output" : "geojson",
                                 "indicators": ["BUILDING_FRACTION","BUILDING_HEIGHT","BUILDING_POP", "WATER_FRACTION","VEGETATION_FRACTION",
-                                               "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "LCZ_FRACTION"]
+                                               "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "LCZ_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY"]
                         ],    "worldpop_indicators" : true
                         ]
         ]
