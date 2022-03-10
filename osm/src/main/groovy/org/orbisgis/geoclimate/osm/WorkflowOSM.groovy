@@ -749,21 +749,25 @@ IProcess osm_processing() {
                             if(grid_indicators_params){
                                 def x_size = grid_indicators_params.x_size
                                 def y_size = grid_indicators_params.y_size
-                                outputGrid = grid_indicators_params.output
-                                IProcess rasterizedIndicators =  Geoindicators.WorkflowGeoIndicators.rasterizeIndicators()
-                                    if(rasterizedIndicators.execute(datasource:h2gis_datasource,envelope: geomEnv,
-                                            x_size : x_size, y_size : y_size,
-                                            srid : srid,rowCol: grid_indicators_params.rowCol,
+                                IProcess gridProcess = Geoindicators.WorkflowGeoIndicators.createGrid()
+                                if(gridProcess.execute(datasource:h2gis_datasource,envelope: geomEnv,
+                                        x_size : x_size, y_size : y_size,
+                                        srid : srid,rowCol: grid_indicators_params.rowCol)){
+                                    def gridTableName = gridProcess.results.outputTableName
+                                    IProcess rasterizedIndicators =  Geoindicators.WorkflowGeoIndicators.rasterizeIndicators()
+                                    if(rasterizedIndicators.execute(datasource:h2gis_datasource,gridTableName: gridTableName,
                                             list_indicators :grid_indicators_params.indicators,
-                                            buildingTable: results.buildingTableName, roadTable: roadTableName, vegetationTable: vegetationTableName,
+                                            buildingTable: buildingTableName, roadTable: roadTableName, vegetationTable: vegetationTableName,
                                             hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
                                             rsu_lcz:results.outputTableRsuLcz,
                                             rsu_urban_typo_area:results.outputTableRsuUrbanTypoArea,
-                                            rsu_urban_typo_floor_area:results.outputTableRsuUrbanTypoFloorArea,
                                             prefixName: processing_parameters.prefixName
                                     )){
                                         results.put("gridIndicatorsTableName", rasterizedIndicators.results.outputTableName)
                                     }
+                                }else {
+                                    info "Cannot create a grid to aggregate the indicators"
+                                }
                             }else{
                                 h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error computing the grid indicators')".toString()
                             }
