@@ -747,6 +747,7 @@ IProcess osm_processing() {
                             def geomEnv =  gf.toGeometry(zoneTableNames.envelope)
                             geomEnv.setSRID(4326)
                             if(grid_indicators_params){
+                                outputGrid =  grid_indicators_params.output
                                 def x_size = grid_indicators_params.x_size
                                 def y_size = grid_indicators_params.y_size
                                 IProcess gridProcess = Geoindicators.WorkflowGeoIndicators.createGrid()
