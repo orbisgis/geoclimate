@@ -238,9 +238,9 @@ IProcess workflow() {
                                                          "vegetation",
                                                          "impervious",
                                                          "urban_areas",
-                                                         "rsu_urban_typo_area",
-                                                         "rsu_urban_typo_floor_area",
-                                                         "building_urban_typo",
+                                                         "rsu_utrf_area",
+                                                         "rsu_utrf_floor_area",
+                                                         "building_utrf",
                                                          "grid_indicators",
                                                          "road_traffic",
                                                          "population"]
@@ -435,9 +435,9 @@ IProcess workflow() {
                                                          "vegetation",
                                                          "impervious",
                                                          "urban_areas",
-                                                         "rsu_urban_typo_area",
-                                                         "rsu_urban_typo_floor_area",
-                                                         "building_urban_typo",
+                                                         "rsu_utrf_area",
+                                                         "rsu_utrf_floor_area",
+                                                         "building_utrf",
                                                          "grid_indicators",
                                                          "road_traffic"]
                             //Get processing parameters
@@ -755,9 +755,9 @@ def outputFolderProperties(def outputFolder){
                         "water",
                         "vegetation",
                         "impervious",
-                        "rsu_urban_typo_area",
-                        "rsu_urban_typo_floor_area",
-                        "building_urban_typo",
+                        "rsu_utrf_area",
+                        "rsu_utrf_floor_area",
+                        "building_utrf",
                         "grid_indicators",
                         "road_traffic",
                         "population"]
@@ -1157,7 +1157,7 @@ def extractProcessingParameters(def processing_parameters){
                                                   "pervious_surface_fraction"      : 0,
                                                   "height_of_roughness_elements"   : 6,
                                                   "terrain_roughness_length"       : 0.5],
-                                 urbanTypoModelName: "UTRF_BDTOPO_V2_RF_2_1.model"]
+                                 utrfModelName: "UTRF_BDTOPO_V2_RF_2_1.model"]
     defaultParameters.put("rsu_indicators", rsu_indicators_default)
 
     if(processing_parameters){
@@ -1249,14 +1249,14 @@ def extractProcessingParameters(def processing_parameters){
                     return
                 }
                 def allowed_grid_indicators=["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_POP","BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
-                                             "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "URBAN_TYPO_AREA_FRACTION", "LCZ_FRACTION", "LCZ_PRIMARY"]
+                                             "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "UTRF_AREA_FRACTION", "LCZ_FRACTION", "LCZ_PRIMARY"]
                 def allowedOutputIndicators = allowed_grid_indicators.intersect(list_indicators*.toUpperCase())
                 if(allowedOutputIndicators){
                     //Update the RSU indicators list according the grid indicators
                     list_indicators.each { val ->
                         if(val.trim().toUpperCase() in ["LCZ_FRACTION","LCZ_PRIMARY"]){
                             rsu_indicators.indicatorUse<<"LCZ"
-                        }else if (val.trim().toUpperCase() in ["URBAN_TYPO_AREA_FRACTION"]){
+                        }else if (val.trim().toUpperCase() in ["UTRF_AREA_FRACTION"]){
                             rsu_indicators.indicatorUse<<"UTRF"
                         }
                     }
@@ -1405,7 +1405,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
                         indicatorUse: rsu_indicators_params.indicatorUse,
                         svfSimplified: rsu_indicators_params.svfSimplified, prefixName: processing_parameters.prefixName,
                         mapOfWeights: rsu_indicators_params.mapOfWeights,
-                        urbanTypoModelName: "UTRF_BDTOPO_V2_RF_2_1.model")) {
+                        utrfModelName: "UTRF_BDTOPO_V2_RF_2_1.model")) {
                     error "Cannot build the geoindicators for the zone $id_zone"
                 } else {
                     results.putAll(geoIndicators.getResults())
@@ -1457,7 +1457,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
                         buildingTable: buildingTableName, roadTable: roadTableName, vegetationTable: vegetationTableName,
                         hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
                         rsu_lcz:results.outputTableRsuLcz,
-                        rsu_urban_typo_area:results.outputTableRsuUrbanTypoArea,
+                        rsu_utrf_area:results.outputTableRsuUtrfArea,
                         prefixName: processing_parameters.prefixName
                 )){
                     results.put("gridIndicatorsTableName", rasterizedIndicators.results.outputTableName)
@@ -1545,12 +1545,12 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
         }
         else if(it == "urban_areas"){
             saveTableAsGeojson(results.urbanAreasTableName, "${subFolder.getAbsolutePath()+File.separator+"urban_areas"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }else if(it == "rsu_urban_typo_area"){
-            saveTableAsGeojson(results.outputTableRsuUrbanTypoArea, "${subFolder.getAbsolutePath()+File.separator+"rsu_urban_typo_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }else if(it == "rsu_urban_typo_floor_area"){
-            saveTableAsGeojson(results.outputTableRsuUrbanTypoFloorArea, "${subFolder.getAbsolutePath()+File.separator+"rsu_urban_typo_floor_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }else if(it == "building_urban_typo"){
-            saveTableAsGeojson(results.outputTableBuildingUrbanTypo, "${subFolder.getAbsolutePath()+File.separator+"building_urban_typo"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        }else if(it == "rsu_utrf_area"){
+            saveTableAsGeojson(results.outputTableRsuUtrfArea, "${subFolder.getAbsolutePath()+File.separator+"rsu_utrf_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        }else if(it == "rsu_utrf_floor_area"){
+            saveTableAsGeojson(results.outputTableRsuUtrfFloorArea, "${subFolder.getAbsolutePath()+File.separator+"rsu_utrf_floor_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        }else if(it == "building_utrf"){
+            saveTableAsGeojson(results.outputTableBuildingUtrf, "${subFolder.getAbsolutePath()+File.separator+"building_utrf"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }else if(it == "grid_indicators"){
             saveTableAsGeojson(results.gridIndicatorsTableName, "${subFolder.getAbsolutePath()+File.separator+"grid_indicators"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }else if(it == "road_traffic"){
@@ -1612,16 +1612,16 @@ def saveTablesInDatabase(def output_datasource, def h2gis_datasource, def output
     indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_lcz, id_zone, h2gis_datasource, h2gis_tables.outputTableRsuLcz
             ,  "",  inputSRID, outputSRID,reproject)
 
-    //Export rsu_urban_typo_area
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_urban_typo_area,id_zone,h2gis_datasource, h2gis_tables.outputTableRsuUrbanTypoArea
+    //Export rsu_utrf_area
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_utrf_area,id_zone,h2gis_datasource, h2gis_tables.outputTableRsuUtrfArea
             , "",inputSRID,outputSRID,reproject)
 
-    //Export rsu_urban_typo_floor_area
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_urban_typo_floor_area,id_zone,h2gis_datasource, h2gis_tables.outputTableRsuUrbanTypoFloorArea
+    //Export rsu_utrf_floor_area
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_utrf_floor_area,id_zone,h2gis_datasource, h2gis_tables.outputTableRsuUtrfFloorArea
             , "",inputSRID,outputSRID,reproject)
 
-    //Export building_urban_typo
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.building_urban_typo,id_zone,h2gis_datasource, h2gis_tables.outputTableBuildingUrbanTypo
+    //Export building_utrf
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.building_utrf,id_zone,h2gis_datasource, h2gis_tables.outputTableBuildingUtrf
             , "",inputSRID,outputSRID,reproject)
 
     //Export grid_indicators
