@@ -1835,12 +1835,10 @@ IProcess computeGeoclimateIndicators() {
 }
 
 /**
- * This process is used to aggregate geoclimate output indicators on a grid
+ * This process is used to commpute aggregate geoclimate indicators on a grid set as input
  *
  * @param h2gis_datasource the local H2GIS database
- * @param zoneEnvelopeTableName
- * @param x_size x size of the grid
- * @param y_size y size of the grid
+ * @param gridTableName the name of the grid table to aggregate the data
  * @param list_indicators indicators names to compute
  * @param buildingTable name
  * @param roadTable name
@@ -1859,15 +1857,13 @@ IProcess rasterizeIndicators() {
         title "Aggregate indicators on a grid"
         id "rasterizeIndicators"
         inputs datasource: JdbcDataSource,
-                envelope: Envelope,
-                x_size : Integer, y_size : Integer,
-                srid : Integer,rowCol : false, list_indicators :[],
+                gridTableName: String, list_indicators :[],
                 buildingTable: "", roadTable: "", vegetationTable: "",
                 hydrographicTable: "", imperviousTable: "", rsu_lcz:"",
                 rsu_urban_typo_area:"",rsu_urban_typo_floor_area:"",
                 prefixName: String
         outputs outputTableName: String
-        run { datasource, envelope, x_size, y_size,srid,rowCol, list_indicators,buildingTable, roadTable, vegetationTable,
+        run { datasource, gridTableName, list_indicators,buildingTable, roadTable, vegetationTable,
               hydrographicTable, imperviousTable, rsu_lcz,rsu_urban_typo_area,rsu_urban_typo_floor_area, prefixName ->
             if(!list_indicators){
                 info "The list of indicator names cannot be null or empty"
@@ -1875,19 +1871,8 @@ IProcess rasterizeIndicators() {
             }
             def grid_indicators_table = "grid_indicators"
             def grid_column_identifier ="id"
-            //Start to compute the grid
-            def gridProcess = Geoindicators.SpatialUnits.createGrid()
-            if(gridProcess.execute([geometry: envelope, deltaX: x_size, deltaY: y_size,  rowCol :rowCol , datasource: datasource])) {
-                def grid_table_name = gridProcess.results.outputTableName
-                //Reproject the grid in the local UTM
-                if(envelope.getSRID()==4326){
-                    def reprojectedGrid =  postfix("grid")
-                    datasource.execute """drop table if exists $reprojectedGrid; 
-                    create table $reprojectedGrid as  select st_transform(the_geom, $srid) as the_geom, id, id_col, id_row from $grid_table_name""".toString()
-                    grid_table_name = reprojectedGrid
-                }
                 def indicatorTablesToJoin = [:]
-                indicatorTablesToJoin.put(grid_table_name, grid_column_identifier)
+                indicatorTablesToJoin.put(gridTableName, grid_column_identifier)
                 /*
                 * Make aggregation process with previous grid and current rsu lcz
                 */
@@ -1895,7 +1880,7 @@ IProcess rasterizeIndicators() {
                     def indicatorName = "LCZ_PRIMARY"
                     def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics()
                     if (upperScaleAreaStatistics.execute(
-                            [upperTableName : grid_table_name,
+                            [upperTableName : gridTableName,
                              upperColumnId  : grid_column_identifier,
                              lowerTableName : rsu_lcz,
                              lowerColumnName: indicatorName,
@@ -1964,7 +1949,7 @@ IProcess rasterizeIndicators() {
                     def indicatorName = "TYPO_MAJ"
                     def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics()
                     if (upperScaleAreaStatistics.execute(
-                            [upperTableName : grid_table_name,
+                            [upperTableName : gridTableName,
                              upperColumnId  : grid_column_identifier,
                              lowerTableName : rsu_urban_typo_area,
                              lowerColumnName: indicatorName,
@@ -2010,7 +1995,7 @@ IProcess rasterizeIndicators() {
                     def priorities_tmp = columnFractionsList.sort().values()
                     def computeSmallestGeom = Geoindicators.RsuIndicators.smallestCommunGeometry()
                     if (computeSmallestGeom.execute([
-                            rsuTable       : grid_table_name, id_rsu: grid_column_identifier,
+                            rsuTable       : gridTableName, id_rsu: grid_column_identifier,
                             buildingTable  : buildingTable, roadTable: roadTable,
                             vegetationTable: vegetationTable, waterTable: hydrographicTable,
                             imperviousTable: imperviousTable,
@@ -2019,7 +2004,7 @@ IProcess rasterizeIndicators() {
                         def surfaceFractionsProcess = Geoindicators.RsuIndicators.surfaceFractions()
                         def superpositions = []
                         if(surfaceFractionsProcess.execute([
-                                rsuTable: grid_table_name, spatialRelationsTable: superpositionsTableGrid,
+                                rsuTable: gridTableName, spatialRelationsTable: superpositionsTableGrid,
                                 id_rsu :grid_column_identifier,
                                 superpositions: superpositions,
                                 priorities: priorities_tmp,
@@ -2036,7 +2021,7 @@ IProcess rasterizeIndicators() {
                     createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
                     if (!createScalesRelationsGridBl([datasource              : datasource,
                                                       sourceTable             : buildingTable,
-                                                      targetTable             : grid_table_name,
+                                                      targetTable             : gridTableName,
                                                       idColumnTarget          : grid_column_identifier,
                                                       prefixName              : prefixName,
                                                       nbRelations             : null])) {
@@ -2045,7 +2030,7 @@ IProcess rasterizeIndicators() {
                     }
                     def computeBuildingStats = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
                     if (!computeBuildingStats([inputLowerScaleTableName: createScalesRelationsGridBl.results.outputTableName,
-                                               inputUpperScaleTableName: grid_table_name,
+                                               inputUpperScaleTableName: gridTableName,
                                                inputIdUp               : grid_column_identifier,
                                                inputIdLow              : grid_column_identifier,
                                                inputVarAndOperations   : unweightedBuildingIndicators,
@@ -2064,7 +2049,7 @@ IProcess rasterizeIndicators() {
                         createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
                         if (!createScalesRelationsGridBl([datasource              : datasource,
                                                           sourceTable             : buildingTable,
-                                                          targetTable             : grid_table_name,
+                                                          targetTable             : gridTableName,
                                                           idColumnTarget          : grid_column_identifier,
                                                           prefixName              : prefixName,
                                                           nbRelations             : null])) {
@@ -2075,7 +2060,7 @@ IProcess rasterizeIndicators() {
                     def indicatorName = "TYPE"
                     def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics()
                     if (upperScaleAreaStatistics.execute(
-                            [upperTableName : grid_table_name,
+                            [upperTableName : gridTableName,
                              upperColumnId  : grid_column_identifier,
                              lowerTableName : createScalesRelationsGridBl.results.outputTableName,
                              lowerColumnName: indicatorName,
@@ -2125,12 +2110,47 @@ IProcess rasterizeIndicators() {
                     info "Cannot merge all indicators in grid table $grid_indicators_table."
                     return
                 }
-            }
             [outputTableName: grid_indicators_table]
         }
     }
 }
 
+/**
+ * This process is used to create a grid to aggregate indicators
+ *
+ * @param h2gis_datasource the local H2GIS database
+ * @param zoneEnvelopeTableName
+ * @param x_size x size of the grid
+ * @param y_size y size of the grid
+ * @param outputTableName the name of grid  table
+ * @return
+ */
+IProcess createGrid() {
+    return create {
+        title "Create a regular grid"
+        id "creategridIndicators"
+        inputs datasource: JdbcDataSource,
+                envelope: Envelope,
+                x_size : Integer, y_size : Integer,
+                srid : Integer,rowCol : false
+        outputs outputTableName: String
+        run { datasource, envelope, x_size, y_size,srid,rowCol ->
+            //Start to compute the grid
+            def gridProcess = Geoindicators.SpatialUnits.createGrid()
+            if(gridProcess.execute([geometry: envelope, deltaX: x_size, deltaY: y_size,  rowCol :rowCol , datasource: datasource])) {
+                def grid_table_name = gridProcess.results.outputTableName
+                //Reproject the grid in the local UTM
+                if (envelope.getSRID() == 4326) {
+                    def reprojectedGrid = postfix("grid")
+                    datasource.execute """drop table if exists $reprojectedGrid; 
+                    create table $reprojectedGrid as  select st_transform(the_geom, $srid) as the_geom, id, id_col, id_row from $grid_table_name""".toString()
+                    grid_table_name = reprojectedGrid
+                }
+                [outputTableName: grid_table_name]
+            }
+        }
+    }
+}
 
 /**
  * This process is used to re-format the building table when the estimated height RF is used.
