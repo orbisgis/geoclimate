@@ -159,7 +159,7 @@ class WorkflowGeoIndicatorsTest {
                             "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
 
         def ind_i = ["UTRF"]
-        def modelPath = "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_1.model"
+        def modelPath = "UTRF_BDTOPO_V2_RF_2_1.model"
         IProcess GeoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
         assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
                 buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,

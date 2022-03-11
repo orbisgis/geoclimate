@@ -1157,7 +1157,7 @@ def extractProcessingParameters(def processing_parameters){
                                                   "pervious_surface_fraction"      : 0,
                                                   "height_of_roughness_elements"   : 6,
                                                   "terrain_roughness_length"       : 0.5],
-                                 urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_1.model"]
+                                 urbanTypoModelName: "UTRF_BDTOPO_V2_RF_2_1.model"]
     defaultParameters.put("rsu_indicators", rsu_indicators_default)
 
     if(processing_parameters){
@@ -1405,7 +1405,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
                         indicatorUse: rsu_indicators_params.indicatorUse,
                         svfSimplified: rsu_indicators_params.svfSimplified, prefixName: processing_parameters.prefixName,
                         mapOfWeights: rsu_indicators_params.mapOfWeights,
-                        urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_1.model")) {
+                        urbanTypoModelName: "UTRF_BDTOPO_V2_RF_2_1.model")) {
                     error "Cannot build the geoindicators for the zone $id_zone"
                 } else {
                     results.putAll(geoIndicators.getResults())

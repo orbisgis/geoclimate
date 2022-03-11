@@ -696,7 +696,7 @@ IProcess osm_processing() {
                                         svfSimplified: rsu_indicators_params.svfSimplified,
                                         prefixName: processing_parameters.prefixName,
                                         mapOfWeights: rsu_indicators_params.mapOfWeights,
-                                        urbanTypoModelName: "URBAN_TYPOLOGY_OSM_RF_2_1.model",
+                                        urbanTypoModelName: "UTRF_OSM_RF_2_1.model",
                                         buildingHeightModelName: estimateHeight ? "BUILDING_HEIGHT_OSM_RF_2_0.model" : "")) {
 
                                     error "Cannot build the geoindicators for the zone $id_zone"
@@ -991,7 +991,7 @@ def extractProcessingParameters(def processing_parameters){
                                                   "height_of_roughness_elements"   : 6,
                                                   "terrain_roughness_length"       : 0.5],
                                  estimateHeight:true,
-                                 urbanTypoModelName: "URBAN_TYPOLOGY_OSM_RF_2_1.model"]
+                                 urbanTypoModelName: "UTRF_OSM_RF_2_1.model"]
     defaultParameters.put("rsu_indicators", rsu_indicators_default)
 
     if(processing_parameters){
