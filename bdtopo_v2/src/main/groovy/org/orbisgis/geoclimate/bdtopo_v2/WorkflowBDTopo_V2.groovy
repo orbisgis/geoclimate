@@ -1448,19 +1448,25 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
             if(grid_indicators_params) {
                 def x_size = grid_indicators_params.x_size
                 def y_size = grid_indicators_params.y_size
-                IProcess rasterizedIndicators =  Geoindicators.WorkflowGeoIndicators.rasterizeIndicators()
+                IProcess gridProcess = Geoindicators.WorkflowGeoIndicators.createGrid()
                 def geomEnv = h2gis_datasource.getSpatialTable(zoneTableName).getExtent()
-                if(rasterizedIndicators.execute(datasource:h2gis_datasource,envelope: geomEnv,
+                if(gridProcess.execute(datasource:h2gis_datasource,envelope: geomEnv,
                         x_size : x_size, y_size : y_size,
-                        srid : srid,rowCol: grid_indicators_params.rowCol,
-                        list_indicators :grid_indicators_params.indicators,
-                        buildingTable: buildingTableName, roadTable: roadTableName, vegetationTable: vegetationTableName,
-                        hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
-                        rsu_lcz:results.outputTableRsuLcz,
-                        rsu_urban_typo_area:results.outputTableRsuUrbanTypoArea,
-                        prefixName: processing_parameters.prefixName
-                )){
-                    results.put("gridIndicatorsTableName", rasterizedIndicators.results.outputTableName)
+                        srid : srid,rowCol: grid_indicators_params.rowCol)){
+                    def gridTableName = gridProcess.results.outputTableName
+                    IProcess rasterizedIndicators =  Geoindicators.WorkflowGeoIndicators.rasterizeIndicators()
+                    if(rasterizedIndicators.execute(datasource:h2gis_datasource,gridTableName: gridTableName,
+                            list_indicators :grid_indicators_params.indicators,
+                            buildingTable: buildingTableName, roadTable: roadTableName, vegetationTable: vegetationTableName,
+                            hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
+                            rsu_lcz:results.outputTableRsuLcz,
+                            rsu_urban_typo_area:results.outputTableRsuUrbanTypoArea,
+                            prefixName: processing_parameters.prefixName
+                    )){
+                        results.put("gridIndicatorsTableName", rasterizedIndicators.results.outputTableName)
+                    }
+                }else {
+                    info "Cannot create a grid to aggregate the indicators"
                 }
             }
 
