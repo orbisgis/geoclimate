@@ -20,7 +20,7 @@ import static java.lang.Math.*
  * the resulting database will be stored
  * @param buildingTable The name of the input ITable where are stored the buildings, the building contiguity values,
  * the building total facade length values and the building and rsu id
- * @param correlationTable The name of the input ITable where are stored the rsu geometries and the id_rsu
+ * @param rsuTable The name of the input ITable where are stored the rsu geometries and the id_rsu
  * @param buContiguityColumn The name of the column where are stored the building contiguity values (within the
  * building Table)
  * @param buTotalFacadeLengthColumn The name of the column where are stored the building total facade length values
@@ -65,6 +65,113 @@ IProcess freeExternalFacadeDensity() {
                     "ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU GROUP BY b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD_RSU;"
 
             datasource query.toString()
+
+            [outputTableName: outputTableName]
+        }
+    }
+}
+
+/**
+ * Process used to compute the sum of all building free facades (roofs are excluded) included in a
+ * Reference Spatial Unit (RSU) divided by the RSU area. The calculation is performed more accurately than
+ * in the freeExternalFacadeDensity IProcess since in this process only the part of building being in the RSU
+ * is considered in the calculation of the indicator.
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param buildingTable The name of the input ITable where are stored the buildings geometry, the building height,
+ * the building and the rsu id
+ * @param rsuTable The name of the input ITable where are stored the rsu geometries and the id_rsu
+ * @param prefixName String use as prefix to name the output table
+ *
+ * @return A database table name.
+ * @author Jérémy Bernard
+ */
+IProcess freeExternalFacadeDensityExact() {
+    return create {
+        title "RSU free external facade density (exact version)"
+        id "freeExternalFacadeDensityExact"
+        inputs buildingTable: String, rsuTable: String, prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { buildingTable, rsuTable, prefixName, datasource ->
+
+            def GEOMETRIC_FIELD_RSU = "the_geom"
+            def GEOMETRIC_FIELD_BU = "the_geom"
+            def ID_FIELD_RSU = "id_rsu"
+            def ID_FIELD_BU = "id_build"
+            def HEIGHT_WALL = "height_wall"
+            def FACADE_AREA = "facade_area"
+            def RSU_AREA = "rsu_area"
+            def BASE_NAME = "_exact_free_external_facade_density"
+
+            debug "Executing RSU free external facade density (exact version)"
+
+            // The name of the outputTableName is constructed
+            def outputTableName = prefix prefixName, BASE_NAME
+
+            // Temporary table names
+            def buildLine = postfix "buildLine"
+            def buildLineRsu = postfix "buildLineRsu"
+            def sharedLineRsu = postfix "shareLineRsu"
+
+            // Consider facades as touching each other within a snap tolerance
+            def snap_tolerance = 0.01
+
+            // 1. Convert the building polygons into lines and create the intersection with RSU polygons
+            datasource."$buildingTable"."$ID_FIELD_RSU".createIndex()
+            datasource."$rsuTable"."$ID_FIELD_RSU".createIndex()
+            datasource """
+                DROP TABLE IF EXISTS $buildLine;
+                CREATE TABLE $buildLine
+                    AS SELECT   a.$ID_FIELD_BU, a.$ID_FIELD_RSU, ST_AREA(b.$GEOMETRIC_FIELD_RSU) AS $RSU_AREA,
+                                ST_INTERSECTION(ST_TOMULTILINE(a.$GEOMETRIC_FIELD_BU), b.$GEOMETRIC_FIELD_RSU) AS $GEOMETRIC_FIELD_BU,
+                                a.$HEIGHT_WALL
+                    FROM $buildingTable AS a LEFT JOIN $rsuTable AS b
+                    ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU""".toString()
+
+            // 2. Keep only intersected facades within a given distance and calculate their area per RSU
+            datasource."$buildLine"."$GEOMETRIC_FIELD_BU".createSpatialIndex()
+            datasource."$buildLine"."$ID_FIELD_RSU".createIndex()
+            datasource."$buildLine"."$ID_FIELD_BU".createIndex()
+            datasource """
+                DROP TABLE IF EXISTS $sharedLineRsu;
+                CREATE TABLE $sharedLineRsu 
+                    AS SELECT   SUM(ST_LENGTH(  ST_INTERSECTION(a.$GEOMETRIC_FIELD_BU, 
+                                                                ST_SNAP(b.$GEOMETRIC_FIELD_BU, a.$GEOMETRIC_FIELD_BU, $snap_tolerance)
+                                                                )
+                                                )
+                                    *LEAST(a.$HEIGHT_WALL, b.$HEIGHT_WALL)) AS $FACADE_AREA,
+                                a.$ID_FIELD_RSU
+                    FROM    $buildLine AS a LEFT JOIN $buildLine AS b
+                            ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU
+                    WHERE       a.$GEOMETRIC_FIELD_BU && b.$GEOMETRIC_FIELD_BU AND ST_INTERSECTS(a.$GEOMETRIC_FIELD_BU, 
+                                ST_SNAP(b.$GEOMETRIC_FIELD_BU, a.$GEOMETRIC_FIELD_BU, $snap_tolerance)) AND
+                                a.$ID_FIELD_BU <> b.$ID_FIELD_BU
+                    GROUP BY a.$ID_FIELD_RSU;""".toString()
+
+            // 3. Calculates the building facade area within each RSU
+            datasource."$buildLine"."$ID_FIELD_RSU".createIndex()
+            datasource """
+                DROP TABLE IF EXISTS $buildLineRsu;
+                CREATE TABLE $buildLineRsu
+                    AS SELECT   $ID_FIELD_RSU, MIN($RSU_AREA) AS $RSU_AREA,
+                                SUM(ST_LENGTH($GEOMETRIC_FIELD_BU) * $HEIGHT_WALL) AS $FACADE_AREA
+                    FROM $buildLine
+                    GROUP BY $ID_FIELD_RSU;""".toString()
+
+            // 4. Calculates the free facade density by RSU (subtract 3 and 2 and divide by RSU area)
+            datasource."$buildLineRsu"."$ID_FIELD_RSU".createIndex()
+            datasource."$sharedLineRsu"."$ID_FIELD_RSU".createIndex()
+            datasource """
+                DROP TABLE IF EXISTS $outputTableName;
+                CREATE TABLE $outputTableName
+                    AS SELECT   a.$ID_FIELD_RSU,
+                                (a.$FACADE_AREA-b.$FACADE_AREA)/a.$RSU_AREA AS EXACT_FREE_FACADE_DENSITY
+                    FROM $buildLineRsu AS a LEFT JOIN $sharedLineRsu AS b
+                    ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU""".toString()
+
+            // The temporary tables are deleted
+            datasource "DROP TABLE IF EXISTS $buildLine, $buildLineRsu, $sharedLineRsu".toString()
 
             [outputTableName: outputTableName]
         }
@@ -213,7 +320,7 @@ IProcess groundSkyViewFactor() {
             debug "SVF calculation time: ${(System.currentTimeMillis() - to_start) / 1000} s"
 
             // The temporary tables are deleted
-            //datasource "DROP TABLE IF EXISTS $rsuDiff, $ptsRSUtot, $multiptsRSU, $rsuDiffTot,$pts_order,$multiptsRSUtot, $svfPts".toString()
+            datasource "DROP TABLE IF EXISTS $rsuDiff, $ptsRSUtot, $multiptsRSU, $rsuDiffTot,$pts_order,$multiptsRSUtot, $svfPts".toString()
 
             [outputTableName: outputTableName]
         }
