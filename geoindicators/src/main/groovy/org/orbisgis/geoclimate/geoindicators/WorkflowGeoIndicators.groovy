@@ -2074,6 +2074,34 @@ IProcess rasterizeIndicators() {
                     indicatorTablesToJoin.put(upperScaleAreaStatistics.results.outputTableName, grid_column_identifier)
                 }
 
+                if(list_indicators*.toUpperCase().contains("FREE_EXTERNAL_FACADE_DENSITY") && buildingTable){
+                    if(!createScalesRelationsGridBl){
+                        // Create the relations between grid cells and buildings
+                        createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
+                        if (!createScalesRelationsGridBl([datasource              : datasource,
+                                                          sourceTable             : buildingTable,
+                                                          targetTable             : grid_table_name,
+                                                          idColumnTarget          : grid_column_identifier,
+                                                          prefixName              : prefixName,
+                                                          nbRelations             : null])) {
+                            info "Cannot compute the scales relations between buildings and grid cells."
+                            return
+                        }
+                    }
+                    def indicatorName = "FREE_EXTERNAL_FACADE_DENSITY_EXACT"
+                    def freeFacadeDensityExact = Geoindicators.RsuIndicators.freeExternalFacadeDensityExact()
+                    if (freeFacadeDensityExact.execute(
+                            [buildingTable               : buildingTable,
+                             rsuTable                    : grid_table_name,
+                             prefixName                  : prefixName,
+                             datasource                  : datasource])) {
+                        indicatorTablesToJoin.put(freeFacadeDensityExact.results.outputTableName, grid_column_identifier)
+                    } else {
+                        info "Cannot calculate the exact free external facade density"
+                    }
+                    indicatorTablesToJoin.put(freeFacadeDensityExact.results.outputTableName, grid_column_identifier)
+                }
+
                 //Join all indicators at grid scale
                 def joinGrids = Geoindicators.DataUtils.joinTables()
                 if (!joinGrids([inputTableNamesWithId: indicatorTablesToJoin,
