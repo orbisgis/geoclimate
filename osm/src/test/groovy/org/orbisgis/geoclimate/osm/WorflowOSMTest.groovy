@@ -18,11 +18,22 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @BeforeAll
     static void copyOSMFiles(){
         //Here we copy osm files stored in resources to avoid overpass query
-        def tmp_dir = new File(System.getProperty("java.io.tmpdir"))
-        def  overpass_1 = new File(getClass().getResource("4e8e5b748c6b5b571ebac46714aaaeba112045e541facef8623a1fc233004255.osm").toURI())
-        FileUtils.copyFileToDirectory(overpass_1, tmp_dir)
-        def  overpass_2 = new File(getClass().getResource("5c4099c626089c4dd6f612b77ce6c4c0b7f4ddbd81d1dd2e36598601c972e5da.osm").toURI())
-        FileUtils.copyFileToDirectory(overpass_2, tmp_dir)
+        def  overpass_file_pont_de_veyle = new File(WorflowOSMTest.class.getResource("overpass_pont_de_veyle.osm").toURI())
+        //The sha encoding used to set a name to the file by OSMTools
+        def pont_de_veyle_query_sha = "4e8e5b748c6b5b571ebac46714aaaeba112045e541facef8623a1fc233004255"
+        def copy_pont_de_veyle = new File(System.getProperty("java.io.tmpdir")+File.separator+pont_de_veyle_query_sha+".osm")
+        FileUtils.copyFile(overpass_file_pont_de_veyle, copy_pont_de_veyle)
+        def  overpass_file_bbox = new File(WorflowOSMTest.class.getResource("overpass_bbox.osm").toURI())
+        //The sha encoding used to set a name to the file by OSMTools
+        def bbox_query_sha = "5c4099c626089c4dd6f612b77ce6c4c0b7f4ddbd81d1dd2e36598601c972e5da"
+        def copy_bbox = new File(System.getProperty("java.io.tmpdir")+File.separator+bbox_query_sha+".osm")
+        FileUtils.copyFile(overpass_file_bbox, copy_bbox)
+        def  overpass_file_bbox_logger = new File(WorflowOSMTest.class.getResource("overpass_bbox_logger.osm").toURI())
+        //The sha encoding used to set a name to the file by OSMTools
+        def bbox_logger_query_sha = "7da2d1cd63290068a75fb5f94510c8461e65f5790f9f8c6b97aab8204ef4699e"
+        def copy_bbox_logger = new File(System.getProperty("java.io.tmpdir")+File.separator+bbox_logger_query_sha+".osm")
+        FileUtils.copyFile(overpass_file_bbox_logger, copy_bbox_logger)
+
     }
 
     @Test
