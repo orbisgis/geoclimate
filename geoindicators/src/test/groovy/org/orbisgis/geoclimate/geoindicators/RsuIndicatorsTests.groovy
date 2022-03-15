@@ -53,6 +53,48 @@ class RsuIndicatorsTests {
     }
 
     @Test
+    void freeExternalFacadeDensityExactTest() {
+        // Only the first 1 first created buildings are selected for the tests
+        h2GIS """
+                DROP TABLE IF EXISTS tempo_build, tempo_rsu; 
+                CREATE TABLE tempo_build(id_build int, the_geom geometry, height_wall double);
+                INSERT INTO tempo_build VALUES (1, 'POLYGON((50 50, 150 50, 150 150, 140 150, 140 60, 60 60, 60 150,
+                                                            50 150, 50 50))'::GEOMETRY, 20),
+                                               (2, 'POLYGON((60 60, 140 60, 140 110, 60 110, 60 60))'::GEOMETRY, 10);
+                CREATE TABLE tempo_rsu(id_rsu int, the_geom geometry);
+                INSERT INTO tempo_rsu VALUES    (1, 'POLYGON((0 0, 100 0, 100 100, 0 100, 0 0))'::GEOMETRY),
+                                                (2, 'POLYGON((100 0, 200 0, 200 100, 100 100, 100 0))'::GEOMETRY),
+                                                (3, 'POLYGON((0 100, 100 100, 100 200, 0 200, 0 100))'::GEOMETRY),
+                                                (4, 'POLYGON((100 100, 200 100, 200 200, 100 200, 100 100))'::GEOMETRY);
+        """
+        // First calculate the correlation table between buildings and rsu
+        def createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
+        createScalesRelationsGridBl([datasource              : h2GIS,
+                                     sourceTable             : "tempo_build",
+                                     targetTable             : "tempo_rsu",
+                                     idColumnTarget          : "id_rsu",
+                                     prefixName              : "test",
+                                     nbRelations             : null])
+
+        // The geometry of the buildings are useful for the calculation, then they are inserted inside
+        // the build/rsu correlation table
+        h2GIS "DROP TABLE IF EXISTS corr_tempo; CREATE TABLE corr_tempo AS SELECT a.*, b.the_geom " +
+                "FROM ${createScalesRelationsGridBl.results.outputTableName} AS a, tempo_build AS b" +
+                " WHERE a.id_build = b.id_build"
+
+        def p = Geoindicators.RsuIndicators.freeExternalFacadeDensityExact()
+        assertTrue p([
+                        buildingTable               : "corr_tempo",
+                        rsuTable                    : "tempo_rsu",
+                        prefixName                  : "test",
+                        datasource                  : h2GIS])
+        assertEquals 0.28, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").EXACT_FREE_FACADE_DENSITY
+        assertEquals 0.28, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 2").EXACT_FREE_FACADE_DENSITY
+        assertEquals 0.25, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 3").EXACT_FREE_FACADE_DENSITY
+        assertEquals 0.25, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 4").EXACT_FREE_FACADE_DENSITY
+    }
+
+    @Test
     void groundSkyViewFactorTest() {
         // Only the first 1 first created buildings are selected for the tests
         h2GIS "DROP TABLE IF EXISTS tempo_build, rsu_free_external_facade_density; CREATE TABLE tempo_build AS SELECT * " +

@@ -435,9 +435,9 @@ IProcess workflow() {
                                                          "vegetation",
                                                          "impervious",
                                                          "urban_areas",
-                                                         "rsu_utrf_area",
-                                                         "rsu_utrf_floor_area",
-                                                         "building_utrf",
+                                                         "rsu_urban_typo_area",
+                                                         "rsu_urban_typo_floor_area",
+                                                         "building_urban_typo",
                                                          "grid_indicators",
                                                          "road_traffic"]
                             //Get processing parameters
@@ -594,7 +594,7 @@ IProcess workflow() {
                                                 def bdtopo_results  = bdtopo_processing(h2gis_datasource, processing_parameters,
                                                         code, file_outputFolder, outputFolderProperties.tables, null, null, outputSRID)
                                                 if(bdtopo_results){
-                                                    outputTableNamesResult.put(id_zone, bdtopo_results.findAll{ it.value!=null })
+                                                    outputTableNamesResult.put(code, bdtopo_results.findAll{ it.value!=null })
                                                 }else{
                                                     error "Cannot execute the geoclimate processing chain on $code"
                                                     return
@@ -755,9 +755,9 @@ def outputFolderProperties(def outputFolder){
                         "water",
                         "vegetation",
                         "impervious",
-                        "rsu_utrf_area",
-                        "rsu_utrf_floor_area",
-                        "building_utrf",
+                        "rsu_urban_typo_area",
+                        "rsu_urban_typo_floor_area",
+                        "building_urban_typo",
                         "grid_indicators",
                         "road_traffic",
                         "population"]
@@ -857,10 +857,10 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
     //Check if code is a string or a bbox
     //The zone is a osm bounding box represented by ymin,xmin , ymax,xmax,
     if (code in Collection) {
-        def tmp_insee = code.join("-")
+        def tmp_insee = code.join("_")
         h2gis_datasource.execute("""DROP TABLE IF EXISTS ${outputTableName};
         CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(GEOMETRY),CODE_INSEE VARCHAR);
-        INSERT INTO ${outputTableName} VALUES(ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, ${commune_srid}), ${tmp_insee})""".toString())
+        INSERT INTO ${outputTableName} VALUES(ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, ${commune_srid}), '${tmp_insee}')""".toString())
     }else if (code instanceof String) {
         //input_database_properties =updateDriverURL(input_database_properties)
         String inputTableName = "(SELECT THE_GEOM, CODE_INSEE FROM $commune_location WHERE CODE_INSEE='$code' or nom='$code')"
@@ -1090,7 +1090,7 @@ def findIDZones(JdbcDataSource h2gis_datasource, def id_zones, def srid){
                 *  ymin,xmin , ymax,xmax,
                 */
                 if (id_zone in Collection) {
-                    def tmp_insee = id_zone.join("-")
+                    def tmp_insee = id_zone.join("_")
                     def params =[id_zone[1],id_zone[0],id_zone[3],id_zone[2],srid, tmp_insee]
                     h2gis_datasource.executeInsert("INSERT INTO COMMUNE (THE_GEOM,CODE_INSEE) VALUES (ST_MakeEnvelope(?, ?, ?, ?, ?), ?)", params)
                     inseeCodes<<tmp_insee
@@ -1157,7 +1157,7 @@ def extractProcessingParameters(def processing_parameters){
                                                   "pervious_surface_fraction"      : 0,
                                                   "height_of_roughness_elements"   : 6,
                                                   "terrain_roughness_length"       : 0.5],
-                                 utrfModelName: "UTRF_BDTOPO_V2_RF_2_1.model"]
+                                 urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_1.model"]
     defaultParameters.put("rsu_indicators", rsu_indicators_default)
 
     if(processing_parameters){
@@ -1249,7 +1249,7 @@ def extractProcessingParameters(def processing_parameters){
                     return
                 }
                 def allowed_grid_indicators=["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_POP","BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
-                                             "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "UTRF_AREA_FRACTION", "LCZ_FRACTION", "LCZ_PRIMARY"]
+                                             "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "URBAN_TYPO_AREA_FRACTION", "LCZ_FRACTION", "LCZ_PRIMARY"]
                 def allowedOutputIndicators = allowed_grid_indicators.intersect(list_indicators*.toUpperCase())
                 if(allowedOutputIndicators){
                     //Update the RSU indicators list according the grid indicators
@@ -1325,7 +1325,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
     def  srid =  h2gis_datasource.getSpatialTable("COMMUNE").srid
     def id_zone
     if(id_zones in Collection){
-        id_zone =  id_zones.join("-")
+        id_zone =  id_zones.join("_")
     }else if (id_zones instanceof String){
         id_zone = id_zones
     }
@@ -1405,7 +1405,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
                         indicatorUse: rsu_indicators_params.indicatorUse,
                         svfSimplified: rsu_indicators_params.svfSimplified, prefixName: processing_parameters.prefixName,
                         mapOfWeights: rsu_indicators_params.mapOfWeights,
-                        utrfModelName: "UTRF_BDTOPO_V2_RF_2_1.model")) {
+                        urbanTypoModelName: "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_1.model")) {
                     error "Cannot build the geoindicators for the zone $id_zone"
                 } else {
                     results.putAll(geoIndicators.getResults())
@@ -1448,19 +1448,25 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
             if(grid_indicators_params) {
                 def x_size = grid_indicators_params.x_size
                 def y_size = grid_indicators_params.y_size
-                IProcess rasterizedIndicators =  Geoindicators.WorkflowGeoIndicators.rasterizeIndicators()
+                IProcess gridProcess = Geoindicators.WorkflowGeoIndicators.createGrid()
                 def geomEnv = h2gis_datasource.getSpatialTable(zoneTableName).getExtent()
-                if(rasterizedIndicators.execute(datasource:h2gis_datasource,envelope: geomEnv,
+                if(gridProcess.execute(datasource:h2gis_datasource,envelope: geomEnv,
                         x_size : x_size, y_size : y_size,
-                        srid : srid,rowCol: grid_indicators_params.rowCol,
-                        list_indicators :grid_indicators_params.indicators,
-                        buildingTable: buildingTableName, roadTable: roadTableName, vegetationTable: vegetationTableName,
-                        hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
-                        rsu_lcz:results.outputTableRsuLcz,
-                        rsu_utrf_area:results.outputTableRsuUtrfArea,
-                        prefixName: processing_parameters.prefixName
-                )){
-                    results.put("gridIndicatorsTableName", rasterizedIndicators.results.outputTableName)
+                        srid : srid,rowCol: grid_indicators_params.rowCol)){
+                    def gridTableName = gridProcess.results.outputTableName
+                    IProcess rasterizedIndicators =  Geoindicators.WorkflowGeoIndicators.rasterizeIndicators()
+                    if(rasterizedIndicators.execute(datasource:h2gis_datasource,gridTableName: gridTableName,
+                            list_indicators :grid_indicators_params.indicators,
+                            buildingTable: buildingTableName, roadTable: roadTableName, vegetationTable: vegetationTableName,
+                            hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
+                            rsu_lcz:results.outputTableRsuLcz,
+                            rsu_utrf_area:results.outputTableRsuUtrfArea,
+                            prefixName: processing_parameters.prefixName
+                    )){
+                        results.put("gridIndicatorsTableName", rasterizedIndicators.results.outputTableName)
+                    }
+                }else {
+                    info "Cannot create a grid to aggregate the indicators"
                 }
             }
 
@@ -1545,12 +1551,12 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
         }
         else if(it == "urban_areas"){
             saveTableAsGeojson(results.urbanAreasTableName, "${subFolder.getAbsolutePath()+File.separator+"urban_areas"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }else if(it == "rsu_utrf_area"){
-            saveTableAsGeojson(results.outputTableRsuUtrfArea, "${subFolder.getAbsolutePath()+File.separator+"rsu_utrf_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }else if(it == "rsu_utrf_floor_area"){
-            saveTableAsGeojson(results.outputTableRsuUtrfFloorArea, "${subFolder.getAbsolutePath()+File.separator+"rsu_utrf_floor_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }else if(it == "building_utrf"){
-            saveTableAsGeojson(results.outputTableBuildingUtrf, "${subFolder.getAbsolutePath()+File.separator+"building_utrf"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        }else if(it == "rsu_urban_typo_area"){
+            saveTableAsGeojson(results.outputTableRsuUrbanTypoArea, "${subFolder.getAbsolutePath()+File.separator+"rsu_urban_typo_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        }else if(it == "rsu_urban_typo_floor_area"){
+            saveTableAsGeojson(results.outputTableRsuUrbanTypoFloorArea, "${subFolder.getAbsolutePath()+File.separator+"rsu_urban_typo_floor_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+        }else if(it == "building_urban_typo"){
+            saveTableAsGeojson(results.outputTableBuildingUrbanTypo, "${subFolder.getAbsolutePath()+File.separator+"building_urban_typo"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }else if(it == "grid_indicators"){
             saveTableAsGeojson(results.gridIndicatorsTableName, "${subFolder.getAbsolutePath()+File.separator+"grid_indicators"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }else if(it == "road_traffic"){
@@ -1612,16 +1618,16 @@ def saveTablesInDatabase(def output_datasource, def h2gis_datasource, def output
     indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_lcz, id_zone, h2gis_datasource, h2gis_tables.outputTableRsuLcz
             ,  "",  inputSRID, outputSRID,reproject)
 
-    //Export rsu_utrf_area
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_utrf_area,id_zone,h2gis_datasource, h2gis_tables.outputTableRsuUtrfArea
+    //Export rsu_urban_typo_area
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_urban_typo_area,id_zone,h2gis_datasource, h2gis_tables.outputTableRsuUrbanTypoArea
             , "",inputSRID,outputSRID,reproject)
 
-    //Export rsu_utrf_floor_area
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_utrf_floor_area,id_zone,h2gis_datasource, h2gis_tables.outputTableRsuUtrfFloorArea
+    //Export rsu_urban_typo_floor_area
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_urban_typo_floor_area,id_zone,h2gis_datasource, h2gis_tables.outputTableRsuUrbanTypoFloorArea
             , "",inputSRID,outputSRID,reproject)
 
-    //Export building_utrf
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.building_utrf,id_zone,h2gis_datasource, h2gis_tables.outputTableBuildingUtrf
+    //Export building_urban_typo
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.building_urban_typo,id_zone,h2gis_datasource, h2gis_tables.outputTableBuildingUrbanTypo
             , "",inputSRID,outputSRID,reproject)
 
     //Export grid_indicators

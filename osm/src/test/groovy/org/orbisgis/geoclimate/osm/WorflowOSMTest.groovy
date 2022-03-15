@@ -1,6 +1,8 @@
 package org.orbisgis.geoclimate.osm
 
 import groovy.json.JsonOutput
+import org.apache.commons.io.FileUtils
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.orbisgis.geoclimate.Geoindicators
@@ -12,44 +14,26 @@ import static org.junit.jupiter.api.Assertions.*
 
 class WorflowOSMTest extends WorkflowAbstractTest {
 
-    @Test
-    void osmToRSU() {
-        String directory ="./target/osm_processchain_geoindicators_rsu"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
-        def h2GIS = H2GIS.open(dirFile.absolutePath+File.separator+'osm_chain_db;AUTO_SERVER=TRUE')
-        def zoneToExtract = "Pont-de-Veyle"
-        IProcess process = OSM.WorkflowOSM.buildGeoclimateLayers()
 
-        process.execute([datasource: h2GIS, zoneToExtract :zoneToExtract, distance: 0])
+    @BeforeAll
+    static void copyOSMFiles(){
+        //Here we copy osm files stored in resources to avoid overpass query
+        def  overpass_file_pont_de_veyle = new File(WorflowOSMTest.class.getResource("overpass_pont_de_veyle.osm").toURI())
+        //The sha encoding used to set a name to the file by OSMTools
+        def pont_de_veyle_query_sha = "4e8e5b748c6b5b571ebac46714aaaeba112045e541facef8623a1fc233004255"
+        def copy_pont_de_veyle = new File(System.getProperty("java.io.tmpdir")+File.separator+pont_de_veyle_query_sha+".osm")
+        FileUtils.copyFile(overpass_file_pont_de_veyle, copy_pont_de_veyle)
+        def  overpass_file_bbox = new File(WorflowOSMTest.class.getResource("overpass_bbox.osm").toURI())
+        //The sha encoding used to set a name to the file by OSMTools
+        def bbox_query_sha = "5c4099c626089c4dd6f612b77ce6c4c0b7f4ddbd81d1dd2e36598601c972e5da"
+        def copy_bbox = new File(System.getProperty("java.io.tmpdir")+File.separator+bbox_query_sha+".osm")
+        FileUtils.copyFile(overpass_file_bbox, copy_bbox)
+        def  overpass_file_bbox_logger = new File(WorflowOSMTest.class.getResource("overpass_bbox_logger.osm").toURI())
+        //The sha encoding used to set a name to the file by OSMTools
+        def bbox_logger_query_sha = "7da2d1cd63290068a75fb5f94510c8461e65f5790f9f8c6b97aab8204ef4699e"
+        def copy_bbox_logger = new File(System.getProperty("java.io.tmpdir")+File.separator+bbox_logger_query_sha+".osm")
+        FileUtils.copyFile(overpass_file_bbox_logger, copy_bbox_logger)
 
-        def prefixName  = "osm"
-
-        // Create the RSU
-        def prepareRSUData = Geoindicators.SpatialUnits.prepareTSUData()
-        def createRSU = Geoindicators.SpatialUnits.createRSU()
-        if (prepareRSUData([datasource        : h2GIS,
-                             zoneTable         : process.getResults().outputZone,
-                             roadTable         : process.getResults().outputRoad,
-                             railTable         : process.getResults().outputRail,
-                             vegetationTable   : process.getResults().outputVeget,
-                             hydrographicTable : process.getResults().outputHydro,
-                             prefixName        : prefixName])) {
-            def saveTables = Geoindicators.DataUtils.saveTablesAsFiles()
-
-            saveTables.execute( [inputTableNames: process.getResults().values(), delete:true
-                                 , directory: directory, datasource: h2GIS])
-
-            if (createRSU([datasource    : h2GIS,
-                            inputTableName: prepareRSUData.results.outputTableName,
-                            inputZoneTableName :process.getResults().outputZone,
-                            prefixName    : prefixName])) {
-                //TODO enable it for debug purpose
-                // h2GIS.getTable(createRSU.results.outputTableName).save(dirFile.absolutePath+File.separator+"${prefixName}.geojson", true)
-                assertTrue(h2GIS.getTable(createRSU.results.outputTableName).getRowCount()>0)
-            }
-        }
     }
 
     @Test
@@ -88,59 +72,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         datasource.load(urlVeget, vegetationTableName, true)
         datasource.load(urlHydro, hydrographicTableName, true)
         datasource.load(urlZone, zoneTableName, true)
-
         //Run tests
         geoIndicatorsCalc(dirFile.absolutePath+File, datasource, zoneTableName, buildingTableName,roadTableName,
                 null,vegetationTableName, hydrographicTableName,saveResults, svfSimplified, indicatorUse, prefixName)
-
-    }
-
-    @Test
-    void osmGeoIndicatorsFromApi() {
-        String directory ="./target/osm_processchain_indicators"
-        //TODO enable it for debug purpose
-        boolean saveResults = false
-        def prefixName = ""
-        def svfSimplified = true
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
-
-        H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osm_chain_db;AUTO_SERVER=TRUE")
-
-        //Extract and transform OSM data
-        def zoneToExtract = "Pont-de-Veyle"
-
-        IProcess prepareOSMData = OSM.WorkflowOSM.buildGeoclimateLayers()
-
-        prepareOSMData.execute([datasource: datasource, zoneToExtract :zoneToExtract, distance: 0])
-
-        String buildingTableName = prepareOSMData.getResults().outputBuilding
-
-        String roadTableName = prepareOSMData.getResults().outputRoad
-
-        String railTableName = prepareOSMData.getResults().outputRail
-
-        String hydrographicTableName = prepareOSMData.getResults().outputHydro
-
-        String vegetationTableName = prepareOSMData.getResults().outputVeget
-
-        String zoneTableName = prepareOSMData.getResults().outputZone
-
-        if(saveResults){
-            println("Saving OSM GIS layers")
-            IProcess saveTables = Geoindicators.DataUtils.saveTablesAsFiles()
-            saveTables.execute( [inputTableNames: [buildingTableName,roadTableName,railTableName,hydrographicTableName,
-                                                   vegetationTableName,zoneTableName]
-                                 , directory: dirFile.absolutePath, datasource: datasource])
-        }
-
-        def indicatorUse = ["TEB", "UTRF", "LCZ"]
-
-        //Run tests
-        geoIndicatorsCalc(dirFile.absolutePath, datasource, zoneTableName, buildingTableName,roadTableName,railTableName,vegetationTableName,
-                hydrographicTableName,saveResults, svfSimplified,indicatorUse,  prefixName)
-
     }
 
 
@@ -363,31 +297,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
-
     }
 
-    @Disabled
-    @Test
-    void testOSMWorkflowFromBboxDeleteDBFalse() {
-        String directory ="./target/geoclimate_chain"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
-        def osm_parmeters = [
-                "description" :"Example of configuration file to run the OSM workflow and store the result in a folder",
-                "geoclimatedb" : [
-                        "folder" : dirFile.absolutePath,
-                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
-                        "delete" :true
-                ],
-                "input" : [
-                        "locations" : [[38.89557963573336,-77.03930318355559,38.89944983078282,-77.03364372253417]]],
-                "output" :[
-                        "folder" : directory]
-        ]
-        IProcess process = OSM.WorkflowOSM.workflow()
-        assertTrue(process.execute(input: osm_parmeters))
-    }
 
     @Test
     void testOSMWorkflowFromBbox() {
@@ -618,8 +529,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "locations" : [[48.49749,5.25349,48.58082,5.33682]],
-                        "delete":true],
+                        "locations" : [[48.49749,5.25349,48.58082,5.33682]]],
                 "output" :[
                         "folder" : ["path": directory,
                                     "tables": ["grid_indicators", "zones"]]],
@@ -669,7 +579,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                 "rowCol": true,
                                 "output" : "geojson",
                                 "indicators": ["BUILDING_FRACTION","BUILDING_HEIGHT","BUILDING_POP", "WATER_FRACTION","VEGETATION_FRACTION",
-                                               "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "LCZ_FRACTION"]
+                                               "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "LCZ_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY"]
                         ],    "worldpop_indicators" : true
                         ]
         ]
