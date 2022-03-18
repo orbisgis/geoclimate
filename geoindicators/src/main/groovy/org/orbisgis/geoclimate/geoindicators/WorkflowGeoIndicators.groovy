@@ -1956,12 +1956,13 @@ IProcess rasterizeIndicators() {
 
                 // If any surface fraction calculation is needed, create the priority list containing only needed fractions
                 // and also set which type of statistics is needed if "BUILDING_HEIGHT" is activated
+                def surfaceFractionsProcess
                 def columnFractionsList = [:]
                 def priorities = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
 
                 def unweightedBuildingIndicators = [:]
                 list_indicators.each{
-                    if(it.equalsIgnoreCase("BUILDING_FRACTION")){
+                    if(it.equalsIgnoreCase("BUILDING_FRACTION") || it.equalsIgnoreCase("BUILDING_SURFACE_DENSITY")){
                         columnFractionsList.put( priorities.indexOf("building"),"building")
                     }
                     else if(it.equalsIgnoreCase("WATER_FRACTION")){
@@ -1994,7 +1995,7 @@ IProcess rasterizeIndicators() {
                             imperviousTable: imperviousTable,
                             prefixName     : prefixName, datasource: datasource])) {
                         def superpositionsTableGrid = computeSmallestGeom.results.outputTableName
-                        def surfaceFractionsProcess = Geoindicators.RsuIndicators.surfaceFractions()
+                        surfaceFractionsProcess = Geoindicators.RsuIndicators.surfaceFractions()
                         def superpositions = []
                         if(surfaceFractionsProcess.execute([
                                 rsuTable: gridTableName, spatialRelationsTable: superpositionsTableGrid,
@@ -2066,7 +2067,8 @@ IProcess rasterizeIndicators() {
                     }
                 }
 
-                if(list_indicators*.toUpperCase().contains("FREE_EXTERNAL_FACADE_DENSITY") && buildingTable){
+                if((list_indicators*.toUpperCase().contains("FREE_EXTERNAL_FACADE_DENSITY") && buildingTable) ||
+                        (list_indicators*.toUpperCase().contains("BUILDING_SURFACE_DENSITY") && buildingTable)){
                     if(!createScalesRelationsGridBl){
                         // Create the relations between grid cells and buildings
                         createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
@@ -2086,7 +2088,22 @@ IProcess rasterizeIndicators() {
                              rsuTable                    : gridTableName,
                              prefixName                  : prefixName,
                              datasource                  : datasource])) {
-                        indicatorTablesToJoin.put(freeFacadeDensityExact.results.outputTableName, grid_column_identifier)
+                        if(list_indicators*.toUpperCase().contains("FREE_EXTERNAL_FACADE_DENSITY")){
+                            indicatorTablesToJoin.put(freeFacadeDensityExact.results.outputTableName, grid_column_identifier)
+                        }
+                        if(list_indicators*.toUpperCase().contains("FREE_EXTERNAL_FACADE_DENSITY")){
+                            def buildingSurfDensity = Geoindicators.RsuIndicators.buildingSurfaceDensity()
+                            if (buildingSurfDensity.execute([
+                                    facadeDensityTable: freeFacadeDensityExact.results.outputTableName,
+                                    buildingFractionTable: surfaceFractionsProcess.results.outputTableName,
+                                    facDensityColumn: "exact_free_facade_density",
+                                    buFractionColumn: "building_fraction",
+                                    prefixName: prefixName,
+                                    datasource: datasource])) {
+                                if(list_indicators*.toUpperCase().contains("BUILDING_SURFACE_DENSITY")){
+                                    indicatorTablesToJoin.put(buildingSurfDensity.results.outputTableName, grid_column_identifier)
+                                }
+                        }
                     } else {
                         info "Cannot calculate the exact free external facade density"
                     }

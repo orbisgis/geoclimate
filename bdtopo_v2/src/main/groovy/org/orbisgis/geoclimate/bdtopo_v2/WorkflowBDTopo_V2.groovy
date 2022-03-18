@@ -1249,7 +1249,8 @@ def extractProcessingParameters(def processing_parameters){
                     return
                 }
                 def allowed_grid_indicators=["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_POP","BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
-                                             "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "UTRF_AREA_FRACTION", "LCZ_FRACTION", "LCZ_PRIMARY","FREE_EXTERNAL_FACADE_DENSITY"]
+                                             "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "UTRF_AREA_FRACTION", "LCZ_FRACTION", "LCZ_PRIMARY","FREE_EXTERNAL_FACADE_DENSITY",
+                                             "BUILDING_SURFACE_DENSITY"]
                 def allowedOutputIndicators = allowed_grid_indicators.intersect(list_indicators*.toUpperCase())
                 if(allowedOutputIndicators){
                     //Update the RSU indicators list according the grid indicators
