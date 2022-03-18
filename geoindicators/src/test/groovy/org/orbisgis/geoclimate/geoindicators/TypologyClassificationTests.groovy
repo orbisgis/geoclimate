@@ -468,7 +468,6 @@ class TypologyClassificationTests {
         // Information about where to find the training dataset for the test
         def trainingTableName = "training_table"
         String directory = "../geoclimate/models"
-        directory = "/home/ebocher/Autres/codes/geoclimate/models"
         def savePath = directory + File.separator + model_name + ".model"
 
         if (new File(directory).exists()) {
