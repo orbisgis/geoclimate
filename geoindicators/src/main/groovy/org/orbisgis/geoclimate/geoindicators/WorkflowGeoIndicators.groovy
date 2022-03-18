@@ -1953,9 +1953,9 @@ IProcess rasterizeIndicators() {
                     }
                 }
 
-                // Calculate all surface fractions indicators on the GRID cell
-                // Need to create the smallest geometries used as input of the surface fraction process
 
+                // If any surface fraction calculation is needed, create the priority list containing only needed fractions
+                // and also set which type of statistics is needed if "BUILDING_HEIGHT" is activated
                 def columnFractionsList = [:]
                 def priorities = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
 
@@ -1980,10 +1980,12 @@ IProcess rasterizeIndicators() {
                     else if(it.equalsIgnoreCase("BUILDING_POP")&& buildingTable){
                         unweightedBuildingIndicators.put("pop", ["SUM"])
                     }
-
                 }
+
+                // Calculate all surface fractions indicators on the GRID cell
                 if(columnFractionsList){
                     def priorities_tmp = columnFractionsList.sort().values()
+                    // Need to create the smallest geometries used as input of the surface fraction process
                     def computeSmallestGeom = Geoindicators.RsuIndicators.smallestCommunGeometry()
                     if (computeSmallestGeom.execute([
                             rsuTable       : gridTableName, id_rsu: grid_column_identifier,
@@ -2062,7 +2064,6 @@ IProcess rasterizeIndicators() {
                     } else {
                         info "Cannot aggregate the building type at grid scale"
                     }
-                    indicatorTablesToJoin.put(upperScaleAreaStatistics.results.outputTableName, grid_column_identifier)
                 }
 
                 if(list_indicators*.toUpperCase().contains("FREE_EXTERNAL_FACADE_DENSITY") && buildingTable){
@@ -2071,7 +2072,7 @@ IProcess rasterizeIndicators() {
                         createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
                         if (!createScalesRelationsGridBl([datasource              : datasource,
                                                           sourceTable             : buildingTable,
-                                                          targetTable             : grid_table_name,
+                                                          targetTable             : gridTableName,
                                                           idColumnTarget          : grid_column_identifier,
                                                           prefixName              : prefixName,
                                                           nbRelations             : null])) {
@@ -2079,18 +2080,16 @@ IProcess rasterizeIndicators() {
                             return
                         }
                     }
-                    def indicatorName = "FREE_EXTERNAL_FACADE_DENSITY_EXACT"
                     def freeFacadeDensityExact = Geoindicators.RsuIndicators.freeExternalFacadeDensityExact()
                     if (freeFacadeDensityExact.execute(
                             [buildingTable               : buildingTable,
-                             rsuTable                    : grid_table_name,
+                             rsuTable                    : gridTableName,
                              prefixName                  : prefixName,
                              datasource                  : datasource])) {
                         indicatorTablesToJoin.put(freeFacadeDensityExact.results.outputTableName, grid_column_identifier)
                     } else {
                         info "Cannot calculate the exact free external facade density"
                     }
-                    indicatorTablesToJoin.put(freeFacadeDensityExact.results.outputTableName, grid_column_identifier)
                 }
 
                 //Join all indicators at grid scale
