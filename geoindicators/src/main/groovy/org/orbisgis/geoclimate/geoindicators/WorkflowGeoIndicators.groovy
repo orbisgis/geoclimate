@@ -2071,7 +2071,7 @@ IProcess rasterizeIndicators() {
                         createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
                         if (!createScalesRelationsGridBl([datasource              : datasource,
                                                           sourceTable             : buildingTable,
-                                                          targetTable             : grid_table_name,
+                                                          targetTable             : gridTableName,
                                                           idColumnTarget          : grid_column_identifier,
                                                           prefixName              : prefixName,
                                                           nbRelations             : null])) {
@@ -2079,11 +2079,10 @@ IProcess rasterizeIndicators() {
                             return
                         }
                     }
-                    def indicatorName = "FREE_EXTERNAL_FACADE_DENSITY_EXACT"
                     def freeFacadeDensityExact = Geoindicators.RsuIndicators.freeExternalFacadeDensityExact()
                     if (freeFacadeDensityExact.execute(
                             [buildingTable               : buildingTable,
-                             rsuTable                    : grid_table_name,
+                             rsuTable                    : gridTableName,
                              prefixName                  : prefixName,
                              datasource                  : datasource])) {
                         indicatorTablesToJoin.put(freeFacadeDensityExact.results.outputTableName, grid_column_identifier)
