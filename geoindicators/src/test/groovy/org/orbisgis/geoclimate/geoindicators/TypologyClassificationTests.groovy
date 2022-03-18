@@ -1,6 +1,10 @@
 package org.orbisgis.geoclimate.geoindicators
 
 import com.thoughtworks.xstream.XStream
+import com.thoughtworks.xstream.io.xml.StaxDriver
+import com.thoughtworks.xstream.security.NoTypePermission
+import com.thoughtworks.xstream.security.NullPermission
+import com.thoughtworks.xstream.security.PrimitiveTypePermission
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
@@ -8,6 +12,7 @@ import org.junit.jupiter.api.Test
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 import smile.classification.DataFrameClassifier
+import smile.classification.RandomForest
 import smile.validation.Accuracy
 import smile.validation.Validation
 import java.util.zip.GZIPInputStream
@@ -376,8 +381,8 @@ class TypologyClassificationTests {
     @Test
     void tempoCreateRandomForestClassifTest() {
         // Specify the model and training datat appropriate to the right use
-        def model_name = "URBAN_TYPOLOGY_OSM_RF_2_0"
-        def training_data_name = "TRAINING_DATA_URBAN_TYPOLOGY_OSM_RF_2_0"
+        def model_name = "UTRF_OSM_RF_2_2"
+        def training_data_name = "TRAINING_DATA_UTRF_OSM_RF_2_2"
         // Name of the variable to model
         def var2model = "I_TYPO"
         def var2ModelFinal = "I_TYPO"
@@ -452,9 +457,8 @@ class TypologyClassificationTests {
     @Test
     //TODO filter  avg_height_roof=0
     void createRandomForestModelBUILDING_HEIGHT_OSM_RF() {
-        // Specify the model and training datat appropriate to the right use
-        def model_name = "BUILDING_HEIGHT_OSM_RF_2_0.model"
-        def training_data_name = "TRAINING_DATA_BUILDINGHEIGHT_OSM_RF_1_0.geojson.gz"
+        // Specify the model and training data appropriate to the right use
+        def model_name = "BUILDING_HEIGHT_OSM_RF_2_2.model"
         // Name of the variable to model
         def var2model = "HEIGHT_ROOF"
         def var2ModelFinal = "HEIGHT_ROOF"
@@ -467,15 +471,11 @@ class TypologyClassificationTests {
         def savePath = directory + File.separator + model_name + ".model"
 
         if (new File(directory).exists()) {
-            // Read the training data
-            h2GIS """ CALL GEOJSONREAD('${directory + File.separator + training_data_name + ".geojson.gz"}', 'tempo0')"""
+            // Read the two training data files
+            h2GIS """ CALL GEOJSONREAD('${directory + File.separator + "TRAINING_DATA_BUILDINGHEIGHT_OSM_RF_2_2_part1" + ".geojson"}', 'tempo_a', true)"""
+            h2GIS """ CALL GEOJSONREAD('${directory + File.separator + "TRAINING_DATA_BUILDINGHEIGHT_OSM_RF_2_2_part2" + ".geojson"}', 'tempo_b', true)"""
 
-            // Select only specific data
-            h2GIS """   DROP TABLE IF EXISTS tempo;
-                        CREATE TABLE tempo
-                            AS SELECT * 
-                            FROM tempo0
-                             """
+            h2GIS.execute('''DROP TABLE IF EXISTS tempo; CREATE TABLE tempo as select * from tempo_a union all select * from tempo_b''')
 
             // Remove unnecessary column
             h2GIS "ALTER TABLE tempo DROP COLUMN the_geom;"
@@ -533,10 +533,10 @@ class TypologyClassificationTests {
     //This test is used to create the random forest model to build the urban typology with BDTOPO V2.2
     @Disabled
     @Test
-    void createRandomForestModelURBAN_TYPOLOGY_BDTOPO_V2_RF() {
+    void createRandomForestModelUTRF_BDTOPO_V2_RF() {
         // Specify the model and training datat appropriate to the right use
-        def model_name = "URBAN_TYPOLOGY_BDTOPO_V2_RF_2_1.model"
-        def training_data_name = "TRAINING_DATA_URBAN_TYPOLOGY_BDTOPO_V2_RF_2_1.geojson.gz"
+        def model_name = "UTRF_BDTOPO_V2_RF_2_2.model"
+        def training_data_name = "TRAINING_DATA_UTRF_BDTOPO_V2_RF_2_2.geojson.gz"
         // Name of the variable to model
         def var2model = "I_TYPO"
         def var2ModelFinal = "I_TYPO"
@@ -615,10 +615,10 @@ class TypologyClassificationTests {
     //This test is used to create the random forest model to build the urban typology with OSM
     @Disabled
     @Test
-    void createRandomForestModelURBAN_TYPOLOGY_OSM_RF() {
+    void createRandomForestModelUTRF_OSM_RF() {
         // Specify the model and training datat appropriate to the right use
-        def model_name = "URBAN_TYPOLOGY_OSM_RF_2_1.model"
-        def training_data_name = "TRAINING_DATA_URBAN_TYPOLOGY_OSM_RF_2_1.geojson.gz"
+        def model_name = "UTRF_OSM_RF_2_2.model"
+        def training_data_name = "TRAINING_DATA_UTRF_OSM_RF_2_2.geojson.gz"
         // Name of the variable to model
         def var2model = "I_TYPO"
         def var2ModelFinal = "I_TYPO"
@@ -628,6 +628,7 @@ class TypologyClassificationTests {
         // Information about where to find the training dataset for the test
         def trainingTableName = "training_table"
         String directory = "../geoclimate/models/"
+
         def savePath = directory + File.separator + model_name
 
         if (new File(directory).exists()) {
@@ -693,4 +694,4 @@ class TypologyClassificationTests {
             println("The model has not been create because the output directory doesn't exist")
         }
     }
-}
+   }

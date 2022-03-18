@@ -787,9 +787,9 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                                 "rsu_indicators":"rsu_indicators_2154",
                                 "rsu_lcz":"rsu_lcz_2154",
                                 "zones":"zones_2154",
-                                "building_urban_typo":"building_urban_typo_2154",
-                                "rsu_urban_typo_area":"rsu_urban_typo_area_2154",
-                                "rsu_urban_typo_floor_area":"rsu_urban_typo_floor_area_2154",
+                                "building_utrf":"building_utrf_2154",
+                                "rsu_utrf_area":"rsu_utrf_area_2154",
+                                "rsu_utrf_floor_area":"rsu_utrf_floor_area_2154",
                                 "grid_indicators":"grid_indicators_2154",
                                 "road_traffic" : "road_traffic_2154"]
                 ]
@@ -817,7 +817,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                                         "x_size": 100,
                                         "y_size": 100,
                                         "indicators": ["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
-                                                       "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "URBAN_TYPO_AREA_FRACTION", "LCZ_FRACTION"]
+                                                       "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "UTRF_AREA_FRACTION", "LCZ_FRACTION"]
                                 ],*/
                                 "road_traffic": true
                 ]

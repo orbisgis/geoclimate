@@ -563,14 +563,17 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "locations" : ["Pont-de-Veyle"]],
+                        "locations" : ["Redon"],
+                "timeout":3600,
+                "maxsize": 536870918,
+                "endpoint":"https://lz4.overpass-api.de/api"],
                 "output" :[
                         "folder" :directory]
                 ,
                 "parameters":
                         ["distance" : 0,
                          "rsu_indicators":[
-                                 "indicatorUse": ["LCZ"],
+                                 "indicatorUse": ["LCZ", "UTRF"],
                                  "svfSimplified": true,
                                  "estimateHeight":true
                          ],"grid_indicators": [
