@@ -517,6 +517,7 @@ class RsuIndicatorsTests {
         assertEquals(3.0/20, result0["low_vegetation_fraction"])
         assertEquals(1.0/4, result0["water_fraction"])
         assertEquals(1.0/10, result0["building_fraction"])
+        assertEquals(0d, result0["undefined_fraction"])
 
         // combination 2
         def p1 = Geoindicators.RsuIndicators.surfaceFractions()
@@ -534,6 +535,7 @@ class RsuIndicatorsTests {
         assertEquals(3.0/20, result1["low_vegetation_fraction"])
         assertEquals(3.0/20, result1["water_fraction"])
         assertEquals(1.0/5, result1["building_fraction"])
+        assertEquals(0d, result0["undefined_fraction"])
 
         // combination 3
         def p2 = Geoindicators.RsuIndicators.surfaceFractions()
@@ -552,6 +554,7 @@ class RsuIndicatorsTests {
         assertEquals(3.0/20, result2["low_vegetation_fraction"])
         assertEquals(1.0/4, result2["water_fraction"])
         assertEquals(0d, result2["building_fraction"])
+        assertEquals(0d, result0["undefined_fraction"])
     }
 
     @Test
@@ -582,6 +585,7 @@ class RsuIndicatorsTests {
                 prefixName: "test", datasource: h2GIS])
         def result0 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName}")
         assertEquals(5.0/100, result0["road_fraction"])
+        assertEquals(0.95d, result0["undefined_fraction"])
     }
 
     @Test
@@ -607,6 +611,7 @@ class RsuIndicatorsTests {
                 prefixName: "test", datasource: h2GIS])
         def result0 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName} WHERE ID_RSU=1")
         assertEquals(0d, result0["building_fraction"])
+        assertEquals(1d, result0["undefined_fraction"])
     }
 
     @Test
@@ -635,5 +640,6 @@ class RsuIndicatorsTests {
         assertEquals(3.0/20, result0["low_vegetation_fraction"])
         assertEquals(1.0/4, result0["water_fraction"])
         assertEquals(3.0/10, result0["building_fraction"])
+        assertEquals(0d, result0["undefined_fraction"])
     }
 }
