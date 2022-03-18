@@ -236,6 +236,13 @@ IProcess workflow() {
                         return null
                     }
 
+                    //Change the endpoint to get the overpass data
+                    def  overpass_enpoint = inputParameter.get("endpoint")
+
+                    if(!overpass_enpoint){
+                        overpass_enpoint = "https://lz4.overpass-api.de/api"
+                    }
+                    System.setProperty("OVERPASS_ENPOINT", overpass_enpoint);
 
                     def deleteOSMFile = inputParameter.get("delete")
                     if(!deleteOSMFile){
@@ -328,7 +335,7 @@ IProcess workflow() {
                                         id_zones: osmFilters, outputFolder: file_outputFolder, ouputTableFiles: outputFolderProperties.tables,
                                         output_datasource: output_datasource, outputTableNames: finalOutputTables, outputSRID :outputSRID, downloadAllOSMData:downloadAllOSMData, deleteOutputData: deleteOutputData,
                                         deleteOSMFile:deleteOSMFile, logTableZones:logTableZones, bbox_size : osm_size_area,
-                                        overpass_timeout :overpass_timeout, overpass_maxsize:overpass_maxsize)) {
+                                        overpass_timeout :overpass_timeout, overpass_maxsize:overpass_maxsize, overpass_enpoint:overpass_enpoint)) {
                                     h2gis_datasource.getSpatialTable(logTableZones).save("${databaseFolder+File.separator}logzones.geojson")
                                     return null
                                 }
@@ -500,7 +507,8 @@ IProcess osm_processing() {
                 overpass_timeout :180, overpass_maxsize:536870912
         outputs outputTableNames: Map
         run { H2GIS h2gis_datasource, processing_parameters, id_zones, outputFolder, ouputTableFiles, output_datasource, outputTableNames,
-              outputSRID, downloadAllOSMData,deleteOutputData, deleteOSMFile,logTableZones, bbox_size, overpass_timeout, overpass_maxsize ->
+              outputSRID, downloadAllOSMData,deleteOutputData, deleteOSMFile,logTableZones, bbox_size, overpass_timeout,
+              overpass_maxsize->
             //Store the zone identifier and the names of the tables
             def outputTableNamesResult = [:]
             //Create the table to log on the processed zone
@@ -696,8 +704,8 @@ IProcess osm_processing() {
                                         svfSimplified: rsu_indicators_params.svfSimplified,
                                         prefixName: processing_parameters.prefixName,
                                         mapOfWeights: rsu_indicators_params.mapOfWeights,
-                                        utrfModelName: "UTRF_OSM_RF_2_1.model",
-                                        buildingHeightModelName: estimateHeight ? "BUILDING_HEIGHT_OSM_RF_2_0.model" : "")) {
+                                        utrfModelName: "UTRF_OSM_RF_2_2.model",
+                                        buildingHeightModelName: estimateHeight ? "BUILDING_HEIGHT_OSM_RF_2_2.model" : "")) {
 
                                     error "Cannot build the geoindicators for the zone $id_zone"
 

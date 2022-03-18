@@ -569,7 +569,7 @@ class Utilities {
     /** Get method for HTTP request */
     private static def GET = "GET"
     /** Overpass server endpoint as defined by WSDL2 definition */
-    static def OVERPASS_ENDPOINT ="https://overpass-api.de/api"
+    static def OVERPASS_ENDPOINT ="https://overpass-api.de/api/"
     /** Overpass server base URL */
     static def OVERPASS_BASE_URL = "${OVERPASS_ENDPOINT}/interpreter?data="
     /** Url of the status of the Overpass server */

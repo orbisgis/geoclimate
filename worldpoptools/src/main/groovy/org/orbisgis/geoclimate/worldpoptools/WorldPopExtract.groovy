@@ -90,7 +90,7 @@ IProcess extractWorldPopLayer() {
                         info "The OSM file has been downloaded at ${popGridFilePath}."
                     } else {
                         outputGridFile.delete()
-                        error "Cannot extract the OSM data for the query $overpassQuery"
+                        error "Cannot extract the OSM data for the query $gridRequest"
                         return
                     }}
             }
