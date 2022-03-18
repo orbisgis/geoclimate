@@ -1565,6 +1565,9 @@ IProcess surfaceFractions() {
             // The name of the outputTableName is constructed
             def outputTableName = postfix( BASE_TABLE_NAME)
 
+            // Temporary tables are created
+            def withoutUndefined = postfix "without_undefined"
+
             // Create the indexes on each of the input tables
             datasource."$rsuTable"."$id_rsu".createIndex()
             datasource."$spatialRelationsTable"."$id_rsu".createIndex()
@@ -1577,7 +1580,7 @@ IProcess surfaceFractions() {
                 i++
             }
 
-            def query = """DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT b.${id_rsu} """
+            def query = """DROP TABLE IF EXISTS $withoutUndefined; CREATE TABLE $withoutUndefined AS SELECT b.${id_rsu} """
             def end_query = """ FROM $spatialRelationsTable AS a RIGHT JOIN $rsuTable b 
                             ON a.${id_rsu}=b.${id_rsu} GROUP BY b.${id_rsu};"""
 
@@ -1656,6 +1659,17 @@ IProcess surfaceFractions() {
                 datasource query.toString() + end_query.toString()
 
             }
+            // Calculates the fraction of land without defined surface
+            def allCols = datasource.getTable(withoutUndefined).getColumns()
+            def allFractionCols = allCols.minus(id_rsu.toUpperCase())
+            datasource """ DROP TABLE IF EXISTS $outputTableName;
+                           CREATE TABLE $outputTableName
+                                AS SELECT *, 1-(${allFractionCols.join("+")}) AS UNDEFINED_FRACTION
+                                FROM $withoutUndefined"""
+
+            // Drop intermediate tables
+            datasource "DROP TABLE IF EXISTS $withoutUndefined;".toString()
+
             //Cache the table name to re-use it
             cacheTableName(BASE_TABLE_NAME, outputTableName)
             [outputTableName: outputTableName]

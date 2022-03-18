@@ -67,7 +67,7 @@ class WorkflowGeoIndicatorsTest {
                                    "BUILDING_FRACTION", "WATER_FRACTION", "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
                                    "HIGH_VEGETATION_LOW_VEGETATION_FRACTION", "HIGH_VEGETATION_WATER_FRACTION",
                                    "HIGH_VEGETATION_ROAD_FRACTION", "HIGH_VEGETATION_IMPERVIOUS_FRACTION",
-                                   "HIGH_VEGETATION_BUILDING_FRACTION"]
+                                   "HIGH_VEGETATION_BUILDING_FRACTION", "UNDEFINED_FRACTION"]
 
     // Column names in the LCZ Table
     public static listColLcz = ["LCZ_PRIMARY", "LCZ_SECONDARY", "LCZ_EQUALITY_VALUE", "LCZ_UNIQUENESS_VALUE", "MIN_DISTANCE"]
