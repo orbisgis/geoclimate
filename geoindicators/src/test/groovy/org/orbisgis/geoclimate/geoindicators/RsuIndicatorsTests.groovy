@@ -642,4 +642,28 @@ class RsuIndicatorsTests {
         assertEquals(3.0/10, result0["building_fraction"])
         assertEquals(0d, result0["undefined_fraction"])
     }
+
+    @Test
+    void buildingSurfaceDensityTest() {
+        h2GIS """
+                DROP TABLE IF EXISTS facade_density_tab, building_fraction_tab; 
+                CREATE TABLE facade_density_tab(id_rsu int, facade_density double);
+                INSERT INTO facade_density_tab VALUES (1, 1.2),
+                                               (2, 0);
+                CREATE TABLE building_fraction_tab(id_rsu int, building_fraction double);
+                INSERT INTO building_fraction_tab VALUES    (1, 0.5),
+                                                (2, 1);
+        """
+
+        def p0 = Geoindicators.RsuIndicators.buildingSurfaceDensity()
+        assertTrue p0.execute([
+                facadeDensityTable: "facade_density_tab", buildingFractionTable: "building_fraction_tab",
+                facDensityColumn: "facade_density",
+                buFractionColumn: "building_fraction",
+                prefixName: "test", datasource: h2GIS])
+        def result1 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName} WHERE id_rsu=1")
+        assertEquals(1.7, result1["building_surface_density"])
+        def result2 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName} WHERE id_rsu=2")
+        assertEquals(1.0, result2["building_surface_density"])
+    }
 }

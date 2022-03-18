@@ -102,7 +102,7 @@ IProcess freeExternalFacadeDensityExact() {
             def HEIGHT_WALL = "height_wall"
             def FACADE_AREA = "facade_area"
             def RSU_AREA = "rsu_area"
-            def BASE_NAME = "_exact_free_external_facade_density"
+            def BASE_NAME = "exact_free_external_facade_density"
 
             debug "Executing RSU free external facade density (exact version)"
 
@@ -1672,6 +1672,57 @@ IProcess surfaceFractions() {
 
             //Cache the table name to re-use it
             cacheTableName(BASE_TABLE_NAME, outputTableName)
+            [outputTableName: outputTableName]
+        }
+    }
+}
+
+/**
+ * Process used to compute the sum of all building facades (free facades and roofs) included in a
+ * Reference Spatial Unit (RSU) divided by the RSU area. The calculation is actually simply the sum
+ * of two other indicators (building fraction and free external facade density)...
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param facadeDensityTable The name of the input ITable where are stored the facade density and the rsu id
+ * @param buildingFractionTable The name of the input ITable where are stored the building fraction and the rsu id
+ * @param facDensityColumn The name of the column where are stored the facade density values (within the
+ * 'facadeDensityTable' Table)
+ * @param buFractionColumn The name of the column where are stored the building fraction values (within the
+ * 'buildingFractionTable' Table)
+ * @param prefixName String use as prefix to name the output table
+ *
+ * @return A database table name.
+ * @author Jérémy Bernard
+ */
+IProcess buildingSurfaceDensity() {
+    return create {
+        title "RSU building surface density"
+        id "buildingSurfaceDensity"
+        inputs facadeDensityTable: String, buildingFractionTable: String, facDensityColumn: String,
+                buFractionColumn: String, prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { facadeDensityTable, buildingFractionTable, facDensityColumn, buFractionColumn, prefixName, datasource ->
+
+            def ID_FIELD_RSU = "id_rsu"
+            def BASE_NAME = "building_surface_fraction"
+
+            debug "Executing building surface density"
+
+            // The name of the outputTableName is constructed
+            def outputTableName = prefix prefixName, BASE_NAME
+
+            // Sum free facade density and building fraction...
+            datasource."$facadeDensityTable"."$ID_FIELD_RSU".createIndex()
+            datasource."$buildingFractionTable"."$ID_FIELD_RSU".createIndex()
+            datasource """
+                DROP TABLE IF EXISTS $outputTableName;
+                CREATE TABLE $outputTableName
+                    AS SELECT   a.$ID_FIELD_RSU, 
+                                a.$buFractionColumn + b.$facDensityColumn AS BUILDING_SURFACE_DENSITY
+                    FROM $buildingFractionTable AS a LEFT JOIN $facadeDensityTable AS b
+                    ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU""".toString()
+
             [outputTableName: outputTableName]
         }
     }
