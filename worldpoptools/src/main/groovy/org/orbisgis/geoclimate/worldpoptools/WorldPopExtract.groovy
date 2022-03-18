@@ -50,7 +50,7 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
 
 /**
  * This process is used to extract a grid population data from  https://www.worldpop.org
- * The grid is stored in a OS tmp dir.
+ * The grid is stored in a tmp dir.
  * If the grid already exists the file is reused.
  * @return
  */
