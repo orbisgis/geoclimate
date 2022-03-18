@@ -1005,7 +1005,7 @@ def extractProcessingParameters(def processing_parameters){
                                                   "height_of_roughness_elements"   : 6,
                                                   "terrain_roughness_length"       : 0.5],
                                  estimateHeight:true,
-                                 utrfModelName: "UTRF_OSM_RF_2_1.model"]
+                                 utrfModelName: "UTRF_OSM_RF_2_2.model"]
     defaultParameters.put("rsu_indicators", rsu_indicators_default)
 
     if(processing_parameters){
