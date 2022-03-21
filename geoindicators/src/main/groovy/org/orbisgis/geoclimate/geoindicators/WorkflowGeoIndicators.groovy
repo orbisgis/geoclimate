@@ -2100,9 +2100,10 @@ IProcess rasterizeIndicators() {
                                     buFractionColumn: "building_fraction",
                                     prefixName: prefixName,
                                     datasource: datasource])) {
-                                if(list_indicators*.toUpperCase().contains("BUILDING_SURFACE_DENSITY")){
+                                if (list_indicators*.toUpperCase().contains("BUILDING_SURFACE_DENSITY")) {
                                     indicatorTablesToJoin.put(buildingSurfDensity.results.outputTableName, grid_column_identifier)
                                 }
+                            }
                         }
                     } else {
                         info "Cannot calculate the exact free external facade density"
