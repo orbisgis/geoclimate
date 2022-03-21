@@ -573,16 +573,17 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters":
                         ["distance" : 0,
                          "rsu_indicators":[
-                                 "indicatorUse": ["LCZ", "UTRF"],
+                                 "indicatorUse": ["LCZ"],
                                  "svfSimplified": true,
                                  "estimateHeight":true
                          ],"grid_indicators": [
                                 "x_size": 100,
                                 "y_size": 100,
-                                "rowCol": true,
-                                "output" : "geojson",
-                                "indicators": ["BUILDING_FRACTION","BUILDING_HEIGHT","BUILDING_POP", "WATER_FRACTION","VEGETATION_FRACTION",
-                                               "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "LCZ_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY"]
+                                //"rowCol": true,
+                                "indicators":  ["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_POP",
+                                                "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
+                                                "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "LCZ_FRACTION", "LCZ_PRIMARY",
+                                                "FREE_EXTERNAL_FACADE_DENSITY"]
                         ],    "worldpop_indicators" : true
                         ]
         ]
@@ -606,9 +607,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "locations" : [[
-                                         53.83061, 9.83664, 53.91394, 9.91997
-                                 ]]],
+                        "locations" :
+                                   [[46.257330,4.870033,46.269970,4.905224]]
+                                 ],
                 "output" :["folder" : directory,srid: 4326]
                 ,
                 "parameters":
@@ -619,8 +620,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                  "estimateHeight":true
                          ],
                          "grid_indicators": [
-                                 "x_size": 10,
-                                 "y_size": 10,
+                                 "x_size": 10000,
+                                 "y_size": 10000,
                                  "rowCol": true,
                                  "output" : "asc",
                                  "indicators": ["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",

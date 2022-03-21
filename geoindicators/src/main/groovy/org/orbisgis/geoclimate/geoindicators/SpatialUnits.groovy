@@ -519,12 +519,9 @@ IProcess spatialJoin() {
                                                         DESC LIMIT $nbRelations) AS $idColumnTarget 
                                             FROM $sourceTable a""".toString()
                 } else {
-                    def sourceColumns = sourceSpatialTable.getColumnsTypes().findAll {
-                        it.value.toLowerCase() != 'geometry'
-                    }.collect {"a."+it.key}
                     datasource """  DROP TABLE IF EXISTS $outputTableName;
                                     CREATE TABLE $outputTableName 
-                                            AS SELECT   ${sourceColumns.join(",")}, b.$idColumnTarget,
+                                            AS SELECT   a.*, b.$idColumnTarget,
                                                         ST_AREA(ST_INTERSECTION(ST_PRECISIONREDUCER(a.$GEOMETRIC_COLUMN_SOURCE, 3), 
                                                         ST_PRECISIONREDUCER(b.$GEOMETRIC_COLUMN_TARGET,3))) AS AREA
                                             FROM    $sourceTable a, $targetTable b

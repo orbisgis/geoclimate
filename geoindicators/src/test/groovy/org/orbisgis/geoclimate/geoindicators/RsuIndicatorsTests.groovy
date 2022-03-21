@@ -76,15 +76,11 @@ class RsuIndicatorsTests {
                                      prefixName              : "test",
                                      nbRelations             : null])
 
-        // The geometry of the buildings are useful for the calculation, then they are inserted inside
-        // the build/rsu correlation table
-        h2GIS "DROP TABLE IF EXISTS corr_tempo; CREATE TABLE corr_tempo AS SELECT a.*, b.the_geom " +
-                "FROM ${createScalesRelationsGridBl.results.outputTableName} AS a, tempo_build AS b" +
-                " WHERE a.id_build = b.id_build"
+        def buildingTableRelation =createScalesRelationsGridBl.results.outputTableName
 
         def p = Geoindicators.RsuIndicators.freeExternalFacadeDensityExact()
         assertTrue p([
-                        buildingTable               : "corr_tempo",
+                        buildingTable               : buildingTableRelation,
                         rsuTable                    : "tempo_rsu",
                         idRsu                       : "id_rsu",
                         prefixName                  : "test",
@@ -392,7 +388,7 @@ class RsuIndicatorsTests {
         h2GIS.eachRow("SELECT * FROM test_rsu_extended_free_facade_fraction WHERE id_rsu = 1"){
             row -> concat+= row.extended_free_facade_fraction.round(3)
         }
-        assertEquals(0.177, concat)
+        assertEquals(0.173, concat)
     }
 
 

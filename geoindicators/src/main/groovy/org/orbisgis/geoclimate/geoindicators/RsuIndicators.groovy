@@ -1230,9 +1230,8 @@ IProcess extendedFreeFacadeFraction() {
             def fullInclBu = postfix "fullInclBu"
             def notIncBu = postfix "notIncBu"
 
-            // The RSU area is extended according to a buffer
             datasource """DROP TABLE IF EXISTS $extRsuTable; CREATE TABLE $extRsuTable AS SELECT  
-                    ST_BUFFER($GEOMETRIC_FIELD, $buffDist, 'quad_segs=2') AS $GEOMETRIC_FIELD,
+                    ST_BUFFER($GEOMETRIC_FIELD, $buffDist) AS $GEOMETRIC_FIELD,
                     $ID_FIELD_RSU FROM $rsuTable;""".toString()
 
             // The facade area of buildings being entirely included in the RSU buffer is calculated
