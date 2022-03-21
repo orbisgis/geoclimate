@@ -702,6 +702,7 @@ class RsuIndicatorsTests {
                 buildingTable               : "corr_tempo",
                 rsuTable                    : "tempo_rsu",
                 prefixName                  : "test",
+                listLayersBottom            : [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
                 datasource                  : h2GIS])
         assertEquals 1.0/3, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").ROOF_FRACTION_DISTRIBUTION_0_5, 0.00001
         assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").ROOF_FRACTION_DISTRIBUTION_15_20, 0.00001

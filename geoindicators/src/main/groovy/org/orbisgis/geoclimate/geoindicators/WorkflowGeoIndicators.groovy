@@ -2084,7 +2084,7 @@ IProcess rasterizeIndicators() {
                     }
                     def freeFacadeDensityExact = Geoindicators.RsuIndicators.freeExternalFacadeDensityExact()
                     if (freeFacadeDensityExact.execute(
-                            [buildingTable               : buildingTable,
+                            [buildingTable               : createScalesRelationsGridBl.results.outputTableName,
                              rsuTable                    : gridTableName,
                              prefixName                  : prefixName,
                              datasource                  : datasource])) {
@@ -2107,6 +2107,33 @@ IProcess rasterizeIndicators() {
                         }
                     } else {
                         info "Cannot calculate the exact free external facade density"
+                    }
+                }
+
+                if(list_indicators*.toUpperCase().contains("BUILDING_HEIGHT_DIST") && buildingTable){
+                    if(!createScalesRelationsGridBl){
+                        // Create the relations between grid cells and buildings
+                        createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
+                        if (!createScalesRelationsGridBl([datasource              : datasource,
+                                                          sourceTable             : buildingTable,
+                                                          targetTable             : gridTableName,
+                                                          idColumnTarget          : grid_column_identifier,
+                                                          prefixName              : prefixName,
+                                                          nbRelations             : null])) {
+                            info "Cannot compute the scales relations between buildings and grid cells."
+                            return
+                        }
+                    }
+                    def roofFractionDistributionExact = Geoindicators.RsuIndicators.roofFractionDistributionExact()
+                    if (roofFractionDistributionExact(
+                            [buildingTable               : createScalesRelationsGridBl.results.outputTableName,
+                             rsuTable                    : gridTableName,
+                             prefixName                  : prefixName,
+                             listLayersBottom            : [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+                             datasource                  : datasource])) {
+                        indicatorTablesToJoin.put(roofFractionDistributionExact.results.outputTableName, grid_column_identifier)
+                    } else {
+                        info "Cannot compute the roof fraction distribution."
                     }
                 }
 
