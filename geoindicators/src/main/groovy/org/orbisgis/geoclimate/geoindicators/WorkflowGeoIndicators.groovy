@@ -2086,6 +2086,7 @@ IProcess rasterizeIndicators() {
                     if (freeFacadeDensityExact.execute(
                             [buildingTable               : createScalesRelationsGridBl.results.outputTableName,
                              rsuTable                    : gridTableName,
+                             idRsu                       : grid_column_identifier,
                              prefixName                  : prefixName,
                              datasource                  : datasource])) {
                         if(list_indicators*.toUpperCase().contains("FREE_EXTERNAL_FACADE_DENSITY")){
