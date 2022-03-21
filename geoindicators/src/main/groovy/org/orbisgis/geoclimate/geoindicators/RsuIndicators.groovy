@@ -1727,3 +1727,154 @@ IProcess buildingSurfaceDensity() {
         }
     }
 }
+
+/**
+ * Script to compute the distributio of (only) horizontal roof area fraction for each layer of the canopy. If the height
+ * roof and height wall differ, take the average value at building height. Note that this process first cut the buildings
+ * according to RSU in order to calculate the exact distribution.
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param buildingTable the name of the input ITable where are stored the buildings and the relationships
+ * between buildings and RSU
+ * @param rsuTable the name of the input ITable where are stored the RSU
+ * @param prefixName String use as prefix to name the output table
+ * @param listLayersBottom the list of height corresponding to the bottom of each vertical layers (default
+ * [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50])
+ *
+ * @return outputTableName Table name in which the rsu id and their corresponding indicator value are stored
+ *
+ * @author Jérémy Bernard
+ */
+IProcess roofFractionDistributionExact() {
+    return create {
+        title "RSU exact horizontal roof area fraction distribution"
+        id "roofFractionDistributionExact"
+        inputs rsuTable: String, buildingTable: String, listLayersBottom: [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+                prefixName: String, datasource: JdbcDataSource, density: true
+        outputs outputTableName: String
+        run { rsuTable, buildingTable, listLayersBottom, prefixName, datasource, density ->
+
+            def GEOMETRIC_COLUMN_RSU = "the_geom"
+            def GEOMETRIC_COLUMN_BU = "the_geom"
+            def ID_COLUMN_RSU = "id_rsu"
+            def ID_COLUMN_BU = "id_build"
+            def HEIGHT_WALL = "height_wall"
+            def HEIGHT_ROOF = "height_roof"
+            def BUILDING_AREA = "building_area"
+            def BUILD_HEIGHT = "BUILD_HEIGHT"
+            def BASE_NAME = "roof_fraction_distribution"
+
+            // The name of the outputTableName is constructed
+            def outputTableName = prefix prefixName, BASE_NAME
+
+            debug "Executing RSU roof area distribution (and optionally roof density)"
+
+            // To avoid overwriting the output files of this step, a unique identifier is created
+            // Temporary table names
+            def buildInter = postfix "build_inter"
+            def rsuBuildingArea = postfix "rsu_building_area"
+            def buildFracH = postfix "roof_frac_H"
+            def bufferTable = postfix "buffer_table"
+
+            // 1. Create the intersection between buildings and RSU polygons
+            datasource."$buildingTable"."$ID_COLUMN_BU".createIndex()
+            datasource."$rsuTable"."$ID_COLUMN_RSU".createIndex()
+            datasource """
+                DROP TABLE IF EXISTS $buildInter;
+                CREATE TABLE $buildInter
+                    AS SELECT   a.$ID_COLUMN_BU, a.$ID_COLUMN_RSU,
+                                ST_INTERSECTION(a.$GEOMETRIC_COLUMN_BU, b.$GEOMETRIC_COLUMN_RSU) AS $GEOMETRIC_COLUMN_BU,
+                                (a.$HEIGHT_WALL + a.$HEIGHT_ROOF) / 2 AS $BUILD_HEIGHT
+                    FROM $buildingTable AS a LEFT JOIN $rsuTable AS b
+                    ON a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU""".toString()
+
+            // 2. Calculate the total building roof area within each RSU
+            datasource."$buildInter"."$ID_COLUMN_RSU".createIndex()
+            datasource """
+                DROP TABLE IF EXISTS $rsuBuildingArea;
+                CREATE TABLE $rsuBuildingArea
+                    AS SELECT   $ID_COLUMN_RSU, SUM(ST_AREA($GEOMETRIC_COLUMN_BU)) AS $BUILDING_AREA
+                    FROM $buildInter
+                    GROUP BY $ID_COLUMN_RSU""".toString()
+
+            // 3. Calculate the fraction of roof for each level of the canopy (defined by 'listLayersBottom') except the last
+            datasource."$buildInter"."$BUILD_HEIGHT".createIndex()
+            datasource."$buildInter"."$ID_COLUMN_RSU".createIndex()
+            datasource."$rsuBuildingArea"."$ID_COLUMN_RSU".createIndex()
+            def tab_H = [:]
+            def indicToJoin = [:]
+            for (i in 1..(listLayersBottom.size() - 1)) {
+                def layer_top = listLayersBottom[i]
+                def layer_bottom = listLayersBottom[i-1]
+                def indicNameH = "${BASE_NAME}_${layer_bottom}_$layer_top".toString()
+                tab_H[i-1] = "${buildFracH}_$layer_bottom".toString()
+                datasource """
+                DROP TABLE IF EXISTS $bufferTable;
+                CREATE TABLE $bufferTable
+                    AS SELECT   a.$ID_COLUMN_RSU, 
+                                CASE WHEN a.$BUILDING_AREA = 0
+                                THEN 0
+                                ELSE SUM(ST_AREA(b.$GEOMETRIC_COLUMN_BU)) / a.$BUILDING_AREA
+                                END AS $indicNameH
+                    FROM $rsuBuildingArea AS a LEFT JOIN $buildInter AS b
+                    ON a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU
+                    WHERE b.$BUILD_HEIGHT >= $layer_bottom AND b.$BUILD_HEIGHT < $layer_top
+                    GROUP BY b.$ID_COLUMN_RSU""".toString()
+                // Fill missing values with 0
+                datasource."$bufferTable"."$ID_COLUMN_RSU".createIndex()
+                datasource """
+                    DROP TABLE IF EXISTS $bufferTable${tab_H[i-1]};
+                    CREATE TABLE ${tab_H[i-1]}
+                    AS SELECT   a.$ID_COLUMN_RSU, 
+                                COALESCE(b.$indicNameH, 0) AS $indicNameH
+                    FROM $rsuTable AS a LEFT JOIN $bufferTable AS b
+                    ON a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU""".toString()
+                // Declare this layer to the layer to join at the end
+                indicToJoin.put(tab_H[i-1], ID_COLUMN_RSU)
+            }
+
+            // 4. Calculate the fraction of roof for the last level of the canopy
+            def layer_bottom = listLayersBottom[listLayersBottom.size() - 1]
+            def indicNameH = "${BASE_NAME}_${layer_bottom}_inf".toString()
+            tab_H[listLayersBottom.size() - 1] = "${buildFracH}_$layer_bottom".toString()
+            datasource """
+            DROP TABLE IF EXISTS $bufferTable;
+            CREATE TABLE $bufferTable
+                AS SELECT   a.$ID_COLUMN_RSU, 
+                            CASE WHEN a.$BUILDING_AREA = 0
+                            THEN 0
+                            ELSE SUM(ST_AREA(b.$GEOMETRIC_COLUMN_BU)) / a.$BUILDING_AREA
+                            END AS $indicNameH
+                FROM $rsuBuildingArea AS a LEFT JOIN $buildInter AS b
+                ON a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU
+                WHERE b.$BUILD_HEIGHT >= $layer_bottom
+                GROUP BY b.$ID_COLUMN_RSU""".toString()
+            // Fill missing values with 0
+            datasource."$bufferTable"."$ID_COLUMN_RSU".createIndex()
+            datasource """
+                    DROP TABLE IF EXISTS ${tab_H[listLayersBottom.size() - 1]};
+                    CREATE TABLE ${tab_H[listLayersBottom.size() - 1]}
+                    AS SELECT   a.$ID_COLUMN_RSU, 
+                                COALESCE(b.$indicNameH, 0) AS $indicNameH
+                    FROM $rsuTable AS a LEFT JOIN $bufferTable AS b
+                    ON a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU""".toString()
+            // Declare this layer to the layer to join at the end
+            indicToJoin.put(tab_H[listLayersBottom.size() - 1], ID_COLUMN_RSU)
+
+            // 5. Join all layers in one table
+            def joinGrids = Geoindicators.DataUtils.joinTables()
+            if (!joinGrids([inputTableNamesWithId: indicToJoin,
+                            outputTableName      : outputTableName,
+                            datasource           : datasource])) {
+                info "Cannot merge all indicators in RSU table $outputTableName."
+                return
+            }
+
+            datasource """DROP TABLE IF EXISTS $buildInter, $rsuBuildingArea, $bufferTable,
+                    ${tab_H.values().join(",")}""".toString()
+
+            [outputTableName: outputTableName]
+        }
+    }
+}
