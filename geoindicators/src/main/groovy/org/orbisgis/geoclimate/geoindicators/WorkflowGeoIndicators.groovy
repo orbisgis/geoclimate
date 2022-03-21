@@ -1961,6 +1961,7 @@ IProcess rasterizeIndicators() {
                 def priorities = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
 
                 def unweightedBuildingIndicators = [:]
+                def weightedBuildingIndicators = [:]
                 list_indicators.each{
                     if(it.equalsIgnoreCase("BUILDING_FRACTION") || it.equalsIgnoreCase("BUILDING_SURFACE_DENSITY")){
                         columnFractionsList.put( priorities.indexOf("building"),"building")
@@ -1977,6 +1978,9 @@ IProcess rasterizeIndicators() {
                     }
                     else if(it.equalsIgnoreCase("BUILDING_HEIGHT")&& buildingTable){
                         unweightedBuildingIndicators.put("height_roof", ["AVG","STD"])
+                    }
+                    else if(it.equalsIgnoreCase("BUILDING_HEIGHT_WEIGHTED") && buildingTable){
+                        weightedBuildingIndicators["height_roof"] = ["area": ["AVG","STD"]]
                     }
                     else if(it.equalsIgnoreCase("BUILDING_POP")&& buildingTable){
                         unweightedBuildingIndicators.put("pop", ["SUM"])
@@ -2034,6 +2038,34 @@ IProcess rasterizeIndicators() {
                         return
                     }
                     indicatorTablesToJoin.put(computeBuildingStats.results.outputTableName, grid_column_identifier)
+
+                }
+
+                if(weightedBuildingIndicators){
+                    if(!createScalesRelationsGridBl) {
+                        // Create the relations between grid cells and buildings
+                        createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
+                        if (!createScalesRelationsGridBl([datasource    : datasource,
+                                                          sourceTable   : buildingTable,
+                                                          targetTable   : gridTableName,
+                                                          idColumnTarget: grid_column_identifier,
+                                                          prefixName    : prefixName,
+                                                          nbRelations   : null])) {
+                            info "Cannot compute the scales relations between buildings and grid cells."
+                            return
+                        }
+                    }
+                    def computeWeightedAggregStat = Geoindicators.GenericIndicators.weightedAggregatedStatistics()
+                    if (!computeWeightedAggregStat([inputLowerScaleTableName : createScalesRelationsGridBl.results.outputTableName,
+                                               inputUpperScaleTableName : gridTableName,
+                                               inputIdUp                : grid_column_identifier,
+                                               inputVarWeightsOperations: weightedBuildingIndicators,
+                                               prefixName               : prefixName,
+                                               datasource               : datasource])) {
+                        info "Cannot compute the weighted aggregated statistics on grid cells."
+                        return
+                    }
+                    indicatorTablesToJoin.put(computeWeightedAggregStat.results.outputTableName, grid_column_identifier)
 
                 }
 
