@@ -583,53 +583,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                 "indicators":  ["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_POP",
                                                 "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
                                                 "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "LCZ_FRACTION", "LCZ_PRIMARY",
-                                                "FREE_EXTERNAL_FACADE_DENSITY"]
+                                                "FREE_EXTERNAL_FACADE_DENSITY", "BUILDING_HEIGHT_WEIGHTED"]
                         ],    "worldpop_indicators" : true
                         ]
         ]
-        IProcess process = OSM.WorkflowOSM.workflow()
-        assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
-    }
-
-
-    @Disabled //Use it for debug SLIM copernicus
-    @Test
-    void testIntegrationSlim() {
-        String directory ="./target/geoclimate_slim_integration"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
-        def osm_parmeters = [
-                "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
-                "geoclimatedb" : [
-                        "folder" : dirFile.absolutePath,
-                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
-                        "delete" :false
-                ],
-                "input" : [
-                        "locations" :
-                                   [[46.257330,4.870033,46.269970,4.905224]]
-                                 ],
-                "output" :["folder" : directory,srid: 4326]
-                ,
-                "parameters":
-                        ["distance" : 0,
-                         "rsu_indicators":[
-                                 "indicatorUse": ["LCZ"],
-                                 "svfSimplified": true,
-                                 "estimateHeight":true
-                         ],
-                         "grid_indicators": [
-                                 "x_size": 10000,
-                                 "y_size": 10000,
-                                 "rowCol": true,
-                                 "output" : "asc",
-                                 "indicators": ["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
-                                                "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "LCZ_FRACTION"]
-                         ]
-                        ]
-        ]
-
         IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
     }
