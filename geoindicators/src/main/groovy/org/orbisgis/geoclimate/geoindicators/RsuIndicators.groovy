@@ -81,7 +81,8 @@ IProcess freeExternalFacadeDensity() {
  * the resulting database will be stored
  * @param buildingTable The name of the input ITable where are stored the buildings geometry, the building height,
  * the building and the rsu id
- * @param rsuTable The name of the input ITable where are stored the rsu geometries and the id_rsu
+ * @param rsuTable The name of the input ITable where are stored the rsu geometries and the 'idRsu'
+ * @param idRsu the name of the id of the RSU table
  * @param prefixName String use as prefix to name the output table
  *
  * @return A database table name.
@@ -1689,6 +1690,7 @@ IProcess surfaceFractions() {
  * 'facadeDensityTable' Table)
  * @param buFractionColumn The name of the column where are stored the building fraction values (within the
  * 'buildingFractionTable' Table)
+ * @param idRsu the name of the id of the RSU table
  * @param prefixName String use as prefix to name the output table
  *
  * @return A database table name.
@@ -1736,6 +1738,7 @@ IProcess buildingSurfaceDensity() {
  * @param buildingTable the name of the input ITable where are stored the buildings and the relationships
  * between buildings and RSU
  * @param rsuTable the name of the input ITable where are stored the RSU
+ * @param idRsu the name of the id of the RSU table
  * @param prefixName String use as prefix to name the output table
  * @param listLayersBottom the list of height corresponding to the bottom of each vertical layers (default
  * [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50])
@@ -1870,6 +1873,100 @@ IProcess roofFractionDistributionExact() {
 
             datasource """DROP TABLE IF EXISTS $buildInter, $rsuBuildingArea, $bufferTable,
                     ${tab_H.values().join(",")}""".toString()
+
+            [outputTableName: outputTableName]
+        }
+    }
+}
+
+/**
+ * Process used to compute the frontal area index for different combinations of direction / canopy levels. The frontal
+ * area index for a given set of direction / level is defined as the projected area of facade facing the direction
+ * of analysis divided by the horizontal surface of analysis and divided by the height of the layer
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param buildingTable The name of the input ITable where are stored the buildings geometry, the building height,
+ * the building and the rsu id
+ * @param rsuTable The name of the input ITable where are stored the rsu geometries and the 'idRsu'
+ * @param idRsu the name of the id of the RSU table
+ * @param listLayersBottom the list of height corresponding to the bottom of each vertical layers (default
+ *  * [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50])
+ * @param numberOfDirection the number of directions used for the calculation - according to the method used it should
+ * be divisor of 360 AND a multiple of 2 (default 12)
+ * @param prefixName String use as prefix to name the output table
+ *
+ * @return A database table name.
+ * @author Jérémy Bernard
+ */
+IProcess frontalAreaIndexDistribution() {
+    return create {
+        title "RSU frontal area index distribution"
+        id "frontalAreaIndexDistribution"
+        inputs buildingTable: String, rsuTable: String, idRsu: String, prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { buildingTable, rsuTable, idRsu, prefixName, datasource ->
+
+            def GEOMETRIC_FIELD_RSU = "the_geom"
+            def GEOMETRIC_FIELD_BU = "the_geom"
+            def ID_FIELD_BU = "id_build"
+            def HEIGHT_WALL = "height_wall"
+            def FACADE_AREA = "facade_area"
+            def RSU_AREA = "rsu_area"
+            def BASE_NAME = "exact_free_external_facade_density"
+
+            debug "Executing RSU free external facade density (exact version)"
+
+            // The name of the outputTableName is constructed
+            def outputTableName = prefix prefixName, BASE_NAME
+
+            // Temporary table names
+            def buildLine = postfix "buildLine"
+            def buildLineRsu = postfix "buildLineRsu"
+            def sharedLineRsu = postfix "shareLineRsu"
+
+            // Consider facades as touching each other within a snap tolerance
+            def snap_tolerance = 0.01
+
+            // 1. Convert the building polygons into lines and create the intersection with RSU polygons
+            datasource."$buildingTable"."$idRsu".createIndex()
+            datasource."$rsuTable"."$idRsu".createIndex()
+            datasource """
+                DROP TABLE IF EXISTS $buildLine;
+                CREATE TABLE $buildLine
+                    AS SELECT   a.$ID_FIELD_BU, a.$idRsu, ST_AREA(b.$GEOMETRIC_FIELD_RSU) AS $RSU_AREA,
+                                ST_INTERSECTION(ST_TOMULTILINE(a.$GEOMETRIC_FIELD_BU), b.$GEOMETRIC_FIELD_RSU) AS $GEOMETRIC_FIELD_BU,
+                                a.$HEIGHT_WALL
+                    FROM $buildingTable AS a LEFT JOIN $rsuTable AS b
+                    ON a.$idRsu = b.$idRsu""".toString()
+
+            // 2. Keep only intersected facades within a given distance and calculate their length, height and azimuth
+            datasource."$buildLine"."$GEOMETRIC_FIELD_BU".createSpatialIndex()
+            datasource."$buildLine"."$idRsu".createIndex()
+            datasource."$buildLine"."$ID_FIELD_BU".createIndex()
+            datasource """
+                DROP TABLE IF EXISTS $sharedLineRsu;
+                CREATE TABLE $sharedLineRsu 
+                    AS SELECT   ST_LENGTH(  ST_INTERSECTION(a.$GEOMETRIC_FIELD_BU, 
+                                                            ST_SNAP(b.$GEOMETRIC_FIELD_BU, a.$GEOMETRIC_FIELD_BU, $snap_tolerance)
+                                                            )
+                                                ) AS LENGTH
+                                ST_AZIMUTH(  ST_INTERSECTION(a.$GEOMETRIC_FIELD_BU, 
+                                                             ST_SNAP(b.$GEOMETRIC_FIELD_BU, a.$GEOMETRIC_FIELD_BU, $snap_tolerance)
+                                                             )
+                                                ) AS AZIMUTH
+                                LEAST(a.$HEIGHT_WALL, b.$HEIGHT_WALL) AS $HEIGHT_WALL,
+                                a.$idRsu,
+                                a.$ID_FIELD_BU
+                    FROM    $buildLine AS a LEFT JOIN $buildLine AS b
+                            ON a.$idRsu = b.$idRsu
+                    WHERE       a.$GEOMETRIC_FIELD_BU && b.$GEOMETRIC_FIELD_BU AND ST_INTERSECTS(a.$GEOMETRIC_FIELD_BU, 
+                                ST_SNAP(b.$GEOMETRIC_FIELD_BU, a.$GEOMETRIC_FIELD_BU, $snap_tolerance)) AND
+                                a.$ID_FIELD_BU <> b.$ID_FIELD_BU;""".toString()
+
+
+            // The temporary tables are deleted
+            datasource "DROP TABLE IF EXISTS $buildLine, $buildLineRsu, $sharedLineRsu".toString()
 
             [outputTableName: outputTableName]
         }
