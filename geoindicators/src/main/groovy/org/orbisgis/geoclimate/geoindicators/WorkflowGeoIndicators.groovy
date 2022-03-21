@@ -2095,12 +2095,13 @@ IProcess rasterizeIndicators() {
                         if(list_indicators*.toUpperCase().contains("FREE_EXTERNAL_FACADE_DENSITY")){
                             def buildingSurfDensity = Geoindicators.RsuIndicators.buildingSurfaceDensity()
                             if (buildingSurfDensity.execute([
-                                    facadeDensityTable: freeFacadeDensityExact.results.outputTableName,
-                                    buildingFractionTable: surfaceFractionsProcess.results.outputTableName,
-                                    facDensityColumn: "exact_free_facade_density",
-                                    buFractionColumn: "building_fraction",
-                                    prefixName: prefixName,
-                                    datasource: datasource])) {
+                                    facadeDensityTable      : freeFacadeDensityExact.results.outputTableName,
+                                    buildingFractionTable   : surfaceFractionsProcess.results.outputTableName,
+                                    facDensityColumn        : "exact_free_facade_density",
+                                    buFractionColumn        : "building_fraction",
+                                    idRsu                   : grid_column_identifier,
+                                    prefixName              : prefixName,
+                                    datasource              : datasource])) {
                                 if (list_indicators*.toUpperCase().contains("BUILDING_SURFACE_DENSITY")) {
                                     indicatorTablesToJoin.put(buildingSurfDensity.results.outputTableName, grid_column_identifier)
                                 }
@@ -2129,8 +2130,9 @@ IProcess rasterizeIndicators() {
                     if (roofFractionDistributionExact(
                             [buildingTable               : createScalesRelationsGridBl.results.outputTableName,
                              rsuTable                    : gridTableName,
-                             prefixName                  : prefixName,
+                             idRsu                       : grid_column_identifier,
                              listLayersBottom            : [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+                             prefixName                  : prefixName,
                              datasource                  : datasource])) {
                         indicatorTablesToJoin.put(roofFractionDistributionExact.results.outputTableName, grid_column_identifier)
                     } else {

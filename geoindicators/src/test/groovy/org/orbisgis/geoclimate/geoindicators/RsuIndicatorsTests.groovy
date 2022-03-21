@@ -661,6 +661,7 @@ class RsuIndicatorsTests {
                 facadeDensityTable: "facade_density_tab", buildingFractionTable: "building_fraction_tab",
                 facDensityColumn: "facade_density",
                 buFractionColumn: "building_fraction",
+                idRsu: "id_rsu",
                 prefixName: "test", datasource: h2GIS])
         def result1 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName} WHERE id_rsu=1")
         assertEquals(1.7, result1["building_surface_density"])
@@ -702,6 +703,7 @@ class RsuIndicatorsTests {
         assertTrue p([
                 buildingTable               : "corr_tempo",
                 rsuTable                    : "tempo_rsu",
+                idRsu                       : "id_rsu",
                 prefixName                  : "test",
                 listLayersBottom            : [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
                 datasource                  : h2GIS])

@@ -1699,11 +1699,10 @@ IProcess buildingSurfaceDensity() {
         title "RSU building surface density"
         id "buildingSurfaceDensity"
         inputs facadeDensityTable: String, buildingFractionTable: String, facDensityColumn: String,
-                buFractionColumn: String, prefixName: String, datasource: JdbcDataSource
+                buFractionColumn: String, idRsu: String, prefixName: String, datasource: JdbcDataSource
         outputs outputTableName: String
-        run { facadeDensityTable, buildingFractionTable, facDensityColumn, buFractionColumn, prefixName, datasource ->
+        run { facadeDensityTable, buildingFractionTable, facDensityColumn, buFractionColumn, idRsu, prefixName, datasource ->
 
-            def ID_FIELD_RSU = "id_rsu"
             def BASE_NAME = "building_surface_fraction"
 
             debug "Executing building surface density"
@@ -1712,15 +1711,15 @@ IProcess buildingSurfaceDensity() {
             def outputTableName = prefix prefixName, BASE_NAME
 
             // Sum free facade density and building fraction...
-            datasource."$facadeDensityTable"."$ID_FIELD_RSU".createIndex()
-            datasource."$buildingFractionTable"."$ID_FIELD_RSU".createIndex()
+            datasource."$facadeDensityTable"."$idRsu".createIndex()
+            datasource."$buildingFractionTable"."$idRsu".createIndex()
             datasource """
                 DROP TABLE IF EXISTS $outputTableName;
                 CREATE TABLE $outputTableName
-                    AS SELECT   a.$ID_FIELD_RSU, 
+                    AS SELECT   a.$idRsu, 
                                 a.$buFractionColumn + b.$facDensityColumn AS BUILDING_SURFACE_DENSITY
                     FROM $buildingFractionTable AS a LEFT JOIN $facadeDensityTable AS b
-                    ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU""".toString()
+                    ON a.$idRsu = b.$idRsu""".toString()
 
             [outputTableName: outputTableName]
         }
@@ -1749,14 +1748,13 @@ IProcess roofFractionDistributionExact() {
     return create {
         title "RSU exact horizontal roof area fraction distribution"
         id "roofFractionDistributionExact"
-        inputs rsuTable: String, buildingTable: String, listLayersBottom: [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+        inputs rsuTable: String, buildingTable: String, idRsu: String, listLayersBottom: [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
                 prefixName: String, datasource: JdbcDataSource, density: true
         outputs outputTableName: String
-        run { rsuTable, buildingTable, listLayersBottom, prefixName, datasource, density ->
+        run { rsuTable, buildingTable, idRsu, listLayersBottom, prefixName, datasource, density ->
 
             def GEOMETRIC_COLUMN_RSU = "the_geom"
             def GEOMETRIC_COLUMN_BU = "the_geom"
-            def ID_COLUMN_RSU = "id_rsu"
             def ID_COLUMN_BU = "id_build"
             def HEIGHT_WALL = "height_wall"
             def HEIGHT_ROOF = "height_roof"
@@ -1778,29 +1776,29 @@ IProcess roofFractionDistributionExact() {
 
             // 1. Create the intersection between buildings and RSU polygons
             datasource."$buildingTable"."$ID_COLUMN_BU".createIndex()
-            datasource."$rsuTable"."$ID_COLUMN_RSU".createIndex()
+            datasource."$rsuTable"."$idRsu".createIndex()
             datasource """
                 DROP TABLE IF EXISTS $buildInter;
                 CREATE TABLE $buildInter
-                    AS SELECT   a.$ID_COLUMN_BU, a.$ID_COLUMN_RSU,
+                    AS SELECT   a.$ID_COLUMN_BU, a.$idRsu,
                                 ST_INTERSECTION(a.$GEOMETRIC_COLUMN_BU, b.$GEOMETRIC_COLUMN_RSU) AS $GEOMETRIC_COLUMN_BU,
                                 (a.$HEIGHT_WALL + a.$HEIGHT_ROOF) / 2 AS $BUILD_HEIGHT
                     FROM $buildingTable AS a LEFT JOIN $rsuTable AS b
-                    ON a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU""".toString()
+                    ON a.$idRsu = b.$idRsu""".toString()
 
             // 2. Calculate the total building roof area within each RSU
-            datasource."$buildInter"."$ID_COLUMN_RSU".createIndex()
+            datasource."$buildInter"."$idRsu".createIndex()
             datasource """
                 DROP TABLE IF EXISTS $rsuBuildingArea;
                 CREATE TABLE $rsuBuildingArea
-                    AS SELECT   $ID_COLUMN_RSU, SUM(ST_AREA($GEOMETRIC_COLUMN_BU)) AS $BUILDING_AREA
+                    AS SELECT   $idRsu, SUM(ST_AREA($GEOMETRIC_COLUMN_BU)) AS $BUILDING_AREA
                     FROM $buildInter
-                    GROUP BY $ID_COLUMN_RSU""".toString()
+                    GROUP BY $idRsu""".toString()
 
             // 3. Calculate the fraction of roof for each level of the canopy (defined by 'listLayersBottom') except the last
             datasource."$buildInter"."$BUILD_HEIGHT".createIndex()
-            datasource."$buildInter"."$ID_COLUMN_RSU".createIndex()
-            datasource."$rsuBuildingArea"."$ID_COLUMN_RSU".createIndex()
+            datasource."$buildInter"."$idRsu".createIndex()
+            datasource."$rsuBuildingArea"."$idRsu".createIndex()
             def tab_H = [:]
             def indicToJoin = [:]
             for (i in 1..(listLayersBottom.size() - 1)) {
@@ -1811,26 +1809,26 @@ IProcess roofFractionDistributionExact() {
                 datasource """
                 DROP TABLE IF EXISTS $bufferTable;
                 CREATE TABLE $bufferTable
-                    AS SELECT   a.$ID_COLUMN_RSU, 
+                    AS SELECT   a.$idRsu, 
                                 CASE WHEN a.$BUILDING_AREA = 0
                                 THEN 0
                                 ELSE SUM(ST_AREA(b.$GEOMETRIC_COLUMN_BU)) / a.$BUILDING_AREA
                                 END AS $indicNameH
                     FROM $rsuBuildingArea AS a LEFT JOIN $buildInter AS b
-                    ON a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU
+                    ON a.$idRsu = b.$idRsu
                     WHERE b.$BUILD_HEIGHT >= $layer_bottom AND b.$BUILD_HEIGHT < $layer_top
-                    GROUP BY b.$ID_COLUMN_RSU""".toString()
+                    GROUP BY b.$idRsu""".toString()
                 // Fill missing values with 0
-                datasource."$bufferTable"."$ID_COLUMN_RSU".createIndex()
+                datasource."$bufferTable"."$idRsu".createIndex()
                 datasource """
                     DROP TABLE IF EXISTS $bufferTable${tab_H[i-1]};
                     CREATE TABLE ${tab_H[i-1]}
-                    AS SELECT   a.$ID_COLUMN_RSU, 
+                    AS SELECT   a.$idRsu, 
                                 COALESCE(b.$indicNameH, 0) AS $indicNameH
                     FROM $rsuTable AS a LEFT JOIN $bufferTable AS b
-                    ON a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU""".toString()
+                    ON a.$idRsu = b.$idRsu""".toString()
                 // Declare this layer to the layer to join at the end
-                indicToJoin.put(tab_H[i-1], ID_COLUMN_RSU)
+                indicToJoin.put(tab_H[i-1], idRsu)
             }
 
             // 4. Calculate the fraction of roof for the last level of the canopy
@@ -1840,26 +1838,26 @@ IProcess roofFractionDistributionExact() {
             datasource """
             DROP TABLE IF EXISTS $bufferTable;
             CREATE TABLE $bufferTable
-                AS SELECT   a.$ID_COLUMN_RSU, 
+                AS SELECT   a.$idRsu, 
                             CASE WHEN a.$BUILDING_AREA = 0
                             THEN 0
                             ELSE SUM(ST_AREA(b.$GEOMETRIC_COLUMN_BU)) / a.$BUILDING_AREA
                             END AS $indicNameH
                 FROM $rsuBuildingArea AS a LEFT JOIN $buildInter AS b
-                ON a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU
+                ON a.$idRsu = b.$idRsu
                 WHERE b.$BUILD_HEIGHT >= $layer_bottom
-                GROUP BY b.$ID_COLUMN_RSU""".toString()
+                GROUP BY b.$idRsu""".toString()
             // Fill missing values with 0
-            datasource."$bufferTable"."$ID_COLUMN_RSU".createIndex()
+            datasource."$bufferTable"."$idRsu".createIndex()
             datasource """
                     DROP TABLE IF EXISTS ${tab_H[listLayersBottom.size() - 1]};
                     CREATE TABLE ${tab_H[listLayersBottom.size() - 1]}
-                    AS SELECT   a.$ID_COLUMN_RSU, 
+                    AS SELECT   a.$idRsu, 
                                 COALESCE(b.$indicNameH, 0) AS $indicNameH
                     FROM $rsuTable AS a LEFT JOIN $bufferTable AS b
-                    ON a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU""".toString()
+                    ON a.$idRsu = b.$idRsu""".toString()
             // Declare this layer to the layer to join at the end
-            indicToJoin.put(tab_H[listLayersBottom.size() - 1], ID_COLUMN_RSU)
+            indicToJoin.put(tab_H[listLayersBottom.size() - 1], idRsu)
 
             // 5. Join all layers in one table
             def joinGrids = Geoindicators.DataUtils.joinTables()
