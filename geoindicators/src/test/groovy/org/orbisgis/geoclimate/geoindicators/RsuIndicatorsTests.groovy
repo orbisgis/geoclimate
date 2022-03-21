@@ -86,6 +86,7 @@ class RsuIndicatorsTests {
         assertTrue p([
                         buildingTable               : "corr_tempo",
                         rsuTable                    : "tempo_rsu",
+                        idRsu                       : "id_rsu",
                         prefixName                  : "test",
                         datasource                  : h2GIS])
         assertEquals 0.28, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").EXACT_FREE_FACADE_DENSITY
