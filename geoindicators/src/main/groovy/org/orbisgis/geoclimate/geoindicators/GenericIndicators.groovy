@@ -165,7 +165,7 @@ IProcess weightedAggregatedStatistics() {
             inputVarWeightsOperations.each { var, weights ->
                 weights.each { weight, operations ->
                     nameAndType += "weighted_avg_${var}_$weight DOUBLE PRECISION DEFAULT 0,"
-                    weightedMean += "COALESCE(SUM(a.$var*a.$weight) / SUM(a.$weight),0) AS weighted_avg_${var}_$weight,"
+                    weightedMean += "CASE WHEN SUM(a.$weight)=0  THEN 0 ELSE COALESCE(SUM(a.$var*a.$weight) / SUM(a.$weight),0) END AS weighted_avg_${var}_$weight,"
                 }
             }
             weightedMeanQuery += nameAndType[0..-2] + ") AS (SELECT b.$inputIdUp, ${weightedMean[0..-2]}" +
@@ -184,8 +184,8 @@ IProcess weightedAggregatedStatistics() {
                         weightedStdQuery += "COALESCE(b.weighted_avg_${var}_$weight,0) AS avg_${var}_${weight}_weighted,"
                     }
                     if (operations.contains(STD)) {
-                        weightedStdQuery += "COALESCE(POWER(SUM(a.$weight*POWER(a.$var-b.weighted_avg_${var}_$weight,2))/" +
-                                "SUM(a.$weight),0.5),0) AS std_${var}_${weight}_weighted,"
+                        weightedStdQuery += "CASE WHEN SUM(a.$weight)=0 THEN 0 ELSE COALESCE(POWER(SUM(a.$weight*POWER(a.$var-b.weighted_avg_${var}_$weight,2))/" +
+                                "SUM(a.$weight),0.5),0) END AS std_${var}_${weight}_weighted,"
                     }
                 }
             }
