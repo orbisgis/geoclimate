@@ -85,10 +85,10 @@ class RsuIndicatorsTests {
                         idRsu                       : "id_rsu",
                         prefixName                  : "test",
                         datasource                  : h2GIS])
-        assertEquals 0.28, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").EXACT_FREE_FACADE_DENSITY
-        assertEquals 0.28, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 2").EXACT_FREE_FACADE_DENSITY
-        assertEquals 0.25, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 3").EXACT_FREE_FACADE_DENSITY
-        assertEquals 0.25, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 4").EXACT_FREE_FACADE_DENSITY
+        assertEquals 0.28, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").FREE_EXTERNAL_FACADE_DENSITY
+        assertEquals 0.28, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 2").FREE_EXTERNAL_FACADE_DENSITY
+        assertEquals 0.25, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 3").FREE_EXTERNAL_FACADE_DENSITY
+        assertEquals 0.25, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 4").FREE_EXTERNAL_FACADE_DENSITY
     }
 
     @Test

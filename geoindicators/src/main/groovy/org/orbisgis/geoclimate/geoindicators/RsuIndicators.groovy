@@ -165,7 +165,7 @@ IProcess freeExternalFacadeDensityExact() {
                 DROP TABLE IF EXISTS $outputTableName;
                 CREATE TABLE $outputTableName
                     AS SELECT   a.$idRsu,
-                                (a.$FACADE_AREA-b.$FACADE_AREA)/a.$RSU_AREA AS EXACT_FREE_FACADE_DENSITY
+                                (a.$FACADE_AREA-b.$FACADE_AREA)/a.$RSU_AREA AS FREE_EXTERNAL_FACADE_DENSITY
                     FROM $buildLineRsu AS a LEFT JOIN $sharedLineRsu AS b
                     ON a.$idRsu = b.$idRsu""".toString()
 
