@@ -1,10 +1,6 @@
 package org.orbisgis.geoclimate.geoindicators
 
 import com.thoughtworks.xstream.XStream
-import com.thoughtworks.xstream.io.xml.StaxDriver
-import com.thoughtworks.xstream.security.NoTypePermission
-import com.thoughtworks.xstream.security.NullPermission
-import com.thoughtworks.xstream.security.PrimitiveTypePermission
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
@@ -12,7 +8,6 @@ import org.junit.jupiter.api.Test
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
 import smile.classification.DataFrameClassifier
-import smile.classification.RandomForest
 import smile.validation.Accuracy
 import smile.validation.Validation
 import java.util.zip.GZIPInputStream
@@ -25,13 +20,9 @@ class TypologyClassificationTests {
 
     private static def h2GIS
 
-    private static def randomDbName() {
-        "${TypologyClassificationTests.simpleName}_${UUID.randomUUID().toString().replaceAll "-", "_"}"
-    }
-
     @BeforeAll
     static void beforeAll() {
-        h2GIS = open "./target/${randomDbName()};AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE"
+        h2GIS = open "./target/${TypologyClassificationTests.class.name};AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE"
     }
 
     @BeforeEach
@@ -462,20 +453,20 @@ class TypologyClassificationTests {
         // Name of the variable to model
         def var2model = "HEIGHT_ROOF"
         def var2ModelFinal = "HEIGHT_ROOF"
-        // Whether the RF is a classif or a regression
-        def classif = true
 
         // Information about where to find the training dataset for the test
         def trainingTableName = "training_table"
-        String directory = "../geoclimate/models"
+        String directory = "../geoclimate/models/"
         def savePath = directory + File.separator + model_name + ".model"
 
         if (new File(directory).exists()) {
             // Read the two training data files
-            h2GIS """ CALL GEOJSONREAD('${directory + File.separator + "TRAINING_DATA_BUILDINGHEIGHT_OSM_RF_2_2_part1" + ".geojson"}', 'tempo_a', true)"""
-            h2GIS """ CALL GEOJSONREAD('${directory + File.separator + "TRAINING_DATA_BUILDINGHEIGHT_OSM_RF_2_2_part2" + ".geojson"}', 'tempo_b', true)"""
+            h2GIS """ CALL GEOJSONREAD('${"TRAINING_DATA_BUILDINGHEIGHT_OSM_RF_2_2_part1.geojson"}', 'tempo_a', true)"""
+            h2GIS """ CALL GEOJSONREAD('${"TRAINING_DATA_BUILDINGHEIGHT_OSM_RF_2_2_part2.geojson"}', 'tempo_b', true)"""
 
             h2GIS.execute('''DROP TABLE IF EXISTS tempo; CREATE TABLE tempo as select * from tempo_a union all select * from tempo_b''')
+
+
 
             // Remove unnecessary column
             h2GIS "ALTER TABLE tempo DROP COLUMN the_geom;"
@@ -487,15 +478,15 @@ class TypologyClassificationTests {
 
             h2GIS """   DROP TABLE IF EXISTS $trainingTableName;
                     CREATE TABLE $trainingTableName
-                            AS SELECT CAST($var2model AS INTEGER) AS $var2ModelFinal, ${columns.join(",")}
+                            AS SELECT $var2model  AS $var2ModelFinal, ${columns.join(",")}
                             FROM tempo"""
 
             //Parameters
-            def ntree = 500
-            def min_size_node = 1
-            def nb_var_tree = 9
-            def max_depth = 80
-            def max_leaf_nodes = 400
+            def ntree = 350
+            def min_size_node = 35
+            def nb_var_tree = 25
+            def max_depth = 33
+            def max_leaf_nodes = 1100
 
             assert h2GIS."$trainingTableName"
             def pmed = Geoindicators.TypologyClassification.createRandomForestModel()
@@ -512,17 +503,16 @@ class TypologyClassificationTests {
                     nodeSize         : min_size_node,
                     subsample        : 1.0,
                     datasource       : h2GIS,
-                    classif          : classif])
+                    classif          : false])
             def model = pmed.results.RfModel
             assert model
 
             // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
             def df = DataFrame.of(h2GIS."$trainingTableName")
-            df = df.factorize(var2model)
             df = df.omitNullRows()
             def vector = df.apply(var2model)
-            def truth = vector.toIntArray()
-            def prediction = Validation.test(model, df)
+            def truth = vector.toDoubleArray()
+            def prediction = model.predict(df)
             def accuracy = Accuracy.of(truth, prediction)
             assertEquals 0.725, accuracy.round(3), 1.5
         } else {
@@ -540,8 +530,6 @@ class TypologyClassificationTests {
         // Name of the variable to model
         def var2model = "I_TYPO"
         def var2ModelFinal = "I_TYPO"
-        // Whether the RF is a classif or a regression
-        def classif = true
 
         // Information about where to find the training dataset for the test
         def trainingTableName = "training_table"
@@ -594,7 +582,7 @@ class TypologyClassificationTests {
                     nodeSize         : min_size_node,
                     subsample        : 1.0,
                     datasource       : h2GIS,
-                    classif          : classif])
+                    classif          : true])
             def model = pmed.results.RfModel
             assert model
 
@@ -622,8 +610,6 @@ class TypologyClassificationTests {
         // Name of the variable to model
         def var2model = "I_TYPO"
         def var2ModelFinal = "I_TYPO"
-        // Whether the RF is a classif or a regression
-        def classif = true
 
         // Information about where to find the training dataset for the test
         def trainingTableName = "training_table"
@@ -677,7 +663,7 @@ class TypologyClassificationTests {
                     nodeSize         : min_size_node,
                     subsample        : 1.0,
                     datasource       : h2GIS,
-                    classif          : classif])
+                    classif          : true])
             def model = pmed.results.RfModel
             assert model
 
