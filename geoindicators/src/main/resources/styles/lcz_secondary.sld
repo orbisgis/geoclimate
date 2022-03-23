@@ -246,15 +246,9 @@
         <sld:Rule>
           <sld:Name>Undefined</sld:Name>
           <ogc:Filter>
-            <ogc:Or>
-              <ogc:PropertyIsEqualTo>
-                <ogc:PropertyName>LCZ_SECONDARY</ogc:PropertyName>
-                <ogc:Literal/>
-              </ogc:PropertyIsEqualTo>
-              <ogc:PropertyIsNull>
-                <ogc:PropertyName>LCZ_SECONDARY</ogc:PropertyName>
-              </ogc:PropertyIsNull>
-            </ogc:Or>
+            <ogc:PropertyIsNull>
+              <ogc:PropertyName>LCZ_SECONDARY</ogc:PropertyName>
+            </ogc:PropertyIsNull>
           </ogc:Filter>
           <sld:PolygonSymbolizer>
             <sld:Fill>
