@@ -1891,7 +1891,7 @@ IProcess roofFractionDistributionExact() {
  * @param rsuTable The name of the input ITable where are stored the rsu geometries and the 'idRsu'
  * @param idRsu the name of the id of the RSU table
  * @param listLayersBottom the list of height corresponding to the bottom of each vertical layers (default
- *  * [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50])
+ * [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50])
  * @param numberOfDirection the number of directions used for the calculation - according to the method used it should
  * be divisor of 360 AND a multiple of 2 (default 12)
  * @param prefixName String use as prefix to name the output table
@@ -1903,71 +1903,90 @@ IProcess frontalAreaIndexDistribution() {
     return create {
         title "RSU frontal area index distribution"
         id "frontalAreaIndexDistribution"
-        inputs buildingTable: String, rsuTable: String, idRsu: String, prefixName: String, datasource: JdbcDataSource
+        inputs buildingTable: String, rsuTable: String, idRsu: String, listLayersBottom: [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+                numberOfDirection: 12, prefixName: String, datasource: JdbcDataSource
         outputs outputTableName: String
-        run { buildingTable, rsuTable, idRsu, prefixName, datasource ->
+        run { buildingTable, rsuTable, idRsu, listLayersBottom, numberOfDirection, prefixName, datasource ->
 
             def GEOMETRIC_FIELD_RSU = "the_geom"
             def GEOMETRIC_FIELD_BU = "the_geom"
             def ID_FIELD_BU = "id_build"
             def HEIGHT_WALL = "height_wall"
-            def FACADE_AREA = "facade_area"
             def RSU_AREA = "rsu_area"
-            def BASE_NAME = "exact_free_external_facade_density"
+            def BASE_NAME = "frontal_area_index_distribution"
 
-            debug "Executing RSU free external facade density (exact version)"
+            debug "Executing RSU frontal area index distribution"
 
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
 
-            // Temporary table names
-            def buildLine = postfix "buildLine"
-            def buildLineRsu = postfix "buildLineRsu"
-            def sharedLineRsu = postfix "shareLineRsu"
+            if (360 % numberOfDirection == 0 && numberOfDirection % 2 == 0) {
 
-            // Consider facades as touching each other within a snap tolerance
-            def snap_tolerance = 0.01
+                // Temporary table names
+                def buildLine = postfix "buildLine"
+                def buildLineRsu = postfix "buildLineRsu"
+                def sharedLineRsu = postfix "shareLineRsu"
 
-            // 1. Convert the building polygons into lines and create the intersection with RSU polygons
-            datasource."$buildingTable"."$idRsu".createIndex()
-            datasource."$rsuTable"."$idRsu".createIndex()
-            datasource """
-                DROP TABLE IF EXISTS $buildLine;
-                CREATE TABLE $buildLine
-                    AS SELECT   a.$ID_FIELD_BU, a.$idRsu, ST_AREA(b.$GEOMETRIC_FIELD_RSU) AS $RSU_AREA,
-                                ST_INTERSECTION(ST_TOMULTILINE(a.$GEOMETRIC_FIELD_BU), b.$GEOMETRIC_FIELD_RSU) AS $GEOMETRIC_FIELD_BU,
-                                a.$HEIGHT_WALL
-                    FROM $buildingTable AS a LEFT JOIN $rsuTable AS b
-                    ON a.$idRsu = b.$idRsu""".toString()
+                // Consider facades as touching each other within a snap tolerance
+                def snap_tolerance = 0.01
 
-            // 2. Keep only intersected facades within a given distance and calculate their length, height and azimuth
-            datasource."$buildLine"."$GEOMETRIC_FIELD_BU".createSpatialIndex()
-            datasource."$buildLine"."$idRsu".createIndex()
-            datasource."$buildLine"."$ID_FIELD_BU".createIndex()
-            datasource """
-                DROP TABLE IF EXISTS $sharedLineRsu;
-                CREATE TABLE $sharedLineRsu 
-                    AS SELECT   ST_LENGTH(  ST_INTERSECTION(a.$GEOMETRIC_FIELD_BU, 
-                                                            ST_SNAP(b.$GEOMETRIC_FIELD_BU, a.$GEOMETRIC_FIELD_BU, $snap_tolerance)
-                                                            )
-                                                ) AS LENGTH
-                                ST_AZIMUTH(  ST_INTERSECTION(a.$GEOMETRIC_FIELD_BU, 
-                                                             ST_SNAP(b.$GEOMETRIC_FIELD_BU, a.$GEOMETRIC_FIELD_BU, $snap_tolerance)
-                                                             )
-                                                ) AS AZIMUTH
-                                LEAST(a.$HEIGHT_WALL, b.$HEIGHT_WALL) AS $HEIGHT_WALL,
-                                a.$idRsu,
-                                a.$ID_FIELD_BU
-                    FROM    $buildLine AS a LEFT JOIN $buildLine AS b
-                            ON a.$idRsu = b.$idRsu
-                    WHERE       a.$GEOMETRIC_FIELD_BU && b.$GEOMETRIC_FIELD_BU AND ST_INTERSECTS(a.$GEOMETRIC_FIELD_BU, 
-                                ST_SNAP(b.$GEOMETRIC_FIELD_BU, a.$GEOMETRIC_FIELD_BU, $snap_tolerance)) AND
-                                a.$ID_FIELD_BU <> b.$ID_FIELD_BU;""".toString()
+                // 1. Convert the building polygons into lines and create the intersection with RSU polygons
+                datasource."$buildingTable"."$idRsu".createIndex()
+                datasource."$rsuTable"."$idRsu".createIndex()
+                datasource """
+                    DROP TABLE IF EXISTS $buildLine;
+                    CREATE TABLE $buildLine
+                        AS SELECT   a.$ID_FIELD_BU, a.$idRsu, ST_AREA(b.$GEOMETRIC_FIELD_RSU) AS $RSU_AREA,
+                                    ST_INTERSECTION(ST_TOMULTILINE(a.$GEOMETRIC_FIELD_BU), b.$GEOMETRIC_FIELD_RSU) AS $GEOMETRIC_FIELD_BU,
+                                    a.$HEIGHT_WALL
+                        FROM $buildingTable AS a LEFT JOIN $rsuTable AS b
+                        ON a.$idRsu = b.$idRsu""".toString()
 
+                // 2. Keep only intersected facades within a given distance and calculate their length, height and azimuth
+                datasource."$buildLine"."$GEOMETRIC_FIELD_BU".createSpatialIndex()
+                datasource."$buildLine"."$idRsu".createIndex()
+                datasource."$buildLine"."$ID_FIELD_BU".createIndex()
+                datasource """
+                    DROP TABLE IF EXISTS $sharedLineRsu;
+                    CREATE TABLE $sharedLineRsu 
+                        AS SELECT   ST_LENGTH($GEOMETRIC_FIELD_BU) AS LENGTH,
+                                    ST_AZIMUTH(ST_STARTPOINT($GEOMETRIC_FIELD_BU), ST_ENDPOINT($GEOMETRIC_FIELD_BU)) AS AZIMUTH,
+                                    $idRsu,
+                                    $HEIGHT_WALL,
+                                    $ID_FIELD_BU
+                        FROM ST_EXPLODE('(SELECT    ST_INTERSECTION(a.$GEOMETRIC_FIELD_BU, 
+                                                                    ST_SNAP(b.$GEOMETRIC_FIELD_BU, 
+                                                                            a.$GEOMETRIC_FIELD_BU,
+                                                                            $snap_tolerance)) AS $GEOMETRIC_FIELD_BU,
+                                                    LEAST(a.$HEIGHT_WALL, b.$HEIGHT_WALL) AS $HEIGHT_WALL,
+                                                    a.$idRsu, a.$ID_FIELD_BU
+                                            FROM    $buildLine AS a LEFT JOIN $buildLine AS b
+                                                    ON a.$idRsu = b.$idRsu
+                                            WHERE       a.$GEOMETRIC_FIELD_BU && b.$GEOMETRIC_FIELD_BU AND ST_INTERSECTS(a.$GEOMETRIC_FIELD_BU, 
+                                                        ST_SNAP(b.$GEOMETRIC_FIELD_BU, a.$GEOMETRIC_FIELD_BU, $snap_tolerance)) AND
+                                                        a.$ID_FIELD_BU <> b.$ID_FIELD_BU)')
+                        WHERE ST_DIMENSION($GEOMETRIC_FIELD_BU) = 1;""".toString()
 
-            // The temporary tables are deleted
-            datasource "DROP TABLE IF EXISTS $buildLine, $buildLineRsu, $sharedLineRsu".toString()
+                def dirMedDeg = 180 / numberOfDirection
+                for d in
+                for (i in 1..(listLayersBottom.size() - 1)) {
+                    def layer_top = listLayersBottom[i]
+                    def layer_bottom = listLayersBottom[i-1]
+                    def indicNameH = "${BASE_NAME}_H${layer_bottom}_${layer_top}_D${}_$".toString()
 
+                    // 3. Make the calculation for each direction and each level
+                for (i in 0..(listLayersBottom.size())) {
+                    def layer_top = listLayersBottom[i]
+                    def layer_bottom = listLayersBottom[i-1]
+                    def indicNameH = "${BASE_NAME}_H${layer_bottom}_${layer_top}_D${}_$".toString()
+                    if (i==listLayersBottom.size()){
+                        layer_top = listLayersBottom[i]
+                    }
+                }
+
+                // The temporary tables are deleted
+                datasource "DROP TABLE IF EXISTS $buildLine, $buildLineRsu, $sharedLineRsu".toString()
+            }
             [outputTableName: outputTableName]
         }
     }
