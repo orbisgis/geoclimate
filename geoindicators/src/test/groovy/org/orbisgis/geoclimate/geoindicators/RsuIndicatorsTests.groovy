@@ -65,7 +65,8 @@ class RsuIndicatorsTests {
                 INSERT INTO tempo_rsu VALUES    (1, 'POLYGON((0 0, 100 0, 100 100, 0 100, 0 0))'::GEOMETRY),
                                                 (2, 'POLYGON((100 0, 200 0, 200 100, 100 100, 100 0))'::GEOMETRY),
                                                 (3, 'POLYGON((0 100, 100 100, 100 200, 0 200, 0 100))'::GEOMETRY),
-                                                (4, 'POLYGON((100 100, 200 100, 200 200, 100 200, 100 100))'::GEOMETRY);
+                                                (4, 'POLYGON((100 100, 200 100, 200 200, 100 200, 100 100))'::GEOMETRY),
+                                                (5, 'POLYGON((200 200, 300 200, 300 300, 200 300, 200 200))'::GEOMETRY);
         """
         // First calculate the correlation table between buildings and rsu
         def createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
@@ -89,6 +90,7 @@ class RsuIndicatorsTests {
         assertEquals 0.28, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 2").FREE_EXTERNAL_FACADE_DENSITY
         assertEquals 0.25, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 3").FREE_EXTERNAL_FACADE_DENSITY
         assertEquals 0.25, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 4").FREE_EXTERNAL_FACADE_DENSITY
+        assertEquals 0d, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 5").FREE_EXTERNAL_FACADE_DENSITY
     }
 
     @Test
