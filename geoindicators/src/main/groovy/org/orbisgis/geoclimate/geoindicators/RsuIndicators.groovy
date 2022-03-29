@@ -77,6 +77,9 @@ IProcess freeExternalFacadeDensity() {
  * in the freeExternalFacadeDensity IProcess since in this process only the part of building being in the RSU
  * is considered in the calculation of the indicator.
  *
+ * WARNING: WITH THE CURRENT METHOD, IF A BUILDING FACADE FOLLOW THE LINE SEPARATING TWO RSU, IT WILL BE COUNTED FOR BOTH RSU
+ * (EVEN THOUGH THIS SITUATION IS PROBABLY ALMOST IMPOSSIBLE WITH REGULAR SQUARE GRID)...
+ *
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
  * @param buildingTable The name of the input ITable where are stored the buildings geometry, the building height,
@@ -1824,7 +1827,7 @@ IProcess roofFractionDistributionExact() {
                 // Fill missing values with 0
                 datasource."$bufferTable"."$idRsu".createIndex()
                 datasource """
-                    DROP TABLE IF EXISTS $bufferTable${tab_H[i-1]};
+                    DROP TABLE IF EXISTS ${tab_H[i-1]};
                     CREATE TABLE ${tab_H[i-1]}
                     AS SELECT   a.$idRsu, 
                                 COALESCE(b.$indicNameH, 0) AS $indicNameH
@@ -1884,6 +1887,9 @@ IProcess roofFractionDistributionExact() {
  * area index for a given set of direction / level is defined as the projected area of facade facing the direction
  * of analysis divided by the horizontal surface of analysis and divided by the height of the layer
  *
+ * WARNING: WITH THE CURRENT METHOD, IF A BUILDING FACADE FOLLOW THE LINE SEPARATING TWO RSU, IT WILL BE COUNTED FOR BOTH RSU
+ * (EVEN THOUGH THIS SITUATION IS PROBABLY ALMOST IMPOSSIBLE WITH REGULAR SQUARE GRID)...
+ *
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
  * @param buildingTable The name of the input ITable where are stored the buildings geometry, the building height,
@@ -1912,7 +1918,6 @@ IProcess frontalAreaIndexDistribution() {
             def GEOMETRIC_FIELD_BU = "the_geom"
             def ID_FIELD_BU = "id_build"
             def HEIGHT_WALL = "height_wall"
-            def RSU_AREA = "rsu_area"
             def BASE_NAME = "frontal_area_index_distribution"
 
             debug "Executing RSU frontal area index distribution"
@@ -1924,8 +1929,9 @@ IProcess frontalAreaIndexDistribution() {
 
                 // Temporary table names
                 def buildLine = postfix "buildLine"
-                def buildLineRsu = postfix "buildLineRsu"
-                def sharedLineRsu = postfix "shareLineRsu"
+                def allLinesRsu = postfix "all_lines_rsu"
+                def buildFracH = postfix "build_frac_H"
+                def bufferTable = postfix "buffer_table"
 
                 // Consider facades as touching each other within a snap tolerance
                 def snap_tolerance = 0.01
@@ -1936,7 +1942,7 @@ IProcess frontalAreaIndexDistribution() {
                 datasource """
                     DROP TABLE IF EXISTS $buildLine;
                     CREATE TABLE $buildLine
-                        AS SELECT   a.$ID_FIELD_BU, a.$idRsu, ST_AREA(b.$GEOMETRIC_FIELD_RSU) AS $RSU_AREA,
+                        AS SELECT   a.$ID_FIELD_BU, a.$idRsu,
                                     ST_INTERSECTION(ST_TOMULTILINE(a.$GEOMETRIC_FIELD_BU), b.$GEOMETRIC_FIELD_RSU) AS $GEOMETRIC_FIELD_BU,
                                     a.$HEIGHT_WALL
                         FROM $buildingTable AS a LEFT JOIN $rsuTable AS b
@@ -1947,17 +1953,17 @@ IProcess frontalAreaIndexDistribution() {
                 datasource."$buildLine"."$idRsu".createIndex()
                 datasource."$buildLine"."$ID_FIELD_BU".createIndex()
                 datasource """
-                    DROP TABLE IF EXISTS $sharedLineRsu;
-                    CREATE TABLE $sharedLineRsu 
-                        AS SELECT   ST_LENGTH($GEOMETRIC_FIELD_BU) AS LENGTH,
+                    DROP TABLE IF EXISTS $allLinesRsu;
+                    CREATE TABLE $allLinesRsu 
+                        AS SELECT   -ST_LENGTH($GEOMETRIC_FIELD_BU) AS LENGTH,
                                     ST_AZIMUTH(ST_STARTPOINT($GEOMETRIC_FIELD_BU), ST_ENDPOINT($GEOMETRIC_FIELD_BU)) AS AZIMUTH,
                                     $idRsu,
                                     $HEIGHT_WALL,
                                     $ID_FIELD_BU
-                        FROM ST_EXPLODE('(SELECT    ST_INTERSECTION(a.$GEOMETRIC_FIELD_BU, 
-                                                                    ST_SNAP(b.$GEOMETRIC_FIELD_BU, 
-                                                                            a.$GEOMETRIC_FIELD_BU,
-                                                                            $snap_tolerance)) AS $GEOMETRIC_FIELD_BU,
+                        FROM ST_EXPLODE('(SELECT    ST_TOMULTISEGMENTS(ST_INTERSECTION(a.$GEOMETRIC_FIELD_BU, 
+                                                                                       ST_SNAP(b.$GEOMETRIC_FIELD_BU, 
+                                                                                               a.$GEOMETRIC_FIELD_BU,
+                                                                                               $snap_tolerance))) AS $GEOMETRIC_FIELD_BU,
                                                     LEAST(a.$HEIGHT_WALL, b.$HEIGHT_WALL) AS $HEIGHT_WALL,
                                                     a.$idRsu, a.$ID_FIELD_BU
                                             FROM    $buildLine AS a LEFT JOIN $buildLine AS b
@@ -1965,28 +1971,137 @@ IProcess frontalAreaIndexDistribution() {
                                             WHERE       a.$GEOMETRIC_FIELD_BU && b.$GEOMETRIC_FIELD_BU AND ST_INTERSECTS(a.$GEOMETRIC_FIELD_BU, 
                                                         ST_SNAP(b.$GEOMETRIC_FIELD_BU, a.$GEOMETRIC_FIELD_BU, $snap_tolerance)) AND
                                                         a.$ID_FIELD_BU <> b.$ID_FIELD_BU)')
-                        WHERE ST_DIMENSION($GEOMETRIC_FIELD_BU) = 1;""".toString()
+                        WHERE ST_DIMENSION($GEOMETRIC_FIELD_BU) = 1
+                        UNION ALL
+                        SELECT  ST_LENGTH($GEOMETRIC_FIELD_BU) AS LENGTH,
+                                ST_AZIMUTH(ST_STARTPOINT($GEOMETRIC_FIELD_BU), ST_ENDPOINT($GEOMETRIC_FIELD_BU)) AS AZIMUTH,
+                                $idRsu,
+                                $HEIGHT_WALL,
+                                $ID_FIELD_BU
+                        FROM ST_EXPLODE('(SELECT    ST_TOMULTISEGMENTS($GEOMETRIC_FIELD_BU) AS $GEOMETRIC_FIELD_BU,
+                                                    $HEIGHT_WALL,
+                                                    $idRsu, $ID_FIELD_BU
+                                          FROM $buildLine)')
+                        WHERE ST_LENGTH($GEOMETRIC_FIELD_BU) > 0;""".toString()
 
-                def dirMedDeg = 180 / numberOfDirection
-                for d in
+                // 3. Make the calculations for all directions of each level except the highest one
+                def dirQueryVertFrac = [:]
+                def dirQueryDiv = [:]
+                def angleRangeRad = 2 * Math.PI / numberOfDirection
+                def angleRangeDeg = 360 / numberOfDirection
+                def tab_H = [:]
+                def indicToJoin = [:]
+                datasource."$rsuTable"."$idRsu".createIndex()
                 for (i in 1..(listLayersBottom.size() - 1)) {
                     def layer_top = listLayersBottom[i]
                     def layer_bottom = listLayersBottom[i-1]
-                    def indicNameH = "${BASE_NAME}_H${layer_bottom}_${layer_top}_D${}_$".toString()
+                    def deltaH = layer_top - layer_bottom
+                    tab_H[i-1] = "${buildFracH}_$layer_bottom".toString()
 
-                    // 3. Make the calculation for each direction and each level
-                for (i in 0..(listLayersBottom.size())) {
-                    def layer_top = listLayersBottom[i]
-                    def layer_bottom = listLayersBottom[i-1]
-                    def indicNameH = "${BASE_NAME}_H${layer_bottom}_${layer_top}_D${}_$".toString()
-                    if (i==listLayersBottom.size()){
-                        layer_top = listLayersBottom[i]
+                    // Define queries and indic names
+                    def dirList = [:]
+                    (0..numberOfDirection-1).each{ dirList[it] = (it+0.5)*angleRangeRad}
+                    dirList.each{k, v ->
+                        // Indicator name
+                        def indicName = "FRONTAL_AREA_INDEX_H${layer_bottom}_${layer_top}_D${k*angleRangeDeg}_${(k+1)*angleRangeDeg}"
+                        // Define query to sum the projected facade for buildings and shared facades
+                        dirQueryVertFrac[k] = """
+                                                CASE WHEN $v > AZIMUTH AND $v-AZIMUTH < PI()
+                                                    THEN    CASE WHEN $HEIGHT_WALL >= $layer_top
+                                                                THEN LENGTH*SIN($v-AZIMUTH)
+                                                                ELSE LENGTH*SIN($v-AZIMUTH)*($HEIGHT_WALL-$layer_bottom)/$deltaH
+                                                                END
+                                                    ELSE    CASE WHEN $v - AZIMUTH < -PI()
+                                                            THEN    CASE WHEN $HEIGHT_WALL >= $layer_top
+                                                                    THEN LENGTH*SIN($v+2*PI()-AZIMUTH)
+                                                                    ELSE LENGTH*SIN($v+2*PI()-AZIMUTH)*($HEIGHT_WALL-$layer_bottom)/$deltaH
+                                                                    END
+                                                            ELSE 0
+                                                            END
+                                                    END AS $indicName"""
+                        dirQueryDiv[k] = """COALESCE(SUM(b.$indicName)/ST_AREA(a.$GEOMETRIC_FIELD_RSU), 0) AS $indicName"""
                     }
+                    // Calculates projected surfaces for buildings and shared facades
+                    datasource """
+                        DROP TABLE IF EXISTS $bufferTable;
+                        CREATE TABLE $bufferTable
+                            AS SELECT   $idRsu, 
+                                        ${dirQueryVertFrac.values().join(",")}
+                            FROM $allLinesRsu
+                            WHERE $HEIGHT_WALL > $layer_bottom""".toString()
+                    // Fill missing values with 0
+                    datasource."$bufferTable"."$idRsu".createIndex()
+                    datasource """
+                        DROP TABLE IF EXISTS ${tab_H[i-1]};
+                        CREATE TABLE ${tab_H[i-1]}
+                            AS SELECT   a.$idRsu, 
+                                        ${dirQueryDiv.values().join(",")}
+                            FROM $rsuTable AS a LEFT JOIN $bufferTable AS b
+                            ON a.$idRsu = b.$idRsu
+                            GROUP BY a.$idRsu""".toString()
+                    // Declare this layer to the layer to join at the end
+                    indicToJoin.put(tab_H[i-1], idRsu)
+                }
+
+                // 4. Make the calculations for the last level
+                def layer_bottom = listLayersBottom[listLayersBottom.size() - 1]
+                // Get the maximum building height
+                def layer_top = (datasource.firstRow("SELECT MAX($HEIGHT_WALL) AS MAXH FROM $buildingTable").MAXH).trunc()+1 as int
+                def deltaH = layer_top - layer_bottom
+                tab_H[listLayersBottom.size() - 1] = "${buildFracH}_$layer_bottom".toString()
+
+                // Define queries and indic names
+                def dirList = [:]
+                (0..numberOfDirection-1).each{ dirList[it] = (it+0.5)*angleRangeRad}
+                dirList.each{k, v ->
+                    // Indicator name
+                    def indicName = "FRONTAL_AREA_INDEX_H${layer_bottom}_${layer_top}_D${k*angleRangeDeg}_${(k+1)*angleRangeDeg}"
+                    // Define query to calculate the vertical fraction of projected facade for buildings and shared facades
+                    dirQueryVertFrac[k] = """
+                                            CASE WHEN $v-AZIMUTH > 0 AND $v-AZIMUTH < PI()
+                                                THEN LENGTH*SIN($v-AZIMUTH)*($HEIGHT_WALL-$layer_bottom)/$deltaH
+                                                ELSE    CASE WHEN $v - AZIMUTH < -PI()
+                                                        THEN LENGTH*SIN($v+2*PI()-AZIMUTH)*($HEIGHT_WALL-$layer_bottom)/$deltaH
+                                                        ELSE 0
+                                                        END
+                                            END AS $indicName"""
+                    dirQueryDiv[k] = """COALESCE(SUM(b.$indicName)/ST_AREA(a.$GEOMETRIC_FIELD_RSU), 0) AS $indicName"""
+                }
+                // Calculates projected surfaces for buildings and shared facades
+                datasource """
+                        DROP TABLE IF EXISTS $bufferTable;
+                        CREATE TABLE $bufferTable
+                            AS SELECT   $idRsu, 
+                                        ${dirQueryVertFrac.values().join(",")}
+                            FROM $allLinesRsu
+                            WHERE $HEIGHT_WALL > $layer_bottom""".toString()
+                // Fill missing values with 0
+                datasource."$bufferTable"."$idRsu".createIndex()
+                datasource """
+                        DROP TABLE IF EXISTS ${tab_H[listLayersBottom.size()-1]};
+                        CREATE TABLE ${tab_H[listLayersBottom.size()-1]}
+                            AS SELECT   a.$idRsu, 
+                                        ${dirQueryDiv.values().join(",")}
+                            FROM $rsuTable AS a LEFT JOIN $bufferTable AS b
+                            ON a.$idRsu = b.$idRsu
+                            GROUP BY a.$idRsu""".toString()
+                // Declare this layer to the layer to join at the end
+                indicToJoin.put(tab_H[listLayersBottom.size()-1], idRsu)
+
+                // 5. Join all layers in one table
+                def joinGrids = Geoindicators.DataUtils.joinTables()
+                if (!joinGrids([inputTableNamesWithId: indicToJoin,
+                                outputTableName      : outputTableName,
+                                datasource           : datasource])) {
+                    info "Cannot merge all indicators in RSU table $outputTableName."
+                    return
                 }
 
                 // The temporary tables are deleted
-                datasource "DROP TABLE IF EXISTS $buildLine, $buildLineRsu, $sharedLineRsu".toString()
+                //datasource """DROP TABLE IF EXISTS $buildLine, $allLinesRsu,
+                //                $bufferTable, ${tab_H.values().join(",")}""".toString()
             }
+
             [outputTableName: outputTableName]
         }
     }

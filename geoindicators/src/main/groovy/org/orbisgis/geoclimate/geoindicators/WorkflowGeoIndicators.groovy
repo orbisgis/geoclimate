@@ -2172,6 +2172,35 @@ IProcess rasterizeIndicators() {
                     }
                 }
 
+                if(list_indicators*.toUpperCase().contains("FRONTAL_AREA_INDEX") && buildingTable){
+                    if(!createScalesRelationsGridBl){
+                        // Create the relations between grid cells and buildings
+                        createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
+                        if (!createScalesRelationsGridBl([datasource              : datasource,
+                                                          sourceTable             : buildingTable,
+                                                          targetTable             : gridTableName,
+                                                          idColumnTarget          : grid_column_identifier,
+                                                          prefixName              : prefixName,
+                                                          nbRelations             : null])) {
+                            info "Cannot compute the scales relations between buildings and grid cells."
+                            return
+                        }
+                    }
+                    def frontalAreaIndexDistribution = Geoindicators.RsuIndicators.frontalAreaIndexDistribution()
+                    if (frontalAreaIndexDistribution(
+                            [buildingTable               : createScalesRelationsGridBl.results.outputTableName,
+                             rsuTable                    : gridTableName,
+                             idRsu                       : grid_column_identifier,
+                             listLayersBottom            : [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+                             numberOfDirection           : 12,
+                             prefixName                  : prefixName,
+                             datasource                  : datasource])) {
+                        indicatorTablesToJoin.put(frontalAreaIndexDistribution.results.outputTableName, grid_column_identifier)
+                    } else {
+                        info "Cannot compute the frontal area index."
+                    }
+                }
+
                 //Join all indicators at grid scale
                 def joinGrids = Geoindicators.DataUtils.joinTables()
                 if (!joinGrids([inputTableNamesWithId: indicatorTablesToJoin,
