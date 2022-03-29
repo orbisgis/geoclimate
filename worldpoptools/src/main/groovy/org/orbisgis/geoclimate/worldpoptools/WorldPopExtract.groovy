@@ -113,6 +113,11 @@ IProcess importAscGrid() {
             info "Import the the world pop asc file"
             // The name of the outputTableName is constructed
             def outputTableWorldPopName = postfix tableName
+            if(!worldPopFilePath){
+                info "Create a default empty worldpop table"
+                datasource.execute("""drop table if exists $outputTableWorldPopName;
+                    create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $epsg), ID_POP INTEGER, POP FLOAT);""".toString())
+            }
             AscReaderDriver ascReaderDriver = new AscReaderDriver()
             ascReaderDriver.setAs3DPoint(false)
             ascReaderDriver.setEncoding("UTF-8")
