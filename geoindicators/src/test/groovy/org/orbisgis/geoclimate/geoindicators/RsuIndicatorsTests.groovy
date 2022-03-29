@@ -65,7 +65,8 @@ class RsuIndicatorsTests {
                 INSERT INTO tempo_rsu VALUES    (1, 'POLYGON((0 0, 100 0, 100 100, 0 100, 0 0))'::GEOMETRY),
                                                 (2, 'POLYGON((100 0, 200 0, 200 100, 100 100, 100 0))'::GEOMETRY),
                                                 (3, 'POLYGON((0 100, 100 100, 100 200, 0 200, 0 100))'::GEOMETRY),
-                                                (4, 'POLYGON((100 100, 200 100, 200 200, 100 200, 100 100))'::GEOMETRY);
+                                                (4, 'POLYGON((100 100, 200 100, 200 200, 100 200, 100 100))'::GEOMETRY),
+                                                (5, 'POLYGON((200 200, 300 200, 300 300, 200 300, 200 200))'::GEOMETRY);
         """
         // First calculate the correlation table between buildings and rsu
         def createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
@@ -76,23 +77,20 @@ class RsuIndicatorsTests {
                                      prefixName              : "test",
                                      nbRelations             : null])
 
-        // The geometry of the buildings are useful for the calculation, then they are inserted inside
-        // the build/rsu correlation table
-        h2GIS "DROP TABLE IF EXISTS corr_tempo; CREATE TABLE corr_tempo AS SELECT a.*, b.the_geom " +
-                "FROM ${createScalesRelationsGridBl.results.outputTableName} AS a, tempo_build AS b" +
-                " WHERE a.id_build = b.id_build"
+        def buildingTableRelation =createScalesRelationsGridBl.results.outputTableName
 
         def p = Geoindicators.RsuIndicators.freeExternalFacadeDensityExact()
         assertTrue p([
-                        buildingTable               : "corr_tempo",
+                        buildingTable               : buildingTableRelation,
                         rsuTable                    : "tempo_rsu",
                         idRsu                       : "id_rsu",
                         prefixName                  : "test",
                         datasource                  : h2GIS])
-        assertEquals 0.28, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").EXACT_FREE_FACADE_DENSITY
-        assertEquals 0.28, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 2").EXACT_FREE_FACADE_DENSITY
-        assertEquals 0.25, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 3").EXACT_FREE_FACADE_DENSITY
-        assertEquals 0.25, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 4").EXACT_FREE_FACADE_DENSITY
+        assertEquals 0.28, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").FREE_EXTERNAL_FACADE_DENSITY
+        assertEquals 0.28, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 2").FREE_EXTERNAL_FACADE_DENSITY
+        assertEquals 0.25, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 3").FREE_EXTERNAL_FACADE_DENSITY
+        assertEquals 0.25, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 4").FREE_EXTERNAL_FACADE_DENSITY
+        assertEquals 0d, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 5").FREE_EXTERNAL_FACADE_DENSITY
     }
 
     @Test
@@ -392,7 +390,7 @@ class RsuIndicatorsTests {
         h2GIS.eachRow("SELECT * FROM test_rsu_extended_free_facade_fraction WHERE id_rsu = 1"){
             row -> concat+= row.extended_free_facade_fraction.round(3)
         }
-        assertEquals(0.177, concat)
+        assertEquals(0.173, concat)
     }
 
 

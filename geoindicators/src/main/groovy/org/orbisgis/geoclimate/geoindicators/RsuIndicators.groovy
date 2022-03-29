@@ -116,6 +116,7 @@ IProcess freeExternalFacadeDensityExact() {
             def buildLine = postfix "buildLine"
             def buildLineRsu = postfix "buildLineRsu"
             def sharedLineRsu = postfix "shareLineRsu"
+            def onlyBuildRsu = postfix "onlyBuildRsu"
 
             // Consider facades as touching each other within a snap tolerance
             def snap_tolerance = 0.01
@@ -166,15 +167,26 @@ IProcess freeExternalFacadeDensityExact() {
             datasource."$buildLineRsu"."$idRsu".createIndex()
             datasource."$sharedLineRsu"."$idRsu".createIndex()
             datasource """
-                DROP TABLE IF EXISTS $outputTableName;
-                CREATE TABLE $outputTableName
+                DROP TABLE IF EXISTS $onlyBuildRsu;
+                CREATE TABLE $onlyBuildRsu
                     AS SELECT   a.$idRsu,
-                                (a.$FACADE_AREA-b.$FACADE_AREA)/a.$RSU_AREA AS EXACT_FREE_FACADE_DENSITY
+                                (a.$FACADE_AREA-b.$FACADE_AREA)/a.$RSU_AREA AS FREE_EXTERNAL_FACADE_DENSITY
                     FROM $buildLineRsu AS a LEFT JOIN $sharedLineRsu AS b
                     ON a.$idRsu = b.$idRsu""".toString()
 
+            // 5. Join RSU having no buildings and set their value to 0
+            datasource."$onlyBuildRsu"."$idRsu".createIndex()
+            datasource."$rsuTable"."$idRsu".createIndex()
+            datasource """
+                DROP TABLE IF EXISTS $outputTableName;
+                CREATE TABLE $outputTableName
+                    AS SELECT   a.$idRsu,
+                                COALESCE(b.FREE_EXTERNAL_FACADE_DENSITY, 0) AS FREE_EXTERNAL_FACADE_DENSITY
+                    FROM $rsuTable AS a LEFT JOIN $onlyBuildRsu AS b
+                    ON a.$idRsu = b.$idRsu""".toString()
+
             // The temporary tables are deleted
-            datasource "DROP TABLE IF EXISTS $buildLine, $buildLineRsu, $sharedLineRsu".toString()
+            datasource "DROP TABLE IF EXISTS $buildLine, $buildLineRsu, $sharedLineRsu, $onlyBuildRsu".toString()
 
             [outputTableName: outputTableName]
         }
@@ -1234,9 +1246,8 @@ IProcess extendedFreeFacadeFraction() {
             def fullInclBu = postfix "fullInclBu"
             def notIncBu = postfix "notIncBu"
 
-            // The RSU area is extended according to a buffer
             datasource """DROP TABLE IF EXISTS $extRsuTable; CREATE TABLE $extRsuTable AS SELECT  
-                    ST_BUFFER($GEOMETRIC_FIELD, $buffDist, 'quad_segs=2') AS $GEOMETRIC_FIELD,
+                    ST_BUFFER($GEOMETRIC_FIELD, $buffDist) AS $GEOMETRIC_FIELD,
                     $ID_FIELD_RSU FROM $rsuTable;""".toString()
 
             // The facade area of buildings being entirely included in the RSU buffer is calculated

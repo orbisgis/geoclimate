@@ -563,7 +563,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "locations" : ["Redon"],
+                        "locations" : ["Pont-de-Veyle"],
                 "timeout":3600,
                 "maxsize": 536870918,
                 "endpoint":"https://lz4.overpass-api.de/api"],
@@ -573,62 +573,20 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters":
                         ["distance" : 0,
                          "rsu_indicators":[
-                                 "indicatorUse": ["LCZ", "UTRF"],
+                                 "indicatorUse": ["LCZ"],
                                  "svfSimplified": true,
                                  "estimateHeight":true
                          ],"grid_indicators": [
                                 "x_size": 100,
                                 "y_size": 100,
-                                "rowCol": true,
-                                "output" : "geojson",
-                                "indicators": ["BUILDING_FRACTION","BUILDING_HEIGHT","BUILDING_POP", "WATER_FRACTION","VEGETATION_FRACTION",
-                                               "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "LCZ_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY"]
+                                //"rowCol": true,
+                                "indicators":  ["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_POP",
+                                                "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
+                                                "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "LCZ_FRACTION", "LCZ_PRIMARY",
+                                                "FREE_EXTERNAL_FACADE_DENSITY", "BUILDING_HEIGHT_WEIGHTED"]
                         ],    "worldpop_indicators" : true
                         ]
         ]
-        IProcess process = OSM.WorkflowOSM.workflow()
-        assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
-    }
-
-
-    @Disabled //Use it for debug SLIM copernicus
-    @Test
-    void testIntegrationSlim() {
-        String directory ="./target/geoclimate_slim_integration"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
-        def osm_parmeters = [
-                "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
-                "geoclimatedb" : [
-                        "folder" : dirFile.absolutePath,
-                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
-                        "delete" :false
-                ],
-                "input" : [
-                        "locations" : [[
-                                         53.83061, 9.83664, 53.91394, 9.91997
-                                 ]]],
-                "output" :["folder" : directory,srid: 4326]
-                ,
-                "parameters":
-                        ["distance" : 0,
-                         "rsu_indicators":[
-                                 "indicatorUse": ["LCZ"],
-                                 "svfSimplified": true,
-                                 "estimateHeight":true
-                         ],
-                         "grid_indicators": [
-                                 "x_size": 10,
-                                 "y_size": 10,
-                                 "rowCol": true,
-                                 "output" : "asc",
-                                 "indicators": ["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
-                                                "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "LCZ_FRACTION"]
-                         ]
-                        ]
-        ]
-
         IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
     }
