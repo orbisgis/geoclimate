@@ -242,6 +242,10 @@ boolean grid(String wcsRequest,  File outputGridFile) {
         outputGridFile << connection.inputStream
         return true
     }
+    else if(connection.responseCode == 404){
+        error "The service is not available to execute the WCS query.$queryUrl"
+        return false
+    }
     else {
         error "Cannot execute the WCS query.$queryUrl"
         return false
