@@ -9,7 +9,7 @@
           <sld:Description>
             <sld:Title>Bâtiment d'activité</sld:Title>
           </sld:Description>
-          <MaxScaleDenominator>200000</MaxScaleDenominator>
+          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>typo_maj</ogc:PropertyName>
@@ -32,7 +32,7 @@
           <sld:Description>
             <sld:Title>Bâtiment de grande hauteur</sld:Title>
           </sld:Description>
-          <MaxScaleDenominator>200000</MaxScaleDenominator>
+          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>typo_maj</ogc:PropertyName>
@@ -55,7 +55,7 @@
           <sld:Description>
             <sld:Title>Immeuble continu sur ilôt fermé</sld:Title>
           </sld:Description>
-          <MaxScaleDenominator>200000</MaxScaleDenominator>
+          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>typo_maj</ogc:PropertyName>
@@ -78,7 +78,7 @@
           <sld:Description>
             <sld:Title>Immeuble continu sur ilôt ouvert</sld:Title>
           </sld:Description>
-          <MaxScaleDenominator>200000</MaxScaleDenominator>
+          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>typo_maj</ogc:PropertyName>
@@ -101,7 +101,7 @@
           <sld:Description>
             <sld:Title>Immeuble discontinu</sld:Title>
           </sld:Description>
-          <MaxScaleDenominator>200000</MaxScaleDenominator>
+          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>typo_maj</ogc:PropertyName>
@@ -124,7 +124,7 @@
           <sld:Description>
             <sld:Title>Local</sld:Title>
           </sld:Description>
-          <MaxScaleDenominator>200000</MaxScaleDenominator>
+          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>typo_maj</ogc:PropertyName>
@@ -147,7 +147,7 @@
           <sld:Description>
             <sld:Title>Pavillon continu sur ilôt fermé</sld:Title>
           </sld:Description>
-          <MaxScaleDenominator>200000</MaxScaleDenominator>
+          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>typo_maj</ogc:PropertyName>
@@ -170,7 +170,7 @@
           <sld:Description>
             <sld:Title>Pavillon continu sur ilôt ouvert</sld:Title>
           </sld:Description>
-          <MaxScaleDenominator>200000</MaxScaleDenominator>
+          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>typo_maj</ogc:PropertyName>
@@ -193,7 +193,7 @@
           <sld:Description>
             <sld:Title>Pavillon discontinu</sld:Title>
           </sld:Description>
-          <MaxScaleDenominator>200000</MaxScaleDenominator>
+          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>typo_maj</ogc:PropertyName>
@@ -216,7 +216,7 @@
           <sld:Description>
             <sld:Title>Pavillon semi-continu</sld:Title>
           </sld:Description>
-          <MaxScaleDenominator>200000</MaxScaleDenominator>
+          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>typo_maj</ogc:PropertyName>
@@ -239,7 +239,7 @@
           <sld:Description>
             <sld:Title>Inconnu</sld:Title>
           </sld:Description>
-          <MaxScaleDenominator>200000</MaxScaleDenominator>
+          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
             <ogc:PropertyIsNull>
               <ogc:PropertyName>typo_maj</ogc:PropertyName>

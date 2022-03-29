@@ -9,7 +9,7 @@
           <sld:Description>
             <sld:Title>Industrial building</sld:Title>
           </sld:Description>
-          <MaxScaleDenominator>200000</MaxScaleDenominator>
+          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>I_TYPO</ogc:PropertyName>
@@ -32,7 +32,7 @@
           <sld:Description>
             <sld:Title>High-rise building</sld:Title>
           </sld:Description>
-          <MaxScaleDenominator>200000</MaxScaleDenominator>
+          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>I_TYPO</ogc:PropertyName>
@@ -55,7 +55,7 @@
           <sld:Description>
             <sld:Title>Block of buildings on closed urban islet</sld:Title>
           </sld:Description>
-          <MaxScaleDenominator>200000</MaxScaleDenominator>
+          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>I_TYPO</ogc:PropertyName>
@@ -78,7 +78,7 @@
           <sld:Description>
             <sld:Title>Block of buildings on open urban islet</sld:Title>
           </sld:Description>
-          <MaxScaleDenominator>200000</MaxScaleDenominator>
+          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>I_TYPO</ogc:PropertyName>
@@ -101,7 +101,7 @@
           <sld:Description>
             <sld:Title>Detached building</sld:Title>
           </sld:Description>
-          <MaxScaleDenominator>200000</MaxScaleDenominator>
+          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>I_TYPO</ogc:PropertyName>
@@ -124,7 +124,7 @@
           <sld:Description>
             <sld:Title>Informal building</sld:Title>
           </sld:Description>
-          <MaxScaleDenominator>200000</MaxScaleDenominator>
+          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>I_TYPO</ogc:PropertyName>
@@ -147,7 +147,7 @@
           <sld:Description>
             <sld:Title>Residential on closed islet</sld:Title>
           </sld:Description>
-          <MaxScaleDenominator>200000</MaxScaleDenominator>
+          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>I_TYPO</ogc:PropertyName>
@@ -170,7 +170,7 @@
           <sld:Description>
             <sld:Title>Residential on open islet</sld:Title>
           </sld:Description>
-          <MaxScaleDenominator>200000</MaxScaleDenominator>
+          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>I_TYPO</ogc:PropertyName>
@@ -193,7 +193,7 @@
           <sld:Description>
             <sld:Title>Detached house</sld:Title>
           </sld:Description>
-          <MaxScaleDenominator>200000</MaxScaleDenominator>
+          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>I_TYPO</ogc:PropertyName>
@@ -216,7 +216,7 @@
           <sld:Description>
             <sld:Title>Semi-detached house</sld:Title>
           </sld:Description>
-          <MaxScaleDenominator>200000</MaxScaleDenominator>
+          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>I_TYPO</ogc:PropertyName>
@@ -239,7 +239,7 @@
           <sld:Description>
             <sld:Title>Undefined</sld:Title>
           </sld:Description>
-          <MaxScaleDenominator>200000</MaxScaleDenominator>
+          <MaxScaleDenominator>500000</MaxScaleDenominator>
           <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
             <ogc:PropertyIsNull>
               <ogc:PropertyName>I_TYPO</ogc:PropertyName>
