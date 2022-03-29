@@ -688,7 +688,6 @@ IProcess applyRandomForestModel() {
             def df_var = df.drop(idName.toUpperCase())
 
 
-
             def prediction = Validation.test(model, df_var)
             // We need to add the remove the initial predicted variable in order to not have duplicated...
             df=df.drop(var2model)
