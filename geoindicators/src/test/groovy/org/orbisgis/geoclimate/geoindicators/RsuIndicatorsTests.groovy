@@ -691,15 +691,9 @@ class RsuIndicatorsTests {
                                      prefixName              : "test",
                                      nbRelations             : null])
 
-        // The geometry of the buildings are useful for the calculation, then they are inserted inside
-        // the build/rsu correlation table
-        h2GIS "DROP TABLE IF EXISTS corr_tempo; CREATE TABLE corr_tempo AS SELECT a.*, b.the_geom " +
-                "FROM ${createScalesRelationsGridBl.results.outputTableName} AS a LEFT JOIN tempo_build AS b" +
-                " ON a.id_build = b.id_build"
-
         def p = Geoindicators.RsuIndicators.roofFractionDistributionExact()
         assertTrue p([
-                buildingTable               : "corr_tempo",
+                buildingTable               : createScalesRelationsGridBl.results.outputTableName,
                 rsuTable                    : "tempo_rsu",
                 idRsu                       : "id_rsu",
                 prefixName                  : "test",
@@ -745,15 +739,10 @@ class RsuIndicatorsTests {
                                      prefixName              : "test",
                                      nbRelations             : null])
 
-        // The geometry of the buildings are useful for the calculation, then they are inserted inside
-        // the build/rsu correlation table
-        h2GIS "DROP TABLE IF EXISTS corr_tempo; CREATE TABLE corr_tempo AS SELECT a.*, b.the_geom " +
-                "FROM ${createScalesRelationsGridBl.results.outputTableName} AS a LEFT JOIN tempo_build AS b" +
-                " ON a.id_build = b.id_build"
 
         def p = Geoindicators.RsuIndicators.frontalAreaIndexDistribution()
         assertTrue p([
-                buildingTable               : "corr_tempo",
+                buildingTable               : createScalesRelationsGridBl.results.outputTableName,
                 rsuTable                    : "tempo_rsu",
                 idRsu                       : "id_rsu",
                 listLayersBottom            : [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
