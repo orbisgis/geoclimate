@@ -47,14 +47,14 @@ class WorldPopExtractTest {
         }
         def coverageId = "wpGlobal:ppp_2018"
         def bbox =[ 47.63324, -2.78087,47.65749, -2.75979]
-        assertTrue WorldPopTools.Extract.grid(coverageId, bbox, outputGridFile)
-
-        AscReaderDriver ascReaderDriver = new AscReaderDriver()
-        ascReaderDriver.setAs3DPoint(false)
-        ascReaderDriver.setEncoding("UTF-8")
-        ascReaderDriver.setDeleteTable(true)
-        ascReaderDriver.read(h2GIS.getConnection(),outputGridFile, new EmptyProgressVisitor(), "grid", 4326)
-        assertEquals(720, h2GIS.getSpatialTable("grid").rowCount)
+        if(WorldPopTools.Extract.grid(coverageId, bbox, outputGridFile)) {
+            AscReaderDriver ascReaderDriver = new AscReaderDriver()
+            ascReaderDriver.setAs3DPoint(false)
+            ascReaderDriver.setEncoding("UTF-8")
+            ascReaderDriver.setDeleteTable(true)
+            ascReaderDriver.read(h2GIS.getConnection(), outputGridFile, new EmptyProgressVisitor(), "grid", 4326)
+            assertEquals(720, h2GIS.getSpatialTable("grid").rowCount)
+        }
     }
 
     /**
@@ -66,8 +66,9 @@ class WorldPopExtractTest {
         def coverageId = "wpGlobal:ppp_2018"
         def bbox =[ 47.63324, -2.78087,47.65749, -2.75979]
         def epsg = 4326
-        assertTrue process.execute([coverageId:coverageId, bbox:bbox])
-        assertTrue new File(process.results.outputFilePath).exists()
+        if(process.execute([coverageId:coverageId, bbox:bbox])) {
+            assertTrue new File(process.results.outputFilePath).exists()
+        }
     }
 
     /**
@@ -80,12 +81,13 @@ class WorldPopExtractTest {
         def bbox =[ 47.63324, -2.78087,47.65749, -2.75979]
         [46.257614, 4.866568, 46.271828, 4.8969374]
         def epsg = 4326
-        assertTrue extractWorldPopLayer.execute([coverageId:coverageId, bbox:bbox])
-        assertTrue new File(extractWorldPopLayer.results.outputFilePath).exists()
-        IProcess importAscGrid =  WorldPopTools.Extract.importAscGrid()
-        assertTrue importAscGrid.execute([worldPopFilePath:extractWorldPopLayer.results.outputFilePath,
-                               epsg: epsg, datasource: h2GIS])
-        assertEquals(720, h2GIS.getSpatialTable(importAscGrid.results.outputTableWorldPopName).rowCount)
-        assertEquals(["ID_POP", "THE_GEOM", "POP"], h2GIS.getTable(importAscGrid.results.outputTableWorldPopName).columns)
+        if(extractWorldPopLayer.execute([coverageId:coverageId, bbox:bbox])) {
+            assertTrue new File(extractWorldPopLayer.results.outputFilePath).exists()
+            IProcess importAscGrid = WorldPopTools.Extract.importAscGrid()
+            assertTrue importAscGrid.execute([worldPopFilePath: extractWorldPopLayer.results.outputFilePath,
+                                              epsg            : epsg, datasource: h2GIS])
+            assertEquals(720, h2GIS.getSpatialTable(importAscGrid.results.outputTableWorldPopName).rowCount)
+            assertEquals(["ID_POP", "THE_GEOM", "POP"], h2GIS.getTable(importAscGrid.results.outputTableWorldPopName).columns)
+        }
     }
 }
