@@ -1851,15 +1851,21 @@ IProcess rasterizeIndicators() {
                 gridTableName: String, list_indicators :[],
                 buildingTable: "", roadTable: "", vegetationTable: "",
                 hydrographicTable: "", imperviousTable: "", rsu_lcz:"",
-                rsu_utrf_area:"",rsu_utrf_floor_area:"",
+                rsu_utrf_area:"",rsu_utrf_floor_area:"", seaLandMaskTableName: "",
                 prefixName: String
         outputs outputTableName: String
         run { datasource, gridTableName, list_indicators,buildingTable, roadTable, vegetationTable,
-              hydrographicTable, imperviousTable, rsu_lcz,rsu_utrf_area,rsu_utrf_floor_area, prefixName ->
+              hydrographicTable, imperviousTable, rsu_lcz,rsu_utrf_area,rsu_utrf_floor_area, seaLandMaskTableName,
+              prefixName ->
             if(!list_indicators){
                 info "The list of indicator names cannot be null or empty"
                 return
             }
+            // Temporary (and output tables) are created
+            def tesselatedSeaLandTab = postfix "TESSELATED_SEA_LAND"
+            def seaLandFractionTab = postfix "SEA_LAND_FRACTION"
+
+            def seaLandTypeField = "TYPE"
             def grid_indicators_table = "grid_indicators"
             def grid_column_identifier ="id"
                 def indicatorTablesToJoin = [:]
@@ -2201,6 +2207,46 @@ IProcess rasterizeIndicators() {
                     }
                 }
 
+                if(list_indicators*.toUpperCase().contains("SEA_LAND_FRACTION") && seaLandMaskTableName) {
+                    // If only one type of surface (land or sea) is in the zone, no need for computational fraction calculation
+                    def nbTypes = datasource.firstRow("""SELECT COUNT(DISTINCT($seaLandTypeField)) AS nb_types FROM $seaLandMaskTableName""").NB_TYPES
+                    if (nbTypes == 1) {
+                        def uniqueSurfaceType = datasource.firstRow("""SELECT DISTINCT($seaLandTypeField) AS unique_surface_type FROM $seaLandMaskTableName""").UNIQUE_SURFACE_TYPE
+                        datasource """ 
+                            DROP TABLE IF EXISTS $seaLandFractionTab;
+                            CREATE TABLE $seaLandFractionTab
+                                AS SELECT $grid_column_identifier, 1 AS ${uniqueSurfaceType}_FRACTION
+                                FROM $grid_indicators_table"""
+                        indicatorTablesToJoin.put(seaLandFractionTab, grid_column_identifier)
+                    } else {
+                        // Split the potentially big complex seaLand geometries into smaller triangles in order to makes calculation faster
+                        datasource """ 
+                            DROP TABLE IF EXISTS $tesselatedSeaLandTab;
+                            CREATE TABLE $tesselatedSeaLandTab(id_tesselate serial, the_geom geometry, $seaLandTypeField VARCHAR)
+                                AS SELECT null, the_geom, $seaLandTypeField
+                                FROM ST_EXPLODE('select st_tesselate(the_geom) AS the_geom, $seaLandTypeField FROM $seaLandMaskTableName')"""
+
+                        def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics()
+                        if (upperScaleAreaStatistics(
+                                [upperTableName: grid_indicators_table,
+                                 upperColumnId: grid_column_identifier,
+                                 lowerTableName: tesselatedSeaLandTab,
+                                 lowerColumnName: seaLandTypeField,
+                                 prefixName: prefixName,
+                                 datasource: datasource])) {
+                            // Modify columns name to postfix with "_FRACTION"
+                            datasource """ 
+                                ALTER TABLE ${upperScaleAreaStatistics.results.outputTableName} RENAME COLUMN LAND TO LAND_FRACTION;
+                                ALTER TABLE ${
+                                upperScaleAreaStatistics.results.outputTableName
+                            } RENAME COLUMN SEA TO SEA_FRACTION;"""
+                            indicatorTablesToJoin.put(upperScaleAreaStatistics.results.outputTableName, grid_column_identifier)
+                        } else {
+                            info "Cannot compute the frontal area index."
+                        }
+                    }
+                }
+
                 //Join all indicators at grid scale
                 def joinGrids = Geoindicators.DataUtils.joinTables()
                 if (!joinGrids([inputTableNamesWithId: indicatorTablesToJoin,
@@ -2209,6 +2255,9 @@ IProcess rasterizeIndicators() {
                     info "Cannot merge all indicators in grid table $grid_indicators_table."
                     return
                 }
+
+                // Remove temporary tables
+                datasource """DROP TABLE IF EXISTS $tesselatedSeaLandTab, $seaLandFractionTab"""
             [outputTableName: grid_indicators_table]
         }
     }
