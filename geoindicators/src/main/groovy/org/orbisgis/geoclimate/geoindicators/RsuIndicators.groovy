@@ -77,11 +77,15 @@ IProcess freeExternalFacadeDensity() {
  * in the freeExternalFacadeDensity IProcess since in this process only the part of building being in the RSU
  * is considered in the calculation of the indicator.
  *
+ * WARNING: WITH THE CURRENT METHOD, IF A BUILDING FACADE FOLLOW THE LINE SEPARATING TWO RSU, IT WILL BE COUNTED FOR BOTH RSU
+ * (EVEN THOUGH THIS SITUATION IS PROBABLY ALMOST IMPOSSIBLE WITH REGULAR SQUARE GRID)...
+ *
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
  * @param buildingTable The name of the input ITable where are stored the buildings geometry, the building height,
  * the building and the rsu id
- * @param rsuTable The name of the input ITable where are stored the rsu geometries and the id_rsu
+ * @param rsuTable The name of the input ITable where are stored the rsu geometries and the 'idRsu'
+ * @param idRsu the name of the id of the RSU table
  * @param prefixName String use as prefix to name the output table
  *
  * @return A database table name.
@@ -101,7 +105,7 @@ IProcess freeExternalFacadeDensityExact() {
             def HEIGHT_WALL = "height_wall"
             def FACADE_AREA = "facade_area"
             def RSU_AREA = "rsu_area"
-            def BASE_NAME = "_exact_free_external_facade_density"
+            def BASE_NAME = "exact_free_external_facade_density"
 
             debug "Executing RSU free external facade density (exact version)"
 
@@ -1682,6 +1686,433 @@ IProcess surfaceFractions() {
 
             //Cache the table name to re-use it
             cacheTableName(BASE_TABLE_NAME, outputTableName)
+            [outputTableName: outputTableName]
+        }
+    }
+}
+
+/**
+ * Process used to compute the sum of all building facades (free facades and roofs) included in a
+ * Reference Spatial Unit (RSU) divided by the RSU area. The calculation is actually simply the sum
+ * of two other indicators (building fraction and free external facade density)...
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param facadeDensityTable The name of the input ITable where are stored the facade density and the rsu id
+ * @param buildingFractionTable The name of the input ITable where are stored the building fraction and the rsu id
+ * @param facDensityColumn The name of the column where are stored the facade density values (within the
+ * 'facadeDensityTable' Table)
+ * @param buFractionColumn The name of the column where are stored the building fraction values (within the
+ * 'buildingFractionTable' Table)
+ * @param idRsu the name of the id of the RSU table
+ * @param prefixName String use as prefix to name the output table
+ *
+ * @return A database table name.
+ * @author Jérémy Bernard
+ */
+IProcess buildingSurfaceDensity() {
+    return create {
+        title "RSU building surface density"
+        id "buildingSurfaceDensity"
+        inputs facadeDensityTable: String, buildingFractionTable: String, facDensityColumn: String,
+                buFractionColumn: String, idRsu: String, prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { facadeDensityTable, buildingFractionTable, facDensityColumn, buFractionColumn, idRsu, prefixName, datasource ->
+
+            def BASE_NAME = "building_surface_fraction"
+
+            debug "Executing building surface density"
+
+            // The name of the outputTableName is constructed
+            def outputTableName = prefix prefixName, BASE_NAME
+
+            // Sum free facade density and building fraction...
+            datasource."$facadeDensityTable"."$idRsu".createIndex()
+            datasource."$buildingFractionTable"."$idRsu".createIndex()
+            datasource """
+                DROP TABLE IF EXISTS $outputTableName;
+                CREATE TABLE $outputTableName
+                    AS SELECT   a.$idRsu, 
+                                a.$buFractionColumn + b.$facDensityColumn AS BUILDING_SURFACE_DENSITY
+                    FROM $buildingFractionTable AS a LEFT JOIN $facadeDensityTable AS b
+                    ON a.$idRsu = b.$idRsu""".toString()
+
+            [outputTableName: outputTableName]
+        }
+    }
+}
+
+/**
+ * Script to compute the distributio of (only) horizontal roof area fraction for each layer of the canopy. If the height
+ * roof and height wall differ, take the average value at building height. Note that this process first cut the buildings
+ * according to RSU in order to calculate the exact distribution.
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param buildingTable the name of the input ITable where are stored the buildings and the relationships
+ * between buildings and RSU
+ * @param rsuTable the name of the input ITable where are stored the RSU
+ * @param idRsu the name of the id of the RSU table
+ * @param prefixName String use as prefix to name the output table
+ * @param listLayersBottom the list of height corresponding to the bottom of each vertical layers (default
+ * [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50])
+ *
+ * @return outputTableName Table name in which the rsu id and their corresponding indicator value are stored
+ *
+ * @author Jérémy Bernard
+ */
+IProcess roofFractionDistributionExact() {
+    return create {
+        title "RSU exact horizontal roof area fraction distribution"
+        id "roofFractionDistributionExact"
+        inputs rsuTable: String, buildingTable: String, idRsu: String, listLayersBottom: [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+                prefixName: String, datasource: JdbcDataSource, density: true
+        outputs outputTableName: String
+        run { rsuTable, buildingTable, idRsu, listLayersBottom, prefixName, datasource, density ->
+
+            def GEOMETRIC_COLUMN_RSU = "the_geom"
+            def GEOMETRIC_COLUMN_BU = "the_geom"
+            def ID_COLUMN_BU = "id_build"
+            def HEIGHT_WALL = "height_wall"
+            def HEIGHT_ROOF = "height_roof"
+            def BUILDING_AREA = "building_area"
+            def BUILD_HEIGHT = "BUILD_HEIGHT"
+            def BASE_NAME = "roof_fraction_distribution"
+
+            // The name of the outputTableName is constructed
+            def outputTableName = prefix prefixName, BASE_NAME
+
+            debug "Executing RSU roof area distribution (and optionally roof density)"
+
+            // To avoid overwriting the output files of this step, a unique identifier is created
+            // Temporary table names
+            def buildInter = postfix "build_inter"
+            def rsuBuildingArea = postfix "rsu_building_area"
+            def buildFracH = postfix "roof_frac_H"
+            def bufferTable = postfix "buffer_table"
+
+            // 1. Create the intersection between buildings and RSU polygons
+            datasource."$buildingTable"."$ID_COLUMN_BU".createIndex()
+            datasource."$rsuTable"."$idRsu".createIndex()
+            datasource """
+                DROP TABLE IF EXISTS $buildInter;
+                CREATE TABLE $buildInter
+                    AS SELECT   a.$ID_COLUMN_BU, a.$idRsu,
+                                ST_INTERSECTION(a.$GEOMETRIC_COLUMN_BU, b.$GEOMETRIC_COLUMN_RSU) AS $GEOMETRIC_COLUMN_BU,
+                                (a.$HEIGHT_WALL + a.$HEIGHT_ROOF) / 2 AS $BUILD_HEIGHT
+                    FROM $buildingTable AS a LEFT JOIN $rsuTable AS b
+                    ON a.$idRsu = b.$idRsu""".toString()
+
+            // 2. Calculate the total building roof area within each RSU
+            datasource."$buildInter"."$idRsu".createIndex()
+            datasource """
+                DROP TABLE IF EXISTS $rsuBuildingArea;
+                CREATE TABLE $rsuBuildingArea
+                    AS SELECT   $idRsu, SUM(ST_AREA($GEOMETRIC_COLUMN_BU)) AS $BUILDING_AREA
+                    FROM $buildInter
+                    GROUP BY $idRsu""".toString()
+
+            // 3. Calculate the fraction of roof for each level of the canopy (defined by 'listLayersBottom') except the last
+            datasource."$buildInter"."$BUILD_HEIGHT".createIndex()
+            datasource."$buildInter"."$idRsu".createIndex()
+            datasource."$rsuBuildingArea"."$idRsu".createIndex()
+            def tab_H = [:]
+            def indicToJoin = [:]
+            for (i in 1..(listLayersBottom.size() - 1)) {
+                def layer_top = listLayersBottom[i]
+                def layer_bottom = listLayersBottom[i-1]
+                def indicNameH = "${BASE_NAME}_${layer_bottom}_$layer_top".toString()
+                tab_H[i-1] = "${buildFracH}_$layer_bottom".toString()
+                datasource """
+                DROP TABLE IF EXISTS $bufferTable;
+                CREATE TABLE $bufferTable
+                    AS SELECT   a.$idRsu, 
+                                CASE WHEN a.$BUILDING_AREA = 0
+                                THEN 0
+                                ELSE SUM(ST_AREA(b.$GEOMETRIC_COLUMN_BU)) / a.$BUILDING_AREA
+                                END AS $indicNameH
+                    FROM $rsuBuildingArea AS a LEFT JOIN $buildInter AS b
+                    ON a.$idRsu = b.$idRsu
+                    WHERE b.$BUILD_HEIGHT >= $layer_bottom AND b.$BUILD_HEIGHT < $layer_top
+                    GROUP BY b.$idRsu""".toString()
+                // Fill missing values with 0
+                datasource."$bufferTable"."$idRsu".createIndex()
+                datasource """
+                    DROP TABLE IF EXISTS ${tab_H[i-1]};
+                    CREATE TABLE ${tab_H[i-1]}
+                    AS SELECT   a.$idRsu, 
+                                COALESCE(b.$indicNameH, 0) AS $indicNameH
+                    FROM $rsuTable AS a LEFT JOIN $bufferTable AS b
+                    ON a.$idRsu = b.$idRsu""".toString()
+                // Declare this layer to the layer to join at the end
+                indicToJoin.put(tab_H[i-1], idRsu)
+            }
+
+            // 4. Calculate the fraction of roof for the last level of the canopy
+            def layer_bottom = listLayersBottom[listLayersBottom.size() - 1]
+            def indicNameH = "${BASE_NAME}_${layer_bottom}_inf".toString()
+            tab_H[listLayersBottom.size() - 1] = "${buildFracH}_$layer_bottom".toString()
+            datasource """
+            DROP TABLE IF EXISTS $bufferTable;
+            CREATE TABLE $bufferTable
+                AS SELECT   a.$idRsu, 
+                            CASE WHEN a.$BUILDING_AREA = 0
+                            THEN 0
+                            ELSE SUM(ST_AREA(b.$GEOMETRIC_COLUMN_BU)) / a.$BUILDING_AREA
+                            END AS $indicNameH
+                FROM $rsuBuildingArea AS a LEFT JOIN $buildInter AS b
+                ON a.$idRsu = b.$idRsu
+                WHERE b.$BUILD_HEIGHT >= $layer_bottom
+                GROUP BY b.$idRsu""".toString()
+            // Fill missing values with 0
+            datasource."$bufferTable"."$idRsu".createIndex()
+            datasource """
+                    DROP TABLE IF EXISTS ${tab_H[listLayersBottom.size() - 1]};
+                    CREATE TABLE ${tab_H[listLayersBottom.size() - 1]}
+                    AS SELECT   a.$idRsu, 
+                                COALESCE(b.$indicNameH, 0) AS $indicNameH
+                    FROM $rsuTable AS a LEFT JOIN $bufferTable AS b
+                    ON a.$idRsu = b.$idRsu""".toString()
+            // Declare this layer to the layer to join at the end
+            indicToJoin.put(tab_H[listLayersBottom.size() - 1], idRsu)
+
+            // 5. Join all layers in one table
+            def joinGrids = Geoindicators.DataUtils.joinTables()
+            if (!joinGrids([inputTableNamesWithId: indicToJoin,
+                            outputTableName      : outputTableName,
+                            datasource           : datasource])) {
+                info "Cannot merge all indicators in RSU table $outputTableName."
+                return
+            }
+
+            datasource """DROP TABLE IF EXISTS $buildInter, $rsuBuildingArea, $bufferTable,
+                    ${tab_H.values().join(",")}""".toString()
+
+            [outputTableName: outputTableName]
+        }
+    }
+}
+
+/**
+ * Process used to compute the frontal area index for different combinations of direction / canopy levels. The frontal
+ * area index for a given set of direction / level is defined as the projected area of facade facing the direction
+ * of analysis divided by the horizontal surface of analysis and divided by the height of the layer
+ *
+ * WARNING: WITH THE CURRENT METHOD, IF A BUILDING FACADE FOLLOW THE LINE SEPARATING TWO RSU, IT WILL BE COUNTED FOR BOTH RSU
+ * (EVEN THOUGH THIS SITUATION IS PROBABLY ALMOST IMPOSSIBLE WITH REGULAR SQUARE GRID)...
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param buildingTable The name of the input ITable where are stored the buildings geometry, the building height,
+ * the building and the rsu id
+ * @param rsuTable The name of the input ITable where are stored the rsu geometries and the 'idRsu'
+ * @param idRsu the name of the id of the RSU table
+ * @param listLayersBottom the list of height corresponding to the bottom of each vertical layers (default
+ * [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50])
+ * @param numberOfDirection the number of directions used for the calculation - according to the method used it should
+ * be divisor of 360 AND a multiple of 2 (default 12)
+ * @param prefixName String use as prefix to name the output table
+ *
+ * @return A database table name.
+ * @author Jérémy Bernard
+ */
+IProcess frontalAreaIndexDistribution() {
+    return create {
+        title "RSU frontal area index distribution"
+        id "frontalAreaIndexDistribution"
+        inputs buildingTable: String, rsuTable: String, idRsu: String, listLayersBottom: [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+                numberOfDirection: 12, prefixName: String, datasource: JdbcDataSource
+        outputs outputTableName: String
+        run { buildingTable, rsuTable, idRsu, listLayersBottom, numberOfDirection, prefixName, datasource ->
+
+            def GEOMETRIC_FIELD_RSU = "the_geom"
+            def GEOMETRIC_FIELD_BU = "the_geom"
+            def ID_FIELD_BU = "id_build"
+            def HEIGHT_WALL = "height_wall"
+            def BASE_NAME = "frontal_area_index_distribution"
+
+            debug "Executing RSU frontal area index distribution"
+
+            // The name of the outputTableName is constructed
+            def outputTableName = prefix prefixName, BASE_NAME
+
+            if (360 % numberOfDirection == 0 && numberOfDirection % 2 == 0) {
+
+                // Temporary table names
+                def buildLine = postfix "buildLine"
+                def allLinesRsu = postfix "all_lines_rsu"
+                def buildFracH = postfix "build_frac_H"
+                def bufferTable = postfix "buffer_table"
+
+                // Consider facades as touching each other within a snap tolerance
+                def snap_tolerance = 0.01
+
+                // 1. Convert the building polygons into lines and create the intersection with RSU polygons
+                datasource."$buildingTable"."$idRsu".createIndex()
+                datasource."$rsuTable"."$idRsu".createIndex()
+                datasource """
+                    DROP TABLE IF EXISTS $buildLine;
+                    CREATE TABLE $buildLine
+                        AS SELECT   a.$ID_FIELD_BU, a.$idRsu,
+                                    ST_INTERSECTION(ST_TOMULTILINE(a.$GEOMETRIC_FIELD_BU), b.$GEOMETRIC_FIELD_RSU) AS $GEOMETRIC_FIELD_BU,
+                                    a.$HEIGHT_WALL
+                        FROM $buildingTable AS a LEFT JOIN $rsuTable AS b
+                        ON a.$idRsu = b.$idRsu""".toString()
+
+                // 2. Keep only intersected facades within a given distance and calculate their length, height and azimuth
+                datasource."$buildLine"."$GEOMETRIC_FIELD_BU".createSpatialIndex()
+                datasource."$buildLine"."$idRsu".createIndex()
+                datasource."$buildLine"."$ID_FIELD_BU".createIndex()
+                datasource """
+                    DROP TABLE IF EXISTS $allLinesRsu;
+                    CREATE TABLE $allLinesRsu 
+                        AS SELECT   -ST_LENGTH($GEOMETRIC_FIELD_BU) AS LENGTH,
+                                    ST_AZIMUTH(ST_STARTPOINT($GEOMETRIC_FIELD_BU), ST_ENDPOINT($GEOMETRIC_FIELD_BU)) AS AZIMUTH,
+                                    $idRsu,
+                                    $HEIGHT_WALL,
+                                    $ID_FIELD_BU
+                        FROM ST_EXPLODE('(SELECT    ST_TOMULTISEGMENTS(ST_INTERSECTION(a.$GEOMETRIC_FIELD_BU, 
+                                                                                       ST_SNAP(b.$GEOMETRIC_FIELD_BU, 
+                                                                                               a.$GEOMETRIC_FIELD_BU,
+                                                                                               $snap_tolerance))) AS $GEOMETRIC_FIELD_BU,
+                                                    LEAST(a.$HEIGHT_WALL, b.$HEIGHT_WALL) AS $HEIGHT_WALL,
+                                                    a.$idRsu, a.$ID_FIELD_BU
+                                            FROM    $buildLine AS a LEFT JOIN $buildLine AS b
+                                                    ON a.$idRsu = b.$idRsu
+                                            WHERE       a.$GEOMETRIC_FIELD_BU && b.$GEOMETRIC_FIELD_BU AND ST_INTERSECTS(a.$GEOMETRIC_FIELD_BU, 
+                                                        ST_SNAP(b.$GEOMETRIC_FIELD_BU, a.$GEOMETRIC_FIELD_BU, $snap_tolerance)) AND
+                                                        a.$ID_FIELD_BU <> b.$ID_FIELD_BU)')
+                        WHERE ST_DIMENSION($GEOMETRIC_FIELD_BU) = 1
+                        UNION ALL
+                        SELECT  ST_LENGTH($GEOMETRIC_FIELD_BU) AS LENGTH,
+                                ST_AZIMUTH(ST_STARTPOINT($GEOMETRIC_FIELD_BU), ST_ENDPOINT($GEOMETRIC_FIELD_BU)) AS AZIMUTH,
+                                $idRsu,
+                                $HEIGHT_WALL,
+                                $ID_FIELD_BU
+                        FROM ST_EXPLODE('(SELECT    ST_TOMULTISEGMENTS($GEOMETRIC_FIELD_BU) AS $GEOMETRIC_FIELD_BU,
+                                                    $HEIGHT_WALL,
+                                                    $idRsu, $ID_FIELD_BU
+                                          FROM $buildLine)')
+                        WHERE ST_LENGTH($GEOMETRIC_FIELD_BU) > 0;""".toString()
+
+                // 3. Make the calculations for all directions of each level except the highest one
+                def dirQueryVertFrac = [:]
+                def dirQueryDiv = [:]
+                def angleRangeRad = 2 * Math.PI / numberOfDirection
+                def angleRangeDeg = 360 / numberOfDirection
+                def tab_H = [:]
+                def indicToJoin = [:]
+                datasource."$rsuTable"."$idRsu".createIndex()
+                for (i in 1..(listLayersBottom.size() - 1)) {
+                    def layer_top = listLayersBottom[i]
+                    def layer_bottom = listLayersBottom[i-1]
+                    def deltaH = layer_top - layer_bottom
+                    tab_H[i-1] = "${buildFracH}_$layer_bottom".toString()
+
+                    // Define queries and indic names
+                    def dirList = [:]
+                    (0..numberOfDirection-1).each{ dirList[it] = (it+0.5)*angleRangeRad}
+                    dirList.each{k, v ->
+                        // Indicator name
+                        def indicName = "FRONTAL_AREA_INDEX_H${layer_bottom}_${layer_top}_D${k*angleRangeDeg}_${(k+1)*angleRangeDeg}"
+                        // Define query to sum the projected facade for buildings and shared facades
+                        dirQueryVertFrac[k] = """
+                                                CASE WHEN $v > AZIMUTH AND $v-AZIMUTH < PI()
+                                                    THEN    CASE WHEN $HEIGHT_WALL >= $layer_top
+                                                                THEN LENGTH*SIN($v-AZIMUTH)
+                                                                ELSE LENGTH*SIN($v-AZIMUTH)*($HEIGHT_WALL-$layer_bottom)/$deltaH
+                                                                END
+                                                    ELSE    CASE WHEN $v - AZIMUTH < -PI()
+                                                            THEN    CASE WHEN $HEIGHT_WALL >= $layer_top
+                                                                    THEN LENGTH*SIN($v+2*PI()-AZIMUTH)
+                                                                    ELSE LENGTH*SIN($v+2*PI()-AZIMUTH)*($HEIGHT_WALL-$layer_bottom)/$deltaH
+                                                                    END
+                                                            ELSE 0
+                                                            END
+                                                    END AS $indicName"""
+                        dirQueryDiv[k] = """COALESCE(SUM(b.$indicName)/ST_AREA(a.$GEOMETRIC_FIELD_RSU), 0) AS $indicName"""
+                    }
+                    // Calculates projected surfaces for buildings and shared facades
+                    datasource """
+                        DROP TABLE IF EXISTS $bufferTable;
+                        CREATE TABLE $bufferTable
+                            AS SELECT   $idRsu, 
+                                        ${dirQueryVertFrac.values().join(",")}
+                            FROM $allLinesRsu
+                            WHERE $HEIGHT_WALL > $layer_bottom""".toString()
+                    // Fill missing values with 0
+                    datasource."$bufferTable"."$idRsu".createIndex()
+                    datasource """
+                        DROP TABLE IF EXISTS ${tab_H[i-1]};
+                        CREATE TABLE ${tab_H[i-1]}
+                            AS SELECT   a.$idRsu, 
+                                        ${dirQueryDiv.values().join(",")}
+                            FROM $rsuTable AS a LEFT JOIN $bufferTable AS b
+                            ON a.$idRsu = b.$idRsu
+                            GROUP BY a.$idRsu""".toString()
+                    // Declare this layer to the layer to join at the end
+                    indicToJoin.put(tab_H[i-1], idRsu)
+                }
+
+                // 4. Make the calculations for the last level
+                def layer_bottom = listLayersBottom[listLayersBottom.size() - 1]
+                // Get the maximum building height
+                def layer_top = (datasource.firstRow("SELECT MAX($HEIGHT_WALL) AS MAXH FROM $buildingTable").MAXH).trunc()+1 as int
+                def deltaH = layer_top - layer_bottom
+                tab_H[listLayersBottom.size() - 1] = "${buildFracH}_$layer_bottom".toString()
+
+                // Define queries and indic names
+                def dirList = [:]
+                (0..numberOfDirection-1).each{ dirList[it] = (it+0.5)*angleRangeRad}
+                dirList.each{k, v ->
+                    // Indicator name
+                    def indicName = "FRONTAL_AREA_INDEX_H${layer_bottom}_${layer_top}_D${k*angleRangeDeg}_${(k+1)*angleRangeDeg}"
+                    // Define query to calculate the vertical fraction of projected facade for buildings and shared facades
+                    dirQueryVertFrac[k] = """
+                                            CASE WHEN $v-AZIMUTH > 0 AND $v-AZIMUTH < PI()
+                                                THEN LENGTH*SIN($v-AZIMUTH)*($HEIGHT_WALL-$layer_bottom)/$deltaH
+                                                ELSE    CASE WHEN $v - AZIMUTH < -PI()
+                                                        THEN LENGTH*SIN($v+2*PI()-AZIMUTH)*($HEIGHT_WALL-$layer_bottom)/$deltaH
+                                                        ELSE 0
+                                                        END
+                                            END AS $indicName"""
+                    dirQueryDiv[k] = """COALESCE(SUM(b.$indicName)/ST_AREA(a.$GEOMETRIC_FIELD_RSU), 0) AS $indicName"""
+                }
+                // Calculates projected surfaces for buildings and shared facades
+                datasource """
+                        DROP TABLE IF EXISTS $bufferTable;
+                        CREATE TABLE $bufferTable
+                            AS SELECT   $idRsu, 
+                                        ${dirQueryVertFrac.values().join(",")}
+                            FROM $allLinesRsu
+                            WHERE $HEIGHT_WALL > $layer_bottom""".toString()
+                // Fill missing values with 0
+                datasource."$bufferTable"."$idRsu".createIndex()
+                datasource """
+                        DROP TABLE IF EXISTS ${tab_H[listLayersBottom.size()-1]};
+                        CREATE TABLE ${tab_H[listLayersBottom.size()-1]}
+                            AS SELECT   a.$idRsu, 
+                                        ${dirQueryDiv.values().join(",")}
+                            FROM $rsuTable AS a LEFT JOIN $bufferTable AS b
+                            ON a.$idRsu = b.$idRsu
+                            GROUP BY a.$idRsu""".toString()
+                // Declare this layer to the layer to join at the end
+                indicToJoin.put(tab_H[listLayersBottom.size()-1], idRsu)
+
+                // 5. Join all layers in one table
+                def joinGrids = Geoindicators.DataUtils.joinTables()
+                if (!joinGrids([inputTableNamesWithId: indicToJoin,
+                                outputTableName      : outputTableName,
+                                datasource           : datasource])) {
+                    info "Cannot merge all indicators in RSU table $outputTableName."
+                    return
+                }
+
+                // The temporary tables are deleted
+                //datasource """DROP TABLE IF EXISTS $buildLine, $allLinesRsu,
+                //                $bufferTable, ${tab_H.values().join(",")}""".toString()
+            }
+
             [outputTableName: outputTableName]
         }
     }

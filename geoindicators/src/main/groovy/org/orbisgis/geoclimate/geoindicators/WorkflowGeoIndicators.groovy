@@ -1851,15 +1851,21 @@ IProcess rasterizeIndicators() {
                 gridTableName: String, list_indicators :[],
                 buildingTable: "", roadTable: "", vegetationTable: "",
                 hydrographicTable: "", imperviousTable: "", rsu_lcz:"",
-                rsu_utrf_area:"",rsu_utrf_floor_area:"",
+                rsu_utrf_area:"",rsu_utrf_floor_area:"", seaLandMaskTableName: "",
                 prefixName: String
         outputs outputTableName: String
         run { datasource, gridTableName, list_indicators,buildingTable, roadTable, vegetationTable,
-              hydrographicTable, imperviousTable, rsu_lcz,rsu_utrf_area,rsu_utrf_floor_area, prefixName ->
+              hydrographicTable, imperviousTable, rsu_lcz,rsu_utrf_area,rsu_utrf_floor_area, seaLandMaskTableName,
+              prefixName ->
             if(!list_indicators){
                 info "The list of indicator names cannot be null or empty"
                 return
             }
+            // Temporary (and output tables) are created
+            def tesselatedSeaLandTab = postfix "TESSELATED_SEA_LAND"
+            def seaLandFractionTab = postfix "SEA_LAND_FRACTION"
+
+            def seaLandTypeField = "TYPE"
             def grid_indicators_table = "grid_indicators"
             def grid_column_identifier ="id"
                 def indicatorTablesToJoin = [:]
@@ -1956,13 +1962,14 @@ IProcess rasterizeIndicators() {
 
                 // If any surface fraction calculation is needed, create the priority list containing only needed fractions
                 // and also set which type of statistics is needed if "BUILDING_HEIGHT" is activated
+                def surfaceFractionsProcess
                 def columnFractionsList = [:]
                 def priorities = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
 
                 def unweightedBuildingIndicators = [:]
                 def weightedBuildingIndicators = [:]
                 list_indicators.each{
-                    if(it.equalsIgnoreCase("BUILDING_FRACTION")){
+                    if(it.equalsIgnoreCase("BUILDING_FRACTION") || it.equalsIgnoreCase("BUILDING_SURFACE_DENSITY")){
                         columnFractionsList.put( priorities.indexOf("building"),"building")
                     }
                     else if(it.equalsIgnoreCase("WATER_FRACTION")){
@@ -1998,7 +2005,7 @@ IProcess rasterizeIndicators() {
                             imperviousTable: imperviousTable,
                             prefixName     : prefixName, datasource: datasource])) {
                         def superpositionsTableGrid = computeSmallestGeom.results.outputTableName
-                        def surfaceFractionsProcess = Geoindicators.RsuIndicators.surfaceFractions()
+                        surfaceFractionsProcess = Geoindicators.RsuIndicators.surfaceFractions()
                         def superpositions = []
                         if(surfaceFractionsProcess.execute([
                                 rsuTable: gridTableName, spatialRelationsTable: superpositionsTableGrid,
@@ -2098,7 +2105,8 @@ IProcess rasterizeIndicators() {
                     }
                 }
 
-                if(list_indicators*.toUpperCase().contains("FREE_EXTERNAL_FACADE_DENSITY") && buildingTable){
+                if((list_indicators*.toUpperCase().contains("FREE_EXTERNAL_FACADE_DENSITY") && buildingTable) ||
+                        (list_indicators*.toUpperCase().contains("BUILDING_SURFACE_DENSITY") && buildingTable)){
                     if(!createScalesRelationsGridBl){
                         // Create the relations between grid cells and buildings
                         createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
@@ -2119,9 +2127,124 @@ IProcess rasterizeIndicators() {
                              idRsu                       : grid_column_identifier,
                              prefixName                  : prefixName,
                              datasource                  : datasource])) {
-                        indicatorTablesToJoin.put(freeFacadeDensityExact.results.outputTableName, grid_column_identifier)
+                        if(list_indicators*.toUpperCase().contains("FREE_EXTERNAL_FACADE_DENSITY")){
+                            indicatorTablesToJoin.put(freeFacadeDensityExact.results.outputTableName, grid_column_identifier)
+                        }
+                        if(list_indicators*.toUpperCase().contains("FREE_EXTERNAL_FACADE_DENSITY")){
+                            def buildingSurfDensity = Geoindicators.RsuIndicators.buildingSurfaceDensity()
+                            if (buildingSurfDensity.execute([
+                                    facadeDensityTable      : freeFacadeDensityExact.results.outputTableName,
+                                    buildingFractionTable   : surfaceFractionsProcess.results.outputTableName,
+                                    facDensityColumn        : "FREE_EXTERNAL_FACADE_DENSITY",
+                                    buFractionColumn        : "building_fraction",
+                                    idRsu                   : grid_column_identifier,
+                                    prefixName              : prefixName,
+                                    datasource              : datasource])) {
+                                if (list_indicators*.toUpperCase().contains("BUILDING_SURFACE_DENSITY")) {
+                                    indicatorTablesToJoin.put(buildingSurfDensity.results.outputTableName, grid_column_identifier)
+                                }
+                            }
+                        }
                     } else {
                         info "Cannot calculate the exact free external facade density"
+                    }
+                }
+
+                if(list_indicators*.toUpperCase().contains("BUILDING_HEIGHT_DIST") && buildingTable){
+                    if(!createScalesRelationsGridBl){
+                        // Create the relations between grid cells and buildings
+                        createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
+                        if (!createScalesRelationsGridBl([datasource              : datasource,
+                                                          sourceTable             : buildingTable,
+                                                          targetTable             : gridTableName,
+                                                          idColumnTarget          : grid_column_identifier,
+                                                          prefixName              : prefixName,
+                                                          nbRelations             : null])) {
+                            info "Cannot compute the scales relations between buildings and grid cells."
+                            return
+                        }
+                    }
+                    def roofFractionDistributionExact = Geoindicators.RsuIndicators.roofFractionDistributionExact()
+                    if (roofFractionDistributionExact(
+                            [buildingTable               : createScalesRelationsGridBl.results.outputTableName,
+                             rsuTable                    : gridTableName,
+                             idRsu                       : grid_column_identifier,
+                             listLayersBottom            : [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+                             prefixName                  : prefixName,
+                             datasource                  : datasource])) {
+                        indicatorTablesToJoin.put(roofFractionDistributionExact.results.outputTableName, grid_column_identifier)
+                    } else {
+                        info "Cannot compute the roof fraction distribution."
+                    }
+                }
+
+                if(list_indicators*.toUpperCase().contains("FRONTAL_AREA_INDEX") && buildingTable){
+                    if(!createScalesRelationsGridBl){
+                        // Create the relations between grid cells and buildings
+                        createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
+                        if (!createScalesRelationsGridBl([datasource              : datasource,
+                                                          sourceTable             : buildingTable,
+                                                          targetTable             : gridTableName,
+                                                          idColumnTarget          : grid_column_identifier,
+                                                          prefixName              : prefixName,
+                                                          nbRelations             : null])) {
+                            info "Cannot compute the scales relations between buildings and grid cells."
+                            return
+                        }
+                    }
+                    def frontalAreaIndexDistribution = Geoindicators.RsuIndicators.frontalAreaIndexDistribution()
+                    if (frontalAreaIndexDistribution(
+                            [buildingTable               : createScalesRelationsGridBl.results.outputTableName,
+                             rsuTable                    : gridTableName,
+                             idRsu                       : grid_column_identifier,
+                             listLayersBottom            : [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+                             numberOfDirection           : 12,
+                             prefixName                  : prefixName,
+                             datasource                  : datasource])) {
+                        indicatorTablesToJoin.put(frontalAreaIndexDistribution.results.outputTableName, grid_column_identifier)
+                    } else {
+                        info "Cannot compute the frontal area index."
+                    }
+                }
+
+                if(list_indicators*.toUpperCase().contains("SEA_LAND_FRACTION") && seaLandMaskTableName) {
+                    // If only one type of surface (land or sea) is in the zone, no need for computational fraction calculation
+                    def sea_land_type_rows = datasource.rows("""SELECT $seaLandTypeField, COUNT(*) AS NB_TYPES
+                                                                    FROM $seaLandMaskTableName
+                                                                    GROUP BY $seaLandTypeField""")
+                    if (! sea_land_type_rows[seaLandTypeField].get("SEA")) {
+                        datasource """ 
+                            DROP TABLE IF EXISTS $seaLandFractionTab;
+                            CREATE TABLE $seaLandFractionTab
+                                AS SELECT $grid_column_identifier, 1 AS LAND_FRACTION
+                                FROM $grid_indicators_table"""
+                        indicatorTablesToJoin.put(seaLandFractionTab, grid_column_identifier)
+                    } else {
+                        // Split the potentially big complex seaLand geometries into smaller triangles in order to makes calculation faster
+                        datasource """ 
+                            DROP TABLE IF EXISTS $tesselatedSeaLandTab;
+                            CREATE TABLE $tesselatedSeaLandTab(id_tesselate serial, the_geom geometry, $seaLandTypeField VARCHAR)
+                                AS SELECT null, the_geom, $seaLandTypeField
+                                FROM ST_EXPLODE('select st_tesselate(the_geom) AS the_geom, $seaLandTypeField FROM $seaLandMaskTableName')"""
+
+                        def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics()
+                        if (upperScaleAreaStatistics(
+                                [upperTableName: grid_indicators_table,
+                                 upperColumnId: grid_column_identifier,
+                                 lowerTableName: tesselatedSeaLandTab,
+                                 lowerColumnName: seaLandTypeField,
+                                 prefixName: prefixName,
+                                 datasource: datasource])) {
+                            // Modify columns name to postfix with "_FRACTION"
+                            datasource """ 
+                                ALTER TABLE ${upperScaleAreaStatistics.results.outputTableName} RENAME COLUMN LAND TO LAND_FRACTION;
+                                ALTER TABLE ${
+                                upperScaleAreaStatistics.results.outputTableName
+                            } RENAME COLUMN SEA TO SEA_FRACTION;"""
+                            indicatorTablesToJoin.put(upperScaleAreaStatistics.results.outputTableName, grid_column_identifier)
+                        } else {
+                            info "Cannot compute the frontal area index."
+                        }
                     }
                 }
 
@@ -2133,6 +2256,9 @@ IProcess rasterizeIndicators() {
                     info "Cannot merge all indicators in grid table $grid_indicators_table."
                     return
                 }
+
+                // Remove temporary tables
+                datasource """DROP TABLE IF EXISTS $tesselatedSeaLandTab, $seaLandFractionTab"""
             [outputTableName: grid_indicators_table]
         }
     }

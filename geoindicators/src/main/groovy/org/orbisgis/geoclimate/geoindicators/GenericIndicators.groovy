@@ -1073,7 +1073,7 @@ IProcess upperScaleAreaStatistics() {
                          """
                     }else{
                         query += """
-                         , CASE WHEN $lowerColumnName=${it.val}
+                         , CASE WHEN $lowerColumnName='${it.val}'
                          THEN SUM(area) ELSE 0 END
                          AS $aliasColumn
                          """

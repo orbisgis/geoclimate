@@ -641,4 +641,119 @@ class RsuIndicatorsTests {
         assertEquals(3.0/10, result0["building_fraction"])
         assertEquals(0d, result0["undefined_fraction"])
     }
+
+    @Test
+    void buildingSurfaceDensityTest() {
+        h2GIS """
+                DROP TABLE IF EXISTS facade_density_tab, building_fraction_tab; 
+                CREATE TABLE facade_density_tab(id_rsu int, facade_density double);
+                INSERT INTO facade_density_tab VALUES (1, 1.2),
+                                               (2, 0);
+                CREATE TABLE building_fraction_tab(id_rsu int, building_fraction double);
+                INSERT INTO building_fraction_tab VALUES    (1, 0.5),
+                                                (2, 1);
+        """
+
+        def p0 = Geoindicators.RsuIndicators.buildingSurfaceDensity()
+        assertTrue p0.execute([
+                facadeDensityTable: "facade_density_tab", buildingFractionTable: "building_fraction_tab",
+                facDensityColumn: "facade_density",
+                buFractionColumn: "building_fraction",
+                idRsu: "id_rsu",
+                prefixName: "test", datasource: h2GIS])
+        def result1 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName} WHERE id_rsu=1")
+        assertEquals(1.7, result1["building_surface_density"])
+        def result2 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName} WHERE id_rsu=2")
+        assertEquals(1.0, result2["building_surface_density"])
+    }
+
+    @Test
+    void roofFractionDistributionExactTest() {
+        // Only the first 1 first created buildings are selected for the tests
+        h2GIS """
+                DROP TABLE IF EXISTS tempo_build, tempo_rsu; 
+                CREATE TABLE tempo_build(id_build int, the_geom geometry, height_wall double, height_roof double);
+                INSERT INTO tempo_build VALUES (1, 'POLYGON((-50 -50, 50 -50, 50 50, -50 50, -50 -50))'::GEOMETRY, 2, 4),
+                                               (2, 'POLYGON((50 -50, 150 -50, 150 50, 50 50, 50 -50))'::GEOMETRY, 18, 24),
+                                               (3, 'POLYGON((50 50, 100 50, 100 150, 50 150, 50 50))'::GEOMETRY, 60, 60);
+                CREATE TABLE tempo_rsu(id_rsu int, the_geom geometry);
+                INSERT INTO tempo_rsu VALUES    (1, 'POLYGON((0 0, 100 0, 100 100, 0 100, 0 0))'::GEOMETRY),
+                                                (2, 'POLYGON((100 0, 200 0, 200 100, 100 100, 100 0))'::GEOMETRY),
+                                                (3, 'POLYGON((0 100, 100 100, 100 200, 0 200, 0 100))'::GEOMETRY),
+                                                (4, 'POLYGON((100 100, 200 100, 200 200, 100 200, 100 100))'::GEOMETRY);
+            """
+        // First calculate the correlation table between buildings and rsu
+        def createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
+        createScalesRelationsGridBl([datasource              : h2GIS,
+                                     sourceTable             : "tempo_build",
+                                     targetTable             : "tempo_rsu",
+                                     idColumnTarget          : "id_rsu",
+                                     prefixName              : "test",
+                                     nbRelations             : null])
+
+        def p = Geoindicators.RsuIndicators.roofFractionDistributionExact()
+        assertTrue p([
+                buildingTable               : createScalesRelationsGridBl.results.outputTableName,
+                rsuTable                    : "tempo_rsu",
+                idRsu                       : "id_rsu",
+                prefixName                  : "test",
+                listLayersBottom            : [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+                datasource                  : h2GIS])
+        assertEquals 1.0/3, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").ROOF_FRACTION_DISTRIBUTION_0_5, 0.00001
+        assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").ROOF_FRACTION_DISTRIBUTION_15_20, 0.00001
+        assertEquals 1.0/3, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").ROOF_FRACTION_DISTRIBUTION_20_25, 0.00001
+        assertEquals 1.0/3, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").ROOF_FRACTION_DISTRIBUTION_50_INF, 0.00001
+        assertEquals 1.0, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 2").ROOF_FRACTION_DISTRIBUTION_20_25, 0.00001
+        assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 2").ROOF_FRACTION_DISTRIBUTION_0_5, 0.00001
+        assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 2").ROOF_FRACTION_DISTRIBUTION_50_INF, 0.00001
+        assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 3").ROOF_FRACTION_DISTRIBUTION_20_25, 0.00001
+        assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 3").ROOF_FRACTION_DISTRIBUTION_0_5, 0.00001
+        assertEquals 1.0, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 3").ROOF_FRACTION_DISTRIBUTION_50_INF, 0.00001
+        assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 4").ROOF_FRACTION_DISTRIBUTION_20_25, 0.00001
+        assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 4").ROOF_FRACTION_DISTRIBUTION_0_5, 0.00001
+        assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 4").ROOF_FRACTION_DISTRIBUTION_50_INF, 0.00001
+    }
+
+    @Test
+    void frontalAreaIndexDistributionTest() {
+        // Only the first 1 first created buildings are selected for the tests
+        h2GIS """
+                DROP TABLE IF EXISTS tempo_build, tempo_rsu; 
+                CREATE TABLE tempo_build(id_build int, the_geom geometry, height_wall double);
+                INSERT INTO tempo_build VALUES (1, 'POLYGON((-50 -50, 50 -50, 50 50, -50 50, -50 -50))'::GEOMETRY, 3),
+                                               (2, 'POLYGON((50 -50, 150 -50, 150 50, 50 50, 50 -50))'::GEOMETRY, 21),
+                                               (3, 'POLYGON((50 50, 100 50, 100 150, 50 150, 50 50))'::GEOMETRY, 60);
+                CREATE TABLE tempo_rsu(id_rsu int, the_geom geometry);
+                INSERT INTO tempo_rsu VALUES    (1, 'POLYGON((0 0, 100 0, 100 100, 0 100, 0 0))'::GEOMETRY),
+                                                (2, 'POLYGON((100 0, 200 0, 200 100, 100 100, 100 0))'::GEOMETRY),
+                                                (3, 'POLYGON((0 100, 100 100, 100 200, 0 200, 0 100))'::GEOMETRY),
+                                                (4, 'POLYGON((100 100, 200 100, 200 200, 100 200, 100 100))'::GEOMETRY),
+                                                (5, 'POLYGON((200 200, 300 200, 300 300, 200 300, 200 200))'::GEOMETRY);
+            """
+        // First calculate the correlation table between buildings and rsu
+        def createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
+        createScalesRelationsGridBl([datasource              : h2GIS,
+                                     sourceTable             : "tempo_build",
+                                     targetTable             : "tempo_rsu",
+                                     idColumnTarget          : "id_rsu",
+                                     prefixName              : "test",
+                                     nbRelations             : null])
+
+
+        def p = Geoindicators.RsuIndicators.frontalAreaIndexDistribution()
+        assertTrue p([
+                buildingTable               : createScalesRelationsGridBl.results.outputTableName,
+                rsuTable                    : "tempo_rsu",
+                idRsu                       : "id_rsu",
+                listLayersBottom            : [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+                numberOfDirection           : 12,
+                prefixName                  : "test",
+                datasource                  : h2GIS])
+        assertEquals 0.00566, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").FRONTAL_AREA_INDEX_H0_5_D30_60, 0.00001
+        assertEquals 0.00321, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").FRONTAL_AREA_INDEX_H50_61_D30_60, 0.00001
+        assertEquals 0.00321, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 4").FRONTAL_AREA_INDEX_H50_61_D30_60, 0.00001
+        assertEquals 0.0, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 5").FRONTAL_AREA_INDEX_H0_5_D30_60, 0.00001
+    }
+
 }
+
