@@ -2135,7 +2135,7 @@ IProcess rasterizeIndicators() {
                             if (buildingSurfDensity.execute([
                                     facadeDensityTable      : freeFacadeDensityExact.results.outputTableName,
                                     buildingFractionTable   : surfaceFractionsProcess.results.outputTableName,
-                                    facDensityColumn        : "exact_free_facade_density",
+                                    facDensityColumn        : "FREE_EXTERNAL_FACADE_DENSITY",
                                     buFractionColumn        : "building_fraction",
                                     idRsu                   : grid_column_identifier,
                                     prefixName              : prefixName,
@@ -2209,13 +2209,14 @@ IProcess rasterizeIndicators() {
 
                 if(list_indicators*.toUpperCase().contains("SEA_LAND_FRACTION") && seaLandMaskTableName) {
                     // If only one type of surface (land or sea) is in the zone, no need for computational fraction calculation
-                    def nbTypes = datasource.firstRow("""SELECT COUNT(DISTINCT($seaLandTypeField)) AS nb_types FROM $seaLandMaskTableName""").NB_TYPES
-                    if (nbTypes == 1) {
-                        def uniqueSurfaceType = datasource.firstRow("""SELECT DISTINCT($seaLandTypeField) AS unique_surface_type FROM $seaLandMaskTableName""").UNIQUE_SURFACE_TYPE
+                    def sea_land_type_rows = datasource.rows("""SELECT $seaLandTypeField, COUNT(*) AS NB_TYPES
+                                                                    FROM $seaLandMaskTableName
+                                                                    GROUP BY $seaLandTypeField""")
+                    if (! sea_land_type_rows[seaLandTypeField].get("SEA")) {
                         datasource """ 
                             DROP TABLE IF EXISTS $seaLandFractionTab;
                             CREATE TABLE $seaLandFractionTab
-                                AS SELECT $grid_column_identifier, 1 AS ${uniqueSurfaceType}_FRACTION
+                                AS SELECT $grid_column_identifier, 1 AS LAND_FRACTION
                                 FROM $grid_indicators_table"""
                         indicatorTablesToJoin.put(seaLandFractionTab, grid_column_identifier)
                     } else {
