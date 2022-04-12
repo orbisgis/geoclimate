@@ -1441,7 +1441,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
                         info "Create a default empty worldpop table"
                         def outputTableWorldPopName = postfix "world_pop"
                         h2gis_datasource.execute("""drop table if exists $outputTableWorldPopName;
-                    create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $epsg), ID_POP INTEGER, POP FLOAT);""".toString())
+                    create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $srid), ID_POP INTEGER, POP FLOAT);""".toString())
                         results.put("populationTableName", outputTableWorldPopName)
                     }
 
@@ -1449,7 +1449,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
                     info "Cannot find the population grid $coverageId \n Create a default empty worldpop table"
                     def outputTableWorldPopName = postfix "world_pop"
                     h2gis_datasource.execute("""drop table if exists $outputTableWorldPopName;
-                    create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $epsg), ID_POP INTEGER, POP FLOAT);""".toString())
+                    create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $srid), ID_POP INTEGER, POP FLOAT);""".toString())
                     results.put("populationTableName", outputTableWorldPopName)
                 }
             }
