@@ -563,6 +563,7 @@ IProcess workflow() {
                                                 error "Cannot delete the local H2GIS database : ${databasePath} "
                                             }
                                         }
+                                        return [output: outputTableNamesResult]
                                     } else {
                                         error "Cannot find any commune features from the query $codes"
                                     }
@@ -605,6 +606,19 @@ IProcess workflow() {
                                             info  "${nbzones} area(s) on ${codes.size()}"
                                         }
                                     }
+
+                                    if (delete_h2gis) {
+                                        def localCon = h2gis_datasource.getConnection()
+                                        if(localCon){
+                                            localCon.close()
+                                            DeleteDbFiles.execute(databaseFolder, databaseName, true)
+                                            debug "The local H2GIS database : ${databasePath} has been deleted"
+                                        }
+                                        else{
+                                            error "Cannot delete the local H2GIS database : ${databasePath} "
+                                        }
+                                    }
+                                    return [output: outputTableNamesResult]
 
                                 } else {
                                     error "You don't have permission to write in the folder $outputFolder. \n Check if the folder exists."
@@ -662,6 +676,7 @@ IProcess workflow() {
                                                 error "Cannot delete the local H2GIS database : ${databasePath} "
                                             }
                                         }
+                                        return [output: outputTableNamesResult]
                                     } else if (codes) {
                                         def inputTableNames = inputDataBase.tables
                                         def h2gis_datasource = H2GIS.open(h2gis_properties)
@@ -707,6 +722,7 @@ IProcess workflow() {
                                                     error "Cannot delete the local H2GIS database : ${databasePath} "
                                                 }
                                             }
+                                            return [output: outputTableNamesResult]
                                         } else {
                                             error "Cannot find any commune features from the query $codes"
                                         }
@@ -734,7 +750,7 @@ IProcess workflow() {
             } else {
                 error "Empty parameters"
             }
-            return [outputMessage: "The BDTopo V2.2 workflow has been executed"]
+            return [output: null]
         }
     }
 }
