@@ -799,7 +799,7 @@ IProcess osm_processing() {
                                 saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone, srid, outputSRID, reproject)
                             }
 
-                            outputTableNamesResult.put(id_zone in Map?id_zone.join("_"):id_zone, results.findAll{ it.value!=null })
+                            outputTableNamesResult.put(id_zone in Collection?id_zone.join("_"):id_zone, results.findAll{ it.value!=null })
 
                         } else {
                             h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error loading the OSM file')".toString()
@@ -1179,7 +1179,7 @@ def extractProcessingParameters(def processing_parameters){
  */
 def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFiles, def ouputFolder, def subFolderName, def outputSRID, def reproject, def deleteOutputData, def outputGrid){
     //Create a subfolder to store each results
-    def folderName = id_zone in Map?id_zone.join("_"):id_zone
+    def folderName = id_zone in Collection?id_zone.join("_"):id_zone
     def subFolder = new File(ouputFolder.getAbsolutePath()+File.separator+subFolderName+folderName)
     if(!subFolder.exists()){
         subFolder.mkdir()
