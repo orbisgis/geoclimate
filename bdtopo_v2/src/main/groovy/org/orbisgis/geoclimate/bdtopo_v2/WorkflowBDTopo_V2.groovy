@@ -1531,7 +1531,7 @@ def bdtopo_processing(def  h2gis_datasource, def processing_parameters,def id_zo
  */
 def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFiles, def ouputFolder, def subFolderName,def outputSRID, def reproject, def deleteOutputData){
     //Create a subfolder to store each results
-    def folderName = id_zone in Map?id_zone.join("_"):id_zone
+    def folderName = id_zone in Collection?id_zone.join("_"):id_zone
     def subFolder = new File(ouputFolder.getAbsolutePath()+File.separator+subFolderName+folderName)
     if(!subFolder.exists()){
         subFolder.mkdir()
