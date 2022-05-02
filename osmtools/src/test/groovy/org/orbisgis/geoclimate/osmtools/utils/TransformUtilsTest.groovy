@@ -45,7 +45,7 @@ import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.MultiLineString
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.geoclimate.osmtools.AbstractOSMTest
-import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
+import org.orbisgis.data.H2GIS
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
