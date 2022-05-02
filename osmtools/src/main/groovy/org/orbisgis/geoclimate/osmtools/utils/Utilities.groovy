@@ -39,7 +39,7 @@ package org.orbisgis.geoclimate.osmtools.utils
 import groovy.json.JsonSlurper
 import org.cts.util.UTMUtils
 import org.locationtech.jts.geom.*
-import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
+import org.orbisgis.data.jdbc.JdbcDataSource
 import org.slf4j.LoggerFactory
 
 import static java.nio.charset.StandardCharsets.UTF_8

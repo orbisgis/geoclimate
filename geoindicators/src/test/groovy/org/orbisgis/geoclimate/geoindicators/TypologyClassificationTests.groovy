@@ -6,7 +6,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
+import org.orbisgis.data.dataframe.DataFrame
 import smile.classification.DataFrameClassifier
 import smile.validation.Accuracy
 import smile.validation.Validation
@@ -14,7 +14,7 @@ import java.util.zip.GZIPInputStream
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.fail
-import static org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS.open
+import static org.orbisgis.data.H2GIS.open
 
 class TypologyClassificationTests {
 

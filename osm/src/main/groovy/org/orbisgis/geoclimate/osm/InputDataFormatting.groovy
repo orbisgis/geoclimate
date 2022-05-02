@@ -4,9 +4,9 @@ import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.Polygon
-import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
-import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
-import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.data.api.dataset.ISpatialTable
+import org.orbisgis.data.jdbc.JdbcDataSource
+import org.orbisgis.process.api.IProcess
 
 import java.util.regex.Pattern
 

@@ -73,7 +73,7 @@
 package org.orbisgis.geoclimate.osmtools.utils
 
 import org.orbisgis.geoclimate.osmtools.OSMTools
-import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
+import org.orbisgis.data.jdbc.JdbcDataSource
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 

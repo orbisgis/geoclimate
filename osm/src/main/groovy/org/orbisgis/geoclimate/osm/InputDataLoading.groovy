@@ -7,8 +7,8 @@ import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.geoclimate.osmtools.OSMTools
 import org.orbisgis.geoclimate.osmtools.utils.Utilities
-import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
-import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.data.jdbc.JdbcDataSource
+import org.orbisgis.process.api.IProcess
 import org.h2gis.utilities.GeographyUtilities
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.orbisgis.geoclimate.osmtools.utils.OSMElement

@@ -36,7 +36,7 @@
  */
 package org.orbisgis.geoclimate.osmtools
 
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
+import org.orbisgis.process.GroovyProcessFactory
 import org.orbisgis.geoclimate.osmtools.Loader as LOADER
 import org.orbisgis.geoclimate.osmtools.Transform as TRANSFORM
 import org.orbisgis.geoclimate.osmtools.utils.Utilities as UTILITIES

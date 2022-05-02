@@ -38,8 +38,8 @@ package org.orbisgis.geoclimate.osmtools
 
 import org.junit.jupiter.api.*
 import org.locationtech.jts.geom.*
-import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
-import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.data.H2GIS
+import org.orbisgis.process.api.IProcess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.orbisgis.geoclimate.osmtools.utils.OSMElement

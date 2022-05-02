@@ -5,11 +5,11 @@ import org.h2.value.ValueGeometry
 import org.h2gis.functions.spatial.create.ST_MakeGrid
 import org.locationtech.jts.geom.Geometry
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
-import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
-import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
-import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
-import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.data.api.dataset.ISpatialTable
+import org.orbisgis.data.H2GIS
+import org.orbisgis.data.POSTGIS
+import org.orbisgis.data.jdbc.*
+import org.orbisgis.process.api.IProcess
 
 import java.sql.Connection
 import java.sql.PreparedStatement

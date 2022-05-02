@@ -1,8 +1,8 @@
 package org.orbisgis.geoclimate.bdtopo_v2
 
 import groovy.transform.BaseScript
-import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
-import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.data.jdbc.JdbcDataSource
+import org.orbisgis.process.api.IProcess
 
 @BaseScript BDTopo_V2 BDTopo_V2
 

@@ -41,8 +41,8 @@ import org.cts.util.UTMUtils
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.functions.io.asc.AscReaderDriver
 import org.h2gis.utilities.FileUtilities
-import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
-import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.data.jdbc.JdbcDataSource
+import org.orbisgis.process.api.IProcess
 
 
 @BaseScript WorldPopTools pf

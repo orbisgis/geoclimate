@@ -4,11 +4,11 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.process.api.IProcess
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertTrue
-import static org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS.open
+import static org.orbisgis.data.H2GIS.open
 
 class BuildingIndicatorsTests {
 

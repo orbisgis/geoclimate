@@ -37,7 +37,7 @@
 package org.orbisgis.geoclimate.osmtools
 
 import groovy.transform.BaseScript
-import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
+import org.orbisgis.data.jdbc.JdbcDataSource
 
 import static org.orbisgis.geoclimate.osmtools.utils.TransformUtils.*
 import static org.orbisgis.geoclimate.osmtools.utils.TransformUtils.Types.*

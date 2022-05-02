@@ -5,13 +5,13 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
+import org.orbisgis.data.api.dataset.ISpatialTable
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
-import static org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS.open
+import static org.orbisgis.data.H2GIS.open
 
 class GenericIndicatorsTests {
 

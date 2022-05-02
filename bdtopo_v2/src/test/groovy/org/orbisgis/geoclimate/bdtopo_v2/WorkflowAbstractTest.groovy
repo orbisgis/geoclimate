@@ -1,7 +1,7 @@
 package org.orbisgis.geoclimate.bdtopo_v2
 
 
-import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.process.api.IProcess
 import org.orbisgis.geoclimate.Geoindicators
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

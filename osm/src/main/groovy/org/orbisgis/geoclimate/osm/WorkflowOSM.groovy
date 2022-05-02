@@ -14,11 +14,11 @@ import org.locationtech.jts.geom.Polygon
 import org.orbisgis.geoclimate.osmtools.utils.Utilities
 import org.orbisgis.geoclimate.osmtools.utils.OSMElement
 import org.orbisgis.geoclimate.worldpoptools.WorldPopTools
-import org.orbisgis.orbisdata.datamanager.api.dataset.ITable
-import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
-import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
-import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
-import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.data.api.dataset.ITable
+import org.orbisgis.data.jdbc.JdbcDataSource
+import org.orbisgis.data.H2GIS
+import org.orbisgis.data.POSTGIS
+import org.orbisgis.process.api.IProcess
 import org.orbisgis.geoclimate.osmtools.OSMTools
 import org.h2gis.functions.io.utility.PRJUtil;
 

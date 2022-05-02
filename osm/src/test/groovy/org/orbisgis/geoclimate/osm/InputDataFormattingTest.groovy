@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.geoclimate.osmtools.utils.Utilities
-import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
-import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.data.H2GIS
+import org.orbisgis.process.api.IProcess
 
 import java.util.regex.Pattern
 

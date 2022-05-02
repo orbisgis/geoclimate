@@ -4,8 +4,8 @@ import groovy.transform.BaseScript
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
 import org.locationtech.jts.geom.Envelope
-import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
-import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.data.jdbc.*
+import org.orbisgis.process.api.IProcess
 import org.orbisgis.geoclimate.Geoindicators
 
 @BaseScript Geoindicators geoindicators

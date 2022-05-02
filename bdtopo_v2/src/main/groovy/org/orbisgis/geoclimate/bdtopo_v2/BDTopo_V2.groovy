@@ -1,6 +1,6 @@
 package org.orbisgis.geoclimate.bdtopo_v2
 
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
+import org.orbisgis.process.GroovyProcessFactory
 import org.slf4j.LoggerFactory
 
 
