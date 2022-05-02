@@ -6,7 +6,7 @@ import org.orbisgis.geoclimate.Geoindicators
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertTrue
-import static org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS.open
+import static org.orbisgis.data.H2GIS.open
 
 class TrafficFlowTests {
 

@@ -10,10 +10,10 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.io.WKTReader
-import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
-import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
-import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
-import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.data.jdbc.JdbcDataSource
+import org.orbisgis.data.H2GIS
+import org.orbisgis.data.POSTGIS
+import org.orbisgis.process.api.IProcess
 import org.orbisgis.geoclimate.Geoindicators
 import static org.junit.jupiter.api.Assertions.*
 

@@ -43,7 +43,7 @@ import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.geoclimate.osmtools.utils.Utilities
-import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
+import org.orbisgis.data.jdbc.JdbcDataSource
 
 import java.util.regex.Pattern
 

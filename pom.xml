@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.orbisgis</groupId>
         <artifactId>orbisparent</artifactId>
-        <version>1.2.0-SNAPSHOT</version>
+        <version>1.2.1-SNAPSHOT</version>
     </parent>
     <groupId>org.orbisgis.geoclimate</groupId>
     <artifactId>geoclimate-parent</artifactId>
@@ -26,12 +26,12 @@
         <maven.build.timestamp.format>YYYY-MM-dd</maven.build.timestamp.format>
         <buildNumber>${maven.build.timestamp}</buildNumber>
         <site.basedir>${project.basedir}</site.basedir>
-        <log4j-version>2.15.0</log4j-version>
-        <h2gis-version>2.0.0-SNAPSHOT</h2gis-version>
-        <h2-version>2.1.210</h2-version>
-        <orbisparent-version>1.2.0-SNAPSHOT</orbisparent-version>
-        <cts-version>1.6.0-SNAPSHOT</cts-version>
-        <orbisdata-version>1.0.1-SNAPSHOT</orbisdata-version>
+        <h2gis-version>2.1.0-SNAPSHOT</h2gis-version>
+        <h2-version>2.1.212</h2-version>
+        <orbisparent-version>1.2.1-SNAPSHOT</orbisparent-version>
+        <cts-version>1.6.0</cts-version>
+        <orbisdata-version>2.0.0-SNAPSHOT</orbisdata-version>
+        <slf4j-version>1.7.36</slf4j-version>
     </properties>
 
     <licenses>
@@ -99,36 +99,31 @@
             </dependency>
             <dependency>
                 <groupId>org.orbisgis</groupId>
-                <artifactId>postgis-jts-osgi</artifactId>
-                <version>${h2gis-version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.orbisgis</groupId>
                 <artifactId>cts</artifactId>
                 <version>${cts-version}</version>
             </dependency>
             <dependency>
-                <groupId>org.orbisgis.orbisdata.datamanager</groupId>
-                <artifactId>api</artifactId>
+                <groupId>org.orbisgis.data</groupId>
+                <artifactId>data-api</artifactId>
                 <version>${orbisdata-version}</version>
             </dependency>
             <dependency>
-                <groupId>org.orbisgis.orbisdata.datamanager</groupId>
-                <artifactId>jdbc</artifactId>
+                <groupId>org.orbisgis.data</groupId>
+                <artifactId>h2gis</artifactId>
                 <version>${orbisdata-version}</version>
             </dependency>
             <dependency>
-                <groupId>org.orbisgis.orbisdata.processmanager</groupId>
-                <artifactId>api</artifactId>
+                <groupId>org.orbisgis.data</groupId>
+                <artifactId>postgis</artifactId>
                 <version>${orbisdata-version}</version>
             </dependency>
             <dependency>
-                <groupId>org.orbisgis.orbisdata.processmanager</groupId>
+                <groupId>org.orbisgis</groupId>
                 <artifactId>process</artifactId>
                 <version>${orbisdata-version}</version>
             </dependency>
             <dependency>
-                <groupId>org.orbisgis.orbisdata.datamanager</groupId>
+                <groupId>org.orbisgis.data</groupId>
                 <artifactId>dataframe</artifactId>
                 <version>${orbisdata-version}</version>
             </dependency>
@@ -163,19 +158,14 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-slf4j-impl</artifactId>
-                <version>${log4j-version}</version>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j-version}</version>
             </dependency>
             <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-api</artifactId>
-                <version>${log4j-version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-core</artifactId>
-                <version>${log4j-version}</version>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>${slf4j-version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -206,10 +196,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -265,10 +251,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-report-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

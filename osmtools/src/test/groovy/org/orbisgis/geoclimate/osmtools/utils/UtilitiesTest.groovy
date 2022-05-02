@@ -498,7 +498,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#dropOSMTables(java.lang.String, org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource)}
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#dropOSMTables(java.lang.String, org.orbisgis.data.jdbc.JdbcDataSource)}
      * method.
      */
     @Test
@@ -531,7 +531,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#dropOSMTables(java.lang.String, org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource)}
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#dropOSMTables(java.lang.String, org.orbisgis.data.jdbc.JdbcDataSource)}
      * method with bad data.
      */
     @Test

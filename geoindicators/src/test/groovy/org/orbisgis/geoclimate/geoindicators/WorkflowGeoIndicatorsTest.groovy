@@ -3,9 +3,9 @@ package org.orbisgis.geoclimate.geoindicators
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
-import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
-import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.data.dataframe.DataFrame
+import org.orbisgis.data.H2GIS
+import org.orbisgis.process.api.IProcess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 

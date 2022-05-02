@@ -37,7 +37,7 @@
 
 package org.orbisgis.geoclimate.worldpoptools
 
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
+import org.orbisgis.process.GroovyProcessFactory
 import org.slf4j.LoggerFactory
 
 /**

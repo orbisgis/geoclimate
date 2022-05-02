@@ -3,15 +3,15 @@ package org.orbisgis.geoclimate.bdtopo_v2
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.h2.tools.DeleteDbFiles
-import org.h2gis.postgis_jts_osgi.DataSourceFactoryImpl
+import org.h2gis.postgis_jts.PostGISDBFactory
 import org.h2gis.utilities.FileUtilities
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
-import org.orbisgis.orbisdata.datamanager.api.dataset.ITable
-import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
-import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
-import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
-import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.data.api.dataset.ITable
+import org.orbisgis.data.jdbc.JdbcDataSource
+import org.orbisgis.data.H2GIS
+import org.orbisgis.data.POSTGIS
+import org.orbisgis.process.api.IProcess
 import org.orbisgis.geoclimate.Geoindicators
 import org.h2gis.functions.io.utility.IOMethods
 import org.osgi.service.jdbc.DataSourceFactory
@@ -840,7 +840,7 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
         error "The commune table must be specified to run Geoclimate"
         return
     }
-    DataSourceFactory dataSourceFactory = new DataSourceFactoryImpl();
+    PostGISDBFactory dataSourceFactory = new PostGISDBFactory();
     Connection sourceConnection = null;
     try {
         Properties props = new Properties();

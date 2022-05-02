@@ -2,9 +2,9 @@ package org.orbisgis.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
-import org.orbisgis.orbisdata.datamanager.jdbc.*
-import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.data.api.dataset.ISpatialTable
+import org.orbisgis.data.jdbc.*
+import org.orbisgis.process.api.IProcess
 
 @BaseScript Geoindicators geoindicators
 

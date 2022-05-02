@@ -6,9 +6,9 @@ import com.thoughtworks.xstream.io.xml.StaxDriver
 import groovy.transform.BaseScript
 import org.h2gis.utilities.TableLocation
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.orbisdata.datamanager.dataframe.DataFrame
-import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
-import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.data.dataframe.DataFrame
+import org.orbisgis.data.jdbc.*
+import org.orbisgis.process.api.IProcess
 import smile.base.cart.SplitRule
 import smile.classification.RandomForest as RandomForestClassification
 import smile.data.type.DataType

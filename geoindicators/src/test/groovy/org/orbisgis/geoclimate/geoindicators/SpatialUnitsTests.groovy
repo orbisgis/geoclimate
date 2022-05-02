@@ -6,11 +6,11 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 import org.locationtech.jts.io.WKTReader
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.orbisdata.datamanager.jdbc.postgis.POSTGIS
+import org.orbisgis.data.POSTGIS
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 
-import static org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS.open
+import static org.orbisgis.data.H2GIS.open
 
 class SpatialUnitsTests {
 
