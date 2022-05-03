@@ -532,7 +532,7 @@ IProcess buildingPopulation() {
                 CREATE TABLE $inputBuildingTableName_pop AS SELECT (ST_AREA(ST_INTERSECTION(a.the_geom, st_force2D(b.the_geom)))*a.NB_LEV)  as area_building, a.$ID_BUILDING, 
                  b.$ID_POP, b.pop from
                 $inputBuildingTableName as a, $inputPopulationTableName as b where a.the_geom && b.the_geom and
-                st_intersects(a.the_geom, b.the_geom) and a.type in ('residential', 'building');
+                st_intersects(a.the_geom, b.the_geom) and a.main_use in ('residential', 'building');
                 create index on $inputBuildingTableName_pop ($ID_BUILDING);
                 create index on $inputBuildingTableName_pop ($ID_POP);
             """.toString())
