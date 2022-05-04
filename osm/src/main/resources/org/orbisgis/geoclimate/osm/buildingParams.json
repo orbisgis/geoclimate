@@ -11,7 +11,7 @@
     "barrier", "government", "historic:building", "grandstand",
     "house", "shop", "industrial", "man_made", "residential",
     "apartments", "ruins", "agricultural", "barn", "healthcare",
-    "education", "restaurant", "sustenance", "office"]
+    "education", "restaurant", "sustenance", "office", "tourism"]
     ,
     "level" : {
         "building": 1,
@@ -52,7 +52,9 @@
         "office": 1,
         "heavy_industry": 0,
         "light_industry": 0,
-        "emergency": 0
+        "emergency": 0,
+        "hotel": 2,
+        "hospital": 2
     },
     "type" : {
         "terminal:transportation": {
@@ -510,10 +512,12 @@
         },
         "healthcare": {
             "amenity": [
-                "healthcare"
+                "healthcare",
+                "social_facility"
             ],
             "building": [
-                "healthcare"
+                "healthcare",
+                "hospital"
             ],
             "healthcare": [
                 "! no"
@@ -525,7 +529,8 @@
                 "college",
                 "kindergarten",
                 "school",
-                "university"
+                "university",
+                "research_institute"
             ],
             "building": [
                 "education",
@@ -597,6 +602,19 @@
         "emergency": {
             "building": [
                 "fire_station"
+            ]
+        },
+        "hotel:tourism": {
+            "building": [
+                "hotel"
+            ],
+            "tourism": [
+                "hotel"
+            ]
+        },
+        "attraction:tourism": {
+            "tourism": [
+                "attraction"
             ]
         },
         "building": {
