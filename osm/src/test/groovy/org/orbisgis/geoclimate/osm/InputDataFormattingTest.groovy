@@ -348,7 +348,16 @@ class InputDataFormattingTest {
     @Test
     //enable it to test data extraction from the overpass api
     void extractCreateFormatGISLayers() {
-        def h2GIS = H2GIS.open('./target/osmdb_gislayers;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE')
+
+        def directory =  "/tmp/geoclimate"
+
+        File file  =  new File(directory)
+        if(!file.exists()){
+            file.mkdir()
+        }
+
+
+        def h2GIS = H2GIS.open("${ file.absolutePath+File.separator}osmdb_gislayers;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE".toString())
 
         //def zoneToExtract ="Shanghai, Chine"
         def zoneToExtract = "École Lycée Joliot-Curie,Rennes"
@@ -362,7 +371,10 @@ class InputDataFormattingTest {
         //zoneToExtract="rezé"
         //zoneToExtract = "Brest"
 
-        zoneToExtract =[57.634008, 11.774940, 57.761517, 12.099724]
+        //river Göta älv
+        zoneToExtract =[57.6753, 11.7982, 57.6955, 11.8656]
+        //Taal Crater Lake
+        //zoneToExtract =[13.4203,120.2165,14.5969 , 122.0293]
         IProcess extractData = OSM.InputDataLoading.extractAndCreateGISLayers()
         extractData.execute([
                 datasource   : h2GIS,
@@ -374,14 +386,14 @@ class InputDataFormattingTest {
         if (extractData.results.zoneTableName != null) {
             //Zone
             def epsg = h2GIS.getSpatialTable(extractData.results.zoneTableName).srid
-            h2GIS.getTable(extractData.results.zoneTableName).save("./target/osm_zone_${formatedPlaceName}.geojson", true)
+            h2GIS.getTable(extractData.results.zoneTableName).save("${ file.absolutePath+File.separator}osm_zone_${formatedPlaceName}.geojson", true)
 
             //Zone envelope
-            h2GIS.getTable(extractData.results.zoneEnvelopeTableName).save("./target/osm_zone_envelope_${formatedPlaceName}.geojson", true)
+            h2GIS.getTable(extractData.results.zoneEnvelopeTableName).save("${ file.absolutePath+File.separator}osm_zone_envelope_${formatedPlaceName}.geojson", true)
             IProcess format
 
             //Urban Areas
-            format = OSM.InputDataFormatting.formatUrbanAreas()
+            /*format = OSM.InputDataFormatting.formatUrbanAreas()
             format.execute([
                     datasource                : h2GIS,
                     inputTableName            : extractData.results.urbanAreasTableName,
@@ -445,16 +457,16 @@ class InputDataFormattingTest {
                     inputZoneEnvelopeTableName: extractData.results.zoneEnvelopeTableName,
                     epsg                      : epsg])
             def inputWaterTableName = format.results.outputTableName
-            h2GIS.getTable(inputWaterTableName).save("./target/osm_hydro_${formatedPlaceName}.geojson", true)
+            h2GIS.getTable(inputWaterTableName).save("${ file.absolutePath+File.separator}osm_hydro_${formatedPlaceName}.geojson", true)
 
             //Impervious
-            format = OSM.InputDataFormatting.formatImperviousLayer()
+            /*format = OSM.InputDataFormatting.formatImperviousLayer()
             format.execute([
                     datasource                : h2GIS,
                     inputTableName            : extractData.results.imperviousTableName,
                     inputZoneEnvelopeTableName: extractData.results.zoneEnvelopeTableName,
                     epsg                      : epsg])
-            h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_${formatedPlaceName}.geojson", true)
+            h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_${formatedPlaceName}.geojson", true)*/
 
 
             //Sea/Land mask
@@ -466,7 +478,7 @@ class InputDataFormattingTest {
                     inputWaterTableName : inputWaterTableName,
                     epsg                      : epsg])
             def inputSeaLandTableName = format.results.outputTableName;
-            h2GIS.getTable(inputSeaLandTableName).save("./target/osm_sea_land_${formatedPlaceName}.geojson", true)
+            h2GIS.getTable(inputSeaLandTableName).save("${ file.absolutePath+File.separator}osm_sea_land_${formatedPlaceName}.geojson", true)
 
             //Merge Sea/Land mask and Water layers
             format = OSM.InputDataFormatting.mergeWaterAndSeaLandTables()
@@ -474,7 +486,7 @@ class InputDataFormattingTest {
                     datasource           : h2GIS,
                     inputSeaLandTableName: inputSeaLandTableName, inputWaterTableName: inputWaterTableName,
                     epsg                 : epsg])
-            h2GIS.getTable(format.results.outputTableName).save("./target/osm_water_sea_${formatedPlaceName}.geojson", true)
+            h2GIS.getTable(format.results.outputTableName).save("${ file.absolutePath+File.separator}osm_water_sea_${formatedPlaceName}.geojson", true)
 
         } else {
             assertTrue(false)

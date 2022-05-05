@@ -92,7 +92,7 @@ IProcess formatBuildingLayer() {
                             def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
                             def use = typeAndUseValues[1]
                             def type = typeAndUseValues[0]
-                            if(type) {
+                            if (type) {
                                 def heightRoof = getHeightRoof(height, heightPattern)
                                 def heightWall = getHeightWall(heightRoof, roof_height)
                                 def nbLevels = getNbLevels(b_lev, roof_lev)
@@ -1024,9 +1024,13 @@ IProcess formatSeaLandMask() {
                         def islands_mark = "islands_mark_zone${UUID.randomUUID().toString().replaceAll("-", "_")}"
                         def coastLinesIntersectsPoints = "coatline_intersect_points_zone${UUID.randomUUID().toString().replaceAll("-", "_")}"
                         def coastLinesPoints = "coatline_points_zone${UUID.randomUUID().toString().replaceAll("-", "_")}"
-
+                        def sea_land_mask = "sea_land_mask${UUID.randomUUID().toString().replaceAll("-", "_")}"
+                        def sea_land_mask_in_zone = "sea_land_mask_in_zone${UUID.randomUUID().toString().replaceAll("-", "_")}"
+                        def water_to_be_filtered ="water_to_be_filtered${UUID.randomUUID().toString().replaceAll("-", "_")}"
+                        def water_filtered_exploded = "water_filtered_exploded${UUID.randomUUID().toString().replaceAll("-", "_")}"
                         datasource.execute """DROP TABLE IF EXISTS $outputTableName, $coastLinesIntersects, 
-                        $islands_mark, $mergingDataTable,  $coastLinesIntersectsPoints, $coastLinesPoints;
+                        $islands_mark, $mergingDataTable,  $coastLinesIntersectsPoints, $coastLinesPoints,$sea_land_mask,
+                        $sea_land_mask_in_zone,$water_filtered_exploded,$water_to_be_filtered;
 
                         CREATE TABLE $coastLinesIntersects AS SELECT a.the_geom
                         from $inputTableName  AS  a,  $inputZoneEnvelopeTableName  AS b WHERE
@@ -1044,12 +1048,72 @@ IProcess formatSeaLandMask() {
                         CREATE TABLE  $islands_mark AS select * from $islands_mark_filtered where id not in( SELECT a.id from $islands_mark_filtered as a,  $inputWaterTableName as b
                         where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) and b.type = 'water' and b.zindex=0)""".toString()
 
+                            datasource.execute """  
+                        CREATE TABLE $mergingDataTable  AS
+                        SELECT  THE_GEOM FROM $coastLinesIntersects 
+                        UNION ALL
+                        SELECT st_tomultiline(the_geom)
+                        from $inputZoneEnvelopeTableName ;
+
+                        CREATE TABLE $sea_land_mask (THE_GEOM GEOMETRY,ID serial, TYPE VARCHAR, ZINDEX INTEGER) AS SELECT THE_GEOM, CAST((row_number() over()) as Integer), 'land', 0 AS ZINDEX FROM
+                        st_explode('(SELECT st_polygonize(st_union(ST_NODE(st_accum(the_geom)))) AS the_geom FROM $mergingDataTable)');                
+                        
+                          CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_mask}_the_geom_idx ON $sea_land_mask (THE_GEOM);
+
+                        CREATE TABLE $sea_land_mask_in_zone as SELECT st_intersection(a.THE_GEOM, b.the_geom) as the_geom, a.id, a.type,a.ZINDEX 
+                        FROM $sea_land_mask as a, $inputZoneEnvelopeTableName  as b;                
+                       
+                       
+                        CREATE TABLE $coastLinesPoints as  SELECT ST_LocateAlong(the_geom, 0.5, -0.01) AS the_geom FROM 
+                        st_explode('(select ST_GeometryN(ST_ToMultiSegments(st_intersection(a.the_geom, b.the_geom)), 1) as the_geom from $islands_mark as a,
+                        $inputZoneEnvelopeTableName as b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom))');
+    
+                        CREATE TABLE $coastLinesIntersectsPoints as  SELECT the_geom FROM st_explode('$coastLinesPoints'); 
+
+                        CREATE INDEX IF NOT EXISTS ${sea_land_mask_in_zone}_id_idx ON $sea_land_mask_in_zone (id);
+
+                        CREATE SPATIAL INDEX IF NOT EXISTS ${coastLinesIntersectsPoints}_the_geom_idx ON $coastLinesIntersectsPoints (THE_GEOM);
+
+                        UPDATE $sea_land_mask_in_zone SET TYPE='sea' WHERE ID IN(SELECT DISTINCT(a.ID)
+                                FROM $sea_land_mask_in_zone a, $coastLinesIntersectsPoints b WHERE a.THE_GEOM && b.THE_GEOM AND
+                                st_contains(a.THE_GEOM, b.THE_GEOM));
+                        
+                        DROP TABLE IF EXISTS $water_to_be_filtered;
+                        CREATE TABLE $water_to_be_filtered AS
+                        SELECT st_polygonize(st_union(ST_ToMultiLine(a.the_geom), ST_ToMultiLine(st_accum(b.the_geom)))) AS the_geom, 
+                        a.id AS id_sea FROM  $sea_land_mask_in_zone AS a, 
+                        $inputWaterTableName AS b
+                         WHERE a."TYPE" ='land'  and a.the_geom && b.the_geom and st_contains(a.the_geom, ST_PointOnSurface(b.the_geom)) GROUP BY a.id;
+
+                        DROP TABLE IF EXISTS $water_filtered_exploded;
+                        CREATE TABLE $water_filtered_exploded AS 
+
+                        SELECT st_buffer(the_geom, -0.0001) AS the_geom, 'land' AS type ,id_sea, CAST(ROW_NUMBER() OVER () AS INTEGER) AS ID  
+                        FROM  st_explode('$water_to_be_filtered');
+
+                        CREATE spatial INDEX ON $water_filtered_exploded(the_geom);
+                        CREATE  INDEX ON $water_filtered_exploded(id);
+
+                        UPDATE $water_filtered_exploded SET TYPE='sea' WHERE ID IN(SELECT DISTINCT(a.ID)
+                        FROM $water_filtered_exploded a, $inputWaterTableName b WHERE a.THE_GEOM && b.THE_GEOM AND
+                        st_contains(b.THE_GEOM, a.the_geom) );    
+                               
+                        CREATE TABLE $outputTableName as select the_geom,CAST((row_number() over()) as Integer) AS id, TYPE
+                        from (
+                        SELECT st_buffer(the_geom, -0.0001) AS the_geom, type FROM $sea_land_mask_in_zone  
+                        WHERE id NOT in(SELECT id_sea FROM $water_filtered_exploded)
+                        UNION 
+                        SELECT the_geom, 'land' AS TYPE FROM   $water_filtered_exploded WHERE ID NOT IN(SELECT DISTINCT(a.ID)
+                                FROM $water_filtered_exploded a, $inputWaterTableName b WHERE a.THE_GEOM && b.THE_GEOM AND
+                                st_contains(b.THE_GEOM, a.the_geom) )) as foo; 
+                        
+                         """.toString()
+
                         } else {
-                            datasource.execute """
+                         datasource.execute """
                         CREATE TABLE $islands_mark (the_geom GEOMETRY, ID SERIAL) AS 
                        SELECT the_geom, CAST((row_number() over()) as Integer)  FROM st_explode('(  
                        SELECT ST_LINEMERGE(st_accum(THE_GEOM)) AS the_geom, NULL FROM $coastLinesIntersects)');""".toString()
-                        }
 
                         datasource.execute """  
                         CREATE TABLE $mergingDataTable  AS
@@ -1058,25 +1122,36 @@ IProcess formatSeaLandMask() {
                         SELECT st_tomultiline(the_geom)
                         from $inputZoneEnvelopeTableName ;
 
-                        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY,ID serial, TYPE VARCHAR, ZINDEX INTEGER) AS SELECT THE_GEOM, CAST((row_number() over()) as Integer), 'land', 0 AS ZINDEX FROM
+                        CREATE TABLE $sea_land_mask (THE_GEOM GEOMETRY,ID serial, TYPE VARCHAR, ZINDEX INTEGER) AS SELECT THE_GEOM, CAST((row_number() over()) as Integer), 'land', 0 AS ZINDEX FROM
                         st_explode('(SELECT st_polygonize(st_union(ST_NODE(st_accum(the_geom)))) AS the_geom FROM $mergingDataTable)');                
                         
+                        CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_mask}_the_geom_idx ON $sea_land_mask (THE_GEOM);
+
+                        CREATE TABLE $outputTableName as SELECT st_intersection(a.THE_GEOM, b.the_geom) as the_geom, a.id, a.type,a.ZINDEX 
+                        FROM $sea_land_mask as a, $inputZoneEnvelopeTableName  as b;                
+                       
+                       
                         CREATE TABLE $coastLinesPoints as  SELECT ST_LocateAlong(the_geom, 0.5, -0.01) AS the_geom FROM 
                         st_explode('(select ST_GeometryN(ST_ToMultiSegments(st_intersection(a.the_geom, b.the_geom)), 1) as the_geom from $islands_mark as a,
                         $inputZoneEnvelopeTableName as b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom))');
     
                         CREATE TABLE $coastLinesIntersectsPoints as  SELECT the_geom FROM st_explode('$coastLinesPoints'); 
 
-                        CREATE SPATIAL INDEX IF NOT EXISTS ${outputTableName}_the_geom_idx ON $outputTableName (THE_GEOM);
+                        CREATE INDEX IF NOT EXISTS ${outputTableName}_id_idx ON $outputTableName (id);
+
                         CREATE SPATIAL INDEX IF NOT EXISTS ${coastLinesIntersectsPoints}_the_geom_idx ON $coastLinesIntersectsPoints (THE_GEOM);
 
                         UPDATE $outputTableName SET TYPE='sea' WHERE ID IN(SELECT DISTINCT(a.ID)
                                 FROM $outputTableName a, $coastLinesIntersectsPoints b WHERE a.THE_GEOM && b.THE_GEOM AND
-                                st_contains(a.THE_GEOM, b.THE_GEOM));                                
-                                """.toString()
+                                st_contains(a.THE_GEOM, b.THE_GEOM));   
+                        
+                         """.toString()
+                        }
 
                         datasource.execute("""drop table if exists $mergingDataTable, $coastLinesIntersects, $coastLinesIntersectsPoints, $coastLinesPoints,
-                                $islands_mark""".toString())
+                                $islands_mark, $sea_land_mask,$sea_land_mask_in_zone,$water_filtered_exploded,$water_to_be_filtered
+                        """.toString())
+
                     } else {
                         debug "A zone table must be provided to compute the sea/land mask"
                     }
@@ -1120,8 +1195,8 @@ IProcess mergeWaterAndSeaLandTables() {
                 CREATE TABLE $tmp_water_not_in_sea AS SELECT a.the_geom, a.ID_SOURCE, a.zindex FROM $inputWaterTableName AS a, $inputSeaLandTableName  AS b
                 WHERE b."TYPE"= 'land' AND a.the_geom && b.the_geom AND st_contains(b.THE_GEOM, st_pointonsurface(a.THE_GEOM)) and a.type='water';
                 CREATE TABLE $outputTableName(the_geom GEOMETRY, ID_HYDRO SERIAL, ID_SOURCE VARCHAR, ZINDEX INTEGER) AS SELECT THE_GEOM, CAST((row_number() over()) as Integer) , 
-            id_source, zindex 
-            FROM (SELECT the_geom,  id_source, zindex FROM $tmp_water_not_in_sea UNION ALL 
+                id_source, zindex 
+                FROM (SELECT the_geom,  id_source, zindex FROM $tmp_water_not_in_sea UNION ALL 
                 SELECT THE_GEOM,  '-1', 0 FROM $inputSeaLandTableName  WHERE
                 "TYPE" ='sea') AS foo;"""
                     //Check indexes before executing the query
