@@ -251,7 +251,7 @@ def extractWaysAsPolygons () {
                 CREATE TABLE $outputTableName AS 
                     SELECT 'w'||a.id_way AS id, a.the_geom ${createTagList(datasource, columnsSelector)} 
                     FROM $waysPolygonTmp AS a, $osmTableTag b
-                    WHERE a.id_way=b.id_way
+                    WHERE a.id_way=b.id_way and st_isempty(a.the_geom)=false
                     GROUP BY a.id_way;
         """.toString()
 
@@ -447,7 +447,7 @@ def extractRelationsAsPolygons () {
                 CREATE TABLE $outputTableName AS 
                     SELECT 'r'||a.id_relation AS id, st_normalize(a.the_geom) as the_geom ${createTagList(datasource, columnsSelector)}
                     FROM $relationsMpHoles AS a, ${osmTablesPrefix}_relation_tag  b 
-                    WHERE a.id_relation=b.id_relation 
+                    WHERE a.id_relation=b.id_relation and st_isempty(a.the_geom)=false
                     GROUP BY a.the_geom, a.id_relation;
         """.toString()
 
@@ -567,7 +567,7 @@ def extractWaysAsLines () {
                 CREATE TABLE $outputTableName AS 
                     SELECT 'w'||a.id_way AS id, a.the_geom ${createTagList(datasource, columnsSelector)} 
                     FROM $waysLinesTmp AS a, ${osmTablesPrefix}_way_tag b 
-                    WHERE a.id_way=b.id_way 
+                    WHERE a.id_way=b.id_way and st_isempty(a.the_geom)=false
                     GROUP BY a.id_way;
                 DROP TABLE IF EXISTS $waysLinesTmp, $idWaysTable;
         """.toString()
@@ -683,7 +683,7 @@ def extractRelationsAsLines() {
                 CREATE TABLE $outputTableName AS
                     SELECT 'r'||a.id_relation AS id, a.the_geom ${createTagList(datasource, columnsSelector)}
                     FROM $relationsLinesTmp AS a, ${osmTablesPrefix}_relation_tag  b
-                    WHERE a.id_relation=b.id_relation
+                    WHERE a.id_relation=b.id_relation and st_isempty(a.the_geom)=false
                     GROUP BY a.id_relation;
                 DROP TABLE IF EXISTS $relationsLinesTmp, $relationsFilteredKeys;
         """.toString()

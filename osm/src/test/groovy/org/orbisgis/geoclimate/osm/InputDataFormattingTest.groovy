@@ -375,6 +375,8 @@ class InputDataFormattingTest {
         zoneToExtract =[57.6753, 11.7982, 57.6955, 11.8656]
         //Taal Crater Lake
         //zoneToExtract =[13.4203,120.2165,14.5969 , 122.0293]
+        //Le Havre
+        zoneToExtract = [49.4370, -0.0230,49.5359,0.2053,]
         IProcess extractData = OSM.InputDataLoading.extractAndCreateGISLayers()
         extractData.execute([
                 datasource   : h2GIS,

@@ -890,6 +890,40 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
 
     }
 
+    @Test
+    void testWorkFlowListCodes() {
+        String directory ="./target/bdtopo_chain_grid"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        String dataFolder = getDataFolderPath()
+        def bdTopoParameters = [
+                "description" :"Example of configuration file to run the grid indicators",
+                "geoclimatedb" : [
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete" :false
+                ],
+                "input" :[
+                        "folder": ["path" :dataFolder,
+                                   "locations":[2000,2001,2002]]],
+                "output" :[
+                        "folder" : ["path": "$directory",
+                                    "tables": ["grid_indicators"]]],
+                "parameters":
+                        ["distance" : 0,
+                         "grid_indicators": [
+                                 "x_size": 1000,
+                                 "y_size": 1000,
+                                 "indicators": ["WATER_FRACTION"]
+                         ]
+                        ]
+        ]
+        IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
+        assertFalse(process.execute(input: createConfigFile(bdTopoParameters, directory)))
+    }
+
+
 
     /**
      * Check if the table exist and contains at least one row
