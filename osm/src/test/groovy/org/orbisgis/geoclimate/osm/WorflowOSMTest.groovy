@@ -657,10 +657,15 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Disabled
     @Test
     void testPopulation_Indicators() {
-        String directory ="./target/geoclimate_population"
+        String directory ="/tmp/geoclimate"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
+        H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
+        h2gis.load("/home/ebocher/Documents/NextCloud/Groupe_SIG_Vannes/Publications/Journaux/2021/papier_osm_bruit/Comparison_OSM_NM_vs_Ref_Cities/cities/Barcelona/lden_barcelona_ref.geojson", "area_zone", true)
+        def env = h2gis.firstRow("(select st_transform(st_extent(the_geom), 4326) as the_geom from area_zone)").the_geom.getEnvelopeInternal()
+        def location = [[env.getMinY()as float, env.getMinX() as float, env.getMaxY() as float, env.getMaxX() as float]];
+        //def location = [[41.38605,2.19485, 41.38753,  2.19821]]
         def osm_parmeters = [
                 "description" :"Example of configuration file to run only the road traffic estimation",
                 "geoclimatedb" : [
@@ -669,7 +674,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "osm" : ["Pont-de-Veyle"]],
+                        "locations":location],
                 "output" :[
                         "folder" : ["path": directory,
                                     "tables": ["building", "population"]]],
@@ -678,9 +683,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(input: osm_parmeters))
-        assertEquals(10,  process.getResults().output["Pont-de-Veyle"].size())
-        H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
-        assertTrue h2gis.firstRow("select count(*) as count from ${process.results.output["Pont-de-Veyle"].populationTableName} where pop is not null").count>0
+        //assertEquals(10,  process.getResults().output["Pont-de-Veyle"].size())
+        //assertTrue h2gis.firstRow("select count(*) as count from ${process.results.output["Pont-de-Veyle"].populationTableName} where pop is not null").count>0
     }
 
 
