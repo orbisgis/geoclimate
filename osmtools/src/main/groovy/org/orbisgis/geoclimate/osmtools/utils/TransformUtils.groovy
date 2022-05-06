@@ -433,7 +433,7 @@ class TransformUtils {
         def list = []
         rowskeys.tag_key.each { it ->
             if(it != null)
-                list << "MAX(CASE WHEN b.tag_key = '$it' THEN b.tag_value END) AS \"${it.toUpperCase()}\""
+                list << "MAX(CASE WHEN b.tag_key = '$it' THEN b.tag_value END) AS \"${it}\""
         }
         def tagList =""
         if (!list.isEmpty()) {

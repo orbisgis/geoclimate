@@ -325,12 +325,12 @@ class TransformTest extends AbstractOSMTest {
         assertTrue extractWaysAsPolygons.results.isEmpty()
 
         LOGGER.warn("An error will be thrown next")
-        assertFalse extractWaysAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
-        assertTrue extractWaysAsPolygons.results.isEmpty()
+        assertTrue extractWaysAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
+        assertFalse extractWaysAsPolygons.results.isEmpty()
 
         LOGGER.warn("An error will be thrown next")
-        assertFalse extractWaysAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:null, columnsToKeep:null)
-        assertTrue extractWaysAsPolygons.results.isEmpty()
+        assertTrue extractWaysAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:null, columnsToKeep:null)
+        assertFalse extractWaysAsPolygons.results.isEmpty()
     }
 
     /**
@@ -412,12 +412,12 @@ class TransformTest extends AbstractOSMTest {
         assertTrue extractRelationsAsPolygons.results.isEmpty()
 
         LOGGER.warn("An error will be thrown next")
-        assertFalse extractRelationsAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
-        assertTrue extractRelationsAsPolygons.results.isEmpty()
+        assertTrue extractRelationsAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
+        assertFalse extractRelationsAsPolygons.results.isEmpty()
 
         LOGGER.warn("An error will be thrown next")
-        assertFalse extractRelationsAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:null, columnsToKeep:null)
-        assertTrue extractRelationsAsPolygons.results.isEmpty()
+        assertTrue extractRelationsAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:null, columnsToKeep:null)
+        assertFalse extractRelationsAsPolygons.results.isEmpty()
     }
 
     /**
@@ -499,12 +499,12 @@ class TransformTest extends AbstractOSMTest {
         assertTrue extractWaysAsLines.results.isEmpty()
 
         LOGGER.warn("An error will be thrown next")
-        assertFalse extractWaysAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
-        assertTrue extractWaysAsLines.results.isEmpty()
+        assertTrue extractWaysAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
+        assertFalse extractWaysAsLines.results.isEmpty()
 
         LOGGER.warn("An error will be thrown next")
-        assertFalse extractWaysAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:null, columnsToKeep:null)
-        assertTrue extractWaysAsLines.results.isEmpty()
+        assertTrue extractWaysAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:null, columnsToKeep:null)
+        assertFalse extractWaysAsLines.results.isEmpty()
     }
 
     /**
@@ -587,12 +587,12 @@ class TransformTest extends AbstractOSMTest {
         assertTrue extractRelationsAsLines.results.isEmpty()
 
         LOGGER.warn("An error will be thrown next")
-        assertFalse extractRelationsAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
-        assertTrue extractRelationsAsLines.results.isEmpty()
+        assertTrue extractRelationsAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
+        assertFalse extractRelationsAsLines.results.isEmpty()
 
         LOGGER.warn("An error will be thrown next")
-        assertFalse extractRelationsAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:null, columnsToKeep:null)
-        assertTrue extractRelationsAsLines.results.isEmpty()
+        assertTrue extractRelationsAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:null, columnsToKeep:null)
+        assertFalse extractRelationsAsLines.results.isEmpty()
     }
 
     /**
@@ -700,7 +700,7 @@ class TransformTest extends AbstractOSMTest {
         transform.execute(datasource: h2GIS, osmTablesPrefix: prefix, tags: tags)
         outputTableName = transform.results.outputTableName
         assertEquals 131, h2GIS.firstRow("select count(*) as count from ${outputTableName}").count as int
-        assertEquals 123, h2GIS.firstRow("select count(*) as count from ${outputTableName} where landuse='grass'").count as int
+        assertEquals 123, h2GIS.firstRow("select count(*) as count from ${outputTableName} where \"landuse\"='grass'").count as int
 
     }
 
