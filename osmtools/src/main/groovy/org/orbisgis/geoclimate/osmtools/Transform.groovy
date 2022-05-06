@@ -178,6 +178,15 @@ def extractWaysAsPolygons () {
             def columnsSelector = getColumnSelector(osmTableTag, tags, columnsToKeep)
             def tagsFilter = createWhereFilter(tags)
 
+            if(!datasource.hasTable(osmTableTag)){
+                debug "No tags table found to build the table. An empty table will be returned."
+                datasource """ 
+                    DROP TABLE IF EXISTS $outputTableName;
+                    CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
+                """.toString()
+                return [outputTableName: outputTableName]
+            }
+
             if (datasource.firstRow(countTagsQuery.toString()).count <= 0) {
                 debug "No keys or values found to extract ways. An empty table will be returned."
                 datasource """ 
@@ -300,6 +309,15 @@ def extractRelationsAsPolygons () {
             def countTagsQuery = getCountTagsQuery(osmTableTag, tags)
             def columnsSelector = getColumnSelector(osmTableTag, tags, columnsToKeep)
             def tagsFilter = createWhereFilter(tags)
+
+            if(!datasource.hasTable(osmTableTag)){
+                debug "No tags table found to build the table. An empty table will be returned."
+                datasource """ 
+                    DROP TABLE IF EXISTS $outputTableName;
+                    CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
+                """.toString()
+                return [outputTableName: outputTableName]
+            }
 
             if (datasource.firstRow(countTagsQuery.toString()).count <= 0) {
                 debug "No keys or values found in the relations. An empty table will be returned."
@@ -502,6 +520,15 @@ def extractWaysAsLines () {
             def columnsSelector = getColumnSelector(osmTableTag, tags, columnsToKeep)
             def tagsFilter = createWhereFilter(tags)
 
+            if(!datasource.hasTable(osmTableTag)){
+                debug "No tags table found to build the table. An empty table will be returned."
+                datasource """ 
+                    DROP TABLE IF EXISTS $outputTableName;
+                    CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
+                """.toString()
+                return [outputTableName: outputTableName]
+            }
+
             if (datasource.firstRow(countTagsQuery.toString()).count <= 0) {
                 debug "No keys or values found in the ways. An empty table will be returned."
                 datasource """ 
@@ -609,8 +636,16 @@ def extractRelationsAsLines() {
             def outputTableName = postfix "RELATIONS_LINES"
             def osmTableTag = prefix osmTablesPrefix, "relation_tag"
             def countTagsQuery = getCountTagsQuery(osmTableTag, tags)
-            def columnsSelector = getColumnSelector(osmTableTag, tags, columnsToKeep)
             def tagsFilter = createWhereFilter(tags)
+
+            if(!datasource.hasTable(osmTableTag)){
+                debug "No tags table found to build the table. An empty table will be returned."
+                datasource """ 
+                    DROP TABLE IF EXISTS $outputTableName;
+                    CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
+                """.toString()
+                return [outputTableName: outputTableName]
+            }
 
             if (datasource.firstRow(countTagsQuery.toString()).count <= 0) {
                 warn "No keys or values found in the relations. An empty table will be returned."
@@ -678,6 +713,7 @@ def extractRelationsAsLines() {
                 CREATE INDEX ON $relationsLinesTmp(id_relation);
         """.toString()
 
+            def columnsSelector = getColumnSelector(osmTableTag, tags, columnsToKeep)
             datasource """
                 DROP TABLE IF EXISTS $outputTableName;
                 CREATE TABLE $outputTableName AS

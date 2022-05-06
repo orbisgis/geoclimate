@@ -237,19 +237,19 @@ class TransformUtilsTest extends AbstractOSMTest {
 
         h2gis.execute("CREATE TABLE toto (id int, tag_key varchar, tag_value VARCHAR array[255])")
         h2gis.execute("INSERT INTO toto VALUES (0, 'material', ('concrete', 'brick'))")
-        assertGStringEquals ", MAX(CASE WHEN b.tag_key = 'material' THEN b.tag_value END) AS \"MATERIAL\"",
-                TransformUtils.createTagList(h2gis, "SELECT tag_key FROM $osmTable")
+        assertEquals(", MAX(CASE WHEN b.tag_key = 'material' THEN b.tag_value END) AS \"material\"",
+                TransformUtils.createTagList(h2gis, "SELECT tag_key FROM $osmTable").toString())
         h2gis.execute("DROP TABLE IF EXISTS toto")
 
         h2gis.execute("CREATE TABLE toto (id int, tag_key varchar, tag_value VARCHAR array[255])")
         h2gis.execute("INSERT INTO toto VALUES (1, 'water', null)")
-        assertGStringEquals ", MAX(CASE WHEN b.tag_key = 'water' THEN b.tag_value END) AS \"WATER\"",
+        assertGStringEquals ", MAX(CASE WHEN b.tag_key = 'water' THEN b.tag_value END) AS \"water\"",
                 TransformUtils.createTagList(h2gis, "SELECT tag_key FROM $osmTable")
         h2gis.execute("DROP TABLE IF EXISTS toto")
 
         h2gis.execute("CREATE TABLE toto (id int, tag_key varchar, tag_value VARCHAR array[255])")
         h2gis.execute("INSERT INTO toto VALUES (2, 'road', '{}')")
-        assertGStringEquals ", MAX(CASE WHEN b.tag_key = 'road' THEN b.tag_value END) AS \"ROAD\"",
+        assertGStringEquals ", MAX(CASE WHEN b.tag_key = 'road' THEN b.tag_value END) AS \"road\"",
                 TransformUtils.createTagList(h2gis, "SELECT tag_key FROM $osmTable")
         h2gis.execute("DROP TABLE IF EXISTS toto")
 
