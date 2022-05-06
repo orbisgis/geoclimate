@@ -490,13 +490,13 @@ IProcess formatHydroLayer() {
                         query = "select id , CASE WHEN st_overlaps(st_makevalid(a.the_geom), b.the_geom) " +
                                 "THEN st_force2D(st_intersection(st_makevalid(a.the_geom), st_makevalid(b.the_geom))) " +
                                 "ELSE st_force2D(st_makevalid(a.the_geom)) " +
-                                "END AS the_geom , a.\"NATURAL\", a.layer" +
+                                "END AS the_geom , a.\"natural\", a.\"layer\"" +
                                 " FROM " +
                                 "$inputTableName AS a, $inputZoneEnvelopeTableName AS b " +
                                 "WHERE " +
                                 "a.the_geom && b.the_geom "
                     } else {
-                        query = "select id,  st_force2D(st_makevalid(the_geom)) as the_geom, \"NATURAL\", layer FROM $inputTableName "
+                        query = "select id,  st_force2D(st_makevalid(the_geom)) as the_geom, \"natural\", \"layer\" FROM $inputTableName "
 
                     }
                     int rowcount = 1
@@ -619,7 +619,7 @@ static String[] getTypeAndUse(def row, def columnNames, def myMap) {
             use = type
         }
         finalVal.value.each { osmVals ->
-            if (columnNames.contains(osmVals.key.toUpperCase())) {
+            if (columnNames.contains(osmVals.key)) {
                 def columnValue = row.getString(osmVals.key)
                 if (columnValue != null) {
                     osmVals.value.each { osmVal ->
@@ -833,7 +833,7 @@ static String getTypeValue(def row, def columnNames, def myMap) {
     myMap.each { finalVal ->
         def finalKey = finalVal.key
         finalVal.value.each { osmVals ->
-            if (columnNames.contains(osmVals.key.toUpperCase())) {
+            if (columnNames.contains(osmVals.key)) {
                 def columnValue = row.getString(osmVals.key)
                 if (columnValue != null) {
                     osmVals.value.each { osmVal ->
