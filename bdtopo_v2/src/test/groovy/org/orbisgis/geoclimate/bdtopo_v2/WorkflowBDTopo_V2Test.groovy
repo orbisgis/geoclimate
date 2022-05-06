@@ -523,7 +523,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                 ],
                 "input" :[
                         "folder": ["path" :dataFolder,
-                                   "locations":[communeToTest]]],
+                                   "locations":[communeToTest,communeToTest]]],
                 "output" :[
                         "folder" : ["path": "$directory",
                                     "tables": ["grid_indicators"]]],

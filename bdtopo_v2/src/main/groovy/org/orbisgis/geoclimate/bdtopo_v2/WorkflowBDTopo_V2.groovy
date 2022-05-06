@@ -1118,7 +1118,7 @@ def findIDZones(JdbcDataSource h2gis_datasource, def id_zones, def srid){
                 }
             }
             if(id_zones_tmp){
-                def zones =id_zones_tmp.join(",")
+                def zones =id_zones_tmp.join("','")
                 h2gis_datasource.withBatch(100, "INSERT INTO COMMUNE VALUES(?,?)") { ps ->
                     h2gis_datasource.eachRow("""select THE_GEOM, CODE_INSEE FROM COMMUNE_TMP where code_insee in 
                     ('${zones}') OR nom in('${zones}')"""){ row ->
