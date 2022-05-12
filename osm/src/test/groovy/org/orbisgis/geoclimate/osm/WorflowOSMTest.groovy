@@ -252,7 +252,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "folder" : directory]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
-        assertTrue(process.execute(input: osm_parmeters, directory))
+        assertTrue(process.execute(input: osm_parmeters))
         def  folder = new File("${directory+File.separator+bbox.join("_")}")
         def resultFiles =[]
         folder.eachFileRecurse groovy.io.FileType.FILES,  { file ->
