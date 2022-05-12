@@ -240,7 +240,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.mkdir()
         def bbox = [38.89557963573336,-77.03930318355559,38.89944983078282,-77.03364372253417]
         def osm_parmeters = [
-                "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
+                "description" :"Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb" : [
                         "folder" : dirFile.absolutePath,
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
@@ -253,14 +253,15 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(input: osm_parmeters))
-        def  folder = new File("${directory+File.separator+bbox.join("_")}")
+        def  folder = new File(directory+File.separator+"osm_"+bbox.join("_"))
         def resultFiles =[]
         folder.eachFileRecurse groovy.io.FileType.FILES,  { file ->
             if (file.name.toLowerCase().endsWith(".geojson")) {
                 resultFiles << file.getAbsolutePath()
             }
         }
-        assertTrue(resultFiles)
+        assertTrue(resultFiles.size()==1)
+        assertTrue(resultFiles.get(0)==folder.absolutePath+File.separator+"zones.geojson")
     }
 
     //TODO

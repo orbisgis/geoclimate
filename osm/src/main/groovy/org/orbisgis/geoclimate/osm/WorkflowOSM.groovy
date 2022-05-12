@@ -573,7 +573,7 @@ IProcess osm_processing() {
                                     railTableName,vegetationTableName, hydrographicTableName, imperviousTableName,
                              seaLandMaskTableName
 
-                            if(rsu_indicators_params.indicatorUse|| grid_indicators_params || worldpop_indicators){
+                            if(rsu_indicators_params.indicatorUse){
                                 //Format urban areas
                                 IProcess format = OSM.InputDataFormatting.formatUrbanAreas()
                                 format.execute([
