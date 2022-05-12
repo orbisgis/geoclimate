@@ -257,7 +257,8 @@ IProcess prepareBDTopoData() {
                      ROAD_BD_TOPO_CROSSING             : road_bd_topo_crossing, ROAD_ABSTRACT_CROSSING: road_abstract_crossing,
                      RAIL_BD_TOPO_TYPE                 : rail_bd_topo_type, RAIL_ABSTRACT_TYPE: rail_abstract_type,
                      RAIL_BD_TOPO_CROSSING             : rail_bd_topo_crossing, RAIL_ABSTRACT_CROSSING: rail_abstract_crossing,
-                     VEGET_BD_TOPO_TYPE                : veget_bd_topo_type, VEGET_ABSTRACT_TYPE: veget_abstract_type
+                     VEGET_BD_TOPO_TYPE                : veget_bd_topo_type, VEGET_ABSTRACT_TYPE: veget_abstract_type,
+                     SRID: srid
                     ])
             if (!success) {
                 error("Error occurred when importing the BD Topo data")
