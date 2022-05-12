@@ -82,15 +82,16 @@ CREATE TABLE $BU_ZONE_INDUS (THE_GEOM geometry, ID_SOURCE varchar(24), HEIGHT_WA
     AS SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(ST_NORMALIZE(a.THE_GEOM)) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID, a.HAUTEUR, a.NATURE FROM $BATI_INDUSTRIEL a, $ZONE_BUFFER b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)  and a.HAUTEUR>=0;
 CREATE TABLE $BU_ZONE_REMARQ (THE_GEOM geometry, ID_SOURCE varchar(24), HEIGHT_WALL integer, TYPE varchar)
     AS SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(ST_NORMALIZE(a.THE_GEOM)) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID, a.HAUTEUR, a.NATURE FROM $BATI_REMARQUABLE a, $ZONE_BUFFER b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)  and a.HAUTEUR>=0;
-CREATE TABLE $BU_ZONE_RESERVOIR (THE_GEOM geometry, ID_SOURCE varchar(24), HEIGHT_WALL integer, TYPE varchar)
-    AS SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(ST_NORMALIZE(a.THE_GEOM)) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID, a.HAUTEUR, a.NATURE FROM $RESERVOIR a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.NATURE='Réservoir industriel' and a.HAUTEUR>0;
+CREATE TABLE $BU_ZONE_RESERVOIR
+    AS SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(ST_NORMALIZE(a.THE_GEOM)) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END as the_geom, a.ID
+    as id_source, a.HAUTEUR as HEIGHT_WALL, a.NATURE as type FROM $RESERVOIR a, $ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.NATURE='Réservoir industriel' and a.HAUTEUR>0;
 
 
 -- Merge the 3 tables into one, keeping informations about the initial table name
 -- The fields 'HEIGHT_ROOF' and 'NB_LEV' fields are left empty. They will be updated later in the geoclimate procedure
 -- Since there is no such information into the BD Topo, the field 'ZINDEX' is initialized to 0
 DROP TABLE IF EXISTS $INPUT_BUILDING;
-CREATE TABLE $INPUT_BUILDING (THE_GEOM geometry, ID_SOURCE varchar(24), HEIGHT_WALL integer, HEIGHT_ROOF integer, NB_LEV integer, TYPE varchar, MAIN_USE varchar, ZINDEX integer)
+CREATE TABLE $INPUT_BUILDING (THE_GEOM geometry(polygon, $SRID), ID_SOURCE varchar(24), HEIGHT_WALL integer, HEIGHT_ROOF integer, NB_LEV integer, TYPE varchar, MAIN_USE varchar, ZINDEX integer)
    AS SELECT THE_GEOM, ID_SOURCE, HEIGHT_WALL, null, null, '', '', 0 FROM ST_EXPLODE('$BU_ZONE_INDIF')
 UNION ALL SELECT THE_GEOM, ID_SOURCE, HEIGHT_WALL, null, null, TYPE, '', 0 FROM ST_EXPLODE('$BU_ZONE_INDUS')
 UNION ALL SELECT THE_GEOM, ID_SOURCE, HEIGHT_WALL, null, null, TYPE, '', 0 FROM ST_EXPLODE('$BU_ZONE_REMARQ')

@@ -14,7 +14,6 @@ import org.orbisgis.data.POSTGIS
 import org.orbisgis.process.api.IProcess
 import org.orbisgis.geoclimate.Geoindicators
 import org.h2gis.functions.io.utility.IOMethods
-import org.osgi.service.jdbc.DataSourceFactory
 import org.orbisgis.geoclimate.worldpoptools.WorldPopTools
 
 import javax.sql.DataSource
@@ -875,7 +874,7 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
     if (code in Collection) {
         def tmp_insee = code.join("_")
         h2gis_datasource.execute("""DROP TABLE IF EXISTS ${outputTableName};
-        CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(GEOMETRY),CODE_INSEE VARCHAR);
+        CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, ${commune_srid}),CODE_INSEE VARCHAR);
         INSERT INTO ${outputTableName} VALUES(ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, ${commune_srid}), '${tmp_insee}')""".toString())
     }else if (code instanceof String) {
         //input_database_properties =updateDriverURL(input_database_properties)

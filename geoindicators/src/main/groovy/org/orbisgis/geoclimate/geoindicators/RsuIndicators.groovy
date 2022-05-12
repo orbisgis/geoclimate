@@ -2056,7 +2056,7 @@ IProcess frontalAreaIndexDistribution() {
                 // 4. Make the calculations for the last level
                 def layer_bottom = listLayersBottom[listLayersBottom.size() - 1]
                 // Get the maximum building height
-                def layer_top = (datasource.firstRow("SELECT MAX($HEIGHT_WALL) AS MAXH FROM $buildingTable").MAXH).trunc()+1 as int
+                def layer_top = datasource.firstRow("SELECT CAST(MAX($HEIGHT_WALL) AS INTEGER) +1 AS MAXH FROM $buildingTable").MAXH
                 def deltaH = layer_top - layer_bottom
                 tab_H[listLayersBottom.size() - 1] = "${buildFracH}_$layer_bottom".toString()
 
