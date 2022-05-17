@@ -239,7 +239,7 @@ IProcess prepareTSUData() {
 
                         datasource "DROP TABLE IF EXISTS "+ vegetation_indice
                         datasource "CREATE TABLE "+vegetation_indice+"(THE_GEOM geometry, ID serial," +
-                                " CONTACT integer) AS (SELECT ST_MAKEVALID(THE_GEOM) AS the_geom, CAST((row_number() over()) as Integer), 0 FROM ST_EXPLODE('" +
+                                " CONTACT integer) AS (SELECT the_geom, CAST((row_number() over()) as Integer), 0 FROM ST_EXPLODE('" +
                                 "(SELECT * FROM "+vegetationTable+" WHERE ZINDEX=0)') " +
                                 " WHERE ST_DIMENSION(the_geom)>0 AND ST_ISEMPTY(the_geom)=FALSE)"
                         datasource """CREATE SPATIAL INDEX IF NOT EXISTS veg_indice_idx ON $vegetation_indice (THE_GEOM);
