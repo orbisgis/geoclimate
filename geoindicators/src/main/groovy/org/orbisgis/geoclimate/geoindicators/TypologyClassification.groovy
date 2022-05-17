@@ -264,19 +264,19 @@ IProcess identifyLczType() {
                         centerValue[indicCol] = datasource.firstRow("SELECT ${normalisationType}(all_val) " +
                                 "AS $CENTER_NAME FROM (SELECT ${indicCol}_low AS all_val FROM $LCZ_classes " +
                                 "WHERE ${indicCol}_low IS NOT NULL UNION ALL SELECT ${indicCol}_upp AS all_val " +
-                                "FROM $LCZ_classes WHERE ${indicCol}_upp IS NOT NULL)")."$CENTER_NAME"
+                                "FROM $LCZ_classes WHERE ${indicCol}_upp IS NOT NULL)".toString())."$CENTER_NAME"
                         if (normalisationType == "AVG") {
                             variabilityValue[indicCol] = datasource.firstRow("SELECT STDDEV_POP(all_val) " +
                                     "AS $VARIABILITY_NAME FROM (SELECT ${indicCol}_low AS all_val " +
                                     "FROM $LCZ_classes WHERE ${indicCol}_low IS NOT NULL UNION ALL " +
                                     "SELECT ${indicCol}_upp AS all_val FROM $LCZ_classes WHERE ${indicCol}_upp " +
-                                    "IS NOT NULL)")."$VARIABILITY_NAME"
+                                    "IS NOT NULL)".toString())."$VARIABILITY_NAME"
                         } else {
                             variabilityValue[indicCol] = datasource.firstRow("SELECT MEDIAN(ABS(all_val-" +
                                     "${centerValue[indicCol]})) AS $VARIABILITY_NAME FROM " +
                                     "(SELECT ${indicCol}_low AS all_val FROM $LCZ_classes WHERE ${indicCol}_low " +
                                     "IS NOT NULL UNION ALL SELECT ${indicCol}_upp AS all_val FROM $LCZ_classes " +
-                                    "WHERE ${indicCol}_upp IS NOT NULL)")."$VARIABILITY_NAME"
+                                    "WHERE ${indicCol}_upp IS NOT NULL)".toString())."$VARIABILITY_NAME"
                         }
                         // Piece of query useful for normalizing the LCZ indicator intervals
                         queryRangeNorm += " (${indicCol}_low-${centerValue[indicCol]})/${variabilityValue[indicCol]}" +

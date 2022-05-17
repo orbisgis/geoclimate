@@ -239,7 +239,7 @@ IProcess prepareTSUData() {
 
                         datasource "DROP TABLE IF EXISTS "+ vegetation_indice
                         datasource "CREATE TABLE "+vegetation_indice+"(THE_GEOM geometry, ID serial," +
-                                " CONTACT integer) AS (SELECT ST_MAKEVALID(THE_GEOM) AS the_geom, CAST((row_number() over()) as Integer), 0 FROM ST_EXPLODE('" +
+                                " CONTACT integer) AS (SELECT the_geom, CAST((row_number() over()) as Integer), 0 FROM ST_EXPLODE('" +
                                 "(SELECT * FROM "+vegetationTable+" WHERE ZINDEX=0)') " +
                                 " WHERE ST_DIMENSION(the_geom)>0 AND ST_ISEMPTY(the_geom)=FALSE)"
                         datasource """CREATE SPATIAL INDEX IF NOT EXISTS veg_indice_idx ON $vegetation_indice (THE_GEOM);
@@ -288,7 +288,7 @@ IProcess prepareTSUData() {
                          UPDATE $hydrographic_indice SET CONTACT=1 WHERE ID IN(SELECT DISTINCT(a.ID)
                                  FROM $hydrographic_indice a, $hydrographic_indice b WHERE a.THE_GEOM && b.THE_GEOM
                                  AND ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM) AND a.ID<>b.ID);
-                        CREATE INDEX ON $hydrographic_indice USING BTREE(contact)""".toString()
+                        CREATE INDEX ON $hydrographic_indice (contact)""".toString()
 
 
                         datasource """DROP TABLE IF EXISTS $hydrographic_unified;
