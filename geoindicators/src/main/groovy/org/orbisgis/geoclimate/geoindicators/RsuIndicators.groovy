@@ -477,21 +477,20 @@ IProcess projectedFacadeAreaDistribution() {
                 datasource."$buildingIntersection".id_build_a.createIndex()
                 datasource."$buildingIntersection".id_build_b.createIndex()
 
-
                 // Each free facade is stored TWICE (an intersection could be seen from the point of view of two
                 // buildings).
                 // Facades of isolated buildings are unioned to free facades of non-isolated buildings which are
                 // unioned to free intersection facades. To each facade is affected its corresponding free height
                 datasource """
                     DROP TABLE IF EXISTS $buildingFree;
-                    CREATE TABLE $buildingFree(the_geom GEOMETRY, z_max DOUBLE, z_min DOUBLE) 
-                    AS (SELECT  ST_TOMULTISEGMENTS(a.the_geom), a.$HEIGHT_WALL, 0 
+                    CREATE TABLE $buildingFree (the_geom GEOMETRY, z_max double precision, z_min double precision)
+                    AS (SELECT  ST_TOMULTISEGMENTS(a.the_geom) as the_geom, a.$HEIGHT_WALL as z_max, 0  as z_min
                     FROM $buildingTable a WHERE a.$ID_COLUMN_BU NOT IN (SELECT ID_build_a 
                     FROM $buildingIntersection)) UNION ALL (SELECT  
                     ST_TOMULTISEGMENTS(ST_DIFFERENCE(ST_TOMULTILINE(a.$GEOMETRIC_COLUMN_BU), 
-                    ST_UNION(ST_ACCUM(b.the_geom)))), a.$HEIGHT_WALL, 0 FROM $buildingTable a, 
-                    $buildingIntersection b WHERE a.$ID_COLUMN_BU=b.ID_build_a 
-                    GROUP BY b.ID_build_a) UNION ALL (SELECT ST_TOMULTISEGMENTS(the_geom) 
+                    ST_UNION(ST_ACCUM(b.the_geom)))) as the_geom, a.$HEIGHT_WALL as z_max, 0 as z_min FROM $buildingTable a, 
+                    $buildingIntersection b WHERE a.$ID_COLUMN_BU=b.ID_build_a and st_isempty(b.the_geom)=false
+                    GROUP BY b.ID_build_a) UNION ALL (SELECT ST_TOMULTISEGMENTS(the_geom)
                     AS the_geom, z_max, z_min FROM $buildingIntersection WHERE ID_build_a<ID_build_b)""".toString()
 
                 // The height of wall is calculated for each intermediate level...
@@ -517,7 +516,7 @@ IProcess projectedFacadeAreaDistribution() {
 
                 // Names and types of all columns are then useful when calling sql queries
                 def namesAndType = names.inject([]) { result, iter ->
-                    result += " $iter double"
+                    result += " $iter double precision"
                 }.join(",")
                 def onlyNamesB = names.inject([]) { result, iter ->
                     result += "b.$iter"
@@ -679,7 +678,7 @@ IProcess roofAreaDistribution() {
 
 
             // Indexes and spatial indexes are created on rsu and building Tables
-            datasource """CREATE INDEX IF NOT EXISTS ids_ina ON $buildRoofSurfIni USING RTREE($GEOMETRIC_COLUMN_BU);
+            datasource """CREATE SPATIAL INDEX IF NOT EXISTS ids_ina ON $buildRoofSurfIni ($GEOMETRIC_COLUMN_BU);
                 CREATE INDEX IF NOT EXISTS id_ina ON $buildRoofSurfIni ($ID_COLUMN_BU);""".toString()
 
             // Vertical roofs that are potentially in contact with the facade of a building neighbor are identified
@@ -736,7 +735,7 @@ IProcess roofAreaDistribution() {
                     ON a.$ID_COLUMN_BU=b.$ID_COLUMN_BU);""".toString()
 
             // Indexes and spatial indexes are created on rsu and building Tables
-            datasource """CREATE INDEX IF NOT EXISTS ids_bu ON $buildVertRoofAll USING RTREE(the_geom); 
+            datasource """CREATE SPATIAL INDEX IF NOT EXISTS ids_bu ON $buildVertRoofAll (the_geom); 
                     CREATE INDEX IF NOT EXISTS id_bu ON $buildVertRoofAll (id_build); 
                     CREATE INDEX IF NOT EXISTS id_rsu ON $buildVertRoofAll (id_rsu);""".toString()
 
@@ -1359,7 +1358,7 @@ IProcess smallestCommunGeometry() {
             CREATE TABLE $roadTable_zindex0_buffer as SELECT st_buffer(the_geom, WIDTH::DOUBLE PRECISION/2)
             AS the_geom
             FROM $roadTable  where ZINDEX=0 ;
-            CREATE INDEX IF NOT EXISTS ids_$roadTable_zindex0_buffer ON $roadTable_zindex0_buffer USING RTREE(the_geom);
+            CREATE SPATIAL INDEX IF NOT EXISTS ids_$roadTable_zindex0_buffer ON $roadTable_zindex0_buffer(the_geom);
             CREATE TABLE $road_tmp AS SELECT ST_CollectionExtract(st_intersection(st_union(st_accum(a.the_geom)),b.the_geom),3) AS the_geom, b.${id_rsu} FROM
             $roadTable_zindex0_buffer AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom) GROUP BY b.${id_rsu};
             DROP TABLE IF EXISTS $roadTable_zindex0_buffer;
@@ -1379,14 +1378,14 @@ IProcess smallestCommunGeometry() {
                     $vegetationTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='low' group by b.${id_rsu};
                 CREATE INDEX ON $low_vegetation_rsu_tmp(${id_rsu});
-                CREATE TABLE $low_vegetation_tmp AS SELECT ST_CollectionExtract(st_buffer(st_intersection(a.the_geom, b.the_geom),0),3) AS the_geom, b.${id_rsu} FROM 
+                CREATE TABLE $low_vegetation_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_rsu} FROM 
                         $low_vegetation_rsu_tmp AS a, $rsuTable AS b WHERE a.${id_rsu}=b.${id_rsu} group by b.${id_rsu};
                         DROP TABLE IF EXISTS $high_vegetation_tmp,$high_vegetation_rsu_tmp;
                 CREATE TABLE $high_vegetation_rsu_tmp as select st_union(st_accum(a.the_geom)) as the_geom,  b.${id_rsu} FROM 
                     $vegetationTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='high' group by b.${id_rsu};
                 CREATE INDEX ON $high_vegetation_rsu_tmp(${id_rsu});
-                CREATE TABLE $high_vegetation_tmp AS SELECT ST_CollectionExtract(st_buffer(st_intersection(a.the_geom, b.the_geom),0),3) AS the_geom, b.${id_rsu} FROM 
+                CREATE TABLE $high_vegetation_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_rsu} FROM 
                         $high_vegetation_rsu_tmp AS a, $rsuTable AS b WHERE a.${id_rsu}=b.${id_rsu} group by b.${id_rsu};
                 DROP TABLE $low_vegetation_rsu_tmp, $high_vegetation_rsu_tmp;""".toString()
                     tablesToMerge += ["$low_vegetation_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_rsu} from $low_vegetation_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
@@ -1398,7 +1397,7 @@ IProcess smallestCommunGeometry() {
                     datasource."$waterTable".the_geom.createSpatialIndex()
                     def water_tmp = postfix "water_zindex0"
                     datasource """DROP TABLE IF EXISTS $water_tmp;
-                CREATE TABLE $water_tmp AS SELECT ST_CollectionExtract(st_buffer(st_intersection(a.the_geom, b.the_geom),0),3) AS the_geom, b.${id_rsu} FROM 
+                CREATE TABLE $water_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_rsu} FROM 
                         $waterTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom)""".toString()
                     tablesToMerge += ["$water_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_rsu} from $water_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
@@ -1445,7 +1444,7 @@ IProcess smallestCommunGeometry() {
                 CREATE TABLE $tmp_point_polygonize as  select  EXPLOD_ID as ${ID_COLUMN_NAME}, st_pointonsurface(st_force2D(the_geom)) as the_geom ,
                 st_area(the_geom) as area , ${id_rsu}
                  from st_explode ('(select st_polygonize(st_union(st_force2d(
-                st_precisionreducer(st_node(st_accum(st_force2d(a.the_geom))), 3)))) as the_geom, ${id_rsu} from $tmp_tables as a group by ${id_rsu})')""".toString()
+                st_precisionreducer(st_node(st_accum(a.the_geom)), 3)))) as the_geom, ${id_rsu} from $tmp_tables as a group by ${id_rsu})')""".toString()
 
                 //Create indexes
                 datasource."$tmp_point_polygonize".the_geom.createSpatialIndex()
