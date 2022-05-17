@@ -288,7 +288,7 @@ IProcess prepareTSUData() {
                          UPDATE $hydrographic_indice SET CONTACT=1 WHERE ID IN(SELECT DISTINCT(a.ID)
                                  FROM $hydrographic_indice a, $hydrographic_indice b WHERE a.THE_GEOM && b.THE_GEOM
                                  AND ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM) AND a.ID<>b.ID);
-                        CREATE INDEX ON $hydrographic_indice USING BTREE(contact)""".toString()
+                        CREATE INDEX ON $hydrographic_indice (contact)""".toString()
 
 
                         datasource """DROP TABLE IF EXISTS $hydrographic_unified;
