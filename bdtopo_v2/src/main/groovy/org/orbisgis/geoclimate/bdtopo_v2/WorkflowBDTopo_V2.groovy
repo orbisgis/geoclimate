@@ -920,11 +920,13 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
         }
 
         //Before starting geoclimate algorithms we must check if some tables exist
-        if(!h2gis_datasource.hasTable(outputTableNameBatiInd)&& !h2gis_datasource.hasTable(outputTableNameBatiIndus) && !h2gis_datasource.hasTable(outputTableNameBatiRem)){
+        if(h2gis_datasource.getTable(outputTableNameBatiInd).getRowCount()==0
+                || h2gis_datasource.getTable(outputTableNameBatiIndus)==0 || h2gis_datasource.getTable(outputTableNameBatiRem)==0){
             error "At least one of the following tables must be provided : bati_indifferencie, bati_industriel, bati_remarquable"
             return
         }
-        if(!h2gis_datasource.hasTable(outputTableNameRoad)){
+
+        if(h2gis_datasource.getTable(outputTableNameRoad).getRowCount()==0){
             error "The route table must be provided"
             return
         }
