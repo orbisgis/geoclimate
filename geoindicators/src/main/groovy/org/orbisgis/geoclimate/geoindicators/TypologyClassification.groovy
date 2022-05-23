@@ -275,7 +275,7 @@ IProcess identifyLczType() {
                                     IS NOT NULL)""".toString())."$VARIABILITY_NAME"
                         } else {
                             variabilityValue[indicCol] = datasource.firstRow("""SELECT MEDIAN(ABS(all_val-
-                                    ${centerValue[indicCol]})) AS $VARIABILITY_NAME FROM " +
+                                    ${centerValue[indicCol]})) AS $VARIABILITY_NAME FROM 
                                     (SELECT ${indicCol}_low AS all_val FROM $LCZ_classes WHERE ${indicCol}_low 
                                     IS NOT NULL UNION ALL SELECT ${indicCol}_upp AS all_val FROM $LCZ_classes 
                                     WHERE ${indicCol}_upp IS NOT NULL)""".toString())."$VARIABILITY_NAME"
