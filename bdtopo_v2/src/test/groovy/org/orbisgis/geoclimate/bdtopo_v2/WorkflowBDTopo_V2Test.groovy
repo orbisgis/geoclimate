@@ -382,7 +382,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         checkSpatialTable(h2GISDatabase, "rsu_indicators")
         checkSpatialTable(h2GISDatabase, "rsu_lcz")
         def geoFiles = []
-        def  folder = new File(directory+File.separator+"bdtopo_v2_12174")
+        def  folder = new File(directory+File.separator+inseeCode)
         folder.eachFileRecurse groovy.io.FileType.FILES,  { file ->
             if (file.name.toLowerCase().endsWith(".geojson")) {
                 geoFiles << file.getAbsolutePath()
