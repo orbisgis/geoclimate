@@ -1858,8 +1858,6 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
                     if (tmpTable) {
                         //Workarround to update the SRID on resulset
                         output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);""".toString()
-                        //Add a GID column
-                        output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN gid TYPE serial;""".toString()
 
                     }
                 } else {
@@ -1876,7 +1874,7 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
                 }
                 if (tmpTable) {
                     //Add a GID column
-                    output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN gid TYPE serial;""".toString()
+                    output_datasource.execute """ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS gid serial;""".toString()
                     output_datasource.execute("UPDATE $output_table SET id_zone= '$id_zone'".toString());
                     debug "The table $h2gis_table_to_save has been exported into the table $output_table"
                 } else {
@@ -1997,12 +1995,11 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                         }
                     }
                     if (tmpTable) {
-                        if (!output_datasource.getTable(output_table).hasColumn("id_zone")) {
-                            output_datasource.execute("ALTER TABLE $output_table ADD COLUMN id_zone VARCHAR".toString());
-                        }
+                        output_datasource.execute("ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS id_zone VARCHAR".toString())
+                        output_datasource.execute("UPDATE $output_table SET id_zone= '$id_zone'".toString())
                         //Add GID column
-                        output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN gid TYPE serial;""".toString()
-                        output_datasource.execute("UPDATE $output_table SET id_zone= '$id_zone'".toString());
+                        output_datasource.execute """ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS gid serial;""".toString()
+
                         info "The table $h2gis_table_to_save has been exported into the table $output_table"
                     } else {
                         warn "The table $h2gis_table_to_save hasn't been exported into the table $output_table"
