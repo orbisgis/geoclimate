@@ -376,7 +376,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         dirFile.mkdir()
         def tablesToSave = [
                             "rsu_lcz",]
-        def process = BDTopo_V2.WorkflowBDTopo_V2.bdtopo_processing(h2GISDatabase, defaultParameters, inseeCode, dirFile, tablesToSave, null, null, 4326);
+        def process = BDTopo_V2.WorkflowBDTopo_V2.bdtopo_processing(h2GISDatabase, defaultParameters, inseeCode, directory, tablesToSave, null, null, 4326);
         checkSpatialTable(h2GISDatabase, "block_indicators")
         checkSpatialTable(h2GISDatabase, "building_indicators")
         checkSpatialTable(h2GISDatabase, "rsu_indicators")
