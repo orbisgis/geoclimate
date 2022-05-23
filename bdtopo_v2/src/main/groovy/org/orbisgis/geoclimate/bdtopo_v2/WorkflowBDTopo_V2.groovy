@@ -773,9 +773,9 @@ IProcess workflow() {
  */
 def checkAndFormatZones(def location){
     if (location in Collection) {
-        return location.join("_")
+        return location*.trim().join("_")
     } else if (location instanceof String) {
-        return location
+        return location.trim()
     }else{
         error "Invalid location input. \n" +
                 "The location input must be a string value or an array of 4 coordinates to define a bbox "
@@ -799,7 +799,7 @@ def createMainFolder(def outputFolder, def location){
         } else {
             FileUtilities.deleteFiles(folder)
         }
-        return folder
+        return folder.getAbsolutePath()
 }
 
 /**
@@ -1428,7 +1428,7 @@ def saveResults(def h2gis_datasource, def id_zone, def results, def srid, def ou
     }
     if (outputFolder && outputFiles) {
         //Create the folder to save the results
-        def folder = new File(outputFolder.getAbsolutePath()+File.separator+ id_zone)
+        def folder = new File(outputFolder +File.separator+ id_zone)
         if (!folder.exists()) {
             folder.mkdir()
         } else {

@@ -581,7 +581,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(input: createConfigFile(bdTopoParameters, directory)))
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE")
-        h2gis.load(directory+File.separator+"bdtopo_v2_"+envCoords.join("_")+File.separator+"grid_indicators.geojson")
+        h2gis.load(directory+File.separator+"bdtopo_v2_"+envCoords.join("_")+File.separator+communeToTest+File.separator+"grid_indicators.geojson")
         assertTrue h2gis.firstRow("select count(*) as count from grid_indicators".toString()).count==1
         assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0".toString()).count>0
     }
