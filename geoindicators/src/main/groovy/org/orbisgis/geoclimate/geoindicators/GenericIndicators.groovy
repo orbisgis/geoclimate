@@ -323,7 +323,7 @@ IProcess buildingDirectionDistribution() {
                 datasource."$buildingTableName".id_build.createIndex()
 
                 // The length and direction of the smallest and the longest sides of the Minimum rectangle are calculated
-                datasource """CREATE INDEX IF NOT EXISTS id_bua ON $build_min_rec USING BTREE($ID_FIELD_BU);
+                datasource """CREATE INDEX IF NOT EXISTS id_bua ON $build_min_rec ($ID_FIELD_BU);
                         DROP TABLE IF EXISTS $build_dir360; CREATE TABLE $build_dir360 AS 
                         SELECT a.$inputIdUp, ST_LENGTH(a.the_geom) AS LEN_L, 
                         ST_AREA(b.the_geom)/ST_LENGTH(a.the_geom) AS LEN_H, 

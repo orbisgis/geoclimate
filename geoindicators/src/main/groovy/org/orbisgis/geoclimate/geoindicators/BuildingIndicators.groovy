@@ -173,7 +173,7 @@ IProcess neighborsProperties() {
                     AND ST_INTERSECTS(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD) 
                     AND a.$ID_FIELD <> b.$ID_FIELD)
                 GROUP BY $ID_FIELD;
-                CREATE INDEX IF NOT EXISTS buff_id ON $build_intersec USING BTREE($ID_FIELD);
+                CREATE INDEX IF NOT EXISTS buff_id ON $build_intersec ($ID_FIELD);
                 DROP TABLE IF EXISTS $outputTableName; 
                 CREATE TABLE $outputTableName AS 
                     SELECT  ${list.join(",")} ,  a.$ID_FIELD
@@ -321,7 +321,7 @@ IProcess minimumBuildingSpacing() {
                     WHERE st_expand(a.$GEOMETRIC_FIELD, $bufferDist) && b.$GEOMETRIC_FIELD 
                     AND a.$ID_FIELD <> b.$ID_FIELD 
                     GROUP BY b.$ID_FIELD;
-                 CREATE INDEX IF NOT EXISTS with_buff_id ON $build_min_distance USING BTREE($ID_FIELD); """.toString()
+                 CREATE INDEX IF NOT EXISTS with_buff_id ON $build_min_distance ($ID_FIELD); """.toString()
 
             // The minimum distance is calculated (The minimum distance is set to the $inputE value for buildings
             // having no building neighbors in a envelope meters distance
