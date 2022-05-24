@@ -1490,7 +1490,7 @@ def abstractModelTableBatchExportTable(JdbcDataSource output_datasource, def out
                         //We check if the number of columns is not the same
                         //If there is more columns in the input table we alter the output table
                         def outPutColumnsNames = outputColumns.keySet()
-                        int columnsCount = outPutColumnsNames.size();
+                        outPutColumnsNames.remove("gid")
                         def diffCols = inputColumns.keySet().findAll { e -> !outPutColumnsNames*.toLowerCase().contains(e.toLowerCase()) }
                         def alterTable = ""
                         if (diffCols) {
@@ -1569,6 +1569,7 @@ def abstractModelTableBatchExportTable(JdbcDataSource output_datasource, def out
                     }
                 }
                 if(tmpTable) {
+                    output_datasource.execute """ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS gid serial;""".toString()
                     output_datasource.execute("UPDATE $output_table SET id_zone= '$id_zone'".toString());
                     output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""".toString())
                     info "The table $h2gis_table_to_save has been exported into the table $output_table"
@@ -1604,13 +1605,13 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                 ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource)
                 if (inputRes) {
                     def outputColumns  = output_datasource.getTable(output_table).getColumnsTypes();
+                    outputColumns.remove("gid")
                     def outputconnection = output_datasource.getConnection()
                     try {
                         def inputColumns = inputRes.getColumnsTypes();
                         //We check if the number of columns is not the same
                         //If there is more columns in the input table we alter the output table
                         def outPutColumnsNames = outputColumns.keySet()
-                        int columnsCount = outPutColumnsNames.size();
                         def diffCols = inputColumns.keySet().findAll { e ->  !outPutColumnsNames*.toLowerCase().contains( e.toLowerCase() ) }
                         def alterTable = ""
                         if(diffCols){
@@ -1653,7 +1654,7 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                             }
 
                     } catch (SQLException e) {
-                        error("Cannot save the table $output_table.\n", e);
+                        error("Cannot save the table $output_table.\n $e");
                         return false;
                     } finally {
                         outputconnection.setAutoCommit(true);
@@ -1691,11 +1692,11 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                         }
                     }
                     if(tmpTable){
-                    if(!output_datasource.getTable(output_table).hasColumn("id_zone")) {
-                        output_datasource.execute("ALTER TABLE $output_table ADD COLUMN id_zone VARCHAR".toString());
-                    }
+                    output_datasource.execute("ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS id_zone VARCHAR".toString())
                     output_datasource.execute("UPDATE $output_table SET id_zone= ?", id_zone);
                     output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""".toString())
+                    //Add GID column
+                    output_datasource.execute """ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS gid serial;""".toString()
                     info "The table $h2gis_table_to_save has been exported into the table $output_table"
                     }
                     else{

@@ -1915,7 +1915,6 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                             //We check if the number of columns is not the same
                             //If there is more columns in the input table we alter the output table
                             def outPutColumnsNames = outputColumns.keySet()
-                            int columnsCount = outPutColumnsNames.size();
                             def diffCols = inputColumns.keySet().findAll { e -> !outPutColumnsNames*.toLowerCase().contains(e.toLowerCase()) }
                             def alterTable = ""
                             if (diffCols) {
@@ -1958,7 +1957,7 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                             }
 
                         } catch (SQLException e) {
-                            error("Cannot save the table $output_table.\n", e);
+                            error("Cannot save the table $output_table.\n $e");
                             return false;
                         } finally {
                             info "The table $h2gis_table_to_save has been exported into the table $output_table"
