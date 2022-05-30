@@ -8,3 +8,9 @@
 
 
 GeoClimate documentation is available at https://github.com/orbisgis/geoclimate/wiki
+
+**Note :**
+
+**The documentation is inline with the current GeoClimate code source.**
+
+**If you are using a released version of GeoClimate please read the documentation packaged with the version you are using.**
