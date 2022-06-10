@@ -175,7 +175,6 @@ IProcess freeExternalFacadeDensityExact() {
 
             // 5. Join RSU having no buildings and set their value to 0
             datasource."$onlyBuildRsu"."$idRsu".createIndex()
-            datasource."$rsuTable"."$idRsu".createIndex()
             datasource """
                 DROP TABLE IF EXISTS $outputTableName;
                 CREATE TABLE $outputTableName
@@ -1072,7 +1071,7 @@ IProcess linearRoadOperations() {
                             def queryDistrib = queryExpl + "CREATE TABLE $roadDistrib AS SELECT id_rsu, " +
                                     caseQueryDistrib[0..-2] +
                                     " FROM $roadExpl GROUP BY id_rsu;" +
-                                    "CREATE INDEX IF NOT EXISTS id_d ON $roadDistrib USING BTREE(id_rsu);" +
+                                    "CREATE INDEX IF NOT EXISTS id_d ON $roadDistrib (id_rsu);" +
                                     "DROP TABLE IF EXISTS $roadDistTot; CREATE TABLE $roadDistTot($ID_COLUMN_RSU INTEGER," +
                                     "${nameDistrib.join(" double,")} double) AS (SELECT a.$ID_COLUMN_RSU," +
                                     "COALESCE(b.${nameDistrib.join(",0),COALESCE(b.")},0)  " +
@@ -1090,7 +1089,7 @@ IProcess linearRoadOperations() {
                             String queryDensity = "DROP TABLE IF EXISTS $roadDens;" +
                                     "CREATE TABLE $roadDens AS SELECT id_rsu, " + caseQueryDens[0..-2] +
                                     " FROM $roadInter GROUP BY id_rsu;" +
-                                    "CREATE INDEX IF NOT EXISTS id_d ON $roadDens USING BTREE(id_rsu);" +
+                                    "CREATE INDEX IF NOT EXISTS id_d ON $roadDens (id_rsu);" +
                                     "DROP TABLE IF EXISTS $roadDensTot; CREATE TABLE $roadDensTot($ID_COLUMN_RSU INTEGER," +
                                     "${nameDens.join(" double,")} double) AS (SELECT a.$ID_COLUMN_RSU," +
                                     "COALESCE(b.${nameDens.join(",0),COALESCE(b.")},0) " +
@@ -1104,8 +1103,8 @@ IProcess linearRoadOperations() {
                         if (operations.contains("road_direction_distribution") &&
                                 operations.contains("linear_road_density")) {
                             datasource """DROP TABLE if exists $outputTableName; 
-                                CREATE INDEX IF NOT EXISTS idx_$roadDistTot ON $roadDistTot USING BTREE(id_rsu);
-                                CREATE INDEX IF NOT EXISTS idx_$roadDensTot ON $roadDensTot USING BTREE(id_rsu);
+                                CREATE INDEX IF NOT EXISTS idx_$roadDistTot ON $roadDistTot (id_rsu);
+                                CREATE INDEX IF NOT EXISTS idx_$roadDensTot ON $roadDensTot (id_rsu);
                                 CREATE TABLE $outputTableName AS SELECT a.*,
                                 b.${nameDens.join(",b.")} FROM $roadDistTot a LEFT JOIN $roadDensTot b 
                                 ON a.id_rsu=b.id_rsu""".toString()
@@ -1374,20 +1373,13 @@ IProcess smallestCommunGeometry() {
                     def high_vegetation_tmp = postfix "high_vegetation_zindex0"
                     def high_vegetation_rsu_tmp = postfix "high_vegetation_zindex0"
                     datasource """DROP TABLE IF EXISTS $low_vegetation_tmp, $low_vegetation_rsu_tmp;
-                CREATE TABLE $low_vegetation_rsu_tmp as select st_union(st_accum(a.the_geom)) as the_geom,  b.${id_rsu} FROM 
+                CREATE TABLE $low_vegetation_tmp as select ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom,  b.${id_rsu} FROM 
                     $vegetationTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
-                        AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='low' group by b.${id_rsu};
-                CREATE INDEX ON $low_vegetation_rsu_tmp(${id_rsu});
-                CREATE TABLE $low_vegetation_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_rsu} FROM 
-                        $low_vegetation_rsu_tmp AS a, $rsuTable AS b WHERE a.${id_rsu}=b.${id_rsu} group by b.${id_rsu};
-                        DROP TABLE IF EXISTS $high_vegetation_tmp,$high_vegetation_rsu_tmp;
-                CREATE TABLE $high_vegetation_rsu_tmp as select st_union(st_accum(a.the_geom)) as the_geom,  b.${id_rsu} FROM 
+                        AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='low';
+                CREATE TABLE $high_vegetation_tmp as select ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom,  b.${id_rsu} FROM 
                     $vegetationTable AS a, $rsuTable AS b WHERE a.the_geom && b.the_geom 
-                        AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='high' group by b.${id_rsu};
-                CREATE INDEX ON $high_vegetation_rsu_tmp(${id_rsu});
-                CREATE TABLE $high_vegetation_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_rsu} FROM 
-                        $high_vegetation_rsu_tmp AS a, $rsuTable AS b WHERE a.${id_rsu}=b.${id_rsu} group by b.${id_rsu};
-                DROP TABLE $low_vegetation_rsu_tmp, $high_vegetation_rsu_tmp;""".toString()
+                        AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='high';
+                """.toString()
                     tablesToMerge += ["$low_vegetation_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_rsu} from $low_vegetation_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
                     tablesToMerge += ["$high_vegetation_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_rsu} from $high_vegetation_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
                 }
@@ -2055,7 +2047,7 @@ IProcess frontalAreaIndexDistribution() {
                 // 4. Make the calculations for the last level
                 def layer_bottom = listLayersBottom[listLayersBottom.size() - 1]
                 // Get the maximum building height
-                def layer_top = datasource.firstRow("SELECT CAST(MAX($HEIGHT_WALL) AS INTEGER) +1 AS MAXH FROM $buildingTable").MAXH
+                def layer_top = datasource.firstRow("SELECT CAST(MAX($HEIGHT_WALL) AS INTEGER) +1 AS MAXH FROM $buildingTable".toString()).MAXH
                 def deltaH = layer_top - layer_bottom
                 tab_H[listLayersBottom.size() - 1] = "${buildFracH}_$layer_bottom".toString()
 

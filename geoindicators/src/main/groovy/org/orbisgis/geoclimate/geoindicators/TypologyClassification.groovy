@@ -112,7 +112,7 @@ IProcess identifyLczType() {
 
                 // The LCZ definitions are created in a Table of the DataBase (note that the "terrain_roughness_class"
                 // is replaced by the "terrain_roughness_length" in order to have a continuous interval of values)
-                datasource """DROP TABLE IF EXISTS $LCZ_classes; 
+                datasource.execute("""DROP TABLE IF EXISTS $LCZ_classes; 
                         CREATE TABLE $LCZ_classes(name VARCHAR,
                         sky_view_factor_low FLOAT, sky_view_factor_upp FLOAT,
                          aspect_ratio_low FLOAT,  aspect_ratio_upp FLOAT, 
@@ -130,7 +130,7 @@ IProcess identifyLczType() {
                         ('6',0.6,0.9,0.3,0.8,0.2,0.4,0.2,0.5,0.3,0.6,3.0,10.0,0.175,0.75),
                         ('7',0.2,0.5,1.0,2.0,0.6,0.9,0.0,0.2,0.0,0.3,2.0,4.0,0.175,0.375),
                         ('8',0.7,1.0,0.1,0.3,0.3,0.5,0.4,0.5,0.0,0.2,3.0,10.0,0.175,0.375),
-                        ('9',0.8,1.0,0.1,0.3,0.1,0.2,0.0,0.2,0.6,0.8,3.0,10.0,0.175,0.75);""".toString()
+                        ('9',0.8,1.0,0.1,0.3,0.1,0.2,0.0,0.2,0.6,0.8,3.0,10.0,0.175,0.75);""".toString())
                 /* The rural LCZ types (AND INDUSTRIAL) are excluded from the algorithm, they have their own one
                     "('10',0.6,0.9,0.2,0.5,0.2,0.3,0.2,0.4,0.4,0.5,5.0,15.0,0.175,0.75),"
                     "('101',0.0,0.4,1.0,null,0.0,0.1,0.0,0.1,0.9,1.0,3.0,30.0,1.5,null)," +
@@ -157,6 +157,7 @@ IProcess identifyLczType() {
                 // I. Rural LCZ types are classified according to a "manual" decision tree
                 datasource."$rsuAllIndicators".BUILDING_FRACTION_LCZ.createIndex()
                 datasource."$rsuAllIndicators".ASPECT_RATIO.createIndex()
+                datasource."$rsuAllIndicators"."$ID_FIELD_RSU".createIndex()
 
                 datasource """
                     DROP TABLE IF EXISTS $ruralLCZ; 
@@ -177,6 +178,7 @@ IProcess identifyLczType() {
                         WHERE (BUILDING_FRACTION_LCZ < 0.1 OR BUILDING_FRACTION_LCZ IS NULL) 
                         AND ASPECT_RATIO < 0.1;""".toString()
 
+                datasource."$ruralLCZ"."$ID_FIELD_RSU".createIndex()
                 datasource."$ruralLCZ".IMPERVIOUS_FRACTION_LCZ.createIndex()
                 datasource."$ruralLCZ".PERVIOUS_FRACTION_LCZ.createIndex()
                 datasource."$ruralLCZ".HIGH_ALL_VEGETATION.createIndex()
@@ -261,22 +263,22 @@ IProcess identifyLczType() {
                     if (!indicCol.equalsIgnoreCase(ID_FIELD_RSU) && !indicCol.equalsIgnoreCase(GEOMETRIC_FIELD)) {
                         // The values used for normalization ("mean" and "standard deviation") are calculated
                         // (for each column) and stored into maps
-                        centerValue[indicCol] = datasource.firstRow("SELECT ${normalisationType}(all_val) " +
-                                "AS $CENTER_NAME FROM (SELECT ${indicCol}_low AS all_val FROM $LCZ_classes " +
-                                "WHERE ${indicCol}_low IS NOT NULL UNION ALL SELECT ${indicCol}_upp AS all_val " +
-                                "FROM $LCZ_classes WHERE ${indicCol}_upp IS NOT NULL)".toString())."$CENTER_NAME"
+                        centerValue[indicCol] = datasource.firstRow("""SELECT ${normalisationType}(all_val) 
+                                AS $CENTER_NAME FROM (SELECT ${indicCol}_low AS all_val FROM $LCZ_classes 
+                                WHERE ${indicCol}_low IS NOT NULL UNION ALL SELECT ${indicCol}_upp AS all_val 
+                                FROM $LCZ_classes WHERE ${indicCol}_upp IS NOT NULL)""".toString())."$CENTER_NAME"
                         if (normalisationType == "AVG") {
-                            variabilityValue[indicCol] = datasource.firstRow("SELECT STDDEV_POP(all_val) " +
-                                    "AS $VARIABILITY_NAME FROM (SELECT ${indicCol}_low AS all_val " +
-                                    "FROM $LCZ_classes WHERE ${indicCol}_low IS NOT NULL UNION ALL " +
-                                    "SELECT ${indicCol}_upp AS all_val FROM $LCZ_classes WHERE ${indicCol}_upp " +
-                                    "IS NOT NULL)".toString())."$VARIABILITY_NAME"
+                            variabilityValue[indicCol] = datasource.firstRow("""SELECT STDDEV_POP(all_val) 
+                                    AS $VARIABILITY_NAME FROM (SELECT ${indicCol}_low AS all_val 
+                                    FROM $LCZ_classes WHERE ${indicCol}_low IS NOT NULL UNION ALL 
+                                    SELECT ${indicCol}_upp AS all_val FROM $LCZ_classes WHERE ${indicCol}_upp 
+                                    IS NOT NULL)""".toString())."$VARIABILITY_NAME"
                         } else {
-                            variabilityValue[indicCol] = datasource.firstRow("SELECT MEDIAN(ABS(all_val-" +
-                                    "${centerValue[indicCol]})) AS $VARIABILITY_NAME FROM " +
-                                    "(SELECT ${indicCol}_low AS all_val FROM $LCZ_classes WHERE ${indicCol}_low " +
-                                    "IS NOT NULL UNION ALL SELECT ${indicCol}_upp AS all_val FROM $LCZ_classes " +
-                                    "WHERE ${indicCol}_upp IS NOT NULL)".toString())."$VARIABILITY_NAME"
+                            variabilityValue[indicCol] = datasource.firstRow("""SELECT MEDIAN(ABS(all_val-
+                                    ${centerValue[indicCol]})) AS $VARIABILITY_NAME FROM 
+                                    (SELECT ${indicCol}_low AS all_val FROM $LCZ_classes WHERE ${indicCol}_low 
+                                    IS NOT NULL UNION ALL SELECT ${indicCol}_upp AS all_val FROM $LCZ_classes 
+                                    WHERE ${indicCol}_upp IS NOT NULL)""".toString())."$VARIABILITY_NAME"
                         }
                         // Piece of query useful for normalizing the LCZ indicator intervals
                         queryRangeNorm += " (${indicCol}_low-${centerValue[indicCol]})/${variabilityValue[indicCol]}" +
@@ -395,6 +397,7 @@ IProcess identifyLczType() {
                                         AS SELECT   * 
                                         FROM        $distribLczTableInt
                                         UNION ALL   SELECT * FROM $ruralAndIndustrialCommercialLCZ b;""".toString()
+                datasource."$classifiedLcz"."$ID_FIELD_RSU".createIndex()
 
                 // If the input tables contain a geometric field, we add it to the output table
                 if (datasource."$rsuAllIndicators".hasColumn(GEOMETRIC_FIELD)) {
