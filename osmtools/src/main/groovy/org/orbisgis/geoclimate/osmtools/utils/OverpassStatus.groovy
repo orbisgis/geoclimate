@@ -84,7 +84,7 @@ class OverpassStatus {
         def array = test.split("\n")
         connectionId = Long.decode(array[0]-CONNECT_AS)
         time = format.parse(array[1]-CURRENT_TIME)
-        slotLimit = Integer.decode(array[2]-RATE_LIMIT)
+        slotLimit = Integer.decode(array[3]-RATE_LIMIT)
         def i = 3
         if(array[i].contains(SLOT_AVAILABLE)) {
             slotAvailable = Integer.decode(array[i] - SLOT_AVAILABLE)
