@@ -1260,7 +1260,7 @@ IProcess computeAllGeoIndicators() {
                     // for LCZ classification (rename the indicators with the real names)
                     def queryReplaceNames = []
                     lczIndicNames.each { oldIndic, newIndic ->
-                        queryReplaceNames << "$oldIndic as $newIndic;"
+                        queryReplaceNames << "$oldIndic as $newIndic"
                     }
                     datasource.execute """DROP TABLE IF EXISTS $lczIndicTable;
                                 CREATE TABLE $lczIndicTable 
@@ -1626,7 +1626,7 @@ IProcess computeGeoclimateIndicators() {
                 // for LCZ classification (rename the indicators with the real names)
                 def queryReplaceNames = []
                 lczIndicNames.each { oldIndic, newIndic ->
-                    queryReplaceNames << "$oldIndic as $newIndic;"
+                    queryReplaceNames << "$oldIndic as $newIndic"
                 }
                 datasource.execute """DROP TABLE IF EXISTS $lczIndicTable;
                                 CREATE TABLE $lczIndicTable 
