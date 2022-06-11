@@ -1258,17 +1258,15 @@ IProcess computeAllGeoIndicators() {
 
                     // Get into a new table the ID, geometry column and the 7 indicators defined by Stewart and Oke (2012)
                     // for LCZ classification (rename the indicators with the real names)
-                    def queryReplaceNames = ""
+                    def queryReplaceNames = []
                     lczIndicNames.each { oldIndic, newIndic ->
-                        queryReplaceNames += "ALTER TABLE $lczIndicTable ALTER COLUMN $oldIndic RENAME TO $newIndic;"
+                        queryReplaceNames << "$oldIndic as $newIndic"
                     }
                     datasource.execute """DROP TABLE IF EXISTS $lczIndicTable;
                                 CREATE TABLE $lczIndicTable 
-                                        AS SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, ${lczIndicNames.keySet().join(",")} 
-                                        FROM ${computeRSUIndicators.results.outputTableName};
-                                $queryReplaceNames""".toString()
+                                        AS SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, ${queryReplaceNames.join(",")} 
+                                        FROM ${computeRSUIndicators.results.outputTableName};""".toString()
 
-                    datasource."$lczIndicTable".reload()
 
                     // The classification algorithm is called
                     def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
@@ -1626,17 +1624,14 @@ IProcess computeGeoclimateIndicators() {
 
                 // Get into a new table the ID, geometry column and the 7 indicators defined by Stewart and Oke (2012)
                 // for LCZ classification (rename the indicators with the real names)
-                def queryReplaceNames = ""
+                def queryReplaceNames = []
                 lczIndicNames.each { oldIndic, newIndic ->
-                    queryReplaceNames += "ALTER TABLE $lczIndicTable ALTER COLUMN $oldIndic RENAME TO $newIndic;"
+                    queryReplaceNames << "$oldIndic as $newIndic"
                 }
                 datasource.execute """DROP TABLE IF EXISTS $lczIndicTable;
                                 CREATE TABLE $lczIndicTable 
-                                        AS SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, ${lczIndicNames.keySet().join(",")} 
-                                        FROM ${rsuIndicators};
-                                $queryReplaceNames""".toString()
-
-                datasource."$lczIndicTable".reload()
+                                        AS SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, ${queryReplaceNames.join(",")} 
+                                        FROM ${rsuIndicators};""".toString()
 
                 // The classification algorithm is called
                 def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()

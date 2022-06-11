@@ -92,6 +92,7 @@ class OverpassStatusTest {
     void overpassStatusTest(){
         def testStatus = "Connected as: $CONNECTION_ID\n" +
                 "Current time: $CURRENT_TIME\n" +
+                "Announced endpoint: lz4.overpass-api.de/api/\n"+
                 "Rate limit: $RATE_LIMIT\n" +
                 "$SLOT_AVAILABLE slots available now.\n" +
                 "Slot available after: $SLOT_AVAILABLE_AFTER_DATE, in $SLOT_AVAILABLE_AFTER_TIME seconds.\n" +
@@ -99,6 +100,7 @@ class OverpassStatusTest {
                 "$PID\t$SPACE_LIMIT\t$TIME_LIMIT\t$START_TIME"
         def expected = "Connected as: $CONNECTION_ID\n" +
                 "Current time: ${current.format(format.parse(CURRENT_TIME))}\n" +
+                "Announced endpoint: lz4.overpass-api.de/api/\n"+
                 "Rate limit: $RATE_LIMIT\n" +
                 "$SLOT_AVAILABLE slots available now.\n" +
                 "Slot available after: ${current.format(format.parse(SLOT_AVAILABLE_AFTER_DATE))}, in $SLOT_AVAILABLE_AFTER_TIME seconds.\n" +
@@ -140,6 +142,7 @@ class OverpassStatusTest {
         long time1 = System.currentTimeSeconds()
         def slotBeforeQuery = "Connected as: $CONNECTION_ID\n" +
                 "Current time: ${serverFormat.format(current)}\n" +
+                "Announced endpoint: lz4.overpass-api.de/api/\n"+
                 "Rate limit: $RATE_LIMIT\n" +
                 "0 slots available now.\n" +
                 "Slot available after: ${serverFormat.format(in5Sec)}, in $ds5 seconds.\n" +
@@ -158,6 +161,7 @@ class OverpassStatusTest {
         long time2 = System.currentTimeSeconds()
         def queryBeforeSlot = "Connected as: $CONNECTION_ID\n" +
                 "Current time: ${serverFormat.format(current)}\n" +
+                "Announced endpoint: lz4.overpass-api.de/api/\n"+
                 "Rate limit: $RATE_LIMIT\n" +
                 "0 slots available now.\n" +
                 "Slot available after: ${serverFormat.format(in8Sec)}, in $ds8 seconds.\n" +
