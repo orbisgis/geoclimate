@@ -50,6 +50,8 @@ class OverpassStatus {
     private static final CONNECT_AS = "Connected as: "
     /** String used to parse the slot {@link String} representation */
     private static final CURRENT_TIME = "Current time: "
+    /** String used to parse the Announced endpoint {@link String} representation */
+    private static final ANNOUNCED_ENDPOINT = "Announced endpoint: "
     /** String used to parse the slot {@link String} representation */
     private static final RATE_LIMIT = "Rate limit: "
     /** String used to parse the slot {@link String} representation */
@@ -69,6 +71,8 @@ class OverpassStatus {
     int slotLimit
     /** Number of available slots */
     int slotAvailable = 0
+    /**Announced endpoint*/
+    String announced_endpoint
     /** Lis of locked slots */
     List<Slot> slots = new ArrayList<>()
     /** List of running queries */
@@ -83,9 +87,10 @@ class OverpassStatus {
         local.setTimeZone(TimeZone.getTimeZone(ZoneId.systemDefault()))
         def array = test.split("\n")
         connectionId = Long.decode(array[0]-CONNECT_AS)
-        time = format.parse(array[1]-CURRENT_TIME)
-        slotLimit = Integer.decode(array[2]-RATE_LIMIT)
-        def i = 3
+            time = format.parse(array[1]-CURRENT_TIME)
+        announced_endpoint = array[2]- ANNOUNCED_ENDPOINT
+        slotLimit = Integer.decode(array[3] - RATE_LIMIT)
+        def i = 4
         if(array[i].contains(SLOT_AVAILABLE)) {
             slotAvailable = Integer.decode(array[i] - SLOT_AVAILABLE)
             i++
@@ -173,12 +178,12 @@ class OverpassStatus {
     String toString(){
         def str = "$CONNECT_AS$connectionId\n"
         str += "$CURRENT_TIME${local.format(time)}\n"
+        str += "$ANNOUNCED_ENDPOINT${announced_endpoint}\n"
         str += "$RATE_LIMIT$slotLimit\n"
         str += "$slotAvailable$SLOT_AVAILABLE\n"
         if(slots) str += "${slots.join("\n")}\n"
         str += "$RUNNING_QUERIES\n"
         if(runningQueries) str += "${runningQueries.join("\n")}"
-
         return str
     }
 }
