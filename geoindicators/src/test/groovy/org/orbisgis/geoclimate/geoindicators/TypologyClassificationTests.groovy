@@ -27,7 +27,7 @@ class TypologyClassificationTests {
 
     @BeforeEach
     void beforeEach() {
-        h2GIS.executeScript(this.class.getResourceAsStream("data_for_tests.sql"))
+        h2GIS.executeScript(TypologyClassificationTests.getResourceAsStream("data_for_tests.sql"))
     }
 
     @Test
