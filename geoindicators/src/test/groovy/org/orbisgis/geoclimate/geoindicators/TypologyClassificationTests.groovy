@@ -27,7 +27,8 @@ class TypologyClassificationTests {
 
     @BeforeEach
     void beforeEach() {
-        h2GIS.executeScript(TypologyClassificationTests.getResourceAsStream("data_for_tests.sql"))
+        URL url = this.getClass().getResource("data_for_tests.sql")
+        h2GIS.executeScript(new File(url.toURI()).text)
     }
 
     @Test
