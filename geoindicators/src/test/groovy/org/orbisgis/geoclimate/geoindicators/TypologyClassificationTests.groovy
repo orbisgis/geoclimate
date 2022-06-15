@@ -25,14 +25,9 @@ class TypologyClassificationTests {
         h2GIS = open "./target/${TypologyClassificationTests.class.name};AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE"
     }
 
-    @BeforeEach
-    void beforeEach() {
-        URL url = this.getClass().getResource("data_for_tests.sql")
-        h2GIS.executeScript(new File(url.toURI()).text)
-    }
-
     @Test
     void identifyLczTypeTest() {
+        h2GIS.executeScript(this.getClass().getResourceAsStream("data_for_tests.sql"))
         def pavg = Geoindicators.TypologyClassification.identifyLczType()
         assert pavg.execute([
                 rsuLczIndicators : "rsu_test_lcz_indics",
