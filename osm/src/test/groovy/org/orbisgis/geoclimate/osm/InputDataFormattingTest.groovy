@@ -357,7 +357,7 @@ class InputDataFormattingTest {
         }
 
 
-        def h2GIS = H2GIS.open("${ file.absolutePath+File.separator}osmdb_gislayers;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE".toString())
+        def h2GIS = H2GIS.open("${ file.absolutePath+File.separator}osmdb_gislayers;AUTO_SERVER=TRUE".toString())
 
         //def zoneToExtract ="Shanghai, Chine"
         def zoneToExtract = "École Lycée Joliot-Curie,Rennes"
