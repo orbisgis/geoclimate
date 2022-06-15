@@ -500,6 +500,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
+        def location = [[57.651096,11.821976,57.708916,11.89235]]
+
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb" : [
@@ -508,20 +510,17 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "locations" : ["Lille"],
+                        "locations" : location,
                         "timeout":3600,
                         "maxsize": 536870918,
                         "endpoint":"https://lz4.overpass-api.de/api"],
                 "output" :[
-                         "folder" : ["path": directory,
-                                               "tables": ["building", "population", "road_traffic"]]]
+                         "folder" :  directory]
                 ,
                 "parameters":
                         ["distance" : 0,
                          "rsu_indicators":[
-                                 "indicatorUse": ["LCZ", "TEB", "UTRF"],
-                                 "svfSimplified": true,
-                                 "estimateHeight":true
+                                 "indicatorUse": ["LCZ"]
                          ],"grid_indicators": [
                                 "x_size": 100,
                                 "y_size": 100,
@@ -532,8 +531,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                                 "LCZ_FRACTION", "LCZ_PRIMARY", "FREE_EXTERNAL_FACADE_DENSITY",
                                                 "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
                                                 "BUILDING_HEIGHT_DIST", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION"]
-                        ],   "worldpop_indicators" : true,
-                         "road_traffic" : true
+                        ],   "worldpop_indicators" : false,
+                         "road_traffic" : false
                         ]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
@@ -547,11 +546,11 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
-        h2gis.load("../cities/Barcelona/lden_barcelona_ref.geojson", "area_zone", true)
-        def env = h2gis.firstRow("(select st_transform(st_extent(the_geom), 4326) as the_geom from area_zone)").the_geom.getEnvelopeInternal()
-        def location = [[env.getMinY()as float, env.getMinX() as float, env.getMaxY() as float, env.getMaxX() as float]];
-        //def location = [[41.38605,2.19485, 41.38753,  2.19821]]
+        //H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
+        //h2gis.load("../cities/Barcelona/lden_barcelona_ref.geojson", "area_zone", true)
+        //def env = h2gis.firstRow("(select st_transform(st_extent(the_geom), 4326) as the_geom from area_zone)").the_geom.getEnvelopeInternal()
+        //def location = [[env.getMinY()as float, env.getMinX() as float, env.getMaxY() as float, env.getMaxX() as float]];
+        def location = [[57.651096,11.821976,57.708916,11.89235]]
         def tables =["building", "population", "road_traffic"]
         tables =["road_traffic"]
         def osm_parmeters = [
@@ -567,7 +566,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "folder" : ["path": directory,
                                     "tables": tables]],
                 "parameters":
-                        ["worldpop_indicators" : true, "road_traffic" : true]
+                        ["worldpop_indicators" : false, "road_traffic" : true]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(input: osm_parmeters))
