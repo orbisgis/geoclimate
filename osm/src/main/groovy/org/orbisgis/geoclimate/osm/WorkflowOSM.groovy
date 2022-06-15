@@ -254,7 +254,7 @@ IProcess workflow() {
                     }
 
                     if (!osmFilters) {
-                        error "Please set at least one OSM filter. e.g osm : ['A place name']"
+                        error "Please set at least one OSM filter (place name or bounding box). e.g 'location' : ['A place name']"
                         return null
                     }
                     if (output) {
