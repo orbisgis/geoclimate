@@ -22,7 +22,7 @@ class TypologyClassificationTests {
 
     @BeforeAll
     static void beforeAll() {
-        h2GIS = open "./target/${TypologyClassificationTests.class.name};AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE"
+        h2GIS = open "./target/${TypologyClassificationTests.class.name};AUTO_SERVER=TRUE"
     }
 
     @Test
