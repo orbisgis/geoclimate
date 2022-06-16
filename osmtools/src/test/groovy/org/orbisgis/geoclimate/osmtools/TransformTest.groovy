@@ -682,7 +682,7 @@ class TransformTest extends AbstractOSMTest {
 
     @Test
     void buildGISLayersTest () {
-        def h2GIS = H2GIS.open('./target/osmtools_read_file;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE')
+        def h2GIS = H2GIS.open('./target/osmtools_read_file;AUTO_SERVER=TRUE')
         IProcess loader = OSMTools.Loader.load()
         def prefix = "OSM_REDON"
         assertTrue loader.execute(datasource : h2GIS, osmTablesPrefix : prefix,
@@ -712,7 +712,7 @@ class TransformTest extends AbstractOSMTest {
     @Disabled
     @Test
     void testIntegrationForAPlaceName() {
-        H2GIS h2GIS = H2GIS.open("/tmp/geoclimate;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE")
+        H2GIS h2GIS = H2GIS.open("/tmp/geoclimate;AUTO_SERVER=TRUE")
 
         def  keysValues = ["building", "railway", "amenity",
                            "leisure", "highway", "natural",
@@ -788,7 +788,7 @@ class TransformTest extends AbstractOSMTest {
     @Disabled
     @Test
     void testIntegrationForOSMFile() {
-        H2GIS h2GIS = H2GIS.open("/tmp/geoclimate;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE")
+        H2GIS h2GIS = H2GIS.open("/tmp/geoclimate;AUTO_SERVER=TRUE")
                 def prefix = "OSM_FILE_${OSMTools.Utilities.uuid()}"
                 def load = OSMTools.Loader.load()
                 if (load(datasource: h2GIS, osmTablesPrefix: prefix, osmFilePath:"/tmp/map.osm")) {

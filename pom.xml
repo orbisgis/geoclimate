@@ -27,11 +27,12 @@
         <buildNumber>${maven.build.timestamp}</buildNumber>
         <site.basedir>${project.basedir}</site.basedir>
         <h2gis-version>2.1.0-SNAPSHOT</h2gis-version>
-        <h2-version>2.1.212</h2-version>
+        <h2-version>2.1.214</h2-version>
         <orbisparent-version>1.2.1-SNAPSHOT</orbisparent-version>
         <cts-version>1.6.0</cts-version>
         <orbisdata-version>2.0.0-SNAPSHOT</orbisdata-version>
         <slf4j-version>1.7.36</slf4j-version>
+        <groovy-version>3.0.11</groovy-version>
     </properties>
 
     <licenses>
