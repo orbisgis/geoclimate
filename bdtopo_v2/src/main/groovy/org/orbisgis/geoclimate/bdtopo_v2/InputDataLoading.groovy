@@ -66,6 +66,7 @@ IProcess prepareBDTopoData() {
                 tableImperviousActivSurfName: "",
                 tablePiste_AerodromeName:"",
                 tableReservoirName :"",
+                tablePopulationName:""
                 distBuffer: 500,
                 distance: 1000,
                 idZone: String,
@@ -87,11 +88,12 @@ IProcess prepareBDTopoData() {
                 outputHydroName: String,
                 outputVegetName: String,
                 outputImperviousName: String,
-                outputZoneName: String
+                outputZoneName: String,
+                outputPopulationName:String
         run { datasource, tableCommuneName, tableBuildIndifName, tableBuildIndusName,
               tableBuildRemarqName, tableRoadName, tableRailName, tableHydroName, tableVegetName,
               tableImperviousSportName, tableImperviousBuildSurfName, tableImperviousRoadSurfName,
-              tableImperviousActivSurfName, tablePiste_AerodromeName,tableReservoirName, distBuffer, distance, idZone,
+              tableImperviousActivSurfName, tablePiste_AerodromeName,tableReservoirName,tablePopulationName, distBuffer, distance, idZone,
               building_bd_topo_use_type, building_abstract_use_type,
               road_bd_topo_type, road_abstract_type, road_bd_topo_crossing, road_abstract_crossing,
               rail_bd_topo_type, rail_abstract_type, rail_bd_topo_crossing, rail_abstract_crossing,
@@ -128,7 +130,7 @@ IProcess prepareBDTopoData() {
             def list = [tableCommuneName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName,
                         tableRoadName, tableRailName, tableHydroName, tableVegetName,
                         tableImperviousSportName, tableImperviousBuildSurfName,
-                        tableImperviousRoadSurfName, tableImperviousActivSurfName, tablePiste_AerodromeName,tableReservoirName]
+                        tableImperviousRoadSurfName, tableImperviousActivSurfName, tablePiste_AerodromeName,tableReservoirName, tablePopulationName]
 
             // The SRID is stored and initialized to -1
             def srid = -1
@@ -221,6 +223,21 @@ IProcess prepareBDTopoData() {
             if (!tablesExist.contains(tableReservoirName)) {
                 tableReservoirName= "RESERVOIR"
                 datasource.execute("DROP TABLE IF EXISTS $tableReservoirName; CREATE TABLE $tableReservoirName (THE_GEOM geometry(polygon, $srid), ID varchar,  NATURE varchar, HAUTEUR integer);".toString())
+            }
+
+            if (!tablesExist.contains(tablePopulationName)) {
+                tablePopulationName= "POPULATION"
+                datasource.execute("DROP TABLE IF EXISTS $tablePopulationName; CREATE TABLE $tablePopulationName (THE_GEOM geometry(polygon, $srid), ID serial,  POP FLOAT);".toString())
+            }else {
+                //Format the population table
+                def columnsNames = datasource.getTable(tablePopulationName).getColumnsTypes()
+                        .findAll{key, value -> key.toLowerCase()!= "id" && value in ["INTEGER", "DOUBLE PRECISION",
+                                                            "DECFLOAT","TINYINT", "SMALLINT","BIGINT",
+                                                            "REAL", "NUMERIC"]}.collect{key, value -> key}
+                datasource.execute("""
+                DROP TABLE IF EXISTS
+                CREATE TABLE AS SELECT ST_MAKEVALID(the_geom) as the_geom , ${columnsNames.join(",")} from $tablePopulationName
+                """.toString())
             }
 
             // -------------------------------------------------------------------------------

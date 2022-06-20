@@ -22,7 +22,9 @@
                 "terrain_sport":"ign_bdtopo_2017.terrain_sport",
                 "construction_surfacique":"ign_bdtopo_2017.construction_surfacique",
                 "surface_route":"ign_bdtopo_2017.surface_route",
-                "surface_activite":"ign_bdtopo_2017.surface_activite"}
+                "surface_activite":"ign_bdtopo_2017.surface_activite",
+                "population":  "insee.filosofi2015_carreaux_niveau_naturel_metropole"
+            }
         }}
     },
     "output" :{

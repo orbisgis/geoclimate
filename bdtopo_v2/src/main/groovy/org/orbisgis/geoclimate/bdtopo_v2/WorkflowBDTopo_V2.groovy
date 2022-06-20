@@ -66,7 +66,8 @@ import java.sql.SQLException
  *                 "terrain_sport":"ign_bdtopo_2017.terrain_sport",
  *                 "construction_surfacique":"ign_bdtopo_2017.construction_surfacique",
  *                 "surface_route":"ign_bdtopo_2017.surface_route",
- *                 "surface_activite":"ign_bdtopo_2017.surface_activite"} }
+ *                 "surface_activite":"ign_bdtopo_2017.surface_activite"
+ *                 "population":"insee.population"} }
  *             }
  *             ,
  *  [OPTIONAL ENTRY]  "output" :{ //If not ouput is set the results are keep in the local database
@@ -1471,6 +1472,7 @@ def bdTopoProcessingSingleArea(def h2gis_datasource, def id_zone, def subCommune
                                    tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
                                    tablePiste_AerodromeName    : 'PISTE_AERODROME',
                                    tableReservoirName          : 'RESERVOIR',
+                                   tablePopulationName          : 'POPULATION',
                                    distBuffer                  : processing_parameters.distance_buffer,
                                    distance                    : processing_parameters.distance,
                                    idZone                      : id_zone,
@@ -2138,10 +2140,12 @@ IProcess loadAndFormatData() {
                 tableImperviousActivSurfName: "",
                 tablePiste_AerodromeName: "",
                 tableReservoirName: "",
+                tablePopulationName: "",
                 hLevMin: 3,
                 hLevMax: 15,
                 hThresholdLev2: 10
-        outputs outputBuilding: String, outputRoad: String, outputRail: String, outputHydro: String, outputVeget: String, outputImpervious: String, outputZone: String
+        outputs outputBuilding: String, outputRoad: String, outputRail: String, outputHydro: String, outputVeget: String, outputImpervious: String,
+                outputZone: String, outputPopulation: String
         run { datasource, distBuffer, distance, idZone, tableCommuneName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName, tableRoadName, tableRailName,
               tableHydroName, tableVegetName, tableImperviousSportName, tableImperviousBuildSurfName, tableImperviousRoadSurfName, tableImperviousActivSurfName,
               tablePiste_AerodromeName, tableReservoirName, hLevMin, hLevMax, hThresholdLev2 ->

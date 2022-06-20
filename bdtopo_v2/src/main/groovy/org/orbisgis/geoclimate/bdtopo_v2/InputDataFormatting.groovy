@@ -66,6 +66,7 @@ IProcess formatData() {
             def hydro = 'HYDRO'
             def veget = 'VEGET'
             def impervious = 'IMPERVIOUS'
+            def population = 'POPULATION'
 
             //Run the sql script
             def success = datasource.executeScript(getClass().getResourceAsStream('inputDataFormatting.sql'),
@@ -89,6 +90,8 @@ IProcess formatData() {
                 error "Cannot format the BD Topo data"
             } else {
                 info 'The BD Topo data have been formated'
+                //Format population table if exists
+
                 [outputBuilding  : building,
                  outputRoad      : road,
                  outputRail      : rail,
