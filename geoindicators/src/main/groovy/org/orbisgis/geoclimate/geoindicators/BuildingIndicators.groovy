@@ -496,12 +496,12 @@ IProcess likelihoodLargeBuilding() {
 }
 
 /**
- * Compute an approximate value of the the number of inhabitants by building
- * Update the input building table to add new field pop that contains the estimated
- * value of population
+ * Disaggregate a set of population values to the buildings
+ * Update the input building table to add new population columns
  * @param inputBuildingTableName the building table
  * @param inputPopulationTableName the spatial unit that contains the population to distribute
- * @return the input building table with a population column
+ * @param inputPopulationColumns the list of the columns to disaggregate
+ * @return the input building table with the new population columns
  *
  * @author Erwan Bocher, CNRS
  */
@@ -509,9 +509,9 @@ IProcess buildingPopulation() {
     return create {
         title "Compute the number of inhabitants for each building"
         id "buildingPopulation"
-        inputs inputBuildingTableName: String, inputPopulationTableName: String,  datasource: JdbcDataSource
+        inputs inputBuildingTableName: String, inputPopulationTableName: String, inputPopulationColumns :[], datasource: JdbcDataSource
         outputs buildingTableName: String
-        run { inputBuildingTableName, inputPopulationTableName, datasource ->
+        run { inputBuildingTableName, inputPopulationTableName, inputPopulationColumns, datasource ->
             def BASE_NAME = "building_with_population"
             def ID_BUILDING = "id_build"
             def ID_POP = "id_pop"
@@ -524,32 +524,47 @@ IProcess buildingPopulation() {
             //Indexing table
             datasource."$inputBuildingTableName".the_geom.createSpatialIndex()
             datasource."$inputPopulationTableName".the_geom.createSpatialIndex()
+            def popColumns =[]
+            def sum_popColumns =[]
+            if (inputPopulationColumns) {
+                 datasource."$inputPopulationTableName".getColumns().each { col ->
+                     if (!["the_geom", "id_pop"].contains(col.toLowerCase()
+                     )&& inputPopulationColumns.contains(col.toLowerCase())) {
+                         popColumns << "b.$col"
+                         sum_popColumns << "sum((a.area_building * $col)/b.sum_area_building) as $col"
+                     }
+                 }
+             }else {
+                warn "Please set a list one column that contain population data to be disaggregated"
+               return
+            }
 
-            //Filtering the building to get only residential and intersect it with the pop grid
+            //Filtering the building to get only residential and intersect it with the population table
             def inputBuildingTableName_pop = postfix inputBuildingTableName
             datasource.execute("""
                 drop table if exists $inputBuildingTableName_pop;
                 CREATE TABLE $inputBuildingTableName_pop AS SELECT (ST_AREA(ST_INTERSECTION(a.the_geom, st_force2D(b.the_geom)))*a.NB_LEV)  as area_building, a.$ID_BUILDING, 
-                 b.$ID_POP, b.pop from
+                b.id_pop, ${popColumns.join(",")} from
                 $inputBuildingTableName as a, $inputPopulationTableName as b where a.the_geom && b.the_geom and
-                st_intersects(a.the_geom, b.the_geom) and a.main_use in ('residential', 'building');
+                st_intersects(a.the_geom, b.the_geom) and (a.main_use in ('residential', 'building') 
+                or a.type in ('apartments', 'building', 'detached', 'farm', 'house','residential'));
                 create index on $inputBuildingTableName_pop ($ID_BUILDING);
                 create index on $inputBuildingTableName_pop ($ID_POP);
             """.toString())
 
             def inputBuildingTableName_pop_sum = postfix "building_pop_sum"
             def inputBuildingTableName_area_sum = postfix "building_area_sum"
-            //Aggregate pop
+            //Aggregate population values
             datasource.execute("""drop table if exists $inputBuildingTableName_pop_sum, $inputBuildingTableName_area_sum;
             create table $inputBuildingTableName_area_sum as select id_pop, sum(area_building) as sum_area_building
             from $inputBuildingTableName_pop group by $ID_POP;
             create index on $inputBuildingTableName_area_sum($ID_POP);
             create table $inputBuildingTableName_pop_sum 
-            as select a.$ID_BUILDING, sum((a.area_building * pop)/b.sum_area_building) as pop
+            as select a.$ID_BUILDING, ${sum_popColumns.join(",")} 
             from $inputBuildingTableName_pop as a, $inputBuildingTableName_area_sum as b where a.$ID_POP=b.$ID_POP group by $ID_BUILDING;
             CREATE INDEX ON $inputBuildingTableName_pop_sum ($ID_BUILDING);
             DROP TABLE IF EXISTS $outputTableName;
-            CREATE TABLE $outputTableName AS SELECT a.*, b.pop from $inputBuildingTableName a  
+            CREATE TABLE $outputTableName AS SELECT a.*, ${popColumns.join(",")} from $inputBuildingTableName a  
             LEFT JOIN $inputBuildingTableName_pop_sum  b on a.$ID_BUILDING=b.$ID_BUILDING;
             drop table if exists $inputBuildingTableName_pop,$inputBuildingTableName_pop_sum, $inputBuildingTableName_area_sum ;""".toString())
 

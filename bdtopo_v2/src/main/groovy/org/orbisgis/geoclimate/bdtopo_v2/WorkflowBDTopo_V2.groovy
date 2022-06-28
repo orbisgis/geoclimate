@@ -16,7 +16,6 @@ import org.orbisgis.process.api.IProcess
 import org.orbisgis.geoclimate.Geoindicators
 import org.h2gis.functions.io.utility.IOMethods
 import org.orbisgis.geoclimate.worldpoptools.WorldPopTools
-
 import javax.sql.DataSource
 import java.sql.Connection
 import java.sql.SQLException
@@ -174,7 +173,7 @@ IProcess workflow() {
                 debug "Reading file parameters"
                 debug parameters.description
                 def inputParameters = parameters.input
-                def output = parameters.output
+                def outputParameters = parameters.output
                 //Default H2GIS database properties
                 def databaseFolder = System.getProperty("java.io.tmpdir")
                 def databaseName = "bdtopo_v2_2" + UUID.randomUUID().toString().replaceAll("-", "_")
@@ -225,7 +224,7 @@ IProcess workflow() {
                             }
                             id_zones = inputFolder.locations
                         }
-                        if (output) {
+                        if (outputParameters) {
                             def geoclimateTableNames = ["building_indicators",
                                                         "block_indicators",
                                                         "rsu_indicators",
@@ -249,16 +248,16 @@ IProcess workflow() {
                             if (!processing_parameters) {
                                 return
                             }
-                            def outputDataBase = output.database
-                            def outputFolder = output.folder
-                            def deleteOutputData = output.get("delete")
+                            def outputDataBase = outputParameters.database
+                            def outputFolder = outputParameters.folder
+                            def deleteOutputData = outputParameters.get("delete")
                             if (!deleteOutputData) {
                                 deleteOutputData = true
                             } else if (!deleteOutputData in Boolean) {
                                 error "The delete parameter must be a boolean value"
                                 return null
                             }
-                            def outputSRID = output.get("srid")
+                            def outputSRID = outputParameters.get("srid")
                             if (outputSRID && outputSRID <= 0) {
                                 error "The ouput srid must be greater or equal than 0"
                                 return null
@@ -297,7 +296,7 @@ IProcess workflow() {
                                 if (id_zones) {
                                     id_zones.each { id_zone ->
                                         def formatedZone = checkAndFormatZones(id_zone)
-                                        if(formatedZone) {
+                                        if (formatedZone) {
                                             def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, formatedZone,
                                                     createMainFolder(file_outputFolder, formatedZone), outputFolderProperties.tables, output_datasource,
                                                     finalOutputTables, outputSRID)
@@ -340,7 +339,7 @@ IProcess workflow() {
                                     if (id_zones) {
                                         id_zones.each { id_zone ->
                                             def formatedZone = checkAndFormatZones(id_zone)
-                                            if(formatedZone) {
+                                            if (formatedZone) {
                                                 def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, formatedZone,
                                                         createMainFolder(file_outputFolder, formatedZone), outputFolderProperties.tables, null, null, outputSRID)
                                                 if (bdtopo_results) {
@@ -391,7 +390,7 @@ IProcess workflow() {
                                     if (id_zones) {
                                         id_zones.each { id_zone ->
                                             def formatedZone = checkAndFormatZones(id_zone)
-                                            if(formatedZone) {
+                                            if (formatedZone) {
                                                 def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, formatedZone, null,
                                                         null, output_datasource, finalOutputTables, outputSRID)
                                                 if (bdtopo_results) {
@@ -428,7 +427,7 @@ IProcess workflow() {
                         }
 
                     } else if (inputDataBase) {
-                        if (output) {
+                        if (outputParameters) {
                             def geoclimatetTableNames = ["building_indicators",
                                                          "block_indicators",
                                                          "rsu_indicators",
@@ -451,13 +450,13 @@ IProcess workflow() {
                             if (!processing_parameters) {
                                 return
                             }
-                            def outputSRID = output.get("srid")
+                            def outputSRID = outputParameters.get("srid")
                             if (!outputSRID && outputSRID >= 0) {
                                 error "The ouput srid must be greater or equal than 0"
                                 return null
                             }
-                            def outputDataBase = output.database
-                            def outputFolder = output.folder
+                            def outputDataBase = outputParameters.database
+                            def outputFolder = outputParameters.folder
                             if (outputDataBase && outputFolder) {
                                 def outputFolderProperties = outputFolderProperties(outputFolder)
                                 //Check if we can write in the output folder
@@ -496,7 +495,7 @@ IProcess workflow() {
                                         nbzones++
                                         if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]), code, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
                                             def formatedZone = checkAndFormatZones(code)
-                                            if(formatedZone) {
+                                            if (formatedZone) {
                                                 def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, formatedZone,
                                                         createMainFolder(file_outputFolder, formatedZone), outputFolderProperties.tables, output_datasource,
                                                         finalOutputTables, outputSRID)
@@ -545,7 +544,7 @@ IProcess workflow() {
                                             if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]),
                                                     id_zone, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
                                                 def formatedZone = checkAndFormatZones(id_zone)
-                                                if(formatedZone) {
+                                                if (formatedZone) {
                                                     def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, formatedZone,
                                                             createMainFolder(file_outputFolder, formatedZone), outputFolderProperties.tables,
                                                             output_datasource, finalOutputTables, outputSRID)
@@ -600,7 +599,7 @@ IProcess workflow() {
                                             if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]),
                                                     code, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
                                                 def formatedZone = checkAndFormatZones(code)
-                                                if(formatedZone) {
+                                                if (formatedZone) {
                                                     def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters,
                                                             formatedZone, createMainFolder(file_outputFolder, formatedZone), outputFolderProperties.tables, null, null, outputSRID)
                                                     if (bdtopo_results) {
@@ -662,7 +661,7 @@ IProcess workflow() {
                                             nbzones++
                                             if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]), code, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
                                                 def formatedZone = checkAndFormatZones(code)
-                                                if(formatedZone) {
+                                                if (formatedZone) {
                                                     def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, formatedZone, null, null, output_datasource, finalOutputTables, outputSRID)
                                                     if (bdtopo_results) {
                                                         outputTableNamesResult.putAll(bdtopo_results)
@@ -710,7 +709,7 @@ IProcess workflow() {
                                                 nbzones++
                                                 if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]), id_zone, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
                                                     def formatedZone = checkAndFormatZones(id_zone)
-                                                    if(formatedZone) {
+                                                    if (formatedZone) {
                                                         def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, formatedZone, null, null, output_datasource, finalOutputTables, outputSRID)
                                                         if (bdtopo_results) {
                                                             outputTableNamesResult.putAll(bdtopo_results)
@@ -772,12 +771,12 @@ IProcess workflow() {
  * @param id_zones
  * @return
  */
-def checkAndFormatZones(def location){
+def checkAndFormatZones(def location) {
     if (location in Collection) {
         return location*.trim().join("_")
     } else if (location instanceof String) {
         return location.trim()
-    }else{
+    } else {
         error "Invalid location input. \n" +
                 "The location input must be a string value or an array of 4 coordinates to define a bbox "
         return null
@@ -792,15 +791,15 @@ def checkAndFormatZones(def location){
  * @param location
  * @return
  */
-def createMainFolder(def outputFolder, def location){
-        //Create the folder to save the results
-        def folder = new File(outputFolder.getAbsolutePath()+File.separator+"bdtopo_v2_"+location)
-        if (!folder.exists()) {
-            folder.mkdir()
-        } else {
-            FileUtilities.deleteFiles(folder)
-        }
-        return folder.getAbsolutePath()
+def createMainFolder(def outputFolder, def location) {
+    //Create the folder to save the results
+    def folder = new File(outputFolder.getAbsolutePath() + File.separator + "bdtopo_v2_" + location)
+    if (!folder.exists()) {
+        folder.mkdir()
+    } else {
+        FileUtilities.deleteFiles(folder)
+    }
+    return folder.getAbsolutePath()
 }
 
 /**
@@ -1391,7 +1390,7 @@ def bdtopo_processing(def h2gis_datasource, def processing_parameters, def zone,
                 """.toString())
                     def results = bdTopoProcessingSingleArea(h2gis_datasource, code_insee, subCommuneTableName, srid, processing_parameters)
                     if (results) {
-                       saveResults(h2gis_datasource, code_insee_plus_indice, results, srid, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData)
+                        saveResults(h2gis_datasource, code_insee_plus_indice, results, srid, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData)
                         outputTableNamesResult.put(code_insee_plus_indice, results.findAll { it.value != null })
                     }
                 }
@@ -1429,7 +1428,7 @@ def saveResults(def h2gis_datasource, def id_zone, def results, def srid, def ou
     }
     if (outputFolder && outputFiles) {
         //Create the folder to save the results
-        def folder = new File(outputFolder +File.separator+ id_zone)
+        def folder = new File(outputFolder + File.separator + id_zone)
         if (!folder.exists()) {
             folder.mkdir()
         } else {
@@ -1472,7 +1471,6 @@ def bdTopoProcessingSingleArea(def h2gis_datasource, def id_zone, def subCommune
                                    tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
                                    tablePiste_AerodromeName    : 'PISTE_AERODROME',
                                    tableReservoirName          : 'RESERVOIR',
-                                   tablePopulationName          : 'POPULATION',
                                    distBuffer                  : processing_parameters.distance_buffer,
                                    distance                    : processing_parameters.distance,
                                    idZone                      : id_zone,
@@ -1539,7 +1537,8 @@ def bdTopoProcessingSingleArea(def h2gis_datasource, def id_zone, def subCommune
 
                     IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
                     if (!process.execute([inputBuildingTableName  : results.buildingTableName,
-                                          inputPopulationTableName: importAscGrid.results.outputTableWorldPopName, datasource: h2gis_datasource])) {
+                                          inputPopulationTableName: importAscGrid.results.outputTableWorldPopName,
+                                          inputPopulationColumns :["pop"], datasource: h2gis_datasource])) {
                         info "Cannot compute any population data at building level"
                     }
                     //Update the building table with the population data
@@ -2140,12 +2139,11 @@ IProcess loadAndFormatData() {
                 tableImperviousActivSurfName: "",
                 tablePiste_AerodromeName: "",
                 tableReservoirName: "",
-                tablePopulationName: "",
                 hLevMin: 3,
                 hLevMax: 15,
                 hThresholdLev2: 10
         outputs outputBuilding: String, outputRoad: String, outputRail: String, outputHydro: String, outputVeget: String, outputImpervious: String,
-                outputZone: String, outputPopulation: String
+                outputZone: String
         run { datasource, distBuffer, distance, idZone, tableCommuneName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName, tableRoadName, tableRailName,
               tableHydroName, tableVegetName, tableImperviousSportName, tableImperviousBuildSurfName, tableImperviousRoadSurfName, tableImperviousActivSurfName,
               tablePiste_AerodromeName, tableReservoirName, hLevMin, hLevMax, hThresholdLev2 ->
@@ -2248,6 +2246,7 @@ IProcess loadAndFormatData() {
             def finalVeget = inputDataFormatting.results.outputVeget
             def finalImpervious = inputDataFormatting.results.outputImpervious
             def finalZone = inputDataFormatting.results.outputZone
+
 
             [outputBuilding: finalBuildings, outputRoad: finalRoads, outputRail: finalRails, outputHydro: finalHydro,
              outputVeget   : finalVeget, outputImpervious: finalImpervious, outputZone: finalZone]

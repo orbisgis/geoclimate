@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.orbisgis.geoclimate.Geoindicators
+import org.orbisgis.process.api.IProcess
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertNotNull
@@ -753,6 +754,20 @@ class RsuIndicatorsTests {
         assertEquals 0.00321, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").FRONTAL_AREA_INDEX_H50_61_D30_60, 0.00001
         assertEquals 0.00321, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 4").FRONTAL_AREA_INDEX_H50_61_D30_60, 0.00001
         assertEquals 0.0, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 5").FRONTAL_AREA_INDEX_H0_5_D30_60, 0.00001
+    }
+
+    @Test
+    void rsuPopulationTest1() {
+        h2GIS.execute("""DROP TABLE if exists population_grid, rsu;
+        CREATE TABLE population_grid (ID_POP integer, POP float, THE_GEOM GEOMETRY);
+        INSERT INTO population_grid VALUES(1, 10, 'POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))'::GEOMETRY);
+        CREATE TABLE rsu (ID_rsu integer, THE_GEOM GEOMETRY);
+        INSERT INTO rsu VALUES(1, 'POLYGON ((3 6, 6 6, 6 3, 3 3, 3 6))'::GEOMETRY);
+        """.toString())
+        IProcess process = Geoindicators.RsuIndicators.rsuPopulation()
+        assertTrue process.execute([inputRsuTableName: "rsu", inputPopulationTableName: "population_grid",
+                                    inputPopulationColumns :["pop"], datasource: h2GIS])
+        assertEquals(10f, (float)h2GIS.firstRow("select pop from ${process.results.rsuTableName}").pop)
     }
 
 }

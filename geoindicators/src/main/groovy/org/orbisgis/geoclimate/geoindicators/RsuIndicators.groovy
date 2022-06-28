@@ -2107,3 +2107,80 @@ IProcess frontalAreaIndexDistribution() {
         }
     }
 }
+
+/**
+ * Disaggregate a set of population values to the rsu units
+ * Update the input rsu table to add new population columns
+ * @param inputRsuTableName the building table
+ * @param inputPopulationTableName the spatial unit that contains the population to distribute
+ * @param inputPopulationColumns the list of the columns to disaggregate
+ * @return the input RSU table with the new population columns
+ *
+ * @author Erwan Bocher, CNRS
+ */
+IProcess rsuPopulation() {
+    return create {
+        title "Process to distribute a set of population values at RSU scale"
+        id "rsuPopulation"
+        inputs inputRsuTableName: String, inputPopulationTableName: String, inputPopulationColumns :[], datasource: JdbcDataSource
+        outputs rsuTableName: String
+        run { inputRsuTableName, inputPopulationTableName, inputPopulationColumns, datasource ->
+            def BASE_NAME = "rsu_with_population"
+            def ID_RSU = "id_rsu"
+            def ID_POP = "id_pop"
+
+            debug "Computing rsu population"
+
+            // The name of the outputTableName is constructed
+            def outputTableName = postfix BASE_NAME
+
+            //Indexing table
+            datasource."$inputRsuTableName".the_geom.createSpatialIndex()
+            datasource."$inputPopulationTableName".the_geom.createSpatialIndex()
+            def popColumns =[]
+            def sum_popColumns =[]
+            if (inputPopulationColumns) {
+                datasource."$inputPopulationTableName".getColumns().each { col ->
+                    if (!["the_geom", "id_pop"].contains(col.toLowerCase()
+                    )&& inputPopulationColumns.contains(col.toLowerCase())) {
+                        popColumns << "b.$col"
+                        sum_popColumns << "sum((a.area_rsu * $col)/b.sum_area_rsu) as $col"
+                    }
+                }
+            }else {
+                warn "Please set a list one column that contain population data to be disaggregated"
+                return
+            }
+
+            //Filtering the rsu to get only the geometries that intersect the population table
+            def inputRsuTableName_pop = postfix inputRsuTableName
+            datasource.execute("""
+                drop table if exists $inputRsuTableName_pop;
+                CREATE TABLE $inputRsuTableName_pop AS SELECT (ST_AREA(ST_INTERSECTION(a.the_geom, st_force2D(b.the_geom))))  as area_rsu, a.$ID_RSU, 
+                b.id_pop, ${popColumns.join(",")} from
+                $inputRsuTableName as a, $inputPopulationTableName as b where a.the_geom && b.the_geom and
+                st_intersects(a.the_geom, b.the_geom);
+                create index on $inputRsuTableName_pop ($ID_RSU);
+                create index on $inputRsuTableName_pop ($ID_POP);
+            """.toString())
+
+            def inputRsuTableName_pop_sum = postfix "rsu_pop_sum"
+            def inputRsuTableName_area_sum = postfix "rsu_area_sum"
+            //Aggregate population values
+            datasource.execute("""drop table if exists $inputRsuTableName_pop_sum, $inputRsuTableName_area_sum;
+            create table $inputRsuTableName_area_sum as select id_pop, sum(area_rsu) as sum_area_rsu
+            from $inputRsuTableName_pop group by $ID_POP;
+            create index on $inputRsuTableName_area_sum($ID_POP);
+            create table $inputRsuTableName_pop_sum 
+            as select a.$ID_RSU, ${sum_popColumns.join(",")} 
+            from $inputRsuTableName_pop as a, $inputRsuTableName_area_sum as b where a.$ID_POP=b.$ID_POP group by $ID_RSU;
+            CREATE INDEX ON $inputRsuTableName_pop_sum ($ID_RSU);
+            DROP TABLE IF EXISTS $outputTableName;
+            CREATE TABLE $outputTableName AS SELECT a.*, ${popColumns.join(",")} from $inputRsuTableName a  
+            LEFT JOIN $inputRsuTableName_pop_sum  b on a.$ID_RSU=b.$ID_RSU;
+            drop table if exists $inputRsuTableName_pop,$inputRsuTableName_pop_sum, $inputRsuTableName_area_sum ;""".toString())
+
+            [rsuTableName: outputTableName]
+        }
+    }
+}

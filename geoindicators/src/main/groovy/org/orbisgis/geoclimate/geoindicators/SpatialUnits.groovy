@@ -239,7 +239,7 @@ IProcess prepareTSUData() {
 
                         datasource "DROP TABLE IF EXISTS "+ vegetation_indice
                         datasource "CREATE TABLE "+vegetation_indice+"(THE_GEOM geometry, ID serial," +
-                                " CONTACT integer) AS (SELECT the_geom, CAST((row_number() over()) as Integer), 0 FROM ST_EXPLODE('" +
+                                " CONTACT integer) AS (SELECT the_geom, EXPLOD_ID, 0 FROM ST_EXPLODE('" +
                                 "(SELECT * FROM "+vegetationTable+" WHERE ZINDEX=0)') " +
                                 " WHERE ST_DIMENSION(the_geom)>0 AND ST_ISEMPTY(the_geom)=FALSE)"
                         datasource """CREATE SPATIAL INDEX IF NOT EXISTS veg_indice_idx ON $vegetation_indice (THE_GEOM);
@@ -280,7 +280,7 @@ IProcess prepareTSUData() {
 
                         datasource "DROP TABLE IF EXISTS "+ hydrographic_indice
                         datasource "CREATE TABLE "+hydrographic_indice+"(THE_GEOM geometry, ID serial," +
-                                " CONTACT integer) AS (SELECT st_makevalid(THE_GEOM) AS the_geom, CAST((row_number() over()) as Integer) , 0 FROM " +
+                                " CONTACT integer) AS (SELECT st_makevalid(THE_GEOM) AS the_geom, EXPLOD_ID , 0 FROM " +
                                 "ST_EXPLODE('(SELECT * FROM "+hydrographicTable+" WHERE ZINDEX=0)')" +
                                 " WHERE ST_DIMENSION(the_geom)>0 AND ST_ISEMPTY(the_geom)=false)"
 
@@ -581,7 +581,7 @@ IProcess createGrid() {
             if (datasource instanceof H2GIS) {
                 debug "Creating grid with H2GIS"
                 datasource """
-                           CREATE TABLE $outputTableName AS SELECT * FROM 
+                           CREATE TABLE $outputTableName AS SELECT the_geom, id as id_grid,ID_COL, ID_ROW FROM 
                            ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY,$rowCol);
                            """.toString()
             }
@@ -590,7 +590,7 @@ IProcess createGrid() {
                 PreparedStatement preparedStatement = null
                 Connection outputConnection = datasource.getConnection()
                 try {
-                    def createTable = "CREATE TABLE $outputTableName(THE_GEOM GEOMETRY(POLYGON), ID INT, ID_COL INT, ID_ROW INT);"
+                    def createTable = "CREATE TABLE $outputTableName(THE_GEOM GEOMETRY(POLYGON), ID_GRID INT, ID_COL INT, ID_ROW INT);"
                     def insertTable = "INSERT INTO $outputTableName VALUES (?, ?, ?, ?);"
                     datasource.execute(createTable.toString())
                     preparedStatement = outputConnection.prepareStatement(insertTable.toString())
