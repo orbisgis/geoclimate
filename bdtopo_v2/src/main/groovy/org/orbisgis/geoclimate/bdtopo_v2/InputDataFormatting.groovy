@@ -66,7 +66,6 @@ IProcess formatData() {
             def hydro = 'HYDRO'
             def veget = 'VEGET'
             def impervious = 'IMPERVIOUS'
-            def population = 'POPULATION'
 
             //Run the sql script
             def success = datasource.executeScript(getClass().getResourceAsStream('inputDataFormatting.sql'),
