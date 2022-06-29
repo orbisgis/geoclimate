@@ -1561,11 +1561,6 @@ IProcess computeGeoclimateIndicators() {
                 return null
             }
             def relationBuildings = spatialUnits.getResults().outputTableBuildingName
-            //Replace the outputBuildingTableName with the new one that contains the relation
-            datasource.execute("""DROP TABLE IF EXISTS $buildingTable;
-            ALTER TABLE $relationBuildings RENAME TO $buildingTable;""".toString())
-            relationBuildings = buildingTable
-
             def relationBlocks = spatialUnits.getResults().outputTableBlockName
             def relationRSU = spatialUnits.getResults().outputTableRsuName
 
@@ -1812,6 +1807,11 @@ IProcess computeGeoclimateIndicators() {
             last_update = CAST(now() AS VARCHAR),
             version = '${Geoindicators.version()}',
             build_number = '${Geoindicators.buildNumber()}'""".toString()
+
+
+            //Replace the building table with a new one that contains the relations between block and RSU
+            datasource.execute("""DROP TABLE IF EXISTS $buildingTable;
+            ALTER TABLE $relationBuildings RENAME TO $buildingTable;""".toString())
 
             return [outputTableBuildingIndicators   : buildingIndicators,
                     outputTableBlockIndicators      : blockIndicators,
