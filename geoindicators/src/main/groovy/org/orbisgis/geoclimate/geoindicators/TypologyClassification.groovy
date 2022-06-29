@@ -415,7 +415,7 @@ IProcess identifyLczType() {
                                             LEFT JOIN   $rsuLczIndicators b
                                             ON          a.$ID_FIELD_RSU=b.$ID_FIELD_RSU""".toString()
                 } else {
-                    datasource """ALTER TABLE $classifiedLcz RENAME TO $outputTableName;""".toString()
+                    datasource """DROP TABLE IF EXISTS $outputTableName; ALTER TABLE $classifiedLcz RENAME TO $outputTableName;""".toString()
                 }
 /*
                 // Temporary tables are deleted

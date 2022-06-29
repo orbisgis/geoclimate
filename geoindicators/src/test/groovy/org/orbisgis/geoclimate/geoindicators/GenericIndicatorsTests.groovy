@@ -553,7 +553,7 @@ class GenericIndicatorsTests {
         def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics()
         upperScaleAreaStatistics.execute(
                 [upperTableName: targetTableName,
-                 upperColumnId: "id",
+                 upperColumnId: "id_grid",
                  lowerTableName: indicatorTableName,
                  lowerColumnName: indicatorName,
                  prefixName: "agg",
@@ -565,25 +565,25 @@ class GenericIndicatorsTests {
 
         def nb_indicators = h2GIS.rows "SELECT distinct ${indicatorName} AS nb FROM $indicatorTableName"
         def columns = upperStats.getColumns()
-        columns.remove("ID")
+        columns.remove("ID_GRID")
         columns.remove("THE_GEOM")
         assertEquals(nb_indicators.size(), columns.size())
 
-        def query ="drop table if exists babeth_zone; create table babeth_zone as select id,"
+        def query ="drop table if exists babeth_zone; create table babeth_zone as select ID_GRID,"
         columns.each {
             query+= "SUM($it) + "
         }
         query = query[0..-4]
-        query+=" as sum_indic from ${upperScaleTableResult} group by ID"
+        query+=" as sum_indic from ${upperScaleTableResult} group by ID_GRID"
         h2GIS.execute query
 
         def values= h2GIS.firstRow "select count(*) as nb from babeth_zone where sum_indic=0"
         assertEquals(1, values.NB)
 
-        values= h2GIS.firstRow "select sum_indic as nb from babeth_zone where id=3"
+        values= h2GIS.firstRow "select sum_indic as nb from babeth_zone where ID_GRID=3"
         assertEquals(0.11, values.NB)
 
-        values= h2GIS.firstRow "select sum_indic as nb from babeth_zone where id=0"
+        values= h2GIS.firstRow "select sum_indic as nb from babeth_zone where ID_GRID=0"
         assertEquals(0.007575, values.NB)
 
     }
