@@ -1092,7 +1092,7 @@ IProcess formatSeaLandMask() {
                         DROP TABLE IF EXISTS $water_filtered_exploded;
                         CREATE TABLE $water_filtered_exploded AS 
 
-                        SELECT st_buffer(the_geom, -0.0001) AS the_geom, 'land' AS type ,id_sea, EXPLO AS ID  
+                        SELECT st_buffer(the_geom, -0.0001) AS the_geom, 'land' AS type ,id_sea, EXPLOD_ID AS ID  
                         FROM  st_explode('$water_to_be_filtered');
 
                         CREATE spatial INDEX ON $water_filtered_exploded(the_geom);
