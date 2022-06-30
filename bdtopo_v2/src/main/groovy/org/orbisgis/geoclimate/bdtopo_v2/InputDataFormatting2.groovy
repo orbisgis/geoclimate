@@ -3,95 +3,12 @@ package org.orbisgis.geoclimate.bdtopo_v2
 import groovy.transform.BaseScript
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.Polygon
+import org.orbisgis.data.api.dataset.ISpatialTable
+import org.orbisgis.data.api.dataset.ITable
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.process.api.IProcess
 
 @BaseScript BDTopo_V2 BDTopo_V2
-
-/**
- * This process allows to control the quality of input tables and then to format and enrich them
- *
- * @param datasource A connexion to a database (H2GIS, PostGIS, ...), in which the data to process will be stored
- * @param inputBuilding Table name in which the input buildings are stored
- * @param inputRoad Table name in which the input roads are stored
- * @param inputRail Table name in which the input rail ways are stored
- * @param inputHydro Table name in which the input hydrographic areas are stored
- * @param inputVeget Table name in which the input vegetation areas are stored
- * @param inputImpervious Table name in which the input impervious areas are stored
- * @param inputZone Table name in which the input zone stored
- * @param hLevMin Minimum building level height
- * @param hLevMax Maximum building level height
- * @param hThresholdLev2 Threshold on the building height, used to determine the number of levels
- * @param idZone The Zone id
- * @param expand The distance (expressed in meter) used to compute the extended area around the ZONE
- * @param buildingAbstractParameters The name of the table in which the abstract building's parameters are stored
- * @param roadAbstractParameters The name of the table in which the abstract road's parameters are stored
- * @param vegetAbstractParameters The name of the table in which the abstract vegetation area's parameters are stored
- *
- * @return outputBuilding Table name in which the (ready to be used in the GeoIndicators part) buildings are stored
- * @return outputRoad Table name in which the (ready to be used in the GeoIndicators part) roads are stored
- * @return outputRail Table name in which the (ready to be used in the GeoIndicators part) rail ways are stored
- * @return outputHydro Table name in which the (ready to be used in the GeoIndicators part) hydrographic areas are stored
- * @return outputVeget Table name in which the (ready to be used in the GeoIndicators part) vegetation areas are stored
- * @return outputImpervious Table name in which the (ready to be used in the GeoIndicators part) impervious areas are stored
- * @return outputZone Table name in which the (ready to be used in the GeoIndicators part) zone is stored
- */
-IProcess formatData() {
-    return create {
-        title 'Allows to format and enrich the input data in order to feed the GeoClimate model'
-        id "formatData"
-        inputs datasource: JdbcDataSource, inputBuilding: String, inputRoad: String, inputRail: String,
-                inputHydro: String, inputVeget: String, inputImpervious: String, inputZone: String,
-                hLevMin: 3, hLevMax: 15, hThresholdLev2: 10, expand: 1000, idZone: String
-        outputs outputBuilding: String, outputRoad: String,
-                outputRail: String, outputHydro: String, outputVeget: String,
-                outputImpervious: String, outputZone: String
-        run { JdbcDataSource datasource, inputBuilding, inputRoad, inputRail,
-              inputHydro, inputVeget, inputImpervious, inputZone,
-              hLevMin, hLevMax, hThresholdLev2, expand, idZone ->
-            info('Formating the BDTOPO data')
-            def uuid = UUID.randomUUID().toString().replaceAll('-', '_')
-            def zoneNeighbors = postfix 'ZONE_NEIGHBORS_'
-            def buZone = postfix 'BU_ZONE_'
-            def buildWithZone = postfix 'BUILD_WITHIN_ZONE_'
-            def buildOuterZone = postfix 'BUILD_OUTER_ZONE_'
-            def buildOuterZoneMatrix = postfix 'BUILD_OUTER_ZONE_MATRIX_'
-            def buildZoneMatrix = postfix 'BUILD_ZONE_MATRIX_'
-            def buildingFC = postfix 'BUILDING_FC_'
-
-            //Final output table names
-            def building = 'BUILDING'
-            def road = 'ROAD'
-            def rail = 'RAIL'
-            def hydro = 'HYDRO'
-            def veget = 'VEGET'
-            def impervious = 'IMPERVIOUS'
-
-            //1. CREATE ZONE_NEIGHBORS TABLE (using the EXPAND parameter and ZONE table)
-
-            datasource.execute("""
-            DROP TABLE IF EXISTS ZONE_NEIGHBORS;
-            CREATE TABLE ZONE_NEIGHBORS (the_geom geometry, ID_ZONE varchar) AS SELECT  the_geom, ID_ZONE FROM $inputZone 
-            UNION SELECT ST_DIFFERENCE(ST_EXPAND(the_geom, $expand), the_geom) as the_geom, 'outside' FROM $inputZone;
-            CREATE SPATIAL INDEX ON ZONE_NEIGHBORS (the_geom);
-            """.toString())
-
-
-            info 'The BD Topo data have been formated'
-            //Format population table if exists
-
-            [outputBuilding  : building,
-             outputRoad      : road,
-             outputRail      : rail,
-             outputHydro     : hydro,
-             outputVeget     : veget,
-             outputImpervious: impervious,
-             outputZone      : inputZone
-            ]
-
-        }
-    }
-}
 
 /**
  * This process is used to format the BDTopo buildings table into a table that matches the constraints
@@ -110,53 +27,46 @@ IProcess formatBuildingLayer() {
     return create {
         title "Transform BDTopo buildings table into a table that matches the constraints of the GeoClimate input model"
         id "formatBuildingLayer"
-        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, h_lev_min: 3, h_lev_max: 15, hThresholdLev2: 10, jsonFilename: "", urbanAreasTableName: ""
-        outputs outputTableName: String, outputEstimateTableName: String
-        run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, epsg, h_lev_min, h_lev_max, hThresholdLev2, jsonFilename, urbanAreasTableName ->
+        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: String, inputImpervious: "", h_lev_min: 3, h_lev_max: 15, hThresholdLev2: 10, urbanAreasTableName: ""
+        outputs outputTableName: String
+        run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, inputImpervious, h_lev_min, h_lev_max, hThresholdLev2, urbanAreasTableName ->
 
-            datasource.execute("""
-            -- Add an id (primary key, called ID_BUILD) to the input layer (INPUT_BUILDING) and create indexes
+            if (!h_lev_min) {
+                h_lev_min = 3
+            }
+            if (!h_lev_max) {
+                h_lev_max = 15
+            }
+            if (!hThresholdLev2) {
+                hThresholdLev2 = 10
+            }
 
-            DROP TABLE IF EXISTS BU_ZONE;
-            CREATE TABLE BU_ZONE (THE_GEOM geometry, ID_BUILD serial, ID_SOURCE varchar(24), HEIGHT_WALL integer, HEIGHT_ROOF integer, NB_LEV integer, TYPE varchar, MAIN_USE varchar, ZINDEX integer) AS SELECT ST_FORCE2D(THE_GEOM), rownum(), 
-            ID_SOURCE, HEIGHT_WALL, HEIGHT_ROOF, NB_LEV, TYPE, MAIN_USE, ZINDEX FROM $inputTableName;
-            CREATE SPATIAL INDEX ON BU_ZONE (the_geom);
-            CREATE INDEX ON BU_ZONE (ID_BUILD);
-            
-            -- 1- Select buildings that are within a city and assign the a ID_ZONE to the building
-            
-            DROP TABLE IF EXISTS BUILD_WITHIN_ZONE;
-            CREATE TABLE BUILD_WITHIN_ZONE AS SELECT a.ID_BUILD, b.ID_ZONE as ID_ZONE FROM BU_ZONE a, ZONE_NEIGHBORS b WHERE a.the_geom && b.the_geom AND ST_CONTAINS(b.the_geom, a.the_geom);
-            CREATE INDEX ON BUILD_WITHIN_ZONE (ID_BUILD);
-
-            -- 2- Select buildings that are on a boundary (not within a city)
-            DROP TABLE IF EXISTS BUILD_OUTER_ZONE;
-            CREATE TABLE BUILD_OUTER_ZONE AS SELECT * FROM BU_ZONE WHERE ID_BUILD NOT IN (SELECT ID_BUILD FROM BUILD_WITHIN_ZONE);
-
-            -- 3- Associate building to city, depending on the maximum surface of intersection, only for buildings that are not within a city
-            DROP TABLE IF EXISTS BUILD_OUTER_ZONE_MATRIX ;
-            CREATE TABLE BUILD_OUTER_ZONE_MATRIX (ID_BUILD integer primary key, ID_ZONE varchar) AS SELECT a.ID_BUILD , (SELECT ID_ZONE FROM $ZONE_NEIGHBORS b WHERE a.THE_GEOM && b.THE_GEOM ORDER BY ST_AREA(ST_INTERSECTION(a.THE_GEOM, b.THE_GEOM)) DESC LIMIT 1) AS ID_ZONE 
-            FROM BUILD_OUTER_ZONE a WHERE ST_NUMGEOMETRIES(a.THE_GEOM)=1;
-
-            -- 4- Merge into one single table these information
-            DROP TABLE IF EXISTS BUILD_ZONE_MATRIX ;
-            CREATE TABLE BUILD_ZONE_MATRIX (ID_BUILD integer primary key, ID_ZONE varchar) AS SELECT * FROM BUILD_WITHIN_ZONE UNION SELECT * FROM BUILD_OUTER_ZONE_MATRIX;
-            CREATE INDEX ON BUILD_ZONE_MATRIX (ID_BUILD);
-
-            -- Join this "matrix" to the initial table (with all building information) (FC = First Control)
-            DROP TABLE IF EXISTS BUILDING_FC ;
-            CREATE TABLE BUILDING_FC AS SELECT a.*, b.ID_ZONE FROM BU_ZONE a LEFT JOIN BUILD_ZONE_MATRIX b ON a.ID_BUILD=b.ID_BUILD;
-
-            DROP TABLE IF EXISTS ZONE_NEIGHBORS, BUILD_WITHIN_ZONE, BUILD_OUTER_ZONE, BUILD_OUTER_ZONE_MATRIX, BUILD_ZONE_MATRIX;
-            
-            """.toString())
+            def outputTableName = postfix "INPUT_BUILDING"
+            debug 'Formating building layer'
 
             //Create the final building table
 
+            datasource.execute("""DROP TABLE IF EXISTS $outputTableName;
+            CREATE TABLE $outputTableName (THE_GEOM geometry, ID_BUILD integer, ID_SOURCE varchar(24), 
+            HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT, NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX integer);""".toString())
+
+            if (inputTableName) {
+                ISpatialTable inputSpatialTable = datasource."$inputTableName"
+                if (!inputSpatialTable.isEmpty()) {
+                    def queryMapper = "SELECT "
+                    if (inputZoneEnvelopeTableName) {
+                        inputSpatialTable.the_geom.createSpatialIndex()
+                        datasource."$inputZoneEnvelopeTableName".the_geom.createSpatialIndex()
+                        queryMapper += " a.*  FROM $inputTableName as a,  $inputZoneEnvelopeTableName as b WHERE a.the_geom && b.the_geom and st_intersects(a.the_geom " +
+                                ",b.the_geom) and st_area(a.the_geom)>1 and st_isempty(a.the_geom)=false "
+                    } else {
+                        queryMapper += "* FROM $inputTableName as a where st_area(a.the_geom)>1 "
+                    }
+
             def building_type_use =
                     ["Bâtiment agricole"        : ["farm_auxiliary": "agricultural"],
-                     "Bâtiment commercial'"     : ["commercial": "commercial"],
-                     "Bâtiment industriel'"     : ["light_industry": "industrial"],
+                     "Bâtiment commercial"     : ["commercial": "commercial"],
+                     "Bâtiment industriel"     : ["light_industry": "industrial"],
                      "Serre"                    : ["greenhouse": "agricultural"],
                      "Silo"                     : ["silo": "agricultural"],
                      "Aérogare"                 : ["terminal": "transportation"],
@@ -175,7 +85,8 @@ IProcess formatBuildingLayer() {
                      "Préfecture"               : ["government": "government"],
                      "Sous-préfecture"          : ["government": "government"],
                      "Tour, donjon, moulin"     : ["historic": "heritage"],
-                     "Tribune"                  : ["grandstand": "entertainment_arts_culture"]]
+                     "Tribune"                  : ["grandstand": "entertainment_arts_culture"],
+                     "Résidentiel"              : ["residential": "residential"]]
 
             def building_type_level = ["building"                  : 1,
                                        "house"                     : 1,
@@ -216,25 +127,21 @@ IProcess formatBuildingLayer() {
                                        "heavy_industry"            : 0,
                                        "light_industry"            : 0]
 
-            def outputTableName = "BUILDING"
-
-            datasource.execute("""DROP TABLE IF EXISTS $outputBuilding;
-            CREATE TABLE $outputBuilding (THE_GEOM geometry, ID_BUILD integer PRIMARY KEY, ID_SOURCE varchar(24), 
-            HEIGHT_WALL integer, HEIGHT_ROOF integer, NB_LEV integer, TYPE varchar, MAIN_USE varchar, ZINDEX integer, ID_ZONE varchar);""".toString())
 
 
             //Formating building table
             def id_build = 1;
             datasource.withBatch(1000) { stmt ->
-                datasource.eachRow("SELECT * FROM $outputBuilding".toString()) { row ->
+                datasource.eachRow(queryMapper.toString()) { row ->
                     def feature_type = "building"
                     def feature_main_use = "building"
                     def id_source = row.ID_SOURCE
                     if (row.TYPE) {
-                        def tmp_type_use = building_type_use.get(row.NATURE)
+                        def tmp_type_use = building_type_use.get(row.TYPE)
                         if (tmp_type_use) {
-                            feature_type = tmp_type_use[0]
-                            feature_main_use = tmp_type_use[1]
+                            def type_main = tmp_type_use.grep()[0]
+                            feature_type = type_main.key
+                            feature_main_use = type_main.value
                         }
                     }
                     def height_wall = row.HEIGHT_WALL
@@ -258,7 +165,7 @@ IProcess formatBuildingLayer() {
                             Geometry subGeom = geom.getGeometryN(i)
                             if (subGeom instanceof Polygon) {
                                 stmt.addBatch """
-                                                INSERT INTO ${outputBuilding} values(
+                                                INSERT INTO ${outputTableName} values(
                                                     ST_GEOMFROMTEXT('${subGeom}',$srid), 
                                                     $id_build, 
                                                     '$id_source',
@@ -267,8 +174,7 @@ IProcess formatBuildingLayer() {
                                                     ${formatedHeight.nbLevels},
                                                     '${feature_type}',
                                                     '${feature_main_use}',
-                                                    ${zIndex},
-                                                    '$idZone')
+                                                    ${zIndex})
                                             """.toString()
 
                                 id_build++
@@ -277,12 +183,51 @@ IProcess formatBuildingLayer() {
                     }
                 }
             }
+                    //Let's use the impervious table to improve building qualification
+                    if(inputImpervious){
+                        datasource."$outputTableName".the_geom.createSpatialIndex()
+                        datasource."$outputTableName".id_build.createIndex()
+                        datasource."$outputTableName".type.createIndex()
+                        datasource."$inputImpervious".the_geom.createSpatialIndex()
+                        def buildinType = postfix("BUILDING_TYPE")
+
+                        datasource.execute """create table $buildinType as SELECT 
+                        max(b.type) as type, 
+                        max(b.type) as main_use, a.id_build FROM $outputTableName a, $inputImpervious b 
+                        WHERE ST_POINTONSURFACE(a.the_geom) && b.the_geom and st_intersects(ST_POINTONSURFACE(a.the_geom), b.the_geom) 
+                        AND  a.TYPE ='building' AND b.TYPE != 'unknown'
+                         group by a.id_build""".toString()
+
+                        datasource.getTable(buildinType).id_build.createIndex()
+
+                        def newBuildingWithType = postfix("NEW_BUILDING_TYPE")
+
+                        datasource.execute """DROP TABLE IF EXISTS $newBuildingWithType;
+                                           CREATE TABLE $newBuildingWithType as
+                                            SELECT  a.THE_GEOM, a.ID_BUILD,a.ID_SOURCE,
+                                            a.HEIGHT_WALL,
+                                            a.HEIGHT_ROOF,
+                                               a.NB_LEV, 
+                                               COALESCE(b.TYPE, a.TYPE) AS TYPE ,
+                                               COALESCE(b.MAIN_USE, a.MAIN_USE) AS MAIN_USE
+                                               , a.ZINDEX from $outputTableName
+                                        a LEFT JOIN $buildinType b on a.id_build=b.id_build""".toString()
+
+                        datasource.execute """DROP TABLE IF EXISTS $buildinType, $outputTableName;
+                        ALTER TABLE $newBuildingWithType RENAME TO $outputTableName;
+                        DROP TABLE IF EXISTS $newBuildingWithType;""".toString()
+                    }
             debug 'Buildings transformation finishes'
             [outputTableName: outputTableName]
 
+            }
+            }
         }
     }
 }
+
+
+
 
 /**
  * Rule to guarantee the height wall, height roof and number of levels values

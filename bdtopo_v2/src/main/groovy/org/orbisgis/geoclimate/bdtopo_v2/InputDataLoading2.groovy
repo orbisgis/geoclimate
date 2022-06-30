@@ -158,7 +158,7 @@ IProcess prepareBDTopoData() {
             }
             if (!tablesExist.contains(tableImperviousRoadSurfName)) {
                 tableImperviousRoadSurfName = "SURFACE_ROUTE"
-                datasource.execute("DROP TABLE IF EXISTS $tableImperviousRoadSurfName; CREATE TABLE $tableImperviousRoadSurfName (THE_GEOM geometry(polygon, $srid), ID varchar);".toString())
+                datasource.execute("DROP TABLE IF EXISTS $tableImperviousRoadSurfName; CREATE TABLE $tableImperviousRoadSurfName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);".toString())
             }
             if (!tablesExist.contains(tableImperviousActivSurfName)) {
                 tableImperviousActivSurfName = "SURFACE_ACTIVITE"
@@ -212,7 +212,7 @@ IProcess prepareBDTopoData() {
             DROP TABLE IF EXISTS BU_ZONE;
             CREATE TABLE BU_ZONE (THE_GEOM geometry, ID_SOURCE varchar(24), HEIGHT_WALL integer, NATURE varchar)
             AS 
-            SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(ST_NORMALIZE(a.THE_GEOM)) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID, a.HAUTEUR, null, FROM BATI_INDIFFERENCIE a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.HAUTEUR>=0
+            SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(ST_NORMALIZE(a.THE_GEOM)) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID, a.HAUTEUR, 'Résidentiel', FROM BATI_INDIFFERENCIE a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.HAUTEUR>=0
             union 
             SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(ST_NORMALIZE(a.THE_GEOM)) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID, a.HAUTEUR, a.NATURE FROM BATI_INDUSTRIEL a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)  and a.HAUTEUR>=0
             union
@@ -258,46 +258,64 @@ IProcess prepareBDTopoData() {
             datasource.execute("""
             DROP TABLE IF EXISTS INPUT_VEGET;
             CREATE TABLE INPUT_VEGET (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer)
-            AS SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(a.THE_GEOM) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID, a.NATURE, 0 FROM ZONE_VEGETATION a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
+            AS SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(a.THE_GEOM) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID, a.NATURE, 0 FROM ZONE_VEGETATION a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
+            UNION
+            SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(a.THE_GEOM) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM))
+            END, a.ID, a.NATURE, 0
+            FROM PISTE_AERODROME a, ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
+            and a.NATURE = 'Piste en herbe';
+            ;
             """.toString())
 
             //8. Prepare the Impervious areas table (from the layers "TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE", "SURFACE_ROUTE" and "SURFACE_ACTIVITE") that are in the study area (ZONE)
             datasource.execute("""
-            DROP TABLE IF EXISTS TMP_IMPERV_TERRAIN_SPORT, TMP_IMPERV_CONSTRUCTION_SURFACIQUE, TMP_IMPERV_SURFACE_ROUTE, TMP_IMPERV_SURFACE_ACTIVITE;
-            CREATE TABLE TMP_IMPERV_TERRAIN_SPORT (THE_GEOM geometry, ID_SOURCE varchar(24))
-            AS SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(a.THE_GEOM) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID FROM TERRAIN_SPORT a, ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) AND a.NATURE='Piste de sport';
-            CREATE TABLE TMP_IMPERV_CONSTRUCTION_SURFACIQUE (THE_GEOM geometry, ID_SOURCE varchar(24))
-            AS SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(a.THE_GEOM) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID FROM CONSTRUCTION_SURFACIQUE a, ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) AND (a.NATURE='Barrage' OR a.NATURE='Ecluse' OR a.NATURE='Escalier');
-            CREATE TABLE TMP_IMPERV_SURFACE_ROUTE (THE_GEOM geometry, ID_SOURCE varchar(24))
-            AS SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(a.THE_GEOM) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID FROM SURFACE_ROUTE a, ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
-            CREATE TABLE TMP_IMPERV_SURFACE_ACTIVITE (THE_GEOM geometry, ID_SOURCE varchar(24))
-            AS SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(a.THE_GEOM) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID FROM SURFACE_ACTIVITE a, ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) AND (a.CATEGORIE='Administratif' OR a.CATEGORIE='Enseignement' OR a.CATEGORIE='Santé');
-            """.toString())
-
-            //9. ADD PISTE_AERODROME TABLE TO IMPERVIOUS DATA
-            datasource.execute("""
-            DROP TABLE IF EXISTS TMP_IMPERV_PISTE_AERODROME;
-            CREATE TABLE TMP_IMPERV_PISTE_AERODROME (THE_GEOM geometry, ID_SOURCE varchar(24))
-            AS SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(a.THE_GEOM) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM))
-            END, a.ID FROM PISTE_AERODROME a, ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
+            DROP TABLE IF EXISTS TMP_IMPERV;
+            CREATE TABLE TMP_IMPERV (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE VARCHAR) AS
+            SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(a.THE_GEOM) 
+            ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID, a.NATURE 
+            FROM TERRAIN_SPORT a, ZONE b WHERE a.the_geom && b.the_geom AND 
+            ST_INTERSECTS(a.the_geom, b.the_geom) AND a.NATURE='Piste de sport'
+            UNION
+            SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(a.THE_GEOM) 
+            ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID, a.NATURE 
+            FROM CONSTRUCTION_SURFACIQUE a, ZONE b WHERE a.the_geom && b.the_geom AND 
+            ST_INTERSECTS(a.the_geom, b.the_geom) AND a.NATURE in ('Barrage','Ecluse','Escalier')
+            UNION
+            SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(a.THE_GEOM) 
+            ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID, a.NATURE 
+            FROM SURFACE_ROUTE a, ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
+            UNION
+            SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(a.THE_GEOM) 
+            ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID,a.CATEGORIE
+            FROM SURFACE_ACTIVITE a, ZONE b WHERE a.the_geom && b.the_geom AND 
+            ST_INTERSECTS(a.the_geom, b.the_geom)
+            UNION
+            SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(a.THE_GEOM) 
+            ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID, a.NATURE
+            FROM PISTE_AERODROME a, ZONE b WHERE a.the_geom && b.the_geom AND 
+            ST_INTERSECTS(a.the_geom, b.the_geom)
+            and a.NATURE = 'Piste en dur';
             """.toString())
 
             datasource.execute("""
             DROP TABLE IF EXISTS INPUT_IMPERVIOUS;
-            CREATE TABLE INPUT_IMPERVIOUS (THE_GEOM geometry, ID_SOURCE varchar(24))
-            AS SELECT THE_GEOM, ID_SOURCE FROM ST_EXPLODE('TMP_IMPERV_TERRAIN_SPORT')
-            UNION ALL SELECT THE_GEOM, ID_SOURCE FROM ST_EXPLODE('TMP_IMPERV_CONSTRUCTION_SURFACIQUE')
-            UNION ALL SELECT THE_GEOM, ID_SOURCE FROM ST_EXPLODE('TMP_IMPERV_SURFACE_ROUTE')
-            UNION ALL SELECT THE_GEOM, ID_SOURCE FROM ST_EXPLODE('TMP_IMPERV_SURFACE_ACTIVITE')
-            UNION ALL SELECT THE_GEOM, ID_SOURCE FROM ST_EXPLODE('TMP_IMPERV_PISTE_AERODROME');
+            CREATE TABLE INPUT_IMPERVIOUS (THE_GEOM geometry, ID_SOURCE varchar(24),TYPE VARCHAR, id_impervious INTEGER)
+            AS SELECT THE_GEOM, ID_SOURCE, 
+            CASE WHEN TYPE ='Administratif' THEN 'government'
+            WHEN TYPE= 'Enseignement' THEN 'education'
+            WHEN TYPE='Santé' THEN 'healthcare' 
+            WHEN TYPE ='Culture et loisirs' THEN 'entertainment_arts_culture'
+            WHEN TYPE ='Transport' THEN 'transportation'
+            WHEN TYPE ='Industriel ou commercial' THEN 'commercial'
+            WHEN TYPE ='Gestion des eaux' THEN 'industrial'
+            WHEN TYPE ='Sport' THEN 'entertainment_arts_culture'
+            ELSE 'unknown' END AS TYPE
+            , EXPLOD_ID AS id_impervious FROM ST_EXPLODE('TMP_IMPERV');
             """.toString())
 
             //10. Clean tables
             datasource.execute("""
-            DROP TABLE IF EXISTS TMP_IMPERV_TERRAIN_SPORT, TMP_IMPERV_CONSTRUCTION_SURFACIQUE, TMP_IMPERV_SURFACE_ROUTE,
-            TMP_IMPERV_SURFACE_ACTIVITE,
-            TMP_IMPERV_PISTE_AERODROME,ZONE_EXTENDED, BU_ZONE_INDIF, BU_ZONE_INDUS, BU_ZONE_REMARQ, BU_ZONE_RESERVOIR;
-            """.toString())
+            DROP TABLE IF EXISTS TMP_IMPERV ,ZONE_EXTENDED; """.toString())
              info('The  BD Topo data have been prepared' +
                      '')
              return    [outputBuildingName: "INPUT_BUILDING", outputRoadName: "INPUT_ROAD",
@@ -308,4 +326,5 @@ IProcess prepareBDTopoData() {
             }
     }
 }
+
 

@@ -45,7 +45,6 @@ IProcess formatBuildingLayer() {
 
             def outputTableName = postfix "INPUT_BUILDING"
             debug 'Formating building layer'
-            outputTableName = "INPUT_BUILDING_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             def outputEstimateTableName = "EST_${outputTableName}"
             datasource """
                     DROP TABLE if exists ${outputEstimateTableName};

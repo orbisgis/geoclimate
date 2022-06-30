@@ -201,8 +201,8 @@ class InputDataLoadingTest {
         assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
-        assertEquals(2, table.columnCount)
-        assertEquals(7, table.rowCount)
+        assertEquals(4, table.columnCount)
+        assertEquals(13, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
         assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
@@ -577,7 +577,7 @@ class InputDataLoadingTest {
         assertNotNull(tableName)
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
-        assertEquals(2, table.columnCount)
+        assertEquals(4, table.columnCount)
         assertEquals(2, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
@@ -625,8 +625,8 @@ class InputDataLoadingTest {
         assertNotNull(tableName)
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
-        assertEquals(2, table.columnCount)
-        assertEquals(7, table.rowCount)
+        assertEquals(4, table.columnCount)
+        assertEquals(13, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
         assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
@@ -673,8 +673,8 @@ class InputDataLoadingTest {
         assertNotNull(tableName)
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
-        assertEquals(2, table.columnCount)
-        assertEquals(7, table.rowCount)
+        assertEquals(4, table.columnCount)
+        assertEquals(13, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
         assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
@@ -721,8 +721,8 @@ class InputDataLoadingTest {
         assertNotNull(tableName)
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
-        assertEquals(2, table.columnCount)
-        assertEquals(5, table.rowCount)
+        assertEquals(4, table.columnCount)
+        assertEquals(11, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.the_geom.isSpatial())
         assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
@@ -737,7 +737,7 @@ class InputDataLoadingTest {
         // Check if the SURFACE_ROUTE table has the correct number of columns and rows
         table = h2GISDatabase.getTable("SURFACE_ROUTE")
         assertNotNull(table)
-        assertEquals(2, table.columnCount)
+        assertEquals(3, table.columnCount)
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.the_geom.isSpatial())
