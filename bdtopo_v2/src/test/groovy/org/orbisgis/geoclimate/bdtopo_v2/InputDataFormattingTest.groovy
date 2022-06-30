@@ -26,7 +26,8 @@ class InputDataFormattingTest {
                                          "ROAD_BD_TOPO_TYPE", "VEGET_ABSTRACT_PARAMETERS", "VEGET_ABSTRACT_TYPE",
                                          "VEGET_BD_TOPO_TYPE"]
 
-        h2GISDatabase = H2GIS.open("./target/h2gis_input_data_formating;AUTO_SERVER=TRUE", "sa", "")
+        h2GISDatabase = H2GIS.open("./target/h2gis_input_data_formating;AUTO_SERVER=TRUE;", "sa", "")
+
 
         // Load parameter files
         paramTables.each{
@@ -34,7 +35,7 @@ class InputDataFormattingTest {
         }
         // Load data files
         listFilesBDTopo.each{
-            h2GISDatabase.load(getClass().getResource("$dataFolderInseeCode/${it.toLowerCase()}.shp"), it, true)
+            h2GISDatabase.load(getClass().getResource("$dataFolderInseeCode${File.separator+it.toLowerCase()}.shp"), it, true)
         }
     }
 
@@ -57,7 +58,6 @@ class InputDataFormattingTest {
                                           veget_bd_topo_type: 'VEGET_BD_TOPO_TYPE', veget_abstract_type: 'VEGET_ABSTRACT_TYPE'
         ])
         def resultsImport=processImport.results
-
         def processFormatting = BDTopo_V2.InputDataFormatting.formatData()
         assertTrue processFormatting.execute([datasource: h2GISDatabase,
                                               inputBuilding: resultsImport.outputBuildingName, inputRoad: resultsImport.outputRoadName,

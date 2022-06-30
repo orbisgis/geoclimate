@@ -4,6 +4,8 @@ import org.orbisgis.geoclimate.geoindicators.BlockIndicators
 import org.orbisgis.geoclimate.geoindicators.BuildingIndicators
 import org.orbisgis.geoclimate.geoindicators.DataUtils
 import org.orbisgis.geoclimate.geoindicators.GenericIndicators
+import org.orbisgis.geoclimate.geoindicators.GridIndicators
+import org.orbisgis.geoclimate.geoindicators.PopulationIndicators
 import org.orbisgis.geoclimate.geoindicators.RoadIndicators
 import org.orbisgis.geoclimate.geoindicators.RsuIndicators
 import org.orbisgis.geoclimate.geoindicators.SpatialUnits
@@ -24,6 +26,8 @@ abstract class Geoindicators  extends GroovyProcessFactory  {
     public static DataUtils = new DataUtils()
     public static TypologyClassification = new TypologyClassification()
     public static RoadIndicators = new RoadIndicators()
+    public static PopulationIndicators= new PopulationIndicators()
+    public static GridIndicators= new GridIndicators()
 
     //The whole chain to run the geoindicators
     public static WorkflowGeoIndicators = new WorkflowGeoIndicators()

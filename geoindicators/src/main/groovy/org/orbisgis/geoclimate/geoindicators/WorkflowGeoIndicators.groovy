@@ -1808,6 +1808,11 @@ IProcess computeGeoclimateIndicators() {
             version = '${Geoindicators.version()}',
             build_number = '${Geoindicators.buildNumber()}'""".toString()
 
+
+            //Replace the building table with a new one that contains the relations between block and RSU
+            datasource.execute("""DROP TABLE IF EXISTS $buildingTable;
+            ALTER TABLE $relationBuildings RENAME TO $buildingTable;""".toString())
+
             return [outputTableBuildingIndicators   : buildingIndicators,
                     outputTableBlockIndicators      : blockIndicators,
                     outputTableRsuIndicators        : rsuIndicators,
@@ -1862,7 +1867,7 @@ IProcess rasterizeIndicators() {
 
             def seaLandTypeField = "TYPE"
             def grid_indicators_table = "grid_indicators"
-            def grid_column_identifier ="id"
+            def grid_column_identifier ="id_grid"
                 def indicatorTablesToJoin = [:]
                 indicatorTablesToJoin.put(gridTableName, grid_column_identifier)
                 /*
@@ -2287,7 +2292,7 @@ IProcess createGrid() {
                 if (envelope.getSRID() == 4326) {
                     def reprojectedGrid = postfix("grid")
                     datasource.execute """drop table if exists $reprojectedGrid; 
-                    create table $reprojectedGrid as  select st_transform(the_geom, $srid) as the_geom, id, id_col, id_row from $grid_table_name""".toString()
+                    create table $reprojectedGrid as  select st_transform(the_geom, $srid) as the_geom, id_grid, id_col, id_row from $grid_table_name""".toString()
                     grid_table_name = reprojectedGrid
                 }
                 [outputTableName: grid_table_name]

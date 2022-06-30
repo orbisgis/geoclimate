@@ -6,7 +6,7 @@
         "delete": false
     },
     "input": {
-        "osm": [
+        "locations": [
             [
                 53.41396,
                 5.33682,

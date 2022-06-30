@@ -162,7 +162,7 @@ IProcess workflow() {
                 debug "Reading file parameters"
                 debug parameters.get("description")
                 def inputParameter = parameters.get("input")
-                def output = parameters.get("output")
+                def outputParameter = parameters.get("output")
                 //Default H2GIS database properties
                 def databaseFolder = System.getProperty("java.io.tmpdir")
                 def databaseName = "osm"+UUID.randomUUID().toString().replaceAll("-", "_")
@@ -257,7 +257,7 @@ IProcess workflow() {
                         error "Please set at least one OSM filter (place name or bounding box). e.g 'location' : ['A place name']"
                         return null
                     }
-                    if (output) {
+                    if (outputParameter) {
                         def geoclimateTableNames = ["building_indicators",
                                                     "block_indicators",
                                                     "rsu_indicators",
@@ -283,14 +283,14 @@ IProcess workflow() {
                         if(!processing_parameters){
                             return
                         }
-                        def outputSRID = output.get("srid")
+                        def outputSRID = outputParameter.get("srid")
                         if(outputSRID && outputSRID<=0){
                             error "The output srid must be greater or equal than 0"
                             return null
                         }
-                        def outputDataBase = output.get("database")
-                        def outputFolder = output.get("folder")
-                        def deleteOutputData = output.get("delete")
+                        def outputDataBase = outputParameter.get("database")
+                        def outputFolder = outputParameter.get("folder")
+                        def deleteOutputData = outputParameter.get("delete")
                         if(!deleteOutputData){
                             deleteOutputData = true
                         }else if(!deleteOutputData in Boolean){
@@ -733,7 +733,8 @@ IProcess osm_processing() {
 
                                         IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
                                         if(!process.execute([inputBuildingTableName: results.buildingTableName,
-                                                             inputPopulationTableName: importAscGrid.results.outputTableWorldPopName,  datasource: h2gis_datasource])) {
+                                                             inputPopulationTableName: importAscGrid.results.outputTableWorldPopName,
+                                                             inputPopulationTableName :["pop"],datasource: h2gis_datasource])) {
                                             info "Cannot compute any population data at building level"
                                         }
                                         //Update the building table with the population data

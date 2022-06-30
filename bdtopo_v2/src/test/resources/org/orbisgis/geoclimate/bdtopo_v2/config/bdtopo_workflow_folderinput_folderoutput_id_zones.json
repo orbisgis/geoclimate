@@ -1,6 +1,6 @@
 {
     "description" :"Example of configuration file with an input folder and a list of id_zones",
-    "geoclimatedb" :{"bdtopo_v2": {
+    "geoclimatedb" :{"locations": {
         "folder" : "/tmp/",
         "name": "geoclimate_db;AUTO_SERVER=TRUE",
         "delete" :true

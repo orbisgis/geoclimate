@@ -6,7 +6,7 @@
         "delete" :true
     },
     "input" : {
-        "osm" : ["kerfot"]},
+        "locations" : ["kerfot"]},
     "output" :{
         "database": {
             "user": "-",

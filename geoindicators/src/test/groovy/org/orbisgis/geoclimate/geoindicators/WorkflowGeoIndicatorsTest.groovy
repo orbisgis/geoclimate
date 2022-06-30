@@ -101,6 +101,8 @@ class WorkflowGeoIndicatorsTest {
 
     @Test
     void GeoIndicatorsTest1() {
+        //Reload the building table because the original table is updated with the block and rsu identifiers
+        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("BUILDING.geojson"), "BUILDING", true)
         datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
         boolean svfSimplified = false
         def prefixName = ""
@@ -152,6 +154,8 @@ class WorkflowGeoIndicatorsTest {
 
     @Test
     void GeoIndicatorsTest2() {
+        //Reload the building table because the original table is updated with the block and rsu identifiers
+        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("BUILDING.geojson"), "BUILDING", true)
         datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
         boolean svfSimplified = false
         def prefixName = ""
@@ -227,6 +231,8 @@ class WorkflowGeoIndicatorsTest {
 
     @Test
     void GeoIndicatorsTest3() {
+        //Reload the building table because the original table is updated with the block and rsu identifiers
+        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("BUILDING.geojson"), "BUILDING", true)
         datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
         boolean svfSimplified = false
         def prefixName = ""
@@ -270,6 +276,8 @@ class WorkflowGeoIndicatorsTest {
 
     @Test
     void GeoIndicatorsTest4() {
+        //Reload the building table because the original table is updated with the block and rsu identifiers
+        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("BUILDING.geojson"), "BUILDING", true)
         datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
         boolean svfSimplified = false
         def prefixName = ""
@@ -313,6 +321,8 @@ class WorkflowGeoIndicatorsTest {
 
     @Test
     void GeoIndicatorsTest5() {
+        //Reload the building table because the original table is updated with the block and rsu identifiers
+        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("BUILDING.geojson"), "BUILDING", true)
         datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
         boolean svfSimplified = false
         def prefixName = ""
@@ -356,6 +366,8 @@ class WorkflowGeoIndicatorsTest {
 
     @Test
     void GeoIndicatorsTest6() {
+        //Reload the building table because the original table is updated with the block and rsu identifiers
+        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("BUILDING.geojson"), "BUILDING", true)
         datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
         boolean svfSimplified = false
         def prefixName = ""
@@ -399,6 +411,8 @@ class WorkflowGeoIndicatorsTest {
 
     @Test
     void GeoIndicatorsTest7() {
+        //Reload the building table because the original table is updated with the block and rsu identifiers
+        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("BUILDING.geojson"), "BUILDING", true)
         datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
         boolean svfSimplified = true
         def prefixName = ""
@@ -433,7 +447,7 @@ class WorkflowGeoIndicatorsTest {
     def checkRSUIndicators(def datasource, def rsuIndicatorsTableName, def save){
         //Check road_fraction > 0
         def countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE ROAD_FRACTION>0".toString())
-        assertEquals(216, countResult.count)
+        assertEquals(217, countResult.count)
 
         //Check building_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE BUILDING_FRACTION>0".toString())
@@ -441,7 +455,7 @@ class WorkflowGeoIndicatorsTest {
 
         //Check high_vegetation_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_fraction>0".toString())
-        assertEquals(12, countResult.count)
+        assertEquals(37, countResult.count)
 
         //Check high_vegetation_water_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_water_fraction>0".toString())
@@ -457,7 +471,7 @@ class WorkflowGeoIndicatorsTest {
 
         //Check high_vegetation_road_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_road_fraction>0".toString())
-        assertEquals(12, countResult.count)
+        assertEquals(39, countResult.count)
 
         //Check high_vegetation_impervious_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_impervious_fraction>0".toString())
@@ -469,7 +483,7 @@ class WorkflowGeoIndicatorsTest {
 
         //Check low_vegetation_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE low_vegetation_fraction>0".toString())
-        assertEquals(47, countResult.count)
+        assertEquals(69, countResult.count)
 
         //Check low_vegetation_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE impervious_fraction>0".toString())

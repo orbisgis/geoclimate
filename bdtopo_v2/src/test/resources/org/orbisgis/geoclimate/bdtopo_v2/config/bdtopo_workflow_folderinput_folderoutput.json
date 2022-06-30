@@ -1,6 +1,6 @@
 {
   "description" :"Example of configuration file with an input and output folder",
-  "input" : {"bdtopo_v2":{
+  "input" : {"locations":{
     "folder": "/tmp/..."}
   },
   "output" :{

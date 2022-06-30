@@ -89,6 +89,8 @@ IProcess formatData() {
                 error "Cannot format the BD Topo data"
             } else {
                 info 'The BD Topo data have been formated'
+                //Format population table if exists
+
                 [outputBuilding  : building,
                  outputRoad      : road,
                  outputRail      : rail,

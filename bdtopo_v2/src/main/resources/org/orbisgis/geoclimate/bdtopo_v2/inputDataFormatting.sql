@@ -39,7 +39,7 @@ CREATE SPATIAL INDEX ON $ZONE_NEIGHBORS (the_geom);
 -- Add an id (primary key, called ID_BUILD) to the input layer ($INPUT_BUILDING) and create indexes
 
 DROP TABLE IF EXISTS $BU_ZONE;
-CREATE TABLE $BU_ZONE (THE_GEOM geometry, ID_BUILD serial, ID_SOURCE varchar(24), HEIGHT_WALL integer, HEIGHT_ROOF integer, NB_LEV integer, TYPE varchar, MAIN_USE varchar, ZINDEX integer) AS SELECT ST_FORCE2D(THE_GEOM), CAST((row_number() over()) as Integer), ID_SOURCE, HEIGHT_WALL, HEIGHT_ROOF, NB_LEV, TYPE, MAIN_USE, ZINDEX FROM $INPUT_BUILDING;
+CREATE TABLE $BU_ZONE (THE_GEOM geometry, ID_BUILD serial, ID_SOURCE varchar(24), HEIGHT_WALL integer, HEIGHT_ROOF integer, NB_LEV integer, TYPE varchar, MAIN_USE varchar, ZINDEX integer) AS SELECT ST_FORCE2D(THE_GEOM), rownum(), ID_SOURCE, HEIGHT_WALL, HEIGHT_ROOF, NB_LEV, TYPE, MAIN_USE, ZINDEX FROM $INPUT_BUILDING;
 CREATE SPATIAL INDEX ON $BU_ZONE (the_geom);
 CREATE INDEX ON $BU_ZONE (ID_BUILD);
 
@@ -123,7 +123,7 @@ UPDATE $BUILDING SET NB_LEV = 	CASE WHEN TYPE in (SELECT TERM FROM $BUILDING_ABS
 -- If the ZINDEX is null, then it's initialised to 0
 DROP TABLE IF EXISTS $ROAD;
 CREATE TABLE $ROAD (THE_GEOM geometry, ID_ROAD serial, ID_SOURCE varchar(24), WIDTH DOUBLE PRECISION, TYPE varchar, SURFACE varchar, SIDEWALK varchar, ZINDEX integer, CROSSING varchar, MAXSPEED INTEGER, DIRECTION INTEGER)
-    AS SELECT  the_geom, CAST((row_number() over()) as Integer), ID_SOURCE, WIDTH, TYPE, SURFACE, SIDEWALK, CASE WHEN ZINDEX is null THEN 0 ELSE ZINDEX END, CROSSING, -1,
+    AS SELECT  the_geom, EXPLOD_ID, ID_SOURCE, WIDTH, TYPE, SURFACE, SIDEWALK, CASE WHEN ZINDEX is null THEN 0 ELSE ZINDEX END, CROSSING, -1,
     CASE WHEN SENS='Double' then 3 WHEN SENS='Direct' then 1  WHEN SENS='Inverse' then 2 else -1 end  FROM ST_EXPLODE('$INPUT_ROAD');
 
 -- Updating the width using the rule ("If null or equal to 0 then replace by the minimum width defined in the ROAD ABSTRACT_PARAMETERS table")
@@ -144,7 +144,7 @@ DROP TABLE IF EXISTS $INPUT_ROAD;
 -- If the ZINDEX is null, then it's initialised to 0
 DROP TABLE IF EXISTS $RAIL;
 CREATE TABLE $RAIL(THE_GEOM geometry, ID_RAIL serial, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer, CROSSING varchar)
-	AS SELECT the_geom, CAST((row_number() over()) as Integer), ID_SOURCE, TYPE, CASE WHEN ZINDEX is null THEN 0 ELSE ZINDEX END, CROSSING FROM ST_EXPLODE('$INPUT_RAIL');
+	AS SELECT the_geom, EXPLOD_ID, ID_SOURCE, TYPE, CASE WHEN ZINDEX is null THEN 0 ELSE ZINDEX END, CROSSING FROM ST_EXPLODE('$INPUT_RAIL');
 
 -- Filling the CROSSING column with a 'null' value when no value
 UPDATE $RAIL SET CROSSING = 'null' WHERE CROSSING is null;
@@ -159,7 +159,7 @@ DROP TABLE IF EXISTS $INPUT_RAIL;
 
 DROP TABLE IF EXISTS $HYDRO;
 CREATE TABLE $HYDRO (THE_GEOM geometry, ID_HYDRO serial, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer)
-	AS SELECT the_geom, CAST((row_number() over()) as Integer), ID_SOURCE, 'water', zindex FROM ST_EXPLODE('$INPUT_HYDRO');
+	AS SELECT the_geom, EXPLOD_ID, ID_SOURCE, 'water', zindex FROM ST_EXPLODE('$INPUT_HYDRO');
 
 -- Clean not needed layers
 DROP TABLE IF EXISTS $INPUT_HYDRO;
@@ -173,7 +173,7 @@ DROP TABLE IF EXISTS $INPUT_HYDRO;
 
 DROP TABLE IF EXISTS $VEGET;
 CREATE TABLE $VEGET (THE_GEOM geometry, ID_VEGET serial, ID_SOURCE varchar(24), TYPE varchar, HEIGHT_CLASS varchar, ZINDEX integer)
-	AS SELECT the_geom, CAST((row_number() over()) as Integer), ID_SOURCE, TYPE, null, ZINDEX FROM ST_EXPLODE('$INPUT_VEGET') where st_isempty(the_geom)=false;
+	AS SELECT the_geom, EXPLOD_ID, ID_SOURCE, TYPE, null, ZINDEX FROM ST_EXPLODE('$INPUT_VEGET') where st_isempty(the_geom)=false;
 
 -- Update the vegetation height class (high or low)
 UPDATE $VEGET SET HEIGHT_CLASS = (SELECT b.HEIGHT_CLASS FROM $VEGET_ABSTRACT_PARAMETERS b WHERE b.TERM=TYPE);
@@ -188,7 +188,7 @@ DROP TABLE IF EXISTS $INPUT_VEGET;
 
 DROP TABLE IF EXISTS $IMPERVIOUS;
 CREATE TABLE $IMPERVIOUS (THE_GEOM geometry, ID_IMPERVIOUS serial, ID_SOURCE varchar(24))
-	AS SELECT the_geom, CAST((row_number() over()) as Integer), ID_SOURCE FROM ST_EXPLODE('$INPUT_IMPERVIOUS');
+	AS SELECT the_geom, EXPLOD_ID, ID_SOURCE FROM ST_EXPLODE('$INPUT_IMPERVIOUS');
 
 -- Clean not needed layers
 DROP TABLE IF EXISTS $INPUT_IMPERVIOUS;

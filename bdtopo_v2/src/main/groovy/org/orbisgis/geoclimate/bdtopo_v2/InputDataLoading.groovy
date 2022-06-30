@@ -128,7 +128,8 @@ IProcess prepareBDTopoData() {
             def list = [tableCommuneName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName,
                         tableRoadName, tableRailName, tableHydroName, tableVegetName,
                         tableImperviousSportName, tableImperviousBuildSurfName,
-                        tableImperviousRoadSurfName, tableImperviousActivSurfName, tablePiste_AerodromeName,tableReservoirName]
+                        tableImperviousRoadSurfName, tableImperviousActivSurfName,
+                        tablePiste_AerodromeName,tableReservoirName]
 
             // The SRID is stored and initialized to -1
             def srid = -1
@@ -222,6 +223,7 @@ IProcess prepareBDTopoData() {
                 tableReservoirName= "RESERVOIR"
                 datasource.execute("DROP TABLE IF EXISTS $tableReservoirName; CREATE TABLE $tableReservoirName (THE_GEOM geometry(polygon, $srid), ID varchar,  NATURE varchar, HAUTEUR integer);".toString())
             }
+
 
             // -------------------------------------------------------------------------------
 
