@@ -49,13 +49,7 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, distance: 1000, idZone: communeToTest,
-                                    building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
-                                    road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
-                                    road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
-                                    rail_bd_topo_type: 'RAIL_BD_TOPO_TYPE', rail_abstract_type: 'RAIL_ABSTRACT_TYPE',
-                                    rail_bd_topo_crossing: 'RAIL_BD_TOPO_CROSSING', rail_abstract_crossing: 'RAIL_ABSTRACT_CROSSING',
-                                    veget_bd_topo_type: 'VEGET_BD_TOPO_TYPE', veget_abstract_type: 'VEGET_ABSTRACT_TYPE'
+                                    distance: 1000, idZone: communeToTest
         ])
         process.getResults().each {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
@@ -66,8 +60,8 @@ class InputDataLoadingTest {
         assertNotNull(tableName)
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
-        assertEquals(8, table.columnCount)
-        assertEquals(3219, table.rowCount)
+        assertEquals(7, table.columnCount)
+        assertEquals(11202, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
         assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
@@ -75,7 +69,6 @@ class InputDataLoadingTest {
         assertEquals('INTEGER', table.columnType('HEIGHT_ROOF'))
         assertEquals('INTEGER', table.columnType('NB_LEV'))
         assertEquals('CHARACTER VARYING', table.columnType('TYPE'))
-        assertEquals('CHARACTER VARYING', table.columnType('MAIN_USE'))
         assertEquals('INTEGER', table.columnType('ZINDEX'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
@@ -92,8 +85,6 @@ class InputDataLoadingTest {
             assertNull(row.HEIGHT_ROOF)
             // Check that there is no rows with a NB_LEV value (will be updated in the following process)
             assertNull(row.NB_LEV)
-            assertNotNull(row.TYPE)
-            assertEquals('', row.MAIN_USE)
             assertNotNull(row.ZINDEX)
             assertNotEquals('', row.ZINDEX)
             assertEquals(0, row.ZINDEX)
@@ -106,7 +97,7 @@ class InputDataLoadingTest {
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(9, table.columnCount)
-        assertEquals(1779, table.rowCount)
+        assertEquals(4973, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
         assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
@@ -257,13 +248,7 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, distance: 1000, idZone: communeToTest,
-                                    building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
-                                    road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
-                                    road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
-                                    rail_bd_topo_type: 'RAIL_BD_TOPO_TYPE', rail_abstract_type: 'RAIL_ABSTRACT_TYPE',
-                                    rail_bd_topo_crossing: 'RAIL_BD_TOPO_CROSSING', rail_abstract_crossing: 'RAIL_ABSTRACT_CROSSING',
-                                    veget_bd_topo_type: 'VEGET_BD_TOPO_TYPE', veget_abstract_type: 'VEGET_ABSTRACT_TYPE'
+                                    distance: 1000, idZone: communeToTest
         ])
         process.getResults().each {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
@@ -274,8 +259,8 @@ class InputDataLoadingTest {
         assertNotNull(tableName)
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
-        assertEquals(8, table.columnCount)
-        assertEquals(274, table.rowCount)
+        assertEquals(7, table.columnCount)
+        assertEquals(721, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
         assertEquals('CHARACTER VARYING', table.getColumnType('ID_SOURCE'))
@@ -283,7 +268,6 @@ class InputDataLoadingTest {
         assertEquals('INTEGER', table.getColumnType('HEIGHT_ROOF'))
         assertEquals('INTEGER', table.getColumnType('NB_LEV'))
         assertEquals('CHARACTER VARYING', table.getColumnType('TYPE'))
-        assertEquals('CHARACTER VARYING', table.getColumnType('MAIN_USE'))
         assertEquals('INTEGER', table.getColumnType('ZINDEX'))
 
         // Check if the BATI_INDIFFERENCIE table has the correct number of columns and rows
@@ -310,13 +294,7 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, distance: 1000, idZone: communeToTest,
-                                    building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
-                                    road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
-                                    road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
-                                    rail_bd_topo_type: 'RAIL_BD_TOPO_TYPE', rail_abstract_type: 'RAIL_ABSTRACT_TYPE',
-                                    rail_bd_topo_crossing: 'RAIL_BD_TOPO_CROSSING', rail_abstract_crossing: 'RAIL_ABSTRACT_CROSSING',
-                                    veget_bd_topo_type: 'VEGET_BD_TOPO_TYPE', veget_abstract_type: 'VEGET_ABSTRACT_TYPE'
+                                    distance: 1000, idZone: communeToTest
         ])
         process.getResults().each {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
@@ -327,8 +305,8 @@ class InputDataLoadingTest {
         assertNotNull(tableName)
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
-        assertEquals(8, table.columnCount)
-        assertEquals(2963, table.rowCount)
+        assertEquals(7, table.columnCount)
+        assertEquals(10547, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
         assertEquals('CHARACTER VARYING', table.getColumnType('ID_SOURCE'))
@@ -336,7 +314,6 @@ class InputDataLoadingTest {
         assertEquals('INTEGER', table.getColumnType('HEIGHT_ROOF'))
         assertEquals('INTEGER', table.getColumnType('NB_LEV'))
         assertEquals('CHARACTER VARYING', table.getColumnType('TYPE'))
-        assertEquals('CHARACTER VARYING', table.getColumnType('MAIN_USE'))
         assertEquals('INTEGER', table.getColumnType('ZINDEX'))
 
         // Check if the BATI_INDUSTRIEL table has the correct number of columns and rows
@@ -364,13 +341,7 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 0, distance: 0, idZone: communeToTest,
-                                    building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
-                                    road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
-                                    road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
-                                    rail_bd_topo_type: 'RAIL_BD_TOPO_TYPE', rail_abstract_type: 'RAIL_ABSTRACT_TYPE',
-                                    rail_bd_topo_crossing: 'RAIL_BD_TOPO_CROSSING', rail_abstract_crossing: 'RAIL_ABSTRACT_CROSSING',
-                                    veget_bd_topo_type: 'VEGET_BD_TOPO_TYPE', veget_abstract_type: 'VEGET_ABSTRACT_TYPE'
+                                    distance: 0, idZone: communeToTest
         ])
         process.getResults().each {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
@@ -381,8 +352,8 @@ class InputDataLoadingTest {
         assertNotNull(tableName)
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
-        assertEquals(8, table.columnCount)
-        assertEquals(1688, table.rowCount)
+        assertEquals(7, table.columnCount)
+        assertEquals(6697, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
         assertEquals('CHARACTER VARYING', table.getColumnType('ID_SOURCE'))
@@ -390,7 +361,6 @@ class InputDataLoadingTest {
         assertEquals('INTEGER', table.getColumnType('HEIGHT_ROOF'))
         assertEquals('INTEGER', table.getColumnType('NB_LEV'))
         assertEquals('CHARACTER VARYING', table.getColumnType('TYPE'))
-        assertEquals('CHARACTER VARYING', table.getColumnType('MAIN_USE'))
         assertEquals('INTEGER', table.getColumnType('ZINDEX'))
 
         // Check if the BATI_REMARQUABLE table has the correct number of columns and rows
@@ -418,13 +388,7 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, distance: 1000, idZone: communeToTest,
-                                    building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
-                                    road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
-                                    road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
-                                    rail_bd_topo_type: 'RAIL_BD_TOPO_TYPE', rail_abstract_type: 'RAIL_ABSTRACT_TYPE',
-                                    rail_bd_topo_crossing: 'RAIL_BD_TOPO_CROSSING', rail_abstract_crossing: 'RAIL_ABSTRACT_CROSSING',
-                                    veget_bd_topo_type: 'VEGET_BD_TOPO_TYPE', veget_abstract_type: 'VEGET_ABSTRACT_TYPE'
+                                    distance: 1000, idZone: communeToTest
         ])
         process.getResults().each {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
@@ -474,13 +438,7 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, distance: 1000, idZone: communeToTest,
-                                    building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
-                                    road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
-                                    road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
-                                    rail_bd_topo_type: 'RAIL_BD_TOPO_TYPE', rail_abstract_type: 'RAIL_ABSTRACT_TYPE',
-                                    rail_bd_topo_crossing: 'RAIL_BD_TOPO_CROSSING', rail_abstract_crossing: 'RAIL_ABSTRACT_CROSSING',
-                                    veget_bd_topo_type: 'VEGET_BD_TOPO_TYPE', veget_abstract_type: 'VEGET_ABSTRACT_TYPE'
+                                    distance: 1000, idZone: communeToTest
         ])
         process.getResults().each {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
@@ -526,13 +484,7 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, distance: 1000, idZone: communeToTest,
-                                    building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
-                                    road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
-                                    road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
-                                    rail_bd_topo_type: 'RAIL_BD_TOPO_TYPE', rail_abstract_type: 'RAIL_ABSTRACT_TYPE',
-                                    rail_bd_topo_crossing: 'RAIL_BD_TOPO_CROSSING', rail_abstract_crossing: 'RAIL_ABSTRACT_CROSSING',
-                                    veget_bd_topo_type: 'VEGET_BD_TOPO_TYPE', veget_abstract_type: 'VEGET_ABSTRACT_TYPE'
+                                    distance: 1000, idZone: communeToTest
         ])
         process.getResults().each {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
@@ -572,13 +524,7 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, distance: 1000, idZone: communeToTest,
-                                    building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
-                                    road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
-                                    road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
-                                    rail_bd_topo_type: 'RAIL_BD_TOPO_TYPE', rail_abstract_type: 'RAIL_ABSTRACT_TYPE',
-                                    rail_bd_topo_crossing: 'RAIL_BD_TOPO_CROSSING', rail_abstract_crossing: 'RAIL_ABSTRACT_CROSSING',
-                                    veget_bd_topo_type: 'VEGET_BD_TOPO_TYPE', veget_abstract_type: 'VEGET_ABSTRACT_TYPE'
+                                    distance: 1000, idZone: communeToTest
         ])
         process.getResults().each {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
@@ -620,13 +566,7 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, distance: 1000, idZone: communeToTest,
-                                    building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
-                                    road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
-                                    road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
-                                    rail_bd_topo_type: 'RAIL_BD_TOPO_TYPE', rail_abstract_type: 'RAIL_ABSTRACT_TYPE',
-                                    rail_bd_topo_crossing: 'RAIL_BD_TOPO_CROSSING', rail_abstract_crossing: 'RAIL_ABSTRACT_CROSSING',
-                                    veget_bd_topo_type: 'VEGET_BD_TOPO_TYPE', veget_abstract_type: 'VEGET_ABSTRACT_TYPE'
+                                    distance: 1000, idZone: communeToTest
         ])
         process.getResults().each {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
@@ -674,13 +614,7 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, distance: 1000, idZone: communeToTest,
-                                    building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
-                                    road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
-                                    road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
-                                    rail_bd_topo_type: 'RAIL_BD_TOPO_TYPE', rail_abstract_type: 'RAIL_ABSTRACT_TYPE',
-                                    rail_bd_topo_crossing: 'RAIL_BD_TOPO_CROSSING', rail_abstract_crossing: 'RAIL_ABSTRACT_CROSSING',
-                                    veget_bd_topo_type: 'VEGET_BD_TOPO_TYPE', veget_abstract_type: 'VEGET_ABSTRACT_TYPE'
+                                    distance: 1000, idZone: communeToTest
         ])
         process.getResults().each {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
@@ -728,13 +662,7 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, distance: 1000, idZone: communeToTest,
-                                    building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
-                                    road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
-                                    road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
-                                    rail_bd_topo_type: 'RAIL_BD_TOPO_TYPE', rail_abstract_type: 'RAIL_ABSTRACT_TYPE',
-                                    rail_bd_topo_crossing: 'RAIL_BD_TOPO_CROSSING', rail_abstract_crossing: 'RAIL_ABSTRACT_CROSSING',
-                                    veget_bd_topo_type: 'VEGET_BD_TOPO_TYPE', veget_abstract_type: 'VEGET_ABSTRACT_TYPE'
+                                    distance: 1000, idZone: communeToTest
         ])
         process.getResults().each {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
@@ -782,13 +710,7 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 500, distance: 1000, idZone: communeToTest,
-                                    building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
-                                    road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
-                                    road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
-                                    rail_bd_topo_type: 'RAIL_BD_TOPO_TYPE', rail_abstract_type: 'RAIL_ABSTRACT_TYPE',
-                                    rail_bd_topo_crossing: 'RAIL_BD_TOPO_CROSSING', rail_abstract_crossing: 'RAIL_ABSTRACT_CROSSING',
-                                    veget_bd_topo_type: 'VEGET_BD_TOPO_TYPE', veget_abstract_type: 'VEGET_ABSTRACT_TYPE'
+                                    distance: 1000, idZone: communeToTest
         ])
         process.getResults().each {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
@@ -835,395 +757,13 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distBuffer: 0, distance: 0, idZone: communeToTest,
-                                    building_bd_topo_use_type: 'BUILDING_BD_TOPO_USE_TYPE', building_abstract_use_type: 'BUILDING_ABSTRACT_USE_TYPE',
-                                    road_bd_topo_type: 'ROAD_BD_TOPO_TYPE', road_abstract_type: 'ROAD_ABSTRACT_TYPE',
-                                    road_bd_topo_crossing: 'ROAD_BD_TOPO_CROSSING', road_abstract_crossing: 'ROAD_ABSTRACT_CROSSING',
-                                    rail_bd_topo_type: 'RAIL_BD_TOPO_TYPE', rail_abstract_type: 'RAIL_ABSTRACT_TYPE',
-                                    rail_bd_topo_crossing: 'RAIL_BD_TOPO_CROSSING', rail_abstract_crossing: 'RAIL_ABSTRACT_CROSSING',
-                                    veget_bd_topo_type: 'VEGET_BD_TOPO_TYPE', veget_abstract_type: 'VEGET_ABSTRACT_TYPE'
+                                    distance: 0, idZone: communeToTest
         ])
         process.getResults().each {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
         }
 
         //assertEquals('true', h2GISDatabase.firstRow("SELECT ST_IsValid(THE_GEOM) as valid FROM INPUT_BUILDING WHERE ID_SOURCE='BATIMENT0000000290122667';")["valid"].toString())
-    }
-
-    @Test
-    void initTypes() {
-        def h2GISDatabase = createH2GIS("initTypes")
-        def process = BDTopo_V2.InputDataLoading.initTypes()
-        assertTrue process.execute([datasource       : h2GISDatabase, buildingAbstractUseType: 'BUILDING_ABSTRACT_USE_TYPE',
-                                    roadAbstractType: 'ROAD_ABSTRACT_TYPE', roadAbstractCrossing: 'ROAD_ABSTRACT_CROSSING',
-                                    railAbstractType: 'RAIL_ABSTRACT_TYPE', railAbstractCrossing: 'RAIL_ABSTRACT_CROSSING',
-                                    vegetAbstractType: 'VEGET_ABSTRACT_TYPE'])
-        process.getResults().each {
-            entry -> assertNotNull h2GISDatabase.getTable(entry.getValue())
-        }
-
-        // Check if the BUILDING_BD_TOPO_USE_TYPE table has the correct number of columns and rows
-        def tableName = process.getResults().outputBuildingBDTopoUseType
-        assertNotNull(tableName)
-        def table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(4, table.columnCount)
-        assertEquals(23, table.rowCount)
-        // Check if the column types are correct
-        assertEquals('INTEGER', table.columnType('ID_NATURE'))
-        assertEquals('CHARACTER VARYING', table.columnType('NATURE'))
-        assertEquals('CHARACTER VARYING', table.columnType('TABLE_NAME'))
-        assertEquals('INTEGER', table.columnType('ID_TYPE'))
-        // For each rows, check if the fields contains null or empty values
-        table.eachRow { row ->
-            assertNotNull(row.ID_NATURE)
-            assertNotEquals('', row.ID_NATURE)
-            assertNotNull(row.NATURE)
-            assertNotNull(row.TABLE_NAME)
-            assertNotEquals('', row.TABLE_NAME)
-            assertNotNull(row.ID_TYPE)
-            assertNotEquals('', row.ID_TYPE)
-        }
-
-        // Check if the ROAD_BD_TOPO_TYPE table has the correct number of columns and rows
-        tableName = process.getResults().outputroadBDTopoType
-        assertNotNull(tableName)
-        table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(4, table.columnCount)
-        assertEquals(12, table.rowCount)
-        assertEquals('INTEGER', table.columnType('ID_NATURE'))
-        assertEquals('CHARACTER VARYING', table.columnType('NATURE'))
-        assertEquals('CHARACTER VARYING', table.columnType('TABLE_NAME'))
-        assertEquals('INTEGER', table.columnType('ID_TYPE'))
-        table.eachRow { row ->
-            assertNotNull(row.ID_NATURE)
-            assertNotEquals('', row.ID_NATURE)
-            assertNotNull(row.NATURE)
-            assertNotEquals('', row.NATURE)
-            assertNotNull(row.TABLE_NAME)
-            assertNotEquals('', row.TABLE_NAME)
-            assertNotNull(row.ID_TYPE)
-            assertNotEquals('', row.ID_TYPE)
-        }
-
-        // Check if the ROAD_BD_TOPO_CROSSING table has the correct number of columns and rows
-        tableName = process.getResults().outputroadBDTopoCrossing
-        assertNotNull(tableName)
-        table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(4, table.columnCount)
-        assertEquals(4, table.rowCount)
-        assertEquals('INTEGER', table.columnType('ID_FRANCHISST'))
-        assertEquals('CHARACTER VARYING', table.columnType('FRANCHISST'))
-        assertEquals('CHARACTER VARYING', table.columnType('TABLE_NAME'))
-        assertEquals('INTEGER', table.columnType('ID_CROSSING'))
-        table.eachRow { row ->
-            assertNotNull(row.ID_FRANCHISST)
-            assertNotEquals('', row.ID_FRANCHISST)
-            assertNotNull(row.FRANCHISST)
-            assertNotEquals('', row.FRANCHISST)
-            assertNotNull(row.TABLE_NAME)
-            assertNotEquals('', row.TABLE_NAME)
-            assertNotNull(row.ID_CROSSING)
-            assertNotEquals('', row.ID_CROSSING)
-        }
-
-        // Check if the RAIL_BD_TOPO_TYPE table has the correct number of columns and rows
-        tableName = process.getResults().outputrailBDTopoType
-        assertNotNull(tableName)
-        table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(4, table.columnCount)
-        assertEquals(8, table.rowCount)
-        assertEquals('INTEGER', table.columnType('ID_NATURE'))
-        assertEquals('CHARACTER VARYING', table.columnType('NATURE'))
-        assertEquals('CHARACTER VARYING', table.columnType('TABLE_NAME'))
-        assertEquals('INTEGER', table.columnType('ID_TYPE'))
-        table.eachRow { row ->
-            assertNotNull(row.ID_NATURE)
-            assertNotEquals('', row.ID_NATURE)
-            assertNotNull(row.NATURE)
-            assertNotEquals('', row.NATURE)
-            assertNotNull(row.TABLE_NAME)
-            assertNotEquals('', row.TABLE_NAME)
-            assertNotNull(row.ID_TYPE)
-            assertNotEquals('', row.ID_TYPE)
-        }
-
-        // Check if the RAIL_BD_TOPO_CROSSING table has the correct number of columns and rows
-        tableName = process.getResults().outputrailBDTopoCrossing
-        assertNotNull(tableName)
-        table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(4, table.columnCount)
-        assertEquals(3, table.rowCount)
-        assertEquals('INTEGER', table.columnType('ID_FRANCHISST'))
-        assertEquals('CHARACTER VARYING', table.columnType('FRANCHISST'))
-        assertEquals('CHARACTER VARYING', table.columnType('TABLE_NAME'))
-        assertEquals('INTEGER', table.columnType('ID_CROSSING'))
-        table.eachRow { row ->
-            assertNotNull(row.ID_FRANCHISST)
-            assertNotEquals('', row.ID_FRANCHISST)
-            assertNotNull(row.FRANCHISST)
-            assertNotEquals('', row.FRANCHISST)
-            assertNotNull(row.TABLE_NAME)
-            assertNotEquals('', row.TABLE_NAME)
-            assertNotNull(row.ID_CROSSING)
-            assertNotEquals('', row.ID_CROSSING)
-        }
-
-        // Check if the VEGET_BD_TOPO_TYPE table has the correct number of columns and rows
-        tableName = process.getResults().outputvegetBDTopoType
-        assertNotNull(tableName)
-        table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(4, table.columnCount)
-        assertEquals(14, table.rowCount)
-        assertEquals('INTEGER', table.columnType('ID_NATURE'))
-        assertEquals('CHARACTER VARYING', table.columnType('NATURE'))
-        assertEquals('CHARACTER VARYING', table.columnType('TABLE_NAME'))
-        assertEquals('INTEGER', table.columnType('ID_TYPE'))
-        table.eachRow { row ->
-            assertNotNull(row.ID_NATURE)
-            assertNotEquals('', row.ID_NATURE)
-            assertNotNull(row.NATURE)
-            assertNotEquals('', row.NATURE)
-            assertNotNull(row.TABLE_NAME)
-            assertNotEquals('', row.TABLE_NAME)
-            assertNotNull(row.ID_TYPE)
-            assertNotEquals('', row.ID_TYPE)
-        }
-    }
-
-    @Test
-    void initParametersAbstract() {
-        def h2GISDatabase =  createH2GIS("initParametersAbstract")
-        def process = BDTopo_V2.InputDataLoading.initParametersAbstract()
-        assertTrue process.execute([datasource: h2GISDatabase])
-        process.getResults().each {entry ->
-            assertNotNull h2GISDatabase.getTable(entry.getValue())
-        }
-
-        // Check if the BUILDING_ABSTRACT_USE_TYPE table has the correct number of columns and rows
-        def tableName = process.getResults().outputBuildingAbstractUseType
-        assertNotNull(tableName)
-        def table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(4, table.columnCount)
-        assertEquals(38, table.rowCount)
-        // Check if the column types are correct
-        assertEquals('INTEGER', table.columnType('ID_TYPE'))
-        assertEquals('CHARACTER VARYING', table.columnType('TERM'))
-        assertEquals('CHARACTER VARYING', table.columnType('DEFINITION'))
-        assertEquals('CHARACTER VARYING', table.columnType('SOURCE'))
-        // For each rows, check if the fields contains null or empty values
-        table.eachRow { row ->
-            assertNotNull(row.ID_TYPE)
-            assertNotEquals('', row.ID_TYPE)
-            assertNotNull(row.TERM)
-            assertNotEquals('', row.TERM)
-            assertNotNull(row.DEFINITION)
-            assertNotEquals('', row.DEFINITION)
-            assertNotNull(row.SOURCE)
-        }
-
-        // Check if the BUILDING_ABSTRACT_PARAMETERS table has the correct number of columns and rows
-        tableName = process.getResults().outputBuildingAbstractParameters
-        assertNotNull(tableName)
-        table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(3, table.columnCount)
-        assertEquals(38, table.rowCount)
-        // Check if the column types are correct
-        assertEquals('INTEGER', table.columnType('ID_TYPE'))
-        assertEquals('CHARACTER VARYING', table.columnType('TERM'))
-        assertEquals('INTEGER', table.columnType('NB_LEV'))
-        table.eachRow { row ->
-            assertNotNull(row.ID_TYPE)
-            assertNotEquals('', row.ID_TYPE)
-            assertNotNull(row.TERM)
-            assertNotEquals('', row.TERM)
-            assertNotNull(row.NB_LEV)
-            assertNotEquals('', row.NB_LEV)
-        }
-
-        // Check if the ROAD_ABSTRACT_TYPE table has the correct number of columns and rows
-        tableName = process.getResults().outputRoadAbstractType
-        assertNotNull(tableName)
-        table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(4, table.columnCount)
-        assertEquals(16, table.rowCount)
-        // Check if the column types are correct
-        assertEquals('INTEGER', table.columnType('ID_TYPE'))
-        assertEquals('CHARACTER VARYING', table.columnType('TERM'))
-        assertEquals('CHARACTER VARYING', table.columnType('DEFINITION'))
-        assertEquals('CHARACTER VARYING', table.columnType('SOURCE'))
-        // For each rows, check if the fields contains null or empty values
-        table.eachRow { row ->
-            assertNotNull(row.ID_TYPE)
-            assertNotEquals('', row.ID_TYPE)
-            assertNotNull(row.TERM)
-            assertNotEquals('', row.TERM)
-            assertNotNull(row.DEFINITION)
-            assertNotEquals('', row.DEFINITION)
-            assertNotNull(row.SOURCE)
-        }
-
-        // Check if the ROAD_ABSTRACT_SURFACE table has the correct number of columns and rows
-        tableName = process.getResults().outputRoadAbstractSurface
-        assertNotNull(tableName)
-        table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(4, table.columnCount)
-        assertEquals(14, table.rowCount)
-        // Check if the column types are correct
-        assertEquals('INTEGER', table.columnType('ID_TYPE'))
-        assertEquals('CHARACTER VARYING', table.columnType('TERM'))
-        assertEquals('CHARACTER VARYING', table.columnType('DEFINITION'))
-        assertEquals('CHARACTER VARYING', table.columnType('SOURCE'))
-        // For each rows, check if the fields contains null or empty values
-        table.eachRow { row ->
-            assertNotNull(row.ID_TYPE)
-            assertNotEquals('', row.ID_TYPE)
-            assertNotNull(row.TERM)
-            assertNotEquals('', row.TERM)
-            assertNotNull(row.DEFINITION)
-            assertNotEquals('', row.DEFINITION)
-            assertNotNull(row.SOURCE)
-        }
-
-        // Check if the ROAD_ABSTRACT_PARAMETERS table has the correct number of columns and rows
-        tableName = process.getResults().outputRoadAbstractParameters
-        assertNotNull(tableName)
-        table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(3, table.columnCount)
-        assertEquals(16, table.rowCount)
-        // Check if the column types are correct
-        assertEquals('INTEGER', table.columnType('ID_TYPE'))
-        assertEquals('CHARACTER VARYING', table.columnType('TERM'))
-        assertEquals('INTEGER', table.columnType('MIN_WIDTH'))
-        table.eachRow { row ->
-            assertNotNull(row.ID_TYPE)
-            assertNotEquals('', row.ID_TYPE)
-            assertNotNull(row.TERM)
-            assertNotEquals('', row.TERM)
-            assertNotNull(row.MIN_WIDTH)
-            assertNotEquals('', row.MIN_WIDTH)
-        }
-
-        // Check if the ROAD_ABSTRACT_CROSSING table has the correct number of columns and rows
-        tableName = process.getResults().outputRoadAbstractCrossing
-        assertNotNull(tableName)
-        table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(4, table.columnCount)
-        assertEquals(3, table.rowCount)
-        // Check if the column types are correct
-        assertEquals('INTEGER', table.columnType('ID_CROSSING'))
-        assertEquals('CHARACTER VARYING', table.columnType('TERM'))
-        assertEquals('CHARACTER VARYING', table.columnType('DEFINITION'))
-        assertEquals('CHARACTER VARYING', table.columnType('SOURCE'))
-        table.eachRow { row ->
-            assertNotNull(row.ID_CROSSING)
-            assertNotEquals('', row.ID_CROSSING)
-            assertNotNull(row.TERM)
-            assertNotEquals('', row.TERM)
-            assertNotNull(row.DEFINITION)
-            assertNotEquals('', row.DEFINITION)
-            assertNotNull(row.SOURCE)
-        }
-
-        // Check if the RAIL_ABSTRACT_TYPE table has the correct number of columns and rows
-        tableName = process.getResults().outputRailAbstractType
-        assertNotNull(tableName)
-        table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(4, table.columnCount)
-        assertEquals(7, table.rowCount)
-        // Check if the column types are correct
-        assertEquals('INTEGER', table.columnType('ID_TYPE'))
-        assertEquals('CHARACTER VARYING', table.columnType('TERM'))
-        assertEquals('CHARACTER VARYING', table.columnType('DEFINITION'))
-        assertEquals('CHARACTER VARYING', table.columnType('SOURCE'))
-        // For each rows, check if the fields contains null or empty values
-        table.eachRow { row ->
-            assertNotNull(row.ID_TYPE)
-            assertNotEquals('', row.ID_TYPE)
-            assertNotNull(row.TERM)
-            assertNotEquals('', row.TERM)
-            assertNotNull(row.DEFINITION)
-            assertNotEquals('', row.DEFINITION)
-            assertNotNull(row.SOURCE)
-        }
-
-        // Check if the RAIL_ABSTRACT_CROSSING table has the correct number of columns and rows
-        tableName = process.getResults().outputRailAbstractCrossing
-        assertNotNull(tableName)
-        table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(4, table.columnCount)
-        assertEquals(3, table.rowCount)
-        // Check if the column types are correct
-        assertEquals('INTEGER', table.columnType('ID_CROSSING'))
-        assertEquals('CHARACTER VARYING', table.columnType('TERM'))
-        assertEquals('CHARACTER VARYING', table.columnType('DEFINITION'))
-        assertEquals('CHARACTER VARYING', table.columnType('SOURCE'))
-        table.eachRow { row ->
-            assertNotNull(row.ID_CROSSING)
-            assertNotEquals('', row.ID_CROSSING)
-            assertNotNull(row.TERM)
-            assertNotEquals('', row.TERM)
-            assertNotNull(row.DEFINITION)
-            assertNotEquals('', row.DEFINITION)
-            assertNotNull(row.SOURCE)
-        }
-
-        // Check if the VEGET_ABSTRACT_TYPE table has the correct number of columns and rows
-        tableName = process.getResults().outputVegetAbstractType
-        assertNotNull(tableName)
-        table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(4, table.columnCount)
-        assertEquals(13, table.rowCount)
-        // Check if the column types are correct
-        assertEquals('INTEGER', table.columnType('ID_TYPE'))
-        assertEquals('CHARACTER VARYING', table.columnType('TERM'))
-        assertEquals('CHARACTER VARYING', table.columnType('DEFINITION'))
-        assertEquals('CHARACTER VARYING', table.columnType('SOURCE'))
-        // For each rows, check if the fields contains null or empty values
-        table.eachRow { row ->
-            assertNotNull(row.ID_TYPE)
-            assertNotEquals('', row.ID_TYPE)
-            assertNotNull(row.TERM)
-            assertNotEquals('', row.TERM)
-            assertNotNull(row.DEFINITION)
-            assertNotEquals('', row.DEFINITION)
-            assertNotNull(row.SOURCE)
-        }
-
-        // Check if the VEGET_ABSTRACT_PARAMETERS table has the correct number of columns and rows
-        tableName = process.getResults().outputVegetAbstractParameters
-        assertNotNull(tableName)
-        table = h2GISDatabase.getTable(tableName)
-        assertNotNull(table)
-        assertEquals(3, table.columnCount)
-        assertEquals(13, table.rowCount)
-        // Check if the column types are correct
-        assertEquals('INTEGER', table.columnType('ID_TYPE'))
-        assertEquals('CHARACTER VARYING', table.columnType('TERM'))
-        assertEquals('CHARACTER VARYING', table.columnType('HEIGHT_CLASS'))
-        // For each rows, check if the fields contains null or empty values
-        table.eachRow { row ->
-            assertNotNull(row.ID_TYPE)
-            assertNotEquals('', row.ID_TYPE)
-            assertNotNull(row.TERM)
-            assertNotEquals('', row.TERM)
-            assertNotNull(row.HEIGHT_CLASS)
-            assertNotEquals('', row.HEIGHT_CLASS)
-        }
     }
 
 }
