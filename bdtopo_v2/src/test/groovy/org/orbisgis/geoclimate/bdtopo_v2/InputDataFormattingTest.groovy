@@ -28,6 +28,7 @@ class InputDataFormattingTest {
 
         h2GISDatabase = H2GIS.open("./target/h2gis_input_data_formating;AUTO_SERVER=TRUE;", "sa", "")
 
+
         // Load parameter files
         paramTables.each{
             h2GISDatabase.load(getClass().getResource(it+".csv"), it, true)

@@ -50,7 +50,7 @@ class GeoclimateTest {
                 "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
                 "geoclimatedb" : [
                         "folder" : "${dirFile.absolutePath}",
-                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" : [
@@ -94,7 +94,7 @@ class GeoclimateTest {
                 "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
                 "geoclimatedb" : [
                         "folder" : dirFile.absolutePath,
-                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" : [
