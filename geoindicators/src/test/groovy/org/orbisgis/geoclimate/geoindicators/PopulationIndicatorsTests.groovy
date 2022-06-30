@@ -95,7 +95,6 @@ class PopulationIndicatorsTests {
         assertEquals(0, rows[2].SUM_POP, 0.1)
 
         rows = h2GIS.rows("SELECT * from ${results.gridTable} order by id_grid".toString())
-        println(rows)
         assertEquals(10, rows[0].SUM_POP, 0.1)
         assertEquals(10, rows[1].SUM_POP, 0.1)
         assertEquals(10, rows[2].SUM_POP, 0.1)
