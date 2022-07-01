@@ -216,11 +216,10 @@ IProcess formatBuildingLayer() {
                         ALTER TABLE $newBuildingWithType RENAME TO $outputTableName;
                         DROP TABLE IF EXISTS $newBuildingWithType;""".toString()
                     }
-                    debug 'Buildings transformation finishes'
-                    [outputTableName: outputTableName]
-
                 }
             }
+            debug 'Buildings transformation finishes'
+            [outputTableName: outputTableName]
         }
     }
 }
