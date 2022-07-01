@@ -760,10 +760,7 @@ IProcess osm_processing() {
 
                             //Default
                             def outputGrid = "geojson"
-                            //Compute the grid indicators based on the original extent in WGS84
-                            GeometryFactory gf = new GeometryFactory()
-                            def geomEnv =  gf.toGeometry(zoneTableNames.envelope)
-                            geomEnv.setSRID(4326)
+                            def  geomEnv = h2gis_datasource.getSpatialTable(zoneTableName).getExtent()
                             if(grid_indicators_params){
                                 outputGrid =  grid_indicators_params.output
                                 def x_size = grid_indicators_params.x_size

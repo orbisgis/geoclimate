@@ -1006,7 +1006,7 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
 
         if (inputTableNames.surface_route) {
             //Extract surface_route
-            def inputTableName = "(SELECT ID, THE_GEOM  FROM ${inputTableNames.surface_route}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
+            def inputTableName = "(SELECT ID, THE_GEOM,NATURE  FROM ${inputTableNames.surface_route}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
             outputTableName = "SURFACE_ROUTE"
             debug "Loading in the H2GIS database $outputTableName"
             IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000);
