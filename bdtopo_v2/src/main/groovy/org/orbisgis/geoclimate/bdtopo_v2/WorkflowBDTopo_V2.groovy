@@ -773,7 +773,7 @@ IProcess workflow() {
  */
 def checkAndFormatZones(def location) {
     if (location in Collection) {
-        return location*.trim().join("_")
+        return location.join("_")
     } else if (location instanceof String) {
         return location.trim()
     } else {
@@ -1350,7 +1350,7 @@ def bdtopo_processing(def h2gis_datasource, def processing_parameters, def zone,
     def outputTableNamesResult = [:]
     def srid = h2gis_datasource.getSpatialTable("COMMUNE").srid
     //We process each zones because the input zone can overlap several communes
-    h2gis_datasource.eachRow("SELECT * FROM COMMUNE") { row ->
+    h2gis_datasource.eachRow("SELECT * FROM ST_EXPLODE('COMMUNE')") { row ->
         Geometry geom = row.the_geom
         def code_insee = row.code_insee
         info "Processing the commune with the code insee :  ${code_insee}"
@@ -1380,6 +1380,7 @@ def bdtopo_processing(def h2gis_datasource, def processing_parameters, def zone,
                     //This code is used to encode the codeinsee plus an indice for each sub geometries
                     def code_insee_plus_indice = "${code_insee}_${subAreaCount}"
                     //Let's create the subcommune table and run the BDTopo process from it
+                    println(subGeom)
                     h2gis_datasource.execute("""
                 DROP TABLE IF EXISTS $subCommuneTableName;
                 CREATE TABLE $subCommuneTableName(the_geom GEOMETRY(POLYGON,$srid), CODE_INSEE VARCHAR)  AS 

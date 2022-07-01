@@ -199,7 +199,6 @@ IProcess prepareBDTopoData() {
             DROP TABLE IF EXISTS ZONE;
             CREATE TABLE ZONE AS SELECT ST_FORCE2D(the_geom) as the_geom, CODE_INSEE AS ID_ZONE  FROM $tableCommuneName;
             CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_ZONE ON ZONE (the_geom);
-            CREATE INDEX IF NOT EXISTS idx_ID_ZONE ON ZONE (ID_ZONE);
             -- Generation of a rectangular area (bbox) around the studied commune
             DROP TABLE IF EXISTS ZONE_EXTENDED;
             CREATE TABLE ZONE_EXTENDED AS SELECT ST_EXPAND(the_geom, $distance) as the_geom FROM ZONE;
@@ -212,11 +211,11 @@ IProcess prepareBDTopoData() {
             CREATE TABLE INPUT_BUILDING (THE_GEOM geometry, ID_SOURCE varchar(24), HEIGHT_WALL integer, TYPE varchar)
             AS 
             SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.HAUTEUR, 'Résidentiel', FROM BATI_INDIFFERENCIE a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.HAUTEUR>=0
-            union 
+            union all
             SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.HAUTEUR, a.NATURE FROM BATI_INDUSTRIEL a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)  and a.HAUTEUR>=0
-            union
+            union all
             SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.HAUTEUR, a.NATURE FROM BATI_REMARQUABLE a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)  and a.HAUTEUR>=0
-            union 
+            union all
             SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID
                     as id_source, a.HAUTEUR , 'heavy_industry' FROM RESERVOIR a, ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.NATURE='Réservoir industriel' and a.HAUTEUR>0;
 
@@ -250,7 +249,7 @@ IProcess prepareBDTopoData() {
             DROP TABLE IF EXISTS INPUT_VEGET;
             CREATE TABLE INPUT_VEGET (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer)
             AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, 0 FROM ZONE_VEGETATION a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
-            UNION
+            UNION all
             SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, 0
             FROM PISTE_AERODROME a, ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
             and a.NATURE = 'Piste en herbe';
@@ -264,18 +263,18 @@ IProcess prepareBDTopoData() {
             SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE 
             FROM TERRAIN_SPORT a, ZONE b WHERE a.the_geom && b.the_geom AND 
             ST_INTERSECTS(a.the_geom, b.the_geom) AND a.NATURE='Piste de sport'
-            UNION
+            UNION all
             SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE 
             FROM CONSTRUCTION_SURFACIQUE a, ZONE b WHERE a.the_geom && b.the_geom AND 
             ST_INTERSECTS(a.the_geom, b.the_geom) AND a.NATURE in ('Barrage','Ecluse','Escalier')
-            UNION
+            UNION all
             SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE 
             FROM SURFACE_ROUTE a, ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
-            UNION
+            UNION all
             SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID,a.CATEGORIE
             FROM SURFACE_ACTIVITE a, ZONE b WHERE a.the_geom && b.the_geom AND 
             ST_INTERSECTS(a.the_geom, b.the_geom)
-            UNION
+            UNION all
             SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE
             FROM PISTE_AERODROME a, ZONE b WHERE a.the_geom && b.the_geom AND 
             ST_INTERSECTS(a.the_geom, b.the_geom)
