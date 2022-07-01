@@ -230,8 +230,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         def process = BDTopo_V2.WorkflowBDTopo_V2.loadAndFormatData()
         assertTrue process.execute([datasource: h2GISDatabase,
                                     tableCommuneName: 'COMMUNE',
-                                    tableRoadName: 'ROUTE',
-                                    distBuffer: 0, distance: 0, idZone: communeToTest
+                                    tableRoadName: 'ROUTE', distance: 0
         ])
         def road_traffic =  Geoindicators.RoadIndicators.build_road_traffic()
         road_traffic.execute([
@@ -239,8 +238,8 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                 inputTableName: process.getResults().outputRoad,
                 epsg: 2154])
 
-        assertEquals 813 , h2GISDatabase.getTable(road_traffic.results.outputTableName).rowCount
-        assertTrue h2GISDatabase.firstRow("select count(*) as count from ${road_traffic.results.outputTableName} where road_type is not null").count==813
+        assertEquals 2360 , h2GISDatabase.getTable(road_traffic.results.outputTableName).rowCount
+        assertTrue h2GISDatabase.firstRow("select count(*) as count from ${road_traffic.results.outputTableName} where road_type is not null").count==2360
     }
 
 
@@ -556,31 +555,38 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         def envCoords = [env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]
         def bdTopoParameters = [
                 "description" :"Example of configuration file to run the grid indicators",
+                "geoclimatedb" : [
+                        "folder" : "${dirFile.absolutePath}",
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete" :false
+                ],
                 "input" :[
                         "folder": ["path" :dataFolder,
                                    "locations":[envCoords]]],
                 "output" :[
-                        "folder" : ["path": "$directory",
-                                    "tables": ["grid_indicators"]]],
+                       "folder" : ["path": "$directory",
+                                    "tables": ["grid_indicators"]
+                        ]],
                 "parameters":
                         ["distance" : 0,
                          "grid_indicators": [
-                                 "x_size": 1000,
-                                 "y_size": 1000,
-                                 "indicators": ["WATER_FRACTION"]
+                                 "x_size": 10,
+                                 "y_size": 10,
+                                 "rowCol": true,
+                                 "indicators": ["WATER_FRACTION","VEGETATION_FRACTION"]
                          ],
                          "rsu_indicators":[
-                                 "indicatorUse": ["LCZ", "UTRF", "TEB"],
-                                 "svfSimplified": true,
+                                 "indicatorUse": ["LCZ"]
                          ],
                         ]
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(input: createConfigFile(bdTopoParameters, directory)))
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
-        h2gis.load(directory+File.separator+"bdtopo_v2_"+envCoords.join("_")+File.separator+communeToTest+File.separator+"grid_indicators.geojson")
-        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators".toString()).count==1
-        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0".toString()).count>0
+        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators".toString()).count==100
+        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where WATER_FRACTION>0".toString()).count==0
+        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where HIGH_VEGETATION_FRACTION>0".toString()).count>0
+        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where LOW_VEGETATION_FRACTION>0".toString()).count==0
     }
 
     @Test

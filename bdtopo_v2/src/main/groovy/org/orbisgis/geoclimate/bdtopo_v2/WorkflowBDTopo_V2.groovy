@@ -1691,7 +1691,7 @@ def saveTablesInDatabase(def output_datasource, def h2gis_datasource, def output
 
     //Export building indicators
     indicatorTableBatchExportTable(output_datasource, outputTableNames.building_indicators, id_zone, h2gis_datasource, h2gis_tables.outputTableBuildingIndicators
-            , "where id_zone!='outside'", inputSRID, outputSRID, reproject)
+            , "", inputSRID, outputSRID, reproject)
 
 
     //Export block indicators
