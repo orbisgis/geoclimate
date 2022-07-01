@@ -60,16 +60,13 @@ class InputDataLoadingTest {
         assertNotNull(tableName)
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
-        assertEquals(7, table.columnCount)
+        assertEquals(4, table.columnCount)
         assertEquals(11202, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
         assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
         assertEquals('INTEGER', table.columnType('HEIGHT_WALL'))
-        assertEquals('INTEGER', table.columnType('HEIGHT_ROOF'))
-        assertEquals('INTEGER', table.columnType('NB_LEV'))
         assertEquals('CHARACTER VARYING', table.columnType('TYPE'))
-        assertEquals('INTEGER', table.columnType('ZINDEX'))
         // For each rows, check if the fields contains the expected values
         table.eachRow { row ->
             assertNotNull(row.THE_GEOM)
@@ -81,13 +78,6 @@ class InputDataLoadingTest {
             assertNotEquals('', row.HEIGHT_WALL)
             assertTrue(row.HEIGHT_WALL >= 0)
             assertTrue(row.HEIGHT_WALL <= 1000)
-            // Check that there is no rows with a HEIGHT_ROOF value (will be updated in the following process)
-            assertNull(row.HEIGHT_ROOF)
-            // Check that there is no rows with a NB_LEV value (will be updated in the following process)
-            assertNull(row.NB_LEV)
-            assertNotNull(row.ZINDEX)
-            assertNotEquals('', row.ZINDEX)
-            assertEquals(0, row.ZINDEX)
         }
 
 
@@ -259,16 +249,13 @@ class InputDataLoadingTest {
         assertNotNull(tableName)
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
-        assertEquals(7, table.columnCount)
+        assertEquals(4, table.columnCount)
         assertEquals(721, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
         assertEquals('CHARACTER VARYING', table.getColumnType('ID_SOURCE'))
         assertEquals('INTEGER', table.getColumnType('HEIGHT_WALL'))
-        assertEquals('INTEGER', table.getColumnType('HEIGHT_ROOF'))
-        assertEquals('INTEGER', table.getColumnType('NB_LEV'))
         assertEquals('CHARACTER VARYING', table.getColumnType('TYPE'))
-        assertEquals('INTEGER', table.getColumnType('ZINDEX'))
 
         // Check if the BATI_INDIFFERENCIE table has the correct number of columns and rows
         table = h2GISDatabase.getTable("BATI_INDIFFERENCIE")
@@ -305,16 +292,13 @@ class InputDataLoadingTest {
         assertNotNull(tableName)
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
-        assertEquals(7, table.columnCount)
+        assertEquals(4, table.columnCount)
         assertEquals(10547, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
         assertEquals('CHARACTER VARYING', table.getColumnType('ID_SOURCE'))
         assertEquals('INTEGER', table.getColumnType('HEIGHT_WALL'))
-        assertEquals('INTEGER', table.getColumnType('HEIGHT_ROOF'))
-        assertEquals('INTEGER', table.getColumnType('NB_LEV'))
         assertEquals('CHARACTER VARYING', table.getColumnType('TYPE'))
-        assertEquals('INTEGER', table.getColumnType('ZINDEX'))
 
         // Check if the BATI_INDUSTRIEL table has the correct number of columns and rows
         table = h2GISDatabase.getTable("BATI_INDUSTRIEL")
@@ -341,7 +325,7 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distance: 0, idZone: communeToTest
+                                    distance: 0
         ])
         process.getResults().each {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
@@ -352,16 +336,13 @@ class InputDataLoadingTest {
         assertNotNull(tableName)
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
-        assertEquals(7, table.columnCount)
+        assertEquals(4, table.columnCount)
         assertEquals(6697, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
         assertEquals('CHARACTER VARYING', table.getColumnType('ID_SOURCE'))
         assertEquals('INTEGER', table.getColumnType('HEIGHT_WALL'))
-        assertEquals('INTEGER', table.getColumnType('HEIGHT_ROOF'))
-        assertEquals('INTEGER', table.getColumnType('NB_LEV'))
         assertEquals('CHARACTER VARYING', table.getColumnType('TYPE'))
-        assertEquals('INTEGER', table.getColumnType('ZINDEX'))
 
         // Check if the BATI_REMARQUABLE table has the correct number of columns and rows
         table = h2GISDatabase.getTable("BATI_REMARQUABLE")
@@ -388,7 +369,7 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distance: 1000, idZone: communeToTest
+                                    distance: 1000
         ])
         process.getResults().each {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
@@ -438,7 +419,7 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distance: 1000, idZone: communeToTest
+                                    distance: 1000
         ])
         process.getResults().each {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
@@ -484,7 +465,7 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distance: 1000, idZone: communeToTest
+                                    distance: 1000
         ])
         process.getResults().each {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
@@ -524,7 +505,7 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distance: 1000, idZone: communeToTest
+                                    distance: 1000
         ])
         process.getResults().each {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
@@ -566,7 +547,7 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distance: 1000, idZone: communeToTest
+                                    distance: 1000
         ])
         process.getResults().each {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
@@ -614,7 +595,7 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distance: 1000, idZone: communeToTest
+                                    distance: 1000
         ])
         process.getResults().each {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
@@ -662,7 +643,7 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distance: 1000, idZone: communeToTest
+                                    distance: 1000
         ])
         process.getResults().each {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
@@ -710,7 +691,7 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distance: 1000, idZone: communeToTest
+                                    distance: 1000
         ])
         process.getResults().each {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
@@ -757,7 +738,7 @@ class InputDataLoadingTest {
                                     tableHydroName: 'SURFACE_EAU', tableVegetName: 'ZONE_VEGETATION',
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                    distance: 0, idZone: communeToTest
+                                    distance: 0
         ])
         process.getResults().each {
             entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))

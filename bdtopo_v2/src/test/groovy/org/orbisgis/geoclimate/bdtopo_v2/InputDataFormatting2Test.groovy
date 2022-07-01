@@ -32,7 +32,7 @@ class InputDataFormatting2Test {
         assertTrue processImport.execute([datasource: h2GISDatabase,
                                           tableCommuneName:'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                           tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
-                                          distance: 1000, idZone: communeToTest
+                                          distance: 1000
         ])
         def resultsImport=processImport.results
         def processFormatting = BDTopo_V2.InputDataFormatting.formatBuildingLayer()
@@ -53,7 +53,7 @@ class InputDataFormatting2Test {
         assertTrue processImport.execute([datasource: h2GISDatabase,
                                           tableCommuneName:'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
                                           tableBuildIndusName: 'BATI_INDUSTRIEL', tableBuildRemarqName: 'BATI_REMARQUABLE',
-                                          distance: 1000, idZone: communeToTest
+                                          distance: 1000
         ])
         def resultsImport=processImport.results
         def processFormatting = BDTopo_V2.InputDataFormatting.formatBuildingLayer()
@@ -67,5 +67,22 @@ class InputDataFormatting2Test {
         assertTrue(h2GISDatabase.firstRow("""SELECT count(*) as count from $tableOutput where NB_LEV is not null or NB_LEV>0 ;""".toString()).count>0)
         assertTrue(h2GISDatabase.firstRow("""SELECT count(*) as count from $tableOutput where HEIGHT_WALL is not null or HEIGHT_WALL>0 ;""".toString()).count>0)
         assertTrue(h2GISDatabase.firstRow("""SELECT count(*) as count from $tableOutput where HEIGHT_ROOF is not null or HEIGHT_ROOF>0 ;""".toString()).count>0)
+    }
+
+    @Test
+    void formattingRoadTest(){
+        def processImport = BDTopo_V2.InputDataLoading.prepareBDTopoData()
+        assertTrue processImport.execute([datasource: h2GISDatabase,
+                                          tableCommuneName:'COMMUNE', tableRoadName: 'ROUTE',
+                                          distance: 1000
+        ])
+        def resultsImport=processImport.results
+        def processFormatting = BDTopo_V2.InputDataFormatting.formatRoadLayer()
+        assertTrue processFormatting.execute([datasource: h2GISDatabase,
+                                              inputTableName: resultsImport.outputRoadName,
+                                              inputZoneEnvelopeTableName: resultsImport.outputZoneName])
+        def tableOutput = processFormatting.results.outputTableName
+        assertTrue(h2GISDatabase.firstRow("""SELECT count(*) as count from $tableOutput where TYPE is not null;""".toString()).count>0)
+        assertTrue(h2GISDatabase.firstRow("""SELECT count(*) as count from $tableOutput where WIDTH is not null or WIDTH>0 ;""".toString()).count>0)
     }
 }

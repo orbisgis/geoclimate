@@ -8,6 +8,8 @@ import org.orbisgis.data.api.dataset.ITable
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.process.api.IProcess
 
+import java.util.regex.Pattern
+
 @BaseScript BDTopo_V2 BDTopo_V2
 
 /**
@@ -63,108 +65,107 @@ IProcess formatBuildingLayer() {
                         queryMapper += "* FROM $inputTableName as a where st_area(a.the_geom)>1 "
                     }
 
-            def building_type_use =
-                    ["Bâtiment agricole"        : ["farm_auxiliary": "agricultural"],
-                     "Bâtiment commercial"     : ["commercial": "commercial"],
-                     "Bâtiment industriel"     : ["light_industry": "industrial"],
-                     "Serre"                    : ["greenhouse": "agricultural"],
-                     "Silo"                     : ["silo": "agricultural"],
-                     "Aérogare"                 : ["terminal": "transportation"],
-                     "Arc de triomphe"          : ["monument": "heritage"],
-                     "Arène ou théâtre antique" : ["monument": "monument"],
-                     "Bâtiment religieux divers": ["religious": "religious"],
-                     "Bâtiment sportif"         : ["sports_centre": "entertainment_arts_culture"],
-                     "Chapelle"                 : ["chapel": "religious"],
-                     "Château"                  : ["castle": "heritage"],
-                     "Eglise"                   : ["church": "religious"],
-                     "Fort, blockhaus, casemate": ["military": "military"],
-                     "Gare"                     : ["train_station": "transportation"],
-                     "Mairie"                   : ["townhall": "government"],
-                     "Monument"                 : ["monument": "monument"],
-                     "Péage"                    : ["toll_booth": "transportation"],
-                     "Préfecture"               : ["government": "government"],
-                     "Sous-préfecture"          : ["government": "government"],
-                     "Tour, donjon, moulin"     : ["historic": "heritage"],
-                     "Tribune"                  : ["grandstand": "entertainment_arts_culture"],
-                     "Résidentiel"              : ["residential": "residential"]]
+                    def building_type_use =
+                            ["Bâtiment agricole"        : ["farm_auxiliary": "agricultural"],
+                             "Bâtiment commercial"      : ["commercial": "commercial"],
+                             "Bâtiment industriel"      : ["light_industry": "industrial"],
+                             "Serre"                    : ["greenhouse": "agricultural"],
+                             "Silo"                     : ["silo": "agricultural"],
+                             "Aérogare"                 : ["terminal": "transportation"],
+                             "Arc de triomphe"          : ["monument": "heritage"],
+                             "Arène ou théâtre antique" : ["monument": "monument"],
+                             "Bâtiment religieux divers": ["religious": "religious"],
+                             "Bâtiment sportif"         : ["sports_centre": "entertainment_arts_culture"],
+                             "Chapelle"                 : ["chapel": "religious"],
+                             "Château"                  : ["castle": "heritage"],
+                             "Eglise"                   : ["church": "religious"],
+                             "Fort, blockhaus, casemate": ["military": "military"],
+                             "Gare"                     : ["train_station": "transportation"],
+                             "Mairie"                   : ["townhall": "government"],
+                             "Monument"                 : ["monument": "monument"],
+                             "Péage"                    : ["toll_booth": "transportation"],
+                             "Préfecture"               : ["government": "government"],
+                             "Sous-préfecture"          : ["government": "government"],
+                             "Tour, donjon, moulin"     : ["historic": "heritage"],
+                             "Tribune"                  : ["grandstand": "entertainment_arts_culture"],
+                             "Résidentiel"              : ["residential": "residential"]]
 
-            def building_type_level = ["building"                  : 1,
-                                       "house"                     : 1,
-                                       "detached"                  : 1,
-                                       "residential"               : 1,
-                                       "apartments"                : 1,
-                                       "bungalow"                  : 0,
-                                       "historic"                  : 0,
-                                       "monument"                  : 0,
-                                       "ruins"                     : 0,
-                                       "castle"                    : 0,
-                                       "agricultural"              : 0,
-                                       "farm"                      : 0,
-                                       "farm_auxiliary"            : 0,
-                                       "barn"                      : 0,
-                                       "greenhouse"                : 0,
-                                       "silo"                      : 0,
-                                       "commercial"                : 2,
-                                       "industrial"                : 0,
-                                       "sport"                     : 0,
-                                       "sports_centre"             : 0,
-                                       "grandstand"                : 0,
-                                       "transportation"            : 0,
-                                       "train_station"             : 0,
-                                       "toll_booth"                : 0,
-                                       "terminal"                  : 0,
-                                       "healthcare"                : 1,
-                                       "education"                 : 1,
-                                       "entertainment_arts_culture": 0,
-                                       "sustenance"                : 1,
-                                       "military"                  : 0,
-                                       "religious"                 : 0,
-                                       "chapel"                    : 0,
-                                       "church"                    : 0,
-                                       "government"                : 1,
-                                       "townhall"                  : 1,
-                                       "office"                    : 1,
-                                       "heavy_industry"            : 0,
-                                       "light_industry"            : 0]
+                    def building_type_level = ["building"                  : 1,
+                                               "house"                     : 1,
+                                               "detached"                  : 1,
+                                               "residential"               : 1,
+                                               "apartments"                : 1,
+                                               "bungalow"                  : 0,
+                                               "historic"                  : 0,
+                                               "monument"                  : 0,
+                                               "ruins"                     : 0,
+                                               "castle"                    : 0,
+                                               "agricultural"              : 0,
+                                               "farm"                      : 0,
+                                               "farm_auxiliary"            : 0,
+                                               "barn"                      : 0,
+                                               "greenhouse"                : 0,
+                                               "silo"                      : 0,
+                                               "commercial"                : 2,
+                                               "industrial"                : 0,
+                                               "sport"                     : 0,
+                                               "sports_centre"             : 0,
+                                               "grandstand"                : 0,
+                                               "transportation"            : 0,
+                                               "train_station"             : 0,
+                                               "toll_booth"                : 0,
+                                               "terminal"                  : 0,
+                                               "healthcare"                : 1,
+                                               "education"                 : 1,
+                                               "entertainment_arts_culture": 0,
+                                               "sustenance"                : 1,
+                                               "military"                  : 0,
+                                               "religious"                 : 0,
+                                               "chapel"                    : 0,
+                                               "church"                    : 0,
+                                               "government"                : 1,
+                                               "townhall"                  : 1,
+                                               "office"                    : 1,
+                                               "heavy_industry"            : 0,
+                                               "light_industry"            : 0]
 
 
+                    //Formating building table
+                    def id_build = 1;
+                    datasource.withBatch(1000) { stmt ->
+                        datasource.eachRow(queryMapper.toString()) { row ->
+                            def feature_type = "building"
+                            def feature_main_use = "building"
+                            def id_source = row.ID_SOURCE
+                            if (row.TYPE) {
+                                def tmp_type_use = building_type_use.get(row.TYPE)
+                                if (tmp_type_use) {
+                                    def type_main = tmp_type_use.grep()[0]
+                                    feature_type = type_main.key
+                                    feature_main_use = type_main.value
+                                }
+                            }
+                            def height_wall = row.HEIGHT_WALL
+                            def height_roof = 0
+                            def nb_lev = 0
+                            //Update height_wall
+                            if (height_wall == null || height_wall == 0) {
+                                height_wall = h_lev_min
+                                height_roof = h_lev_max
+                            }
+                            //Update NB_LEV
+                            def nbLevelsFromType = building_type_level[feature_type]
+                            def formatedHeight = formatHeightsAndNbLevels(height_wall, height_roof, nb_lev, h_lev_min,
+                                    h_lev_max, hThresholdLev2, nbLevelsFromType == null ? 0 : nbLevelsFromType)
 
-            //Formating building table
-            def id_build = 1;
-            datasource.withBatch(1000) { stmt ->
-                datasource.eachRow(queryMapper.toString()) { row ->
-                    def feature_type = "building"
-                    def feature_main_use = "building"
-                    def id_source = row.ID_SOURCE
-                    if (row.TYPE) {
-                        def tmp_type_use = building_type_use.get(row.TYPE)
-                        if (tmp_type_use) {
-                            def type_main = tmp_type_use.grep()[0]
-                            feature_type = type_main.key
-                            feature_main_use = type_main.value
-                        }
-                    }
-                    def height_wall = row.HEIGHT_WALL
-                    def height_roof = row.HEIGHT_ROOF
-                    def nb_lev = row.NB_LEV ? row.NB_LEV : 0
-                    //Update height_wall
-                    if (height_wall == null || height_wall == 0) {
-                        height_wall = h_lev_min
-                        height_roof = h_lev_max
-                    }
-                    //Update NB_LEV
-                    def nbLevelsFromType = building_type_level[feature_type]
-                    def formatedHeight = formatHeightsAndNbLevels(height_wall, height_roof, nb_lev, h_lev_min,
-                            h_lev_max, hThresholdLev2, nbLevelsFromType == null ? 0 : nbLevelsFromType)
-
-                    def zIndex = 0
-                    if (formatedHeight.nbLevels > 0) {
-                        Geometry geom = row.the_geom
-                        def srid = geom.getSRID()
-                        for (int i = 0; i < geom.getNumGeometries(); i++) {
-                            Geometry subGeom = geom.getGeometryN(i)
-                            if (subGeom instanceof Polygon) {
-                                stmt.addBatch """
+                            def zIndex = 0
+                            if (formatedHeight.nbLevels > 0) {
+                                Geometry geom = row.the_geom
+                                def srid = geom.getSRID()
+                                for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                    Geometry subGeom = geom.getGeometryN(i)
+                                    if (subGeom instanceof Polygon) {
+                                        stmt.addBatch """
                                                 INSERT INTO ${outputTableName} values(
                                                     ST_GEOMFROMTEXT('${subGeom}',$srid), 
                                                     $id_build, 
@@ -177,14 +178,14 @@ IProcess formatBuildingLayer() {
                                                     ${zIndex})
                                             """.toString()
 
-                                id_build++
+                                        id_build++
+                                    }
+                                }
                             }
                         }
                     }
-                }
-            }
                     //Let's use the impervious table to improve building qualification
-                    if(inputImpervious){
+                    if (inputImpervious) {
                         datasource."$outputTableName".the_geom.createSpatialIndex()
                         datasource."$outputTableName".id_build.createIndex()
                         datasource."$outputTableName".type.createIndex()
@@ -217,16 +218,165 @@ IProcess formatBuildingLayer() {
                         ALTER TABLE $newBuildingWithType RENAME TO $outputTableName;
                         DROP TABLE IF EXISTS $newBuildingWithType;""".toString()
                     }
-            debug 'Buildings transformation finishes'
-            [outputTableName: outputTableName]
+                    debug 'Buildings transformation finishes'
+                    [outputTableName: outputTableName]
 
-            }
+                }
             }
         }
     }
 }
 
 
+/**
+ * This process is used to transform the BDTopo roads table into a table that matches the constraints
+ * of the geoClimate Input Model
+ * @param datasource A connexion to a DB containing the raw roads table
+ * @param inputTableName The name of the raw roads table in the DB
+ * @param epsg epsgcode to apply
+ * @param jsonFilename name of the json formatted file containing the filtering parameters
+ * @return outputTableName The name of the final roads table
+ */
+IProcess formatRoadLayer() {
+    return create {
+        title "Format the raw roads table into a table that matches the constraints of the GeoClimate Input Model"
+        id "formatRoadLayer"
+        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: ""
+        outputs outputTableName: String
+        run { datasource, inputTableName, inputZoneEnvelopeTableName ->
+            debug('Formating road layer')
+            def outputTableName = postfix "INPUT_ROAD"
+            datasource """
+            DROP TABLE IF EXISTS $outputTableName;
+            CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_road serial, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR, CROSSING VARCHAR(30),
+                SURFACE VARCHAR, SIDEWALK VARCHAR, MAXSPEED INTEGER, DIRECTION INTEGER, ZINDEX INTEGER);
+        """.toString()
+            if (inputTableName) {
+                //Define the mapping between the values in BDTopo and those used in the abstract model
+                def road_types =
+                        ["Autoroute"          : "motorway",
+                         'Quasi-autoroute'    : 'trunk',
+                         'Bretelle'           : 'highway_link',
+                         'Route à 2 chaussées': 'primary',
+                         'Route à 1 chaussée' : 'unclassified',
+                         'Route empierrée'    : 'track',
+                         'Chemin'             : 'track',
+                         'Bac auto'           : 'ferry',
+                         'Bac piéton'         : 'ferry',
+                         'Piste cyclable'     : 'cycleway',
+                         'Sentier'            : 'path',
+                         'Escalier'           : 'steps',
+                         'Gué ou radier'      : null,
+                         'Pont'               : 'bridge', 'Tunnel': 'tunnel', 'NC': null
+                        ]
+
+                def road_types_width =
+                        ["highway"     : 8,
+                         "motorway"    : 24,
+                         "trunk"       : 16,
+                         "primary"     : 10,
+                         "secondary"   : 10,
+                         "tertiary"    : 8,
+                         "residential" : 8,
+                         "unclassified": 3,
+                         "track"       : 2,
+                         "path"        : 1,
+                         "footway"     : 1,
+                         "cycleway"    : 1,
+                         "steps"       : 1,
+                         "highway_link": 8,
+                         "roundabout"  : 4,
+                         "ferry"       : 0,
+                         "pedestrian"  : 3,
+                         "service"     : 3]
+
+                def queryMapper = "SELECT "
+                def inputSpatialTable = datasource."$inputTableName"
+                if (inputSpatialTable.rowCount > 0) {
+                    def columnNames = inputSpatialTable.columns
+                    columnNames.remove("THE_GEOM")
+                    queryMapper += columnNames.join(",")
+                    if (inputZoneEnvelopeTableName) {
+                        inputSpatialTable.the_geom.createSpatialIndex()
+                        queryMapper += ", CASE WHEN st_overlaps(st_force2D(a.the_geom), b.the_geom) " +
+                                "THEN st_force2D(st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom))) " +
+                                "ELSE st_force2D(st_makevalid(a.the_geom)) " +
+                                "END AS the_geom " +
+                                "FROM " +
+                                "$inputTableName AS a, $inputZoneEnvelopeTableName AS b " +
+                                "WHERE " +
+                                "a.the_geom && b.the_geom "
+                    } else {
+                        queryMapper += ", st_force2D(st_makevalid(a.the_geom)) as the_geom FROM $inputTableName  as a"
+                    }
+                    int rowcount = 1
+                    datasource.withBatch(1000) { stmt ->
+                        datasource.eachRow(queryMapper) { row ->
+                            def road_type = row.TYPE
+                            if (road_type) {
+                                road_type = road_types.get(road_type)
+                            } else {
+                                road_type = "unclassified"
+                            }
+                            def width = row.WIDTH
+                            if (width == null || width <= 0) {
+                                width = road_types_width.get(road_type)
+                            }
+                            def road_crossing = row.CROSSING
+                            if (road_crossing) {
+                                road_crossing = road_types.get(road_crossing)
+                            }
+                            def road_sens = row.SENS
+                            if (road_sens) {
+                                if (road_sens == "Double") {
+                                    road_sens = 3
+                                } else if (road_sens == "Direct") {
+                                    road_sens = 1
+                                } else if (road_sens == "Inverse") {
+                                    road_sens = 2
+                                } else {
+                                    road_sens = -1
+                                }
+                            }
+                            def road_zindex = row.ZINDEX
+                            if (!road_zindex) {
+                                road_zindex = 0
+                            }
+                            def ID_SOURCE = row.ID_SOURCE
+                            def road_surface = row.SURFACE
+                            def road_sidewalk = row.SIDEWALK
+                            //Not yet managed
+                            def road_maxspeed = null
+
+                            if (road_zindex >= 0 && road_type) {
+                                Geometry geom = row.the_geom
+                                def epsg = geom.getSRID()
+                                for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                    stmt.addBatch """
+                                        INSERT INTO $outputTableName VALUES(ST_GEOMFROMTEXT(
+                                        '${geom.getGeometryN(i)}',$epsg), 
+                                        ${rowcount++}, 
+                                        '${ID_SOURCE}', 
+                                        ${width},
+                                        '${road_type}',
+                                        '${road_crossing}', 
+                                        '${road_surface}',
+                                        '${road_sidewalk}',
+                                        ${road_maxspeed},
+                                        ${road_sens},
+                                        ${road_zindex})
+                                        """.toString()
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            debug('Roads transformation finishes')
+            [outputTableName: outputTableName]
+        }
+    }
+}
 
 
 /**

@@ -51,8 +51,7 @@ IProcess prepareBDTopoData() {
                 tableImperviousActivSurfName: "",
                 tablePiste_AerodromeName: "",
                 tableReservoirName: "",
-                distance: 1000,
-                idZone: String
+                distance: 1000
         outputs outputBuildingName: String,
                 outputRoadName: String,
                 outputRailName: String,
@@ -63,7 +62,7 @@ IProcess prepareBDTopoData() {
         run { datasource, tableCommuneName, tableBuildIndifName, tableBuildIndusName,
               tableBuildRemarqName, tableRoadName, tableRailName, tableHydroName, tableVegetName,
               tableImperviousSportName, tableImperviousBuildSurfName, tableImperviousRoadSurfName,
-              tableImperviousActivSurfName, tablePiste_AerodromeName, tableReservoirName, distance, idZone ->
+              tableImperviousActivSurfName, tablePiste_AerodromeName, tableReservoirName, distance ->
 
             debug('Import the BDTopo data')
 
@@ -209,8 +208,8 @@ IProcess prepareBDTopoData() {
 
             // 3. Prepare the Building table (from the layers "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL" and "BATI_REMARQUABLE") that are in the study area (ZONE_BUFFER)
             datasource.execute("""
-            DROP TABLE IF EXISTS BU_ZONE;
-            CREATE TABLE BU_ZONE (THE_GEOM geometry, ID_SOURCE varchar(24), HEIGHT_WALL integer, NATURE varchar)
+            DROP TABLE IF EXISTS INPUT_BUILDING;
+            CREATE TABLE INPUT_BUILDING (THE_GEOM geometry, ID_SOURCE varchar(24), HEIGHT_WALL integer, TYPE varchar)
             AS 
             SELECT CASE WHEN ST_ISVALID(a.THE_GEOM) THEN ST_FORCE2D(ST_NORMALIZE(a.THE_GEOM)) ELSE ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) END, a.ID, a.HAUTEUR, 'Résidentiel', FROM BATI_INDIFFERENCIE a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.HAUTEUR>=0
             union 
@@ -222,14 +221,6 @@ IProcess prepareBDTopoData() {
                     as id_source, a.HAUTEUR , 'heavy_industry' FROM RESERVOIR a, ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.NATURE='Réservoir industriel' and a.HAUTEUR>0;
 
             """.toString())
-
-            datasource.execute("""
-            -- Since there is no such information into the BD Topo, the field 'ZINDEX' is initialized to 0
-            DROP TABLE IF EXISTS INPUT_BUILDING;
-            CREATE TABLE INPUT_BUILDING (THE_GEOM geometry(polygon, $srid), ID_SOURCE varchar(24), 
-            HEIGHT_WALL integer, HEIGHT_ROOF integer, 
-            NB_LEV integer, TYPE varchar, ZINDEX integer)
-            AS SELECT THE_GEOM, ID_SOURCE, HEIGHT_WALL, null, null, NATURE, 0 FROM ST_EXPLODE('BU_ZONE');""".toString())
 
             //4. Prepare the Road table (from the layer "ROUTE") that are in the study area (ZONE_BUFFER)
             datasource.execute("""
