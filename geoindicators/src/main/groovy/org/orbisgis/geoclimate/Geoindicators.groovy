@@ -29,6 +29,9 @@ abstract class Geoindicators  extends GroovyProcessFactory  {
     public static PopulationIndicators= new PopulationIndicators()
     public static GridIndicators= new GridIndicators()
 
+    //Cache the XStream models
+    public static Map cacheModels =[:]
+
     //The whole chain to run the geoindicators
     public static WorkflowGeoIndicators = new WorkflowGeoIndicators()
     static Properties GEOCLIMATE_PROPERTIES
@@ -145,5 +148,32 @@ abstract class Geoindicators  extends GroovyProcessFactory  {
             GEOCLIMATE_PROPERTIES.load(Geoindicators.getResourceAsStream("geoclimate.properties"))
         }
         return GEOCLIMATE_PROPERTIES.get(name)
+    }
+
+    /**
+     * Return a XStream model in the cache
+     * @param modelName
+     * @return
+     */
+    static def getModel(modelName){
+        return cacheModels.get(modelName)
+    }
+
+    /**
+     * Put a XStream model in the cache
+     * @param modelName
+     * @param xstream object
+     * @return
+     */
+    static void putModel(String modelName, Object xsStreamModel){
+        cacheModels.put(modelName, xsStreamModel)
+    }
+
+    /**
+     * Clear the cache models
+     * @return
+     */
+    static clearCacheModels(){
+        cacheModels.clear()
     }
 }
