@@ -288,7 +288,7 @@ IProcess formatRoadLayer() {
 
                 def queryMapper = "SELECT "
                 def inputSpatialTable = datasource."$inputTableName"
-                if (inputSpatialTable.rowCount > 0) {
+                if (!inputSpatialTable.isEmpty()) {
                     def columnNames = inputSpatialTable.columns
                     columnNames.remove("THE_GEOM")
                     queryMapper += columnNames.join(",")
@@ -369,6 +369,66 @@ IProcess formatRoadLayer() {
                 }
             }
             debug('Roads transformation finishes')
+            [outputTableName: outputTableName]
+        }
+    }
+}
+
+/**
+ * This process is used to transform the raw hydro table into a table that matches the constraints
+ * of the geoClimate Input Model
+ * @param datasource A connexion to a DB containing the raw hydro table
+ * @param inputTableName The name of the raw hydro table in the DB
+ * @return outputTableName The name of the final hydro table
+ */
+IProcess formatHydroLayer() {
+    return create {
+        title "Format the raw hydro table into a table that matches the constraints of the GeoClimate Input Model"
+        id "formatHydroLayer"
+        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: ""
+        outputs outputTableName: String
+        run { datasource, inputTableName, inputZoneEnvelopeTableName ->
+            debug('Hydro transformation starts')
+            def outputTableName = postfix("INPUT_HYDRO")
+            datasource.execute """Drop table if exists $outputTableName;
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_hydro serial, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);""".toString()
+
+            if (inputTableName) {
+                ISpatialTable inputSpatialTable = datasource.getSpatialTable(inputTableName)
+                if (!inputSpatialTable.isEmpty()) {
+                    String query
+                    if (inputZoneEnvelopeTableName) {
+                        inputSpatialTable.the_geom.createSpatialIndex()
+                        query = "select  CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
+                                "THEN st_force2D(st_intersection(a.the_geom, b.the_geom)) " +
+                                "ELSE a.the_geom " +
+                                "END AS the_geom , a.ZINDEX, a.ID_SOURCE" +
+                                " FROM " +
+                                "$inputTableName AS a, $inputZoneEnvelopeTableName AS b " +
+                                "WHERE " +
+                                "a.the_geom && b.the_geom "
+                    } else {
+                        query = "select * FROM $inputTableName "
+
+                    }
+                    int rowcount = 1
+                    datasource.withBatch(1000) { stmt ->
+                        datasource.eachRow(query) { row ->
+                            def water_type = 'water'
+                            def water_zindex = 0
+                            Geometry geom = row.the_geom
+                            def epsg = geom.getSRID()
+                            for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                Geometry subGeom = geom.getGeometryN(i)
+                                if (subGeom instanceof Polygon) {
+                                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.ID_SOURCE}', '${water_type}', ${water_zindex})".toString()
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            debug('Hydro transformation finishes')
             [outputTableName: outputTableName]
         }
     }

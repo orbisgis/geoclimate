@@ -118,4 +118,20 @@ class InputDataFormatting2Test {
         assertTrue(h2GISDatabase.firstRow("""SELECT count(*) as count from $tableOutput where TYPE is not null;""".toString()).count>0)
         assertTrue(h2GISDatabase.firstRow("""SELECT count(*) as count from $tableOutput where HEIGHT_CLASS is not null;""".toString()).count>0)
     }
+
+    @Test
+    void formattingWaterTest(){
+        def processImport = BDTopo_V2.InputDataLoading.prepareBDTopoData()
+        assertTrue processImport.execute([datasource: h2GISDatabase,
+                                          tableCommuneName:'COMMUNE', tableHydroName: 'ZONE_VEGETATION',
+                                          distance: 1000
+        ])
+        def resultsImport=processImport.results
+        def processFormatting = BDTopo_V2.InputDataFormatting.formatHydroLayer()
+        assertTrue processFormatting.execute([datasource: h2GISDatabase,
+                                              inputTableName: resultsImport.outputHydroName,
+                                              inputZoneEnvelopeTableName: resultsImport.outputZoneName])
+        def tableOutput = processFormatting.results.outputTableName
+        assertTrue(h2GISDatabase.firstRow("""SELECT count(*) as count from $tableOutput where TYPE is not null;""".toString()).count>0)
+    }
 }
