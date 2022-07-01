@@ -294,9 +294,9 @@ IProcess formatRoadLayer() {
                     queryMapper += columnNames.join(",")
                     if (inputZoneEnvelopeTableName) {
                         inputSpatialTable.the_geom.createSpatialIndex()
-                        queryMapper += ", CASE WHEN st_overlaps(st_force2D(a.the_geom), b.the_geom) " +
-                                "THEN st_force2D(st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom))) " +
-                                "ELSE st_makevalid(a.the_geom) " +
+                        queryMapper += ", CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
+                                "THEN st_force2D(st_makevalid(st_intersection(a.the_geom, b.the_geom))) " +
+                                "ELSE a.the_geom " +
                                 "END AS the_geom " +
                                 "FROM " +
                                 "$inputTableName AS a, $inputZoneEnvelopeTableName AS b " +
@@ -404,7 +404,7 @@ IProcess formatRailsLayer() {
                     if (inputZoneEnvelopeTableName) {
                         inputSpatialTable.the_geom.createSpatialIndex()
                         queryMapper += ", CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
-                                "THEN st_force2D(st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom))) " +
+                                "THEN st_force2D(st_makevalid(st_intersection(a.the_geom, b.the_geom))) " +
                                 "ELSE st_makevalid(a.the_geom) " +
                                 "END AS the_geom " +
                                 "FROM " +
@@ -416,20 +416,19 @@ IProcess formatRailsLayer() {
 
                     }
 
-                    def rail_types=['LGV':'highspeed',
-                    'Principale':'rail',
-                    'Voie de service':'service_track',
-                    'Voie non exploitée': 'disused',
-                    'Transport urbain':'tram',
-                    'Funiculaire ou crémaillère': 'funicular',
-                    'Metro':'subway',
-                    'Tramway': 'tram',
-                                    'Pont'               : 'bridge', 'Tunnel': 'tunnel', 'NC': null]
+                    def rail_types = ['LGV'                       : 'highspeed',
+                                      'Principale'                : 'rail',
+                                      'Voie de service'           : 'service_track',
+                                      'Voie non exploitée'        : 'disused',
+                                      'Transport urbain'          : 'tram',
+                                      'Funiculaire ou crémaillère': 'funicular',
+                                      'Metro'                     : 'subway',
+                                      'Tramway'                   : 'tram',
+                                      'Pont'                      : 'bridge', 'Tunnel': 'tunnel', 'NC': null]
                     int rowcount = 1
                     datasource.withBatch(1000) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             def rail_type = row.TYPE
-                            println(rail_type)
                             if (rail_type) {
                                 rail_type = rail_types.get(rail_type)
                             } else {
@@ -464,6 +463,118 @@ IProcess formatRailsLayer() {
                 }
             }
             debug('Rails transformation finishes')
+            [outputTableName: outputTableName]
+        }
+    }
+}
+
+
+/**
+ * This process is used to transform the raw vegetation table into a table that matches the constraints
+ * of the geoClimate Input Model
+ * @param datasource A connexion to a DB containing the raw vegetation table
+ * @param inputTableName The name of the raw vegetation table in the DB
+ * @return outputTableName The name of the final vegetation table
+ */
+IProcess formatVegetationLayer() {
+    return create {
+        title "Format the raw vegetation table into a table that matches the constraints of the GeoClimate Input Model"
+        id "formatVegetationLayer"
+        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: ""
+        outputs outputTableName: String
+        run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName ->
+            debug('Vegetation transformation starts')
+            def outputTableName = postfix "INPUT_VEGET"
+            datasource """ 
+                DROP TABLE IF EXISTS $outputTableName;
+                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_veget serial, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4), ZINDEX INTEGER);""".toString()
+            if (inputTableName) {
+                def queryMapper = "SELECT "
+                def inputSpatialTable = datasource."$inputTableName"
+                if (!inputSpatialTable.isEmpty()) {
+                    def columnNames = inputSpatialTable.columns
+                    columnNames.remove("THE_GEOM")
+                    queryMapper += columnNames.join(",")
+                    if (inputZoneEnvelopeTableName) {
+                        inputSpatialTable.the_geom.createSpatialIndex()
+                        queryMapper += ", CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
+                                "THEN st_force2D(st_intersection(a.the_geom, b.the_geom)) " +
+                                "ELSE a.the_geom " +
+                                "END AS the_geom " +
+                                "FROM " +
+                                "$inputTableName AS a, $inputZoneEnvelopeTableName AS b " +
+                                "WHERE " +
+                                "a.the_geom && b.the_geom "
+                    } else {
+                        queryMapper += ", the_geom FROM $inputTableName  as a"
+                    }
+                    def vegetation_types = ['Zone arborée'             : 'wood',
+                                            'Forêt fermée de feuillus' : 'forest',
+                                            'Forêt fermée mixte'       : 'forest',
+                                            'Forêt fermée de conifères': 'forest',
+                                            'Forêt ouverte'            : 'forest',
+                                            'Peupleraie'               : 'forest',
+                                            'Haie'                     : 'hedge',
+                                            'Lande ligneuse'           : 'heath',
+                                            'Verger'                   : 'orchard',
+                                            'Vigne'                    : 'vineyard',
+                                            'Bois'                     : 'forest',
+                                            'Bananeraie'               : 'banana_plants',
+                                            'Mangrove'                 : 'mangrove',
+                                            'Canne à sucre'            : 'sugar_cane']
+
+                    def vegetation_classes = [
+                            'tree'         : 'high',
+                            'wood'         : 'high',
+                            'forest'       : 'high',
+                            'scrub'        : 'low',
+                            'grassland'    : 'low',
+                            'heath'        : 'low',
+                            'tree_row'     : 'high',
+                            'hedge'        : 'high',
+                            'mangrove'     : 'high',
+                            'orchard'      : 'high',
+                            'vineyard'     : 'low',
+                            'banana_plants': 'high',
+                            'sugar_cane'   : 'low',
+                            'unclassified' : 'low'
+                    ]
+
+                    int rowcount = 1
+                    datasource.withBatch(1000) { stmt ->
+                        datasource.eachRow(queryMapper) { row ->
+                            def vegetation_type = row.TYPE
+                            if (vegetation_type) {
+                                vegetation_type = vegetation_types.get(vegetation_type)
+                            } else {
+                                vegetation_type = "unclassified"
+                            }
+                            def height_class = vegetation_classes.get(vegetation_type)
+                            def vegetation_zindex = row.ZINDEX
+                            if (!vegetation_zindex) {
+                                vegetation_zindex = 0
+                            }
+                            Geometry geom = row.the_geom
+                            for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                Geometry subGeom = geom.getGeometryN(i)
+                                def epsg = geom.getSRID()
+                                if (subGeom instanceof Polygon) {
+                                    stmt.addBatch """
+                                            INSERT INTO $outputTableName VALUES(
+                                                ST_GEOMFROMTEXT('${subGeom}',$epsg), 
+                                                ${rowcount++}, 
+                                                '${row.ID_SOURCE}',
+                                                '${vegetation_type}', 
+                                                '${height_class}', ${vegetation_zindex})
+                                    """.toString()
+                                }
+                            }
+                        }
+
+                    }
+                }
+            }
+            debug('Vegetation transformation finishes')
             [outputTableName: outputTableName]
         }
     }
