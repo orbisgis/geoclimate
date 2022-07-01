@@ -85,4 +85,20 @@ class InputDataFormatting2Test {
         assertTrue(h2GISDatabase.firstRow("""SELECT count(*) as count from $tableOutput where TYPE is not null;""".toString()).count>0)
         assertTrue(h2GISDatabase.firstRow("""SELECT count(*) as count from $tableOutput where WIDTH is not null or WIDTH>0 ;""".toString()).count>0)
     }
+
+    @Test
+    void formattingRailTest(){
+        def processImport = BDTopo_V2.InputDataLoading.prepareBDTopoData()
+        assertTrue processImport.execute([datasource: h2GISDatabase,
+                                          tableCommuneName:'COMMUNE', tableRoadName: 'TRONCON_VOIE_FERREE',
+                                          distance: 1000
+        ])
+        def resultsImport=processImport.results
+        def processFormatting = BDTopo_V2.InputDataFormatting.formatRailsLayer()
+        assertTrue processFormatting.execute([datasource: h2GISDatabase,
+                                              inputTableName: resultsImport.outputRailName,
+                                              inputZoneEnvelopeTableName: resultsImport.outputZoneName])
+        def tableOutput = processFormatting.results.outputTableName
+        assertTrue(h2GISDatabase.getTable(tableOutput).isEmpty())
+    }
 }

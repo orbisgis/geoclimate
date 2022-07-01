@@ -20,8 +20,6 @@ import java.util.regex.Pattern
  * @param hLevMin Minimum building level height
  * @param hLevMax Maximum building level height
  * @param hThresholdLev2 Threshold on the building height, used to determine the number of levels
- * @param epsg EPSG code to apply
- * @param jsonFilename Name of the json formatted file containing the filtering parameters
  * @return outputTableName The name of the final buildings table
  * @return outputEstimatedTableName The name of the table containing the state of estimation for each building
  */
@@ -233,8 +231,6 @@ IProcess formatBuildingLayer() {
  * of the geoClimate Input Model
  * @param datasource A connexion to a DB containing the raw roads table
  * @param inputTableName The name of the raw roads table in the DB
- * @param epsg epsgcode to apply
- * @param jsonFilename name of the json formatted file containing the filtering parameters
  * @return outputTableName The name of the final roads table
  */
 IProcess formatRoadLayer() {
@@ -300,14 +296,14 @@ IProcess formatRoadLayer() {
                         inputSpatialTable.the_geom.createSpatialIndex()
                         queryMapper += ", CASE WHEN st_overlaps(st_force2D(a.the_geom), b.the_geom) " +
                                 "THEN st_force2D(st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom))) " +
-                                "ELSE st_force2D(st_makevalid(a.the_geom)) " +
+                                "ELSE st_makevalid(a.the_geom) " +
                                 "END AS the_geom " +
                                 "FROM " +
                                 "$inputTableName AS a, $inputZoneEnvelopeTableName AS b " +
                                 "WHERE " +
                                 "a.the_geom && b.the_geom "
                     } else {
-                        queryMapper += ", st_force2D(st_makevalid(a.the_geom)) as the_geom FROM $inputTableName  as a"
+                        queryMapper += ", the_geom FROM $inputTableName  as a"
                     }
                     int rowcount = 1
                     datasource.withBatch(1000) { stmt ->
@@ -373,6 +369,101 @@ IProcess formatRoadLayer() {
                 }
             }
             debug('Roads transformation finishes')
+            [outputTableName: outputTableName]
+        }
+    }
+}
+
+/**
+ * This process is used to transform the raw rails table into a table that matches the constraints
+ * of the geoClimate Input Model
+ * @param datasource A connexion to a DB containing the raw rails table
+ * @param inputTableName The name of the raw rails table in the DB
+ * @return outputTableName The name of the final rails table
+ */
+IProcess formatRailsLayer() {
+    return create {
+        title "Format the raw rails table into a table that matches the constraints of the GeoClimate Input Model"
+        id "formatRailsLayer"
+        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: ""
+        outputs outputTableName: String
+        run { datasource, inputTableName, inputZoneEnvelopeTableName ->
+            debug('Rails transformation starts')
+            def outputTableName = postfix("INPUT_RAILS")
+            datasource.execute """ drop table if exists $outputTableName;
+                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_rail serial,
+                ID_SOURCE VARCHAR, TYPE VARCHAR,CROSSING VARCHAR(30), ZINDEX INTEGER);""".toString()
+
+            if (inputTableName) {
+                def queryMapper = "SELECT "
+                def inputSpatialTable = datasource."$inputTableName"
+                if (!inputSpatialTable.isEmpty()) {
+                    def columnNames = inputSpatialTable.columns
+                    columnNames.remove("THE_GEOM")
+                    queryMapper += columnNames.join(",")
+                    if (inputZoneEnvelopeTableName) {
+                        inputSpatialTable.the_geom.createSpatialIndex()
+                        queryMapper += ", CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
+                                "THEN st_force2D(st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom))) " +
+                                "ELSE st_makevalid(a.the_geom) " +
+                                "END AS the_geom " +
+                                "FROM " +
+                                "$inputTableName AS a, $inputZoneEnvelopeTableName AS b " +
+                                "WHERE " +
+                                "a.the_geom && b.the_geom "
+                    } else {
+                        queryMapper += ", the_geom FROM $inputTableName  as a"
+
+                    }
+
+                    def rail_types=['LGV':'highspeed',
+                    'Principale':'rail',
+                    'Voie de service':'service_track',
+                    'Voie non exploitée': 'disused',
+                    'Transport urbain':'tram',
+                    'Funiculaire ou crémaillère': 'funicular',
+                    'Metro':'subway',
+                    'Tramway': 'tram',
+                                    'Pont'               : 'bridge', 'Tunnel': 'tunnel', 'NC': null]
+                    int rowcount = 1
+                    datasource.withBatch(1000) { stmt ->
+                        datasource.eachRow(queryMapper) { row ->
+                            def rail_type = row.TYPE
+                            println(rail_type)
+                            if (rail_type) {
+                                rail_type = rail_types.get(rail_type)
+                            } else {
+                                rail_type = "unclassified"
+                            }
+                            def rail_zindex = row.ZINDEX
+                            if (!rail_zindex) {
+                                rail_zindex = 0
+                            }
+
+                            def rail_crossing = row.CROSSING
+                            if (rail_crossing) {
+                                rail_crossing = rail_types.get(rail_crossing)
+                            }
+                            if (rail_zindex >= 0 && rail_type) {
+                                Geometry geom = row.the_geom
+                                def epsg = geom.getSRID()
+                                for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                    stmt.addBatch """
+                                    INSERT INTO $outputTableName values(ST_GEOMFROMTEXT(
+                                    '${geom.getGeometryN(i)}',$epsg), 
+                                    ${rowcount++}, 
+                                    '${row.ID_SOURCE}',
+                                    '${rail_type}',
+                                    '${rail_crossing}',
+                                    ${rail_zindex})
+                                """
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            debug('Rails transformation finishes')
             [outputTableName: outputTableName]
         }
     }
