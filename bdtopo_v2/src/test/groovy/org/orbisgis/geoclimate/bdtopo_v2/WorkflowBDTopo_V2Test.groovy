@@ -106,8 +106,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
                                     tablePiste_AerodromeName : 'PISTE_AERODROME',
                                     tableReservoirName :'RESERVOIR',
-                                    distBuffer: 0, distance: 0, idZone: communeToTest,
-                                    hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
+                                    distance: 0,hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
         ])
         process.getResults().each {entry ->
             assertNotNull(h2GISDatabase.getTable(entry.getValue()))
@@ -162,8 +161,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
                                     tablePiste_AerodromeName : 'PISTE_AERODROME',
                                     tableReservoirName :'RESERVOIR',
-                                    distBuffer: 500, distance: 1000, idZone: communeToTest,
-                                    hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
+                                    distance: 1000, hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
         ])
         def abstractTables = process.getResults()
 
@@ -206,8 +204,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                                     tableImperviousSportName: 'TERRAIN_SPORT', tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
                                     tablePiste_AerodromeName : 'PISTE_AERODROME',
-                                    tableReservoirName :'RESERVOIR',
-                                    distBuffer: 500, distance: 1000, idZone: communeToTest,
+                                    tableReservoirName :'RESERVOIR',distance: 1000,
                                     hLevMin: 3, hLevMax : 15, hThresholdLev2 : 10
         ])
         def abstractTables = process.getResults()

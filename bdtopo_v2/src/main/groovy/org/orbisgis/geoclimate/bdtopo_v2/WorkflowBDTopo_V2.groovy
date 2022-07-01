@@ -1196,10 +1196,7 @@ def extractProcessingParameters(def processing_parameters) {
         if (distanceP && distanceP in Number) {
             defaultParameters.distance = distanceP
         }
-        def distance_bufferP = processing_parameters.distance_buffer
-        if (distance_bufferP && distance_bufferP in Number) {
-            defaultParameters.distance_buffer = distance_bufferP
-        }
+
         def prefixNameP = processing_parameters.prefixName
         if (prefixNameP && prefixNameP in String) {
             defaultParameters.prefixName = prefixNameP
@@ -1471,9 +1468,7 @@ def bdTopoProcessingSingleArea(def h2gis_datasource, def id_zone, def subCommune
                                    tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
                                    tablePiste_AerodromeName    : 'PISTE_AERODROME',
                                    tableReservoirName          : 'RESERVOIR',
-                                   distBuffer                  : processing_parameters.distance_buffer,
                                    distance                    : processing_parameters.distance,
-                                   idZone                      : id_zone,
                                    hLevMin                     : processing_parameters.hLevMin,
                                    hLevMax                     : processing_parameters.hLevMax,
                                    hThresholdLev2              : processing_parameters.hThresholdLev2
@@ -2122,9 +2117,7 @@ IProcess loadAndFormatData() {
         title "Extract and transform BD Topo data to Geoclimate model"
         id "prepareData"
         inputs datasource: JdbcDataSource,
-                distBuffer: 500,
                 distance: 1000,
-                idZone: String,
                 tableCommuneName: "",
                 tableBuildIndifName: "",
                 tableBuildIndusName: "",
@@ -2144,7 +2137,7 @@ IProcess loadAndFormatData() {
                 hThresholdLev2: 10
         outputs outputBuilding: String, outputRoad: String, outputRail: String, outputHydro: String, outputVeget: String, outputImpervious: String,
                 outputZone: String
-        run { datasource, distBuffer, distance, idZone, tableCommuneName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName, tableRoadName, tableRailName,
+        run { datasource,  distance, tableCommuneName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName, tableRoadName, tableRailName,
               tableHydroName, tableVegetName, tableImperviousSportName, tableImperviousBuildSurfName, tableImperviousRoadSurfName, tableImperviousActivSurfName,
               tablePiste_AerodromeName, tableReservoirName, hLevMin, hLevMax, hThresholdLev2 ->
 
@@ -2162,25 +2155,6 @@ IProcess loadAndFormatData() {
                 return
             }
 
-            //Init model
-            def initParametersAbstract = BDTopo_V2.InputDataLoading.initParametersAbstract()
-            if (!initParametersAbstract(datasource: datasource)) {
-                error "Cannot initialize the geoclimate data model."
-                return
-            }
-            def abstractTables = initParametersAbstract.results
-
-            //Init BD Topo parameters
-            def initTypes = BDTopo_V2.InputDataLoading.initTypes()
-            if (!initTypes([datasource             : datasource,
-                            buildingAbstractUseType: abstractTables.outputBuildingAbstractUseType,
-                            roadAbstractType       : abstractTables.outputRoadAbstractType, roadAbstractCrossing: abstractTables.outputRoadAbstractCrossing,
-                            railAbstractType       : abstractTables.outputRailAbstractType, railAbstractCrossing: abstractTables.outputRailAbstractCrossing,
-                            vegetAbstractType      : abstractTables.outputVegetAbstractType])) {
-                error "Cannot initialize the BD Topo parameters."
-                return
-            }
-            def initTables = initTypes.results
 
             //Prepare the existing bdtopo data in the local database
             def importPreprocess = BDTopo_V2.InputDataLoading.prepareBDTopoData()
@@ -2199,57 +2173,57 @@ IProcess loadAndFormatData() {
                                    tableImperviousActivSurfName: tableImperviousActivSurfName,
                                    tablePiste_AerodromeName    : tablePiste_AerodromeName,
                                    tableReservoirName          : tableReservoirName,
-                                   distBuffer                  : distBuffer,
-                                   distance                    : distance,
-                                   idZone                      : idZone,
-                                   building_bd_topo_use_type   : initTables.outputBuildingBDTopoUseType,
-                                   building_abstract_use_type  : abstractTables.outputBuildingAbstractUseType,
-                                   road_bd_topo_type           : initTables.outputroadBDTopoType,
-                                   road_abstract_type          : abstractTables.outputRoadAbstractType,
-                                   road_bd_topo_crossing       : initTables.outputroadBDTopoCrossing,
-                                   road_abstract_crossing      : abstractTables.outputRoadAbstractCrossing,
-                                   rail_bd_topo_type           : initTables.outputrailBDTopoType,
-                                   rail_abstract_type          : abstractTables.outputRailAbstractType,
-                                   rail_bd_topo_crossing       : initTables.outputrailBDTopoCrossing,
-                                   rail_abstract_crossing      : abstractTables.outputRailAbstractCrossing,
-                                   veget_bd_topo_type          : initTables.outputvegetBDTopoType,
-                                   veget_abstract_type         : abstractTables.outputVegetAbstractType])) {
-                error "Cannot import preprocess."
+                                   distance                    : distance])) {
+                error "Cannot prepare the BDTopo data."
                 return
             }
-            def preprocessTables = importPreprocess.results
 
-            // Input data formatting and statistics
-            def inputDataFormatting = BDTopo_V2.InputDataFormatting.formatData()
-            if (!inputDataFormatting([datasource                : datasource,
-                                      inputBuilding             : preprocessTables.outputBuildingName,
-                                      inputRoad                 : preprocessTables.outputRoadName,
-                                      inputRail                 : preprocessTables.outputRailName,
-                                      inputHydro                : preprocessTables.outputHydroName,
-                                      inputVeget                : preprocessTables.outputVegetName,
-                                      inputImpervious           : preprocessTables.outputImperviousName,
-                                      inputZone                 : preprocessTables.outputZoneName,
-                                      hLevMin                   : hLevMin, hLevMax: hLevMax, hThresholdLev2: hThresholdLev2, idZone: idZone,
-                                      buildingAbstractParameters: abstractTables.outputBuildingAbstractParameters,
-                                      roadAbstractParameters    : abstractTables.outputRoadAbstractParameters,
-                                      vegetAbstractParameters   : abstractTables.outputVegetAbstractParameters])) {
-                error "Cannot format data and compute statistics."
-                return
-            }
+            def preprocessTables = importPreprocess.results
+            def zoneTable =preprocessTables.outputZoneName
+            def finalImpervious =preprocessTables.outputImperviousName
+
+            //Format building
+            IProcess processFormatting = BDTopo_V2.InputDataFormatting.formatBuildingLayer()
+            processFormatting.execute([datasource: datasource,
+                                       inputTableName: preprocessTables.outputBuildingName,
+                                       inputImpervious : finalImpervious,h_lev_min: hLevMin, h_lev_max: hLevMax,
+                                       hThresholdLev2: hThresholdLev2,
+                                       inputZoneEnvelopeTableName: zoneTable])
+            def finalBuildings = processFormatting.results.outputTableName
+
+            //Format roads
+            processFormatting = BDTopo_V2.InputDataFormatting.formatRoadLayer()
+            processFormatting.execute([datasource: datasource,
+                                       inputTableName:preprocessTables.outputRoadName,
+                                       inputZoneEnvelopeTableName: zoneTable])
+            def finalRoads = processFormatting.results.outputTableName
+
+            //Format rails
+            processFormatting = BDTopo_V2.InputDataFormatting.formatRailsLayer()
+            processFormatting.execute([datasource: datasource,
+                                       inputTableName: preprocessTables.outputRailName,
+                                       inputZoneEnvelopeTableName: zoneTable])
+            def finalRails = processFormatting.results.outputTableName
+
+
+            //Format vegetation
+            processFormatting = BDTopo_V2.InputDataFormatting.formatVegetationLayer()
+            processFormatting.execute([datasource: datasource,
+                                       inputTableName: preprocessTables.outputVegetName,
+                                       inputZoneEnvelopeTableName: zoneTable])
+            def finalVeget = processFormatting.results.outputTableName
+
+            //Format water
+            processFormatting = BDTopo_V2.InputDataFormatting.formatHydroLayer()
+            processFormatting.execute([datasource: datasource,
+                                       inputTableName: preprocessTables.outputHydroName,
+                                       inputZoneEnvelopeTableName: zoneTable])
+            def finalHydro = processFormatting.results.outputTableName
 
             debug "End of the BD Topo extract transform process."
 
-            def finalBuildings = inputDataFormatting.results.outputBuilding
-            def finalRoads = inputDataFormatting.results.outputRoad
-            def finalRails = inputDataFormatting.results.outputRail
-            def finalHydro = inputDataFormatting.results.outputHydro
-            def finalVeget = inputDataFormatting.results.outputVeget
-            def finalImpervious = inputDataFormatting.results.outputImpervious
-            def finalZone = inputDataFormatting.results.outputZone
-
-
             [outputBuilding: finalBuildings, outputRoad: finalRoads, outputRail: finalRails, outputHydro: finalHydro,
-             outputVeget   : finalVeget, outputImpervious: finalImpervious, outputZone: finalZone]
+             outputVeget   : finalVeget, outputImpervious: finalImpervious, outputZone: zoneTable]
 
         }
     }

@@ -27,9 +27,9 @@ IProcess formatBuildingLayer() {
     return create {
         title "Transform BDTopo buildings table into a table that matches the constraints of the GeoClimate input model"
         id "formatBuildingLayer"
-        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: String, inputImpervious: "", h_lev_min: 3, h_lev_max: 15, hThresholdLev2: 10, urbanAreasTableName: ""
+        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: String, inputImpervious: "", h_lev_min: 3, h_lev_max: 15, hThresholdLev2: 10
         outputs outputTableName: String
-        run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, inputImpervious, h_lev_min, h_lev_max, hThresholdLev2, urbanAreasTableName ->
+        run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, inputImpervious, h_lev_min, h_lev_max, hThresholdLev2 ->
 
             if (!h_lev_min) {
                 h_lev_min = 3
