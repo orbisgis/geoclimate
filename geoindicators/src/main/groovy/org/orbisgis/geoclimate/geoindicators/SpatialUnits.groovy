@@ -38,7 +38,7 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
  * @param seaLandMaskTableName The table to distinguish sea from land
  * @param surface_vegetation A double value to select the vegetation geometry areas.
  * Expressed in geometry unit of the vegetationTable, default 10000
- * @param surface_hydro  A double value to select the hydrographic geometry areas.
+ * @param surface_hydro A double value to select the hydrographic geometry areas.
  * Expressed in geometry unit of the vegetationTable, default 2500
  *
  * @return A database table name and the name of the column ID
@@ -49,7 +49,7 @@ IProcess createRSU() {
         id "createRSU"
         inputs inputZoneTableName: "", prefixName: "", datasource: JdbcDataSource, rsuType: "TSU",
                 area: 1d, roadTable: "", railTable: "", vegetationTable: "", hydrographicTable: "",
-                seaLandMaskTableName :"", surface_vegetation: 10000, surface_hydro: 2500
+                seaLandMaskTableName: "", surface_vegetation: 10000, surface_hydro: 2500
         outputs outputTableName: String, outputIdRsu: String
         run { inputZoneTableName, prefixName, datasource, rsuType,
               area, roadTable, railTable, vegetationTable, hydrographicTable, seaLandMaskTableName,
@@ -63,18 +63,18 @@ IProcess createRSU() {
             def outputTableName = prefix prefixName, BASE_NAME
             datasource """DROP TABLE IF EXISTS $outputTableName;""".toString()
 
-            if (rsuType == "TSU"){
+            if (rsuType == "TSU") {
                 def prepareTSUData = prepareTSUData()
-                if (!prepareTSUData([datasource        : datasource,
-                                     zoneTable         : inputZoneTableName,
-                                     roadTable         : roadTable,
-                                     railTable         : railTable,
-                                     vegetationTable   : vegetationTable,
-                                     hydrographicTable : hydrographicTable,
-                                     seaLandMaskTableName :seaLandMaskTableName,
-                                     surface_vegetation: surface_vegetation,
-                                     surface_hydro     : surface_hydro,
-                                     prefixName        : prefixName])) {
+                if (!prepareTSUData([datasource          : datasource,
+                                     zoneTable           : inputZoneTableName,
+                                     roadTable           : roadTable,
+                                     railTable           : railTable,
+                                     vegetationTable     : vegetationTable,
+                                     hydrographicTable   : hydrographicTable,
+                                     seaLandMaskTableName: seaLandMaskTableName,
+                                     surface_vegetation  : surface_vegetation,
+                                     surface_hydro       : surface_hydro,
+                                     prefixName          : prefixName])) {
                     info "Cannot prepare the data for RSU calculation."
                     return
                 }
@@ -130,7 +130,7 @@ IProcess createTSU() {
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
 
-            if(!inputTableName){
+            if (!inputTableName) {
                 error "The input data to compute the TSU cannot be null or empty"
                 return null
             }
@@ -183,7 +183,7 @@ IProcess createTSU() {
  * @param surface_vegetation A double value to select the vegetation geometry areas.
  * Expressed in geometry unit of the vegetationTable
  * @param seaLandMaskTableName The table to distinguish sea from land
- * @param surface_hydro  A double value to select the hydrographic geometry areas.
+ * @param surface_hydro A double value to select the hydrographic geometry areas.
  * Expressed in geometry unit of the vegetationTable
  * @param prefixName A prefix used to name the output table
  * @param datasource A connection to a database
@@ -195,7 +195,7 @@ IProcess prepareTSUData() {
         title "Prepare the abstract model to build the TSU"
         id "prepareTSUData"
         inputs zoneTable: "", roadTable: "", railTable: "",
-                vegetationTable: "", hydrographicTable: "", seaLandMaskTableName :"", surface_vegetation: 10000,
+                vegetationTable: "", hydrographicTable: "", seaLandMaskTableName: "", surface_vegetation: 10000,
                 surface_hydro: 2500, prefixName: "unified_abstract_model", datasource: JdbcDataSource
         outputs outputTableName: String
         run { zoneTable, roadTable, railTable, vegetationTable, hydrographicTable, seaLandMaskTableName, surface_vegetation,
@@ -237,24 +237,24 @@ IProcess prepareTSUData() {
                         vegetation_unified = postfix "vegetation_unified"
                         vegetation_tmp = postfix "vegetation_tmp"
 
-                        datasource "DROP TABLE IF EXISTS "+ vegetation_indice
-                        datasource "CREATE TABLE "+vegetation_indice+"(THE_GEOM geometry, ID serial," +
+                        datasource "DROP TABLE IF EXISTS " + vegetation_indice
+                        datasource "CREATE TABLE " + vegetation_indice + "(THE_GEOM geometry, ID serial," +
                                 " CONTACT integer) AS (SELECT the_geom, EXPLOD_ID, 0 FROM ST_EXPLODE('" +
-                                "(SELECT * FROM "+vegetationTable+" WHERE ZINDEX=0)') " +
+                                "(SELECT * FROM " + vegetationTable + " WHERE ZINDEX=0)') " +
                                 " WHERE ST_DIMENSION(the_geom)>0 AND ST_ISEMPTY(the_geom)=FALSE)"
                         datasource """CREATE SPATIAL INDEX IF NOT EXISTS veg_indice_idx ON $vegetation_indice (THE_GEOM);
                         UPDATE $vegetation_indice SET CONTACT=1 WHERE ID IN(SELECT DISTINCT(a.ID)
                                  FROM $vegetation_indice a, $vegetation_indice b WHERE a.THE_GEOM && b.THE_GEOM AND 
                                 ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM) AND a.ID<>b.ID)""".toString()
 
-                        datasource "DROP TABLE IF EXISTS "+vegetation_unified
-                        datasource "CREATE TABLE "+vegetation_unified+" AS " +
-                                "(SELECT ST_SETSRID(the_geom,"+ epsg+") AS the_geom FROM ST_EXPLODE('(SELECT ST_UNION(ST_ACCUM(THE_GEOM))" +
-                                " AS THE_GEOM FROM "+ vegetation_indice+" WHERE CONTACT=1)') " +
+                        datasource "DROP TABLE IF EXISTS " + vegetation_unified
+                        datasource "CREATE TABLE " + vegetation_unified + " AS " +
+                                "(SELECT ST_SETSRID(the_geom," + epsg + ") AS the_geom FROM ST_EXPLODE('(SELECT ST_UNION(ST_ACCUM(THE_GEOM))" +
+                                " AS THE_GEOM FROM " + vegetation_indice + " WHERE CONTACT=1)') " +
                                 "WHERE ST_DIMENSION(the_geom)>0 AND ST_ISEMPTY(the_geom)=FALSE AND " +
-                                "ST_AREA(the_geom)> "+surface_vegetation+") " +
-                                "UNION ALL (SELECT THE_GEOM FROM "+vegetation_indice+" WHERE contact=0 AND " +
-                                "ST_AREA(the_geom)> "+surface_vegetation+")"
+                                "ST_AREA(the_geom)> " + surface_vegetation + ") " +
+                                "UNION ALL (SELECT THE_GEOM FROM " + vegetation_indice + " WHERE contact=0 AND " +
+                                "ST_AREA(the_geom)> " + surface_vegetation + ")"
 
                         datasource "CREATE SPATIAL INDEX IF NOT EXISTS veg_unified_idx ON $vegetation_unified (THE_GEOM)"
 
@@ -278,10 +278,10 @@ IProcess prepareTSUData() {
                         hydrographic_unified = postfix "hydrographic_unified"
                         hydrographic_tmp = postfix "hydrographic_tmp"
 
-                        datasource "DROP TABLE IF EXISTS "+ hydrographic_indice
-                        datasource "CREATE TABLE "+hydrographic_indice+"(THE_GEOM geometry, ID serial," +
+                        datasource "DROP TABLE IF EXISTS " + hydrographic_indice
+                        datasource "CREATE TABLE " + hydrographic_indice + "(THE_GEOM geometry, ID serial," +
                                 " CONTACT integer) AS (SELECT st_makevalid(THE_GEOM) AS the_geom, EXPLOD_ID , 0 FROM " +
-                                "ST_EXPLODE('(SELECT * FROM "+hydrographicTable+" WHERE ZINDEX=0)')" +
+                                "ST_EXPLODE('(SELECT * FROM " + hydrographicTable + " WHERE ZINDEX=0)')" +
                                 " WHERE ST_DIMENSION(the_geom)>0 AND ST_ISEMPTY(the_geom)=false)"
 
                         datasource """CREATE SPATIAL INDEX IF NOT EXISTS hydro_indice_idx ON $hydrographic_indice (THE_GEOM);
@@ -384,7 +384,6 @@ IProcess createBlocks() {
 
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
-
             //Find all neighbors for each building
             debug "Building index to perform the process..."
             datasource."$inputTableName".the_geom.createSpatialIndex()
@@ -497,14 +496,13 @@ IProcess spatialJoin() {
             datasource.getSpatialTable(sourceTable).the_geom.createSpatialIndex()
             datasource."$targetTable".the_geom.createSpatialIndex()
 
-            if (pointOnSurface){
+            if (pointOnSurface) {
                 datasource """    DROP TABLE IF EXISTS $outputTableName;
                                 CREATE TABLE $outputTableName AS SELECT a.*, b.$idColumnTarget 
                                         FROM $sourceTable a, $targetTable b 
                                         WHERE   ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_SOURCE) && b.$GEOMETRIC_COLUMN_TARGET AND 
                                                 ST_INTERSECTS(ST_POINTONSURFACE(a.$GEOMETRIC_COLUMN_SOURCE), b.$GEOMETRIC_COLUMN_TARGET)""".toString()
-            }
-            else {
+            } else {
                 if (nbRelations != null) {
                     datasource """  DROP TABLE IF EXISTS $outputTableName;
                                     CREATE TABLE $outputTableName 
@@ -553,23 +551,23 @@ IProcess spatialJoin() {
  * */
 IProcess createGrid() {
     return create {
-        title"Creating a regular grid in meter"
+        title "Creating a regular grid in meter"
         id "createGrid"
-        inputs geometry: Geometry, deltaX: double, deltaY: double, rowCol : false, prefixName: "", datasource: JdbcDataSource
+        inputs geometry: Geometry, deltaX: double, deltaY: double, rowCol: false, prefixName: "", datasource: JdbcDataSource
         outputs outputTableName: String
         run { geometry, deltaX, deltaY, rowCol, prefixName, datasource ->
-            if(rowCol){
-                if(!deltaX ||!deltaY || deltaX<1 || deltaY< 1){
+            if (rowCol) {
+                if (!deltaX || !deltaY || deltaX < 1 || deltaY < 1) {
                     debug "Invalid grid size padding. Must be greater or equal than 1"
                     return
                 }
-            }else{
-                if(!deltaX ||!deltaY || deltaX<=0 || deltaY<= 0){
+            } else {
+                if (!deltaX || !deltaY || deltaX <= 0 || deltaY <= 0) {
                     error "Invalid grid size padding. Must be greater than 0"
                     return
                 }
             }
-            if(!geometry){
+            if (!geometry) {
                 error "The envelope is null or empty. Cannot compute the grid"
                 return
             }
@@ -584,8 +582,7 @@ IProcess createGrid() {
                            CREATE TABLE $outputTableName AS SELECT the_geom, id as id_grid,ID_COL, ID_ROW FROM 
                            ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY,$rowCol);
                            """.toString()
-            }
-            else if (datasource instanceof POSTGIS) {
+            } else if (datasource instanceof POSTGIS) {
                 debug "Creating grid with POSTGIS"
                 PreparedStatement preparedStatement = null
                 Connection outputConnection = datasource.getConnection()
@@ -599,10 +596,10 @@ IProcess createGrid() {
                     int batchSize = 1000
 
                     while (result.next()) {
-                        preparedStatement.setObject( 1, result.getObject(1))
-                        preparedStatement.setObject( 2, result.getInt(2))
-                        preparedStatement.setObject( 3, result.getInt(3))
-                        preparedStatement.setObject( 4, result.getInt(4))
+                        preparedStatement.setObject(1, result.getObject(1))
+                        preparedStatement.setObject(2, result.getInt(2))
+                        preparedStatement.setObject(3, result.getInt(3))
+                        preparedStatement.setObject(4, result.getInt(4))
                         preparedStatement.addBatch()
                         batch_size++
                         if (batch_size >= batchSize) {
@@ -611,7 +608,7 @@ IProcess createGrid() {
                             batchSize = 0;
                         }
                     }
-                    if (batch_size>0) {
+                    if (batch_size > 0) {
                         preparedStatement.executeBatch()
                     }
                 } catch (SQLException e) {

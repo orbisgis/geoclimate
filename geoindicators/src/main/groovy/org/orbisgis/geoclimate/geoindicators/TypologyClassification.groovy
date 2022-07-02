@@ -32,6 +32,8 @@ import java.util.zip.GZIPOutputStream
 
 @BaseScript Geoindicators geoindicators
 
+
+
 /**
  * This process is used to assign to a Reference Spatial Unit (RSU) a Local Climate Zone type (Stewart et Oke, 2012).
  * This assignment is performed according to the 7 indicators used for LCZ classification. Each LCZ type has a
@@ -590,9 +592,10 @@ IProcess applyRandomForestModel() {
         run { String explicativeVariablesTableName, String pathAndFileName, String idName,
               String prefixName, JdbcDataSource datasource ->
             debug "Apply a Random Forest model"
-            def modelName;
             File inputModelFile = new File(pathAndFileName)
-            modelName = FilenameUtils.getBaseName(pathAndFileName)
+            def modelName = FilenameUtils.getBaseName(pathAndFileName)
+            def model = getModel(modelName)
+            if(!model){
             if (!inputModelFile.exists()) {
                 //We try to find this model in geoclimate
                 def modelURL = "https://github.com/orbisgis/geoclimate/raw/master/models/${modelName}.model"
@@ -616,8 +619,6 @@ IProcess applyRandomForestModel() {
                 }
             }
             def fileInputStream = new FileInputStream(inputModelFile)
-            // The name of the outputTableName is constructed
-            def outputTableName = prefix prefixName, modelName.toLowerCase();
             // Load the RandomForest model
             def xs = new XStream(new StaxDriver())
             // clear out existing permissions and start a whitelist
@@ -632,10 +633,19 @@ IProcess applyRandomForestModel() {
                     "smile.regression.*","smile.data.formula.*", "smile.data.type.*", "smile.data.measure.*", "smile.data.measure.*",
                     "smile.base.cart.*","smile.classification.*","java.lang.*"
             })
-
             // Load the model and recover the name of the variable to model
             def gzipInputStream = new GZIPInputStream(fileInputStream)
-            def model = xs.fromXML(gzipInputStream)
+                model = xs.fromXML(gzipInputStream)
+                putModel(modelName, model)
+            }
+            if(!model){
+                error "Cannot find the requiered columns to apply the model"
+                return
+            }
+
+            // The name of the outputTableName is constructed
+            def outputTableName = prefix prefixName, modelName.toLowerCase();
+
             def varType
             def var2model
             def tree = model.trees[0]

@@ -1,4 +1,3 @@
-
 package org.orbisgis.geoclimate.bdtopo_v2
 
 import groovy.transform.BaseScript
@@ -23,22 +22,8 @@ import org.orbisgis.process.api.IProcess
  * @param tableImperviousBuildSurfName The table name in which the building impervious surfaces are stored
  * @param tableImperviousRoadSurfName The table name in which the impervious road areas are stored
  * @param tableImperviousActivSurfName The table name in which the impervious activities areas are stored
- * @param distBuffer The distance (expressed in meter) used to compute the buffer area around the ZONE
  * @param distance The distance (expressed in meter) used to compute the extended area around the ZONE
- * @param idZone The ZONE id
- * @param building_bd_topo_use_type The name of the table in which the BD Topo building's use and type are stored
- * @param building_abstract_use_type The name of the table in which the abstract building's use and type are stored
- * @param road_bd_topo_type The name of the table in which the BD Topo road's types are stored
- * @param road_abstract_type The name of the table in which the abstract road's types are stored
- * @param road_bd_topo_crossing The name of the table in which the BD Topo road's crossing are stored
- * @param road_abstract_crossing The name of the table in which the abstract road's crossing are stored
- * @param rail_bd_topo_type The name of the table in which the BD Topo rails's types are stored
- * @param rail_abstract_type The name of the table in which the abstract rails's types are stored
- * @param rail_bd_topo_crossing The name of the table in which the BD Topo rails's crossing are stored
- * @param rail_abstract_crossing The name of the table in which the abstract rails's crossing are stored
- * @param veget_bd_topo_type The name of the table in which the BD Topo vegetation's types are stored
- * @param veget_abstract_type The name of the table in which the abstract vegetation's types are stored
- *
+ * @param idZone The ZONE id *
  * @return outputBuildingName Table name in which the (ready to feed the GeoClimate model) buildings are stored
  * @return outputRoadName Table name in which the (ready to feed the GeoClimate model) roads are stored
  * @return outputRailName Table name in which the (ready to feed the GeoClimate model) rail ways are stored
@@ -64,23 +49,9 @@ IProcess prepareBDTopoData() {
                 tableImperviousBuildSurfName: "",
                 tableImperviousRoadSurfName: "",
                 tableImperviousActivSurfName: "",
-                tablePiste_AerodromeName:"",
-                tableReservoirName :"",
-                distBuffer: 500,
-                distance: 1000,
-                idZone: String,
-                building_bd_topo_use_type: String,
-                building_abstract_use_type: String,
-                road_bd_topo_type: String,
-                road_abstract_type: String,
-                road_bd_topo_crossing: String,
-                road_abstract_crossing: String,
-                rail_bd_topo_type: String,
-                rail_abstract_type: String,
-                rail_bd_topo_crossing: String,
-                rail_abstract_crossing: String,
-                veget_bd_topo_type: String,
-                veget_abstract_type: String
+                tablePiste_AerodromeName: "",
+                tableReservoirName: "",
+                distance: 1000
         outputs outputBuildingName: String,
                 outputRoadName: String,
                 outputRailName: String,
@@ -91,31 +62,9 @@ IProcess prepareBDTopoData() {
         run { datasource, tableCommuneName, tableBuildIndifName, tableBuildIndusName,
               tableBuildRemarqName, tableRoadName, tableRailName, tableHydroName, tableVegetName,
               tableImperviousSportName, tableImperviousBuildSurfName, tableImperviousRoadSurfName,
-              tableImperviousActivSurfName, tablePiste_AerodromeName,tableReservoirName, distBuffer, distance, idZone,
-              building_bd_topo_use_type, building_abstract_use_type,
-              road_bd_topo_type, road_abstract_type, road_bd_topo_crossing, road_abstract_crossing,
-              rail_bd_topo_type, rail_abstract_type, rail_bd_topo_crossing, rail_abstract_crossing,
-              veget_bd_topo_type, veget_abstract_type ->
+              tableImperviousActivSurfName, tablePiste_AerodromeName, tableReservoirName, distance ->
 
             debug('Import the BDTopo data')
-            def zone = postfix 'ZONE'
-            def zoneBuffer = postfix 'ZONE_BUFFER_'
-            def zoneExtended = postfix 'ZONE_EXTENDED_'
-            def bu_zone_indif = postfix 'BU_ZONE_INDIF_'
-            def bu_zone_indus = postfix 'BU_ZONE_INDUS_'
-            def bu_zone_remarq = postfix 'BU_ZONE_REMARQ_'
-            def input_building = 'INPUT_BUILDING'
-            def input_road = 'INPUT_ROAD'
-            def input_rail = 'INPUT_RAIL'
-            def input_hydro = 'INPUT_HYDRO'
-            def input_veget = 'INPUT_VEGET'
-            def tmp_imperv_construction_surfacique = postfix 'TMP_IMPERV_CONSTRUCTION_SURFACIQUE_'
-            def tmp_imperv_surface_route = postfix 'TMP_IMPERV_SURFACE_ROUTE_'
-            def tmp_imperv_terrain_sport = postfix 'TMP_IMPERV_TERRAIN_SPORT_'
-            def tmp_imperv_surface_activite = postfix 'TMP_IMPERV_SURFACE_ACTIVITE_'
-            def input_impervious = 'INPUT_IMPERVIOUS'
-            def tmp_imperv_piste_aerodrome = postfix 'TMP_IMPERV_PISTE_AERODROME'
-            def bu_zone_reservoir = postfix 'BU_ZONE_RESERVOIR_'
 
             // If the Commune table is empty, then the process is stopped
             if (!tableCommuneName) {
@@ -129,7 +78,7 @@ IProcess prepareBDTopoData() {
                         tableRoadName, tableRailName, tableHydroName, tableVegetName,
                         tableImperviousSportName, tableImperviousBuildSurfName,
                         tableImperviousRoadSurfName, tableImperviousActivSurfName,
-                        tablePiste_AerodromeName,tableReservoirName]
+                        tablePiste_AerodromeName, tableReservoirName]
 
             // The SRID is stored and initialized to -1
             def srid = -1
@@ -137,24 +86,24 @@ IProcess prepareBDTopoData() {
             def tablesExist = []
             // For each tables in the list, we check the SRID and compare to the srid variable. If different, the process is stopped
             for (String name : list) {
-                if(name) {
+                if (name) {
                     def table = datasource.getTable(name)
-                    if(table) {
+                    if (table) {
                         def hasRow = datasource.firstRow("select 1 as id from ${name} limit 1".toString())
                         if (hasRow) {
-                        tablesExist << name
-                        def currentSrid = table.srid
-                        if (srid == -1) {
-                            srid = currentSrid
-                        } else {
-                            if (currentSrid == 0) {
-                                error "The process has been stopped since the table $name has a no SRID"
-                                return
-                            } else if (currentSrid > 0 && srid != currentSrid) {
-                                error "The process has been stopped since the table $name has a different SRID from the others"
-                                return
+                            tablesExist << name
+                            def currentSrid = table.srid
+                            if (srid == -1) {
+                                srid = currentSrid
+                            } else {
+                                if (currentSrid == 0) {
+                                    error "The process has been stopped since the table $name has a no SRID"
+                                    return
+                                } else if (currentSrid > 0 && srid != currentSrid) {
+                                    error "The process has been stopped since the table $name has a different SRID from the others"
+                                    return
+                                }
                             }
-                        }
                         }
                     }
                 }
@@ -170,20 +119,20 @@ IProcess prepareBDTopoData() {
             }
 
             // If the following tables does not exists, we create corresponding empty tables
-            if ( !tablesExist.contains(tableBuildIndifName)) {
-                tableBuildIndifName ="BATI_INDIFFERENCIE"
+            if (!tablesExist.contains(tableBuildIndifName)) {
+                tableBuildIndifName = "BATI_INDIFFERENCIE"
                 datasource.execute("DROP TABLE IF EXISTS $tableBuildIndifName; CREATE TABLE $tableBuildIndifName (THE_GEOM geometry(polygon, $srid), ID varchar, HAUTEUR integer);".toString())
             }
             if (!tablesExist.contains(tableBuildIndusName)) {
-                tableBuildIndusName="BATI_INDUSTRIEL"
+                tableBuildIndusName = "BATI_INDUSTRIEL"
                 datasource.execute("DROP TABLE IF EXISTS $tableBuildIndusName; CREATE TABLE $tableBuildIndusName (THE_GEOM geometry(polygon, $srid), ID varchar, HAUTEUR integer, NATURE varchar);".toString())
             }
             if (!tablesExist.contains(tableBuildRemarqName)) {
-                tableBuildRemarqName="BATI_REMARQUABLE"
+                tableBuildRemarqName = "BATI_REMARQUABLE"
                 datasource.execute("DROP TABLE IF EXISTS $tableBuildRemarqName;  CREATE TABLE $tableBuildRemarqName (THE_GEOM geometry(polygon, $srid), ID varchar, HAUTEUR integer, NATURE varchar);".toString())
             }
             if (!tablesExist.contains(tableRoadName)) {
-                tableRoadName ="ROUTE"
+                tableRoadName = "ROUTE"
                 datasource.execute("DROP TABLE IF EXISTS $tableRoadName;  CREATE TABLE $tableRoadName (THE_GEOM geometry(linestring, $srid), ID varchar, LARGEUR DOUBLE PRECISION, NATURE varchar, POS_SOL integer, FRANCHISST varchar, SENS varchar);".toString())
             }
             if (!tablesExist.contains(tableRailName)) {
@@ -191,11 +140,11 @@ IProcess prepareBDTopoData() {
                 datasource.execute("DROP TABLE IF EXISTS $tableRailName;  CREATE TABLE $tableRailName (THE_GEOM geometry(linestring, $srid), ID varchar, NATURE varchar, POS_SOL integer, FRANCHISST varchar);".toString())
             }
             if (!tablesExist.contains(tableHydroName)) {
-                tableHydroName ="SURFACE_EAU"
+                tableHydroName = "SURFACE_EAU"
                 datasource.execute("DROP TABLE IF EXISTS $tableHydroName;  CREATE TABLE $tableHydroName (THE_GEOM geometry(polygon, $srid), ID varchar);".toString())
             }
             if (!tablesExist.contains(tableVegetName)) {
-                tableVegetName ="ZONE_VEGETATION"
+                tableVegetName = "ZONE_VEGETATION"
                 datasource.execute("DROP TABLE IF EXISTS $tableVegetName; CREATE TABLE $tableVegetName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);".toString())
             }
             if (!tablesExist.contains(tableImperviousSportName)) {
@@ -203,207 +152,163 @@ IProcess prepareBDTopoData() {
                 datasource.execute("DROP TABLE IF EXISTS $tableImperviousSportName; CREATE TABLE $tableImperviousSportName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);".toString())
             }
             if (!tablesExist.contains(tableImperviousBuildSurfName)) {
-                tableImperviousBuildSurfName ="CONSTRUCTION_SURFACIQUE"
+                tableImperviousBuildSurfName = "CONSTRUCTION_SURFACIQUE"
                 datasource.execute("DROP TABLE IF EXISTS $tableImperviousBuildSurfName; CREATE TABLE $tableImperviousBuildSurfName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);".toString())
             }
             if (!tablesExist.contains(tableImperviousRoadSurfName)) {
                 tableImperviousRoadSurfName = "SURFACE_ROUTE"
-                datasource.execute("DROP TABLE IF EXISTS $tableImperviousRoadSurfName; CREATE TABLE $tableImperviousRoadSurfName (THE_GEOM geometry(polygon, $srid), ID varchar);".toString())
+                datasource.execute("DROP TABLE IF EXISTS $tableImperviousRoadSurfName; CREATE TABLE $tableImperviousRoadSurfName (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);".toString())
             }
             if (!tablesExist.contains(tableImperviousActivSurfName)) {
                 tableImperviousActivSurfName = "SURFACE_ACTIVITE"
                 datasource.execute("DROP TABLE IF EXISTS $tableImperviousActivSurfName; CREATE TABLE $tableImperviousActivSurfName (THE_GEOM geometry(polygon, $srid), ID varchar, CATEGORIE varchar);".toString())
             }
             if (!tablesExist.contains(tablePiste_AerodromeName)) {
-                tablePiste_AerodromeName= "PISTE_AERODROME"
+                tablePiste_AerodromeName = "PISTE_AERODROME"
                 datasource.execute("DROP TABLE IF EXISTS $tablePiste_AerodromeName; CREATE TABLE $tablePiste_AerodromeName (THE_GEOM geometry(polygon, $srid), ID varchar,  NATURE varchar);".toString())
             }
 
             if (!tablesExist.contains(tableReservoirName)) {
-                tableReservoirName= "RESERVOIR"
+                tableReservoirName = "RESERVOIR"
                 datasource.execute("DROP TABLE IF EXISTS $tableReservoirName; CREATE TABLE $tableReservoirName (THE_GEOM geometry(polygon, $srid), ID varchar,  NATURE varchar, HAUTEUR integer);".toString())
             }
 
+            //Here we prepare the BDTopo data
 
-            // -------------------------------------------------------------------------------
+            //1- Create (spatial) indexes if not already exists on the input layers
 
-            def success = datasource.executeScript(getClass().getResourceAsStream('prepareImportedBDTopo.sql'),
-                    [ID_ZONE                           : idZone,
-                     DIST_BUFFER                       : distBuffer,
-                     EXPAND                            : distance,
-                     COMMUNE                           : tableCommuneName,
-                     BATI_INDIFFERENCIE                : tableBuildIndifName,
-                     BATI_INDUSTRIEL                   : tableBuildIndusName, BATI_REMARQUABLE: tableBuildRemarqName,
-                     ROUTE                             : tableRoadName, TRONCON_VOIE_FERREE: tableRailName,
-                     SURFACE_EAU                       : tableHydroName, ZONE_VEGETATION: tableVegetName,
-                     TERRAIN_SPORT                     : tableImperviousSportName, CONSTRUCTION_SURFACIQUE: tableImperviousBuildSurfName,
-                     SURFACE_ROUTE                     : tableImperviousRoadSurfName, SURFACE_ACTIVITE: tableImperviousActivSurfName,
-                     PISTE_AERODROME                   : tablePiste_AerodromeName,
-                     RESERVOIR                         : tableReservoirName,
-                     ZONE                              : zone,
-                     ZONE_BUFFER                       : zoneBuffer,
-                     ZONE_EXTENDED                     : zoneExtended,
-                     BU_ZONE_INDIF                     : bu_zone_indif, BU_ZONE_INDUS: bu_zone_indus, BU_ZONE_REMARQ: bu_zone_remarq,
-                     INPUT_BUILDING                    : input_building,
-                     INPUT_ROAD                        : input_road,
-                     INPUT_RAIL                        : input_rail,
-                     INPUT_HYDRO                       : input_hydro,
-                     INPUT_VEGET                       : input_veget,
-                     TMP_IMPERV_CONSTRUCTION_SURFACIQUE: tmp_imperv_construction_surfacique, TMP_IMPERV_SURFACE_ROUTE: tmp_imperv_surface_route,
-                     TMP_IMPERV_TERRAIN_SPORT          : tmp_imperv_terrain_sport, TMP_IMPERV_SURFACE_ACTIVITE: tmp_imperv_surface_activite,
-                     INPUT_IMPERVIOUS                  : input_impervious,
-                     TMP_IMPERV_PISTE_AERODROME        : tmp_imperv_piste_aerodrome,
-                     BU_ZONE_RESERVOIR                 : bu_zone_reservoir,
-                     BUILDING_BD_TOPO_USE_TYPE         : building_bd_topo_use_type, BUILDING_ABSTRACT_USE_TYPE: building_abstract_use_type,
-                     ROAD_BD_TOPO_TYPE                 : road_bd_topo_type, ROAD_ABSTRACT_TYPE: road_abstract_type,
-                     ROAD_BD_TOPO_CROSSING             : road_bd_topo_crossing, ROAD_ABSTRACT_CROSSING: road_abstract_crossing,
-                     RAIL_BD_TOPO_TYPE                 : rail_bd_topo_type, RAIL_ABSTRACT_TYPE: rail_abstract_type,
-                     RAIL_BD_TOPO_CROSSING             : rail_bd_topo_crossing, RAIL_ABSTRACT_CROSSING: rail_abstract_crossing,
-                     VEGET_BD_TOPO_TYPE                : veget_bd_topo_type, VEGET_ABSTRACT_TYPE: veget_abstract_type,
-                     SRID: srid
-                    ])
-            if (!success) {
-                error("Error occurred when importing the BD Topo data")
-            } else {
-                info('The  BD Topo data have been imported')
-                [outputBuildingName: input_building, outputRoadName: input_road, outputRailName: input_rail,
-                 outputHydroName   : input_hydro, outputVegetName: input_veget, outputImperviousName: input_impervious,
-                 outputZoneName    : zone
+            datasource.execute("""
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_BATI_INDIFFERENCIE ON BATI_INDIFFERENCIE (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_BATI_INDUSTRIEL ON BATI_INDUSTRIEL (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_BATI_REMARQUABLE ON BATI_REMARQUABLE (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_ROUTE ON ROUTE (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_TRONCON_VOIE_FERREE ON TRONCON_VOIE_FERREE (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_SURFACE_EAU ON SURFACE_EAU (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_ZONE_VEGETATION ON ZONE_VEGETATION (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_TERRAIN_SPORT ON TERRAIN_SPORT (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_CONSTRUCTION_SURFACIQUE ON CONSTRUCTION_SURFACIQUE (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_SURFACE_ROUTE ON SURFACE_ROUTE (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_SURFACE_ACTIVITE ON SURFACE_ACTIVITE (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_PISTE_AERODROME ON PISTE_AERODROME (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_RESERVOIR ON RESERVOIR (the_geom);
+            """.toString())
+
+            //2- Preparation of the study area (zone_xx)
+
+            datasource.execute("""
+            DROP TABLE IF EXISTS ZONE;
+            CREATE TABLE ZONE AS SELECT ST_FORCE2D(the_geom) as the_geom, CODE_INSEE AS ID_ZONE  FROM $tableCommuneName;
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_ZONE ON ZONE (the_geom);
+            -- Generation of a rectangular area (bbox) around the studied commune
+            DROP TABLE IF EXISTS ZONE_EXTENDED;
+            CREATE TABLE ZONE_EXTENDED AS SELECT ST_EXPAND(the_geom, $distance) as the_geom FROM ZONE;
+            CREATE SPATIAL INDEX ON ZONE_EXTENDED (the_geom);
+                """.toString())
+
+            // 3. Prepare the Building table (from the layers "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL" and "BATI_REMARQUABLE") that are in the study area (ZONE_BUFFER)
+            datasource.execute("""
+            DROP TABLE IF EXISTS INPUT_BUILDING;
+            CREATE TABLE INPUT_BUILDING (THE_GEOM geometry, ID_SOURCE varchar(24), HEIGHT_WALL integer, TYPE varchar)
+            AS 
+            SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.HAUTEUR, 'Résidentiel', FROM BATI_INDIFFERENCIE a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.HAUTEUR>=0
+            union all
+            SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.HAUTEUR, a.NATURE FROM BATI_INDUSTRIEL a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)  and a.HAUTEUR>=0
+            union all
+            SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.HAUTEUR, a.NATURE FROM BATI_REMARQUABLE a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)  and a.HAUTEUR>=0
+            union all
+            SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID
+                    as id_source, a.HAUTEUR , 'heavy_industry' FROM RESERVOIR a, ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.NATURE='Réservoir industriel' and a.HAUTEUR>0;
+
+            """.toString())
+
+            //4. Prepare the Road table (from the layer "ROUTE") that are in the study area (ZONE_BUFFER)
+            datasource.execute("""
+            DROP TABLE IF EXISTS INPUT_ROAD;
+            CREATE TABLE INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH DOUBLE PRECISION, TYPE varchar, SURFACE varchar, SIDEWALK varchar, ZINDEX integer, CROSSING varchar, SENS varchar)
+            AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.LARGEUR, a.NATURE, '', '', a.POS_SOL, a.FRANCHISST, a.SENS FROM ROUTE a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
+            """.toString())
+
+            //5. Prepare the Rail table (from the layer "TRONCON_VOIE_FERREE") that are in the study area (ZONE)
+
+            datasource.execute("""
+            DROP TABLE IF EXISTS INPUT_RAIL;
+            CREATE TABLE INPUT_RAIL (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer, CROSSING varchar)
+            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, a.POS_SOL, a.FRANCHISST FROM TRONCON_VOIE_FERREE a, ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
+            """.toString())
+
+
+            //6. Prepare the Hydrography table (from the layer "SURFACE_EAU") that are in the study area (ZONE_EXTENDED)
+            datasource.execute("""
+            DROP TABLE IF EXISTS INPUT_HYDRO;
+            CREATE TABLE INPUT_HYDRO (THE_GEOM geometry, ID_SOURCE varchar(24), ZINDEX integer)
+            AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 0  FROM SURFACE_EAU a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
+            """.toString())
+
+            //7. Prepare the Vegetation table (from the layer "ZONE_VEGETATION") that are in the study area (ZONE_EXTENDED)
+            datasource.execute("""
+            DROP TABLE IF EXISTS INPUT_VEGET;
+            CREATE TABLE INPUT_VEGET (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer)
+            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, 0 FROM ZONE_VEGETATION a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
+            UNION all
+            SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, 0
+            FROM PISTE_AERODROME a, ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
+            and a.NATURE = 'Piste en herbe';
+            ;
+            """.toString())
+
+            //8. Prepare the Impervious areas table (from the layers "TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE", "SURFACE_ROUTE" and "SURFACE_ACTIVITE") that are in the study area (ZONE)
+            datasource.execute("""
+            DROP TABLE IF EXISTS TMP_IMPERV;
+            CREATE TABLE TMP_IMPERV (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE VARCHAR) AS
+            SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE 
+            FROM TERRAIN_SPORT a, ZONE b WHERE a.the_geom && b.the_geom AND 
+            ST_INTERSECTS(a.the_geom, b.the_geom) AND a.NATURE='Piste de sport'
+            UNION all
+            SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE 
+            FROM CONSTRUCTION_SURFACIQUE a, ZONE b WHERE a.the_geom && b.the_geom AND 
+            ST_INTERSECTS(a.the_geom, b.the_geom) AND a.NATURE in ('Barrage','Ecluse','Escalier')
+            UNION all
+            SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE 
+            FROM SURFACE_ROUTE a, ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
+            UNION all
+            SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID,a.CATEGORIE
+            FROM SURFACE_ACTIVITE a, ZONE b WHERE a.the_geom && b.the_geom AND 
+            ST_INTERSECTS(a.the_geom, b.the_geom)
+            UNION all
+            SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE
+            FROM PISTE_AERODROME a, ZONE b WHERE a.the_geom && b.the_geom AND 
+            ST_INTERSECTS(a.the_geom, b.the_geom)
+            and a.NATURE = 'Piste en dur';
+            """.toString())
+
+            datasource.execute("""
+            DROP TABLE IF EXISTS INPUT_IMPERVIOUS;
+            CREATE TABLE INPUT_IMPERVIOUS (THE_GEOM geometry, ID_SOURCE varchar(24),TYPE VARCHAR, id_impervious INTEGER)
+            AS SELECT THE_GEOM, ID_SOURCE, 
+            CASE WHEN TYPE ='Administratif' THEN 'government'
+            WHEN TYPE= 'Enseignement' THEN 'education'
+            WHEN TYPE='Santé' THEN 'healthcare' 
+            WHEN TYPE ='Culture et loisirs' THEN 'entertainment_arts_culture'
+            WHEN TYPE ='Transport' THEN 'transportation'
+            WHEN TYPE ='Industriel ou commercial' THEN 'commercial'
+            WHEN TYPE ='Gestion des eaux' THEN 'industrial'
+            WHEN TYPE ='Sport' THEN 'entertainment_arts_culture'
+            ELSE 'unknown' END AS TYPE
+            , EXPLOD_ID AS id_impervious FROM ST_EXPLODE('TMP_IMPERV');
+            """.toString())
+
+            //10. Clean tables
+            datasource.execute("""
+            DROP TABLE IF EXISTS TMP_IMPERV ,ZONE_EXTENDED; """.toString())
+             info('The  BD Topo data have been prepared' +
+                     '')
+             return    [outputBuildingName: "INPUT_BUILDING", outputRoadName: "INPUT_ROAD",
+                        outputRailName: "INPUT_RAIL", outputHydroName   : "INPUT_HYDRO",
+                        outputVegetName: "INPUT_VEGET", outputImperviousName: "INPUT_IMPERVIOUS",
+                         outputZoneName    : "ZONE"
                 ]
             }
-        }
     }
 }
 
-/**
- * This process initialize the tables in which the objects type (for buildings, roads, rails and vegetation areas) are stored
- *
- * @param datasource A connexion to a database (H2GIS, PostGIS, ...), in which the data to process will be stored
- * @param buildingAbstractUseType The name of the table in which the abstract building's use and type are stored
- * @param roadAbstractType The name of the table in which the abstract road's types are stored
- * @param roadAbstractCrossing The name of the table in which the abstract road's crossing are stored
- * @param railAbstractType The name of the table in which the abstract rail's types are stored
- * @param railAbstractCrossing The name of the table in which the abstract rail's crossing are stored
- * @param vegetAbstractType The name of the table in which the abstract vegetation's types are stored
- *
- * @return outputBuildingBDTopoUseType The name of the table in which the BD Topo building's use and type are stored
- * @return outputroadBDTopoType The name of the table in which the BD Topo road's types are stored
- * @return outputroadBDTopoCrossing The name of the table in which the BD Topo road's crossing are stored
- * @return outputrailBDTopoType The name of the table in which the BD Topo rail's types are stored
- * @return outputrailBDTopoCrossing The name of the table in which the BD Topo rail's crossing are stored
- * @return outputvegetBDTopoType The name of the table in which the BD Topo vegetation's types are stored
- */
-IProcess initTypes() {
-    return create {
-        title 'Initialize the types tables for BD Topo and define the matching with the abstract types'
-        id "initTypes"
-        inputs datasource: JdbcDataSource, buildingAbstractUseType: String, roadAbstractType: String,
-                roadAbstractCrossing: String, railAbstractType: String, railAbstractCrossing: String,
-                vegetAbstractType: String
-        outputs outputBuildingBDTopoUseType: String, outputroadBDTopoType: String, outputroadBDTopoCrossing: String,
-                outputrailBDTopoType: String, outputrailBDTopoCrossing: String, outputvegetBDTopoType: String
-        run { JdbcDataSource datasource, buildingAbstractUseType, roadAbstractType, roadAbstractCrossing,
-              railAbstractType, railAbstractCrossing, vegetAbstractType ->
-            debug 'Executing the typesMatching.sql script'
-            def buildingBDTopoUseType = 'BUILDING_BD_TOPO_USE_TYPE'
-            def roadBDTopoType = 'ROAD_BD_TOPO_TYPE'
-            def roadBDTopoCrossing = 'ROAD_BD_TOPO_CROSSING'
-            def railBDTopoType = 'RAIL_BD_TOPO_TYPE'
-            def railBDTopoCrossing = 'RAIL_BD_TOPO_CROSSING'
-            def vegetBDTopoType = 'VEGET_BD_TOPO_TYPE'
 
-            def success = datasource.executeScript(getClass().getResourceAsStream('typesMatching.sql'),
-                    [BUILDING_ABSTRACT_USE_TYPE: buildingAbstractUseType,
-                     ROAD_ABSTRACT_TYPE        : roadAbstractType,
-                     ROAD_ABSTRACT_CROSSING    : roadAbstractCrossing,
-                     RAIL_ABSTRACT_TYPE        : railAbstractType,
-                     RAIL_ABSTRACT_CROSSING    : railAbstractCrossing,
-                     VEGET_ABSTRACT_TYPE       : vegetAbstractType,
-                     BUILDING_BD_TOPO_USE_TYPE : buildingBDTopoUseType,
-                     ROAD_BD_TOPO_TYPE         : roadBDTopoType,
-                     ROAD_BD_TOPO_CROSSING     : roadBDTopoCrossing,
-                     RAIL_BD_TOPO_TYPE         : railBDTopoType,
-                     RAIL_BD_TOPO_CROSSING     : railBDTopoCrossing,
-                     VEGET_BD_TOPO_TYPE        : vegetBDTopoType,
-                    ])
-            if (!success) {
-                error "Error occurred on the execution of the typesMatching.sql script"
-            } else {
-                debug 'The typesMatching.sql script has been executed'
-                [outputBuildingBDTopoUseType: buildingBDTopoUseType, outputroadBDTopoType: roadBDTopoType,
-                 outputroadBDTopoCrossing   : roadBDTopoCrossing, outputrailBDTopoType: railBDTopoType,
-                 outputrailBDTopoCrossing   : railBDTopoCrossing, outputvegetBDTopoType: vegetBDTopoType
-                ]
-            }
-        }
-    }
-}
-
-/**
- * This process initialize the abstract tables in which the objects type and parameters (for buildings, roads, rails
- * hydrographic areas and vegetation areas) are stored
- *
- * @param datasource A connexion to a database (H2GIS, PostGIS, ...), in which the data to process will be stored
- *
- * @return outputBuildingAbstractUseType The name of the table in which the abstract building's use and type are stored
- * @return outputBuildingAbstractParameters The name of the table in which the abstract building's parameters are stored
- * @return outputRoadAbstractType The name of the table in which the abstract road's types are stored
- * @return outputRoadAbstractSurface The name of the table in which the abstract road's surfaces are stored
- * @return outputRoadAbstractParameters The name of the table in which the abstract road's parameters are stored
- * @return outputRoadAbstractCrossing The name of the table in which the abstract road's crossing are stored
- * @return outputRailAbstractType The name of the table in which the abstract rail's types stored
- * @return outputRailAbstractCrossing The name of the table in which the abstract rail's crossing are stored
- * @return outputVegetAbstractType The name of the table in which the abstract vegetation's types are stored
- * @return outputVegetAbstractParameters The name of the table in which the abstract vegetation's parameters are stored
- */
-IProcess initParametersAbstract() {
-    return create {
-        title 'Initialize the abstract and parameter tables'
-        id "initParametersAbstract"
-        inputs datasource: JdbcDataSource
-        outputs outputBuildingAbstractUseType: String, outputBuildingAbstractParameters: String,
-                outputRoadAbstractType: String, outputRoadAbstractSurface: String, outputRoadAbstractParameters: String,
-                outputRoadAbstractCrossing: String, outputRailAbstractType: String, outputRailAbstractCrossing: String,
-                outputVegetAbstractType: String, outputVegetAbstractParameters: String
-        run { JdbcDataSource datasource ->
-            debug 'Executing the parametersAndAbstractTables.sql script'
-            def buildingAbstractUseType = 'BUILDING_ABSTRACT_USE_TYPE'
-            def buildingAbstractParam = 'BUILDING_ABSTRACT_PARAMETERS'
-            def roadAbstractType = 'ROAD_ABSTRACT_TYPE'
-            def roadAbstractSurface = 'ROAD_ABSTRACT_SURFACE'
-            def roadAbstractParam = 'ROAD_ABSTRACT_PARAMETERS'
-            def roadAbstractCrossing = 'ROAD_ABSTRACT_CROSSING'
-            def railAbstractType = 'RAIL_ABSTRACT_TYPE'
-            def railAbstractCrossing = 'RAIL_ABSTRACT_CROSSING'
-            def vegetAbstractType = 'VEGET_ABSTRACT_TYPE'
-            def vegetAbstractParam = 'VEGET_ABSTRACT_PARAMETERS'
-
-            datasource.executeScript(getClass().getResourceAsStream('parametersAndAbstractTables.sql'),
-                    [BUILDING_ABSTRACT_USE_TYPE  : buildingAbstractUseType,
-                     BUILDING_ABSTRACT_PARAMETERS: buildingAbstractParam,
-                     ROAD_ABSTRACT_TYPE          : roadAbstractType,
-                     ROAD_ABSTRACT_SURFACE       : roadAbstractSurface,
-                     ROAD_ABSTRACT_PARAMETERS    : roadAbstractParam,
-                     ROAD_ABSTRACT_CROSSING      : roadAbstractCrossing,
-                     RAIL_ABSTRACT_TYPE          : railAbstractType,
-                     RAIL_ABSTRACT_CROSSING      : railAbstractCrossing,
-                     VEGET_ABSTRACT_TYPE         : vegetAbstractType,
-                     VEGET_ABSTRACT_PARAMETERS   : vegetAbstractParam
-                    ])
-
-            debug 'The parametersAndAbstractTables.sql script has been executed'
-
-            [outputBuildingAbstractUseType   : buildingAbstractUseType,
-             outputBuildingAbstractParameters: buildingAbstractParam,
-             outputRoadAbstractType          : roadAbstractType,
-             outputRoadAbstractSurface       : roadAbstractSurface,
-             outputRoadAbstractParameters    : roadAbstractParam,
-             outputRoadAbstractCrossing      : roadAbstractCrossing,
-             outputRailAbstractType          : railAbstractType,
-             outputRailAbstractCrossing      : railAbstractCrossing,
-             outputVegetAbstractType         : vegetAbstractType,
-             outputVegetAbstractParameters   : vegetAbstractParam
-            ]
-        }
-    }
-}
