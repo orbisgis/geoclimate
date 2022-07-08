@@ -45,7 +45,6 @@ IProcess formatBuildingLayer() {
 
             def outputTableName = postfix "INPUT_BUILDING"
             debug 'Formating building layer'
-            outputTableName = "INPUT_BUILDING_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             def outputEstimateTableName = "EST_${outputTableName}"
             datasource """
                     DROP TABLE if exists ${outputEstimateTableName};
@@ -707,7 +706,7 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
         heightRoof = heightWall
     }
     // Update nbLevels
-    // If the nb_lev parameter (in the abstract table) is equal to 1 or 2
+    // If the nb_lev parameter  is equal to 1 or 2
     // (and height_wall > 10m) then apply the rule. Else, the nb_lev is equal to 1
     if (nbLevels == 0) {
         nbLevels = 1

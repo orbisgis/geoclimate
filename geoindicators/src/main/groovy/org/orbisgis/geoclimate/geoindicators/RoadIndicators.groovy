@@ -122,14 +122,14 @@ IProcess build_road_traffic() {
                             def road_type = getTrafficRoadType(road_types,  source_road_type)
                             //Set a default road
                             if (road_type) {
-                                int maxspeed_value = row."maxspeed"
+                                def maxspeed_value = row."maxspeed"
                                 //Find best speed from road type
                                 if (maxspeed_value == -1) {
                                     maxspeed_value = maxspeed[road_type]
                                 }
-                                int direction = row."direction"
+                                def direction = row."direction"
 
-                                String surface = row."surface"
+                                def surface = row."surface"
 
                                 def pavement_value = getPavement(pavements, surface)
 

@@ -760,7 +760,7 @@ IProcess osm_processing() {
 
                             //Default
                             def outputGrid = "geojson"
-                            def geomEnv = h2gis_datasource.getSpatialTable(zoneTableName).getExtent()
+                            def  geomEnv = h2gis_datasource.getSpatialTable(zoneTableName).getExtent()
                             if(grid_indicators_params){
                                 outputGrid =  grid_indicators_params.output
                                 def x_size = grid_indicators_params.x_size
