@@ -1300,7 +1300,7 @@ def saveTableToAsciiGrid(def outputTable , def subFolder,def filePrefix, def h2g
                 }
                 outputFile.withOutputStream { stream ->
                     stream << "ncols $nbcols\nnrows $nbrows\nxllcorner $xmin\nyllcorner $ymin\ncellsize $x_size\nnodata_value -9999\n"
-                    def query = "select id_row, id_col, case when $it is not null then cast($it as decimal(18, 3)) else $it end as $it from $outputTable order by id_row desc, id_col"
+                    def query = "select id_row, id_col, case when $it is not null then cast($it as decimal(18, 3)) else -9999 end as $it from $outputTable order by id_row desc, id_col"
                     def rowData = ""
                     h2gis_datasource.eachRow(query.toString()) { row ->
                         rowData += row.getString(it) + " "

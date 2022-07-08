@@ -539,6 +539,74 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         assertTrue(process.execute(input: osm_parmeters))
     }
 
+    @Disabled //Use it for debug
+    @Test
+    void testwrf() {
+        String directory ="/tmp/geoclimate"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+
+        def wrf_indicators = ["BUILDING_FRACTION","BUILDING_HEIGHT","BUILDING_HEIGHT_WEIGHTED",
+                              "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
+                              "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
+                              "FREE_EXTullERNAL_FACADE_DENSITY", "BUILDING_SURFACE_DENSITY",
+                              "BUILDING_HEIGHT_DIST", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION"]
+        def databasePath = '/home/decide/GeoclimateGoteborg/geoclimate_db;AUTO_SERVER=TRUE'
+        def h2gis_properties = ["databaseName": databasePath, "user": "sa", "password": ""]
+        def datasource = H2GIS.open(h2gis_properties)
+        def srid_calc = 3007
+        def x_size = 100
+        def y_size = 100
+        def prefixName = "UPDATED_HEIGHT"
+        def buildingUpdated = prefixName + "_BUILDING"
+
+        def id_zone = [57.596495,11.693000,57.805262,12.208557]
+        def listLayers = ["INPUT_SEA_LAND_MASK__ACC521BD_B059_4352_9C29_A91EDD908291", buildingUpdated, "INPUT_VEGET_DA97105A_1690_4360_9FF3_89A5CDB9BEFC",
+                            "INPUT_HYDRO_0B54B128_08E1_4A40_912C_B8DEFCF07079", "INPUT_IMPERVIOUS_C61E4F7E_2B8E_4DD1_9C9B_23A9CC4F6A4B",
+                            "INPUT_ROAD_E305756F_3553_47BD_B65D_F87C88BA273A"]
+        listLayers.each{
+            def listcols = datasource.getTable(it).getColumns()
+            listcols -= "THE_GEOM"
+            datasource """ DROP TABLE IF EXISTS ${it}_$srid_calc;
+                       CREATE TABLE ${it}_$srid_calc
+                            AS SELECT ST_TRANSFORM(the_geom, $srid_calc) AS the_geom, ${listcols.join(', ')}
+                            FROM $it;"""
+        }
+
+        def geomEnv = datasource.firstRow("SELECT ST_TRANSFORM(ST_EXTENT(the_geom), $srid_calc) AS geom FROM ZONES".toString()).geom
+        def rasterizedIndicators
+        def rsuLczUpdated
+        println(""" Grid indicators are calculated """)
+        def gridProcess = Geoindicators.WorkflowGeoIndicators.createGrid()
+        if(gridProcess.execute(datasource:datasource, envelope: geomEnv,
+                x_size : x_size, y_size : y_size,
+                srid : srid_calc, rowCol: false)) {
+            def gridTableName = gridProcess.results.outputTableName
+            def computeRasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators()
+            if (!computeRasterizedIndicators.execute(datasource: datasource,
+                    gridTableName: gridTableName,
+                    list_indicators: wrf_indicators,
+                    buildingTable: "${buildingUpdated}_$srid_calc",
+                    rsu_lcz: rsuLczUpdated,
+                    seaLandMaskTableName: "INPUT_SEA_LAND_MASK__ACC521BD_B059_4352_9C29_A91EDD908291_$srid_calc",
+                    vegetationTable: "INPUT_VEGET_DA97105A_1690_4360_9FF3_89A5CDB9BEFC_$srid_calc",
+                    hydrographicTable: "INPUT_HYDRO_0B54B128_08E1_4A40_912C_B8DEFCF07079_$srid_calc",
+                    imperviousTable: "INPUT_IMPERVIOUS_C61E4F7E_2B8E_4DD1_9C9B_23A9CC4F6A4B_$srid_calc",
+                    roadTable: "INPUT_ROAD_E305756F_3553_47BD_B65D_F87C88BA273A_$srid_calc",
+                    prefixName: prefixName)) {
+                println("Could not rasterized indicators")
+            }
+            rasterizedIndicators = computeRasterizedIndicators.results.outputTableName
+        }
+        def reproject = false
+        def deleteOutputData = true
+        def outputFolder = new File('/home/decide/Data/WRF/Data/output/updated')
+        def subFolder = new File(outputFolder.getAbsolutePath()+File.separator+"osm_"+id_zone)
+        def w = new WorkflowOSM();
+        w.saveTableToAsciiGrid("grid_indicators", subFolder, "grid_indicators", datasource, 3007, reproject, deleteOutputData)
+    }
+
     @Disabled
     @Test
     void testPopulation_Indicators() {

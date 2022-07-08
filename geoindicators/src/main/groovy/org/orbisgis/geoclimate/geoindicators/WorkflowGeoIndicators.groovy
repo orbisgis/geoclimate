@@ -2212,24 +2212,27 @@ IProcess rasterizeIndicators() {
                     def sea_land_type_rows = datasource.rows("""SELECT $seaLandTypeField, COUNT(*) AS NB_TYPES
                                                                     FROM $seaLandMaskTableName
                                                                     GROUP BY $seaLandTypeField""")
-                    if (! sea_land_type_rows[seaLandTypeField].get("SEA")) {
+                    if (! sea_land_type_rows[seaLandTypeField].contains("sea")) {
                         datasource """ 
                             DROP TABLE IF EXISTS $seaLandFractionTab;
                             CREATE TABLE $seaLandFractionTab
                                 AS SELECT $grid_column_identifier, 1 AS LAND_FRACTION
-                                FROM $grid_indicators_table"""
+                                FROM $gridTableName"""
                         indicatorTablesToJoin.put(seaLandFractionTab, grid_column_identifier)
                     } else {
                         // Split the potentially big complex seaLand geometries into smaller triangles in order to makes calculation faster
                         datasource """ 
                             DROP TABLE IF EXISTS $tesselatedSeaLandTab;
                             CREATE TABLE $tesselatedSeaLandTab(id_tesselate serial, the_geom geometry, $seaLandTypeField VARCHAR)
-                                AS SELECT null, the_geom, $seaLandTypeField
-                                FROM ST_EXPLODE('select st_tesselate(the_geom) AS the_geom, $seaLandTypeField FROM $seaLandMaskTableName')"""
+                                AS SELECT explod_id, the_geom, $seaLandTypeField
+                                FROM ST_EXPLODE('(SELECT st_tessellate(the_geom) AS the_geom, $seaLandTypeField 
+                                                    FROM $seaLandMaskTableName
+                                                    WHERE ST_DIMENSION(the_geom) = 2 AND ST_ISEMPTY(the_geom) IS NOT TRUE
+                                                            AND ST_AREA(the_geom)>0)')"""
 
                         def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics()
                         if (upperScaleAreaStatistics(
-                                [upperTableName: grid_indicators_table,
+                                [upperTableName: gridTableName,
                                  upperColumnId: grid_column_identifier,
                                  lowerTableName: tesselatedSeaLandTab,
                                  lowerColumnName: seaLandTypeField,
@@ -2237,10 +2240,11 @@ IProcess rasterizeIndicators() {
                                  datasource: datasource])) {
                             // Modify columns name to postfix with "_FRACTION"
                             datasource """ 
-                                ALTER TABLE ${upperScaleAreaStatistics.results.outputTableName} RENAME COLUMN LAND TO LAND_FRACTION;
+                                ALTER TABLE ${upperScaleAreaStatistics.results.outputTableName} RENAME COLUMN TYPE_LAND TO LAND_FRACTION;
                                 ALTER TABLE ${
                                 upperScaleAreaStatistics.results.outputTableName
-                            } RENAME COLUMN SEA TO SEA_FRACTION;"""
+                            } RENAME COLUMN TYPE_SEA TO SEA_FRACTION;
+                                ALTER TABLE ${upperScaleAreaStatistics.results.outputTableName} DROP COLUMN THE_GEOM;"""
                             indicatorTablesToJoin.put(upperScaleAreaStatistics.results.outputTableName, grid_column_identifier)
                         } else {
                             info "Cannot compute the frontal area index."
