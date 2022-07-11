@@ -2216,26 +2216,30 @@ IProcess rasterizeIndicators() {
                     indicatorTablesToJoin.put(seaLandFractionTab, grid_column_identifier)
                 } else {
                     // Split the potentially big complex seaLand geometries into smaller triangles in order to makes calculation faster
-                    datasource """ 
+                    datasource """
                             DROP TABLE IF EXISTS $tesselatedSeaLandTab;
                             CREATE TABLE $tesselatedSeaLandTab(id_tesselate serial, the_geom geometry, $seaLandTypeField VARCHAR)
-                                AS SELECT null, the_geom, $seaLandTypeField
-                                FROM ST_EXPLODE('select st_tesselate(the_geom) AS the_geom, $seaLandTypeField FROM $seaLandMaskTableName')"""
+                                AS SELECT explod_id, the_geom, $seaLandTypeField
+                                FROM ST_EXPLODE('(SELECT st_tessellate(the_geom) AS the_geom, $seaLandTypeField 
+                                                    FROM $seaLandMaskTableName
+                                                    WHERE ST_DIMENSION(the_geom) = 2 AND ST_ISEMPTY(the_geom) IS NOT TRUE
+                                                            AND ST_AREA(the_geom)>0)')"""
 
                     def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics()
                     if (upperScaleAreaStatistics(
-                            [upperTableName : grid_indicators_table,
-                             upperColumnId  : grid_column_identifier,
-                             lowerTableName : tesselatedSeaLandTab,
+                            [upperTableName: gridTableName,
+                             upperColumnId: grid_column_identifier,
+                             lowerTableName: tesselatedSeaLandTab,
                              lowerColumnName: seaLandTypeField,
-                             prefixName     : prefixName,
-                             datasource     : datasource])) {
+                             prefixName: prefixName,
+                             datasource: datasource])) {
                         // Modify columns name to postfix with "_FRACTION"
                         datasource """ 
-                                ALTER TABLE ${upperScaleAreaStatistics.results.outputTableName} RENAME COLUMN LAND TO LAND_FRACTION;
-                                ALTER TABLE ${
+                            ALTER TABLE ${upperScaleAreaStatistics.results.outputTableName} RENAME COLUMN TYPE_LAND TO LAND_FRACTION;
+                            ALTER TABLE ${
                             upperScaleAreaStatistics.results.outputTableName
-                        } RENAME COLUMN SEA TO SEA_FRACTION;"""
+                        } RENAME COLUMN TYPE_SEA TO SEA_FRACTION;
+                            ALTER TABLE ${upperScaleAreaStatistics.results.outputTableName} DROP COLUMN THE_GEOM;"""
                         indicatorTablesToJoin.put(upperScaleAreaStatistics.results.outputTableName, grid_column_identifier)
                     } else {
                         info "Cannot compute the frontal area index."
