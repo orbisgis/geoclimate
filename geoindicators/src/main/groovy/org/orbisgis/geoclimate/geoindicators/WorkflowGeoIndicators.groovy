@@ -2207,12 +2207,12 @@ IProcess rasterizeIndicators() {
                 def sea_land_type_rows = datasource.rows("""SELECT $seaLandTypeField, COUNT(*) AS NB_TYPES
                                                                     FROM $seaLandMaskTableName
                                                                     GROUP BY $seaLandTypeField""")
-                if (!sea_land_type_rows[seaLandTypeField].get("SEA")) {
+                if (sea_land_type_rows[seaLandTypeField].count("sea") == 0) {
                     datasource """ 
                             DROP TABLE IF EXISTS $seaLandFractionTab;
                             CREATE TABLE $seaLandFractionTab
                                 AS SELECT $grid_column_identifier, 1 AS LAND_FRACTION
-                                FROM $grid_indicators_table"""
+                                FROM $gridTableName"""
                     indicatorTablesToJoin.put(seaLandFractionTab, grid_column_identifier)
                 } else {
                     // Split the potentially big complex seaLand geometries into smaller triangles in order to makes calculation faster
