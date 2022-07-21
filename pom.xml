@@ -2,12 +2,6 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
-    <parent>
-        <groupId>org.orbisgis</groupId>
-        <artifactId>orbisparent</artifactId>
-        <version>1.2.1-SNAPSHOT</version>
-    </parent>
     <groupId>org.orbisgis.geoclimate</groupId>
     <artifactId>geoclimate-parent</artifactId>
     <packaging>pom</packaging>
@@ -26,13 +20,52 @@
         <maven.build.timestamp.format>YYYY-MM-dd</maven.build.timestamp.format>
         <buildNumber>${maven.build.timestamp}</buildNumber>
         <site.basedir>${project.basedir}</site.basedir>
-        <h2gis-version>2.1.0-SNAPSHOT</h2gis-version>
+        <buildNumber>${maven.build.timestamp}</buildNumber>
+        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven-version>3.5.0</maven-version>
+        <java-version>11</java-version>
+
+        <!-- Dependencies versions -->
+        <junit-version>5.8.2</junit-version>
+        <jts-version>1.19.0</jts-version>
+        <h2gis-version>2.1.0</h2gis-version>
         <h2-version>2.1.214</h2-version>
-        <orbisparent-version>1.2.1-SNAPSHOT</orbisparent-version>
         <cts-version>1.6.0</cts-version>
-        <orbisdata-version>2.0.0-SNAPSHOT</orbisdata-version>
+        <orbisdata-version>2.0.0</orbisdata-version>
         <slf4j-version>1.7.36</slf4j-version>
         <groovy-version>3.0.11</groovy-version>
+        <picocli-version>4.6.3</picocli-version>
+        <commons-io-version>2.11.0</commons-io-version>
+        <commons-compress-version>1.21</commons-compress-version>
+        <smile-version>2.5.3</smile-version>
+        <xstream-version>1.4.18</xstream-version>
+
+        <!-- Plugins versions -->
+        <exec-maven-version>3.0.0</exec-maven-version>
+        <gmaven-version>1.13.0</gmaven-version>
+        <jacoco-maven-version>0.8.7</jacoco-maven-version>
+        <maven-archetype-plugin-version>3.2.0</maven-archetype-plugin-version>
+        <maven-assembly-version>3.3.0</maven-assembly-version>
+        <maven-bundle-version>5.1.2</maven-bundle-version>
+        <maven-clean-version>3.1.0</maven-clean-version>
+        <maven-compiler-version>3.8.1</maven-compiler-version>
+        <maven-deploy-version>3.0.0-M1</maven-deploy-version>
+        <maven-enforcer-version>3.0.0</maven-enforcer-version>
+        <maven-gpg-plugin-version>3.0.1</maven-gpg-plugin-version>
+        <maven-install-version>3.0.0-M1</maven-install-version>
+        <maven-jar-version>3.2.0</maven-jar-version>
+        <maven-javadoc-version>3.3.1</maven-javadoc-version>
+        <maven-project-info-reports-version>3.1.2</maven-project-info-reports-version>
+        <maven-release-version>3.0.0-M4</maven-release-version>
+        <maven-resources-version>3.2.0</maven-resources-version>
+        <maven-site-version>3.9.1</maven-site-version>
+        <maven-surefire-version>3.0.0-M5</maven-surefire-version>
+        <maven-surefire-report-plugin-version>3.0.0-M5</maven-surefire-report-plugin-version>
+        <version-maven-version>2.8.1</version-maven-version>
+
+        <!-- Extensions version -->
+        <archetype-packaging-version>3.1.2</archetype-packaging-version>
     </properties>
 
     <licenses>
@@ -69,6 +102,21 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-compress</artifactId>
+                <version>${commons-compress-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons-io-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>info.picocli</groupId>
+                <artifactId>picocli</artifactId>
+                <version>${picocli-version}</version>
+            </dependency>
+            <dependency>
                 <groupId>com.h2database</groupId>
                 <artifactId>h2</artifactId>
                 <version>${h2-version}</version>
@@ -76,7 +124,7 @@
             <dependency>
                 <groupId>org.orbisgis</groupId>
                 <artifactId>commons</artifactId>
-                <version>${orbisparent-version}</version>
+                <version>${orbisdata-version}</version>
             </dependency>
             <dependency>
                 <groupId>org.orbisgis</groupId>
@@ -168,42 +216,351 @@
                 <artifactId>slf4j-simple</artifactId>
                 <version>${slf4j-version}</version>
             </dependency>
+            <!-- Test dependencies -->
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
+                <version>${junit-version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+                <version>${junit-version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-params</artifactId>
+                <version>${junit-version}</version>
+                <scope>test</scope>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
     <!-- Build Settings -->
     <build>
+        <!-- Extension for Maven archetype -->
+        <extensions>
+            <extension>
+                <groupId>org.apache.maven.archetype</groupId>
+                <artifactId>archetype-packaging</artifactId>
+                <version>${archetype-packaging-version}</version>
+            </extension>
+        </extensions>
+        <pluginManagement>
+            <plugins>
+                <!-- Clean -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-clean-plugin</artifactId>
+                    <version>${maven-clean-version}</version>
+                </plugin>
+                <!-- Groovy -->
+                <plugin>
+                    <groupId>org.codehaus.gmavenplus</groupId>
+                    <artifactId>gmavenplus-plugin</artifactId>
+                    <version>${gmaven-version}</version>
+                    <configuration>
+                        <targetBytecode>${maven.compiler.target}</targetBytecode>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>compile</goal>
+                                <goal>compileTests</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <!-- Compilation -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${maven-compiler-version}</version>
+                    <configuration>
+                        <source>${maven.compiler.source}</source>
+                        <target>${maven.compiler.target}</target>
+                        <fork>true</fork>
+                    </configuration>
+                </plugin>
+                <!-- Test -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven-surefire-version}</version>
+                    <configuration>
+                        <useSystemClassLoader>false</useSystemClassLoader>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-report-plugin</artifactId>
+                    <version>${maven-surefire-report-plugin-version}</version>
+                </plugin>
+                <!-- Generation of the OSGI bundle -->
+                <plugin>
+                    <groupId>org.apache.felix</groupId>
+                    <artifactId>maven-bundle-plugin</artifactId>
+                    <version>${maven-bundle-version}</version>
+                    <extensions>true</extensions>
+                    <configuration>
+                        <instructions>
+                            <Bundle-Vendor>Lab-STICC - CNRS UMR 6285</Bundle-Vendor>
+                        </instructions>
+                    </configuration>
+                </plugin>
+                <!-- Deploy -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>${maven-deploy-version}</version>
+                </plugin>
+                <!-- Install -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-install-plugin</artifactId>
+                    <version>${maven-install-version}</version>
+                </plugin>
+                <!-- Tool version check -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>${maven-enforcer-version}</version>
+                    <executions>
+                        <execution>
+                            <id>enforce-versions</id>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                            <configuration>
+                                <rules>
+                                    <bannedPlugins>
+                                        <!-- Will only display a warning but does not fail the build. -->
+                                        <level>WARN</level>
+                                        <excludes>
+                                            <exclude>org.apache.maven.plugins:maven-verifier-plugin</exclude>
+                                        </excludes>
+                                    </bannedPlugins>
+                                    <requireMavenVersion>
+                                        <version>${maven-version}</version>
+                                    </requireMavenVersion>
+                                    <requireJavaVersion>
+                                        <version>${java-version}</version>
+                                    </requireJavaVersion>
+                                </rules>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <!-- Versions check -->
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>versions-maven-plugin</artifactId>
+                    <version>${version-maven-version}</version>
+                    <configuration>
+                        <rulesUri>
+                            https://raw.githubusercontent.com/orbisgis/orbisgis-parents/master/maven-version-rules.xml
+                        </rulesUri>
+                    </configuration>
+                </plugin>
+                <!-- Reporting -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-project-info-reports-plugin</artifactId>
+                    <version>${maven-project-info-reports-version}</version>
+                </plugin>
+                <!-- Test coverage -->
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>${jacoco-maven-version}</version>
+                    <executions>
+                        <execution>
+                            <id>initialize</id>
+                            <goals>
+                                <goal>prepare-agent</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>test</id>
+                            <goals>
+                                <goal>report</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <!-- Javadoc generation -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>${maven-javadoc-version}</version>
+                    <configuration>
+                        <doclint>all,-missing</doclint>
+                        <quiet>true</quiet>
+                    </configuration>
+                </plugin>
+                <!-- Execution -->
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>${exec-maven-version}</version>
+                </plugin>
+                <!-- Assemble the project with dependencies -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <version>${maven-assembly-version}</version>
+                </plugin>
+                <!-- Package the project into a JAR file -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>${maven-jar-version}</version>
+                </plugin>
+                <!-- Maven archetype generation -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-archetype-plugin</artifactId>
+                    <version>${maven-archetype-plugin-version}</version>
+                </plugin>
+                <!-- Maven release generation -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <version>${maven-release-version}</version>
+                    <configuration>
+                        <autoVersionSubmodules>true</autoVersionSubmodules>
+                        <tagNameFormat>v@{project.version}</tagNameFormat>
+                    </configuration>
+                </plugin>
+                <!-- Sign -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-gpg-plugin</artifactId>
+                    <version>${maven-gpg-plugin-version}</version>
+                    <configuration>
+                        <gpgArguments>
+                            <arg>--pinentry-mode</arg>
+                            <arg>loopback</arg>
+                        </gpgArguments>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>sign-artifacts</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>sign</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <!-- Resources -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>${maven-resources-version}</version>
+                </plugin>
+                <!-- Site -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-site-plugin</artifactId>
+                    <version>${maven-site-version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
             </plugin>
+
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>versions-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>display-dependency-updates</goal>
+                            <goal>display-plugin-updates</goal>
+                        </goals>
+                        <phase>validate</phase>
+                    </execution>
+                </executions>
+                <inherited>false</inherited>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
             </plugin>
-            <plugin>
-                <groupId>org.codehaus.gmavenplus</groupId>
-                <artifactId>gmavenplus-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
             </plugin>
+
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+            </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>deploy</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+    <!-- reporting -->
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>dependency-updates-report</report>
+                            <report>plugin-updates-report</report>
+                            <report>property-updates-report</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <show>public</show>
+                </configuration>
+            </plugin>
+        </plugins>
+    </reporting>
 
     <!-- Environment Settings -->
     <issueManagement>
@@ -234,40 +591,15 @@
         </repository>
     </repositories>
 
-    <reporting>
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>versions-maven-plugin</artifactId>
-                <reportSets>
-                    <reportSet>
-                        <reports>
-                            <report>dependency-updates-report</report>
-                            <report>plugin-updates-report</report>
-                            <report>property-updates-report</report>
-                        </reports>
-                    </reportSet>
-                </reportSets>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-report-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </reporting>
 
     <distributionManagement>
-    <snapshotRepository>
-        <id>ossrh</id>
-        <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    </snapshotRepository>
-    <repository>
-        <id>ossrh</id>
-        <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-    </repository>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
     </distributionManagement>
-    </project>
+</project>
