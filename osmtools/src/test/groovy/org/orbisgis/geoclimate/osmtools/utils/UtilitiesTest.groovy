@@ -548,8 +548,12 @@ class UtilitiesTest extends AbstractOSMTest {
     @Disabled
     void getAreaFromPlaceTest(){
         def pattern = Pattern.compile("^POLYGON \\(\\((?>-?\\d+(?>\\.\\d+)? -?\\d+(?>\\.\\d+)?(?>, )?)*\\)\\)\$")
-        assertTrue pattern.matcher(Utilities.getAreaFromPlace("Paimpol").toString()).matches()
-        assertTrue pattern.matcher(Utilities.getAreaFromPlace("Boston").toString()).matches()
+        def data = Utilities.getAreaFromPlace("Paimpol")
+        assertTrue pattern.matcher(data["geom"].toString()).matches()
+        assertEquals(data["extratags"]["ref:INSEE"], "22162")
+        data = Utilities.getAreaFromPlace("Boston")
+        assertTrue pattern.matcher(data["geom"].toString()).matches()
+        assertEquals(data["extratags"]["population"], "689326")
     }
 
     /**

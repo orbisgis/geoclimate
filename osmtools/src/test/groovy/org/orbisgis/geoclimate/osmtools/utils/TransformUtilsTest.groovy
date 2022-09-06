@@ -389,7 +389,7 @@ class TransformUtilsTest extends AbstractOSMTest {
     void arrayUnionTest(){
         def unique = TransformUtils.arrayUnion(true, ["tata", "titi", "tutu"], ["titi", "toto", "toto"], [null, "value"])
         assertNotNull unique
-        assertEquals 6, unique.size
+        assertEquals 6, unique.size()
         assertEquals null, unique[0]
         assertEquals "tata", unique[1]
         assertEquals "titi", unique[2]
@@ -399,7 +399,7 @@ class TransformUtilsTest extends AbstractOSMTest {
 
         def notUnique = TransformUtils.arrayUnion(false, ["tata", "titi", "tutu"], ["titi", "toto", "toto"], [null, "value"])
         assertNotNull notUnique
-        assertEquals 8, notUnique.size
+        assertEquals 8, notUnique.size()
         assertEquals null, notUnique[0]
         assertEquals "tata", notUnique[1]
         assertEquals "titi", notUnique[2]

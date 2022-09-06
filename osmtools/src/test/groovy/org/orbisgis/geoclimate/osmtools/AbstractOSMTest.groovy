@@ -176,7 +176,7 @@ abstract class AbstractOSMTest {
                                new Coordinate(-3.016 ,48.82)] as Coordinate[]
             def geom = new GeometryFactory().createPolygon(coordinates)
             geom.SRID = 4326
-            return geom
+            return ["geom": geom]
         }
     }
 
