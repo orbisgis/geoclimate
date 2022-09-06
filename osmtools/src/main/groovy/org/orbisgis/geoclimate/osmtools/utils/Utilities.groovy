@@ -113,6 +113,8 @@ class Utilities {
                     data.put("geom", area)
                     //Add properties and extrat tags
                     data.putAll(feature.properties)
+                    def bbox = feature.bbox
+                    data.put("bbox", [bbox[1], bbox[0], bbox[3], bbox[2]])
                 } else if (feature.geometry.type.equalsIgnoreCase("multipolygon")) {
                     def mp = feature.geometry.coordinates.collect { it ->
                         parsePolygon(it, geometryFactory)
@@ -122,6 +124,8 @@ class Utilities {
                     data.put("geom", area)
                     //Add properties and extrat tags
                     data.putAll(feature.properties)
+                    def bbox = feature.bbox
+                    data.put("bbox", [bbox[1], bbox[0], bbox[3], bbox[2]])
                 } else {
                     return false
                 }

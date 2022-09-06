@@ -77,7 +77,7 @@ class LoaderTest extends AbstractOSMTest {
      */
     @Test
     void badFromAreaTest(){
-        sampleGetAreaFromPlace()
+        sampleGetNominatimData()
         sampleOverpassQueryOverride()
         def fromArea = OSMTools.Loader.fromArea()
         H2GIS ds = RANDOM_DS()
@@ -100,7 +100,7 @@ class LoaderTest extends AbstractOSMTest {
      */
     @Test
     void fromAreaNoDistTest(){
-        sampleGetAreaFromPlace()
+        sampleGetNominatimData()
         sampleOverpassQueryOverride()
         def fromArea = OSMTools.Loader.fromArea()
         H2GIS ds = RANDOM_DS()
@@ -180,7 +180,7 @@ class LoaderTest extends AbstractOSMTest {
      */
     @Test
     void fromAreaWithDistTest(){
-        sampleGetAreaFromPlace()
+        sampleGetNominatimData()
         sampleOverpassQueryOverride()
         def fromArea = OSMTools.Loader.fromArea()
         H2GIS ds = RANDOM_DS()
@@ -259,7 +259,7 @@ class LoaderTest extends AbstractOSMTest {
      */
     @Test
     void fromPlaceNoDistTest(){
-        sampleGetAreaFromPlace()
+        sampleGetNominatimData()
         sampleOverpassQueryOverride()
         def fromPlace = OSMTools.Loader.fromPlace()
         def placeName = "  The place Name -toFind  "
@@ -307,7 +307,7 @@ class LoaderTest extends AbstractOSMTest {
      */
     @Test
     void fromPlaceWithDistTest(){
-        sampleGetAreaFromPlace()
+        sampleGetNominatimData()
         sampleOverpassQueryOverride()
         def fromPlace = OSMTools.Loader.fromPlace()
         def placeName = "  The place Name -toFind  "
@@ -355,7 +355,7 @@ class LoaderTest extends AbstractOSMTest {
      */
     @Test
     void badFromPlaceTest(){
-        sampleGetAreaFromPlace()
+        sampleGetNominatimData()
         sampleOverpassQueryOverride()
         def fromPlace = OSMTools.Loader.fromPlace()
         def placeName = "  The place Name -toFind  "

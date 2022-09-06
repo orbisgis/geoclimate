@@ -66,7 +66,7 @@ class UtilitiesTest extends AbstractOSMTest {
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
     private static def executeOverPassQuery
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
-    private static def getAreaFromPlace
+    private static def getNominatimData
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
     private static def executeNominatimQuery
 
@@ -546,10 +546,12 @@ class UtilitiesTest extends AbstractOSMTest {
      */
     @Test
     @Disabled
-    void getAreaFromPlaceTest(){
+    void getNominatimDataTest(){
         def pattern = Pattern.compile("^POLYGON \\(\\((?>-?\\d+(?>\\.\\d+)? -?\\d+(?>\\.\\d+)?(?>, )?)*\\)\\)\$")
         def data = Utilities.getNominatimData("Paimpol")
         assertTrue pattern.matcher(data["geom"].toString()).matches()
+        Envelope env = data["geom"].getEnvelopeInternal()
+        assertEquals([env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()].toString(), data["bbox"].toString())
         assertEquals(data["extratags"]["ref:INSEE"], "22162")
         data = Utilities.getNominatimData("Boston")
         assertTrue pattern.matcher(data["geom"].toString()).matches()
@@ -561,7 +563,7 @@ class UtilitiesTest extends AbstractOSMTest {
      */
     @Test
     @Disabled
-    void badGetAreaFromPlaceTest() {
+    void badGetNominatimDataTest() {
         assertNull Utilities.getNominatimData(null)
     }
 
