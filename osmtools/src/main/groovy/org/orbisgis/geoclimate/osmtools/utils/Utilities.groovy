@@ -65,7 +65,7 @@ class Utilities {
 
 
     /**
-     * Return the area of a city name as a geometry.
+     * Return all data from a place name with nominatim api.
      *
      * @author Erwan Bocher (CNRS LAB-STICC)
      * @author Elisabeth Le Saux (UBS LAB-STICC)
@@ -74,7 +74,7 @@ class Utilities {
      *
      * @return a New geometry.
      */
-    static Map getAreaFromPlace(def placeName) {
+    static Map getNominatimData(def placeName) {
         if (!placeName) {
             error "The place name should not be null or empty."
             return null
@@ -183,7 +183,7 @@ class Utilities {
         if (location in Collection) {
             return Utilities.geometryFromValues(location)
         } else if (location instanceof String) {
-            return Utilities.getAreaFromPlace(location)["geom"]
+            return Utilities.getNominatimData(location)["geom"]
         } else {
             return null;
         }

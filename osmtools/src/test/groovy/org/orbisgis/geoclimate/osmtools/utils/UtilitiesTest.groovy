@@ -542,27 +542,27 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#getAreaFromPlace(java.lang.Object)} method.
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#getNominatimData(java.lang.Object)} method.
      */
     @Test
     @Disabled
     void getAreaFromPlaceTest(){
         def pattern = Pattern.compile("^POLYGON \\(\\((?>-?\\d+(?>\\.\\d+)? -?\\d+(?>\\.\\d+)?(?>, )?)*\\)\\)\$")
-        def data = Utilities.getAreaFromPlace("Paimpol")
+        def data = Utilities.getNominatimData("Paimpol")
         assertTrue pattern.matcher(data["geom"].toString()).matches()
         assertEquals(data["extratags"]["ref:INSEE"], "22162")
-        data = Utilities.getAreaFromPlace("Boston")
+        data = Utilities.getNominatimData("Boston")
         assertTrue pattern.matcher(data["geom"].toString()).matches()
         assertEquals(data["extratags"]["population"], "689326")
     }
 
     /**
-     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#getAreaFromPlace(java.lang.Object)} method with bad data.
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#getNominatimData(java.lang.Object)} method with bad data.
      */
     @Test
     @Disabled
     void badGetAreaFromPlaceTest() {
-        assertNull Utilities.getAreaFromPlace(null)
+        assertNull Utilities.getNominatimData(null)
     }
 
     /**

@@ -93,7 +93,7 @@ abstract class AbstractOSMTest {
     void beforeEach(){
         //Store the modified object
         executeOverPassQuery = Utilities.&executeOverPassQuery
-        getAreaFromPlace = Utilities.&getAreaFromPlace
+        getAreaFromPlace = Utilities.&getNominatimData
         executeNominatimQuery = Utilities.&executeNominatimQuery
         extract = OSMTools.Loader.extract()
         load = OSMTools.Loader.load()

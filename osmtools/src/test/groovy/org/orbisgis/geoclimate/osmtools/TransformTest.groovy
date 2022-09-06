@@ -661,7 +661,7 @@ class TransformTest extends AbstractOSMTest {
     @Test
     void transformOnLine() {
         H2GIS h2GIS = RANDOM_DS()
-        Geometry geom = Utilities.getAreaFromPlace("Saint Jean La Poterie");
+        Geometry geom = Utilities.getNominatimData("Saint Jean La Poterie");
         def query = Utilities.buildOSMQuery(geom.getEnvelopeInternal(), [], OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
         def extract = OSMTools.Loader.extract()
         if (!query.isEmpty()) {
@@ -719,7 +719,7 @@ class TransformTest extends AbstractOSMTest {
                            "landuse", "landcover",
                            "vegetation","waterway"]
 
-        Geometry geom = Utilities.getAreaFromPlace("Redon");
+        Geometry geom = Utilities.getNominatimData("Redon");
 
         def query =  "[maxsize:1073741824]"+ Utilities.buildOSMQueryWithAllData(geom.getEnvelopeInternal(), keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
 
