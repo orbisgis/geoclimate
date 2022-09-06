@@ -478,23 +478,23 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#geometryFromOverpass(java.lang.Object)} method.
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#geometryFromValues(java.lang.Object)} method.
      */
     @Test
     void geometryFromOverpassTest(){
         assertEquals("POLYGON ((-3.29109 48.72223, -3.29109 48.83535, -2.80357 48.83535, -2.80357 48.72223, -3.29109 48.72223))",
-                Utilities.geometryFromOverpass([48.83535, -3.29109, 48.72223, -2.80357]).toString())
+                Utilities.geometryFromValues([48.83535, -3.29109, 48.72223, -2.80357]).toString())
     }
 
     /**
-     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#geometryFromOverpass(java.lang.Object)} method with bad data.
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#geometryFromValues(java.lang.Object)} method with bad data.
      */
     @Test
     void badGeometryFromOverpassTest(){
-        assertNull Utilities.geometryFromOverpass([-3.29109, 48.83535, -2.80357])
-        assertNull Utilities.geometryFromOverpass(null)
-        assertNull Utilities.geometryFromOverpass()
-        assertNull Utilities.geometryFromOverpass(new GeometryFactory())
+        assertNull Utilities.geometryFromValues([-3.29109, 48.83535, -2.80357])
+        assertNull Utilities.geometryFromValues(null)
+        assertNull Utilities.geometryFromValues()
+        assertNull Utilities.geometryFromValues(new GeometryFactory())
     }
 
     /**
@@ -570,13 +570,6 @@ class UtilitiesTest extends AbstractOSMTest {
         assertNotNull status
     }
 
-    /**
-     * Test the {@link org.orbisgis.geoclimate.osmtools.OSMTools#wait(int)} method.
-     */
-    @Test
-    void waitTest(){
-        assertTrue Utilities.wait(500)
-    }
 
     /**
      * Test the {@link org.orbisgis.geoclimate.osmtools.OSMTools#executeOverPassQuery(java.lang.Object, java.lang.Object)} method.

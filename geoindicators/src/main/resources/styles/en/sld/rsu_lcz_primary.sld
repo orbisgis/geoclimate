@@ -1,16 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<StyledLayerDescriptor xmlns="http://www.opengis.net/sld" xmlns:se="http://www.opengis.net/se" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.1.0" xmlns:ogc="http://www.opengis.net/ogc" xsi:schemaLocation="http://www.opengis.net/sld http://schemas.opengis.net/sld/1.1.0/StyledLayerDescriptor.xsd" xmlns:xlink="http://www.w3.org/1999/xlink">
-  <NamedLayer>
-    <sld:Name>rsu_lcz</sld:Name>
-    <UserStyle>
-      <sld:Name>rsu_lcz</sld:Name>
+<sld:StyledLayerDescriptor xmlns="http://www.opengis.net/sld" xmlns:sld="http://www.opengis.net/sld" xmlns:gml="http://www.opengis.net/gml" xmlns:ogc="http://www.opengis.net/ogc" version="1.0.0">
+<sld:UserLayer>
+    <sld:UserStyle>
       <sld:FeatureTypeStyle>
         <sld:Rule>
           <sld:Name>LCZ 1: Compact high-rise</sld:Name>
           <sld:Description>
             <sld:Title>LCZ 1: Compact high-rise</sld:Title>
           </sld:Description>
-          <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
+                    <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>LCZ_PRIMARY</ogc:PropertyName>
               <ogc:Literal>1</ogc:Literal>
@@ -19,7 +17,7 @@
           <sld:MaxScaleDenominator>500000</sld:MaxScaleDenominator>
           <sld:PolygonSymbolizer>
             <sld:Fill>
-              <sld:SvgParameter name="fill">#8b0101</sld:SvgParameter>
+              <sld:CssParameter name="fill">#8b0101</sld:CssParameter>
             </sld:Fill>
           </sld:PolygonSymbolizer>
         </sld:Rule>
@@ -28,7 +26,7 @@
           <sld:Description>
             <sld:Title>LCZ 2: Compact mid-rise</sld:Title>
           </sld:Description>
-          <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
+                    <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>LCZ_PRIMARY</ogc:PropertyName>
               <ogc:Literal>2</ogc:Literal>
@@ -37,7 +35,7 @@
           <sld:MaxScaleDenominator>500000</sld:MaxScaleDenominator>
           <sld:PolygonSymbolizer>
             <sld:Fill>
-              <sld:SvgParameter name="fill">#cc0200</sld:SvgParameter>
+              <sld:CssParameter name="fill">#cc0200</sld:CssParameter>
             </sld:Fill>
           </sld:PolygonSymbolizer>
         </sld:Rule>
@@ -46,7 +44,7 @@
           <sld:Description>
             <sld:Title>LCZ 3: Compact low-rise</sld:Title>
           </sld:Description>
-          <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
+                    <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>LCZ_PRIMARY</ogc:PropertyName>
               <ogc:Literal>3</ogc:Literal>
@@ -55,7 +53,7 @@
           <sld:MaxScaleDenominator>500000</sld:MaxScaleDenominator>
           <sld:PolygonSymbolizer>
             <sld:Fill>
-              <sld:SvgParameter name="fill">#fc0001</sld:SvgParameter>
+              <sld:CssParameter name="fill">#fc0001</sld:CssParameter>
             </sld:Fill>
           </sld:PolygonSymbolizer>
         </sld:Rule>
@@ -64,7 +62,7 @@
           <sld:Description>
             <sld:Title>LCZ 4: Open high-rise</sld:Title>
           </sld:Description>
-          <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
+                    <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>LCZ_PRIMARY</ogc:PropertyName>
               <ogc:Literal>4</ogc:Literal>
@@ -73,7 +71,7 @@
           <sld:MaxScaleDenominator>500000</sld:MaxScaleDenominator>
           <sld:PolygonSymbolizer>
             <sld:Fill>
-              <sld:SvgParameter name="fill">#be4c03</sld:SvgParameter>
+              <sld:CssParameter name="fill">#be4c03</sld:CssParameter>
             </sld:Fill>
           </sld:PolygonSymbolizer>
         </sld:Rule>
@@ -82,7 +80,7 @@
           <sld:Description>
             <sld:Title>LCZ 5: Open mid-rise</sld:Title>
           </sld:Description>
-          <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
+                    <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>LCZ_PRIMARY</ogc:PropertyName>
               <ogc:Literal>5</ogc:Literal>
@@ -91,7 +89,7 @@
           <sld:MaxScaleDenominator>500000</sld:MaxScaleDenominator>
           <sld:PolygonSymbolizer>
             <sld:Fill>
-              <sld:SvgParameter name="fill">#ff6602</sld:SvgParameter>
+              <sld:CssParameter name="fill">#ff6602</sld:CssParameter>
             </sld:Fill>
           </sld:PolygonSymbolizer>
         </sld:Rule>
@@ -100,7 +98,7 @@
           <sld:Description>
             <sld:Title>LCZ 6: Open low-rise</sld:Title>
           </sld:Description>
-          <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
+                    <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>LCZ_PRIMARY</ogc:PropertyName>
               <ogc:Literal>6</ogc:Literal>
@@ -109,7 +107,7 @@
           <sld:MaxScaleDenominator>500000</sld:MaxScaleDenominator>
           <sld:PolygonSymbolizer>
             <sld:Fill>
-              <sld:SvgParameter name="fill">#ff9856</sld:SvgParameter>
+              <sld:CssParameter name="fill">#ff9856</sld:CssParameter>
             </sld:Fill>
           </sld:PolygonSymbolizer>
         </sld:Rule>
@@ -118,7 +116,7 @@
           <sld:Description>
             <sld:Title>LCZ 7: Lightweight low-rise</sld:Title>
           </sld:Description>
-          <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
+                    <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>LCZ_PRIMARY</ogc:PropertyName>
               <ogc:Literal>7</ogc:Literal>
@@ -127,7 +125,7 @@
           <sld:MaxScaleDenominator>500000</sld:MaxScaleDenominator>
           <sld:PolygonSymbolizer>
             <sld:Fill>
-              <sld:SvgParameter name="fill">#fbed08</sld:SvgParameter>
+              <sld:CssParameter name="fill">#fbed08</sld:CssParameter>
             </sld:Fill>
           </sld:PolygonSymbolizer>
         </sld:Rule>
@@ -136,7 +134,7 @@
           <sld:Description>
             <sld:Title>LCZ 8: Large low-rise</sld:Title>
           </sld:Description>
-          <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
+                    <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>LCZ_PRIMARY</ogc:PropertyName>
               <ogc:Literal>8</ogc:Literal>
@@ -145,7 +143,7 @@
           <sld:MaxScaleDenominator>500000</sld:MaxScaleDenominator>
           <sld:PolygonSymbolizer>
             <sld:Fill>
-              <sld:SvgParameter name="fill">#bcbcba</sld:SvgParameter>
+              <sld:CssParameter name="fill">#bcbcba</sld:CssParameter>
             </sld:Fill>
           </sld:PolygonSymbolizer>
         </sld:Rule>
@@ -154,7 +152,7 @@
           <sld:Description>
             <sld:Title>LCZ 9: Sparsely built</sld:Title>
           </sld:Description>
-          <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
+                    <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>LCZ_PRIMARY</ogc:PropertyName>
               <ogc:Literal>9</ogc:Literal>
@@ -163,7 +161,7 @@
           <sld:MaxScaleDenominator>500000</sld:MaxScaleDenominator>
           <sld:PolygonSymbolizer>
             <sld:Fill>
-              <sld:SvgParameter name="fill">#ffcca7</sld:SvgParameter>
+              <sld:CssParameter name="fill">#ffcca7</sld:CssParameter>
             </sld:Fill>
           </sld:PolygonSymbolizer>
         </sld:Rule>
@@ -172,7 +170,7 @@
           <sld:Description>
             <sld:Title>LCZ 10: Heavy industry</sld:Title>
           </sld:Description>
-          <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
+                    <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>LCZ_PRIMARY</ogc:PropertyName>
               <ogc:Literal>10</ogc:Literal>
@@ -181,7 +179,7 @@
           <sld:MaxScaleDenominator>500000</sld:MaxScaleDenominator>
           <sld:PolygonSymbolizer>
             <sld:Fill>
-              <sld:SvgParameter name="fill">#57555a</sld:SvgParameter>
+              <sld:CssParameter name="fill">#57555a</sld:CssParameter>
             </sld:Fill>
           </sld:PolygonSymbolizer>
         </sld:Rule>
@@ -190,7 +188,7 @@
           <sld:Description>
             <sld:Title>LCZ A: Dense trees</sld:Title>
           </sld:Description>
-          <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
+                    <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>LCZ_PRIMARY</ogc:PropertyName>
               <ogc:Literal>101</ogc:Literal>
@@ -199,7 +197,7 @@
           <sld:MaxScaleDenominator>500000</sld:MaxScaleDenominator>
           <sld:PolygonSymbolizer>
             <sld:Fill>
-              <sld:SvgParameter name="fill">#006700</sld:SvgParameter>
+              <sld:CssParameter name="fill">#006700</sld:CssParameter>
             </sld:Fill>
           </sld:PolygonSymbolizer>
         </sld:Rule>
@@ -208,7 +206,7 @@
           <sld:Description>
             <sld:Title>LCZ B: Scattered trees</sld:Title>
           </sld:Description>
-          <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
+                    <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>LCZ_PRIMARY</ogc:PropertyName>
               <ogc:Literal>102</ogc:Literal>
@@ -217,7 +215,7 @@
           <sld:MaxScaleDenominator>500000</sld:MaxScaleDenominator>
           <sld:PolygonSymbolizer>
             <sld:Fill>
-              <sld:SvgParameter name="fill">#05aa05</sld:SvgParameter>
+              <sld:CssParameter name="fill">#05aa05</sld:CssParameter>
             </sld:Fill>
           </sld:PolygonSymbolizer>
         </sld:Rule>
@@ -226,7 +224,7 @@
           <sld:Description>
             <sld:Title>LCZ C: Bush,scrub</sld:Title>
           </sld:Description>
-          <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
+                    <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>LCZ_PRIMARY</ogc:PropertyName>
               <ogc:Literal>103</ogc:Literal>
@@ -235,7 +233,7 @@
           <sld:MaxScaleDenominator>500000</sld:MaxScaleDenominator>
           <sld:PolygonSymbolizer>
             <sld:Fill>
-              <sld:SvgParameter name="fill">#648423</sld:SvgParameter>
+              <sld:CssParameter name="fill">#648423</sld:CssParameter>
             </sld:Fill>
           </sld:PolygonSymbolizer>
         </sld:Rule>
@@ -244,7 +242,7 @@
           <sld:Description>
             <sld:Title>LCZ D: Low plants</sld:Title>
           </sld:Description>
-          <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
+                    <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>LCZ_PRIMARY</ogc:PropertyName>
               <ogc:Literal>104</ogc:Literal>
@@ -253,7 +251,7 @@
           <sld:MaxScaleDenominator>500000</sld:MaxScaleDenominator>
           <sld:PolygonSymbolizer>
             <sld:Fill>
-              <sld:SvgParameter name="fill">#bbdb7a</sld:SvgParameter>
+              <sld:CssParameter name="fill">#bbdb7a</sld:CssParameter>
             </sld:Fill>
           </sld:PolygonSymbolizer>
         </sld:Rule>
@@ -262,7 +260,7 @@
           <sld:Description>
             <sld:Title>LCZ E: Bare rock or paved</sld:Title>
           </sld:Description>
-          <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
+                    <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>LCZ_PRIMARY</ogc:PropertyName>
               <ogc:Literal>105</ogc:Literal>
@@ -271,7 +269,7 @@
           <sld:MaxScaleDenominator>500000</sld:MaxScaleDenominator>
           <sld:PolygonSymbolizer>
             <sld:Fill>
-              <sld:SvgParameter name="fill">#010101</sld:SvgParameter>
+              <sld:CssParameter name="fill">#010101</sld:CssParameter>
             </sld:Fill>
           </sld:PolygonSymbolizer>
         </sld:Rule>
@@ -280,7 +278,7 @@
           <sld:Description>
             <sld:Title>LCZ F: Bare soil or sand</sld:Title>
           </sld:Description>
-          <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
+                    <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>LCZ_PRIMARY</ogc:PropertyName>
               <ogc:Literal>106</ogc:Literal>
@@ -289,7 +287,7 @@
           <sld:MaxScaleDenominator>500000</sld:MaxScaleDenominator>
           <sld:PolygonSymbolizer>
             <sld:Fill>
-              <sld:SvgParameter name="fill">#fdf6ae</sld:SvgParameter>
+              <sld:CssParameter name="fill">#fdf6ae</sld:CssParameter>
             </sld:Fill>
           </sld:PolygonSymbolizer>
         </sld:Rule>
@@ -298,7 +296,7 @@
           <sld:Description>
             <sld:Title>LCZ G: Water</sld:Title>
           </sld:Description>
-          <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
+                    <ogc:Filter>
             <ogc:PropertyIsEqualTo>
               <ogc:PropertyName>LCZ_PRIMARY</ogc:PropertyName>
               <ogc:Literal>107</ogc:Literal>
@@ -307,7 +305,7 @@
           <sld:MaxScaleDenominator>500000</sld:MaxScaleDenominator>
           <sld:PolygonSymbolizer>
             <sld:Fill>
-              <sld:SvgParameter name="fill">#6d67fd</sld:SvgParameter>
+              <sld:CssParameter name="fill">#6d67fd</sld:CssParameter>
             </sld:Fill>
           </sld:PolygonSymbolizer>
         </sld:Rule>
@@ -316,7 +314,7 @@
           <sld:Description>
             <sld:Title>Undefined</sld:Title>
           </sld:Description>
-          <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
+                    <ogc:Filter>
             <ogc:PropertyIsNull>
               <ogc:PropertyName>LCZ_PRIMARY</ogc:PropertyName>
             </ogc:PropertyIsNull>
@@ -324,11 +322,11 @@
           <sld:MaxScaleDenominator>500000</sld:MaxScaleDenominator>
           <sld:PolygonSymbolizer>
             <sld:Fill>
-              <sld:SvgParameter name="fill">#ffffff</sld:SvgParameter>
+              <sld:CssParameter name="fill">#ffffff</sld:CssParameter>
             </sld:Fill>
           </sld:PolygonSymbolizer>
         </sld:Rule>
       </sld:FeatureTypeStyle>
-    </UserStyle>
-  </NamedLayer>
-</StyledLayerDescriptor>
+ </sld:UserStyle>
+  </sld:UserLayer>
+</sld:StyledLayerDescriptor>

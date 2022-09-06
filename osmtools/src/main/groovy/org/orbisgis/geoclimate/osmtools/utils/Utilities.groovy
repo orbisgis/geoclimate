@@ -38,6 +38,7 @@ package org.orbisgis.geoclimate.osmtools.utils
 
 import groovy.json.JsonSlurper
 import org.cts.util.UTMUtils
+import org.h2gis.utilities.GeographyUtilities
 import org.locationtech.jts.geom.*
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.slf4j.LoggerFactory
@@ -126,6 +127,60 @@ class Utilities {
             warn "Unable to delete the file '$outputOSMFile'."
         }
         return area
+    }
+
+    /**
+     * Create a geometry from two coordinates and a distance
+     * Expand the geometry in x and y directions
+     * @param lat latitude
+     * @param lon longitude
+     * @param distance in meters
+     * @return
+     */
+    static Geometry getAreaFromPoint(def lat, def lon, float distance) {
+        org.locationtech.jts.geom.Geometry geom =  new GeometryFactory().toGeometry(GeographyUtilities.createEnvelope(new Coordinate(lat,lon), distance, distance))
+        geom.setSRID(4326)
+        return geom
+    }
+
+    /**
+     * Create a bbox represented by a list of  values
+     * @param lat
+     * @param lon
+     * @param distance
+     * @return
+     */
+    static List createBBox(def lat, def lon, float distance){
+        Envelope env = GeographyUtilities.createEnvelope(new Coordinate(lat,lon), distance, distance)
+        if(env){
+            return [(float)env.getMinX(),(float)env.getMinY(), (float)env.getMaxX(),(float)env.getMaxY()]
+        }
+        return null
+    }
+
+    /**
+     * Generic method to return one OSM polygon (area) from
+     *
+     * - a place name. e.g Redon
+     * - a bbox defined by an array of 4 values
+     * - a point and a distance defined by an array of 3 values
+     *
+     *
+     * @author Erwan Bocher (CNRS LAB-STICC)
+     *
+     * @param placeName The nominatim place name.
+     *
+     * @return a New geometry.
+     */
+    static Geometry getArea(def location) {
+        Geometry geom
+        if (location in Collection) {
+            return Utilities.geometryFromValues(location)
+        } else if (location instanceof String) {
+            return Utilities.getAreaFromPlace(location)
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -510,8 +565,9 @@ class Utilities {
     }
 
     /**
-     * This method is used to build a geometry following the overpass bbox signature.
-     * The order of values in the bounding box used by Overpass API is :
+     * This method is used to build a geometry from 4 values (bbox)
+     *
+     * The order of the 4 values to defined in the bounding box is :
      * south ,west, north, east
      *
      *  south : float -> southern latitude of bounding box
@@ -523,22 +579,19 @@ class Utilities {
      *
      * @author Erwan Bocher (CNRS LAB-STICC)
      *
-     * @param bbox 4 values
+     * @param bbox 4 values to define a bbox
      * @return a JTS polygon
      */
-    static Geometry geometryFromOverpass(def bbox) {
+    static Geometry geometryFromValues(def bbox) {
         if (!bbox) {
-            error "The latitude and longitude values cannot be null or empty"
             return null
         }
         if (!(bbox instanceof Collection)) {
-            error "The latitude and longitude values must be set as an array"
             return null
         }
-        if (bbox.size == 4) {
+        if (bbox.size() == 4) {
             return buildGeometry([bbox[1], bbox[0], bbox[3], bbox[2]]);
         }
-        error("The bbox must be defined with 4 values")
     }
 
 
@@ -577,7 +630,7 @@ class Utilities {
 
     /**
      * Return the status of the Overpass server.
-     * @return A {@link OverpassStatus} instance.
+     * @return A string representation of the overpass status.
      */
     static def getServerStatus()  {
         final String proxyHost = System.getProperty("http.proxyHost");
@@ -595,46 +648,13 @@ class Utilities {
         }
         connection.requestMethod = GET
         connection.connect()
-
         if (connection.responseCode == 200) {
-            def content = connection.inputStream.text
-            return new OverpassStatus(content)
-        } else {
+            return connection.inputStream.text
+        }
+        else {
             error "Cannot get the status of the server.\n Server answer with code ${connection.responseCode} : " +
                     "${connection.inputStream.text}"
         }
-    }
-
-    /**
-     * Wait for a free overpass slot.
-     * @param timeout Timeout to limit the waiting.
-     * @return True if there is a free slot, false otherwise.
-     */
-    static def wait(int timeout)  {
-        def to = timeout
-        def status = getServerStatus()
-        info("Try to wait for slot available")
-        if(!status.waitForSlot(timeout)){
-            //Case of too low timeout for slot availibility
-            if(status.slotWaitTime > to){
-                error("Wait timeout is lower than the wait time for a slot.")
-                return false
-            }
-            info("Wait for query end")
-            if(!status.waitForQueryEnd(to)){
-                error("Wait timeout is lower than the wait time for a query end.")
-                return false
-            }
-            to -= status.queryWaitTime
-            //Case of too low timeout for slot availibility
-            if(status.slotWaitTime > to){
-                error("Wait timeout is lower than the wait time for a slot.")
-                return false
-            }
-            info("Wait for slot available")
-            return status.waitForSlot(timeout)
-        }
-        return true
     }
 
     /** {@link Closure} converting and UTF-8 {@link String} into an {@link URL}. */

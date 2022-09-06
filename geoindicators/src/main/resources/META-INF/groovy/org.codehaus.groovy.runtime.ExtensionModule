@@ -1,0 +1,4 @@
+moduleName=OrbisGIS Groovy JDBC datastore extension
+moduleVersion=1.0
+extensionClasses= org.orbisgis.geoclimate.geoindicators.GeoindicatorsExtensionModule
+staticExtensionClasses=
