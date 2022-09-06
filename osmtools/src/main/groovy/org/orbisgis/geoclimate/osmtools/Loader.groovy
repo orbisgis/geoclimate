@@ -170,7 +170,7 @@ def fromPlace() {
             def osmTablesPrefix = postfix "OSM_DATA_$formatedPlaceName"
             def epsg = DEFAULT_SRID
 
-            def geom = Utilities.getAreaFromPlace(placeName);
+            def geom = Utilities.getNominatimData(placeName)["geom"]
             if (!geom) {
                 error("Cannot find an area from the place name $placeName")
                 return

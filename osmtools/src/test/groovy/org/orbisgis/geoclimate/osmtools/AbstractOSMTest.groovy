@@ -78,7 +78,7 @@ abstract class AbstractOSMTest {
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
     private static def executeOverPassQuery
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
-    private static def getAreaFromPlace
+    private static def getNominatimData
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
     private static def executeNominatimQuery
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
@@ -93,7 +93,7 @@ abstract class AbstractOSMTest {
     void beforeEach(){
         //Store the modified object
         executeOverPassQuery = Utilities.&executeOverPassQuery
-        getAreaFromPlace = Utilities.&getAreaFromPlace
+        getNominatimData = Utilities.&getNominatimData
         executeNominatimQuery = Utilities.&executeNominatimQuery
         extract = OSMTools.Loader.extract()
         load = OSMTools.Loader.load()
@@ -106,7 +106,7 @@ abstract class AbstractOSMTest {
     void afterEach(){
         //Restore the modified object
         Utilities.metaClass.static.executeOverPassQuery = executeOverPassQuery
-        Utilities.metaClass.static.getAreaFromPlace = getAreaFromPlace
+        Utilities.metaClass.static.getNominatimData = getNominatimData
         Utilities.metaClass.static.executeNominatimQuery = executeNominatimQuery
         OSMTools.Loader.metaClass.extract = extract
         OSMTools.Loader.metaClass.load = load
@@ -165,10 +165,10 @@ abstract class AbstractOSMTest {
     }
 
     /**
-     * Override the 'getAreaFromPlace' methods to avoid the call to the server
+     * Override the 'getNominatimData' methods to avoid the call to the server
      */
-    protected static void sampleGetAreaFromPlace(){
-        Utilities.metaClass.static.getAreaFromPlace = {placeName ->
+    protected static void sampleGetNominatimData(){
+        Utilities.metaClass.static.getNominatimData = {placeName ->
             def coordinates = [new Coordinate(-3.016, 48.82),
                                new Coordinate(-3.016, 48.821),
                                new Coordinate(-3.015 ,48.821),
@@ -176,15 +176,15 @@ abstract class AbstractOSMTest {
                                new Coordinate(-3.016 ,48.82)] as Coordinate[]
             def geom = new GeometryFactory().createPolygon(coordinates)
             geom.SRID = 4326
-            return geom
+            return ["geom": geom]
         }
     }
 
     /**
-     * Override the 'getAreaFromPlace' methods to avoid the call to the server
+     * Override the 'getNominatimData' methods to avoid the call to the server
      */
-    protected static void badGetAreaFromPlace(){
-        Utilities.metaClass.getAreaFromPlace = {placeName -> }
+    protected static void badGetNominatimData(){
+        Utilities.metaClass.getNominatimData = {placeName -> }
     }
 
     /**

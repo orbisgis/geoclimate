@@ -66,7 +66,7 @@ class UtilitiesTest extends AbstractOSMTest {
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
     private static def executeOverPassQuery
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
-    private static def getAreaFromPlace
+    private static def getNominatimData
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
     private static def executeNominatimQuery
 
@@ -542,23 +542,29 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#getAreaFromPlace(java.lang.Object)} method.
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#getNominatimData(java.lang.Object)} method.
      */
     @Test
     @Disabled
-    void getAreaFromPlaceTest(){
+    void getNominatimDataTest(){
         def pattern = Pattern.compile("^POLYGON \\(\\((?>-?\\d+(?>\\.\\d+)? -?\\d+(?>\\.\\d+)?(?>, )?)*\\)\\)\$")
-        assertTrue pattern.matcher(Utilities.getAreaFromPlace("Paimpol").toString()).matches()
-        assertTrue pattern.matcher(Utilities.getAreaFromPlace("Boston").toString()).matches()
+        def data = Utilities.getNominatimData("Paimpol")
+        assertTrue pattern.matcher(data["geom"].toString()).matches()
+        Envelope env = data["geom"].getEnvelopeInternal()
+        assertEquals([env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()].toString(), data["bbox"].toString())
+        assertEquals(data["extratags"]["ref:INSEE"], "22162")
+        data = Utilities.getNominatimData("Boston")
+        assertTrue pattern.matcher(data["geom"].toString()).matches()
+        assertEquals(data["extratags"]["population"], "689326")
     }
 
     /**
-     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#getAreaFromPlace(java.lang.Object)} method with bad data.
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#getNominatimData(java.lang.Object)} method with bad data.
      */
     @Test
     @Disabled
-    void badGetAreaFromPlaceTest() {
-        assertNull Utilities.getAreaFromPlace(null)
+    void badGetNominatimDataTest() {
+        assertNull Utilities.getNominatimData(null)
     }
 
     /**

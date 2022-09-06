@@ -65,7 +65,7 @@ class Utilities {
 
 
     /**
-     * Return the area of a city name as a geometry.
+     * Return all data from a place name with nominatim api.
      *
      * @author Erwan Bocher (CNRS LAB-STICC)
      * @author Elisabeth Le Saux (UBS LAB-STICC)
@@ -74,8 +74,7 @@ class Utilities {
      *
      * @return a New geometry.
      */
-    static Geometry getAreaFromPlace(def placeName) {
-        def area
+    static Map getNominatimData(def placeName) {
         if (!placeName) {
             error "The place name should not be null or empty."
             return null
@@ -105,20 +104,31 @@ class Utilities {
 
         GeometryFactory geometryFactory = new GeometryFactory()
 
-        area = null
+        def data = [:]
         jsonRoot.features.find() { feature ->
             if (feature.geometry != null) {
                 if (feature.geometry.type.equalsIgnoreCase("polygon")) {
-                    area = parsePolygon(feature.geometry.coordinates, geometryFactory)
+                    def area = parsePolygon(feature.geometry.coordinates, geometryFactory)
+                    area.setSRID(4326)
+                    data.put("geom", area)
+                    //Add properties and extrat tags
+                    data.putAll(feature.properties)
+                    def bbox = feature.bbox
+                    data.put("bbox", [bbox[1], bbox[0], bbox[3], bbox[2]])
                 } else if (feature.geometry.type.equalsIgnoreCase("multipolygon")) {
                     def mp = feature.geometry.coordinates.collect { it ->
                         parsePolygon(it, geometryFactory)
                     }.toArray(new Polygon[0])
-                    area = geometryFactory.createMultiPolygon(mp)
+                    def area = geometryFactory.createMultiPolygon(mp)
+                    area.setSRID(4326)
+                    data.put("geom", area)
+                    //Add properties and extrat tags
+                    data.putAll(feature.properties)
+                    def bbox = feature.bbox
+                    data.put("bbox", [bbox[1], bbox[0], bbox[3], bbox[2]])
                 } else {
                     return false
                 }
-                area.setSRID(4326)
                 return true
             }
             return false
@@ -126,7 +136,7 @@ class Utilities {
         if (!outputOSMFile.delete()) {
             warn "Unable to delete the file '$outputOSMFile'."
         }
-        return area
+        return data
     }
 
     /**
@@ -177,7 +187,7 @@ class Utilities {
         if (location in Collection) {
             return Utilities.geometryFromValues(location)
         } else if (location instanceof String) {
-            return Utilities.getAreaFromPlace(location)
+            return Utilities.getNominatimData(location)["geom"]
         } else {
             return null;
         }
@@ -266,7 +276,7 @@ class Utilities {
         }
 
         def apiUrl = "${endPoint}search?q="
-        def request = "&limit=5&format=geojson&polygon_geojson=1"
+        def request = "&limit=5&format=geojson&polygon_geojson=1&extratags=1"
 
         URL url = new URL(apiUrl + Utilities.utf8ToUrl(query) + request)
         final String proxyHost = System.getProperty("http.proxyHost");
@@ -514,7 +524,7 @@ class Utilities {
             error "The BBox should be an array"
             return null
         }
-        if (bbox.size != 4) {
+        if (bbox.size() != 4) {
             error "The BBox should be an array of 4 values"
             return null
         }
@@ -558,7 +568,7 @@ class Utilities {
             error "The latitude and longitude values must be set as an array"
             return null
         }
-        if (bbox.size == 4) {
+        if (bbox.size() == 4) {
             return buildGeometry([bbox[1], bbox[0], bbox[3], bbox[2]]);
         }
         error("The bbox must be defined with 4 values")
