@@ -43,31 +43,19 @@ IProcess extractAndCreateGISLayers() {
             if (zoneToExtract) {
                 def outputZoneTable = "ZONE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
                 def outputZoneEnvelopeTable = "ZONE_ENVELOPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-                def GEOMETRY_TYPE
-                Geometry geom
-                if (zoneToExtract in Collection) {
+                def GEOMETRY_TYPE = "GEOMETRY"
+                Geometry geom = Utilities.getArea(zoneToExtract)
+                if (!geom) {
+                    error("Cannot find an area from the place name ${zoneToExtract}")
+                    return null
+                }
+                if (geom instanceof Polygon) {
                     GEOMETRY_TYPE = "POLYGON"
-                    geom = Utilities.geometryFromOverpass(zoneToExtract)
-                    if (!geom) {
-                        error("The bounding box cannot be null")
-                        return null
-                    }
-                } else if (zoneToExtract instanceof String) {
-                    geom = Utilities.getAreaFromPlace(zoneToExtract);
-                    if (!geom) {
-                        error("Cannot find an area from the place name ${zoneToExtract}")
-                        return null
-                    } else {
-                        GEOMETRY_TYPE = "GEOMETRY"
-                        if (geom instanceof Polygon) {
-                            GEOMETRY_TYPE = "POLYGON"
-                        } else if (geom instanceof MultiPolygon) {
-                            GEOMETRY_TYPE = "MULTIPOLYGON"
-                        }
-                    }
-                } else {
-                    error("The zone to extract must be a place name or a JTS envelope")
-                    return null;
+                } else if (geom instanceof MultiPolygon) {
+                    GEOMETRY_TYPE = "MULTIPOLYGON"
+                } else{
+                    error("Invalid geometry to extract the OSM data ${geom.getGeometryType()}")
+                    return null
                 }
 
                 /**

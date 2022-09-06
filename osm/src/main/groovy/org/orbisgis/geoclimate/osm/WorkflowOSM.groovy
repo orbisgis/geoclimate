@@ -8,7 +8,6 @@ import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.FileUtilities
 import org.h2gis.utilities.GeographyUtilities
 import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.geoclimate.osmtools.utils.Utilities
@@ -332,7 +331,7 @@ IProcess workflow() {
                                 def osmprocessing = osm_processing()
                                 if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
                                         processing_parameters: processing_parameters,
-                                        id_zones: osmFilters, outputFolder: file_outputFolder, ouputTableFiles: outputFolderProperties.tables,
+                                        id_zones: osmFilters.findAll{it}, outputFolder: file_outputFolder, ouputTableFiles: outputFolderProperties.tables,
                                         output_datasource: output_datasource, outputTableNames: finalOutputTables, outputSRID :outputSRID, downloadAllOSMData:downloadAllOSMData, deleteOutputData: deleteOutputData,
                                         deleteOSMFile:deleteOSMFile, logTableZones:logTableZones, bbox_size : osm_size_area,
                                         overpass_timeout :overpass_timeout, overpass_maxsize:overpass_maxsize, overpass_enpoint:overpass_enpoint)) {
@@ -375,7 +374,7 @@ IProcess workflow() {
                                     def osmprocessing = osm_processing()
                                     if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
                                             processing_parameters: processing_parameters,
-                                            id_zones: osmFilters, outputFolder: file_outputFolder, ouputTableFiles: outputFolderProperties.tables,
+                                            id_zones: osmFilters.findAll{it}, outputFolder: file_outputFolder, ouputTableFiles: outputFolderProperties.tables,
                                             output_datasource: null, outputTableNames: null, outputSRID :outputSRID, downloadAllOSMData:downloadAllOSMData, deleteOutputData: deleteOutputData,
                                             deleteOSMFile:deleteOSMFile, logTableZones: logTableZones, bbox_size : osm_size_area,
                                             overpass_timeout :overpass_timeout, overpass_maxsize:overpass_maxsize)) {
@@ -430,7 +429,7 @@ IProcess workflow() {
                                     def osmprocessing = osm_processing()
                                     if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
                                             processing_parameters: processing_parameters,
-                                            id_zones: osmFilters, outputFolder: null, ouputTableFiles: null,
+                                            id_zones: osmFilters.findAll{it}, outputFolder: null, ouputTableFiles: null,
                                             output_datasource: output_datasource, outputTableNames: finalOutputTables,outputSRID :outputSRID,downloadAllOSMData:downloadAllOSMData,
                                             deleteOutputData: deleteOutputData,deleteOSMFile:deleteOSMFile,
                                             logTableZones: logTableZones, bbox_size : osm_size_area,
@@ -516,12 +515,13 @@ IProcess osm_processing() {
             CREATE TABLE $logTableZones (the_geom GEOMETRY(GEOMETRY, 4326), request VARCHAR, info VARCHAR);""".toString()
             int nbAreas = id_zones.size();
             info "$nbAreas osm areas will be processed"
-            id_zones.eachWithIndex { id_zone, index ->
+            int index = 0
+            id_zones.each { id_zone ->
                 def start = System.currentTimeMillis();
                 //Extract the zone table and read its SRID
                 def zoneTableNames = extractOSMZone(h2gis_datasource, id_zone, processing_parameters.distance, bbox_size)
                 if (zoneTableNames) {
-                    id_zone = id_zone in Map ? "bbox_" + id_zone.join('_') : id_zone
+                    id_zone = id_zone in Map ? "location_" + id_zone.join('_') : id_zone
                     def zoneTableName = zoneTableNames.outputZoneTable
                     def zoneEnvelopeTableName = zoneTableNames.outputZoneEnvelopeTable
                     if(h2gis_datasource.getTable(zoneTableName).getRowCount()==0){
@@ -810,24 +810,15 @@ IProcess osm_processing() {
                         error "Cannot execute the overpass query $query"
                         return
                     }
+                    index++
                 } else {
                     //Log in table
-                    if (id_zone in Collection) {
-                        def geom = Utilities.geometryFromOverpass(id_zone)
-                        if (!geom) {
-                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(null,'$id_zone', 'Error to extract the zone with Nominatim')".toString()
-                        }
-                        else{
-                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('$geom',4326) ,'$id_zone', 'Error to extract the zone with Nominatim')".toString()
-                        }
-                    } else if (id_zone instanceof String) {
-                        h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(null,'$id_zone', 'Error to extract the zone with Nominatim')".toString()
-                    }
-                    error "Cannot calculate a bounding box to extract OSM data"
+                    h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(null,'$id_zone', 'Error to extract the zone with Nominatim')".toString()
                     return
                 }
-
-                info "Number of areas processed ${index + 1} on $nbAreas"
+                if(index>0) {
+                    info "Number of areas processed ${index + 1} on $nbAreas"
+                }
             }
             return [outputTableNames: outputTableNamesResult]
         }
@@ -846,31 +837,19 @@ def extractOSMZone(def datasource, def zoneToExtract, def distance, def bbox_siz
     def outputZoneTable = "ZONE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
     def outputZoneEnvelopeTable = "ZONE_ENVELOPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
     if (zoneToExtract) {
-        def GEOMETRY_TYPE
-        Geometry geom
-        if (zoneToExtract in Collection) {
+        def GEOMETRY_TYPE = "GEOMETRY"
+        Geometry geom = Utilities.getArea(zoneToExtract)
+        if (!geom) {
+            error("Cannot find an area from the location ${zoneToExtract}")
+            return null
+        }
+        if (geom instanceof Polygon) {
             GEOMETRY_TYPE = "POLYGON"
-            geom = Utilities.geometryFromOverpass(zoneToExtract)
-            if (!geom) {
-                error("The bounding box cannot be null")
-                return null
-            }
-        } else if (zoneToExtract instanceof String) {
-            geom = Utilities.getAreaFromPlace(zoneToExtract);
-            if (!geom) {
-                error("Cannot find an area from the place name ${zoneToExtract}")
-                return null
-            } else {
-                GEOMETRY_TYPE = "GEOMETRY"
-                if (geom instanceof Polygon) {
-                    GEOMETRY_TYPE = "POLYGON"
-                } else if (geom instanceof MultiPolygon) {
-                    GEOMETRY_TYPE = "MULTIPOLYGON"
-                }
-            }
-        } else {
-            error("The zone to extract must be a place name or a JTS envelope")
-            return null;
+        } else if (geom instanceof MultiPolygon) {
+            GEOMETRY_TYPE = "MULTIPOLYGON"
+        } else{
+            error("Invalid geometry to extract the OSM data ${geom.getGeometryType()}")
+            return null
         }
 
         /**

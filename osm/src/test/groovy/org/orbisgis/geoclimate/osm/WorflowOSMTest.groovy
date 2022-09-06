@@ -264,7 +264,39 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         assertTrue(resultFiles.get(0)==folder.absolutePath+File.separator+"zones.geojson")
     }
 
-    //TODO
+    @Disabled
+    @Test
+    void testOSMWorkflowFromPoint() {
+        String directory ="./target/geoclimate_osm_point"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def bbox = OSM.bbox(48.78146, -3.01115,100)
+        def osm_parmeters = [
+                "description" :"Example of configuration file to run the OSM workflow and store the result in a folder",
+                "geoclimatedb" : [
+                        "folder" : dirFile.absolutePath,
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete" :true
+                ],
+                "input" : [
+                        "locations" : [bbox]],
+                "output" :[
+                        "folder" : directory]
+        ]
+        IProcess process = OSM.WorkflowOSM.workflow()
+        assertTrue(process.execute(input: osm_parmeters))
+        def  folder = new File(directory+File.separator+"osm_"+bbox.join("_"))
+        def resultFiles =[]
+        folder.eachFileRecurse groovy.io.FileType.FILES,  { file ->
+            if (file.name.toLowerCase().endsWith(".geojson")) {
+                resultFiles << file.getAbsolutePath()
+            }
+        }
+        assertTrue(resultFiles.size()==1)
+        assertTrue(resultFiles.get(0)==folder.absolutePath+File.separator+"zones.geojson")
+    }
+
     @Test
     void testOSMWorkflowBadOSMFilters() {
         String directory ="./target/geoclimate_chain"
@@ -279,7 +311,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "locations" : ["", [-3.0961382389068604, -3.1055688858032227,48.77155634881654,]]],
+                        "locations" : ["", [-3.0961382389068604, -3.1055688858032227,]]],
                 "output" :[
                         "folder" : directory]
         ]
