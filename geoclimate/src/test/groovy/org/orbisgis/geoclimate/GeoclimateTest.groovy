@@ -85,13 +85,13 @@ class GeoclimateTest {
 
     @Disabled
     @Test
-    void runWorkflow() {
+    void runOSMWorkflow() {
         def directory ="./target/geoclimate_cli"
         def dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
         def osmParameters = [
-                "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
+                "description" :"Example of configuration file to run the OSM workflow and store the resultset in a folder",
                 "geoclimatedb" : [
                         "folder" : dirFile.absolutePath,
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
@@ -116,5 +116,39 @@ class GeoclimateTest {
                 ]
         ]
         Geoclimate.OSM.workflow.execute(input: osmParameters)
+    }
+
+    @Disabled
+    @Test
+    void runBDTopoWorkflow() {
+        def directory ="./target/geoclimate_cli_bdtopo"
+        def dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def wParameters = [
+                "description" :"Example of configuration file to run the OSM workflow and store the resultset in a folder",
+                "geoclimatedb" : [
+                        "folder" : dirFile.absolutePath,
+                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete" :true
+                ],
+                "input" :[
+                        "folder": ["path" :"/home/ebocher/Autres/codes/geoclimate/bdtopo_v2/src/test/resources/org/orbisgis/geoclimate/bdtopo_v2/sample_12174",
+                                   "locations":["12174"]]],
+                "output" :[
+                        "folder" : directory],
+                "parameters":[
+                        "rsu_indicators":[
+                                "indicatorUse": ["LCZ"]
+                        ],
+                        "grid_indicators": [
+                                "x_size": 1000,
+                                "y_size": 1000,
+                                "indicators": ["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
+                                               "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "LCZ_FRACTION"]
+                        ]
+                ]
+        ]
+        Geoclimate.BDTopo_V2.workflow.execute(input: wParameters)
     }
 }

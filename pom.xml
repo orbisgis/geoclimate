@@ -216,6 +216,21 @@
                 <artifactId>slf4j-simple</artifactId>
                 <version>${slf4j-version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.codehaus.groovy</groupId>
+                <artifactId>groovy</artifactId>
+                <version>${groovy-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codehaus.groovy</groupId>
+                <artifactId>groovy-json</artifactId>
+                <version>${groovy-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codehaus.groovy</groupId>
+                <artifactId>groovy-sql</artifactId>
+                <version>${groovy-version}</version>
+            </dependency>
             <!-- Test dependencies -->
             <dependency>
                 <groupId>org.junit.jupiter</groupId>

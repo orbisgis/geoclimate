@@ -27,6 +27,11 @@
             <version>${groovy-version}</version>
         </dependency>
         <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy-sql</artifactId>
+            <version>${groovy-version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.orbisgis.data</groupId>
             <artifactId>h2gis</artifactId>
         </dependency>
@@ -62,10 +67,12 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

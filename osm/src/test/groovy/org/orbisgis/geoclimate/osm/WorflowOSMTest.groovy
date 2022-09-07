@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.POSTGIS
+import org.orbisgis.geoclimate.osmtools.utils.Utilities
 import org.orbisgis.process.api.IProcess
 
 import static org.junit.jupiter.api.Assertions.*
@@ -532,7 +533,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def location = [[57.651096,11.821976,57.708916,11.89235]]
+
+        def nominatim = Utilities.getNominatimData("Redon")
 
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the result in a folder",
@@ -542,7 +544,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "locations" : location,
+                        "locations" : [nominatim["bbox"]],
                         "timeout":3600,
                         "maxsize": 536870918,
                         "endpoint":"https://lz4.overpass-api.de/api"],

@@ -3,7 +3,7 @@ package org.orbisgis.geoclimate.geoindicators
 import groovy.transform.BaseScript
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
-import org.locationtech.jts.geom.Envelope
+import org.locationtech.jts.geom.Geometry
 import org.orbisgis.data.jdbc.*
 import org.orbisgis.process.api.IProcess
 import org.orbisgis.geoclimate.Geoindicators
@@ -2278,7 +2278,7 @@ IProcess createGrid() {
         title "Create a regular grid"
         id "creategridIndicators"
         inputs datasource: JdbcDataSource,
-                envelope: Envelope,
+                envelope: Geometry,
                 x_size: Integer, y_size: Integer,
                 srid: Integer, rowCol: false
         outputs outputTableName: String
