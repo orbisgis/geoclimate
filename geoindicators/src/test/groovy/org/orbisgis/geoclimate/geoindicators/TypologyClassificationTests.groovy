@@ -1,6 +1,10 @@
 package org.orbisgis.geoclimate.geoindicators
 
 import com.thoughtworks.xstream.XStream
+import com.thoughtworks.xstream.io.xml.StaxDriver
+import com.thoughtworks.xstream.security.NoTypePermission
+import com.thoughtworks.xstream.security.NullPermission
+import com.thoughtworks.xstream.security.PrimitiveTypePermission
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
@@ -204,7 +208,19 @@ class TypologyClassificationTests {
 
 
         // Test that the model is well written in the file and can be used to recover the variable names for example
-        def xs = new XStream()
+        def xs = new XStream(new StaxDriver())
+        // clear out existing permissions and start a whitelist
+        xs.addPermission(NoTypePermission.NONE);
+        // allow some basics
+        xs.addPermission(NullPermission.NULL);
+        xs.addPermission(PrimitiveTypePermission.PRIMITIVES);
+        xs.allowTypeHierarchy(Collection.class);
+        // allow any type from the packages
+        xs.allowTypesByWildcard(new String[] {
+                TypologyClassification.class.getPackage().getName()+".*",
+                "smile.regression.*","smile.data.formula.*", "smile.data.type.*", "smile.data.measure.*", "smile.data.measure.*",
+                "smile.base.cart.*","smile.classification.*","java.lang.*"
+        })
         def fileInputStream = new FileInputStream(savePath)
         assert fileInputStream
         def gzipInputStream = new GZIPInputStream(fileInputStream)
