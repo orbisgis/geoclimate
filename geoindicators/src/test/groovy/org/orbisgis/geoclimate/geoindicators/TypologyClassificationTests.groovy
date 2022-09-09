@@ -219,7 +219,7 @@ class TypologyClassificationTests {
         xs.allowTypesByWildcard(new String[] {
                 TypologyClassification.class.getPackage().getName()+".*",
                 "smile.regression.*","smile.data.formula.*", "smile.data.type.*", "smile.data.measure.*", "smile.data.measure.*",
-                "smile.base.cart.*","smile.classification.*","java.lang.*"
+                "smile.base.cart.*","smile.classification.*","java.lang.*","java.util.*"
         })
         def fileInputStream = new FileInputStream(savePath)
         assert fileInputStream

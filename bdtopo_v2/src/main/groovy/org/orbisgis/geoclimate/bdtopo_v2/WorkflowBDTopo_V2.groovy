@@ -1126,8 +1126,8 @@ def findIDZones(JdbcDataSource h2gis_datasource, def id_zones, def srid) {
                 } else if (id_zone instanceof String) {
                     id_zones_tmp << id_zone
                 } else {
-                    warn "The location value : $id_zone must be a text to find an inseecode\n" +
-                            " or an array for coordinates to specify a bbox\n"
+                    warn "The location value : $id_zone must be a text to find an insee code\n" +
+                            " or an array of coordinates to specify a bbox\n"
                 }
             }
             if (id_zones_tmp) {

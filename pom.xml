@@ -39,7 +39,7 @@
         <commons-io-version>2.11.0</commons-io-version>
         <commons-compress-version>1.21</commons-compress-version>
         <smile-version>2.5.3</smile-version>
-        <xstream-version>1.4.18</xstream-version>
+        <xstream-version>1.4.19</xstream-version>
 
         <!-- Plugins versions -->
         <exec-maven-version>3.0.0</exec-maven-version>

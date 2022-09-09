@@ -1754,6 +1754,11 @@ IProcess computeGeoclimateIndicators() {
                         datasource."$resultsDistrib"."$COLUMN_ID_RSU".createIndex()
                         datasource.tempo_distrib."$COLUMN_ID_RSU".createIndex()
                         def tmpTable = postfix "UTRF_RSU_$ind"
+                        if(ind=='AREA'){
+                            utrfArea=tmpTable
+                        }else if(ind=='FLOOR_AREA'){
+                            utrfFloorArea=tmpTable
+                        }
                         datasource """  DROP TABLE IF EXISTS $tmpTable;
                                     CREATE TABLE $tmpTable
                                         AS SELECT   a.*, 

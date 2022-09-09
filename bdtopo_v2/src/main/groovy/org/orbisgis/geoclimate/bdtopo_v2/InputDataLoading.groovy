@@ -1,6 +1,8 @@
 package org.orbisgis.geoclimate.bdtopo_v2
 
 import groovy.transform.BaseScript
+import org.h2gis.utilities.GeometryTableUtilities
+import org.h2gis.utilities.TableLocation
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.process.api.IProcess
 
@@ -82,30 +84,31 @@ IProcess prepareBDTopoData() {
 
             // The SRID is stored and initialized to -1
             def srid = -1
+            def con = datasource.getConnection()
 
             def tablesExist = []
             // For each tables in the list, we check the SRID and compare to the srid variable. If different, the process is stopped
             for (String name : list) {
                 if (name) {
-                    def table = datasource.getTable(name)
-                    if (table) {
-                        def hasRow = datasource.firstRow("select 1 as id from ${name} limit 1".toString())
-                        if (hasRow) {
-                            tablesExist << name
-                            def currentSrid = table.srid
-                            if (srid == -1) {
-                                srid = currentSrid
-                            } else {
-                                if (currentSrid == 0) {
-                                    error "The process has been stopped since the table $name has a no SRID"
-                                    return
-                                } else if (currentSrid > 0 && srid != currentSrid) {
-                                    error "The process has been stopped since the table $name has a different SRID from the others"
-                                    return
+                    if (datasource.hasTable(name)) {
+                            def hasRow = datasource.firstRow("select 1 as id from ${name} limit 1".toString())
+                            if (hasRow) {
+                                tablesExist << name
+                                def currentSrid = GeometryTableUtilities.getSRID(con, TableLocation.parse(name, datasource.getDataBaseType()))
+                                if (srid == -1) {
+                                    srid = currentSrid
+                                } else {
+                                    if (currentSrid == 0) {
+                                        error "The process has been stopped since the table $name has a no SRID"
+                                        return
+                                    } else if (currentSrid > 0 && srid != currentSrid) {
+                                        error "The process has been stopped since the table $name has a different SRID from the others"
+                                        return
+                                    }
                                 }
                             }
                         }
-                    }
+
                 }
             }
 
@@ -302,8 +305,7 @@ IProcess prepareBDTopoData() {
             //10. Clean tables
             datasource.execute("""
             DROP TABLE IF EXISTS TMP_IMPERV ,ZONE_EXTENDED; """.toString())
-             info('The  BD Topo data have been prepared' +
-                     '')
+            debug('The BDTopo data has been prepared')
              return    [outputBuildingName: "INPUT_BUILDING", outputRoadName: "INPUT_ROAD",
                         outputRailName: "INPUT_RAIL", outputHydroName   : "INPUT_HYDRO",
                         outputVegetName: "INPUT_VEGET", outputImperviousName: input_impervious,
