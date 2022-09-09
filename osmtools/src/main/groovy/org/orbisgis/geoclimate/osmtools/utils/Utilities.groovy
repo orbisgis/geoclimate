@@ -747,7 +747,7 @@ class Utilities {
         connection.requestMethod = GET
         connection.connect()
 
-        info "Executing query... $query"
+        debug"Executing query... $query"
         //Save the result in a file
         if (connection.responseCode == 200) {
             info "Downloading the OSM data from overpass api in ${outputOSMFile}"

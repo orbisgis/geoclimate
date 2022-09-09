@@ -506,12 +506,12 @@ IProcess osm_processing() {
                 overpass_timeout :180, overpass_maxsize:536870912
         outputs outputTableNames: Map
         run { H2GIS h2gis_datasource, processing_parameters, id_zones, outputFolder, ouputTableFiles, output_datasource, outputTableNames,
-              outputSRID, downloadAllOSMData,deleteOutputData, deleteOSMFile,logTableZones, bbox_size, overpass_timeout,
-              overpass_maxsize->
+              outputSRID, downloadAllOSMData, deleteOutputData, deleteOSMFile, logTableZones, bbox_size, overpass_timeout,
+              overpass_maxsize ->
             //Store the zone identifier and the names of the tables
             def outputTableNamesResult = [:]
             //Create the table to log on the processed zone
-             h2gis_datasource.execute """DROP TABLE IF EXISTS $logTableZones;
+            h2gis_datasource.execute """DROP TABLE IF EXISTS $logTableZones;
             CREATE TABLE $logTableZones (the_geom GEOMETRY(GEOMETRY, 4326), request VARCHAR, info VARCHAR);""".toString()
             int nbAreas = id_zones.size();
             info "$nbAreas osm areas will be processed"
@@ -524,40 +524,40 @@ IProcess osm_processing() {
                     id_zone = id_zone in Map ? "location_" + id_zone.join('_') : id_zone
                     def zoneTableName = zoneTableNames.outputZoneTable
                     def zoneEnvelopeTableName = zoneTableNames.outputZoneEnvelopeTable
-                    if(h2gis_datasource.getTable(zoneTableName).getRowCount()==0){
+                    if (h2gis_datasource.getTable(zoneTableName).getRowCount() == 0) {
                         error "Cannot find any geometry to define the zone to extract the OSM data"
                         return
                     }
                     def srid = h2gis_datasource.getSpatialTable(zoneTableName).srid
-                    def reproject =false
-                    if(outputSRID){
-                        if(outputSRID!=srid){
+                    def reproject = false
+                    if (outputSRID) {
+                        if (outputSRID != srid) {
                             reproject = true
                         }
-                    }else{
-                        outputSRID =srid
+                    } else {
+                        outputSRID = srid
                     }
                     //Prepare OSM extraction
                     //TODO set key values ?
                     def query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]" + Utilities.buildOSMQuery(zoneTableNames.envelope, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
 
-                    if(downloadAllOSMData){
+                    if (downloadAllOSMData) {
                         //Create a custom OSM query to download all requiered data. It will take more time and resources
                         //because much more OSM elements will be returned
-                        def  keysValues = ["building", "railway", "amenity",
-                                           "leisure", "highway", "natural",
-                                           "landuse", "landcover",
-                                           "vegetation","waterway"]
+                        def keysValues = ["building", "railway", "amenity",
+                                          "leisure", "highway", "natural",
+                                          "landuse", "landcover",
+                                          "vegetation", "waterway"]
                         //TODO : Remove unnecessary keys according the output tables set in the config file
-                        query =  "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]"+ Utilities.buildOSMQueryWithAllData(zoneTableNames.envelope, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+                        query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]" + Utilities.buildOSMQueryWithAllData(zoneTableNames.envelope, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
                     }
 
                     def extract = OSMTools.Loader.extract()
                     if (extract.execute(overpassQuery: query)) {
                         IProcess createGISLayerProcess = OSM.InputDataLoading.createGISLayers()
                         if (createGISLayerProcess.execute(datasource: h2gis_datasource, osmFilePath: extract.results.outputFilePath, epsg: srid)) {
-                            if(deleteOSMFile){
-                                if( new File(extract.results.outputFilePath).delete()){
+                            if (deleteOSMFile) {
+                                if (new File(extract.results.outputFilePath).delete()) {
                                     debug "The osm file ${extract.results.outputFilePath}has been deleted"
                                 }
                             }
@@ -569,11 +569,11 @@ IProcess osm_processing() {
 
                             debug "Formating OSM GIS layers"
                             //Process only the required table
-                            def urbanAreasTable ,buildingTableName,buildingEstimateTableName,  roadTableName,
-                                    railTableName,vegetationTableName, hydrographicTableName, imperviousTableName,
-                             seaLandMaskTableName
+                            def urbanAreasTable, buildingTableName, buildingEstimateTableName, roadTableName,
+                                railTableName, vegetationTableName, hydrographicTableName, imperviousTableName,
+                                seaLandMaskTableName
 
-                            if(rsu_indicators_params.indicatorUse){
+                            if (rsu_indicators_params.indicatorUse) {
                                 //Format urban areas
                                 IProcess format = OSM.InputDataFormatting.formatUrbanAreas()
                                 format.execute([
@@ -599,59 +599,59 @@ IProcess osm_processing() {
                                 buildingEstimateTableName = format.results.outputEstimateTableName
 
 
-                            format = OSM.InputDataFormatting.formatRailsLayer()
-                            format.execute([
-                                    datasource                : h2gis_datasource,
-                                    inputTableName            : gisLayersResults.railTableName,
-                                    inputZoneEnvelopeTableName: zoneEnvelopeTableName,
-                                    epsg                      : srid])
+                                format = OSM.InputDataFormatting.formatRailsLayer()
+                                format.execute([
+                                        datasource                : h2gis_datasource,
+                                        inputTableName            : gisLayersResults.railTableName,
+                                        inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                        epsg                      : srid])
                                 railTableName = format.results.outputTableName
 
-                            format = OSM.InputDataFormatting.formatVegetationLayer()
-                            format.execute([
-                                    datasource                : h2gis_datasource,
-                                    inputTableName            : gisLayersResults.vegetationTableName,
-                                    inputZoneEnvelopeTableName: zoneEnvelopeTableName,
-                                    epsg                      : srid])
+                                format = OSM.InputDataFormatting.formatVegetationLayer()
+                                format.execute([
+                                        datasource                : h2gis_datasource,
+                                        inputTableName            : gisLayersResults.vegetationTableName,
+                                        inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                        epsg                      : srid])
                                 vegetationTableName = format.results.outputTableName
 
-                            format = OSM.InputDataFormatting.formatHydroLayer()
-                            format.execute([
-                                    datasource                : h2gis_datasource,
-                                    inputTableName            : gisLayersResults.hydroTableName,
-                                    inputZoneEnvelopeTableName: zoneEnvelopeTableName,
-                                    epsg                      : srid])
-                             hydrographicTableName = format.results.outputTableName
+                                format = OSM.InputDataFormatting.formatHydroLayer()
+                                format.execute([
+                                        datasource                : h2gis_datasource,
+                                        inputTableName            : gisLayersResults.hydroTableName,
+                                        inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                        epsg                      : srid])
+                                hydrographicTableName = format.results.outputTableName
 
-                            format = OSM.InputDataFormatting.formatImperviousLayer()
-                            format.execute([
-                                    datasource                : h2gis_datasource,
-                                    inputTableName            : gisLayersResults.imperviousTableName,
-                                    inputZoneEnvelopeTableName: zoneEnvelopeTableName,
-                                    epsg                      : srid])
-                             imperviousTableName = format.results.outputTableName
+                                format = OSM.InputDataFormatting.formatImperviousLayer()
+                                format.execute([
+                                        datasource                : h2gis_datasource,
+                                        inputTableName            : gisLayersResults.imperviousTableName,
+                                        inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                        epsg                      : srid])
+                                imperviousTableName = format.results.outputTableName
 
-                            //Sea/Land mask
-                            format = OSM.InputDataFormatting.formatSeaLandMask()
-                            format.execute([
-                                    datasource                : h2gis_datasource,
-                                    inputTableName            : gisLayersResults.coastlineTableName,
-                                    inputZoneEnvelopeTableName: zoneEnvelopeTableName,
-                                    epsg                      : srid])
+                                //Sea/Land mask
+                                format = OSM.InputDataFormatting.formatSeaLandMask()
+                                format.execute([
+                                        datasource                : h2gis_datasource,
+                                        inputTableName            : gisLayersResults.coastlineTableName,
+                                        inputZoneEnvelopeTableName: zoneEnvelopeTableName,
+                                        epsg                      : srid])
 
                                 seaLandMaskTableName = format.results.outputTableName
 
-                            //Merge the Sea/Land mask with water table
-                            format = OSM.InputDataFormatting.mergeWaterAndSeaLandTables()
-                            format.execute([
-                                    datasource           : h2gis_datasource,
-                                    inputSeaLandTableName: seaLandMaskTableName, inputWaterTableName: hydrographicTableName,
-                                    epsg                 : srid])
+                                //Merge the Sea/Land mask with water table
+                                format = OSM.InputDataFormatting.mergeWaterAndSeaLandTables()
+                                format.execute([
+                                        datasource           : h2gis_datasource,
+                                        inputSeaLandTableName: seaLandMaskTableName, inputWaterTableName: hydrographicTableName,
+                                        epsg                 : srid])
 
-                            hydrographicTableName = format.results.outputTableName
+                                hydrographicTableName = format.results.outputTableName
                             }
-                          
-                            if(road_traffic || rsu_indicators_params.indicatorUse||grid_indicators_params){
+
+                            if (road_traffic || rsu_indicators_params.indicatorUse || grid_indicators_params) {
 
                                 IProcess format = OSM.InputDataFormatting.formatRoadLayer()
                                 format.execute([
@@ -678,25 +678,25 @@ IProcess osm_processing() {
 
 
                             //Compute traffic flow
-                            if(road_traffic){
-                                IProcess format =  Geoindicators.RoadIndicators.build_road_traffic()
+                            if (road_traffic) {
+                                IProcess format = Geoindicators.RoadIndicators.build_road_traffic()
                                 format.execute([
-                                        datasource : h2gis_datasource,
+                                        datasource    : h2gis_datasource,
                                         inputTableName: roadTableName,
-                                        epsg: srid])
+                                        epsg          : srid])
                                 results.put("roadTrafficTableName", format.results.outputTableName)
                             }
 
                             //Compute the RSU indicators
-                            if(rsu_indicators_params.indicatorUse){
-                                def estimateHeight  = rsu_indicators_params."estimateHeight"
+                            if (rsu_indicators_params.indicatorUse) {
+                                def estimateHeight = rsu_indicators_params."estimateHeight"
                                 IProcess geoIndicators = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
                                 if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
                                         buildingTable: buildingTableName, roadTable: roadTableName,
                                         railTable: railTableName, vegetationTable: vegetationTableName,
                                         hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
                                         buildingEstimateTableName: buildingEstimateTableName,
-                                        seaLandMaskTableName:seaLandMaskTableName,
+                                        seaLandMaskTableName: seaLandMaskTableName,
                                         surface_vegetation: rsu_indicators_params.surface_vegetation,
                                         surface_hydro: rsu_indicators_params.surface_hydro,
                                         snappingTolerance: rsu_indicators_params.snappingTolerance,
@@ -712,35 +712,34 @@ IProcess osm_processing() {
                                     h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error computing geoindicators')".toString()
 
                                     return
-                                }
-                                else{
-                                     results.putAll(geoIndicators.getResults())
+                                } else {
+                                    results.putAll(geoIndicators.getResults())
                                 }
                             }
 
                             //Extract and compute population indicators for the specified year
                             //This data can be used by the grid_indicators process
-                            if(worldpop_indicators){
+                            if (worldpop_indicators) {
                                 IProcess extractWorldPopLayer = WorldPopTools.Extract.extractWorldPopLayer()
                                 def coverageId = "wpGlobal:ppp_2020"
-                                def bbox = [zoneTableNames.envelope.getMinY() as Float,zoneTableNames.envelope.getMinX()as Float,
-                                            zoneTableNames.envelope.getMaxY()as Float,zoneTableNames.envelope.getMaxX()as Float]
-                                if(extractWorldPopLayer.execute([coverageId:coverageId,  bbox :bbox])){
+                                def bbox = [zoneTableNames.envelope.getMinY() as Float, zoneTableNames.envelope.getMinX() as Float,
+                                            zoneTableNames.envelope.getMaxY() as Float, zoneTableNames.envelope.getMaxX() as Float]
+                                if (extractWorldPopLayer.execute([coverageId: coverageId, bbox: bbox])) {
                                     IProcess importAscGrid = WorldPopTools.Extract.importAscGrid()
-                                    if(importAscGrid.execute([worldPopFilePath:extractWorldPopLayer.results.outputFilePath,
-                                                              epsg: srid, tableName : coverageId.replaceAll(":", "_"),  datasource: h2gis_datasource, epsg:srid])){
+                                    if (importAscGrid.execute([worldPopFilePath: extractWorldPopLayer.results.outputFilePath,
+                                                               epsg            : srid, tableName: coverageId.replaceAll(":", "_"), datasource: h2gis_datasource, epsg: srid])) {
                                         results.put("populationTableName", importAscGrid.results.outputTableWorldPopName)
 
                                         IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
-                                        if(!process.execute([inputBuildingTableName: results.buildingTableName,
-                                                             inputPopulationTableName: importAscGrid.results.outputTableWorldPopName,
-                                                             inputPopulationTableName :["pop"],datasource: h2gis_datasource])) {
+                                        if (!process.execute([inputBuildingTableName  : results.buildingTableName,
+                                                              inputPopulationTableName: importAscGrid.results.outputTableWorldPopName,
+                                                              inputPopulationTableName: ["pop"], datasource: h2gis_datasource])) {
                                             info "Cannot compute any population data at building level"
                                         }
                                         //Update the building table with the population data
                                         results.put("buildingTableName", process.results.buildingTableName)
 
-                                    }else {
+                                    } else {
                                         info "Cannot import the worldpop asc file $extractWorldPopLayer.results.outputFilePath"
                                         info "Create a default empty worldpop table"
                                         def outputTableWorldPopName = postfix "world_pop"
@@ -749,7 +748,7 @@ IProcess osm_processing() {
                                         results.put("populationTableName", outputTableWorldPopName)
                                     }
 
-                                }else {
+                                } else {
                                     info "Cannot find the population grid $coverageId \n Create a default empty worldpop table"
                                     def outputTableWorldPopName = postfix "world_pop"
                                     h2gis_datasource.execute("""drop table if exists $outputTableWorldPopName;
@@ -760,36 +759,36 @@ IProcess osm_processing() {
 
                             //Default
                             def outputGrid = "geojson"
-                            def  geomEnv = h2gis_datasource.getSpatialTable(zoneTableName).getExtent()
-                            if(grid_indicators_params){
-                                outputGrid =  grid_indicators_params.output
+                            def geomEnv = h2gis_datasource.getSpatialTable(zoneTableName).getExtent()
+                            if (grid_indicators_params) {
+                                outputGrid = grid_indicators_params.output
                                 def x_size = grid_indicators_params.x_size
                                 def y_size = grid_indicators_params.y_size
                                 IProcess gridProcess = Geoindicators.WorkflowGeoIndicators.createGrid()
-                                if(gridProcess.execute(datasource:h2gis_datasource,envelope: geomEnv,
-                                        x_size : x_size, y_size : y_size,
-                                        srid : srid,rowCol: grid_indicators_params.rowCol)){
+                                if (gridProcess.execute(datasource: h2gis_datasource, envelope: geomEnv,
+                                        x_size: x_size, y_size: y_size,
+                                        srid: srid, rowCol: grid_indicators_params.rowCol)) {
                                     def gridTableName = gridProcess.results.outputTableName
-                                    IProcess rasterizedIndicators =  Geoindicators.WorkflowGeoIndicators.rasterizeIndicators()
-                                    if(rasterizedIndicators.execute(datasource:h2gis_datasource,gridTableName: gridTableName,
-                                            list_indicators :grid_indicators_params.indicators,
+                                    IProcess rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators()
+                                    if (rasterizedIndicators.execute(datasource: h2gis_datasource, gridTableName: gridTableName,
+                                            list_indicators: grid_indicators_params.indicators,
                                             buildingTable: buildingTableName, roadTable: roadTableName, vegetationTable: vegetationTableName,
                                             hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
-                                            rsu_lcz:results.outputTableRsuLcz,
-                                            rsu_utrf_area:results.outputTableRsuUtrfArea,
-                                            rsu_utrf_floor_area:results.outputTableRsuUtrfFloorArea,
+                                            rsu_lcz: results.outputTableRsuLcz,
+                                            rsu_utrf_area: results.outputTableRsuUtrfArea,
+                                            rsu_utrf_floor_area: results.outputTableRsuUtrfFloorArea,
                                             prefixName: processing_parameters.prefixName
-                                    )){
+                                    )) {
                                         results.put("gridIndicatorsTableName", rasterizedIndicators.results.outputTableName)
                                     }
-                                }else {
+                                } else {
                                     info "Cannot create a grid to aggregate the indicators"
                                 }
-                            }else{
+                            } else {
                                 h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error computing the grid indicators')".toString()
                             }
 
-                            if (outputFolder  && ouputTableFiles) {
+                            if (outputFolder && ouputTableFiles) {
                                 saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject, deleteOutputData, outputGrid)
 
                             }
@@ -797,7 +796,7 @@ IProcess osm_processing() {
                                 saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone, srid, outputSRID, reproject)
                             }
 
-                            outputTableNamesResult.put(id_zone in Collection?id_zone.join("_"):id_zone, results.findAll{ it.value!=null })
+                            outputTableNamesResult.put(id_zone in Collection ? id_zone.join("_") : id_zone, results.findAll { it.value != null })
 
                         } else {
                             h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error loading the OSM file')".toString()
@@ -816,11 +815,13 @@ IProcess osm_processing() {
                     h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(null,'$id_zone', 'Error to extract the zone with Nominatim')".toString()
                     return
                 }
-                if(index>0) {
+                if (index > 0) {
                     info "Number of areas processed ${index + 1} on $nbAreas"
                 }
             }
+            if (outputTableNamesResult) {
             return [outputTableNames: outputTableNamesResult]
+            }
         }
     }
 }

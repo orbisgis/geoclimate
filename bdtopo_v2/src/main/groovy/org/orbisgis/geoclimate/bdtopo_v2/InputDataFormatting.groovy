@@ -41,7 +41,7 @@ IProcess formatBuildingLayer() {
                 hThresholdLev2 = 10
             }
 
-            def outputTableName = postfix "INPUT_BUILDING"
+            def outputTableName = postfix "BUILDING"
             debug 'Formating building layer'
 
             //Create the final building table
@@ -240,7 +240,7 @@ IProcess formatRoadLayer() {
         outputs outputTableName: String
         run { datasource, inputTableName, inputZoneEnvelopeTableName ->
             debug('Formating road layer')
-            def outputTableName = postfix "INPUT_ROAD"
+            def outputTableName = postfix "ROAD"
             datasource """
             DROP TABLE IF EXISTS $outputTableName;
             CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_road serial, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR, CROSSING VARCHAR(30),
@@ -388,7 +388,7 @@ IProcess formatHydroLayer() {
         outputs outputTableName: String
         run { datasource, inputTableName, inputZoneEnvelopeTableName ->
             debug('Hydro transformation starts')
-            def outputTableName = postfix("INPUT_HYDRO")
+            def outputTableName = postfix("HYDRO")
             datasource.execute """Drop table if exists $outputTableName;
                     CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_hydro serial, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);""".toString()
 
@@ -448,7 +448,7 @@ IProcess formatRailsLayer() {
         outputs outputTableName: String
         run { datasource, inputTableName, inputZoneEnvelopeTableName ->
             debug('Rails transformation starts')
-            def outputTableName = postfix("INPUT_RAILS")
+            def outputTableName = postfix("RAILS")
             datasource.execute """ drop table if exists $outputTableName;
                 CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_rail serial,
                 ID_SOURCE VARCHAR, TYPE VARCHAR,CROSSING VARCHAR(30), ZINDEX INTEGER);""".toString()
@@ -543,7 +543,7 @@ IProcess formatVegetationLayer() {
         outputs outputTableName: String
         run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName ->
             debug('Vegetation transformation starts')
-            def outputTableName = postfix "INPUT_VEGET"
+            def outputTableName = postfix "VEGET"
             datasource """ 
                 DROP TABLE IF EXISTS $outputTableName;
                 CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_veget serial, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4), ZINDEX INTEGER);""".toString()

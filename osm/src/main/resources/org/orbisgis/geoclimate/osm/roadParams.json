@@ -16,7 +16,7 @@
   },
   "columns":["width","highway", "surface", "sidewalk",
     "layer","maxspeed","oneway",
-    "route","junction", "bridge", "service", "access"],
+    "route","junction", "bridge", "service", "access", "area"],
     "surface":
      {
         "unpaved": {

@@ -93,7 +93,7 @@ IProcess identifyLczType() {
                 def queryValuesNorm = ""
 
                 // The name of the outputTableName is constructed
-                def outputTableName = prefix prefixName, BASE_NAME
+                def outputTableName = postfix(BASE_NAME)
 
                 // To avoid overwriting the output files of this step, a unique identifier is created
                 // Temporary table names are defined

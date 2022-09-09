@@ -43,7 +43,7 @@ IProcess build_road_traffic() {
         outputs outputTableName: String
         run { datasource, inputTableName, inputZoneEnvelopeTableName, epsg, jsonFilename ->
             debug('Create the default traffic data')
-            def outputTableName =  "ROAD_TRAFFIC"
+            def outputTableName =  postfix"ROAD_TRAFFIC"
             datasource """
                 DROP TABLE IF EXISTS $outputTableName;
                 CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_ROAD SERIAL, ID_SOURCE VARCHAR, 

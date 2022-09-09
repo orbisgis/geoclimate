@@ -749,7 +749,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         def user = postgis_b.user
         def password = postgis_b.password
         def url = postgis_b.url
-        def locations = ["Allaire"]
+        def locations = ["35236"]
         def local_database_name="geoclimate_test_integration;AUTO_SERVER=TRUE"
 
         /*================================================================================
@@ -814,8 +814,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                 "output" : output,
                 "parameters": [ "distance" : 1000   ,
                                 "rsu_indicators":[
-                                        "indicatorUse": ["LCZ", "UTRF", "TEB"],
-                                        "svfSimplified": false,
+                                        "indicatorUse": ["LCZ", "UTRF", "TEB"]
                                 ],
                                 /*"grid_indicators": [
                                         "x_size": 100,
