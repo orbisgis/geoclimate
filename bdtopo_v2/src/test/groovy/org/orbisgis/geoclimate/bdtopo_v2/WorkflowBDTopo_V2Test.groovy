@@ -373,10 +373,12 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         def tablesToSave = [
                             "rsu_lcz",]
         def process = BDTopo_V2.WorkflowBDTopo_V2.bdtopo_processing(h2GISDatabase, defaultParameters, inseeCode, directory, tablesToSave, null, null, 4326);
-        checkSpatialTable(h2GISDatabase, "block_indicators")
-        checkSpatialTable(h2GISDatabase, "building_indicators")
-        checkSpatialTable(h2GISDatabase, "rsu_indicators")
-        checkSpatialTable(h2GISDatabase, "rsu_lcz")
+        def tableNames = process.values()
+
+        checkSpatialTable(h2GISDatabase, tableNames["outputTableBlockIndicators"])
+        checkSpatialTable(h2GISDatabase, tableNames["outputTableBuildingIndicators"])
+        checkSpatialTable(h2GISDatabase, tableNames["outputTableRsuIndicators"])
+        checkSpatialTable(h2GISDatabase, tableNames["outputTableRsuLcz"])
         def geoFiles = []
         def  folder = new File(directory+File.separator+inseeCode)
         folder.eachFileRecurse groovy.io.FileType.FILES,  { file ->
