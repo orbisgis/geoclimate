@@ -305,7 +305,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
         def osm_parmeters = [
-                "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
+                "description" :"Example of configuration file to run the OSM workflow and store the results in a folder",
                 "geoclimatedb" : [
                         "folder" : dirFile.absolutePath,
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
@@ -317,7 +317,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "folder" : directory]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
-        assertTrue(process.execute(input: osm_parmeters))
+        assertFalse(process.execute(input: osm_parmeters))
     }
 
     @Test
@@ -521,9 +521,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
-        assertEquals(3,  process.getResults().output["Pont-de-Veyle"].size())
+        def roadTableName = process.getResults().output["Pont-de-Veyle"]["roadTrafficTableName"]
+        assertNotNull(roadTableName)
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
-        assertTrue h2gis.firstRow("select count(*) as count from road_traffic where road_type is not null").count>0
+        assertTrue h2gis.firstRow("select count(*) as count from $roadTableName where road_type is not null".toString()).count>0
     }
 
     @Disabled //Use it for debug

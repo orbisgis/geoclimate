@@ -37,7 +37,7 @@ IProcess computeBuildingsIndicators() {
             finalTablesToJoin.put(inputBuildingTableName, idColumnBu)
 
             // The name of the outputTableName is constructed
-            def outputTableName = prefix prefixName, BASE_NAME
+            def outputTableName = postfix BASE_NAME
             def buildingPrefixName = "building_indicator_"
             def buildTableJoinNeighbors = postfix "A"
 
@@ -199,7 +199,7 @@ IProcess computeBlockIndicators() {
 
             info "Start computing block indicators..."
             // The name of the outputTableName is constructed
-            def outputTableName = prefix prefixName, BASE_NAME
+            def outputTableName = postfix(BASE_NAME)
             def blockPrefixName = "block_indicator_"
             def id_block = "id_block"
             def id_build = "id_build"
@@ -472,7 +472,7 @@ IProcess computeRSUIndicators() {
             intermediateJoin.put(rsuTable, columnIdRsu)
 
             // Name of the output table
-            def outputTableName = prefix prefixName, BASE_NAME
+            def outputTableName = postfix(BASE_NAME)
 
             // PrefixName for intermediate table (start with a letter to avoid table name issue if start with a number)
             def temporaryPrefName = "rsu_indicator"
@@ -1181,7 +1181,6 @@ IProcess computeAllGeoIndicators() {
 
                 // Temporary (and output tables) are created
                 def lczIndicTable = postfix "LCZ_INDIC_TABLE"
-                def baseNameUtrfRsu = prefix prefixName, "UTRF_RSU_"
                 def utrfBuilding
                 def distribNotPercent = "DISTRIB_NOT_PERCENT"
                 def COLUMN_ID_RSU = "id_rsu"
@@ -1193,8 +1192,8 @@ IProcess computeAllGeoIndicators() {
 
                 // Output Lcz (and urbanTypo) table names are set to null in case LCZ indicators (and urban typo) are not calculated
                 def rsuLcz = null
-                def utrfArea = baseNameUtrfRsu + "AREA"
-                def utrfFloorArea = baseNameUtrfRsu + "FLOOR_AREA"
+                def utrfArea
+                def utrfFloorArea
                 def rsuLczWithoutGeom = "rsu_lcz_without_geom"
 
                 //Compute building indicators
@@ -1331,7 +1330,7 @@ IProcess computeAllGeoIndicators() {
                             endCaseWhen += " END"
                         }
                         queryCaseWhenReplace = queryCaseWhenReplace + " 'unknown' " + endCaseWhen
-                        utrfBuilding = prefix prefixName, "UTRF_BUILDING"
+                        utrfBuilding = postfix"UTRF_BUILDING"
                         datasource."$utrfBuild"."$COLUMN_ID_BUILD".createIndex()
                         datasource."$buildingIndicators"."$COLUMN_ID_BUILD".createIndex()
                         datasource """  DROP TABLE IF EXISTS $utrfBuilding;
@@ -1524,7 +1523,6 @@ IProcess computeGeoclimateIndicators() {
             }
             // Temporary (and output tables) are created
             def lczIndicTable = postfix "LCZ_INDIC_TABLE"
-            def baseNameUtrfRsu = prefix prefixName, "UTRF_RSU_"
             def utrfBuilding
             def distribNotPercent = "DISTRIB_NOT_PERCENT"
 
@@ -1542,8 +1540,8 @@ IProcess computeGeoclimateIndicators() {
 
             // Output Lcz (and urbanTypo) table names are set to null in case LCZ indicators (and urban typo) are not calculated
             def rsuLcz = null
-            def utrfArea = baseNameUtrfRsu + "AREA"
-            def utrfFloorArea = baseNameUtrfRsu + "FLOOR_AREA"
+            def utrfArea = null
+            def utrfFloorArea = null
 
             //Create spatial units and relations : building, block, rsu
             IProcess spatialUnits = createUnitsOfAnalysis()
@@ -1695,7 +1693,7 @@ IProcess computeGeoclimateIndicators() {
                         endCaseWhen += " END"
                     }
                     queryCaseWhenReplace = queryCaseWhenReplace + " 'unknown' " + endCaseWhen
-                    utrfBuilding = prefix prefixName, "UTRF_BUILDING"
+                    utrfBuilding = postfix"UTRF_BUILDING"
                     datasource."$utrfBuild"."$COLUMN_ID_BUILD".createIndex()
                     datasource."$buildingIndicators"."$COLUMN_ID_BUILD".createIndex()
                     datasource """  DROP TABLE IF EXISTS $utrfBuilding;
@@ -1755,8 +1753,14 @@ IProcess computeGeoclimateIndicators() {
                         // while there is no building in the RSU
                         datasource."$resultsDistrib"."$COLUMN_ID_RSU".createIndex()
                         datasource.tempo_distrib."$COLUMN_ID_RSU".createIndex()
-                        datasource """  DROP TABLE IF EXISTS $baseNameUtrfRsu$ind;
-                                    CREATE TABLE $baseNameUtrfRsu$ind
+                        def tmpTable = postfix "UTRF_RSU_$ind"
+                        if(ind=='AREA'){
+                            utrfArea=tmpTable
+                        }else if(ind=='FLOOR_AREA'){
+                            utrfFloorArea=tmpTable
+                        }
+                        datasource """  DROP TABLE IF EXISTS $tmpTable;
+                                    CREATE TABLE $tmpTable
                                         AS SELECT   a.*, 
                                                     CASE WHEN   b.UNIQUENESS_VALUE=-1
                                                     THEN        NULL

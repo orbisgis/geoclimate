@@ -93,7 +93,7 @@ IProcess identifyLczType() {
                 def queryValuesNorm = ""
 
                 // The name of the outputTableName is constructed
-                def outputTableName = prefix prefixName, BASE_NAME
+                def outputTableName = postfix(BASE_NAME)
 
                 // To avoid overwriting the output files of this step, a unique identifier is created
                 // Temporary table names are defined
@@ -631,7 +631,7 @@ IProcess applyRandomForestModel() {
             xs.allowTypesByWildcard(new String[] {
                     TypologyClassification.class.getPackage().getName()+".*",
                     "smile.regression.*","smile.data.formula.*", "smile.data.type.*", "smile.data.measure.*", "smile.data.measure.*",
-                    "smile.base.cart.*","smile.classification.*","java.lang.*"
+                    "smile.base.cart.*","smile.classification.*","java.lang.*","java.util.*"
             })
             // Load the model and recover the name of the variable to model
             def gzipInputStream = new GZIPInputStream(fileInputStream)

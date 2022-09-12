@@ -1,6 +1,8 @@
 package org.orbisgis.geoclimate.bdtopo_v2
 
 import groovy.transform.BaseScript
+import org.h2gis.utilities.GeometryTableUtilities
+import org.h2gis.utilities.TableLocation
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.process.api.IProcess
 
@@ -82,30 +84,31 @@ IProcess prepareBDTopoData() {
 
             // The SRID is stored and initialized to -1
             def srid = -1
+            def con = datasource.getConnection()
 
             def tablesExist = []
             // For each tables in the list, we check the SRID and compare to the srid variable. If different, the process is stopped
             for (String name : list) {
                 if (name) {
-                    def table = datasource.getTable(name)
-                    if (table) {
-                        def hasRow = datasource.firstRow("select 1 as id from ${name} limit 1".toString())
-                        if (hasRow) {
-                            tablesExist << name
-                            def currentSrid = table.srid
-                            if (srid == -1) {
-                                srid = currentSrid
-                            } else {
-                                if (currentSrid == 0) {
-                                    error "The process has been stopped since the table $name has a no SRID"
-                                    return
-                                } else if (currentSrid > 0 && srid != currentSrid) {
-                                    error "The process has been stopped since the table $name has a different SRID from the others"
-                                    return
+                    if (datasource.hasTable(name)) {
+                            def hasRow = datasource.firstRow("select 1 as id from ${name} limit 1".toString())
+                            if (hasRow) {
+                                tablesExist << name
+                                def currentSrid = GeometryTableUtilities.getSRID(con, TableLocation.parse(name, datasource.getDataBaseType()))
+                                if (srid == -1) {
+                                    srid = currentSrid
+                                } else {
+                                    if (currentSrid == 0) {
+                                        error "The process has been stopped since the table $name has a no SRID"
+                                        return
+                                    } else if (currentSrid > 0 && srid != currentSrid) {
+                                        error "The process has been stopped since the table $name has a different SRID from the others"
+                                        return
+                                    }
                                 }
                             }
                         }
-                    }
+
                 }
             }
 
@@ -195,13 +198,14 @@ IProcess prepareBDTopoData() {
 
             //2- Preparation of the study area (zone_xx)
 
+            def zoneTable = postfix("ZONE")
             datasource.execute("""
-            DROP TABLE IF EXISTS ZONE;
-            CREATE TABLE ZONE AS SELECT ST_FORCE2D(the_geom) as the_geom, CODE_INSEE AS ID_ZONE  FROM $tableCommuneName;
-            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_ZONE ON ZONE (the_geom);
+            DROP TABLE IF EXISTS $zoneTable;
+            CREATE TABLE $zoneTable AS SELECT ST_FORCE2D(the_geom) as the_geom, CODE_INSEE AS ID_ZONE  FROM $tableCommuneName;
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_ZONE ON $zoneTable (the_geom);
             -- Generation of a rectangular area (bbox) around the studied commune
             DROP TABLE IF EXISTS ZONE_EXTENDED;
-            CREATE TABLE ZONE_EXTENDED AS SELECT ST_EXPAND(the_geom, $distance) as the_geom FROM ZONE;
+            CREATE TABLE ZONE_EXTENDED AS SELECT ST_EXPAND(the_geom, $distance) as the_geom FROM $zoneTable;
             CREATE SPATIAL INDEX ON ZONE_EXTENDED (the_geom);
                 """.toString())
 
@@ -217,7 +221,7 @@ IProcess prepareBDTopoData() {
             SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.HAUTEUR, a.NATURE FROM BATI_REMARQUABLE a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)  and a.HAUTEUR>=0
             union all
             SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID
-                    as id_source, a.HAUTEUR , 'heavy_industry' FROM RESERVOIR a, ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.NATURE='Réservoir industriel' and a.HAUTEUR>0;
+                    as id_source, a.HAUTEUR , 'heavy_industry' FROM RESERVOIR a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.NATURE='Réservoir industriel' and a.HAUTEUR>0;
 
             """.toString())
 
@@ -233,7 +237,7 @@ IProcess prepareBDTopoData() {
             datasource.execute("""
             DROP TABLE IF EXISTS INPUT_RAIL;
             CREATE TABLE INPUT_RAIL (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer, CROSSING varchar)
-            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, a.POS_SOL, a.FRANCHISST FROM TRONCON_VOIE_FERREE a, ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
+            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, a.POS_SOL, a.FRANCHISST FROM TRONCON_VOIE_FERREE a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
             """.toString())
 
 
@@ -251,7 +255,7 @@ IProcess prepareBDTopoData() {
             AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, 0 FROM ZONE_VEGETATION a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
             UNION all
             SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, 0
-            FROM PISTE_AERODROME a, ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
+            FROM PISTE_AERODROME a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
             and a.NATURE = 'Piste en herbe';
             ;
             """.toString())
@@ -261,29 +265,30 @@ IProcess prepareBDTopoData() {
             DROP TABLE IF EXISTS TMP_IMPERV;
             CREATE TABLE TMP_IMPERV (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE VARCHAR) AS
             SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE 
-            FROM TERRAIN_SPORT a, ZONE b WHERE a.the_geom && b.the_geom AND 
+            FROM TERRAIN_SPORT a, $zoneTable b WHERE a.the_geom && b.the_geom AND 
             ST_INTERSECTS(a.the_geom, b.the_geom) AND a.NATURE='Piste de sport'
             UNION all
             SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE 
-            FROM CONSTRUCTION_SURFACIQUE a, ZONE b WHERE a.the_geom && b.the_geom AND 
+            FROM CONSTRUCTION_SURFACIQUE a, $zoneTable b WHERE a.the_geom && b.the_geom AND 
             ST_INTERSECTS(a.the_geom, b.the_geom) AND a.NATURE in ('Barrage','Ecluse','Escalier')
             UNION all
             SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE 
-            FROM SURFACE_ROUTE a, ZONE b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
+            FROM SURFACE_ROUTE a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
             UNION all
             SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID,a.CATEGORIE
-            FROM SURFACE_ACTIVITE a, ZONE b WHERE a.the_geom && b.the_geom AND 
+            FROM SURFACE_ACTIVITE a, $zoneTable b WHERE a.the_geom && b.the_geom AND 
             ST_INTERSECTS(a.the_geom, b.the_geom)
             UNION all
             SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE
-            FROM PISTE_AERODROME a, ZONE b WHERE a.the_geom && b.the_geom AND 
+            FROM PISTE_AERODROME a, $zoneTable b WHERE a.the_geom && b.the_geom AND 
             ST_INTERSECTS(a.the_geom, b.the_geom)
             and a.NATURE = 'Piste en dur';
             """.toString())
 
+            def input_impervious = postfix "INPUT_IMPERVIOUS"
             datasource.execute("""
-            DROP TABLE IF EXISTS INPUT_IMPERVIOUS;
-            CREATE TABLE INPUT_IMPERVIOUS (THE_GEOM geometry, ID_SOURCE varchar(24),TYPE VARCHAR, id_impervious INTEGER)
+            DROP TABLE IF EXISTS $input_impervious;
+            CREATE TABLE $input_impervious (THE_GEOM geometry, ID_SOURCE varchar(24),TYPE VARCHAR, id_impervious INTEGER)
             AS SELECT THE_GEOM, ID_SOURCE, 
             CASE WHEN TYPE ='Administratif' THEN 'government'
             WHEN TYPE= 'Enseignement' THEN 'education'
@@ -300,12 +305,11 @@ IProcess prepareBDTopoData() {
             //10. Clean tables
             datasource.execute("""
             DROP TABLE IF EXISTS TMP_IMPERV ,ZONE_EXTENDED; """.toString())
-             info('The  BD Topo data have been prepared' +
-                     '')
+            debug('The BDTopo data has been prepared')
              return    [outputBuildingName: "INPUT_BUILDING", outputRoadName: "INPUT_ROAD",
                         outputRailName: "INPUT_RAIL", outputHydroName   : "INPUT_HYDRO",
-                        outputVegetName: "INPUT_VEGET", outputImperviousName: "INPUT_IMPERVIOUS",
-                         outputZoneName    : "ZONE"
+                        outputVegetName: "INPUT_VEGET", outputImperviousName: input_impervious,
+                         outputZoneName    : zoneTable
                 ]
             }
     }

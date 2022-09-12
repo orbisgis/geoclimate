@@ -219,7 +219,7 @@ IProcess formatRoadLayer() {
                                 "FROM " +
                                 "$inputTableName AS a, $inputZoneEnvelopeTableName AS b " +
                                 "WHERE " +
-                                "a.the_geom && b.the_geom "
+                                "a.the_geom && b.the_geom"
                     } else {
                         queryMapper += ", st_force2D(st_makevalid(a.the_geom)) as the_geom FROM $inputTableName  as a"
                     }
@@ -229,12 +229,16 @@ IProcess formatRoadLayer() {
                         datasource.eachRow(queryMapper) { row ->
                             def processRow = true
                             def road_access = row.'access'
+                            def road_area = row.'area'
+                            if(road_area in['yes']){
+                                processRow = false
+                            }
                             def road_service = row.'service'
                             if (road_service && road_service in ["parking_aisle", "alley", "slipway", "drive-through", "driveway"]) {
-                                processRow = false;
+                                processRow = false
                             }
                             if (road_access && road_access in ["agricultural", "forestry"]) {
-                                processRow = false;
+                                processRow = false
                             }
 
                             if (processRow) {

@@ -1126,8 +1126,8 @@ def findIDZones(JdbcDataSource h2gis_datasource, def id_zones, def srid) {
                 } else if (id_zone instanceof String) {
                     id_zones_tmp << id_zone
                 } else {
-                    warn "The location value : $id_zone must be a text to find an inseecode\n" +
-                            " or an array for coordinates to specify a bbox\n"
+                    warn "The location value : $id_zone must be a text to find an insee code\n" +
+                            " or an array of coordinates to specify a bbox\n"
                 }
             }
             if (id_zones_tmp) {
@@ -1345,7 +1345,7 @@ def extractProcessingParameters(def processing_parameters) {
  * @param deleteOutputData true to delete the ouput files if exist
  * @return
  */
-def bdtopo_processing(def h2gis_datasource, def processing_parameters, def zone, def outputFolder, def outputFiles, def output_datasource, def outputTableNames, def outputSRID, def deleteOutputData = true) {
+def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def zone, def outputFolder, def outputFiles, def output_datasource, def outputTableNames, def outputSRID, def deleteOutputData = true) {
     //Add the GIS layers to the list of results
     def outputTableNamesResult = [:]
     def srid = h2gis_datasource.getSpatialTable("COMMUNE").srid
@@ -1372,6 +1372,15 @@ def bdtopo_processing(def h2gis_datasource, def processing_parameters, def zone,
             }
         } else {
             int subAreaCount = 1
+            def tablesToMerge = ["zoneTableName" : [],
+                                "roadTableName"                : [], "railTableName": [], "hydrographicTableName": [],
+                                "vegetationTableName"          : [], "imperviousTableName": [], "buildingTableName": [],
+                                "outputTableBuildingIndicators": [], "outputTableBlockIndicators": [],
+                                "outputTableRsuIndicators"     : [], "outputTableRsuLcz": [],
+                                "outputTableRsuUtrfArea"       : [], "outputTableRsuUtrfFloorArea": [],
+                                "outputTableBuildingUtrf"      : [], "populationTableName": [],
+                                "buildingTableName"            : [], "roadTrafficTableName": []
+            ]
             for (i in 0..<numGeom) {
                 info "Processing the sub area ${subAreaCount} on ${numGeom + 1}"
                 def subGeom = geom.getGeometryN(i)
@@ -1387,12 +1396,40 @@ def bdtopo_processing(def h2gis_datasource, def processing_parameters, def zone,
                 """.toString())
                     def results = bdTopoProcessingSingleArea(h2gis_datasource, code_insee, subCommuneTableName, srid, processing_parameters)
                     if (results) {
-                        saveResults(h2gis_datasource, code_insee_plus_indice, results, srid, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData)
-                        outputTableNamesResult.put(code_insee_plus_indice, results.findAll { it.value != null })
+                        results.each{it->
+                            if(it.value){
+                                tablesToMerge[it.key]<<it.value
+                            }
+                        }
                     }
                 }
                 subAreaCount++
             }
+            //We must merge here all sub areas and then compute the grid indicators
+            //so the user have a continuous spatial domain instead of multiples tables
+            def results =[:]
+            tablesToMerge.each { it ->
+                def tableNames = it.value
+                def queryToJoin = []
+                String tmp_table
+                tableNames.each { tableName ->
+                    if (tableName) {
+                        queryToJoin << "SELECT * FROM $tableName "
+                        tmp_table = tableName
+                    }
+                }
+                if (tmp_table) {
+                    def finalTableName = postfix(tmp_table.substring(0, tmp_table.lastIndexOf("_")))
+                    h2gis_datasource.execute("""
+                        DROP TABLE IF EXISTS $finalTableName;
+                        CREATE TABLE $finalTableName as ${queryToJoin.join(" union all ")};
+                        DROP TABLE IF EXISTS  ${tableNames.join(",")} """.toString())
+                    results.put(it.key, finalTableName)
+                }
+            }
+            outputTableNamesResult.put(code_insee, results)
+            saveResults(h2gis_datasource, code_insee, results, srid, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData)
+
         }
     }
     return outputTableNamesResult
@@ -2154,7 +2191,6 @@ IProcess loadAndFormatData() {
                 error "The database to store the BD Topo data doesn't exist"
                 return
             }
-
 
             //Prepare the existing bdtopo data in the local database
             def importPreprocess = BDTopo_V2.InputDataLoading.prepareBDTopoData()

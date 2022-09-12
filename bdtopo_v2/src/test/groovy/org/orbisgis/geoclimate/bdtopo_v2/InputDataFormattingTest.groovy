@@ -6,7 +6,7 @@ import org.orbisgis.data.H2GIS
 
 import static org.junit.jupiter.api.Assertions.*
 
-class InputDataFormatting2Test {
+class InputDataFormattingTest {
 
     H2GIS h2GISDatabase
 
