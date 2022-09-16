@@ -316,37 +316,37 @@ IProcess workflow() {
              * Run the workflow when the input data comes from a folder
              */
             if (inputFolder) {
-                    def h2gis_datasource = H2GIS.open(h2gis_properties)
-                    if (!h2gis_datasource) {
-                        error "Cannot load the local H2GIS database to run Geoclimate"
-                        return
-                    }
-                    def datafromFolder = linkDataFromFolder(inputFolder,inputWorkflowTableNames,  h2gis_datasource, locations, inputSRID)
-                    inputSRID = datafromFolder.inputSrid
-                    def  sourceSrid = datafromFolder.sourceSrid
-                    def tablesLinked = datafromFolder.tableNames
-                    if (tablesLinked) {
-                        locations.each { location ->
-                            //We must extract the data from the shapefiles for each locations
-                            if(filterLinkedData(location, processing_parameters.distance, tablesLinked,sourceSrid, inputSRID, h2gis_datasource)) {
-                                def formatedZone = checkAndFormatLocations(location)
-                                if (formatedZone) {
-                                    def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, formatedZone,
-                                            createMainFolder(file_outputFolder, formatedZone), outputFileTables, outputDatasource,
-                                            outputTables, outputSRID, inputSRID)
-                                    if (bdtopo_results) {
-                                        outputTableNamesResult.putAll(bdtopo_results)
-                                    }
+                def h2gis_datasource = H2GIS.open(h2gis_properties)
+                if (!h2gis_datasource) {
+                    error "Cannot load the local H2GIS database to run Geoclimate"
+                    return
+                }
+                def datafromFolder = linkDataFromFolder(inputFolder, inputWorkflowTableNames, h2gis_datasource, inputSRID)
+                inputSRID = datafromFolder.inputSrid
+                def sourceSrid = datafromFolder.sourceSrid
+                def tablesLinked = datafromFolder.tableNames
+                if (tablesLinked) {
+                    locations.each { location ->
+                        //We must extract the data from the shapefiles for each locations
+                        if (filterLinkedData(location, processing_parameters.distance, tablesLinked, sourceSrid, inputSRID, h2gis_datasource)) {
+                            def formatedZone = checkAndFormatLocations(location)
+                            if (formatedZone) {
+                                def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, formatedZone,
+                                        createMainFolder(file_outputFolder, formatedZone), outputFileTables, outputDatasource,
+                                        outputTables, outputSRID, inputSRID)
+                                if (bdtopo_results) {
+                                    outputTableNamesResult.putAll(bdtopo_results)
                                 }
                             }
                         }
-                        deleteH2GISDb(delete_h2gis, h2gis_datasource.getConnection(), databaseFolder, databaseName)
-
-                        return [output: outputTableNamesResult]
-                    } else {
-                        error "Cannot find any data to process from the folder $inputFolder"
-                        return
                     }
+                    deleteH2GISDb(delete_h2gis, h2gis_datasource.getConnection(), databaseFolder, databaseName)
+
+                    return [output: outputTableNamesResult]
+                } else {
+                    error "Cannot find any data to process from the folder $inputFolder"
+                    return
+                }
 
             }
 
@@ -396,7 +396,7 @@ IProcess workflow() {
                     info "${nbzones} location(s) on ${locations.size()}"
                 }
                 deleteH2GISDb(delete_h2gis, h2gis_datasource.getConnection(), databaseFolder, databaseName)
-                if(outputTableNamesResult) {
+                if (outputTableNamesResult) {
                     return [output: outputTableNamesResult]
                 }
             }
@@ -438,7 +438,7 @@ def checkOutputTables(def outputDataBase, def outputTableNames, def outputWorkfl
                 outputTables.put(table.key.toLowerCase(), table.value)
             }
         }
-        if(!outputTables){
+        if (!outputTables) {
             error "Please set a valid list of output tables as  : \n" +
                     "${outputWorkflowTableNames.collect { name -> [name: name] }}"
         }
@@ -476,7 +476,7 @@ def checkAndFormatLocations(def locations) {
  * @return
  */
 def createMainFolder(def outputFolder, def location) {
-    if(!outputFolder){
+    if (!outputFolder) {
         return
     }
     //Create the folder to save the results
@@ -550,25 +550,26 @@ def createDatasource(def database_properties) {
  * @param h2gis_datasource
  * @return
  */
-def filterLinkedData(def location, def distance, def inputTables,def sourceSRID, def inputSRID, H2GIS h2gis_datasource){
+def filterLinkedData(def location, def distance, def inputTables, def sourceSRID, def inputSRID, H2GIS h2gis_datasource) {
     def formatting_geom = "the_geom"
-    if(sourceSRID>=0 && sourceSRID!=inputSRID){
-        formatting_geom = "st_transform(the_geom, $inputSRID) as the_geom"
-    }else if(sourceSRID>=0 && sourceSRID==inputSRID){
+    if (sourceSRID == 0 && sourceSRID != inputSRID) {
         formatting_geom = "st_setsrid(the_geom, $inputSRID) as the_geom"
+    } else if (sourceSRID >= 0 && sourceSRID == inputSRID) {
+        formatting_geom = "st_transform(the_geom, $inputSRID) as the_geom"
     }
+
     String outputTableName = "COMMUNE"
     //Let's process the data by location
     //Check if code is a string or a bbox
     //The zone is a osm bounding box represented by ymin,xmin , ymax,xmax,
     if (location in Collection) {
         debug "Loading in the H2GIS database $outputTableName"
-        h2gis_datasource.execute("""CREATE TABLE $outputTableName as  SELECT
+        h2gis_datasource.execute("""DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as  SELECT
                     ST_INTERSECTION(the_geom, ST_MakeEnvelope(${location[1]},${location[0]},${location[3]},${location[2]}, $sourceSRID)) as the_geom, CODE_INSEE  from ${inputTables.commune} where the_geom 
                     && ST_MakeEnvelope(${location[1]},${location[0]},${location[3]},${location[2]}, $sourceSRID) """.toString())
     } else if (location instanceof String) {
         debug "Loading in the H2GIS database $outputTableName"
-        h2gis_datasource.execute("CREATE TABLE $outputTableName as SELECT $formatting_geom, CODE_INSEE FROM ${inputTables.commune} WHERE CODE_INSEE='$location' or lower(nom)='${location.toLowerCase()}')".toString())
+        h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as SELECT $formatting_geom, CODE_INSEE FROM ${inputTables.commune} WHERE CODE_INSEE='$location' or lower(nom)='${location.toLowerCase()}'".toString())
 
     }
     def count = h2gis_datasource."$outputTableName".rowCount
@@ -580,28 +581,28 @@ def filterLinkedData(def location, def distance, def inputTables,def sourceSRID,
             //Extract bati_indifferencie
             outputTableName = "BATI_INDIFFERENCIE"
             debug "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.execute("CREATE TABLE $outputTableName as SELECT ID, $formatting_geom, HAUTEUR FROM ${inputTables.bati_indifferencie}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+            h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as SELECT ID, $formatting_geom, HAUTEUR FROM ${inputTables.bati_indifferencie}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
         }
 
         if (inputTables.bati_industriel) {
             //Extract bati_industriel
             outputTableName = "BATI_INDUSTRIEL"
             debug "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.execute("CREATE TABLE $outputTableName as SELECT ID, $formatting_geom, NATURE, HAUTEUR FROM ${inputTables.bati_industriel}  WHERE the_geom, && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+            h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as SELECT ID, $formatting_geom, NATURE, HAUTEUR FROM ${inputTables.bati_industriel}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
         }
 
         if (inputTables.bati_remarquable) {
             //Extract bati_remarquable
             outputTableName = "BATI_REMARQUABLE"
-            debug "Loading in the H2GIS database $outputTableNameBatiRem"
-            h2gis_datasource.execute("CREATE TABLE $outputTableName as SELECT ID, $formatting_geom, NATURE, HAUTEUR FROM ${inputTables.bati_remarquable}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+            debug "Loading in the H2GIS database $outputTableName"
+            h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as SELECT ID, $formatting_geom, NATURE, HAUTEUR FROM ${inputTables.bati_remarquable}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
         }
 
         if (inputTables.route) {
             //Extract route
             outputTableName = "ROUTE"
-            debug "Loading in the H2GIS database $outputTableNameRoad"
-            h2gis_datasource.execute("CREATE TABLE $outputTableName as SELECT ID, $formatting_geom, NATURE, LARGEUR, POS_SOL, FRANCHISST, SENS FROM ${inputTables.route}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+            debug "Loading in the H2GIS database $outputTableName"
+            h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as SELECT ID, $formatting_geom, NATURE, LARGEUR, POS_SOL, FRANCHISST, SENS FROM ${inputTables.route}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
         } else {
             error "The route table must be provided"
             return
@@ -611,7 +612,7 @@ def filterLinkedData(def location, def distance, def inputTables,def sourceSRID,
             //Extract troncon_voie_ferree
             debug "Loading in the H2GIS database $outputTableName"
             outputTableName = "TRONCON_VOIE_FERREE"
-            h2gis_datasource.execute("CREATE TABLE $outputTableName as SELECT ID,$formatting_geom, NATURE, LARGEUR, POS_SOL, FRANCHISST FROM ${inputTables.troncon_voie_ferree}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+            h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as SELECT ID,$formatting_geom, NATURE, LARGEUR, POS_SOL, FRANCHISST FROM ${inputTables.troncon_voie_ferree}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
 
         }
 
@@ -619,7 +620,7 @@ def filterLinkedData(def location, def distance, def inputTables,def sourceSRID,
             //Extract surface_eau
             debug "Loading in the H2GIS database $outputTableName"
             outputTableName = "SURFACE_EAU"
-            h2gis_datasource.execute("CREATE TABLE $outputTableName as SELECT ID, $formatting_geom FROM ${inputTables.surface_eau}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+            h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as SELECT ID, $formatting_geom FROM ${inputTables.surface_eau}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
 
         }
 
@@ -627,7 +628,7 @@ def filterLinkedData(def location, def distance, def inputTables,def sourceSRID,
             //Extract zone_vegetation
             debug "Loading in the H2GIS database $outputTableName"
             outputTableName = "ZONE_VEGETATION"
-            h2gis_datasource.execute("CREATE TABLE $outputTableName  SELECT ID, $formatting_geom, NATURE  FROM ${inputTables.zone_vegetation}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+            h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName  AS SELECT ID, $formatting_geom, NATURE  FROM ${inputTables.zone_vegetation}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
 
         }
 
@@ -635,7 +636,7 @@ def filterLinkedData(def location, def distance, def inputTables,def sourceSRID,
             //Extract terrain_sport
             debug "Loading in the H2GIS database $outputTableName"
             outputTableName = "TERRAIN_SPORT"
-            h2gis_datasource.execute("CREATE TABLE $outputTableName  SELECT ID, $formatting_geom, NATURE  FROM ${inputTables.terrain_sport}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY) AND NATURE='Piste de sport'".toString())
+            h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName AS SELECT ID, $formatting_geom, NATURE  FROM ${inputTables.terrain_sport}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY) AND NATURE='Piste de sport'".toString())
 
         }
 
@@ -643,37 +644,36 @@ def filterLinkedData(def location, def distance, def inputTables,def sourceSRID,
             //Extract construction_surfacique
             outputTableName = "CONSTRUCTION_SURFACIQUE"
             debug "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.execute("CREATE TABLE $outputTableName  SELECT ID, $formatting_geom, NATURE  FROM ${inputTables.construction_surfacique}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY) AND (NATURE='Barrage' OR NATURE='Ecluse' OR NATURE='Escalier')".toString())
+            h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName AS SELECT ID, $formatting_geom, NATURE  FROM ${inputTables.construction_surfacique}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY) AND (NATURE='Barrage' OR NATURE='Ecluse' OR NATURE='Escalier')".toString())
         }
 
         if (inputTables.surface_route) {
             //Extract surface_route
             outputTableName = "SURFACE_ROUTE"
             debug "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.execute("CREATE TABLE $outputTableName  SELECT ID, $formatting_geom,NATURE  FROM ${inputTables.surface_route}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+            h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName AS SELECT ID, $formatting_geom,NATURE  FROM ${inputTables.surface_route}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
         }
 
         if (inputTables.surface_activite) {
             //Extract surface_activite
             outputTableName = "SURFACE_ACTIVITE"
             debug "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.execute("CREATE TABLE $outputTableName  SELECT ID, $formatting_geom, CATEGORIE  FROM ${inputTables.surface_activite}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY) AND (CATEGORIE='Administratif' OR CATEGORIE='Enseignement' OR CATEGORIE='Santé')".toString())
+            h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName AS SELECT ID, $formatting_geom, CATEGORIE  FROM ${inputTables.surface_activite}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY) AND (CATEGORIE='Administratif' OR CATEGORIE='Enseignement' OR CATEGORIE='Santé')".toString())
         }
         //Extract PISTE_AERODROME
         if (inputTables.piste_aerodrome) {
             outputTableName = "PISTE_AERODROME"
             debug "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.execute("CREATE TABLE $outputTableName  SELECT ID, $formatting_geom, NATURE  FROM ${inputTables.piste_aerodrome}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+            h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName  AS SELECT ID, $formatting_geom, NATURE  FROM ${inputTables.piste_aerodrome}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
         }
 
         //Extract RESERVOIR
         if (inputTables.reservoir) {
             outputTableName = "RESERVOIR"
             debug "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.execute("CREATE TABLE $outputTableName  SELECT ID, $formatting_geom, NATURE, HAUTEUR  FROM ${inputTables.reservoir}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+            h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName AS SELECT ID, $formatting_geom, NATURE, HAUTEUR  FROM ${inputTables.reservoir}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
         }
-
-        return sourceSRID
+        return true
 
     } else {
         error "Cannot find any commune with the insee code : $location"
@@ -718,7 +718,7 @@ def loadDataFromPostGIS(def input_database_properties, def code, def distance, d
 
     //Find the SRID of the commune table
     def commune_srid = GeometryTableUtilities.getSRID(sourceConnection, commune_location)
-    if (commune_srid <=0) {
+    if (commune_srid <= 0) {
         error("The commune table doesn't have any SRID");
         return
     }
@@ -872,10 +872,10 @@ def loadDataFromPostGIS(def input_database_properties, def code, def distance, d
  * @param inputSRID a list of SRID set the geometries
  * @return a list of id_zones
  */
-def linkDataFromFolder(def inputFolder, def inputWorkflowTableNames,  H2GIS h2gis_datasource, def inputSRID) {
+def linkDataFromFolder(def inputFolder, def inputWorkflowTableNames, H2GIS h2gis_datasource, def inputSRID) {
     def folder = new File(inputFolder)
     if (folder.isDirectory()) {
-        def geoFiles = [:]
+        def geoFiles = []
         folder.eachFileRecurse groovy.io.FileType.FILES, { file ->
             if (file.name.toLowerCase().endsWith(".shp")) {
                 geoFiles << file.getAbsolutePath()
@@ -886,7 +886,6 @@ def linkDataFromFolder(def inputFolder, def inputWorkflowTableNames,  H2GIS h2gi
         if (commune_file) {
             //Load commune and check if there is some id_zones inside
             h2gis_datasource.link(commune_file, "COMMUNE_TMP", true)
-            h2gis_datasource.getSpatialTable("COMMUNE_TMP").the_geom.createSpatialIndex()
             geoFiles.remove(commune_file)
             int srid = h2gis_datasource.getSpatialTable("COMMUNE_TMP").srid
             def sourceSrid = srid
@@ -898,19 +897,22 @@ def linkDataFromFolder(def inputFolder, def inputWorkflowTableNames,  H2GIS h2gi
                 return null
             }
             //Link the files
-                def numberFiles = geoFiles.size()
-                def tableNames = [:]
-                tableNames.put("commune","COMMUNE_TMP" )
-                geoFiles.eachWithIndex { geoFile, index ->
-                    debug "linking file $geoFile $index on $numberFiles"
-                    //We must link only the allowed tables
-                    def fileName =URIUtilities.fileFromString(geoFile).getName().toLowerCase()
-                    if(inputWorkflowTableNames.contains(fileName)){
-                        h2gis_datasource.link(geoFile,"${fileName}_tmp", true)
-                        tableNames.put(fileName, "${fileName}_tmp")
-                    }
+            def numberFiles = geoFiles.size()
+            def tableNames = [:]
+            tableNames.put("commune", "COMMUNE_TMP")
+            //h2gis_datasource.execute("CREATE SPATIAL INDEX ON COMMUNE_TMP(THE_GEOM)".toString())
+            geoFiles.eachWithIndex { geoFile, index ->
+                debug "linking file $geoFile $index on $numberFiles"
+                //We must link only the allowed tables
+                def fileName = URIUtilities.fileFromString(geoFile).getName()
+                def name = fileName.substring(0, fileName.lastIndexOf(".")).toLowerCase();
+                if (inputWorkflowTableNames.contains(name)) {
+                    h2gis_datasource.link(geoFile, "${name}_tmp", true)
+                    //h2gis_datasource.execute("CREATE SPATIAL INDEX ON ${name}_tmp(THE_GEOM)".toString())
+                    tableNames.put(name, "${name}_tmp")
                 }
-                return ["sourceSrid" : sourceSrid, "inputSrid" : srid,"tableNames" : tableNames]
+            }
+            return ["sourceSrid": sourceSrid, "inputSrid": srid, "tableNames": tableNames]
 
         } else {
             error "The input folder must contains a file named commune"
@@ -1267,8 +1269,7 @@ def bdTopoProcessingSingleArea(def h2gis_datasource, def id_zone, def subCommune
                                    distance                    : processing_parameters.distance,
                                    hLevMin                     : processing_parameters.hLevMin,
                                    hLevMax                     : processing_parameters.hLevMax,
-                                   hThresholdLev2              : processing_parameters.hThresholdLev2,
-                                   inputSRID                   : srid
+                                   hThresholdLev2              : processing_parameters.hThresholdLev2
     ])) {
 
         def buildingTableName = loadAndFormatData.results.outputBuilding
@@ -1932,13 +1933,12 @@ IProcess loadAndFormatData() {
                 tableReservoirName: "",
                 hLevMin: 3,
                 hLevMax: 15,
-                hThresholdLev2: 10,
-                inputSRID :""
+                hThresholdLev2: 10
         outputs outputBuilding: String, outputRoad: String, outputRail: String, outputHydro: String, outputVeget: String, outputImpervious: String,
                 outputZone: String
         run { datasource, distance, tableCommuneName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName, tableRoadName, tableRailName,
               tableHydroName, tableVegetName, tableImperviousSportName, tableImperviousBuildSurfName, tableImperviousRoadSurfName, tableImperviousActivSurfName,
-              tablePiste_AerodromeName, tableReservoirName, hLevMin, hLevMax, hThresholdLev2, inputSRID ->
+              tablePiste_AerodromeName, tableReservoirName, hLevMin, hLevMax, hThresholdLev2 ->
 
             if (!hLevMin) {
                 hLevMin = 3
@@ -1971,8 +1971,7 @@ IProcess loadAndFormatData() {
                                    tableImperviousActivSurfName: tableImperviousActivSurfName,
                                    tablePiste_AerodromeName    : tablePiste_AerodromeName,
                                    tableReservoirName          : tableReservoirName,
-                                   distance                    : distance,
-                                   inputSRID                   : inputSRID])) {
+                                   distance                    : distance])) {
                 error "Cannot prepare the BDTopo data."
                 return
             }

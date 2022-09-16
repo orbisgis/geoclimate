@@ -54,8 +54,7 @@ IProcess prepareBDTopoData() {
                 tableImperviousActivSurfName: "",
                 tablePiste_AerodromeName: "",
                 tableReservoirName: "",
-                distance: 1000,
-                inputSRID:""
+                distance: 1000
         outputs outputBuildingName: String,
                 outputRoadName: String,
                 outputRailName: String,
@@ -66,7 +65,7 @@ IProcess prepareBDTopoData() {
         run { datasource, tableCommuneName, tableBuildIndifName, tableBuildIndusName,
               tableBuildRemarqName, tableRoadName, tableRailName, tableHydroName, tableVegetName,
               tableImperviousSportName, tableImperviousBuildSurfName, tableImperviousRoadSurfName,
-              tableImperviousActivSurfName, tablePiste_AerodromeName, tableReservoirName, distance,inputSRID ->
+              tableImperviousActivSurfName, tablePiste_AerodromeName, tableReservoirName, distance ->
 
             debug('Import the BDTopo data')
 
@@ -85,21 +84,6 @@ IProcess prepareBDTopoData() {
                         tablePiste_AerodromeName, tableReservoirName]
             def srid = -1
             def tablesExist = []
-            if(inputSRID){
-                srid = inputSRID
-                // Check if table has data
-                for (String name : list) {
-                    if (name) {
-                        if (datasource.hasTable(name)) {
-                            def hasRow = datasource.firstRow("select 1 as id from ${name} limit 1".toString())
-                            if (hasRow) {
-                                tablesExist << name
-                            }
-                        }
-                    }
-                }
-            }
-            else {
                 def con = datasource.getConnection()
                 // For each tables in the list, we check the SRID and compare to the srid variable. If different, the process is stopped
                 for (String name : list) {
@@ -125,7 +109,6 @@ IProcess prepareBDTopoData() {
 
                     }
                 }
-            }
 
             // -------------------------------------------------------------------------------
             // Check if the input files are present
