@@ -25,7 +25,8 @@ import org.orbisgis.process.api.IProcess
  * @param tableImperviousRoadSurfName The table name in which the impervious road areas are stored
  * @param tableImperviousActivSurfName The table name in which the impervious activities areas are stored
  * @param distance The distance (expressed in meter) used to compute the extended area around the ZONE
- * @param idZone The ZONE id *
+ * @param inputSRID to force the SRID of the input data
+ *
  * @return outputBuildingName Table name in which the (ready to feed the GeoClimate model) buildings are stored
  * @return outputRoadName Table name in which the (ready to feed the GeoClimate model) roads are stored
  * @return outputRailName Table name in which the (ready to feed the GeoClimate model) rail ways are stored
@@ -53,7 +54,8 @@ IProcess prepareBDTopoData() {
                 tableImperviousActivSurfName: "",
                 tablePiste_AerodromeName: "",
                 tableReservoirName: "",
-                distance: 1000
+                distance: 1000,
+                inputSRID:""
         outputs outputBuildingName: String,
                 outputRoadName: String,
                 outputRailName: String,
@@ -64,7 +66,7 @@ IProcess prepareBDTopoData() {
         run { datasource, tableCommuneName, tableBuildIndifName, tableBuildIndusName,
               tableBuildRemarqName, tableRoadName, tableRailName, tableHydroName, tableVegetName,
               tableImperviousSportName, tableImperviousBuildSurfName, tableImperviousRoadSurfName,
-              tableImperviousActivSurfName, tablePiste_AerodromeName, tableReservoirName, distance ->
+              tableImperviousActivSurfName, tablePiste_AerodromeName, tableReservoirName, distance,inputSRID ->
 
             debug('Import the BDTopo data')
 
@@ -81,16 +83,28 @@ IProcess prepareBDTopoData() {
                         tableImperviousSportName, tableImperviousBuildSurfName,
                         tableImperviousRoadSurfName, tableImperviousActivSurfName,
                         tablePiste_AerodromeName, tableReservoirName]
-
-            // The SRID is stored and initialized to -1
             def srid = -1
-            def con = datasource.getConnection()
-
             def tablesExist = []
-            // For each tables in the list, we check the SRID and compare to the srid variable. If different, the process is stopped
-            for (String name : list) {
-                if (name) {
-                    if (datasource.hasTable(name)) {
+            if(inputSRID){
+                srid = inputSRID
+                // Check if table has data
+                for (String name : list) {
+                    if (name) {
+                        if (datasource.hasTable(name)) {
+                            def hasRow = datasource.firstRow("select 1 as id from ${name} limit 1".toString())
+                            if (hasRow) {
+                                tablesExist << name
+                            }
+                        }
+                    }
+                }
+            }
+            else {
+                def con = datasource.getConnection()
+                // For each tables in the list, we check the SRID and compare to the srid variable. If different, the process is stopped
+                for (String name : list) {
+                    if (name) {
+                        if (datasource.hasTable(name)) {
                             def hasRow = datasource.firstRow("select 1 as id from ${name} limit 1".toString())
                             if (hasRow) {
                                 tablesExist << name
@@ -109,6 +123,7 @@ IProcess prepareBDTopoData() {
                             }
                         }
 
+                    }
                 }
             }
 

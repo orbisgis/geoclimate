@@ -7,6 +7,7 @@ import org.h2gis.postgis_jts.PostGISDBFactory
 import org.h2gis.utilities.FileUtilities
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
+import org.h2gis.utilities.URIUtilities
 import org.locationtech.jts.geom.Geometry
 import org.orbisgis.data.api.dataset.ITable
 import org.orbisgis.data.jdbc.JdbcDataSource
@@ -44,17 +45,16 @@ import java.sql.SQLException
  *       "delete" :false
  *     },
  * [ONE ENTRY REQUIRED]   "input" : {
- *         "folder": {"path" :"path of the folder that contains the BD Topo layers as shapefile",
- *             "locations":["56260"]}, //list of insee code, with a comma separator
+ *         "folder": "path of the folder that contains the BD Topo layers as shapefile",
+ *             "locations":["56260"] //list of insee code, with a comma separator
+ *             "srid :  2154}, //SRID to force the projection
  *          "database": {
  *             "user": "-",
  *             "password": "-",
  *             "url": "jdbc:postgresql://", //JDBC url to connect with the database
- *             "locations":["56220"], //list of insee code, with a comma separator
  *             //List of BDTOPO tables required to compute the geoclimate indicators
- *             //Pattern :  Catalog.Schema.Table
  *             "tables": {
- *                 "commune":"ign_bdtopo_2017.commune",
+ *                 "commune":"commune",
  *                 "bati_indifferencie":"ign_bdtopo_2017.bati_indifferencie",
  *                 "bati_industriel":"ign_bdtopo_2017.bati_industriel",
  *                 "bati_remarquable":"ign_bdtopo_2017.bati_remarquable",
@@ -69,7 +69,7 @@ import java.sql.SQLException
  *                 "population":"insee.population"} }
  *             }
  *             ,
- *  [OPTIONAL ENTRY]  "output" :{ //If not ouput is set the results are keep in the local database
+ *  [OPTIONAL ENTRY]  "output" :{ //If not output is set the results are keep in the local database
  *             "folder" : "/tmp/myResultFolder" //tmp folder to store the computed layers in a geojson format,
  *             "database": { //database parameters to store the computed layers
  *                  "user": "-",
@@ -167,599 +167,238 @@ IProcess workflow() {
                         "a map with all required parameters"
                 return
             }
+            if (!parameters) {
+                error "Wrong input parameters"
+                return
+            }
             //Store the zone identifier and the names of the tables
             def outputTableNamesResult = [:]
-            if (parameters) {
-                debug "Reading file parameters"
-                debug parameters.description
-                def inputParameters = parameters.input
-                def outputParameters = parameters.output
-                //Default H2GIS database properties
-                def databaseFolder = System.getProperty("java.io.tmpdir")
-                def databaseName = "bdtopo_v2_2" + UUID.randomUUID().toString().replaceAll("-", "_")
-                def databasePath = databaseFolder + File.separator + databaseName
-                def h2gis_properties = ["databaseName": databasePath, "user": "sa", "password": ""]
-                def delete_h2gis = true
-                def geoclimatedb = parameters.geoclimatedb
-                if (geoclimatedb) {
-                    def h2gis_folder = geoclimatedb.get("folder")
-                    if (h2gis_folder) {
-                        databaseFolder = h2gis_folder
+            debug "Reading file parameters"
+            debug parameters.description
+            def inputParameters = parameters.input
+            def outputParameters = parameters.output
+            //Default H2GIS database properties
+            def databaseFolder = System.getProperty("java.io.tmpdir")
+            def databaseName = "bdtopo_v2_2" + UUID.randomUUID().toString().replaceAll("-", "_")
+            def databasePath = databaseFolder + File.separator + databaseName
+            def h2gis_properties = ["databaseName": databasePath, "user": "sa", "password": ""]
+            def delete_h2gis = true
+            def geoclimatedb = parameters.geoclimatedb
+            //We collect informations to create the local H2GIS database
+            if (geoclimatedb) {
+                def h2gis_folder = geoclimatedb.get("folder")
+                if (h2gis_folder) {
+                    databaseFolder = h2gis_folder
+                }
+                databasePath = databaseFolder + File.separator + databaseName
+                def h2gis_name = geoclimatedb.get("name")
+                if (h2gis_name) {
+                    def dbName = h2gis_name.split(";")
+                    databaseName = dbName[0]
+                    databasePath = databaseFolder + File.separator + h2gis_name
+                }
+                def delete_h2gis_db = geoclimatedb.delete
+                if (delete_h2gis_db == null) {
+                    delete_h2gis = true
+                } else if (delete_h2gis_db instanceof String) {
+                    delete_h2gis = true
+                    if (delete_h2gis_db.equalsIgnoreCase("false")) {
+                        delete_h2gis = false
                     }
-                    databasePath = databaseFolder + File.separator + databaseName
-                    def h2gis_name = geoclimatedb.get("name")
-                    if (h2gis_name) {
-                        def dbName = h2gis_name.split(";")
-                        databaseName = dbName[0]
-                        databasePath = databaseFolder + File.separator + h2gis_name
+                } else if (delete_h2gis_db instanceof Boolean) {
+                    delete_h2gis = delete_h2gis_db
+                }
+                if (databasePath) {
+                    h2gis_properties = ["databaseName": databasePath, "user": "sa", "password": ""]
+                }
+            }
+
+            if (!inputParameters) {
+                error "Cannot find any input parameters."
+                return
+            }
+            def inputDataBase = inputParameters.database
+            def inputFolder = inputParameters.folder
+            def locations = inputParameters.locations as Set
+            if (!locations) {
+                error "Cannot find any locations parameter."
+                return
+            }
+            def inputSRID = inputParameters.srid
+            if (inputSRID && inputSRID <= 0) {
+                error "The input srid must be greater than 0."
+                return
+            }
+            if (inputFolder && inputDataBase) {
+                error "Please set only one input data provider"
+                return null
+            }
+
+            def inputWorkflowTableNames = ["commune",
+                                           "bati_indifferencie", "bati_industriel",
+                                           "bati_remarquable", "route",
+                                           "troncon_voie_ferree", "surface_eau",
+                                           "terrain_sport", "construction_surfacique",
+                                           "surface_route", "surface_activite",
+                                           "piste_aerodrome", "reservoir"]
+
+            def outputWorkflowTableNames = ["building_indicators",
+                                            "block_indicators",
+                                            "rsu_indicators",
+                                            "rsu_lcz",
+                                            "zones",
+                                            "building",
+                                            "road",
+                                            "rail",
+                                            "water",
+                                            "vegetation",
+                                            "impervious",
+                                            "urban_areas",
+                                            "rsu_utrf_area",
+                                            "rsu_utrf_floor_area",
+                                            "building_utrf",
+                                            "grid_indicators",
+                                            "road_traffic",
+                                            "population"]
+            //Get processing parameters
+            def processing_parameters = extractProcessingParameters(parameters.parameters)
+            if (!processing_parameters) {
+                warn "Please set \"parameters\" values to compute GeoClimate indicators."
+                return
+            }
+
+            //Get the out put parameters
+            def outputDatasource
+            def outputTables
+            def file_outputFolder
+            def outputFileTables
+            def outputSRID
+            if (outputParameters) {
+                def outputDataBase = outputParameters.database
+                def outputFolder = outputParameters.folder
+                def deleteOutputData = outputParameters.get("delete")
+                if (!deleteOutputData) {
+                    deleteOutputData = true
+                } else if (!deleteOutputData in Boolean) {
+                    error "The delete parameter must be a boolean value"
+                    return null
+                }
+                outputSRID = outputParameters.get("srid")
+                if (outputSRID && outputSRID <= 0) {
+                    error "The output srid must be greater than 0"
+                    return null
+                }
+                if (outputFolder) {
+                    def outputFiles = outputFolderProperties(outputFolder, outputWorkflowTableNames)
+                    outputFileTables = outputFiles.tables
+                    //Check if we can write in the output folder
+                    file_outputFolder = new File(outputFiles.path)
+                    if (!file_outputFolder.isDirectory()) {
+                        error "The directory $file_outputFolder doesn't exist."
+                        return
                     }
-                    def delete_h2gis_db = geoclimatedb.delete
-                    if (delete_h2gis_db == null) {
-                        delete_h2gis = true
-                    } else if (delete_h2gis_db instanceof String) {
-                        delete_h2gis = true
-                        if (delete_h2gis_db.equalsIgnoreCase("false")) {
-                            delete_h2gis = false
+                    if (!file_outputFolder.canWrite()) {
+                        file_outputFolder = null
+                        error "You don't have permission to write in the folder $outputFolder \n" +
+                                "Please check the folder."
+                        return
+                    }
+
+                } else if (outputDataBase) {
+                    //Check the conditions to store the results a database
+                    def outputDataBaseData = checkOutputTables(outputDataBase, outputDataBase.tables, outputWorkflowTableNames)
+                    outputDatasource = outputDataBaseData.outputDatasource
+                    outputTables = outputDataBaseData.outputTables
+                }
+            }
+
+            /**
+             * Run the workflow when the input data comes from a folder
+             */
+            if (inputFolder) {
+                    def h2gis_datasource = H2GIS.open(h2gis_properties)
+                    if (!h2gis_datasource) {
+                        error "Cannot load the local H2GIS database to run Geoclimate"
+                        return
+                    }
+                    def datafromFolder = linkDataFromFolder(inputFolder,inputWorkflowTableNames,  h2gis_datasource, locations, inputSRID)
+                    inputSRID = datafromFolder.inputSrid
+                    def  sourceSrid = datafromFolder.sourceSrid
+                    def tablesLinked = datafromFolder.tableNames
+                    if (tablesLinked) {
+                        locations.each { location ->
+                            //We must extract the data from the shapefiles for each locations
+                            if(filterLinkedData(location, processing_parameters.distance, tablesLinked,sourceSrid, inputSRID, h2gis_datasource)) {
+                                def formatedZone = checkAndFormatLocations(location)
+                                if (formatedZone) {
+                                    def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, formatedZone,
+                                            createMainFolder(file_outputFolder, formatedZone), outputFileTables, outputDatasource,
+                                            outputTables, outputSRID, inputSRID)
+                                    if (bdtopo_results) {
+                                        outputTableNamesResult.putAll(bdtopo_results)
+                                    }
+                                }
+                            }
                         }
-                    } else if (delete_h2gis_db instanceof Boolean) {
-                        delete_h2gis = delete_h2gis_db
+                        deleteH2GISDb(delete_h2gis, h2gis_datasource.getConnection(), databaseFolder, databaseName)
+
+                        return [output: outputTableNamesResult]
+                    } else {
+                        error "Cannot find any data to process from the folder $inputFolder"
+                        return
                     }
-                    if (databasePath) {
-                        h2gis_properties = ["databaseName": databasePath, "user": "sa", "password": ""]
+
+            }
+
+            /**
+             * Run the workflow when the input data comes from a database
+             */
+            if (inputDataBase) {
+                def inputTables = inputDataBase.tables as Set
+                if (!inputTables) {
+                    inputTables = inputWorkflowTableNames.collect { name -> [name: name] }
+                } else {
+                    inputTables = [:]
+                    inputTables.each { table ->
+                        if (inputWorkflowTableNames.contains(table.key.toLowerCase())) {
+                            inputTables.put(table.key.toLowerCase(), table.value)
+                        }
+                    }
+                    if (inputTables) {
+                        error "Please set a valid list of input tables as  : \n" +
+                                "${inputWorkflowTableNames.collect { name -> [name: name] }}"
+                        return
                     }
                 }
-                if (inputParameters) {
-                    def inputDataBase = inputParameters.database
-                    def inputFolder = inputParameters.folder
-                    def id_zones = []
-                    if (inputFolder && inputDataBase) {
-                        error "Please set only one input data provider"
-                    } else if (inputFolder) {
-                        def inputFolderPath = inputFolder
-                        if (inputFolder in Map) {
-                            inputFolderPath = inputFolder.path
-                            if (!inputFolderPath) {
-                                error "The input folder $inputFolderPath cannot be null or empty"
-                                return
-                            }
-                            id_zones = inputFolder.locations
-                        }
-                        if (outputParameters) {
-                            def geoclimateTableNames = ["building_indicators",
-                                                        "block_indicators",
-                                                        "rsu_indicators",
-                                                        "rsu_lcz",
-                                                        "zones",
-                                                        "building",
-                                                        "road",
-                                                        "rail",
-                                                        "water",
-                                                        "vegetation",
-                                                        "impervious",
-                                                        "urban_areas",
-                                                        "rsu_utrf_area",
-                                                        "rsu_utrf_floor_area",
-                                                        "building_utrf",
-                                                        "grid_indicators",
-                                                        "road_traffic",
-                                                        "population"]
-                            //Get processing parameters
-                            def processing_parameters = extractProcessingParameters(parameters.parameters)
-                            if (!processing_parameters) {
-                                return
-                            }
-                            def outputDataBase = outputParameters.database
-                            def outputFolder = outputParameters.folder
-                            def deleteOutputData = outputParameters.get("delete")
-                            if (!deleteOutputData) {
-                                deleteOutputData = true
-                            } else if (!deleteOutputData in Boolean) {
-                                error "The delete parameter must be a boolean value"
-                                return null
-                            }
-                            def outputSRID = outputParameters.get("srid")
-                            if (outputSRID && outputSRID <= 0) {
-                                error "The ouput srid must be greater or equal than 0"
-                                return null
-                            }
-                            if (outputDataBase && outputFolder) {
-                                def outputFolderProperties = outputFolderProperties(outputFolder)
-                                //Check if we can write in the output folder
-                                def file_outputFolder = new File(outputFolderProperties.path)
-                                if (!file_outputFolder.isDirectory()) {
-                                    error "The directory $file_outputFolder doesn't exist."
-                                    return
-                                }
-                                if (!file_outputFolder.canWrite()) {
-                                    file_outputFolder = null
-                                }
-                                //Check not the conditions for the output database
-                                def outputTableNames = outputDataBase.get("tables")
-                                def allowedOutputTableNames = geoclimateTableNames.intersect(outputTableNames.keySet())
-                                def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size() !=
-                                        allowedOutputTableNames.size()
-                                if (!allowedOutputTableNames && notSameTableNames) {
-                                    outputDataBase = null
-                                    outputTableNames = null
-                                }
-                                def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
-                                def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
-                                if (!output_datasource) {
-                                    return
-                                }
-                                def h2gis_datasource = H2GIS.open(h2gis_properties)
-                                if (!h2gis_datasource) {
-                                    error "Cannot load the local H2GIS database to run Geoclimate"
-                                    return
-                                }
-                                id_zones = loadDataFromFolder(inputFolderPath, h2gis_datasource, id_zones)
-                                if (id_zones) {
-                                    id_zones.each { id_zone ->
-                                        def formatedZone = checkAndFormatZones(id_zone)
-                                        if (formatedZone) {
-                                            def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, formatedZone,
-                                                    createMainFolder(file_outputFolder, formatedZone), outputFolderProperties.tables, output_datasource,
-                                                    finalOutputTables, outputSRID)
-                                            if (bdtopo_results) {
-                                                outputTableNamesResult.putAll(bdtopo_results)
-                                            }
-                                        }
-                                    }
-                                    if (delete_h2gis) {
-                                        def localCon = h2gis_datasource.getConnection()
-                                        if (localCon) {
-                                            localCon.close()
-                                            DeleteDbFiles.execute(databaseFolder, databaseName, true)
-                                            debug "The local H2GIS database : ${databasePath} has been deleted"
-                                        } else {
-                                            error "Cannot delete the local H2GIS database : ${databasePath} "
-                                        }
-                                    }
-                                    return [output: outputTableNamesResult]
-                                } else {
-                                    error "Cannot load the files from the folder $inputFolder"
-                                    return
-                                }
 
-                            } else if (outputFolder) {
-                                def outputFolderProperties = outputFolderProperties(outputFolder)
-                                //Check if we can write in the output folder
-                                def file_outputFolder = new File(outputFolderProperties.path)
-                                if (!file_outputFolder.isDirectory()) {
-                                    error "The directory $file_outputFolder doesn't exist."
-                                    return
-                                }
-                                if (file_outputFolder.canWrite()) {
-                                    def h2gis_datasource = H2GIS.open(h2gis_properties)
-                                    if (!h2gis_datasource) {
-                                        error "Cannot load the local H2GIS database to run Geoclimate"
-                                        return
-                                    }
-                                    id_zones = loadDataFromFolder(inputFolderPath, h2gis_datasource, id_zones)
-                                    if (id_zones) {
-                                        id_zones.each { id_zone ->
-                                            def formatedZone = checkAndFormatZones(id_zone)
-                                            if (formatedZone) {
-                                                def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, formatedZone,
-                                                        createMainFolder(file_outputFolder, formatedZone), outputFolderProperties.tables, null, null, outputSRID)
-                                                if (bdtopo_results) {
-                                                    outputTableNamesResult.putAll(bdtopo_results)
-                                                }
-                                            }
-
-                                        }
-                                        //Delete database
-                                        if (delete_h2gis) {
-                                            def localCon = h2gis_datasource.getConnection()
-                                            if (localCon) {
-                                                localCon.close()
-                                                DeleteDbFiles.execute(databaseFolder, databaseName, true)
-                                                debug "The local H2GIS database : ${databasePath} has been deleted"
-                                            } else {
-                                                error "Cannot delete the local H2GIS database : ${databasePath} "
-                                            }
-                                        }
-                                        return [output: outputTableNamesResult]
-                                    } else {
-                                        error "Cannot load the files from the folder $inputFolder"
-                                        return
-                                    }
-                                } else {
-                                    error "You don't have permission to write in the folder $outputFolder \n" +
-                                            "Please check the folder."
-                                    return
-                                }
-
-                            } else if (outputDataBase) {
-                                def outputTableNames = outputDataBase.tables
-                                def allowedOutputTableNames = geoclimateTableNames.intersect(outputTableNames.keySet())
-                                def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size() !=
-                                        allowedOutputTableNames.size()
-                                if (allowedOutputTableNames && !notSameTableNames) {
-                                    def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
-                                    def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
-                                    if (!output_datasource) {
-                                        return
-                                    }
-                                    def h2gis_datasource = H2GIS.open(h2gis_properties)
-                                    if (!h2gis_datasource) {
-                                        error "Cannot load the local H2GIS database to run Geoclimate"
-                                        return
-                                    }
-                                    id_zones = loadDataFromFolder(inputFolderPath, h2gis_datasource, id_zones)
-                                    if (id_zones) {
-                                        id_zones.each { id_zone ->
-                                            def formatedZone = checkAndFormatZones(id_zone)
-                                            if (formatedZone) {
-                                                def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, formatedZone, null,
-                                                        null, output_datasource, finalOutputTables, outputSRID)
-                                                if (bdtopo_results) {
-                                                    outputTableNamesResult.putAll(bdtopo_results)
-                                                }
-                                            }
-                                        }
-                                        if (delete_h2gis) {
-                                            def localCon = h2gis_datasource.getConnection()
-                                            if (localCon) {
-                                                localCon.close()
-                                                DeleteDbFiles.execute(databaseFolder, databaseName, true)
-                                                debug "The local H2GIS database : ${databasePath} has been deleted"
-                                            } else {
-                                                error "Cannot delete the local H2GIS database : ${databasePath} "
-                                            }
-                                        }
-                                        return [output: outputTableNamesResult]
-                                    } else {
-                                        error "Cannot load the files from the folder $inputFolder"
-                                        return
-                                    }
-                                } else {
-                                    error "All output table names must be specified in the configuration file."
-                                    return
-                                }
+                def h2gis_datasource = H2GIS.open(h2gis_properties)
+                if (!h2gis_datasource) {
+                    error "Cannot load the local H2GIS database to run Geoclimate"
+                    return
+                }
+                def nbzones = 0;
+                for (location in locations) {
+                    nbzones++
+                    inputSRIDsrid = loadDataFromPostGIS(inputDataBase.subMap(["user", "password", "url"]), location, processing_parameters.distance, inputTables, h2gis_datasource)
+                    if (inputSRID) {
+                        def formatedZone = checkAndFormatLocations(location)
+                        if (formatedZone) {
+                            def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, formatedZone, createMainFolder(file_outputFolder, formatedZone), outputFileTables, outputDatasource, outputTables, outputSRID, inputSRID)
+                            if (bdtopo_results) {
+                                outputTableNamesResult.putAll(bdtopo_results)
                             } else {
-                                error "Please set at least one output provider"
-                                return
+                                error "Cannot execute the geoclimate processing chain on $location\n"
                             }
-                        } else {
-                            error "Please set at least one output provider"
-                            return
-                        }
-
-                    } else if (inputDataBase) {
-                        if (outputParameters) {
-                            def geoclimatetTableNames = ["building_indicators",
-                                                         "block_indicators",
-                                                         "rsu_indicators",
-                                                         "rsu_lcz",
-                                                         "zones",
-                                                         "building",
-                                                         "road",
-                                                         "rail",
-                                                         "water",
-                                                         "vegetation",
-                                                         "impervious",
-                                                         "urban_areas",
-                                                         "rsu_utrf_area",
-                                                         "rsu_utrf_floor_area",
-                                                         "building_utrf",
-                                                         "grid_indicators",
-                                                         "road_traffic"]
-                            //Get processing parameters
-                            def processing_parameters = extractProcessingParameters(parameters.parameters)
-                            if (!processing_parameters) {
-                                return
-                            }
-                            def outputSRID = outputParameters.get("srid")
-                            if (!outputSRID && outputSRID >= 0) {
-                                error "The ouput srid must be greater or equal than 0"
-                                return null
-                            }
-                            def outputDataBase = outputParameters.database
-                            def outputFolder = outputParameters.folder
-                            if (outputDataBase && outputFolder) {
-                                def outputFolderProperties = outputFolderProperties(outputFolder)
-                                //Check if we can write in the output folder
-                                def file_outputFolder = new File(outputFolderProperties.path)
-                                if (!file_outputFolder.isDirectory()) {
-                                    error "The directory $file_outputFolder doesn't exist."
-                                    return
-                                }
-                                if (!file_outputFolder.canWrite()) {
-                                    file_outputFolder = null
-                                }
-                                //Check not the conditions for the output database
-                                def outputTableNames = outputDataBase.tables
-                                def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
-                                def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size() !=
-                                        allowedOutputTableNames.size()
-                                if (!allowedOutputTableNames && notSameTableNames) {
-                                    outputDataBase = null
-                                    outputTableNames = null
-                                }
-                                def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
-                                def codes = inputDataBase.locations
-                                if (codes && codes in Collection) {
-                                    def inputTableNames = inputDataBase.tables
-                                    def h2gis_datasource = H2GIS.open(h2gis_properties)
-                                    if (!h2gis_datasource) {
-                                        error "Cannot load the local H2GIS database to run Geoclimate"
-                                        return
-                                    }
-                                    def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
-                                    if (!output_datasource) {
-                                        return
-                                    }
-                                    def nbzones = 0;
-                                    for (code in codes) {
-                                        nbzones++
-                                        if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]), code, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
-                                            def formatedZone = checkAndFormatZones(code)
-                                            if (formatedZone) {
-                                                def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, formatedZone,
-                                                        createMainFolder(file_outputFolder, formatedZone), outputFolderProperties.tables, output_datasource,
-                                                        finalOutputTables, outputSRID)
-                                                if (bdtopo_results) {
-                                                    outputTableNamesResult.putAll(bdtopo_results)
-                                                }
-                                            }
-
-                                        } else {
-                                            return
-                                        }
-                                        info "${nbzones} area(s) on ${codes.size()}"
-                                    }
-                                    if (delete_h2gis) {
-                                        def localCon = h2gis_datasource.getConnection()
-                                        if (localCon) {
-                                            localCon.close()
-                                            DeleteDbFiles.execute(databaseFolder, databaseName, true)
-                                            debug "The local H2GIS database : ${databasePath} has been deleted"
-                                        } else {
-                                            error "Cannot delete the local H2GIS database : ${databasePath} "
-                                        }
-                                    }
-
-                                    return [output: outputTableNamesResult]
-
-                                } else if (codes) {
-                                    def inputTableNames = inputDataBase.tables
-                                    def h2gis_datasource = H2GIS.open(h2gis_properties)
-                                    if (!h2gis_datasource) {
-                                        error "Cannot load the local H2GIS database to run Geoclimate"
-                                        return
-                                    }
-                                    def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
-                                    if (!output_datasource) {
-                                        return
-                                    }
-                                    def commune_location = inputTableNames.commune
-                                    if (commune_location) {
-                                        output_datasource.eachRow("select distinct insee_com from $commune_location where $codes group by insee_com ;") { row ->
-                                            id_zones << row.insee_com
-                                        }
-                                        def nbzones = 0;
-                                        for (id_zone in id_zones) {
-                                            nbzones++
-                                            if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]),
-                                                    id_zone, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
-                                                def formatedZone = checkAndFormatZones(id_zone)
-                                                if (formatedZone) {
-                                                    def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, formatedZone,
-                                                            createMainFolder(file_outputFolder, formatedZone), outputFolderProperties.tables,
-                                                            output_datasource, finalOutputTables, outputSRID)
-                                                    if (bdtopo_results) {
-                                                        outputTableNamesResult.putAll(bdtopo_results)
-                                                    } else {
-                                                        error "Cannot execute the geoclimate processing chain on $id_zone"
-                                                        return
-                                                    }
-                                                }
-                                            } else {
-                                                return
-                                            }
-                                            info "${nbzones} area(s) on ${id_zones.size()}"
-                                        }
-                                        if (delete_h2gis) {
-                                            def localCon = h2gis_datasource.getConnection()
-                                            if (localCon) {
-                                                localCon.close()
-                                                DeleteDbFiles.execute(databaseFolder, databaseName, true)
-                                                debug "The local H2GIS database : ${databasePath} has been deleted"
-                                            } else {
-                                                error "Cannot delete the local H2GIS database : ${databasePath} "
-                                            }
-                                        }
-                                        return [output: outputTableNamesResult]
-                                    } else {
-                                        error "Cannot find any commune features from the query $codes"
-                                    }
-                                }
-
-                            } else if (outputFolder) {
-                                def outputFolderProperties = outputFolderProperties(outputFolder)
-                                //Check if we can write in the output folder
-                                def file_outputFolder = new File(outputFolderProperties.path)
-                                if (!file_outputFolder.isDirectory()) {
-                                    error "The directory $file_outputFolder doesn't exist."
-                                    return null
-                                }
-                                if (file_outputFolder.canWrite()) {
-                                    def codes = inputDataBase.locations
-                                    if (codes && codes in Collection) {
-                                        def inputTableNames = inputDataBase.tables
-                                        def h2gis_datasource = H2GIS.open(h2gis_properties)
-                                        if (!h2gis_datasource) {
-                                            error "Cannot load the local H2GIS database to run Geoclimate"
-                                            return
-                                        }
-                                        def nbzones = 0;
-                                        for (code in codes) {
-                                            nbzones++
-                                            if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]),
-                                                    code, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
-                                                def formatedZone = checkAndFormatZones(code)
-                                                if (formatedZone) {
-                                                    def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters,
-                                                            formatedZone, createMainFolder(file_outputFolder, formatedZone), outputFolderProperties.tables, null, null, outputSRID)
-                                                    if (bdtopo_results) {
-                                                        outputTableNamesResult.putAll(bdtopo_results)
-                                                    } else {
-                                                        error "Cannot execute the geoclimate processing chain on $code"
-                                                        return
-                                                    }
-                                                }
-                                            } else {
-                                                return
-                                            }
-                                            info "${nbzones} area(s) on ${codes.size()}"
-                                        }
-                                    }
-
-                                    if (delete_h2gis) {
-                                        def localCon = h2gis_datasource.getConnection()
-                                        if (localCon) {
-                                            localCon.close()
-                                            DeleteDbFiles.execute(databaseFolder, databaseName, true)
-                                            debug "The local H2GIS database : ${databasePath} has been deleted"
-                                        } else {
-                                            error "Cannot delete the local H2GIS database : ${databasePath} "
-                                        }
-                                    }
-                                    return [output: outputTableNamesResult]
-
-                                } else {
-                                    error "You don't have permission to write in the folder $outputFolder. \n Check if the folder exists."
-                                    return
-                                }
-                            } else if (outputDataBase) {
-                                def outputTableNames = outputDataBase.tables
-                                if (!outputTableNames) {
-                                    error "You must set at least one table name to export in the database.\n" +
-                                            "Available tables key names are : ${geoclimatetTableNames.join(",")}"
-                                    return
-                                }
-                                def allowedOutputTableNames = geoclimatetTableNames.intersect(outputTableNames.keySet())
-                                def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size() !=
-                                        allowedOutputTableNames.size()
-                                if (allowedOutputTableNames && !notSameTableNames) {
-                                    def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
-                                    def codes = inputDataBase.locations
-                                    if (codes && codes in Collection) {
-                                        def inputTableNames = inputDataBase.tables
-                                        def h2gis_datasource = H2GIS.open(h2gis_properties)
-                                        if (!h2gis_datasource) {
-                                            error "Cannot load the local H2GIS database to run Geoclimate"
-                                            return
-                                        }
-                                        def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
-                                        if (!output_datasource) {
-                                            return null
-                                        }
-                                        def nbzones = 0;
-                                        for (code in codes) {
-                                            nbzones++
-                                            if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]), code, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
-                                                def formatedZone = checkAndFormatZones(code)
-                                                if (formatedZone) {
-                                                    def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, formatedZone, null, null, output_datasource, finalOutputTables, outputSRID)
-                                                    if (bdtopo_results) {
-                                                        outputTableNamesResult.putAll(bdtopo_results)
-                                                    } else {
-                                                        error "Cannot execute the geoclimate processing chain on $code"
-                                                        return
-                                                    }
-                                                }
-                                            } else {
-                                                return null
-                                            }
-                                            info "${nbzones} area(s) on ${codes.size()}"
-                                        }
-                                        if (delete_h2gis) {
-                                            def localCon = h2gis_datasource.getConnection()
-                                            if (localCon) {
-                                                localCon.close()
-                                                DeleteDbFiles.execute(databaseFolder, databaseName, true)
-                                                debug "The local H2GIS database : ${databasePath} has been deleted"
-                                            } else {
-                                                error "Cannot delete the local H2GIS database : ${databasePath} "
-                                            }
-                                        }
-                                        return [output: outputTableNamesResult]
-                                    } else if (codes) {
-                                        def inputTableNames = inputDataBase.tables
-                                        def h2gis_datasource = H2GIS.open(h2gis_properties)
-                                        if (!h2gis_datasource) {
-                                            error "Cannot load the local H2GIS database to run Geoclimate"
-                                            return
-                                        }
-                                        def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
-                                        if (!output_datasource) {
-                                            return null
-                                        }
-                                        def commune_location = inputTableNames.commune
-                                        if (commune_location) {
-                                            output_datasource.eachRow("select distinct CODE_INSEE from $commune_location where $codes group by CODE_INSEE ;") { row ->
-                                                id_zones << row.insee_com
-                                            }
-
-                                            info "${id_zones.size()} communes will be processed"
-                                            def nbzones = 0
-                                            for (id_zone in id_zones) {
-                                                nbzones++
-                                                if (loadDataFromDatasource(inputDataBase.subMap(["user", "password", "url"]), id_zone, processing_parameters.distance, inputTableNames, h2gis_datasource)) {
-                                                    def formatedZone = checkAndFormatZones(id_zone)
-                                                    if (formatedZone) {
-                                                        def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, formatedZone, null, null, output_datasource, finalOutputTables, outputSRID)
-                                                        if (bdtopo_results) {
-                                                            outputTableNamesResult.putAll(bdtopo_results)
-                                                        } else {
-                                                            error "Cannot execute the geoclimate processing chain on $id_zone"
-                                                            return
-                                                        }
-                                                    }
-                                                    info "${nbzones} area(s) on ${id_zones.size()}"
-                                                } else {
-                                                    return
-                                                }
-                                            }
-                                            if (delete_h2gis) {
-                                                def localCon = h2gis_datasource.getConnection()
-                                                if (localCon) {
-                                                    localCon.close()
-                                                    DeleteDbFiles.execute(databaseFolder, databaseName, true)
-                                                    debug "The local H2GIS database : ${databasePath} has been deleted"
-                                                } else {
-                                                    error "Cannot delete the local H2GIS database : ${databasePath} "
-                                                }
-                                            }
-                                            return [output: outputTableNamesResult]
-                                        } else {
-                                            error "Cannot find any commune features from the query $codes"
-                                        }
-                                    }
-
-                                } else {
-                                    error "All output table names must be specified in the configuration file."
-                                    return
-                                }
-
-                            } else {
-                                error "Please set at least one output provider"
-                                return
-                            }
-                        } else {
-                            error "Please set at least one output provider"
-                            return
                         }
                     } else {
-                        error "Please set a valid input data provider"
+                        error "Cannot load the data for the location $location"
                     }
-                } else {
-                    error "Cannot find any input parameters."
+                    info "${nbzones} location(s) on ${locations.size()}"
                 }
-            } else {
-                error "Empty parameters"
+                deleteH2GISDb(delete_h2gis, h2gis_datasource.getConnection(), databaseFolder, databaseName)
+                if(outputTableNamesResult) {
+                    return [output: outputTableNamesResult]
+                }
             }
             return [output: null]
         }
@@ -767,15 +406,60 @@ IProcess workflow() {
 }
 
 /**
+ *
+ * Method to delete the local H2GIS database used by the workflow
+ * @param delete
+ * @param h2GIS
+ * @return
+ */
+def deleteH2GISDb(def delete, Connection connection, def dbFolder, def dbName) {
+    if (delete) {
+        if (connection) {
+            connection.close()
+            DeleteDbFiles.execute(dbFolder, dbName, true)
+            debug "The local H2GIS database : ${dbName} has been deleted"
+        } else {
+            error "Cannot delete the local H2GIS database : ${dbName} "
+        }
+    }
+}
+
+/**
+ * Method to check the output tables set by the user and create the datasource connexion
+ * Return null if the table names are invalid or if we cannot create the connection to the database
+ */
+def checkOutputTables(def outputDataBase, def outputTableNames, def outputWorkflowTableNames) {
+    def outputTables = [:]
+    if (!outputTableNames) {
+        outputTables = outputWorkflowTableNames.collect { [it: it] }
+    } else {
+        outputTableNames.each { table ->
+            if (outputWorkflowTableNames.contains(table.key.toLowerCase())) {
+                outputTables.put(table.key.toLowerCase(), table.value)
+            }
+        }
+        if(!outputTables){
+            error "Please set a valid list of output tables as  : \n" +
+                    "${outputWorkflowTableNames.collect { name -> [name: name] }}"
+        }
+    }
+    def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
+    if (!output_datasource) {
+        error "Cannot connect to the output database"
+    }
+    return [outputTables: outputTables, outputDatasource: output_datasource]
+
+}
+/**
  * Sanity check for the location value
  * @param id_zones
  * @return
  */
-def checkAndFormatZones(def location) {
-    if (location in Collection) {
-        return location.join("_")
-    } else if (location instanceof String) {
-        return location.trim()
+def checkAndFormatLocations(def locations) {
+    if (locations in Collection) {
+        return locations.join("_")
+    } else if (locations instanceof String) {
+        return locations.trim()
     } else {
         error "Invalid location input. \n" +
                 "The location input must be a string value or an array of 4 coordinates to define a bbox "
@@ -792,6 +476,9 @@ def checkAndFormatZones(def location) {
  * @return
  */
 def createMainFolder(def outputFolder, def location) {
+    if(!outputFolder){
+        return
+    }
     //Create the folder to save the results
     def folder = new File(outputFolder.getAbsolutePath() + File.separator + "bdtopo_v2_" + location)
     if (!folder.exists()) {
@@ -806,25 +493,7 @@ def createMainFolder(def outputFolder, def location) {
  * Return the properties parameters to store results in a folder
  * @param outputFolder the output folder parameters from the json file
  */
-def outputFolderProperties(def outputFolder) {
-    def tablesToSave = ["building_indicators",
-                        "block_indicators",
-                        "rsu_indicators",
-                        "rsu_lcz",
-                        "zones",
-                        "building",
-                        "road",
-                        "rail",
-                        "water",
-                        "vegetation",
-                        "impervious",
-                        "rsu_utrf_area",
-                        "rsu_utrf_floor_area",
-                        "building_utrf",
-                        "grid_indicators",
-                        "road_traffic",
-                        "population"]
-
+def outputFolderProperties(def outputFolder, def outputWorkflowTableNames) {
     if (outputFolder in Map) {
         def outputPath = outputFolder.path
         def outputTables = outputFolder.tables
@@ -832,11 +501,11 @@ def outputFolderProperties(def outputFolder) {
             return
         }
         if (outputTables) {
-            return ["path": outputPath, "tables": tablesToSave.intersect(outputTables)]
+            return ["path": outputPath, "tables": outputWorkflowTableNames.intersect(outputTables)]
         }
-        return ["path": outputPath, "tables": tablesToSave]
+        return ["path": outputPath, "tables": outputWorkflowTableNames]
     } else {
-        return ["path": outputFolder, "tables": tablesToSave]
+        return ["path": outputFolder, "tables": outputWorkflowTableNames]
     }
 }
 
@@ -870,6 +539,148 @@ def createDatasource(def database_properties) {
     }
 }
 
+/**
+ *
+ * Method to filter the data from the input shapefiles
+ * @param location
+ * @param distance
+ * @param inputTables
+ * @param sourceSRID
+ * @param inputSRID
+ * @param h2gis_datasource
+ * @return
+ */
+def filterLinkedData(def location, def distance, def inputTables,def sourceSRID, def inputSRID, H2GIS h2gis_datasource){
+    def formatting_geom = "the_geom"
+    if(sourceSRID>=0 && sourceSRID!=inputSRID){
+        formatting_geom = "st_transform(the_geom, $inputSRID) as the_geom"
+    }else if(sourceSRID>=0 && sourceSRID==inputSRID){
+        formatting_geom = "st_setsrid(the_geom, $inputSRID) as the_geom"
+    }
+    String outputTableName = "COMMUNE"
+    //Let's process the data by location
+    //Check if code is a string or a bbox
+    //The zone is a osm bounding box represented by ymin,xmin , ymax,xmax,
+    if (location in Collection) {
+        debug "Loading in the H2GIS database $outputTableName"
+        h2gis_datasource.execute("""CREATE TABLE $outputTableName as  SELECT
+                    ST_INTERSECTION(the_geom, ST_MakeEnvelope(${location[1]},${location[0]},${location[3]},${location[2]}, $sourceSRID)) as the_geom, CODE_INSEE  from ${inputTables.commune} where the_geom 
+                    && ST_MakeEnvelope(${location[1]},${location[0]},${location[3]},${location[2]}, $sourceSRID) """.toString())
+    } else if (location instanceof String) {
+        debug "Loading in the H2GIS database $outputTableName"
+        h2gis_datasource.execute("CREATE TABLE $outputTableName as SELECT $formatting_geom, CODE_INSEE FROM ${inputTables.commune} WHERE CODE_INSEE='$location' or lower(nom)='${location.toLowerCase()}')".toString())
+
+    }
+    def count = h2gis_datasource."$outputTableName".rowCount
+    if (count > 0) {
+        //Compute the envelope of the extracted area to extract the thematic tables
+        def geomToExtract = h2gis_datasource.firstRow("SELECT ST_EXPAND(ST_UNION(ST_ACCUM(the_geom)), ${distance}) AS THE_GEOM FROM $outputTableName".toString()).THE_GEOM
+
+        if (inputTables.bati_indifferencie) {
+            //Extract bati_indifferencie
+            outputTableName = "BATI_INDIFFERENCIE"
+            debug "Loading in the H2GIS database $outputTableName"
+            h2gis_datasource.execute("CREATE TABLE $outputTableName as SELECT ID, $formatting_geom, HAUTEUR FROM ${inputTables.bati_indifferencie}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+        }
+
+        if (inputTables.bati_industriel) {
+            //Extract bati_industriel
+            outputTableName = "BATI_INDUSTRIEL"
+            debug "Loading in the H2GIS database $outputTableName"
+            h2gis_datasource.execute("CREATE TABLE $outputTableName as SELECT ID, $formatting_geom, NATURE, HAUTEUR FROM ${inputTables.bati_industriel}  WHERE the_geom, && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+        }
+
+        if (inputTables.bati_remarquable) {
+            //Extract bati_remarquable
+            outputTableName = "BATI_REMARQUABLE"
+            debug "Loading in the H2GIS database $outputTableNameBatiRem"
+            h2gis_datasource.execute("CREATE TABLE $outputTableName as SELECT ID, $formatting_geom, NATURE, HAUTEUR FROM ${inputTables.bati_remarquable}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+        }
+
+        if (inputTables.route) {
+            //Extract route
+            outputTableName = "ROUTE"
+            debug "Loading in the H2GIS database $outputTableNameRoad"
+            h2gis_datasource.execute("CREATE TABLE $outputTableName as SELECT ID, $formatting_geom, NATURE, LARGEUR, POS_SOL, FRANCHISST, SENS FROM ${inputTables.route}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+        } else {
+            error "The route table must be provided"
+            return
+        }
+
+        if (inputTables.troncon_voie_ferree) {
+            //Extract troncon_voie_ferree
+            debug "Loading in the H2GIS database $outputTableName"
+            outputTableName = "TRONCON_VOIE_FERREE"
+            h2gis_datasource.execute("CREATE TABLE $outputTableName as SELECT ID,$formatting_geom, NATURE, LARGEUR, POS_SOL, FRANCHISST FROM ${inputTables.troncon_voie_ferree}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+
+        }
+
+        if (inputTables.surface_eau) {
+            //Extract surface_eau
+            debug "Loading in the H2GIS database $outputTableName"
+            outputTableName = "SURFACE_EAU"
+            h2gis_datasource.execute("CREATE TABLE $outputTableName as SELECT ID, $formatting_geom FROM ${inputTables.surface_eau}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+
+        }
+
+        if (inputTables.zone_vegetation) {
+            //Extract zone_vegetation
+            debug "Loading in the H2GIS database $outputTableName"
+            outputTableName = "ZONE_VEGETATION"
+            h2gis_datasource.execute("CREATE TABLE $outputTableName  SELECT ID, $formatting_geom, NATURE  FROM ${inputTables.zone_vegetation}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+
+        }
+
+        if (inputTables.terrain_sport) {
+            //Extract terrain_sport
+            debug "Loading in the H2GIS database $outputTableName"
+            outputTableName = "TERRAIN_SPORT"
+            h2gis_datasource.execute("CREATE TABLE $outputTableName  SELECT ID, $formatting_geom, NATURE  FROM ${inputTables.terrain_sport}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY) AND NATURE='Piste de sport'".toString())
+
+        }
+
+        if (inputTables.construction_surfacique) {
+            //Extract construction_surfacique
+            outputTableName = "CONSTRUCTION_SURFACIQUE"
+            debug "Loading in the H2GIS database $outputTableName"
+            h2gis_datasource.execute("CREATE TABLE $outputTableName  SELECT ID, $formatting_geom, NATURE  FROM ${inputTables.construction_surfacique}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY) AND (NATURE='Barrage' OR NATURE='Ecluse' OR NATURE='Escalier')".toString())
+        }
+
+        if (inputTables.surface_route) {
+            //Extract surface_route
+            outputTableName = "SURFACE_ROUTE"
+            debug "Loading in the H2GIS database $outputTableName"
+            h2gis_datasource.execute("CREATE TABLE $outputTableName  SELECT ID, $formatting_geom,NATURE  FROM ${inputTables.surface_route}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+        }
+
+        if (inputTables.surface_activite) {
+            //Extract surface_activite
+            outputTableName = "SURFACE_ACTIVITE"
+            debug "Loading in the H2GIS database $outputTableName"
+            h2gis_datasource.execute("CREATE TABLE $outputTableName  SELECT ID, $formatting_geom, CATEGORIE  FROM ${inputTables.surface_activite}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY) AND (CATEGORIE='Administratif' OR CATEGORIE='Enseignement' OR CATEGORIE='Santé')".toString())
+        }
+        //Extract PISTE_AERODROME
+        if (inputTables.piste_aerodrome) {
+            outputTableName = "PISTE_AERODROME"
+            debug "Loading in the H2GIS database $outputTableName"
+            h2gis_datasource.execute("CREATE TABLE $outputTableName  SELECT ID, $formatting_geom, NATURE  FROM ${inputTables.piste_aerodrome}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+        }
+
+        //Extract RESERVOIR
+        if (inputTables.reservoir) {
+            outputTableName = "RESERVOIR"
+            debug "Loading in the H2GIS database $outputTableName"
+            h2gis_datasource.execute("CREATE TABLE $outputTableName  SELECT ID, $formatting_geom, NATURE, HAUTEUR  FROM ${inputTables.reservoir}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+        }
+
+        return sourceSRID
+
+    } else {
+        error "Cannot find any commune with the insee code : $location"
+        return
+    }
+
+}
 
 /**
  * Load the required tables stored in a database
@@ -877,8 +688,8 @@ def createDatasource(def database_properties) {
  * @param inputDatasource database where the tables are
  * @return true is succeed, false otherwise
  */
-def loadDataFromDatasource(def input_database_properties, def code, def distance, def inputTableNames, H2GIS h2gis_datasource) {
-    def commune_location = inputTableNames.commune
+def loadDataFromPostGIS(def input_database_properties, def code, def distance, def inputTables, def inputSRID, H2GIS h2gis_datasource) {
+    def commune_location = inputTables.commune
     if (!commune_location) {
         error "The commune table must be specified to run Geoclimate"
         return
@@ -907,23 +718,31 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
 
     //Find the SRID of the commune table
     def commune_srid = GeometryTableUtilities.getSRID(sourceConnection, commune_location)
-    if (commune_srid == -1) {
+    if (commune_srid <=0) {
         error("The commune table doesn't have any SRID");
         return
     }
+    if (commune_srid == 0 && inputSRID) {
+        commune_srid = inputSRID
+    } else if (commune_srid <= 0) {
+        warn "Cannot find a SRID value for the layer commune.\n" +
+                "Please set a valid OGC prj or use the parameter srid to force it."
+        return null
+    }
+
     String outputTableName = "COMMUNE"
-    //Let's process the data by i_zone
+    //Let's process the data by location
     //Check if code is a string or a bbox
     //The zone is a osm bounding box represented by ymin,xmin , ymax,xmax,
     if (code in Collection) {
         //def tmp_insee = code.join("_")
         String inputTableName = """(SELECT
-                    ST_INTERSECTION(the_geom, ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, $commune_srid)) as the_geom, CODE_INSEE  from $commune_location where the_geom 
+                    ST_INTERSECTION(st_setsrid(the_geom, $commune_srid), ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, $commune_srid)) as the_geom, CODE_INSEE  from $commune_location where st_setsrid(the_geom, $commune_srid) 
                     && ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, $commune_srid))""".toString()
         debug "Loading in the H2GIS database $outputTableName"
         IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 10);
     } else if (code instanceof String) {
-        String inputTableName = "(SELECT THE_GEOM, CODE_INSEE FROM $commune_location WHERE CODE_INSEE='$code' or lower(nom)='${code.toLowerCase()}')"
+        String inputTableName = "(SELECT st_setsrid(the_geom, $commune_srid) as the_geom, CODE_INSEE FROM $commune_location WHERE CODE_INSEE='$code' or lower(nom)='${code.toLowerCase()}')"
         debug "Loading in the H2GIS database $outputTableName"
         IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000);
     }
@@ -932,30 +751,30 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
         //Compute the envelope of the extracted area to extract the thematic tables
         def geomToExtract = h2gis_datasource.firstRow("SELECT ST_EXPAND(ST_UNION(ST_ACCUM(the_geom)), ${distance}) AS THE_GEOM FROM $outputTableName".toString()).THE_GEOM
         def outputTableNameBatiInd = "BATI_INDIFFERENCIE"
-        if (inputTableNames.bati_indifferencie) {
+        if (inputTables.bati_indifferencie) {
             //Extract bati_indifferencie
-            def inputTableName = "(SELECT ID, THE_GEOM, HAUTEUR FROM ${inputTableNames.bati_indifferencie}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
+            def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, HAUTEUR FROM ${inputTables.bati_indifferencie}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
             debug "Loading in the H2GIS database $outputTableNameBatiInd"
             IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableNameBatiInd, -1, 1000);
         }
         def outputTableNameBatiIndus = "BATI_INDUSTRIEL"
-        if (inputTableNames.bati_industriel) {
+        if (inputTables.bati_industriel) {
             //Extract bati_industriel
-            def inputTableName = "(SELECT ID, THE_GEOM, NATURE, HAUTEUR FROM ${inputTableNames.bati_industriel}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
+            def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, NATURE, HAUTEUR FROM ${inputTables.bati_industriel}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
             debug "Loading in the H2GIS database $outputTableNameBatiIndus"
             IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableNameBatiIndus, -1, 1000);
         }
         def outputTableNameBatiRem = "BATI_REMARQUABLE"
-        if (inputTableNames.bati_remarquable) {
+        if (inputTables.bati_remarquable) {
             //Extract bati_remarquable
-            def inputTableName = "(SELECT ID, THE_GEOM, NATURE, HAUTEUR FROM ${inputTableNames.bati_remarquable}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
+            def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, NATURE, HAUTEUR FROM ${inputTables.bati_remarquable}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
             debug "Loading in the H2GIS database $outputTableNameBatiRem"
             IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableNameBatiRem, -1, 1000);
         }
         def outputTableNameRoad = "ROUTE"
-        if (inputTableNames.route) {
+        if (inputTables.route) {
             //Extract route
-            def inputTableName = "(SELECT ID, THE_GEOM, NATURE, LARGEUR, POS_SOL, FRANCHISST, SENS FROM ${inputTableNames.route}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
+            def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, NATURE, LARGEUR, POS_SOL, FRANCHISST, SENS FROM ${inputTables.route}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
             debug "Loading in the H2GIS database $outputTableNameRoad"
             IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableNameRoad, -1, 1000);
         } else {
@@ -963,73 +782,73 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
             return
         }
 
-        if (inputTableNames.troncon_voie_ferree) {
+        if (inputTables.troncon_voie_ferree) {
             //Extract troncon_voie_ferree
-            def inputTableName = "(SELECT ID, THE_GEOM, NATURE, LARGEUR, POS_SOL, FRANCHISST FROM ${inputTableNames.troncon_voie_ferree}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
+            def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, NATURE, LARGEUR, POS_SOL, FRANCHISST FROM ${inputTables.troncon_voie_ferree}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
             outputTableName = "TRONCON_VOIE_FERREE"
             debug "Loading in the H2GIS database $outputTableName"
             IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000);
         }
 
-        if (inputTableNames.surface_eau) {
+        if (inputTables.surface_eau) {
             //Extract surface_eau
-            def inputTableName = "(SELECT ID, THE_GEOM FROM ${inputTableNames.surface_eau}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
+            def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom FROM ${inputTables.surface_eau}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
             outputTableName = "SURFACE_EAU"
             debug "Loading in the H2GIS database $outputTableName"
             IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000);
         }
 
-        if (inputTableNames.zone_vegetation) {
+        if (inputTables.zone_vegetation) {
             //Extract zone_vegetation
-            def inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.zone_vegetation}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
+            def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, NATURE  FROM ${inputTables.zone_vegetation}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
             outputTableName = "ZONE_VEGETATION"
             debug "Loading in the H2GIS database $outputTableName"
             IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000);
         }
 
-        if (inputTableNames.terrain_sport) {
+        if (inputTables.terrain_sport) {
             //Extract terrain_sport
-            def inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.terrain_sport}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY) AND NATURE='Piste de sport')"
+            def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, NATURE  FROM ${inputTables.terrain_sport}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY) AND NATURE='Piste de sport')"
             outputTableName = "TERRAIN_SPORT"
             debug "Loading in the H2GIS database $outputTableName"
 
             IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000);
         }
 
-        if (inputTableNames.construction_surfacique) {
+        if (inputTables.construction_surfacique) {
             //Extract construction_surfacique
-            def inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.construction_surfacique}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY) AND (NATURE='Barrage' OR NATURE='Ecluse' OR NATURE='Escalier'))"
+            def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, NATURE  FROM ${inputTables.construction_surfacique}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY) AND (NATURE='Barrage' OR NATURE='Ecluse' OR NATURE='Escalier'))"
             outputTableName = "CONSTRUCTION_SURFACIQUE"
             debug "Loading in the H2GIS database $outputTableName"
             IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000);
         }
 
-        if (inputTableNames.surface_route) {
+        if (inputTables.surface_route) {
             //Extract surface_route
-            def inputTableName = "(SELECT ID, THE_GEOM,NATURE  FROM ${inputTableNames.surface_route}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
+            def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom,NATURE  FROM ${inputTables.surface_route}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
             outputTableName = "SURFACE_ROUTE"
             debug "Loading in the H2GIS database $outputTableName"
             IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000);
         }
 
-        if (inputTableNames.surface_activite) {
+        if (inputTables.surface_activite) {
             //Extract surface_activite
-            def inputTableName = "(SELECT ID, THE_GEOM, CATEGORIE  FROM ${inputTableNames.surface_activite}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY) AND (CATEGORIE='Administratif' OR CATEGORIE='Enseignement' OR CATEGORIE='Santé'))"
+            def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, CATEGORIE  FROM ${inputTables.surface_activite}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY) AND (CATEGORIE='Administratif' OR CATEGORIE='Enseignement' OR CATEGORIE='Santé'))"
             outputTableName = "SURFACE_ACTIVITE"
             debug "Loading in the H2GIS database $outputTableName"
             IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000);
         }
         //Extract PISTE_AERODROME
-        if (inputTableNames.piste_aerodrome) {
-            def inputTableName = "(SELECT ID, THE_GEOM, NATURE  FROM ${inputTableNames.piste_aerodrome}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
+        if (inputTables.piste_aerodrome) {
+            def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, NATURE  FROM ${inputTables.piste_aerodrome}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
             outputTableName = "PISTE_AERODROME"
             debug "Loading in the H2GIS database $outputTableName"
             IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000);
         }
 
         //Extract RESERVOIR
-        if (inputTableNames.reservoir) {
-            def inputTableName = "(SELECT ID, THE_GEOM, NATURE, HAUTEUR  FROM ${inputTableNames.reservoir}  WHERE the_geom && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
+        if (inputTables.reservoir) {
+            def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, NATURE, HAUTEUR  FROM ${inputTables.reservoir}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
             outputTableName = "RESERVOIR"
             debug "Loading in the H2GIS database $outputTableName"
             IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000);
@@ -1037,7 +856,7 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
 
         sourceConnection.close();
 
-        return true
+        return commune_srid
 
     } else {
         error "Cannot find any commune with the insee code : $code"
@@ -1050,13 +869,13 @@ def loadDataFromDatasource(def input_database_properties, def code, def distance
  *
  * @param inputFolder where the files are
  * @param h2gis_datasource the local database for the geoclimate processes
- * @param id_zones a list of id zones to process
+ * @param inputSRID a list of SRID set the geometries
  * @return a list of id_zones
  */
-def loadDataFromFolder(def inputFolder, def h2gis_datasource, def id_zones) {
+def linkDataFromFolder(def inputFolder, def inputWorkflowTableNames,  H2GIS h2gis_datasource, def inputSRID) {
     def folder = new File(inputFolder)
     if (folder.isDirectory()) {
-        def geoFiles = []
+        def geoFiles = [:]
         folder.eachFileRecurse groovy.io.FileType.FILES, { file ->
             if (file.name.toLowerCase().endsWith(".shp")) {
                 geoFiles << file.getAbsolutePath()
@@ -1067,28 +886,32 @@ def loadDataFromFolder(def inputFolder, def h2gis_datasource, def id_zones) {
         if (commune_file) {
             //Load commune and check if there is some id_zones inside
             h2gis_datasource.link(commune_file, "COMMUNE_TMP", true)
-
-            int srid = h2gis_datasource.getSpatialTable("COMMUNE_TMP").srid
-            if (srid == -1) {
-                error "The commune file doesn't have any srid"
-                return
-            }
             h2gis_datasource.getSpatialTable("COMMUNE_TMP").the_geom.createSpatialIndex()
-            id_zones = findIDZones(h2gis_datasource, id_zones, srid)
             geoFiles.remove(commune_file)
-            if (id_zones) {
-                //Load the files
-                def numberFiles = geoFiles.size()
-                geoFiles.eachWithIndex { geoFile, index ->
-                    debug "Loading file $geoFile $index on $numberFiles"
-                    h2gis_datasource.link(geoFile, true)
-                }
-                return id_zones
-
-            } else {
-                error "The commune file doesn't contains any zone identifiers"
-                return
+            int srid = h2gis_datasource.getSpatialTable("COMMUNE_TMP").srid
+            def sourceSrid = srid
+            if (srid == 0 && inputSRID) {
+                srid = inputSRID
+            } else if (srid == 0) {
+                warn "Cannot find a SRID value for the layer commune.shp.\n" +
+                        "Please set a valid OGC prj or use the parameter srid to force it."
+                return null
             }
+            //Link the files
+                def numberFiles = geoFiles.size()
+                def tableNames = [:]
+                tableNames.put("commune","COMMUNE_TMP" )
+                geoFiles.eachWithIndex { geoFile, index ->
+                    debug "linking file $geoFile $index on $numberFiles"
+                    //We must link only the allowed tables
+                    def fileName =URIUtilities.fileFromString(geoFile).getName().toLowerCase()
+                    if(inputWorkflowTableNames.contains(fileName)){
+                        h2gis_datasource.link(geoFile,"${fileName}_tmp", true)
+                        tableNames.put(fileName, "${fileName}_tmp")
+                    }
+                }
+                return ["sourceSrid" : sourceSrid, "inputSrid" : srid,"tableNames" : tableNames]
+
         } else {
             error "The input folder must contains a file named commune"
             return
@@ -1099,72 +922,6 @@ def loadDataFromFolder(def inputFolder, def h2gis_datasource, def id_zones) {
     }
 }
 
-/**
- * Return a list of id_zones
- * @param h2gis_datasource the local database for the geoclimate processes
- * @param id_zones a list of id zones to process
- * @return
- */
-def findIDZones(JdbcDataSource h2gis_datasource, def id_zones, def srid) {
-    def inseeCodes = []
-    if (h2gis_datasource.hasTable("COMMUNE_TMP")) {
-        h2gis_datasource.execute("""DROP TABLE IF EXISTS COMMUNE;
-            CREATE TABLE COMMUNE (THE_GEOM GEOMETRY(GEOMETRY, ${srid}), CODE_INSEE VARCHAR)""".toString())
-        if (id_zones) {
-            def id_zones_tmp = []
-            id_zones.eachWithIndex { id_zone, index ->
-                /*The zone is a osm bounding box represented by
-                *  ymin,xmin , ymax,xmax,
-                */
-                if (id_zone in Collection) {
-                    def tmp_insee = id_zone.join("_")
-                    h2gis_datasource.execute("""DROP TABLE IF EXISTS COMMUNE; CREATE TABLE COMMUNE AS 
-                    SELECT
-                    ST_INTERSECTION(the_geom, ST_MakeEnvelope(${id_zone[1]},${id_zone[0]},${id_zone[3]},${id_zone[2]}, $srid)) as the_geom,CODE_INSEE  from COMMUNE_TMP where the_geom 
-                    && ST_MakeEnvelope(${id_zone[1]},${id_zone[0]},${id_zone[3]},${id_zone[2]}, $srid)""".toString())
-                    inseeCodes << tmp_insee
-                } else if (id_zone instanceof String) {
-                    id_zones_tmp << id_zone
-                } else {
-                    warn "The location value : $id_zone must be a text to find an insee code\n" +
-                            " or an array of coordinates to specify a bbox\n"
-                }
-            }
-            if (id_zones_tmp) {
-                def zones = id_zones_tmp.join("','")
-                h2gis_datasource.withBatch(100, "INSERT INTO COMMUNE VALUES(?,?)") { ps ->
-                    h2gis_datasource.eachRow("""select THE_GEOM, CODE_INSEE FROM COMMUNE_TMP where code_insee in 
-                    ('${zones}') OR nom in('${zones}')""") { row ->
-                        if (!inseeCodes.contains(row.CODE_INSEE)) {
-                            ps.addBatch([row.the_geom, row.CODE_INSEE])
-                            inseeCodes << row.CODE_INSEE
-                        }
-                    }
-                }
-            }
-            if (!inseeCodes) {
-                error "Cannot find any commune or area from : ${id_zones}"
-            }
-        } else {
-            h2gis_datasource.withBatch(100, "INSERT INTO COMMUNE VALUES(?,?)") { ps ->
-                h2gis_datasource.eachRow("""select THE_GEOM, CODE_INSEE FROM COMMUNE_TMP group by code_insee""") { row ->
-                    if (!inseeCodes.contains(row.CODE_INSEE)) {
-                        ps.addBatch([row.the_geom, row.CODE_INSEE])
-                        inseeCodes << row.CODE_INSEE
-                    }
-                }
-            }
-            if (!inseeCodes) {
-                error "Cannot find any commune from : ${id_zones}"
-            }
-        }
-
-        return inseeCodes
-    } else {
-        return inseeCodes
-    }
-
-}
 /**
  * Read the file parameters and create a new map of parameters
  * The map of parameters is initialized with default values
@@ -1342,13 +1099,15 @@ def extractProcessingParameters(def processing_parameters) {
  * @param outputFiles the name of the tables that will be saved
  * @param output_datasource a connexion to a database to save the results
  * @param outputTableNames the name of the tables in the output_datasource to save the results
- * @param deleteOutputData true to delete the ouput files if exist
+ * @param outputSRID force the srid for the output data
+ * @param inputSRID force the srid for the input data
+ * @param deleteOutputData true to delete the output files if exist
  * @return
  */
-def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def zone, def outputFolder, def outputFiles, def output_datasource, def outputTableNames, def outputSRID, def deleteOutputData = true) {
+def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def zone, def outputFolder, def outputFiles,
+                      def output_datasource, def outputTableNames, def outputSRID, def inputSRID, def deleteOutputData = true) {
     //Add the GIS layers to the list of results
     def outputTableNamesResult = [:]
-    def srid = h2gis_datasource.getSpatialTable("COMMUNE").srid
     //We process each zones because the input zone can overlap several communes
     h2gis_datasource.eachRow("SELECT ST_CollectionExtract(THE_GEOM, 3) as the_geom,code_insee  FROM COMMUNE") { row ->
         Geometry geom = row.the_geom
@@ -1361,25 +1120,25 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def zon
                 //Let's create the subcommune table and run the BDTopo process from it
                 h2gis_datasource.execute("""
                 DROP TABLE IF EXISTS $subCommuneTableName;
-                CREATE TABLE $subCommuneTableName(the_geom GEOMETRY(POLYGON,$srid), CODE_INSEE VARCHAR)  AS 
-                SELECT ST_GEOMFROMTEXT('${geom.getGeometryN(0)}', $srid) as the_geom , '${code_insee}' AS CODE_INSEE
+                CREATE TABLE $subCommuneTableName(the_geom GEOMETRY(POLYGON,$inputSRID), CODE_INSEE VARCHAR)  AS 
+                SELECT ST_GEOMFROMTEXT('${geom.getGeometryN(0)}', $inputSRID) as the_geom , '${code_insee}' AS CODE_INSEE
                 """.toString())
-                def results = bdTopoProcessingSingleArea(h2gis_datasource, code_insee, subCommuneTableName, srid, processing_parameters)
+                def results = bdTopoProcessingSingleArea(h2gis_datasource, code_insee, subCommuneTableName, inputSRID, processing_parameters)
                 if (results) {
-                    saveResults(h2gis_datasource, code_insee, results, srid, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData)
+                    saveResults(h2gis_datasource, code_insee, results, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData)
                     outputTableNamesResult.put(code_insee, results.findAll { it.value != null })
                 }
             }
         } else {
             int subAreaCount = 1
-            def tablesToMerge = ["zoneTableName" : [],
-                                "roadTableName"                : [], "railTableName": [], "hydrographicTableName": [],
-                                "vegetationTableName"          : [], "imperviousTableName": [], "buildingTableName": [],
-                                "outputTableBuildingIndicators": [], "outputTableBlockIndicators": [],
-                                "outputTableRsuIndicators"     : [], "outputTableRsuLcz": [],
-                                "outputTableRsuUtrfArea"       : [], "outputTableRsuUtrfFloorArea": [],
-                                "outputTableBuildingUtrf"      : [], "populationTableName": [],
-                                "buildingTableName"            : [], "roadTrafficTableName": []
+            def tablesToMerge = ["zoneTableName"                : [],
+                                 "roadTableName"                : [], "railTableName": [], "hydrographicTableName": [],
+                                 "vegetationTableName"          : [], "imperviousTableName": [], "buildingTableName": [],
+                                 "outputTableBuildingIndicators": [], "outputTableBlockIndicators": [],
+                                 "outputTableRsuIndicators"     : [], "outputTableRsuLcz": [],
+                                 "outputTableRsuUtrfArea"       : [], "outputTableRsuUtrfFloorArea": [],
+                                 "outputTableBuildingUtrf"      : [], "populationTableName": [],
+                                 "buildingTableName"            : [], "roadTrafficTableName": []
             ]
             for (i in 0..<numGeom) {
                 info "Processing the sub area ${subAreaCount} on ${numGeom + 1}"
@@ -1392,13 +1151,13 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def zon
                     h2gis_datasource.execute("""
                 DROP TABLE IF EXISTS $subCommuneTableName;
                 CREATE TABLE $subCommuneTableName(the_geom GEOMETRY(POLYGON,$srid), CODE_INSEE VARCHAR)  AS 
-                SELECT ST_GEOMFROMTEXT('${subGeom}', $srid) as the_geom , '${code_insee_plus_indice}' AS CODE_INSEE
+                SELECT ST_GEOMFROMTEXT('${subGeom}', $inputSRID) as the_geom , '${code_insee_plus_indice}' AS CODE_INSEE
                 """.toString())
-                    def results = bdTopoProcessingSingleArea(h2gis_datasource, code_insee, subCommuneTableName, srid, processing_parameters)
+                    def results = bdTopoProcessingSingleArea(h2gis_datasource, code_insee, subCommuneTableName, inputSRID, processing_parameters)
                     if (results) {
-                        results.each{it->
-                            if(it.value){
-                                tablesToMerge[it.key]<<it.value
+                        results.each { it ->
+                            if (it.value) {
+                                tablesToMerge[it.key] << it.value
                             }
                         }
                     }
@@ -1407,7 +1166,7 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def zon
             }
             //We must merge here all sub areas and then compute the grid indicators
             //so the user have a continuous spatial domain instead of multiples tables
-            def results =[:]
+            def results = [:]
             tablesToMerge.each { it ->
                 def tableNames = it.value
                 def queryToJoin = []
@@ -1428,7 +1187,7 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def zon
                 }
             }
             outputTableNamesResult.put(code_insee, results)
-            saveResults(h2gis_datasource, code_insee, results, srid, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData)
+            saveResults(h2gis_datasource, code_insee, results, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData)
 
         }
     }
@@ -1508,7 +1267,8 @@ def bdTopoProcessingSingleArea(def h2gis_datasource, def id_zone, def subCommune
                                    distance                    : processing_parameters.distance,
                                    hLevMin                     : processing_parameters.hLevMin,
                                    hLevMax                     : processing_parameters.hLevMax,
-                                   hThresholdLev2              : processing_parameters.hThresholdLev2
+                                   hThresholdLev2              : processing_parameters.hThresholdLev2,
+                                   inputSRID                   : srid
     ])) {
 
         def buildingTableName = loadAndFormatData.results.outputBuilding
@@ -1570,7 +1330,7 @@ def bdTopoProcessingSingleArea(def h2gis_datasource, def id_zone, def subCommune
                     IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
                     if (!process.execute([inputBuildingTableName  : results.buildingTableName,
                                           inputPopulationTableName: importAscGrid.results.outputTableWorldPopName,
-                                          inputPopulationColumns :["pop"], datasource: h2gis_datasource])) {
+                                          inputPopulationColumns  : ["pop"], datasource: h2gis_datasource])) {
                         info "Cannot compute any population data at building level"
                     }
                     //Update the building table with the population data
@@ -2139,6 +1899,7 @@ def prepareTableOutput(def h2gis_table_to_save, def filter, def inputSRID, def h
  * @param hLevMin Minimum building level height
  * @param hLevMax Maximum building level height
  * @param hThresholdLev2 Threshold on the building height, used to determine the number of levels
+ * @param inputSRID to force the SRID of the input data
  *
  * @return outputBuilding Table name in which the (ready to be used in the GeoIndicators part) buildings are stored
  * @return outputRoad Table name in which the (ready to be used in the GeoIndicators part) roads are stored
@@ -2171,12 +1932,13 @@ IProcess loadAndFormatData() {
                 tableReservoirName: "",
                 hLevMin: 3,
                 hLevMax: 15,
-                hThresholdLev2: 10
+                hThresholdLev2: 10,
+                inputSRID :""
         outputs outputBuilding: String, outputRoad: String, outputRail: String, outputHydro: String, outputVeget: String, outputImpervious: String,
                 outputZone: String
-        run { datasource,  distance, tableCommuneName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName, tableRoadName, tableRailName,
+        run { datasource, distance, tableCommuneName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName, tableRoadName, tableRailName,
               tableHydroName, tableVegetName, tableImperviousSportName, tableImperviousBuildSurfName, tableImperviousRoadSurfName, tableImperviousActivSurfName,
-              tablePiste_AerodromeName, tableReservoirName, hLevMin, hLevMax, hThresholdLev2 ->
+              tablePiste_AerodromeName, tableReservoirName, hLevMin, hLevMax, hThresholdLev2, inputSRID ->
 
             if (!hLevMin) {
                 hLevMin = 3
@@ -2209,50 +1971,51 @@ IProcess loadAndFormatData() {
                                    tableImperviousActivSurfName: tableImperviousActivSurfName,
                                    tablePiste_AerodromeName    : tablePiste_AerodromeName,
                                    tableReservoirName          : tableReservoirName,
-                                   distance                    : distance])) {
+                                   distance                    : distance,
+                                   inputSRID                   : inputSRID])) {
                 error "Cannot prepare the BDTopo data."
                 return
             }
 
             def preprocessTables = importPreprocess.results
-            def zoneTable =preprocessTables.outputZoneName
-            def finalImpervious =preprocessTables.outputImperviousName
+            def zoneTable = preprocessTables.outputZoneName
+            def finalImpervious = preprocessTables.outputImperviousName
 
             //Format building
             IProcess processFormatting = BDTopo_V2.InputDataFormatting.formatBuildingLayer()
-            processFormatting.execute([datasource: datasource,
-                                       inputTableName: preprocessTables.outputBuildingName,
-                                       inputImpervious : finalImpervious,h_lev_min: hLevMin, h_lev_max: hLevMax,
-                                       hThresholdLev2: hThresholdLev2,
+            processFormatting.execute([datasource                : datasource,
+                                       inputTableName            : preprocessTables.outputBuildingName,
+                                       inputImpervious           : finalImpervious, h_lev_min: hLevMin, h_lev_max: hLevMax,
+                                       hThresholdLev2            : hThresholdLev2,
                                        inputZoneEnvelopeTableName: zoneTable])
             def finalBuildings = processFormatting.results.outputTableName
 
             //Format roads
             processFormatting = BDTopo_V2.InputDataFormatting.formatRoadLayer()
-            processFormatting.execute([datasource: datasource,
-                                       inputTableName:preprocessTables.outputRoadName,
+            processFormatting.execute([datasource                : datasource,
+                                       inputTableName            : preprocessTables.outputRoadName,
                                        inputZoneEnvelopeTableName: zoneTable])
             def finalRoads = processFormatting.results.outputTableName
 
             //Format rails
             processFormatting = BDTopo_V2.InputDataFormatting.formatRailsLayer()
-            processFormatting.execute([datasource: datasource,
-                                       inputTableName: preprocessTables.outputRailName,
+            processFormatting.execute([datasource                : datasource,
+                                       inputTableName            : preprocessTables.outputRailName,
                                        inputZoneEnvelopeTableName: zoneTable])
             def finalRails = processFormatting.results.outputTableName
 
 
             //Format vegetation
             processFormatting = BDTopo_V2.InputDataFormatting.formatVegetationLayer()
-            processFormatting.execute([datasource: datasource,
-                                       inputTableName: preprocessTables.outputVegetName,
+            processFormatting.execute([datasource                : datasource,
+                                       inputTableName            : preprocessTables.outputVegetName,
                                        inputZoneEnvelopeTableName: zoneTable])
             def finalVeget = processFormatting.results.outputTableName
 
             //Format water
             processFormatting = BDTopo_V2.InputDataFormatting.formatHydroLayer()
-            processFormatting.execute([datasource: datasource,
-                                       inputTableName: preprocessTables.outputHydroName,
+            processFormatting.execute([datasource                : datasource,
+                                       inputTableName            : preprocessTables.outputHydroName,
                                        inputZoneEnvelopeTableName: zoneTable])
             def finalHydro = processFormatting.results.outputTableName
 
