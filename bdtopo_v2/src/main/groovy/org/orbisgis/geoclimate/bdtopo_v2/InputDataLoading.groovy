@@ -179,6 +179,7 @@ IProcess prepareBDTopoData() {
             //1- Create (spatial) indexes if not already exists on the input layers
 
             datasource.execute("""
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_BATI_INDIFFERENCIE ON $tableCommuneName (the_geom);
             CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_BATI_INDIFFERENCIE ON BATI_INDIFFERENCIE (the_geom);
             CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_BATI_INDUSTRIEL ON BATI_INDUSTRIEL (the_geom);
             CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_BATI_REMARQUABLE ON BATI_REMARQUABLE (the_geom);
@@ -200,7 +201,7 @@ IProcess prepareBDTopoData() {
             datasource.execute("""
             DROP TABLE IF EXISTS $zoneTable;
             CREATE TABLE $zoneTable AS SELECT ST_FORCE2D(the_geom) as the_geom, CODE_INSEE AS ID_ZONE  FROM $tableCommuneName;
-            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_ZONE ON $zoneTable (the_geom);
+            CREATE SPATIAL INDEX IF NOT EXISTS idx_geom_ZONE ON $zoneTable (the_geom);
             -- Generation of a rectangular area (bbox) around the studied commune
             DROP TABLE IF EXISTS ZONE_EXTENDED;
             CREATE TABLE ZONE_EXTENDED AS SELECT ST_EXPAND(the_geom, $distance) as the_geom FROM $zoneTable;

@@ -240,7 +240,7 @@ IProcess workflow() {
                                            "troncon_voie_ferree", "surface_eau",
                                            "terrain_sport", "construction_surfacique",
                                            "surface_route", "surface_activite",
-                                           "piste_aerodrome", "reservoir"]
+                                           "piste_aerodrome", "reservoir", "zone_vegetation"]
 
             def outputWorkflowTableNames = ["building_indicators",
                                             "block_indicators",
@@ -1152,7 +1152,7 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def zon
                     //Let's create the subcommune table and run the BDTopo process from it
                     h2gis_datasource.execute("""
                 DROP TABLE IF EXISTS $subCommuneTableName;
-                CREATE TABLE $subCommuneTableName(the_geom GEOMETRY(POLYGON,$srid), CODE_INSEE VARCHAR)  AS 
+                CREATE TABLE $subCommuneTableName(the_geom GEOMETRY(POLYGON,$inputSRID), CODE_INSEE VARCHAR)  AS 
                 SELECT ST_GEOMFROMTEXT('${subGeom}', $inputSRID) as the_geom , '${code_insee_plus_indice}' AS CODE_INSEE
                 """.toString())
                     def results = bdTopoProcessingSingleArea(h2gis_datasource, code_insee, subCommuneTableName, inputSRID, processing_parameters)
