@@ -242,18 +242,6 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         assertTrue h2GISDatabase.firstRow("select count(*) as count from ${road_traffic.results.outputTableName} where road_type is not null").count==2360
     }
 
-
-    @Test //Integration tests
-    @Disabled
-    void testBDTopoConfigurationFile() {
-        def configFile = getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput.json").toURI()
-        //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_folderoutput_id_zones.json").toURI()
-        //configFile =getClass().getResource("config/bdtopo_workflow_folderinput_dboutput.json").toURI()
-        //configFile =getClass().getResource("config/bdtopo_workflow_dbinput_dboutput.json").toURI()
-        IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
-        process.execute(configurationFile:configFile)
-    }
-
     @Test
     void workflowWrongMapOfWeights() {
         String directory ="./target/bdtopo_workflow"
@@ -372,7 +360,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         dirFile.mkdir()
         def tablesToSave = [
                             "rsu_lcz",]
-        def process = BDTopo_V2.WorkflowBDTopo_V2.bdtopo_processing(h2GISDatabase, defaultParameters, inseeCode, directory, tablesToSave, null, null, 4326);
+        def process = BDTopo_V2.WorkflowBDTopo_V2.bdtopo_processing(h2GISDatabase, defaultParameters, inseeCode, directory, tablesToSave, null, null, 4326, 2154);
         def tableNames = process.values()
 
         checkSpatialTable(h2GISDatabase, tableNames["outputTableBlockIndicators"])
@@ -473,8 +461,8 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         "delete" :true
                 ],
                 "input" : [
-                        "folder": ["path" :dataFolder,
-                                   "locations":[[env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]]]],
+                        "folder": dataFolder,
+                                   "locations":[[env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]]],
                 "output" :[
                         "database" :
                                 ["user" : postgis_dbProperties.user,
@@ -520,8 +508,8 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         "delete" :false
                 ],
                 "input" :[
-                        "folder": ["path" :dataFolder,
-                                   "locations":[communeToTest,communeToTest]]],
+                        "folder": dataFolder,
+                                   "locations":[communeToTest,communeToTest]],
                 "output" :[
                         "folder" : ["path": "$directory",
                                     "tables": ["grid_indicators"]]],
@@ -563,8 +551,8 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         "delete" :false
                 ],
                 "input" :[
-                        "folder": ["path" :dataFolder,
-                                   "locations":[envCoords]]],
+                        "folder": dataFolder,
+                                   "locations":[envCoords]],
                 "output" :[
                        "folder" : ["path": "$directory",
                                     "tables": ["grid_indicators"]
@@ -606,8 +594,8 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         "delete" :false
                 ],
                 "input" :[
-                        "folder": ["path" :dataFolder,
-                                   "locations":["Olemps"]]],
+                        "folder": dataFolder,
+                                   "locations":["Olemps"]],
                 "output" :[
                         "folder" : ["path": "$directory",
                                     "tables": ["grid_indicators"]]],
@@ -641,8 +629,8 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         "delete" :false
                 ],
                 "input" :[
-                        "folder": ["path" :dataFolder,
-                                   "locations":["Olemps"]]],
+                        "folder": dataFolder,
+                                   "locations":["Olemps"]],
                 "output" :[
                         "folder" : ["path": "$directory",
                                     "tables": ["grid_indicators"]]],
@@ -679,8 +667,8 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         "delete" :false
                 ],
                 "input" :[
-                        "folder": ["path" :dataFolder,
-                                   "locations":[[env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]]]],
+                        "folder": dataFolder,
+                                   "locations":[[env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]]],
                 "output" :[
                         "folder" : ["path": "$directory",
                                     "tables": ["grid_indicators", "population"]]],
@@ -720,8 +708,8 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         "delete" :false
                 ],
                 "input" :[
-                        "folder": ["path" :dataFolder,
-                                   "locations":[communeToTest]]],
+                        "folder": dataFolder,
+                                   "locations":[communeToTest]],
                 "output" :[
                         "folder" : ["path": "$directory",
                                     "tables": ["road_traffic"]]],
@@ -839,13 +827,10 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
 
     @Disabled //Use it for integration test with a postgis database
     @Test
-    void testIntegrationPostGISInput() {
-        def user = ""
-        def password = ""
-        def url = "jdbc:postgresql://x:5432/x"
-
-        def locations = [[6785161.292786511,346264.052218681,6794396.60947986,356288.94475984486], "56223"]
-        String directory ="./target/bdtopo_workflow_postgis_input"
+    void testIntegrationFolderInput() {
+        def inputData = "/home/ebocher/Autres/data/IGN/BDTOPO_2-2_TOUSTHEMES_SHP_LAMB93_D022_2018-09-25/BDTOPO/1_DONNEES_LIVRAISON_2018-11-00144/BDT_2-2_SHP_LAMB93_D022-ED182"
+        def locations = ["Paimpol"]
+        String directory ="./target/bdtopo_workflow_folder_input"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
@@ -857,32 +842,15 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                         "delete" :true
                 ],
                 "input" : [
-                        "database": [
-                                "user":user,
-                                "password": password,
-                                "url": url,
-                                "locations":locations,
-                                "tables": ["commune":"ign_bdtopo_2017.commune",
-                                           "bati_indifferencie":"ign_bdtopo_2017.bati_indifferencie",
-                                           "bati_industriel":"ign_bdtopo_2017.bati_industriel",
-                                           "bati_remarquable":"ign_bdtopo_2017.bati_remarquable",
-                                           "route":"ign_bdtopo_2017.route",
-                                           "troncon_voie_ferree":"ign_bdtopo_2017.troncon_voie_ferree",
-                                           "surface_eau":"ign_bdtopo_2017.surface_eau",
-                                           "zone_vegetation":"ign_bdtopo_2017.zone_vegetation",
-                                           "terrain_sport":"ign_bdtopo_2017.terrain_sport",
-                                           "construction_surfacique":"ign_bdtopo_2017.construction_surfacique",
-                                           "surface_route":"ign_bdtopo_2017.surface_route",
-                                           "surface_activite":"ign_bdtopo_2017.surface_activite",
-                                           "piste_aerodrome":"ign_bdtopo_2017.piste_aerodrome"]
-                        ]],
+                        "folder": inputData,
+                        "locations":locations,
+                        "srid": 2154],
                 "output" :[
-                        "folder" : ["path": "$directory"]],
+                        "folder" : ["path": directory]],
                 "parameters":
                         ["distance" : 0,
                          rsu_indicators: [
-                                 "indicatorUse": ["LCZ", "UTRF"],
-                                 "svfSimplified": true
+                                 "indicatorUse": ["LCZ", "UTRF"]
                          ],
                          "grid_indicators": [
                                  "x_size": 1000,

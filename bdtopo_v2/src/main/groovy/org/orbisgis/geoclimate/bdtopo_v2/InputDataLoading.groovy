@@ -25,7 +25,8 @@ import org.orbisgis.process.api.IProcess
  * @param tableImperviousRoadSurfName The table name in which the impervious road areas are stored
  * @param tableImperviousActivSurfName The table name in which the impervious activities areas are stored
  * @param distance The distance (expressed in meter) used to compute the extended area around the ZONE
- * @param idZone The ZONE id *
+ * @param inputSRID to force the SRID of the input data
+ *
  * @return outputBuildingName Table name in which the (ready to feed the GeoClimate model) buildings are stored
  * @return outputRoadName Table name in which the (ready to feed the GeoClimate model) roads are stored
  * @return outputRailName Table name in which the (ready to feed the GeoClimate model) rail ways are stored
@@ -81,16 +82,13 @@ IProcess prepareBDTopoData() {
                         tableImperviousSportName, tableImperviousBuildSurfName,
                         tableImperviousRoadSurfName, tableImperviousActivSurfName,
                         tablePiste_AerodromeName, tableReservoirName]
-
-            // The SRID is stored and initialized to -1
             def srid = -1
-            def con = datasource.getConnection()
-
             def tablesExist = []
-            // For each tables in the list, we check the SRID and compare to the srid variable. If different, the process is stopped
-            for (String name : list) {
-                if (name) {
-                    if (datasource.hasTable(name)) {
+                def con = datasource.getConnection()
+                // For each tables in the list, we check the SRID and compare to the srid variable. If different, the process is stopped
+                for (String name : list) {
+                    if (name) {
+                        if (datasource.hasTable(name)) {
                             def hasRow = datasource.firstRow("select 1 as id from ${name} limit 1".toString())
                             if (hasRow) {
                                 tablesExist << name
@@ -109,8 +107,8 @@ IProcess prepareBDTopoData() {
                             }
                         }
 
+                    }
                 }
-            }
 
             // -------------------------------------------------------------------------------
             // Check if the input files are present
@@ -181,6 +179,7 @@ IProcess prepareBDTopoData() {
             //1- Create (spatial) indexes if not already exists on the input layers
 
             datasource.execute("""
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_BATI_INDIFFERENCIE ON $tableCommuneName (the_geom);
             CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_BATI_INDIFFERENCIE ON BATI_INDIFFERENCIE (the_geom);
             CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_BATI_INDUSTRIEL ON BATI_INDUSTRIEL (the_geom);
             CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_BATI_REMARQUABLE ON BATI_REMARQUABLE (the_geom);
@@ -202,7 +201,7 @@ IProcess prepareBDTopoData() {
             datasource.execute("""
             DROP TABLE IF EXISTS $zoneTable;
             CREATE TABLE $zoneTable AS SELECT ST_FORCE2D(the_geom) as the_geom, CODE_INSEE AS ID_ZONE  FROM $tableCommuneName;
-            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_ZONE ON $zoneTable (the_geom);
+            CREATE SPATIAL INDEX IF NOT EXISTS idx_geom_ZONE ON $zoneTable (the_geom);
             -- Generation of a rectangular area (bbox) around the studied commune
             DROP TABLE IF EXISTS ZONE_EXTENDED;
             CREATE TABLE ZONE_EXTENDED AS SELECT ST_EXPAND(the_geom, $distance) as the_geom FROM $zoneTable;
