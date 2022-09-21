@@ -63,7 +63,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
         H2GIS datasource = H2GIS.open(dirFile.absolutePath+File.separator+"osm_chain_db;AUTO_SERVER=TRUE")
 
-        String zoneTableName="zone"
+        String zone="zone"
         String buildingTableName="building"
         String roadTableName="road"
         String railTableName="rails"
@@ -76,9 +76,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         datasource.load(urlRail, railTableName, true)
         datasource.load(urlVeget, vegetationTableName, true)
         datasource.load(urlHydro, hydrographicTableName, true)
-        datasource.load(urlZone, zoneTableName, true)
+        datasource.load(urlZone, zone, true)
         //Run tests
-        geoIndicatorsCalc(dirFile.absolutePath+File, datasource, zoneTableName, buildingTableName,roadTableName,
+        geoIndicatorsCalc(dirFile.absolutePath+File, datasource, zone, buildingTableName,roadTableName,
                 null,vegetationTableName, hydrographicTableName,saveResults, svfSimplified, indicatorUse, prefixName)
     }
 
@@ -535,7 +535,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
 
-        def nominatim = Utilities.getNominatimData("Redon")
+        def nominatim = Utilities.getNominatimData("Pont-de-Veyle")
 
         def osm_parmeters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the result in a folder",
@@ -555,7 +555,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters":
                         ["distance" : 0,
                          "rsu_indicators":[
-                                 "indicatorUse": ["LCZ"]
+                                 "indicatorUse": ["LCZ", "UTRF", "TEB"]
                          ],"grid_indicators": [
                                 "x_size": 100,
                                 "y_size": 100,
@@ -679,7 +679,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(input: osm_parmeters))
         //assertEquals(10,  process.getResults().output["Pont-de-Veyle"].size())
-        //assertTrue h2gis.firstRow("select count(*) as count from ${process.results.output["Pont-de-Veyle"].populationTableName} where pop is not null").count>0
+        //assertTrue h2gis.firstRow("select count(*) as count from ${process.results.output["Pont-de-Veyle"].population} where pop is not null").count>0
     }
 
 

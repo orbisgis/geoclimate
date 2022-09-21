@@ -385,10 +385,10 @@ class InputDataFormattingTest {
         String formatedPlaceName = zoneToExtract.join("-").trim().split("\\s*(,|\\s)\\s*").join("_");
 
 
-        if (extractData.results.zoneTableName != null) {
+        if (extractData.results.zone != null) {
             //Zone
-            def epsg = h2GIS.getSpatialTable(extractData.results.zoneTableName).srid
-            h2GIS.getTable(extractData.results.zoneTableName).save("${ file.absolutePath+File.separator}osm_zone_${formatedPlaceName}.geojson", true)
+            def epsg = h2GIS.getSpatialTable(extractData.results.zone).srid
+            h2GIS.getTable(extractData.results.zone).save("${ file.absolutePath+File.separator}osm_zone_${formatedPlaceName}.geojson", true)
 
             //Zone envelope
             h2GIS.getTable(extractData.results.zoneEnvelopeTableName).save("${ file.absolutePath+File.separator}osm_zone_envelope_${formatedPlaceName}.geojson", true)

@@ -2112,7 +2112,7 @@ IProcess frontalAreaIndexDistribution() {
  * Disaggregate a set of population values to the rsu units
  * Update the input rsu table to add new population columns
  * @param inputRsuTableName the building table
- * @param inputPopulationTableName the spatial unit that contains the population to distribute
+ * @param inputpopulation the spatial unit that contains the population to distribute
  * @param inputPopulationColumns the list of the columns to disaggregate
  * @return the input RSU table with the new population columns
  *
@@ -2122,9 +2122,9 @@ IProcess rsuPopulation() {
     return create {
         title "Process to distribute a set of population values at RSU scale"
         id "rsuPopulation"
-        inputs inputRsuTableName: String, inputPopulationTableName: String, inputPopulationColumns :[], datasource: JdbcDataSource
+        inputs inputRsuTableName: String, inputpopulation: String, inputPopulationColumns :[], datasource: JdbcDataSource
         outputs rsuTableName: String
-        run { inputRsuTableName, inputPopulationTableName, inputPopulationColumns, datasource ->
+        run { inputRsuTableName, inputpopulation, inputPopulationColumns, datasource ->
             def BASE_NAME = "rsu_with_population"
             def ID_RSU = "id_rsu"
             def ID_POP = "id_pop"
@@ -2136,11 +2136,11 @@ IProcess rsuPopulation() {
 
             //Indexing table
             datasource."$inputRsuTableName".the_geom.createSpatialIndex()
-            datasource."$inputPopulationTableName".the_geom.createSpatialIndex()
+            datasource."$inputpopulation".the_geom.createSpatialIndex()
             def popColumns =[]
             def sum_popColumns =[]
             if (inputPopulationColumns) {
-                datasource."$inputPopulationTableName".getColumns().each { col ->
+                datasource."$inputpopulation".getColumns().each { col ->
                     if (!["the_geom", "id_pop"].contains(col.toLowerCase()
                     )&& inputPopulationColumns.contains(col.toLowerCase())) {
                         popColumns << "b.$col"
@@ -2158,7 +2158,7 @@ IProcess rsuPopulation() {
                 drop table if exists $inputRsuTableName_pop;
                 CREATE TABLE $inputRsuTableName_pop AS SELECT (ST_AREA(ST_INTERSECTION(a.the_geom, st_force2D(b.the_geom))))  as area_rsu, a.$ID_RSU, 
                 b.id_pop, ${popColumns.join(",")} from
-                $inputRsuTableName as a, $inputPopulationTableName as b where a.the_geom && b.the_geom and
+                $inputRsuTableName as a, $inputpopulation as b where a.the_geom && b.the_geom and
                 st_intersects(a.the_geom, b.the_geom);
                 create index on $inputRsuTableName_pop ($ID_RSU);
                 create index on $inputRsuTableName_pop ($ID_POP);

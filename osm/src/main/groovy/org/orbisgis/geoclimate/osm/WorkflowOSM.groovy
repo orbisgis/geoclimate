@@ -519,16 +519,16 @@ IProcess osm_processing() {
             id_zones.each { id_zone ->
                 def start = System.currentTimeMillis();
                 //Extract the zone table and read its SRID
-                def zoneTableNames = extractOSMZone(h2gis_datasource, id_zone, processing_parameters.distance, bbox_size)
-                if (zoneTableNames) {
+                def zones = extractOSMZone(h2gis_datasource, id_zone, processing_parameters.distance, bbox_size)
+                if (zones) {
                     id_zone = id_zone in Map ? "location_" + id_zone.join('_') : id_zone
-                    def zoneTableName = zoneTableNames.outputZoneTable
-                    def zoneEnvelopeTableName = zoneTableNames.outputZoneEnvelopeTable
-                    if (h2gis_datasource.getTable(zoneTableName).getRowCount() == 0) {
+                    def zone = zones.outputZoneTable
+                    def zoneEnvelopeTableName = zones.outputZoneEnvelopeTable
+                    if (h2gis_datasource.getTable(zone).getRowCount() == 0) {
                         error "Cannot find any geometry to define the zone to extract the OSM data"
                         return
                     }
-                    def srid = h2gis_datasource.getSpatialTable(zoneTableName).srid
+                    def srid = h2gis_datasource.getSpatialTable(zone).srid
                     def reproject = false
                     if (outputSRID) {
                         if (outputSRID != srid) {
@@ -539,7 +539,7 @@ IProcess osm_processing() {
                     }
                     //Prepare OSM extraction
                     //TODO set key values ?
-                    def query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]" + Utilities.buildOSMQuery(zoneTableNames.envelope, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+                    def query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]" + Utilities.buildOSMQuery(zones.envelope, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
 
                     if (downloadAllOSMData) {
                         //Create a custom OSM query to download all requiered data. It will take more time and resources
@@ -549,7 +549,7 @@ IProcess osm_processing() {
                                           "landuse", "landcover",
                                           "vegetation", "waterway"]
                         //TODO : Remove unnecessary keys according the output tables set in the config file
-                        query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]" + Utilities.buildOSMQueryWithAllData(zoneTableNames.envelope, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+                        query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]" + Utilities.buildOSMQueryWithAllData(zones.envelope, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
                     }
 
                     def extract = OSMTools.Loader.extract()
@@ -665,7 +665,7 @@ IProcess osm_processing() {
                             debug "OSM GIS layers formated"
                             //Add the GIS layers to the list of results
                             def results = [:]
-                            results.put("zoneTableName", zoneTableName)
+                            results.put("zone", zone)
                             results.put("roadTableName", roadTableName)
                             results.put("railTableName", railTableName)
                             results.put("hydrographicTableName", hydrographicTableName)
@@ -691,7 +691,7 @@ IProcess osm_processing() {
                             if (rsu_indicators_params.indicatorUse) {
                                 def estimateHeight = rsu_indicators_params."estimateHeight"
                                 IProcess geoIndicators = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
-                                if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zoneTableName,
+                                if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zone,
                                         buildingTable: buildingTableName, roadTable: roadTableName,
                                         railTable: railTableName, vegetationTable: vegetationTableName,
                                         hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
@@ -709,7 +709,7 @@ IProcess osm_processing() {
 
                                     error "Cannot build the geoindicators for the zone $id_zone"
 
-                                    h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error computing geoindicators')".toString()
+                                    h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zones.geometry}',4326) ,'$id_zone', 'Error computing geoindicators')".toString()
 
                                     return
                                 } else {
@@ -722,18 +722,18 @@ IProcess osm_processing() {
                             if (worldpop_indicators) {
                                 IProcess extractWorldPopLayer = WorldPopTools.Extract.extractWorldPopLayer()
                                 def coverageId = "wpGlobal:ppp_2020"
-                                def bbox = [zoneTableNames.envelope.getMinY() as Float, zoneTableNames.envelope.getMinX() as Float,
-                                            zoneTableNames.envelope.getMaxY() as Float, zoneTableNames.envelope.getMaxX() as Float]
+                                def bbox = [zones.envelope.getMinY() as Float, zones.envelope.getMinX() as Float,
+                                            zones.envelope.getMaxY() as Float, zones.envelope.getMaxX() as Float]
                                 if (extractWorldPopLayer.execute([coverageId: coverageId, bbox: bbox])) {
                                     IProcess importAscGrid = WorldPopTools.Extract.importAscGrid()
                                     if (importAscGrid.execute([worldPopFilePath: extractWorldPopLayer.results.outputFilePath,
                                                                epsg            : srid, tableName: coverageId.replaceAll(":", "_"), datasource: h2gis_datasource, epsg: srid])) {
-                                        results.put("populationTableName", importAscGrid.results.outputTableWorldPopName)
+                                        results.put("population", importAscGrid.results.outputTableWorldPopName)
 
                                         IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
                                         if (!process.execute([inputBuildingTableName  : results.buildingTableName,
-                                                              inputPopulationTableName: importAscGrid.results.outputTableWorldPopName,
-                                                              inputPopulationTableName: ["pop"], datasource: h2gis_datasource])) {
+                                                              inputpopulation: importAscGrid.results.outputTableWorldPopName,
+                                                              inputpopulation: ["pop"], datasource: h2gis_datasource])) {
                                             info "Cannot compute any population data at building level"
                                         }
                                         //Update the building table with the population data
@@ -745,7 +745,7 @@ IProcess osm_processing() {
                                         def outputTableWorldPopName = postfix "world_pop"
                                         h2gis_datasource.execute("""drop table if exists $outputTableWorldPopName;
                                         create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $srid), ID_POP INTEGER, POP FLOAT);""".toString())
-                                        results.put("populationTableName", outputTableWorldPopName)
+                                        results.put("population", outputTableWorldPopName)
                                     }
 
                                 } else {
@@ -753,13 +753,13 @@ IProcess osm_processing() {
                                     def outputTableWorldPopName = postfix "world_pop"
                                     h2gis_datasource.execute("""drop table if exists $outputTableWorldPopName;
                                     create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $srid), ID_POP INTEGER, POP FLOAT);""".toString())
-                                    results.put("populationTableName", outputTableWorldPopName)
+                                    results.put("population", outputTableWorldPopName)
                                 }
                             }
 
                             //Default
                             def outputGrid = "geojson"
-                            def geomEnv = h2gis_datasource.getSpatialTable(zoneTableName).getExtent()
+                            def geomEnv = h2gis_datasource.getSpatialTable(zone).getExtent()
                             if (grid_indicators_params) {
                                 outputGrid = grid_indicators_params.output
                                 def x_size = grid_indicators_params.x_size
@@ -770,22 +770,23 @@ IProcess osm_processing() {
                                         srid: srid, rowCol: grid_indicators_params.rowCol)) {
                                     def gridTableName = gridProcess.results.outputTableName
                                     IProcess rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators()
-                                    if (rasterizedIndicators.execute(datasource: h2gis_datasource, gridTableName: gridTableName,
+                                    if (rasterizedIndicators.execute(datasource: h2gis_datasource, grid: gridTableName,
                                             list_indicators: grid_indicators_params.indicators,
-                                            buildingTable: buildingTableName, roadTable: roadTableName, vegetationTable: vegetationTableName,
-                                            hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
-                                            rsu_lcz: results.outputTableRsuLcz,
-                                            rsu_utrf_area: results.outputTableRsuUtrfArea,
-                                            rsu_utrf_floor_area: results.outputTableRsuUtrfFloorArea,
+                                            building: buildingTableName, road: roadTableName, vegetation: vegetationTableName,
+                                            water: hydrographicTableName, impervious: imperviousTableName,
+                                            rsu_lcz: results.rsu_lcz,
+                                            rsu_utrf_area: results.rsu_utrf_area,
+                                            rsu_utrf_floor_area: results.rsu_utrf_floor_area,
+                                            sea_land_mask :seaLandMaskTableName,
                                             prefixName: processing_parameters.prefixName
                                     )) {
-                                        results.put("gridIndicatorsTableName", rasterizedIndicators.results.outputTableName)
+                                        results.put("grid_indicators", rasterizedIndicators.results.outputTableName)
                                     }
                                 } else {
                                     info "Cannot create a grid to aggregate the indicators"
                                 }
                             } else {
-                                h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error computing the grid indicators')".toString()
+                                h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zones.geometry}',4326) ,'$id_zone', 'Error computing the grid indicators')".toString()
                             }
 
                             if (outputFolder && ouputTableFiles) {
@@ -799,13 +800,13 @@ IProcess osm_processing() {
                             outputTableNamesResult.put(id_zone in Collection ? id_zone.join("_") : id_zone, results.findAll { it.value != null })
 
                         } else {
-                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error loading the OSM file')".toString()
+                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zones.geometry}',4326) ,'$id_zone', 'Error loading the OSM file')".toString()
                             error "Cannot load the OSM file ${extract.results.outputFilePath}"
                             return
                         }
                     } else {
                         //Log in table
-                        h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zoneTableNames.geometry}',4326) ,'$id_zone', 'Error to extract the data with OverPass')".toString()
+                        h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zones.geometry}',4326) ,'$id_zone', 'Error to extract the data with OverPass')".toString()
                         error "Cannot execute the overpass query $query"
                         return
                     }
@@ -1168,19 +1169,19 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
     outputFiles.each{
         //Save indicators
         if(it == "building_indicators"){
-            saveTableAsGeojson(results.outputTableBuildingIndicators, "${subFolder.getAbsolutePath()+File.separator+"building_indicators"}.geojson",h2gis_datasource,outputSRID, reproject, deleteOutputData)
+            saveTableAsGeojson(results.building_indicators, "${subFolder.getAbsolutePath()+File.separator+"building_indicators"}.geojson",h2gis_datasource,outputSRID, reproject, deleteOutputData)
         }
         else if(it == "block_indicators"){
-            saveTableAsGeojson(results.outputTableBlockIndicators, "${subFolder.getAbsolutePath()+File.separator+"block_indicators"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
+            saveTableAsGeojson(results.block_indicators, "${subFolder.getAbsolutePath()+File.separator+"block_indicators"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else  if(it == "rsu_indicators"){
-            saveTableAsGeojson(results.outputTableRsuIndicators, "${subFolder.getAbsolutePath()+File.separator+"rsu_indicators"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
+            saveTableAsGeojson(results.rsu_indicators, "${subFolder.getAbsolutePath()+File.separator+"rsu_indicators"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else  if(it == "rsu_lcz"){
-            saveTableAsGeojson(results.outputTableRsuLcz,  "${subFolder.getAbsolutePath()+File.separator+"rsu_lcz"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
+            saveTableAsGeojson(results.rsu_lcz,  "${subFolder.getAbsolutePath()+File.separator+"rsu_lcz"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else  if(it == "zones"){
-            saveTableAsGeojson(results.zoneTableName,  "${subFolder.getAbsolutePath()+File.separator+"zones"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
+            saveTableAsGeojson(results.zone,  "${subFolder.getAbsolutePath()+File.separator+"zones"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         //Save input GIS tables
         else  if(it == "building"){
@@ -1206,16 +1207,16 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
         }else if(it == "rsu_utrf_area"){
             saveTableAsGeojson(results.outputTableRsuUtrfoArea, "${subFolder.getAbsolutePath()+File.separator+"rsu_utrf_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }else if(it == "rsu_utrf_floor_area"){
-            saveTableAsGeojson(results.outputTableRsuUtrfFloorArea, "${subFolder.getAbsolutePath()+File.separator+"rsu_utrf_floor_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+            saveTableAsGeojson(results.rsu_utrf_floor_area, "${subFolder.getAbsolutePath()+File.separator+"rsu_utrf_floor_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }else if(it == "building_utrf"){
-            saveTableAsGeojson(results.outputTableBuildingUtrf, "${subFolder.getAbsolutePath()+File.separator+"building_utrf"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+            saveTableAsGeojson(results.building_utrf, "${subFolder.getAbsolutePath()+File.separator+"building_utrf"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
         else if(it == "grid_indicators"){
             if(outputGrid=="geojson"){
-                saveTableAsGeojson(results.gridIndicatorsTableName, "${subFolder.getAbsolutePath()+File.separator+"grid_indicators"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+                saveTableAsGeojson(results.grid_indicators, "${subFolder.getAbsolutePath()+File.separator+"grid_indicators"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
             }
             else if(outputGrid=="asc"){
-                saveTableToAsciiGrid(results.gridIndicatorsTableName, subFolder, "grid_indicators", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+                saveTableToAsciiGrid(results.grid_indicators, subFolder, "grid_indicators", h2gis_datasource,outputSRID,reproject,deleteOutputData)
             }
         }
         else if(it == "sea_land_mask"){
@@ -1227,7 +1228,7 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
         else if(it == "road_traffic"){
             saveTableAsGeojson(results.roadTrafficTableName,  "${subFolder.getAbsolutePath()+File.separator+"road_traffic"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }else  if(it == "population"){
-            saveTableAsGeojson(results.populationTableName, "${subFolder.getAbsolutePath()+File.separator+"population"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+            saveTableAsGeojson(results.population, "${subFolder.getAbsolutePath()+File.separator+"population"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
         }
     }
 }
@@ -1350,35 +1351,35 @@ def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource,def o
  */
 def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_datasource, def outputTableNames, def h2gis_tables, def id_zone,def inputSRID, def outputSRID, def reproject){
     //Export building indicators
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.building_indicators,id_zone,h2gis_datasource, h2gis_tables.outputTableBuildingIndicators
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.building_indicators,id_zone,h2gis_datasource, h2gis_tables.building_indicators
             , "WHERE ID_RSU IS NOT NULL", inputSRID, outputSRID,reproject)
 
     //Export block indicators
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.block_indicators,id_zone, h2gis_datasource, h2gis_tables.outputTableBlockIndicators
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.block_indicators,id_zone, h2gis_datasource, h2gis_tables.block_indicators
             , "WHERE ID_RSU IS NOT NULL", inputSRID, outputSRID,reproject)
 
     //Export rsu indicators
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_indicators,id_zone, h2gis_datasource, h2gis_tables.outputTableRsuIndicators
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_indicators,id_zone, h2gis_datasource, h2gis_tables.rsu_indicators
             , "",inputSRID, outputSRID,reproject)
 
     //Export rsu lcz
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_lcz,id_zone,h2gis_datasource, h2gis_tables.outputTableRsuLcz
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_lcz,id_zone,h2gis_datasource, h2gis_tables.rsu_lcz
             , "",inputSRID,outputSRID,reproject)
 
     //Export rsu_utrf_area
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_utrf_area,id_zone,h2gis_datasource, h2gis_tables.outputTableRsuUtrfArea
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_utrf_area,id_zone,h2gis_datasource, h2gis_tables.rsu_utrf_area
             , "",inputSRID,outputSRID,reproject)
 
     //Export rsu_utrf_floor_area
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_utrf_floor_area,id_zone,h2gis_datasource, h2gis_tables.outputTableRsuUtrfFloorArea
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_utrf_floor_area,id_zone,h2gis_datasource, h2gis_tables.rsu_utrf_floor_area
             , "",inputSRID,outputSRID,reproject)
 
     //Export grid_indicators
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.grid_indicators,id_zone,h2gis_datasource, h2gis_tables.gridIndicatorsTableName
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.grid_indicators,id_zone,h2gis_datasource, h2gis_tables.grid_indicators
             , "",inputSRID,outputSRID,reproject)
 
     //Export building_utrf
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.building_utrf,id_zone,h2gis_datasource, h2gis_tables.outputTableBuildingUtrf
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.building_utrf,id_zone,h2gis_datasource, h2gis_tables.building_utrf
             , "",inputSRID,outputSRID,reproject)
 
     //Export road_traffic
@@ -1386,7 +1387,7 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
             , "", inputSRID,outputSRID,reproject)
 
     //Export zone
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.zones,id_zone, h2gis_datasource, h2gis_tables.zoneTableName
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.zones,id_zone, h2gis_datasource, h2gis_tables.zone
             , "",inputSRID,outputSRID,reproject)
 
     //Export building
@@ -1418,7 +1419,7 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
             , "",inputSRID,outputSRID,reproject)
 
     //Export population table
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.population, id_zone,h2gis_datasource, h2gis_tables.populationTableName
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.population, id_zone,h2gis_datasource, h2gis_tables.population
             , "", inputSRID,outputSRID,reproject)
 
     //Export building_height_missing table
@@ -1809,9 +1810,9 @@ IProcess buildGeoclimateLayers() {
                 def vegetationTableName = res.vegetationTableName
                 def hydroTableName = res.hydroTableName
                 def imperviousTableName = res.imperviousTableName
-                def zoneTableName = res.zoneTableName
+                def zone = res.zone
                 def zoneEnvelopeTableName = res.zoneEnvelopeTableName
-                def epsg = datasource.getSpatialTable(zoneTableName).srid
+                def epsg = datasource.getSpatialTable(zone).srid
                 if (zoneEnvelopeTableName != null) {
                     debug "Formating OSM GIS layers"
                     IProcess format = OSM.InputDataFormatting.formatBuildingLayer()
@@ -1870,7 +1871,7 @@ IProcess buildGeoclimateLayers() {
                 return [outputBuilding: buildingTableName, outputRoad: roadTableName,
                         outputRail    : railTableName, outputHydro: hydroTableName,
                         outputVeget   : vegetationTableName, outputImpervious: imperviousTableName,
-                        outputZone    : zoneTableName, outputZoneEnvelope: zoneEnvelopeTableName]
+                        outputZone    : zone, outputZoneEnvelope: zoneEnvelopeTableName]
 
             }
         }

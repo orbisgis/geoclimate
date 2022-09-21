@@ -23,7 +23,7 @@ import org.orbisgis.geoclimate.osmtools.utils.OSMElement
   * or a bounding box specified as a JTS envelope
   * @param distance in meters to expand the envelope of the query box. Default is 0
   * @return The name of the resulting GIS tables : buildingTableName, roadTableName,
-  * railTableName, vegetationTableName, hydroTableName, zoneTableName, zoneEnvelopeTableName and urbanAreasTableName.
+  * railTableName, vegetationTableName, hydroTableName, zone, zoneEnvelopeTableName and urbanAreasTableName.
   * Note that the GIS tables are projected in a local utm projection
  */
 IProcess extractAndCreateGISLayers() {
@@ -33,7 +33,7 @@ IProcess extractAndCreateGISLayers() {
         inputs datasource: JdbcDataSource, zoneToExtract: Object, distance: 0, downloadAllOSMData : true
         outputs buildingTableName: String, roadTableName: String, railTableName: String,
                 vegetationTableName: String, hydroTableName: String, imperviousTableName : String,
-                urbanAreasTableName: String, zoneTableName: String,
+                urbanAreasTableName: String, zone: String,
                 zoneEnvelopeTableName: String, coastlineTableName : String
         run { datasource, zoneToExtract, distance,downloadAllOSMData ->
             if (datasource == null) {
@@ -106,7 +106,7 @@ IProcess extractAndCreateGISLayers() {
                          hydroTableName       : results.hydroTableName,
                          imperviousTableName  : results.imperviousTableName,
                          urbanAreasTableName : results.urbanAreasTableName,
-                         zoneTableName        : outputZoneTable,
+                         zone        : outputZoneTable,
                          zoneEnvelopeTableName: outputZoneEnvelopeTable,
                          coastlineTableName : results.coastlineTableName]
                     } else {

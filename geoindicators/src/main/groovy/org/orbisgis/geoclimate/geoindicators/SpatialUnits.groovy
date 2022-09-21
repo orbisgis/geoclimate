@@ -22,7 +22,7 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
 /**
  * This process is used to create the reference spatial units (RSU)
  *
- * @param inputZoneTableName The zone table to keep the RSU inside
+ * @param inputzone The zone table to keep the RSU inside
  * Default value is empty so all RSU are kept.
  * @param prefixName A prefix used to name the output table
  * @param datasource A connection to a database
@@ -47,11 +47,11 @@ IProcess createRSU() {
     return create {
         title "Create reference spatial units (RSU)"
         id "createRSU"
-        inputs inputZoneTableName: "", prefixName: "", datasource: JdbcDataSource, rsuType: "TSU",
+        inputs inputzone: "", prefixName: "", datasource: JdbcDataSource, rsuType: "TSU",
                 area: 1d, roadTable: "", railTable: "", vegetationTable: "", hydrographicTable: "",
                 seaLandMaskTableName: "", surface_vegetation: 10000, surface_hydro: 2500
         outputs outputTableName: String, outputIdRsu: String
-        run { inputZoneTableName, prefixName, datasource, rsuType,
+        run { inputzone, prefixName, datasource, rsuType,
               area, roadTable, railTable, vegetationTable, hydrographicTable, seaLandMaskTableName,
               surface_vegetation, surface_hydro ->
 
@@ -66,7 +66,7 @@ IProcess createRSU() {
             if (rsuType == "TSU") {
                 def prepareTSUData = prepareTSUData()
                 if (!prepareTSUData([datasource          : datasource,
-                                     zoneTable           : inputZoneTableName,
+                                     zoneTable           : inputzone,
                                      roadTable           : roadTable,
                                      railTable           : railTable,
                                      vegetationTable     : vegetationTable,
@@ -84,7 +84,7 @@ IProcess createRSU() {
                 if (!createTSU([datasource        : datasource,
                                 inputTableName    : tsuDataPrepared,
                                 prefixName        : prefixName,
-                                inputZoneTableName: inputZoneTableName])) {
+                                inputzone: inputzone])) {
                     info "Cannot compute the RSU."
                     return
                 }
@@ -108,7 +108,7 @@ IProcess createRSU() {
  * This process is used to create the Topographical Spatial Units (TSU)
  *
  * @param inputTableName The input spatial table to be processed
- * @param inputZoneTableName The zone table to keep the TSU inside
+ * @param inputzone The zone table to keep the TSU inside
  * Default value is empty so all TSU are kept.
  * @param prefixName A prefix used to name the output table
  * @param datasource A connection to a database
@@ -119,9 +119,9 @@ IProcess createTSU() {
     return create {
         title "Create reference spatial units (TSU)"
         id "createTSU"
-        inputs inputTableName: String, inputZoneTableName: "", prefixName: "", datasource: JdbcDataSource, area: 1d
+        inputs inputTableName: String, inputzone: "", prefixName: "", datasource: JdbcDataSource, area: 1d
         outputs outputTableName: String, outputIdRsu: String
-        run { inputTableName, inputZoneTableName, prefixName, datasource, area ->
+        run { inputTableName, inputzone, prefixName, datasource, area ->
 
             def COLUMN_ID_NAME = "id_rsu"
             def BASE_NAME = "tsu"
@@ -141,7 +141,7 @@ IProcess createTSU() {
                 return null
             }
 
-            if (inputZoneTableName) {
+            if (inputzone) {
                 datasource.getSpatialTable(inputTableName).the_geom.createSpatialIndex()
                 datasource """
                     DROP TABLE IF EXISTS $outputTableName;
@@ -150,7 +150,7 @@ IProcess createTSU() {
                         FROM ST_EXPLODE('(
                                 SELECT ST_POLYGONIZE(ST_UNION(ST_PRECISIONREDUCER(ST_NODE(ST_ACCUM(the_geom)), 3))) AS the_geom 
                                 FROM $inputTableName)') AS a,
-                            $inputZoneTableName AS b
+                            $inputzone AS b
                         WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(ST_POINTONSURFACE(a.THE_GEOM), b.the_geom) and st_area(a.the_geom) > $area
             """.toString()

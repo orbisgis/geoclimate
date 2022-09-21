@@ -123,8 +123,8 @@ class LoaderTest extends AbstractOSMTest {
 
         def r = fromArea.results
         assertFalse r.isEmpty()
-        assertTrue r.containsKey("zoneTableName")
-        assertTrue Pattern.compile("ZONE_$uuidRegex").matcher(r.zoneTableName as String).matches()
+        assertTrue r.containsKey("zone")
+        assertTrue Pattern.compile("ZONE_$uuidRegex").matcher(r.zone as String).matches()
         assertTrue r.containsKey("zoneEnvelopeTableName")
         assertTrue Pattern.compile("ZONE_ENVELOPE_$uuidRegex").matcher(r.zoneEnvelopeTableName as String).matches()
         assertTrue r.containsKey("osmTablesPrefix")
@@ -132,7 +132,7 @@ class LoaderTest extends AbstractOSMTest {
         assertTrue r.containsKey("epsg")
         assertEquals 4326, r.epsg
 
-        def zone = ds.getSpatialTable(r.zoneTableName)
+        def zone = ds.getSpatialTable(r.zone)
         assertEquals 1, zone.rowCount
         assertEquals 1, zone.getColumnCount()
         assertTrue zone.columns.contains("THE_GEOM")
@@ -151,8 +151,8 @@ class LoaderTest extends AbstractOSMTest {
 
         r = fromArea.results
         assertFalse r.isEmpty()
-        assertTrue r.containsKey("zoneTableName")
-        assertTrue Pattern.compile("ZONE_$uuidRegex").matcher(r.zoneTableName as String).matches()
+        assertTrue r.containsKey("zone")
+        assertTrue Pattern.compile("ZONE_$uuidRegex").matcher(r.zone as String).matches()
         assertTrue r.containsKey("zoneEnvelopeTableName")
         assertTrue Pattern.compile("ZONE_ENVELOPE_$uuidRegex").matcher(r.zoneEnvelopeTableName as String).matches()
         assertTrue r.containsKey("osmTablesPrefix")
@@ -160,7 +160,7 @@ class LoaderTest extends AbstractOSMTest {
         assertTrue r.containsKey("epsg")
         assertEquals 4326, r.epsg
 
-        zone = ds.getSpatialTable(r.zoneTableName)
+        zone = ds.getSpatialTable(r.zone)
         assertEquals 1, zone.rowCount
         assertEquals 1, zone.getColumnCount()
         assertTrue zone.columns.contains("THE_GEOM")
@@ -205,14 +205,14 @@ class LoaderTest extends AbstractOSMTest {
 
         def r = fromArea.results
         assertFalse r.isEmpty()
-        assertTrue r.containsKey("zoneTableName")
-        assertTrue Pattern.compile("ZONE_$uuidRegex").matcher(r.zoneTableName as String).matches()
+        assertTrue r.containsKey("zone")
+        assertTrue Pattern.compile("ZONE_$uuidRegex").matcher(r.zone as String).matches()
         assertTrue r.containsKey("zoneEnvelopeTableName")
         assertTrue Pattern.compile("ZONE_ENVELOPE_$uuidRegex").matcher(r.zoneEnvelopeTableName as String).matches()
         assertTrue r.containsKey("osmTablesPrefix")
         assertTrue Pattern.compile("OSM_DATA_$uuidRegex").matcher(r.osmTablesPrefix as String).matches()
 
-        def zone = ds.getSpatialTable(r.zoneTableName)
+        def zone = ds.getSpatialTable(r.zone)
         assertEquals 1, zone.rowCount
         assertEquals 1, zone.getColumnCount()
         assertTrue zone.columns.contains("THE_GEOM")
@@ -232,14 +232,14 @@ class LoaderTest extends AbstractOSMTest {
 
         r = fromArea.results
         assertFalse r.isEmpty()
-        assertTrue r.containsKey("zoneTableName")
-        assertTrue Pattern.compile("ZONE_$uuidRegex").matcher(r.zoneTableName as String).matches()
+        assertTrue r.containsKey("zone")
+        assertTrue Pattern.compile("ZONE_$uuidRegex").matcher(r.zone as String).matches()
         assertTrue r.containsKey("zoneEnvelopeTableName")
         assertTrue Pattern.compile("ZONE_ENVELOPE_$uuidRegex").matcher(r.zoneEnvelopeTableName as String).matches()
         assertTrue r.containsKey("osmTablesPrefix")
         assertTrue Pattern.compile("OSM_DATA_$uuidRegex").matcher(r.osmTablesPrefix as String).matches()
 
-        zone = ds.getSpatialTable(r.zoneTableName)
+        zone = ds.getSpatialTable(r.zone)
         assertEquals 1, zone.rowCount
         assertEquals 1, zone.getColumnCount()
         assertTrue zone.columns.contains("THE_GEOM")
@@ -276,14 +276,14 @@ class LoaderTest extends AbstractOSMTest {
         assertTrue fromPlace(datasource: ds, placeName: placeName)
         def r = fromPlace.results
         assertFalse r.isEmpty()
-        assertTrue r.containsKey("zoneTableName")
-        assertTrue Pattern.compile("ZONE_$formattedPlaceName$uuidRegex").matcher(r.zoneTableName as String).matches()
+        assertTrue r.containsKey("zone")
+        assertTrue Pattern.compile("ZONE_$formattedPlaceName$uuidRegex").matcher(r.zone as String).matches()
         assertTrue r.containsKey("zoneEnvelopeTableName")
         assertTrue Pattern.compile("ZONE_ENVELOPE_$formattedPlaceName$uuidRegex").matcher(r.zoneEnvelopeTableName as String).matches()
         assertTrue r.containsKey("osmTablesPrefix")
         assertTrue Pattern.compile("OSM_DATA_$formattedPlaceName$uuidRegex").matcher(r.osmTablesPrefix as String).matches()
 
-        def zone = ds.getSpatialTable(r.zoneTableName)
+        def zone = ds.getSpatialTable(r.zone)
         assertEquals 1, zone.rowCount
         assertEquals 2, zone.getColumnCount()
         assertTrue zone.columns.contains("THE_GEOM")
@@ -324,14 +324,14 @@ class LoaderTest extends AbstractOSMTest {
         assertTrue fromPlace(datasource: ds, placeName: placeName, distance: dist)
         def r = fromPlace.results
         assertFalse r.isEmpty()
-        assertTrue r.containsKey("zoneTableName")
-        assertTrue Pattern.compile("ZONE_$formattedPlaceName$uuidRegex").matcher(r.zoneTableName as String).matches()
+        assertTrue r.containsKey("zone")
+        assertTrue Pattern.compile("ZONE_$formattedPlaceName$uuidRegex").matcher(r.zone as String).matches()
         assertTrue r.containsKey("zoneEnvelopeTableName")
         assertTrue Pattern.compile("ZONE_ENVELOPE_$formattedPlaceName$uuidRegex").matcher(r.zoneEnvelopeTableName as String).matches()
         assertTrue r.containsKey("osmTablesPrefix")
         assertTrue Pattern.compile("OSM_DATA_$formattedPlaceName$uuidRegex").matcher(r.osmTablesPrefix as String).matches()
 
-        def zone = ds.getSpatialTable(r.zoneTableName)
+        def zone = ds.getSpatialTable(r.zone)
         assertEquals 1, zone.rowCount
         assertEquals 2, zone.getColumnCount()
         assertTrue zone.columns.contains("THE_GEOM")
