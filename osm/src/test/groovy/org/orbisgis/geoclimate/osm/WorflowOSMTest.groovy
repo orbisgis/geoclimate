@@ -625,15 +625,15 @@ class WorflowOSMTest extends WorkflowAbstractTest {
             def gridTableName = gridProcess.results.outputTableName
             def computeRasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators()
             if (!computeRasterizedIndicators.execute(datasource: datasource,
-                    gridTableName: gridTableName,
+                    grid: gridTableName,
                     list_indicators: wrf_indicators,
-                    buildingTable: buildingUpdated,
+                    building: buildingUpdated,
                     rsu_lcz: rsuLczUpdated,
-                    seaLandMaskTableName: sea_land_maskFile+test,
-                    vegetationTable: vegetationFile+test,
-                    hydrographicTable: waterFile+test,
-                    imperviousTable: imperviousFile+test,
-                    roadTable: roadFile+test,
+                    sea_land_mask: sea_land_maskFile+test,
+                    vegetation: vegetationFile+test,
+                    water: waterFile+test,
+                    impervious: imperviousFile+test,
+                    road : roadFile+test,
                     prefixName: prefixName)) {
                 println("Could not rasterized indicators")
             }
