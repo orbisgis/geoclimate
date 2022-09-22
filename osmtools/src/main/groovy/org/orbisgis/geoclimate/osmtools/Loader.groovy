@@ -73,7 +73,7 @@ def fromArea() {
         title "Extract the OSM data using an area"
         id "fromArea"
         inputs datasource: JdbcDataSource, filterArea: Object, distance: 0
-        outputs zoneTableName: String, zoneEnvelopeTableName: String, osmTablesPrefix: String, epsg: int
+        outputs zone: String, zoneEnvelopeTableName: String, osmTablesPrefix: String, epsg: int
         run { JdbcDataSource datasource, filterArea, distance ->
             if(!datasource) {
                 error("No datasource provided.")
@@ -121,7 +121,7 @@ def fromArea() {
                         osmTablesPrefix: osmTablesPrefix,
                         osmFilePath: extract.results.outputFilePath)) {
                     info "Loading OSM data from the area $filterArea"
-                    return [zoneTableName        : outputZoneTable,
+                    return [zone        : outputZoneTable,
                             zoneEnvelopeTableName: outputZoneEnvelopeTable,
                             osmTablesPrefix      : osmTablesPrefix,
                             epsg                 : epsg]
@@ -154,7 +154,7 @@ def fromPlace() {
         title "Extract the OSM data using a place name"
         id "fromPlace"
         inputs datasource: JdbcDataSource, placeName: String, distance: 0
-        outputs zoneTableName: String, zoneEnvelopeTableName: String, osmTablesPrefix: String
+        outputs zone: String, zoneEnvelopeTableName: String, osmTablesPrefix: String
         run { JdbcDataSource datasource, placeName, distance ->
             if(!placeName) {
                 error("Cannot find an area from a void place name.")
@@ -203,7 +203,7 @@ def fromPlace() {
                         osmTablesPrefix: osmTablesPrefix,
                         osmFilePath: extract.results.outputFilePath)) {
                     info "Loading OSM data from the place $placeName"
-                    return [zoneTableName        : outputZoneTable,
+                    return [zone        : outputZoneTable,
                             zoneEnvelopeTableName: outputZoneEnvelopeTable,
                             osmTablesPrefix      : osmTablesPrefix]
                 } else {

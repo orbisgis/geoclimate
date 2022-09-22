@@ -914,7 +914,7 @@ IProcess createUnitsOfAnalysis() {
             info "Create the units of analysis..."
             // Create the RSU
             def createRSU = Geoindicators.SpatialUnits.createRSU()
-            if (!createRSU([inputZoneTableName  : zoneTable,
+            if (!createRSU([inputzone  : zoneTable,
                             prefixName          : prefixName,
                             datasource          : datasource,
                             rsuType             : rsuType,
@@ -1002,8 +1002,8 @@ IProcess createUnitsOfAnalysis() {
  * building, block and RSU
  * Compute also the LCZ classification and the urban typology
  *
- * @return 5 tables outputTableBuildingIndicators, outputTableBlockIndicators, outputTableRsuIndicators,
- * outputTableRsuLcz, buildingTableName. The first three tables contains the geoindicators and the last table the LCZ classification.
+ * @return 5 tables building_indicators, block_indicators, rsu_indicators,
+ * rsu_lcz, buildingTableName. The first three tables contains the geoindicators and the last table the LCZ classification.
  * The last table returns the new building table if the height model is set to true
  * This table can be empty if the user decides not to calculate it.
  *
@@ -1023,10 +1023,10 @@ IProcess computeAllGeoIndicators() {
                                "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
                 utrfModelName: "",
                 buildingHeightModelName: ""
-        outputs outputTableBuildingIndicators: String, outputTableBlockIndicators: String,
-                outputTableRsuIndicators: String, outputTableRsuLcz: String, zoneTableName: String,
-                outputTableRsuUtrfArea: String, outputTableRsuUtrfFloorArea: String,
-                outputTableBuildingUtrf: String, buildingTableName: String
+        outputs building_indicators: String, block_indicators: String,
+                rsu_indicators: String, rsu_lcz: String, zone: String,
+                rsu_utrf_area: String, rsu_utrf_floor_area: String,
+                building_utrf: String, buildingTableName: String
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
               imperviousTable, buildingEstimateTableName, seaLandMaskTableName,
               surface_vegetation, surface_hydro, snappingTolerance, indicatorUse, svfSimplified, prefixName, mapOfWeights,
@@ -1062,7 +1062,7 @@ IProcess computeAllGeoIndicators() {
                 info "Extracting the building having no height information and estimate it"
                 def results = geoIndicators.results;
                 //Select indicators we need at building scales
-                def buildingIndicatorsTableName = results.outputTableBuildingIndicators;
+                def buildingIndicatorsTableName = results.building_indicators;
                 datasource.getTable(buildingEstimateTableName).id_build.createIndex()
                 datasource.getTable(buildingIndicatorsTableName).id_build.createIndex()
                 datasource.getTable(buildingIndicatorsTableName).id_rsu.createIndex()
@@ -1082,8 +1082,8 @@ IProcess computeAllGeoIndicators() {
                 def applygatherScales = Geoindicators.GenericIndicators.gatherScales()
                 applygatherScales.execute([
                         buildingTable    : estimated_building_with_indicators,
-                        blockTable       : results.outputTableBlockIndicators,
-                        rsuTable         : results.outputTableRsuIndicators,
+                        blockTable       : results.block_indicators,
+                        rsuTable         : results.rsu_indicators,
                         targetedScale    : "BUILDING",
                         operationsToApply: ["AVG", "STD"],
                         prefixName       : prefixName,
@@ -1091,8 +1091,8 @@ IProcess computeAllGeoIndicators() {
                 def gatheredScales = applygatherScales.results.outputTableName
 
                 //We use the existing spatial units
-                def relationBlocks = results.outputTableBlockIndicators
-                def relationRSU = results.outputTableRsuIndicators
+                def relationBlocks = results.block_indicators
+                def relationRSU = results.rsu_indicators
 
                 def buildingTableName = "BUILDING_TABLE_WITH_RSU_AND_BLOCK_ID"
                 def nbBuildingEstimated
@@ -1151,14 +1151,14 @@ IProcess computeAllGeoIndicators() {
                     if (indicatorUse.isEmpty()) {
                         //Clean the System properties that stores intermediate table names
                         clearTablesCache()
-                        return [outputTableBuildingIndicators: results.outputTableBuildingIndicators,
-                                outputTableBlockIndicators   : relationBlocks,
-                                outputTableRsuIndicators     : relationRSU,
-                                outputTableRsuLcz            : null,
-                                zoneTableName                : zoneTable,
-                                outputTableRsuUtrfArea       : null,
-                                outputTableRsuUtrfFloorArea  : null,
-                                outputTableBuildingUtrf      : null,
+                        return [building_indicators: results.building_indicators,
+                                block_indicators   : relationBlocks,
+                                rsu_indicators     : relationRSU,
+                                rsu_lcz            : null,
+                                zone                : zoneTable,
+                                rsu_utrf_area       : null,
+                                rsu_utrf_floor_area  : null,
+                                building_utrf      : null,
                                 buildingTableName            : buildingTableName]
                     }
 
@@ -1181,6 +1181,7 @@ IProcess computeAllGeoIndicators() {
 
                 // Temporary (and output tables) are created
                 def lczIndicTable = postfix "LCZ_INDIC_TABLE"
+                def baseNameUtrfRsu = postfix "UTRF_RSU_"
                 def utrfBuilding
                 def distribNotPercent = "DISTRIB_NOT_PERCENT"
                 def COLUMN_ID_RSU = "id_rsu"
@@ -1192,8 +1193,8 @@ IProcess computeAllGeoIndicators() {
 
                 // Output Lcz (and urbanTypo) table names are set to null in case LCZ indicators (and urban typo) are not calculated
                 def rsuLcz = null
-                def utrfArea
-                def utrfFloorArea
+                def utrfArea = baseNameUtrfRsu + "AREA"
+                def utrfFloorArea = baseNameUtrfRsu + "FLOOR_AREA"
                 def rsuLczWithoutGeom = "rsu_lcz_without_geom"
 
                 //Compute building indicators
@@ -1440,14 +1441,14 @@ IProcess computeAllGeoIndicators() {
 
                 //Clean the System properties that stores intermediate table names
                 clearTablesCache()
-                return [outputTableBuildingIndicators: computeBuildingsIndicators.getResults().outputTableName,
-                        outputTableBlockIndicators   : blockIndicators,
-                        outputTableRsuIndicators     : computeRSUIndicators.getResults().outputTableName,
-                        outputTableRsuLcz            : rsuLcz,
-                        zoneTableName                : zoneTable,
-                        outputTableRsuUtrfArea       : utrfArea,
-                        outputTableRsuUtrfFloorArea  : utrfFloorArea,
-                        outputTableBuildingUtrf      : utrfBuilding,
+                return [building_indicators: computeBuildingsIndicators.getResults().outputTableName,
+                        block_indicators   : blockIndicators,
+                        rsu_indicators     : computeRSUIndicators.getResults().outputTableName,
+                        rsu_lcz            : rsuLcz,
+                        zone                : zoneTable,
+                        rsu_utrf_area       : utrfArea,
+                        rsu_utrf_floor_area  : utrfFloorArea,
+                        building_utrf      : utrfBuilding,
                         buildingTableName            : buildingTableName]
 
             } else {
@@ -1481,10 +1482,10 @@ IProcess computeAllGeoIndicators() {
  * building, block and RSU
  * The LCZ classification  and the urban typology
  *
- * @return 8 tables outputTableBuildingIndicators, outputTableBlockIndicators, outputTableRsuIndicators,
- * outputTableRsuLcz, zoneTableName ,
- * outputTableRsuUtrfArea, outputTableRsuUtrfFloorArea,
- * outputTableBuildingUtrf.
+ * @return 8 tables building_indicators, block_indicators, rsu_indicators,
+ * rsu_lcz, zone ,
+ * rsu_utrf_area, rsu_utrf_floor_area,
+ * building_utrf.
  * The first three tables contains the geoindicators and the last tables the LCZ and urban typology classifications.
  * This table can be empty if the user decides not to calculate it.
  *
@@ -1502,10 +1503,10 @@ IProcess computeGeoclimateIndicators() {
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
                 utrfModelName: ""
-        outputs outputTableBuildingIndicators: String, outputTableBlockIndicators: String,
-                outputTableRsuIndicators: String, outputTableRsuLcz: String, zoneTableName: String,
-                outputTableRsuUtrfArea: String, outputTableRsuUtrfFloorArea: String,
-                outputTableBuildingUtrf: String
+        outputs building_indicators: String, block_indicators: String,
+                rsu_indicators: String, rsu_lcz: String, zone: String,
+                rsu_utrf_area: String, rsu_utrf_floor_area: String,
+                building_utrf: String
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
               imperviousTable, seaLandMaskTableName,
               surface_vegetation, surface_hydro, snappingTolerance, indicatorUse, svfSimplified, prefixName, mapOfWeights,
@@ -1523,6 +1524,7 @@ IProcess computeGeoclimateIndicators() {
             }
             // Temporary (and output tables) are created
             def lczIndicTable = postfix "LCZ_INDIC_TABLE"
+            def baseNameUtrfRsu = postfix "UTRF_RSU_"
             def utrfBuilding
             def distribNotPercent = "DISTRIB_NOT_PERCENT"
 
@@ -1540,8 +1542,8 @@ IProcess computeGeoclimateIndicators() {
 
             // Output Lcz (and urbanTypo) table names are set to null in case LCZ indicators (and urban typo) are not calculated
             def rsuLcz = null
-            def utrfArea = null
-            def utrfFloorArea = null
+            def utrfArea = baseNameUtrfRsu + "AREA"
+            def utrfFloorArea = baseNameUtrfRsu + "FLOOR_AREA"
 
             //Create spatial units and relations : building, block, rsu
             IProcess spatialUnits = createUnitsOfAnalysis()
@@ -1753,14 +1755,8 @@ IProcess computeGeoclimateIndicators() {
                         // while there is no building in the RSU
                         datasource."$resultsDistrib"."$COLUMN_ID_RSU".createIndex()
                         datasource.tempo_distrib."$COLUMN_ID_RSU".createIndex()
-                        def tmpTable = postfix "UTRF_RSU_$ind"
-                        if(ind=='AREA'){
-                            utrfArea=tmpTable
-                        }else if(ind=='FLOOR_AREA'){
-                            utrfFloorArea=tmpTable
-                        }
-                        datasource """  DROP TABLE IF EXISTS $tmpTable;
-                                    CREATE TABLE $tmpTable
+                        datasource """  DROP TABLE IF EXISTS $baseNameUtrfRsu$ind;
+                                    CREATE TABLE $baseNameUtrfRsu$ind
                                         AS SELECT   a.*, 
                                                     CASE WHEN   b.UNIQUENESS_VALUE=-1
                                                     THEN        NULL
@@ -1814,14 +1810,14 @@ IProcess computeGeoclimateIndicators() {
             datasource.execute("""DROP TABLE IF EXISTS $buildingTable;
             ALTER TABLE $relationBuildings RENAME TO $buildingTable;""".toString())
 
-            return [outputTableBuildingIndicators: buildingIndicators,
-                    outputTableBlockIndicators   : blockIndicators,
-                    outputTableRsuIndicators     : rsuIndicators,
-                    outputTableRsuLcz            : rsuLcz,
-                    zoneTableName                : zoneTable,
-                    outputTableRsuUtrfArea       : utrfArea,
-                    outputTableRsuUtrfFloorArea  : utrfFloorArea,
-                    outputTableBuildingUtrf      : utrfBuilding]
+            return [building_indicators: buildingIndicators,
+                    block_indicators   : blockIndicators,
+                    rsu_indicators     : rsuIndicators,
+                    rsu_lcz            : rsuLcz,
+                    zone                : zoneTable,
+                    rsu_utrf_area       : utrfArea,
+                    rsu_utrf_floor_area  : utrfFloorArea,
+                    building_utrf      : utrfBuilding]
         }
     }
 }
@@ -1849,14 +1845,14 @@ IProcess rasterizeIndicators() {
         title "Aggregate indicators on a grid"
         id "rasterizeIndicators"
         inputs datasource: JdbcDataSource,
-                gridTableName: String, list_indicators: [],
-                buildingTable: "", roadTable: "", vegetationTable: "",
-                hydrographicTable: "", imperviousTable: "", rsu_lcz: "",
-                rsu_utrf_area: "", rsu_utrf_floor_area: "", seaLandMaskTableName: "",
+                grid: String, list_indicators: [],
+                building: "", road: "", vegetation: "",
+                water: "", impervious: "", rsu_lcz: "",
+                rsu_utrf_area: "", rsu_utrf_floor_area: "", sea_land_mask: "",
                 prefixName: String
         outputs outputTableName: String
-        run { datasource, gridTableName, list_indicators, buildingTable, roadTable, vegetationTable,
-              hydrographicTable, imperviousTable, rsu_lcz, rsu_utrf_area, rsu_utrf_floor_area, seaLandMaskTableName,
+        run { datasource, grid, list_indicators, building, road, vegetation,
+              water, impervious, rsu_lcz, rsu_utrf_area, rsu_utrf_floor_area, sea_land_mask,
               prefixName ->
             if (!list_indicators) {
                 info "The list of indicator names cannot be null or empty"
@@ -1870,7 +1866,7 @@ IProcess rasterizeIndicators() {
             def grid_indicators_table = "grid_indicators"
             def grid_column_identifier = "id_grid"
             def indicatorTablesToJoin = [:]
-            indicatorTablesToJoin.put(gridTableName, grid_column_identifier)
+            indicatorTablesToJoin.put(grid, grid_column_identifier)
             /*
             * Make aggregation process with previous grid and current rsu lcz
             */
@@ -1878,7 +1874,7 @@ IProcess rasterizeIndicators() {
                 def indicatorName = "LCZ_PRIMARY"
                 def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics()
                 if (upperScaleAreaStatistics.execute(
-                        [upperTableName : gridTableName,
+                        [upperTableName : grid,
                          upperColumnId  : grid_column_identifier,
                          lowerTableName : rsu_lcz,
                          lowerColumnName: indicatorName,
@@ -1947,7 +1943,7 @@ IProcess rasterizeIndicators() {
                 def indicatorName = "TYPO_MAJ"
                 def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics()
                 if (upperScaleAreaStatistics.execute(
-                        [upperTableName : gridTableName,
+                        [upperTableName : grid,
                          upperColumnId  : grid_column_identifier,
                          lowerTableName : rsu_utrf_area,
                          lowerColumnName: indicatorName,
@@ -1981,11 +1977,11 @@ IProcess rasterizeIndicators() {
                     columnFractionsList.put(priorities.indexOf("road"), "road")
                 } else if (it.equalsIgnoreCase("IMPERVIOUS_FRACTION")) {
                     columnFractionsList.put(priorities.indexOf("impervious"), "impervious")
-                } else if (it.equalsIgnoreCase("BUILDING_HEIGHT") && buildingTable) {
+                } else if (it.equalsIgnoreCase("BUILDING_HEIGHT") && building) {
                     unweightedBuildingIndicators.put("height_roof", ["AVG", "STD"])
-                } else if (it.equalsIgnoreCase("BUILDING_HEIGHT_WEIGHTED") && buildingTable) {
+                } else if (it.equalsIgnoreCase("BUILDING_HEIGHT_WEIGHTED") && building) {
                     weightedBuildingIndicators["height_roof"] = ["area": ["AVG", "STD"]]
-                } else if (it.equalsIgnoreCase("BUILDING_POP") && buildingTable) {
+                } else if (it.equalsIgnoreCase("BUILDING_POP") && building) {
                     unweightedBuildingIndicators.put("pop", ["SUM"])
                 }
             }
@@ -1996,16 +1992,16 @@ IProcess rasterizeIndicators() {
                 // Need to create the smallest geometries used as input of the surface fraction process
                 def computeSmallestGeom = Geoindicators.RsuIndicators.smallestCommunGeometry()
                 if (computeSmallestGeom.execute([
-                        rsuTable       : gridTableName, id_rsu: grid_column_identifier,
-                        buildingTable  : buildingTable, roadTable: roadTable,
-                        vegetationTable: vegetationTable, waterTable: hydrographicTable,
-                        imperviousTable: imperviousTable,
+                        rsuTable       : grid, id_rsu: grid_column_identifier,
+                        buildingTable  : building, roadTable: road,
+                        vegetationTable: vegetation, waterTable: water,
+                        imperviousTable: impervious,
                         prefixName     : prefixName, datasource: datasource])) {
                     def superpositionsTableGrid = computeSmallestGeom.results.outputTableName
                     surfaceFractionsProcess = Geoindicators.RsuIndicators.surfaceFractions()
                     def superpositions = []
                     if (surfaceFractionsProcess.execute([
-                            rsuTable      : gridTableName, spatialRelationsTable: superpositionsTableGrid,
+                            rsuTable      : grid, spatialRelationsTable: superpositionsTableGrid,
                             id_rsu        : grid_column_identifier,
                             superpositions: superpositions,
                             priorities    : priorities_tmp,
@@ -2021,8 +2017,8 @@ IProcess rasterizeIndicators() {
                 // Create the relations between grid cells and buildings
                 createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
                 if (!createScalesRelationsGridBl([datasource    : datasource,
-                                                  sourceTable   : buildingTable,
-                                                  targetTable   : gridTableName,
+                                                  sourceTable   : building,
+                                                  targetTable   : grid,
                                                   idColumnTarget: grid_column_identifier,
                                                   prefixName    : prefixName,
                                                   nbRelations   : null])) {
@@ -2031,7 +2027,7 @@ IProcess rasterizeIndicators() {
                 }
                 def computeBuildingStats = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
                 if (!computeBuildingStats([inputLowerScaleTableName: createScalesRelationsGridBl.results.outputTableName,
-                                           inputUpperScaleTableName: gridTableName,
+                                           inputUpperScaleTableName: grid,
                                            inputIdUp               : grid_column_identifier,
                                            inputIdLow              : grid_column_identifier,
                                            inputVarAndOperations   : unweightedBuildingIndicators,
@@ -2049,8 +2045,8 @@ IProcess rasterizeIndicators() {
                     // Create the relations between grid cells and buildings
                     createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
                     if (!createScalesRelationsGridBl([datasource    : datasource,
-                                                      sourceTable   : buildingTable,
-                                                      targetTable   : gridTableName,
+                                                      sourceTable   : building,
+                                                      targetTable   : grid,
                                                       idColumnTarget: grid_column_identifier,
                                                       prefixName    : prefixName,
                                                       nbRelations   : null])) {
@@ -2060,7 +2056,7 @@ IProcess rasterizeIndicators() {
                 }
                 def computeWeightedAggregStat = Geoindicators.GenericIndicators.weightedAggregatedStatistics()
                 if (!computeWeightedAggregStat([inputLowerScaleTableName : createScalesRelationsGridBl.results.outputTableName,
-                                                inputUpperScaleTableName : gridTableName,
+                                                inputUpperScaleTableName : grid,
                                                 inputIdUp                : grid_column_identifier,
                                                 inputVarWeightsOperations: weightedBuildingIndicators,
                                                 prefixName               : prefixName,
@@ -2072,13 +2068,13 @@ IProcess rasterizeIndicators() {
 
             }
 
-            if (list_indicators*.toUpperCase().contains("BUILDING_TYPE") && buildingTable) {
+            if (list_indicators*.toUpperCase().contains("BUILDING_TYPE") && building) {
                 if (!createScalesRelationsGridBl) {
                     // Create the relations between grid cells and buildings
                     createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
                     if (!createScalesRelationsGridBl([datasource    : datasource,
-                                                      sourceTable   : buildingTable,
-                                                      targetTable   : gridTableName,
+                                                      sourceTable   : building,
+                                                      targetTable   : grid,
                                                       idColumnTarget: grid_column_identifier,
                                                       prefixName    : prefixName,
                                                       nbRelations   : null])) {
@@ -2089,7 +2085,7 @@ IProcess rasterizeIndicators() {
                 def indicatorName = "TYPE"
                 def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics()
                 if (upperScaleAreaStatistics.execute(
-                        [upperTableName : gridTableName,
+                        [upperTableName : grid,
                          upperColumnId  : grid_column_identifier,
                          lowerTableName : createScalesRelationsGridBl.results.outputTableName,
                          lowerColumnName: indicatorName,
@@ -2102,14 +2098,14 @@ IProcess rasterizeIndicators() {
                 }
             }
 
-            if ((list_indicators*.toUpperCase().contains("FREE_EXTERNAL_FACADE_DENSITY") && buildingTable) ||
-                    (list_indicators*.toUpperCase().contains("BUILDING_SURFACE_DENSITY") && buildingTable)) {
+            if ((list_indicators*.toUpperCase().contains("FREE_EXTERNAL_FACADE_DENSITY") && building) ||
+                    (list_indicators*.toUpperCase().contains("BUILDING_SURFACE_DENSITY") && building)) {
                 if (!createScalesRelationsGridBl) {
                     // Create the relations between grid cells and buildings
                     createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
                     if (!createScalesRelationsGridBl([datasource    : datasource,
-                                                      sourceTable   : buildingTable,
-                                                      targetTable   : gridTableName,
+                                                      sourceTable   : building,
+                                                      targetTable   : grid,
                                                       idColumnTarget: grid_column_identifier,
                                                       prefixName    : prefixName,
                                                       nbRelations   : null])) {
@@ -2120,7 +2116,7 @@ IProcess rasterizeIndicators() {
                 def freeFacadeDensityExact = Geoindicators.RsuIndicators.freeExternalFacadeDensityExact()
                 if (freeFacadeDensityExact.execute(
                         [buildingTable: createScalesRelationsGridBl.results.outputTableName,
-                         rsuTable     : gridTableName,
+                         rsuTable     : grid,
                          idRsu        : grid_column_identifier,
                          prefixName   : prefixName,
                          datasource   : datasource])) {
@@ -2147,13 +2143,13 @@ IProcess rasterizeIndicators() {
                 }
             }
 
-            if (list_indicators*.toUpperCase().contains("BUILDING_HEIGHT_DIST") && buildingTable) {
+            if (list_indicators*.toUpperCase().contains("BUILDING_HEIGHT_DIST") && building) {
                 if (!createScalesRelationsGridBl) {
                     // Create the relations between grid cells and buildings
                     createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
                     if (!createScalesRelationsGridBl([datasource    : datasource,
-                                                      sourceTable   : buildingTable,
-                                                      targetTable   : gridTableName,
+                                                      sourceTable   : building,
+                                                      targetTable   : grid,
                                                       idColumnTarget: grid_column_identifier,
                                                       prefixName    : prefixName,
                                                       nbRelations   : null])) {
@@ -2164,7 +2160,7 @@ IProcess rasterizeIndicators() {
                 def roofFractionDistributionExact = Geoindicators.RsuIndicators.roofFractionDistributionExact()
                 if (roofFractionDistributionExact(
                         [buildingTable   : createScalesRelationsGridBl.results.outputTableName,
-                         rsuTable        : gridTableName,
+                         rsuTable        : grid,
                          idRsu           : grid_column_identifier,
                          listLayersBottom: [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
                          prefixName      : prefixName,
@@ -2175,14 +2171,14 @@ IProcess rasterizeIndicators() {
                 }
             }
 
-            if (list_indicators*.toUpperCase().contains("FRONTAL_AREA_INDEX") && buildingTable) {
-                if(!datasource.getTable(buildingTable).isEmpty()){
+            if (list_indicators*.toUpperCase().contains("FRONTAL_AREA_INDEX") && building) {
+                if(!datasource.getTable(building).isEmpty()){
                 if (!createScalesRelationsGridBl) {
                     // Create the relations between grid cells and buildings
                     createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
                     if (!createScalesRelationsGridBl([datasource    : datasource,
-                                                      sourceTable   : buildingTable,
-                                                      targetTable   : gridTableName,
+                                                      sourceTable   : building,
+                                                      targetTable   : grid,
                                                       idColumnTarget: grid_column_identifier,
                                                       prefixName    : prefixName,
                                                       nbRelations   : null])) {
@@ -2193,7 +2189,7 @@ IProcess rasterizeIndicators() {
                 def frontalAreaIndexDistribution = Geoindicators.RsuIndicators.frontalAreaIndexDistribution()
                 if (frontalAreaIndexDistribution(
                         [buildingTable    : createScalesRelationsGridBl.results.outputTableName,
-                         rsuTable         : gridTableName,
+                         rsuTable         : grid,
                          idRsu            : grid_column_identifier,
                          listLayersBottom : [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
                          numberOfDirection: 12,
@@ -2206,17 +2202,17 @@ IProcess rasterizeIndicators() {
                 }
             }
 
-            if (list_indicators*.toUpperCase().contains("SEA_LAND_FRACTION") && seaLandMaskTableName) {
+            if (list_indicators*.toUpperCase().contains("SEA_LAND_FRACTION") && sea_land_mask) {
                 // If only one type of surface (land or sea) is in the zone, no need for computational fraction calculation
                 def sea_land_type_rows = datasource.rows("""SELECT $seaLandTypeField, COUNT(*) AS NB_TYPES
-                                                                    FROM $seaLandMaskTableName
+                                                                    FROM $sea_land_mask
                                                                     GROUP BY $seaLandTypeField""")
                 if (sea_land_type_rows[seaLandTypeField].count("sea") == 0) {
                     datasource """ 
                             DROP TABLE IF EXISTS $seaLandFractionTab;
                             CREATE TABLE $seaLandFractionTab
                                 AS SELECT $grid_column_identifier, 1 AS LAND_FRACTION
-                                FROM $gridTableName"""
+                                FROM $grid"""
                     indicatorTablesToJoin.put(seaLandFractionTab, grid_column_identifier)
                 } else {
                     // Split the potentially big complex seaLand geometries into smaller triangles in order to makes calculation faster
@@ -2225,13 +2221,13 @@ IProcess rasterizeIndicators() {
                             CREATE TABLE $tesselatedSeaLandTab(id_tesselate serial, the_geom geometry, $seaLandTypeField VARCHAR)
                                 AS SELECT explod_id, the_geom, $seaLandTypeField
                                 FROM ST_EXPLODE('(SELECT st_tessellate(the_geom) AS the_geom, $seaLandTypeField 
-                                                    FROM $seaLandMaskTableName
+                                                    FROM $sea_land_mask
                                                     WHERE ST_DIMENSION(the_geom) = 2 AND ST_ISEMPTY(the_geom) IS NOT TRUE
                                                             AND ST_AREA(the_geom)>0)')"""
 
                     def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics()
                     if (upperScaleAreaStatistics(
-                            [upperTableName: gridTableName,
+                            [upperTableName: grid,
                              upperColumnId: grid_column_identifier,
                              lowerTableName: tesselatedSeaLandTab,
                              lowerColumnName: seaLandTypeField,

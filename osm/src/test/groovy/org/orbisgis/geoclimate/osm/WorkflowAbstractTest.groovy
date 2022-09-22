@@ -16,7 +16,7 @@ class WorkflowAbstractTest {
      * A method to compute geomorphological indicators
      * @param directory
      * @param datasource
-     * @param zoneTableName
+     * @param zone
      * @param buildingTableName
      * @param roadTableName
      * @param railTableName
@@ -25,13 +25,13 @@ class WorkflowAbstractTest {
      * @param saveResults
      * @param indicatorUse
      */
-    void geoIndicatorsCalc(String directory, def datasource, String zoneTableName, String buildingTableName,
+    void geoIndicatorsCalc(String directory, def datasource, String zone, String buildingTableName,
                            String roadTableName, String railTableName, String vegetationTableName,
                            String hydrographicTableName, boolean saveResults, boolean svfSimplified = false, def indicatorUse,
                            String prefixName = "") {
         //Create spatial units and relations : building, block, rsu
         IProcess spatialUnits = Geoindicators.WorkflowGeoIndicators.createUnitsOfAnalysis()
-        assertTrue spatialUnits.execute([datasource       : datasource, zoneTable: zoneTableName, buildingTable: buildingTableName,
+        assertTrue spatialUnits.execute([datasource       : datasource, zoneTable: zone, buildingTable: buildingTableName,
                                          roadTable        : roadTableName, railTable: railTableName, vegetationTable: vegetationTableName,
                                          hydrographicTable: hydrographicTableName, surface_vegetation: 100000,
                                          surface_hydro    : 2500, distance: 0.01, prefixName: prefixName])

@@ -93,7 +93,7 @@ class SpatialUnitsTests {
         h2GIS.load(SpatialUnitsTests.getResource("zone_test.geojson"),true)
 
         def createRSU = Geoindicators.SpatialUnits.createRSU()
-        if (!createRSU([inputZoneTableName  : "zone_test",
+        if (!createRSU([inputzone  : "zone_test",
                         prefixName          : "block",
                         datasource          : h2GIS,
                         rsuType             : "TSU",

@@ -181,10 +181,10 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                 hydrographicTable: abstractTables.outputHydro, indicatorUse: ["LCZ"],
                 mapOfWeights: mapOfWeights, svfSimplified:svfSimplified)
 
-        assertTrue(datasource.getTable(geodindicators.results.outputTableBuildingIndicators).rowCount>0)
-        assertNull(geodindicators.results.outputTableBlockIndicators)
-        assertTrue(datasource.getTable(geodindicators.results.outputTableRsuIndicators).rowCount>0)
-        assertTrue(datasource.getTable(geodindicators.results.outputTableRsuLcz).rowCount>0)
+        assertTrue(datasource.getTable(geodindicators.results.building_indicators).rowCount>0)
+        assertNull(geodindicators.results.block_indicators)
+        assertTrue(datasource.getTable(geodindicators.results.rsu_indicators).rowCount>0)
+        assertTrue(datasource.getTable(geodindicators.results.rsu_lcz).rowCount>0)
     }
 
 
@@ -363,10 +363,10 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         def process = BDTopo_V2.WorkflowBDTopo_V2.bdtopo_processing(h2GISDatabase, defaultParameters, inseeCode, directory, tablesToSave, null, null, 4326, 2154);
         def tableNames = process.values()
 
-        checkSpatialTable(h2GISDatabase, tableNames["outputTableBlockIndicators"])
-        checkSpatialTable(h2GISDatabase, tableNames["outputTableBuildingIndicators"])
-        checkSpatialTable(h2GISDatabase, tableNames["outputTableRsuIndicators"])
-        checkSpatialTable(h2GISDatabase, tableNames["outputTableRsuLcz"])
+        checkSpatialTable(h2GISDatabase, tableNames["block_indicators"])
+        checkSpatialTable(h2GISDatabase, tableNames["building_indicators"])
+        checkSpatialTable(h2GISDatabase, tableNames["rsu_indicators"])
+        checkSpatialTable(h2GISDatabase, tableNames["rsu_lcz"])
         def geoFiles = []
         def  folder = new File(directory+File.separator+inseeCode)
         folder.eachFileRecurse groovy.io.FileType.FILES,  { file ->
@@ -687,8 +687,8 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         assertTrue(process.execute(input: createConfigFile(bdTopoParameters, directory)))
         def tableNames =process.results.output.values();
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_db;AUTO_SERVER=TRUE")
-        assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.gridIndicatorsTableName[0]} where BUILDING_FRACTION>0").count>0
-        assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.populationTableName[0]} where pop is not null").count>0
+        assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.grid_indicators[0]} where BUILDING_FRACTION>0").count>0
+        assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.population[0]} where pop is not null").count>0
 
     }
 
