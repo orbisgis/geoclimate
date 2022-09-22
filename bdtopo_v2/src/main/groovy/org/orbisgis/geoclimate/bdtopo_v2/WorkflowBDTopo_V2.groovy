@@ -354,21 +354,22 @@ IProcess workflow() {
              * Run the workflow when the input data comes from a database
              */
             if (inputDataBase) {
-                def inputTables = inputDataBase.tables as Set
+                def inputTables = inputDataBase.tables
                 if (!inputTables) {
                     inputTables = inputWorkflowTableNames.collect { name -> [name: name] }
                 } else {
-                    inputTables = [:]
+                    def inputTables_tmp = [:]
                     inputTables.each { table ->
                         if (inputWorkflowTableNames.contains(table.key.toLowerCase())) {
-                            inputTables.put(table.key.toLowerCase(), table.value)
+                            inputTables_tmp.put(table.key.toLowerCase(), table.value)
                         }
                     }
-                    if (inputTables) {
+                    if (inputTables_tmp.size()==0) {
                         error "Please set a valid list of input tables as  : \n" +
                                 "${inputWorkflowTableNames.collect { name -> [name: name] }}"
                         return
                     }
+                    inputTables =inputTables_tmp
                 }
 
                 def h2gis_datasource = H2GIS.open(h2gis_properties)
@@ -379,7 +380,7 @@ IProcess workflow() {
                 def nbzones = 0;
                 for (location in locations) {
                     nbzones++
-                    inputSRIDsrid = loadDataFromPostGIS(inputDataBase.subMap(["user", "password", "url"]), location, processing_parameters.distance, inputTables, h2gis_datasource)
+                    inputSRID = loadDataFromPostGIS(inputDataBase.subMap(["user", "password", "url"]), location, processing_parameters.distance, inputTables,inputSRID, h2gis_datasource)
                     if (inputSRID) {
                         def formatedZone = checkAndFormatLocations(location)
                         if (formatedZone) {
@@ -737,8 +738,10 @@ def loadDataFromPostGIS(def input_database_properties, def code, def distance, d
     if (code in Collection) {
         //def tmp_insee = code.join("_")
         String inputTableName = """(SELECT
-                    ST_INTERSECTION(st_setsrid(the_geom, $commune_srid), ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, $commune_srid)) as the_geom, CODE_INSEE  from $commune_location where st_setsrid(the_geom, $commune_srid) 
-                    && ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, $commune_srid))""".toString()
+                    ST_INTERSECTION(st_setsrid(the_geom, $commune_srid), ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, $commune_srid)) as the_geom, CODE_INSEE  from $commune_location where 
+                    st_setsrid(the_geom, $commune_srid) 
+                    && ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, $commune_srid) and
+                    st_intersects(st_setsrid(the_geom, $commune_srid), ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, $commune_srid)))""".toString()
         debug "Loading in the H2GIS database $outputTableName"
         IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 10);
     } else if (code instanceof String) {
