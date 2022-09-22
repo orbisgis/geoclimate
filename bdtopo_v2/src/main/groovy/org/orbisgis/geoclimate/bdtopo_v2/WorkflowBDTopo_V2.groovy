@@ -1329,14 +1329,14 @@ def bdTopoProcessingSingleArea(def h2gis_datasource, def id_zone, def subCommune
                     results.put("population", importAscGrid.results.outputTableWorldPopName)
 
                     IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
-                    if (!process.execute([inputBuildingTableName  : results.buildingTableName,
+                    if (!process.execute([inputBuildingTableName  : results.building,
                                           inputpopulation: importAscGrid.results.outputTableWorldPopName,
                                           inputPopulationColumns  : ["pop"], datasource: h2gis_datasource])) {
                         info "Cannot compute any population data at building level"
                     }
                     //Update the building table with the population data
                     buildingTableName = process.results.buildingTableName
-                    results.put("buildingTableName", buildingTableName)
+                    results.put("building", buildingTableName)
 
                 } else {
                     info "Cannot import the worldpop asc file $extractWorldPopLayer.results.outputFilePath"
