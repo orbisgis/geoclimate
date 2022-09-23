@@ -1136,13 +1136,13 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def out
         } else {
             int subAreaCount = 1
             def tablesToMerge = ["zone"                : [],
-                                 "roadTableName"                : [], "railTableName": [], "hydrographicTableName": [],
-                                 "vegetationTableName"          : [], "imperviousTableName": [], "buildingTableName": [],
+                                 "road"                : [], "rail": [], "water": [],
+                                 "vegetation"          : [], "impervious": [], "building": [],
                                  "building_indicators": [], "block_indicators": [],
                                  "rsu_indicators"     : [], "rsu_lcz": [],
                                  "rsu_utrf_area"       : [], "rsu_utrf_floor_area": [],
-                                 "building_utrf"      : [], "population": [],
-                                 "buildingTableName"            : [], "roadTrafficTableName": []
+                                 "building_utrf"      : [], "population": [], "road_traffic": [],
+                                 "grid_indicators": []
             ]
             for (i in 0..<numGeom) {
                 info "Processing the sub area ${subAreaCount} on ${numGeom + 1}"
@@ -1391,7 +1391,7 @@ def bdTopoProcessingSingleArea(def h2gis_datasource, def id_zone, def subCommune
                     datasource    : h2gis_datasource,
                     inputTableName: roadTableName,
                     epsg          : srid])
-            results.put("roadTrafficTableName", format.results.outputTableName)
+            results.put("road_traffic", format.results.outputTableName)
         }
 
         info "${id_zone} has been processed"
