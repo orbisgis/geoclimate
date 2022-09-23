@@ -331,7 +331,7 @@ IProcess workflow() {
                         if (filterLinkedData(location, processing_parameters.distance, tablesLinked, sourceSrid, inputSRID, h2gis_datasource)) {
                             def formatedZone = checkAndFormatLocations(location)
                             if (formatedZone) {
-                                def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, formatedZone,
+                                def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters,
                                         createMainFolder(file_outputFolder, formatedZone), outputFileTables, outputDatasource,
                                         outputTables, outputSRID, inputSRID)
                                 if (bdtopo_results) {
@@ -384,7 +384,7 @@ IProcess workflow() {
                     if (inputSRID) {
                         def formatedZone = checkAndFormatLocations(location)
                         if (formatedZone) {
-                            def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, formatedZone, createMainFolder(file_outputFolder, formatedZone), outputFileTables, outputDatasource, outputTables, outputSRID, inputSRID)
+                            def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, createMainFolder(file_outputFolder, formatedZone), outputFileTables, outputDatasource, outputTables, outputSRID, inputSRID)
                             if (bdtopo_results) {
                                 outputTableNamesResult.putAll(bdtopo_results)
                             } else {
@@ -1099,7 +1099,6 @@ def extractProcessingParameters(def processing_parameters) {
  *
  * @param h2gis_datasource the local H2GIS database
  * @param processing_parameters the geoclimate chain parameters
- * @param id_zones a list of id zones to process
  * @param outputFolder folder to store the files, null otherwise
  * @param outputFiles the name of the tables that will be saved
  * @param output_datasource a connexion to a database to save the results
@@ -1109,7 +1108,7 @@ def extractProcessingParameters(def processing_parameters) {
  * @param deleteOutputData true to delete the output files if exist
  * @return
  */
-def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def zone, def outputFolder, def outputFiles,
+def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def outputFolder, def outputFiles,
                       def output_datasource, def outputTableNames, def outputSRID, def inputSRID, def deleteOutputData = true) {
     //Add the GIS layers to the list of results
     def outputTableNamesResult = [:]
@@ -1137,13 +1136,13 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def zon
         } else {
             int subAreaCount = 1
             def tablesToMerge = ["zone"                : [],
-                                 "roadTableName"                : [], "railTableName": [], "hydrographicTableName": [],
-                                 "vegetationTableName"          : [], "imperviousTableName": [], "buildingTableName": [],
+                                 "road"                : [], "rail": [], "water": [],
+                                 "vegetation"          : [], "impervious": [], "building": [],
                                  "building_indicators": [], "block_indicators": [],
                                  "rsu_indicators"     : [], "rsu_lcz": [],
                                  "rsu_utrf_area"       : [], "rsu_utrf_floor_area": [],
-                                 "building_utrf"      : [], "population": [],
-                                 "buildingTableName"            : [], "roadTrafficTableName": []
+                                 "building_utrf"      : [], "population": [], "road_traffic": [],
+                                 "grid_indicators": []
             ]
             for (i in 0..<numGeom) {
                 info "Processing the sub area ${subAreaCount} on ${numGeom + 1}"
@@ -1392,7 +1391,7 @@ def bdTopoProcessingSingleArea(def h2gis_datasource, def id_zone, def subCommune
                     datasource    : h2gis_datasource,
                     inputTableName: roadTableName,
                     epsg          : srid])
-            results.put("roadTrafficTableName", format.results.outputTableName)
+            results.put("road_traffic", format.results.outputTableName)
         }
 
         info "${id_zone} has been processed"

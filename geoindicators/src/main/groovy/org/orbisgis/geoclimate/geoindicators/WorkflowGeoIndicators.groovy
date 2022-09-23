@@ -1026,7 +1026,7 @@ IProcess computeAllGeoIndicators() {
         outputs building_indicators: String, block_indicators: String,
                 rsu_indicators: String, rsu_lcz: String, zone: String,
                 rsu_utrf_area: String, rsu_utrf_floor_area: String,
-                building_utrf: String, buildingTableName: String
+                building_utrf: String, building: String
         run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
               imperviousTable, buildingEstimateTableName, seaLandMaskTableName,
               surface_vegetation, surface_hydro, snappingTolerance, indicatorUse, svfSimplified, prefixName, mapOfWeights,
@@ -1155,11 +1155,11 @@ IProcess computeAllGeoIndicators() {
                                 block_indicators   : relationBlocks,
                                 rsu_indicators     : relationRSU,
                                 rsu_lcz            : null,
-                                zone                : zoneTable,
-                                rsu_utrf_area       : null,
-                                rsu_utrf_floor_area  : null,
+                                zone               : zoneTable,
+                                rsu_utrf_area      : null,
+                                rsu_utrf_floor_area: null,
                                 building_utrf      : null,
-                                buildingTableName            : buildingTableName]
+                                building           : buildingTableName]
                     }
 
                     //Drop tables
@@ -1449,7 +1449,7 @@ IProcess computeAllGeoIndicators() {
                         rsu_utrf_area       : utrfArea,
                         rsu_utrf_floor_area  : utrfFloorArea,
                         building_utrf      : utrfBuilding,
-                        buildingTableName            : buildingTableName]
+                        building            : buildingTableName]
 
             } else {
                 clearTablesCache()
@@ -1469,7 +1469,7 @@ IProcess computeAllGeoIndicators() {
                     return
                 } else {
                     def results = geoIndicators.getResults()
-                    results.put("buildingTableName", buildingTable)
+                    results.put("building", buildingTable)
                     return results
                 }
             }
