@@ -82,7 +82,7 @@ IProcess formatBuildingLayer() {
 
                     def heightPattern = Pattern.compile("((?:\\d+\\/|(?:\\d+|^|\\s)\\.)?\\d+)\\s*([^\\s\\d+\\-.,:;^\\/]+(?:\\^\\d+(?:\$|(?=[\\s:;\\/])))?(?:\\/[^\\s\\d+\\-.,:;^\\/]+(?:\\^\\d+(?:\$|(?=[\\s:;\\/])))?)*)?", Pattern.CASE_INSENSITIVE)
                     def id_build = 1;
-                    datasource.withBatch(2000) { stmt ->
+                    datasource.withBatch(100) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             String height = row.height
                             String roof_height = row.'roof:height'
@@ -144,9 +144,9 @@ IProcess formatBuildingLayer() {
                         def buildinType = "BUILDING_TYPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
 
                         datasource.execute """create table $buildinType as SELECT max(b.type) as type, max(b.main_use) as main_use, a.id_build FROM $outputTableName a, $urbanAreasTableName b 
-                        WHERE ST_POINTONSURFACE(a.the_geom) && b.the_geom and st_intersects(ST_POINTONSURFACE(a.the_geom), b.the_geom) AND  a.TYPE ='building' group by a.id_build""".toString()
+                        WHERE a.the_geom && b.the_geom and st_intersects(ST_POINTONSURFACE(a.the_geom), b.the_geom) AND  a.TYPE ='building' group by a.id_build""".toString()
 
-                        datasource.getTable(buildinType).id_build.createIndex()
+                        datasource.execute("CREATE INDEX ON $buildinType(id_build)".toString())
 
                         def newBuildingWithType = "NEW_BUILDING_TYPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
 
@@ -434,7 +434,7 @@ IProcess formatVegetationLayer() {
                         queryMapper += ", st_force2D(st_makevalid(a.the_geom)) as the_geom FROM $inputTableName  as a"
                     }
                     int rowcount = 1
-                    datasource.withBatch(1000) { stmt ->
+                    datasource.withBatch(100) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             def type = getTypeValue(row, columnNames, mappingType)
                             if (type) {

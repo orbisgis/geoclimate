@@ -521,7 +521,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
-        def roadTableName = process.getResults().output["Pont-de-Veyle"]["roadTrafficTableName"]
+        def roadTableName = process.getResults().output["Pont-de-Veyle"]["road_traffic"]
         assertNotNull(roadTableName)
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from $roadTableName where road_type is not null".toString()).count>0

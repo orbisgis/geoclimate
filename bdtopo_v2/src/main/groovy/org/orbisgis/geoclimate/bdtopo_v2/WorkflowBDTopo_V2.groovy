@@ -158,7 +158,7 @@ IProcess workflow() {
                         error "The configuration file must be a json file"
                         return
                     }
-                    parameters = readJSONParameters(configFile)
+                    parameters = Geoindicators.WorkflowUtilities.readJSON(configFile)
                 } else if (input instanceof Map) {
                     parameters = input
                 }
@@ -263,7 +263,6 @@ IProcess workflow() {
             //Get processing parameters
             def processing_parameters = extractProcessingParameters(parameters.parameters)
             if (!processing_parameters) {
-                warn "Please set \"parameters\" values to compute GeoClimate indicators."
                 return
             }
 
@@ -273,10 +272,11 @@ IProcess workflow() {
             def file_outputFolder
             def outputFileTables
             def outputSRID
+            def deleteOutputData
             if (outputParameters) {
                 def outputDataBase = outputParameters.database
                 def outputFolder = outputParameters.folder
-                def deleteOutputData = outputParameters.get("delete")
+                deleteOutputData = outputParameters.get("delete")
                 if (!deleteOutputData) {
                     deleteOutputData = true
                 } else if (!deleteOutputData in Boolean) {
@@ -289,7 +289,7 @@ IProcess workflow() {
                     return null
                 }
                 if (outputFolder) {
-                    def outputFiles = outputFolderProperties(outputFolder, outputWorkflowTableNames)
+                    def outputFiles = Geoindicators.WorkflowUtilities.buildOutputFolderParameters(outputFolder, outputWorkflowTableNames)
                     outputFileTables = outputFiles.tables
                     //Check if we can write in the output folder
                     file_outputFolder = new File(outputFiles.path)
@@ -304,11 +304,12 @@ IProcess workflow() {
                         return
                     }
 
-                } else if (outputDataBase) {
+                }
+                if (outputDataBase) {
                     //Check the conditions to store the results a database
-                    def outputDataBaseData = checkOutputTables(outputDataBase, outputDataBase.tables, outputWorkflowTableNames)
-                    outputDatasource = outputDataBaseData.outputDatasource
-                    outputTables = outputDataBaseData.outputTables
+                    def outputDataBaseData = Geoindicators.WorkflowUtilities.buildOutputDBParameters(outputDataBase, outputDataBase.tables, outputWorkflowTableNames)
+                    outputDatasource = outputDataBaseData.datasource
+                    outputTables = outputDataBaseData.tables
                 }
             }
 
@@ -426,32 +427,6 @@ def deleteH2GISDb(def delete, Connection connection, def dbFolder, def dbName) {
 }
 
 /**
- * Method to check the output tables set by the user and create the datasource connexion
- * Return null if the table names are invalid or if we cannot create the connection to the database
- */
-def checkOutputTables(def outputDataBase, def outputTableNames, def outputWorkflowTableNames) {
-    def outputTables = [:]
-    if (!outputTableNames) {
-        outputTables = outputWorkflowTableNames.collect { [it: it] }
-    } else {
-        outputTableNames.each { table ->
-            if (outputWorkflowTableNames.contains(table.key.toLowerCase())) {
-                outputTables.put(table.key.toLowerCase(), table.value)
-            }
-        }
-        if (!outputTables) {
-            error "Please set a valid list of output tables as  : \n" +
-                    "${outputWorkflowTableNames.collect { name -> [name: name] }}"
-        }
-    }
-    def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
-    if (!output_datasource) {
-        error "Cannot connect to the output database"
-    }
-    return [outputTables: outputTables, outputDatasource: output_datasource]
-
-}
-/**
  * Sanity check for the location value
  * @param id_zones
  * @return
@@ -490,55 +465,6 @@ def createMainFolder(def outputFolder, def location) {
     return folder.getAbsolutePath()
 }
 
-/**
- * Return the properties parameters to store results in a folder
- * @param outputFolder the output folder parameters from the json file
- */
-def outputFolderProperties(def outputFolder, def outputWorkflowTableNames) {
-    if (outputFolder in Map) {
-        def outputPath = outputFolder.path
-        def outputTables = outputFolder.tables
-        if (!outputPath) {
-            return
-        }
-        if (outputTables) {
-            return ["path": outputPath, "tables": outputWorkflowTableNames.intersect(outputTables)]
-        }
-        return ["path": outputPath, "tables": outputWorkflowTableNames]
-    } else {
-        return ["path": outputFolder, "tables": outputWorkflowTableNames]
-    }
-}
-
-/**
- * Create a datasource from the following parameters :
- * user, password, url
- *
- * @param database_properties from the json file
- * @return a connection or null if the parameters are invalid
- */
-def createDatasource(def database_properties) {
-    def db_output_url = database_properties.url
-    if (db_output_url) {
-        if (db_output_url.startsWith("jdbc:")) {
-            String url = db_output_url.substring("jdbc:".length());
-            if (url.startsWith("h2")) {
-                return H2GIS.open(database_properties)
-            } else if (url.startsWith("postgresql")) {
-                return POSTGIS.open(database_properties)
-            } else {
-                error "Unsupported database"
-                return
-            }
-        } else {
-            error "Invalid output database url"
-            return
-        }
-
-    } else {
-        error "The output database url cannot be null or empty"
-    }
-}
 
 /**
  *
@@ -935,14 +861,14 @@ def linkDataFromFolder(def inputFolder, def inputWorkflowTableNames, H2GIS h2gis
  * @return a filled map of parameters
  */
 def extractProcessingParameters(def processing_parameters) {
-    def defaultParameters = [distance       : 1000,
-                             distance_buffer: 500, prefixName: "",
+    def defaultParameters = [distance       : 1000f,
+                             distance_buffer: 500f, prefixName: "",
                              hLevMin        : 3, hLevMax: 15, hThresholdLev2: 10]
     def rsu_indicators_default = [indicatorUse      : [],
                                   svfSimplified     : true,
-                                  surface_vegetation: 10000,
-                                  surface_hydro     : 2500,
-                                  snappingTolerance : 0.01,
+                                  surface_vegetation: 10000f,
+                                  surface_hydro     : 2500f,
+                                  snappingTolerance : 0.01f,
                                   mapOfWeights      : ["sky_view_factor"             : 4,
                                                        "aspect_ratio"                : 3,
                                                        "building_surface_fraction"   : 8,
@@ -1112,6 +1038,12 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def out
                       def output_datasource, def outputTableNames, def outputSRID, def inputSRID, def deleteOutputData = true) {
     //Add the GIS layers to the list of results
     def outputTableNamesResult = [:]
+    def grid_indicators_params = processing_parameters.grid_indicators
+    def outputGrid ="geojson"
+    if (grid_indicators_params) {
+        outputGrid = grid_indicators_params.output
+    }
+
     //We process each zones because the input zone can overlap several communes
     h2gis_datasource.eachRow("SELECT ST_CollectionExtract(THE_GEOM, 3) as the_geom,code_insee  FROM COMMUNE") { row ->
         Geometry geom = row.the_geom
@@ -1129,7 +1061,7 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def out
                 """.toString())
                 def results = bdTopoProcessingSingleArea(h2gis_datasource, code_insee, subCommuneTableName, inputSRID, processing_parameters)
                 if (results) {
-                    saveResults(h2gis_datasource, code_insee, results, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData)
+                    saveResults(h2gis_datasource, code_insee, results, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData, outputGrid)
                     outputTableNamesResult.put(code_insee, results.findAll { it.value != null })
                 }
             }
@@ -1191,7 +1123,7 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def out
                 }
             }
             outputTableNamesResult.put(code_insee, results)
-            saveResults(h2gis_datasource, code_insee, results, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData)
+            saveResults(h2gis_datasource, code_insee, results, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData,outputGrid)
 
         }
     }
@@ -1213,7 +1145,7 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def out
  * @param deleteOutputData
  * @return
  */
-def saveResults(def h2gis_datasource, def id_zone, def results, def srid, def outputFolder, def outputFiles, def output_datasource, def outputTableNames, def outputSRID, def deleteOutputData) {
+def saveResults(def h2gis_datasource, def id_zone, def results, def srid, def outputFolder, def outputFiles, def output_datasource, def outputTableNames, def outputSRID, def deleteOutputData, def outputGrid ) {
     //Check if the user decides to reproject the output data
     def reproject = false
     if (outputSRID) {
@@ -1231,7 +1163,7 @@ def saveResults(def h2gis_datasource, def id_zone, def results, def srid, def ou
         } else {
             FileUtilities.deleteFiles(folder)
         }
-        saveOutputFiles(h2gis_datasource, results, outputFiles, folder, outputSRID, reproject, deleteOutputData)
+        saveOutputFiles(h2gis_datasource, results, outputFiles, folder, outputSRID, reproject, deleteOutputData, outputGrid)
     }
     if (output_datasource) {
         saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone, srid, outputSRID, reproject)
@@ -1409,72 +1341,20 @@ def bdTopoProcessingSingleArea(def h2gis_datasource, def id_zone, def subCommune
  * @param deleteOutputData true to delete the file if exists
  * @return
  */
-def saveOutputFiles(def h2gis_datasource, def results, def outputFiles, def outputFolder, def outputSRID, def reproject, def deleteOutputData) {
+def saveOutputFiles(def h2gis_datasource, def results, def outputFiles, def outputFolder, def outputSRID, def reproject, def deleteOutputData, def outputGrid) {
     outputFiles.each {
-        //Save indicators
-        if (it == "building_indicators") {
-            saveTableAsGeojson(results.building_indicators, "${outputFolder.getAbsolutePath() + File.separator + "building_indicators"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "block_indicators") {
-            saveTableAsGeojson(results.block_indicators, "${outputFolder.getAbsolutePath() + File.separator + "block_indicators"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "rsu_indicators") {
-            saveTableAsGeojson(results.rsu_indicators, "${outputFolder.getAbsolutePath() + File.separator + "rsu_indicators"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "rsu_lcz") {
-            saveTableAsGeojson(results.rsu_lcz, "${outputFolder.getAbsolutePath() + File.separator + "rsu_lcz"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "zones") {
-            saveTableAsGeojson(results.zone, "${outputFolder.getAbsolutePath() + File.separator + "zones"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        }
-        //Save input GIS tables
-        else if (it == "building") {
-            saveTableAsGeojson(results.buildingTableName, "${outputFolder.getAbsolutePath() + File.separator + "building"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "road") {
-            saveTableAsGeojson(results.roadTableName, "${outputFolder.getAbsolutePath() + File.separator + "road"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "rail") {
-            saveTableAsGeojson(results.railTableName, "${outputFolder.getAbsolutePath() + File.separator + "rail"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        }
-        if (it == "water") {
-            saveTableAsGeojson(results.hydrographicTableName, "${outputFolder.getAbsolutePath() + File.separator + "water"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "vegetation") {
-            saveTableAsGeojson(results.vegetationTableName, "${outputFolder.getAbsolutePath() + File.separator + "vegetation"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "impervious") {
-            saveTableAsGeojson(results.imperviousTableName, "${outputFolder.getAbsolutePath() + File.separator + "impervious"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "urban_areas") {
-            saveTableAsGeojson(results.urbanAreasTableName, "${outputFolder.getAbsolutePath() + File.separator + "urban_areas"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "rsu_utrf_area") {
-            saveTableAsGeojson(results.rsu_utrf_area, "${outputFolder.getAbsolutePath() + File.separator + "rsu_utrf_area"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "rsu_utrf_floor_area") {
-            saveTableAsGeojson(results.rsu_utrf_floor_area, "${outputFolder.getAbsolutePath() + File.separator + "rsu_utrf_floor_area"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "building_utrf") {
-            saveTableAsGeojson(results.building_utrf, "${outputFolder.getAbsolutePath() + File.separator + "building_utrf"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "grid_indicators") {
-            saveTableAsGeojson(results.grid_indicators, "${outputFolder.getAbsolutePath() + File.separator + "grid_indicators"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "road_traffic") {
-            saveTableAsGeojson(results.roadTrafficTableName, "${outputFolder.getAbsolutePath() + File.separator + "road_traffic"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "population") {
-            saveTableAsGeojson(results.population, "${outputFolder.getAbsolutePath() + File.separator + "population"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
+        if (it == "grid_indicators") {
+            if (outputGrid == "geojson") {
+                Geoindicators.WorkflowUtilities.saveToGeojson(results."$it", "${outputFolder.getAbsolutePath() + File.separator + it}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
+            } else if (outputGrid == "asc") {
+                Geoindicators.WorkflowUtilities.saveToAscGrid(results."$it", outputFolder, it, h2gis_datasource, outputSRID, reproject, deleteOutputData)
+            }
+        } else {
+            Geoindicators.WorkflowUtilities.saveToGeojson(results."$it", "${outputFolder.getAbsolutePath() + File.separator + it}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
         }
     }
 }
 
-/**
- * Method to save a table into a geojson file
- * @param outputTable name of the table to export
- * @param filePath path to save the table
- * @param h2gis_datasource connection to the database
- * @param outputSRID srid code to reproject the outputTable.
- * @param deleteOutputData true to delete the file if exists
- */
-def saveTableAsGeojson(def outputTable, def filePath, def h2gis_datasource, def outputSRID, def reproject, def deleteOutputData) {
-    if (outputTable && h2gis_datasource.hasTable(outputTable)) {
-        if (!reproject) {
-            h2gis_datasource.save(outputTable, filePath, deleteOutputData)
-        } else {
-            if (h2gis_datasource.getTable(outputTable).getRowCount() > 0) {
-                h2gis_datasource.getSpatialTable(outputTable).reproject(outputSRID).save(filePath, deleteOutputData)
-            }
-        }
-        info "${outputTable} has been saved in ${filePath}."
-    }
-}
 
 /**
  * Save the output tables in a database
@@ -2030,14 +1910,4 @@ IProcess loadAndFormatData() {
 }
 
 
-/**
- * Parse a json file to a Map
- * @param jsonFile
- * @return
- */
-static Map readJSONParameters(def jsonFile) {
-    def jsonSlurper = new JsonSlurper()
-    if (jsonFile) {
-        return jsonSlurper.parse(jsonFile)
-    }
-}
+
