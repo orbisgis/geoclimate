@@ -168,7 +168,7 @@ IProcess createGISLayers() {
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
                     outputBuildingTableName = postfix("OSM_BUILDING")
                     datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputBuildingTableName".toString())
-                    debug "Building layer created"
+                    info "Building layer created"
                 }
 
                 //Create road layer
@@ -181,7 +181,7 @@ IProcess createGISLayers() {
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
                     outputRoadTableName = postfix("OSM_ROAD")
                     datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputRoadTableName".toString())
-                    debug "Road layer created"
+                    info "Road layer created"
                 }
 
                 //Create rail layer
@@ -194,7 +194,7 @@ IProcess createGISLayers() {
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
                     outputRailTableName = postfix("OSM_RAIL")
                     datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputRailTableName".toString())
-                    debug "Rail layer created"
+                    info "Rail layer created"
                 }
                 //Create vegetation layer
                 paramsDefaultFile = this.class.getResourceAsStream("vegetParams.json")
@@ -206,7 +206,7 @@ IProcess createGISLayers() {
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
                     outputVegetationTableName = postfix("OSM_VEGETATION")
                     datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputVegetationTableName".toString())
-                    debug "Vegetation layer created"
+                    info "Vegetation layer created"
                 }
 
                 //Create water layer
@@ -219,7 +219,7 @@ IProcess createGISLayers() {
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags,columnsToKeep: columnsToKeep)) {
                     outputHydroTableName = postfix("OSM_WATER")
                     datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputHydroTableName".toString())
-                    debug "Water layer created"
+                    info "Water layer created"
                 }
 
                 //Create impervious layer
@@ -232,7 +232,7 @@ IProcess createGISLayers() {
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
                     outputImperviousTableName = postfix("OSM_IMPERVIOUS")
                     datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputImperviousTableName".toString())
-                    debug "Impervious layer created"
+                    info "Impervious layer created"
                 }
 
                 //Create urban areas layer
@@ -245,7 +245,7 @@ IProcess createGISLayers() {
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
                     outputUrbanAreasTableName = postfix("OSM_URBAN_AREAS")
                     datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputUrbanAreasTableName".toString())
-                    debug "Urban areas layer created"
+                    info "Urban areas layer created"
                 }
 
                 //Create coastline layer
@@ -257,7 +257,7 @@ IProcess createGISLayers() {
                 if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags)) {
                     outputCoastlineTableName = postfix("OSM_COASTLINE")
                     datasource.execute("ALTER TABLE ${transform.results.outputTableName} RENAME TO $outputCoastlineTableName".toString())
-                    debug "Coastline layer created"
+                    info "Coastline layer created"
                 }
 
                 //Drop the OSM tables

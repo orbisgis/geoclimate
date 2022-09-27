@@ -125,10 +125,11 @@ class TransformUtils {
      * @param epsgCode EPSG code to reproject the geometries
      * @param tags list of keys and values to be filtered
      * @param columnsToKeep a list of columns to keep. The name of a column corresponds to a key name
+     * @param valid_geom true to valid the geometries
      *
      * @return The name for the table that contains all polygons/lines
      */
-    static def toPolygonOrLine(Types type, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep) {
+    static def toPolygonOrLine(Types type, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, valid_geom=true) {
         //Check if parameters a good
         if (!datasource) {
             error "Please set a valid database connection"
@@ -162,7 +163,7 @@ class TransformUtils {
 
         //Start the transformation
         def outputTableName = "OSM_${type.name()}_" + uuid()
-        info "Start ${type.name().toLowerCase()} transformation"
+        debug "Start ${type.name().toLowerCase()} transformation"
         debug "Indexing osm tables..."
         buildIndexes(datasource, osmTablesPrefix)
 
@@ -204,13 +205,13 @@ class TransformUtils {
                                 FROM $outputRelation;
                             DROP TABLE IF EXISTS $outputWay, $outputRelation;
             """.toString()
-            info "The way and relation ${type.name()} have been built."
+            debug "The way and relation ${type.name()} have been built."
         } else if (outputWay) {
             datasource.execute "ALTER TABLE $outputWay RENAME TO $outputTableName".toString()
-            info "The way ${type.name()} have been built."
+            debug "The way ${type.name()} have been built."
         } else if (outputRelation) {
             datasource.execute "ALTER TABLE $outputRelation RENAME TO $outputTableName".toString()
-            info "The relation ${type.name()} have been built."
+            debug "The relation ${type.name()} have been built."
         } else {
             warn "Cannot extract any ${type.name()}."
             return
@@ -314,7 +315,7 @@ class TransformUtils {
             """.toString()
             return false
         }
-        info "Build nodes as points"
+        debug "Build nodes as points"
         def tagList = createTagList datasource, columnsSelector
         if (tagsFilter.isEmpty()) {
             if (columnsToKeep) {
