@@ -1403,7 +1403,7 @@ def saveTablesInDatabase(def output_datasource, def h2gis_datasource, def output
             , "", inputSRID, outputSRID, reproject)
 
     //Export road_traffic
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.road_traffic, id_zone, h2gis_datasource, h2gis_tables.roadTrafficTableName
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.road_traffic, id_zone, h2gis_datasource, h2gis_tables.road_traffic
             , "", inputSRID, outputSRID, reproject)
 
     //Export zone
@@ -1411,23 +1411,23 @@ def saveTablesInDatabase(def output_datasource, def h2gis_datasource, def output
             , "", inputSRID, outputSRID, reproject)
 
     //Export building
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.building, id_zone, h2gis_datasource, h2gis_tables.buildingTableName
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.building, id_zone, h2gis_datasource, h2gis_tables.building
             , "", inputSRID, outputSRID, reproject)
 
     //Export road
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.road, id_zone, h2gis_datasource, h2gis_tables.roadTableName
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.road, id_zone, h2gis_datasource, h2gis_tables.road
             , "", inputSRID, outputSRID, reproject)
     //Export rail
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.rail, id_zone, h2gis_datasource, h2gis_tables.railTableName
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.rail, id_zone, h2gis_datasource, h2gis_tables.rail
             , "", inputSRID, outputSRID, reproject)
     //Export vegetation
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.vegetation, id_zone, h2gis_datasource, h2gis_tables.vegetationTableName
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.vegetation, id_zone, h2gis_datasource, h2gis_tables.vegetation
             , "", inputSRID, outputSRID, reproject)
     //Export water
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.water, id_zone, h2gis_datasource, h2gis_tables.hydrographicTableName
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.water, id_zone, h2gis_datasource, h2gis_tables.water
             , "", inputSRID, outputSRID, reproject)
     //Export impervious
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.impervious, id_zone, h2gis_datasource, h2gis_tables.imperviousTableName
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.impervious, id_zone, h2gis_datasource, h2gis_tables.impervious
             , "", inputSRID, outputSRID, reproject)
 
     //Export population table

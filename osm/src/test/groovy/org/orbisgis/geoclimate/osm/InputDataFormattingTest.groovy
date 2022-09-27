@@ -321,7 +321,6 @@ class InputDataFormattingTest {
                 estimateHeight: true])
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated.shp", true)
         assertEquals 1038, h2GIS.getTable(format.results.outputTableName).rowCount
-        assertEquals 1038, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL is null").count == 0

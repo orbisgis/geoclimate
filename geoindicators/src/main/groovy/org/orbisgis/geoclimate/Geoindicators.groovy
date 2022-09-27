@@ -30,8 +30,7 @@ abstract class Geoindicators  extends GroovyProcessFactory  {
     public static PopulationIndicators= new PopulationIndicators()
     public static GridIndicators= new GridIndicators()
 
-    //Workflow utilities
-    public static WorkflowUtilities = new WorkflowUtilities()
+    public static WorkflowUtilities= new WorkflowUtilities()
 
     //Cache the XStream models
     public static Map cacheModels =[:]

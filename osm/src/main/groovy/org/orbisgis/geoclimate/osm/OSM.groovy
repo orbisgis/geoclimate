@@ -2,7 +2,7 @@ package org.orbisgis.geoclimate.osm
 
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
-import org.orbisgis.geoclimate.geoindicators.WorkflowUtilities
+import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.geoclimate.osmtools.utils.Utilities
 import org.orbisgis.process.GroovyProcessFactory
 import org.slf4j.Logger
@@ -19,8 +19,6 @@ abstract class OSM extends GroovyProcessFactory {
     public static WorkflowOSM = new WorkflowOSM()
     public static InputDataLoading = new InputDataLoading()
     public static InputDataFormatting = new InputDataFormatting()
-
-    public static WorkflowUtilities = new WorkflowUtilities()
 
     static def uuid = { UUID.randomUUID().toString().replaceAll("-", "_") }
 
