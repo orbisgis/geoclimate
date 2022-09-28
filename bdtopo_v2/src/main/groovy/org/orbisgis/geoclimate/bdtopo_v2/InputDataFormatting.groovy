@@ -464,7 +464,7 @@ IProcess formatRailsLayer() {
                         inputSpatialTable.the_geom.createSpatialIndex()
                         queryMapper += ", CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
                                 "THEN st_force2D(st_makevalid(st_intersection(a.the_geom, b.the_geom))) " +
-                                "ELSE st_makevalid(a.the_geom) " +
+                                "ELSE a.the_geom " +
                                 "END AS the_geom " +
                                 "FROM " +
                                 "$inputTableName AS a, $inputZoneEnvelopeTableName AS b " +
