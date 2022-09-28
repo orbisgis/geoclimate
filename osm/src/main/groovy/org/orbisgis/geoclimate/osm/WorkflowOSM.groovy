@@ -1,6 +1,5 @@
 package org.orbisgis.geoclimate.osm
 
-import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.h2.tools.DeleteDbFiles
 import org.h2gis.functions.io.utility.IOMethods
@@ -16,10 +15,8 @@ import org.orbisgis.geoclimate.worldpoptools.WorldPopTools
 import org.orbisgis.data.api.dataset.ITable
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.data.H2GIS
-import org.orbisgis.data.POSTGIS
 import org.orbisgis.process.api.IProcess
 import org.orbisgis.geoclimate.osmtools.OSMTools
-import org.h2gis.functions.io.utility.PRJUtil;
 
 import java.sql.SQLException
 
@@ -130,355 +127,242 @@ IProcess workflow() {
         title "Create all Geoindicators from OSM data"
         id "workflow"
         inputs input: Object
-        outputs output:Map
+        outputs output: Map
         run { input ->
             //OSM workflow parameters
-            Map parameters =null
-            if(input) {
-                if (input instanceof String){
+            Map parameters = null
+            if (input) {
+                if (input instanceof String) {
                     //Check if it's a path to a file
                     def configFile = new File(input)
                     if (!configFile.isFile()) {
                         error "The configuration file doesn't exist"
                         return
                     }
-                    if(!FileUtilities.isExtensionWellFormated(configFile, "json")){
+                    if (!FileUtilities.isExtensionWellFormated(configFile, "json")) {
                         error "The configuration file must be a json file"
                         return
                     }
-                    parameters = readJSONParameters(configFile)
-                }else if(input instanceof Map){
-                    parameters =input
+                    parameters = Geoindicators.WorkflowUtilities.readJSON(configFile)
+                } else if (input instanceof Map) {
+                    parameters = input
                 }
-            }
-            else {
+            } else {
                 error "The input parameters cannot be null or empty.\n Please set a path to a configuration file or " +
                         "a map with all required parameters"
                 return
             }
-
-            if (parameters) {
-                debug "Reading file parameters"
-                debug parameters.get("description")
-                def inputParameter = parameters.get("input")
-                def outputParameter = parameters.get("output")
-                //Default H2GIS database properties
-                def databaseFolder = System.getProperty("java.io.tmpdir")
-                def databaseName = "osm"+UUID.randomUUID().toString().replaceAll("-", "_")
-                def databasePath = databaseFolder + File.separator + databaseName
-                def h2gis_properties = ["databaseName": databasePath, "user": "sa", "password": ""]
-                def delete_h2gis = true
-                def geoclimatedb = parameters.get("geoclimatedb")
-                if (geoclimatedb) {
-                    def h2gis_folder = geoclimatedb.get("folder")
-                    if(h2gis_folder){
-                        databaseFolder=h2gis_folder
-                    }
-                    databasePath =  databaseFolder + File.separator + databaseName
-                    def h2gis_name= geoclimatedb.get("name")
-                    if(h2gis_name){
-                        def dbName = h2gis_name.split(";")
-                        databaseName=dbName[0]
-                        databasePath =  databaseFolder + File.separator + h2gis_name
-                    }
-                    def delete_h2gis_db = geoclimatedb.get("delete")
-                    if (delete_h2gis_db == null) {
-                        delete_h2gis = true
-                    } else if (delete_h2gis_db instanceof String) {
-                        delete_h2gis = true
-                        if (delete_h2gis_db.equalsIgnoreCase("false")) {
-                            delete_h2gis = false
-                        }
-                    } else if (delete_h2gis_db instanceof Boolean) {
-                        delete_h2gis = delete_h2gis_db
-                    }
-                    if(databasePath){
-                        h2gis_properties = ["databaseName": databasePath, "user": "sa", "password": ""]
-                    }
-                }
-                if (inputParameter) {
-                    def osmFilters = inputParameter.get("locations")
-                    def downloadAllOSMData = inputParameter.get("all")
-                    if(!downloadAllOSMData){
-                        downloadAllOSMData = true
-                    }else if(!downloadAllOSMData in Boolean){
-                        error "The all parameter must be a boolean value"
-                        return null
-                    }
-                    def  osm_size_area = inputParameter.get("area")
-
-                    if(!osm_size_area){
-                        //Default size in km²
-                        osm_size_area = 1000
-                    }
-                    else if(osm_size_area<0){
-                        error "The area of the bounding box to be extracted from OSM must be greater than 0 km²"
-                        return null
-                    }
-
-                    def  overpass_timeout = inputParameter.get("timeout")
-                    if(!overpass_timeout){
-                        overpass_timeout = 900
-                    }
-                    else if(overpass_timeout<=180){
-                        error "The timeout value must be greater than the default value : 180 s"
-                        return null
-                    }
-
-                    def  overpass_maxsize = inputParameter.get("maxsize")
-
-                    if(!overpass_maxsize){
-                        overpass_maxsize = 1073741824
-                    }
-                    else if(overpass_maxsize<=536870912){
-                        error "The maxsize value must be greater than the default value :  536870912 (512 MB)"
-                        return null
-                    }
-
-                    //Change the endpoint to get the overpass data
-                    def  overpass_enpoint = inputParameter.get("endpoint")
-
-                    if(!overpass_enpoint){
-                        overpass_enpoint = "https://lz4.overpass-api.de/api"
-                    }
-                    System.setProperty("OVERPASS_ENPOINT", overpass_enpoint);
-
-                    def deleteOSMFile = inputParameter.get("delete")
-                    if(!deleteOSMFile){
-                        deleteOSMFile=false
-                    }
-                    else if(!Boolean.valueOf(deleteOSMFile)){
-                        error "The delete option must be false or true"
-                        return null
-                    }
-
-                    if (!osmFilters) {
-                        error "Please set at least one OSM filter (place name or bounding box). e.g 'location' : ['A place name']"
-                        return null
-                    }
-                    if (outputParameter) {
-                        def geoclimateTableNames = ["building_indicators",
-                                                    "block_indicators",
-                                                    "rsu_indicators",
-                                                    "rsu_lcz",
-                                                    "zones",
-                                                    "building",
-                                                    "road",
-                                                    "rail",
-                                                    "water",
-                                                    "vegetation",
-                                                    "impervious",
-                                                    "urban_areas",
-                                                    "rsu_utrf_area",
-                                                    "rsu_utrf_floor_area",
-                                                    "building_utrf",
-                                                    "grid_indicators",
-                                                    "sea_land_mask",
-                                                    "building_height_missing",
-                                                    "road_traffic",
-                                                    "population"]
-                        //Get processing parameters
-                        def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
-                        if(!processing_parameters){
-                            return
-                        }
-                        def outputSRID = outputParameter.get("srid")
-                        if(outputSRID && outputSRID<=0){
-                            error "The output srid must be greater or equal than 0"
-                            return null
-                        }
-                        def outputDataBase = outputParameter.get("database")
-                        def outputFolder = outputParameter.get("folder")
-                        def deleteOutputData = outputParameter.get("delete")
-                        if(!deleteOutputData){
-                            deleteOutputData = true
-                        }else if(!deleteOutputData in Boolean){
-                            error "The delete parameter must be a boolean value"
-                            return null
-                        }
-                        if (outputDataBase && outputFolder) {
-                            def outputFolderProperties = outputFolderProperties(outputFolder)
-                            //Check if we can write in the output folder
-                            def file_outputFolder = new File(outputFolderProperties.path)
-                            if (!file_outputFolder.isDirectory()) {
-                                error "The directory $file_outputFolder doesn't exist."
-                                return null
-                            }
-                            if (!file_outputFolder.canWrite()) {
-                                file_outputFolder = null
-                            }
-                            //Check not the conditions for the output database
-                            def outputTableNames = outputDataBase.get("tables")
-                            def allowedOutputTableNames = geoclimateTableNames.intersect(outputTableNames.keySet())
-                            def notSameTableNames = allowedOutputTableNames.groupBy { it.value }.size() != allowedOutputTableNames.size()
-                            if (!allowedOutputTableNames && notSameTableNames) {
-                                outputDataBase = null
-                                outputTableNames = null
-                            }
-                            def finalOutputTables = outputTableNames.subMap(allowedTableNames)
-                            def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
-                            if (!output_datasource) {
-                                return null
-                            }
-
-                            def h2gis_datasource = H2GIS.open(h2gis_properties)
-                            if(!h2gis_datasource){
-                                error "Cannot load the local H2GIS database to run Geoclimate"
-                                return
-                            }
-                            if (osmFilters && osmFilters in Collection) {
-                                def logTableZones = postfix("log_zones")
-                                def osmprocessing = osm_processing()
-                                if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
-                                        processing_parameters: processing_parameters,
-                                        id_zones: osmFilters.findAll{it}, outputFolder: file_outputFolder, ouputTableFiles: outputFolderProperties.tables,
-                                        output_datasource: output_datasource, outputTableNames: finalOutputTables, outputSRID :outputSRID, downloadAllOSMData:downloadAllOSMData, deleteOutputData: deleteOutputData,
-                                        deleteOSMFile:deleteOSMFile, logTableZones:logTableZones, bbox_size : osm_size_area,
-                                        overpass_timeout :overpass_timeout, overpass_maxsize:overpass_maxsize, overpass_enpoint:overpass_enpoint)) {
-                                    h2gis_datasource.getSpatialTable(logTableZones).save("${databaseFolder+File.separator}logzones.geojson")
-                                    return null
-                                }
-                                if (delete_h2gis) {
-                                    def localCon = h2gis_datasource.getConnection()
-                                    if(localCon){
-                                        localCon.close()
-                                        DeleteDbFiles.execute(databaseFolder, databaseName, true)
-                                        debug "The local H2GIS database : ${databasePath} has been deleted"
-                                    }
-                                    else{
-                                        error "Cannot delete the local H2GIS database : ${databasePath} "
-                                    }
-                                }
-                                return [output: osmprocessing.getResults().outputTableNames]
-                            } else {
-                                error "Cannot find any OSM filters"
-                                return null
-                            }
-
-                        } else if (outputFolder) {
-                            //Check if we can write in the output folder
-                            def outputFolderProperties = outputFolderProperties(outputFolder)
-                            def file_outputFolder = new File(outputFolderProperties.path)
-                            if (!file_outputFolder.isDirectory()) {
-                                error "The directory $file_outputFolder doesn't exist."
-                                return null
-                            }
-                            if (file_outputFolder.canWrite()) {
-                                def h2gis_datasource = H2GIS.open(h2gis_properties)
-                                if(!h2gis_datasource){
-                                    error "Cannot load the local H2GIS database to run Geoclimate"
-                                    return
-                                }
-                                if (osmFilters && osmFilters in Collection) {
-                                    def logTableZones = postfix("log_zones")
-                                    def osmprocessing = osm_processing()
-                                    if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
-                                            processing_parameters: processing_parameters,
-                                            id_zones: osmFilters.findAll{it}, outputFolder: file_outputFolder, ouputTableFiles: outputFolderProperties.tables,
-                                            output_datasource: null, outputTableNames: null, outputSRID :outputSRID, downloadAllOSMData:downloadAllOSMData, deleteOutputData: deleteOutputData,
-                                            deleteOSMFile:deleteOSMFile, logTableZones: logTableZones, bbox_size : osm_size_area,
-                                            overpass_timeout :overpass_timeout, overpass_maxsize:overpass_maxsize)) {
-                                        h2gis_datasource.getSpatialTable(logTableZones).save("${databaseFolder+File.separator}logzones.geojson")
-                                        return null
-                                    }
-                                    //Delete database
-                                    if (delete_h2gis) {
-                                        def localCon = h2gis_datasource.getConnection()
-                                        if(localCon){
-                                            localCon.close()
-                                            DeleteDbFiles.execute(databaseFolder, databaseName, true)
-                                            debug "The local H2GIS database : ${databasePath} has been deleted"
-                                        }
-                                        else{
-                                            error "Cannot delete the local H2GIS database : ${databasePath} "
-                                        }
-                                     }
-                                    return [output: osmprocessing.getResults().outputTableNames]
-
-                                } else {
-                                    error "Cannot find any the OSM area from :  $inputFolder"
-                                    return null
-                                }
-                            } else {
-                                error "You don't have permission to write in the folder $outputFolder \n Please check the folder."
-                                return null
-                            }
-
-                        } else if (outputDataBase) {
-                            def outputTableNames = outputDataBase.get("tables")
-                            if(!outputTableNames){
-                                error "You must set at least one table name to export in the database.\n" +
-                                        "Available tables key names are : ${geoclimateTableNames.join(",")}"
-                                return
-                            }
-                            def allowedOutputTableNames = geoclimateTableNames.intersect(outputTableNames.keySet())
-                            def notSameTableNames = allowedOutputTableNames.groupBy { it}.size() != allowedOutputTableNames.size()
-                            if (allowedOutputTableNames && !notSameTableNames) {
-                                def finalOutputTables = outputTableNames.subMap(allowedOutputTableNames)
-                                def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
-                                if (!output_datasource) {
-                                    return null
-                                }
-                                def h2gis_datasource = H2GIS.open(h2gis_properties)
-                                if(!h2gis_datasource){
-                                    error "Cannot load the local H2GIS database to run Geoclimate"
-                                    return
-                                }
-                                if (osmFilters && osmFilters in Collection) {
-                                    def logTableZones = postfix("log_zones")
-                                    def osmprocessing = osm_processing()
-                                    if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
-                                            processing_parameters: processing_parameters,
-                                            id_zones: osmFilters.findAll{it}, outputFolder: null, ouputTableFiles: null,
-                                            output_datasource: output_datasource, outputTableNames: finalOutputTables,outputSRID :outputSRID,downloadAllOSMData:downloadAllOSMData,
-                                            deleteOutputData: deleteOutputData,deleteOSMFile:deleteOSMFile,
-                                            logTableZones: logTableZones, bbox_size : osm_size_area,
-                                            overpass_timeout :overpass_timeout, overpass_maxsize:overpass_maxsize)) {
-                                        h2gis_datasource.getSpatialTable(logTableZones).save("${databaseFolder+File.separator}logzones.geojson")
-                                        return null
-                                    }
-                                    if (delete_h2gis) {
-                                        def localCon = h2gis_datasource.getConnection()
-                                        if(localCon){
-                                            localCon.close()
-                                            DeleteDbFiles.execute(databaseFolder, databaseName, true)
-                                            debug "The local H2GIS database : ${databasePath} has been deleted"
-                                        }
-                                        else{
-                                            error "Cannot delete the local H2GIS database : ${databasePath} "
-                                        }
-                                    }
-                                    return [output: osmprocessing.getResults().outputTableNames]
-
-                                } else {
-                                    error "Cannot find any OSM area from : $inputFolder"
-                                    return null
-                                }
-
-                            } else {
-                                error "All output table names must be specified in the configuration file."
-                                return null
-                            }
-                        } else {
-                            error "Please set at least one output provider"
-                            return null
-                        }
-
-                    } else {
-                        error "Please set at least one output provider"
-                        return null
-                    }
-
-                } else {
-                    error "Cannot find any input parameter to extract data from Overpass API."
-
-                }
-            } else {
-                error "Empty parameters"
+            if (!parameters) {
+                error "Wrong input parameters"
+                return
             }
 
-            return null;
+            debug "Reading file parameters"
+            debug parameters.get("description")
+            def inputParameters = parameters.get("input")
+            def outputParameter = parameters.get("output")
+            //Default H2GIS database properties
+            def databaseFolder = System.getProperty("java.io.tmpdir")
+            def databaseName = "osm" + UUID.randomUUID().toString().replaceAll("-", "_")
+            def databasePath = databaseFolder + File.separator + databaseName
+            def h2gis_properties = ["databaseName": databasePath, "user": "sa", "password": ""]
+            def delete_h2gis = true
+            def geoclimatedb = parameters.get("geoclimatedb")
+            if (geoclimatedb) {
+                def h2gis_folder = geoclimatedb.get("folder")
+                if (h2gis_folder) {
+                    databaseFolder = h2gis_folder
+                }
+                databasePath = databaseFolder + File.separator + databaseName
+                def h2gis_name = geoclimatedb.get("name")
+                if (h2gis_name) {
+                    def dbName = h2gis_name.split(";")
+                    databaseName = dbName[0]
+                    databasePath = databaseFolder + File.separator + h2gis_name
+                }
+                def delete_h2gis_db = geoclimatedb.get("delete")
+                if (delete_h2gis_db == null) {
+                    delete_h2gis = true
+                } else if (delete_h2gis_db instanceof String) {
+                    delete_h2gis = true
+                    if (delete_h2gis_db.equalsIgnoreCase("false")) {
+                        delete_h2gis = false
+                    }
+                } else if (delete_h2gis_db instanceof Boolean) {
+                    delete_h2gis = delete_h2gis_db
+                }
+                if (databasePath) {
+                    h2gis_properties = ["databaseName": databasePath, "user": "sa", "password": ""]
+                }
+            }
+            if (!inputParameters) {
+                error "Cannot find any input parameters."
+                return
+            }
 
+            def locations = inputParameters.locations as Set
+            if (!locations) {
+                error "Please set at least one OSM location (place name or bounding box)."
+                return
+            }
+            def downloadAllOSMData = inputParameters.get("all")
+            if (!downloadAllOSMData) {
+                downloadAllOSMData = true
+            } else if (!downloadAllOSMData in Boolean) {
+                error "The all parameter must be a boolean value"
+                return null
+            }
+            def osm_size_area = inputParameters.get("area")
+
+            if (!osm_size_area) {
+                //Default size in km²
+                osm_size_area = 1000
+            } else if (osm_size_area < 0) {
+                error "The area of the bounding box to be extracted from OSM must be greater than 0 km²"
+                return null
+            }
+
+            def overpass_timeout = inputParameters.get("timeout")
+            if (!overpass_timeout) {
+                overpass_timeout = 900
+            } else if (overpass_timeout <= 180) {
+                error "The timeout value must be greater than the default value : 180 s"
+                return null
+            }
+
+            def overpass_maxsize = inputParameters.get("maxsize")
+
+            if (!overpass_maxsize) {
+                overpass_maxsize = 1073741824
+            } else if (overpass_maxsize <= 536870912) {
+                error "The maxsize value must be greater than the default value :  536870912 (512 MB)"
+                return null
+            }
+
+            //Change the endpoint to get the overpass data
+            def overpass_enpoint = inputParameters.get("endpoint")
+
+            if (!overpass_enpoint) {
+                overpass_enpoint = "https://lz4.overpass-api.de/api"
+            }
+            System.setProperty("OVERPASS_ENPOINT", overpass_enpoint)
+
+            def deleteOSMFile = inputParameters.get("delete")
+            if (!deleteOSMFile) {
+                deleteOSMFile = false
+            } else if (!Boolean.valueOf(deleteOSMFile)) {
+                error "The delete option must be false or true"
+                return null
+            }
+
+            def outputWorkflowTableNames = ["building_indicators",
+                                            "block_indicators",
+                                            "rsu_indicators",
+                                            "rsu_lcz",
+                                            "zone",
+                                            "building",
+                                            "road",
+                                            "rail",
+                                            "water",
+                                            "vegetation",
+                                            "impervious",
+                                            "urban_areas",
+                                            "rsu_utrf_area",
+                                            "rsu_utrf_floor_area",
+                                            "building_utrf",
+                                            "grid_indicators",
+                                            "sea_land_mask",
+                                            "building_height_missing",
+                                            "road_traffic",
+                                            "population"]
+
+            //Get processing parameters
+            def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
+            if (!processing_parameters) {
+                return
+            }
+
+            def outputDatasource
+            def outputTables
+            def file_outputFolder
+            def outputFileTables
+            def outputSRID
+            def deleteOutputData
+
+            if (outputParameter) {
+                def outputDataBase = outputParameter.get("database")
+                def outputFolder = outputParameter.get("folder")
+                deleteOutputData = outputParameter.get("delete")
+                if (!deleteOutputData) {
+                    deleteOutputData = true
+                } else if (!deleteOutputData in Boolean) {
+                    error "The delete parameter must be a boolean value"
+                    return null
+                }
+                outputSRID = outputParameter.get("srid")
+                if (outputSRID && outputSRID <= 0) {
+                    error "The output srid must be greater or equal than 0"
+                    return null
+                }
+                if (outputFolder) {
+                    //Check if we can write in the output folder
+                    def outputFiles = Geoindicators.WorkflowUtilities.buildOutputFolderParameters(outputFolder, outputWorkflowTableNames)
+                    outputFileTables = outputFiles.tables
+                    //Check if we can write in the output folder
+                    file_outputFolder = new File(outputFiles.path)
+                    if (!file_outputFolder.isDirectory()) {
+                        error "The directory $file_outputFolder doesn't exist."
+                        return
+                    }
+                    if (!file_outputFolder.canWrite()) {
+                        file_outputFolder = null
+                        error "You don't have permission to write in the folder $outputFolder \n" +
+                                "Please check the folder."
+                        return
+                    }
+                }
+                if (outputDataBase) {
+                    //Check the conditions to store the results a database
+                    def outputDataBaseData = Geoindicators.WorkflowUtilities.buildOutputDBParameters(outputDataBase, outputDataBase.tables, outputWorkflowTableNames)
+                    outputDatasource = outputDataBaseData.datasource
+                    outputTables = outputDataBaseData.tables
+                }
+            }
+
+            if (locations && locations in Collection) {
+                def h2gis_datasource = H2GIS.open(h2gis_properties)
+                if (!h2gis_datasource) {
+                    error "Cannot load the local H2GIS database to run Geoclimate"
+                    return
+                }
+                def logTableZones = postfix("log_zones")
+                def osmprocessing = osm_processing()
+                if (!osmprocessing.execute(h2gis_datasource: h2gis_datasource,
+                        processing_parameters: processing_parameters,
+                        id_zones: locations.findAll { it }, outputFolder: file_outputFolder, ouputTableFiles: outputFileTables,
+                        output_datasource: outputDatasource, outputTableNames: outputTables, outputSRID: outputSRID, downloadAllOSMData: downloadAllOSMData,
+                        deleteOutputData: deleteOutputData, deleteOSMFile: deleteOSMFile,
+                        logTableZones: logTableZones, bbox_size: osm_size_area,
+                        overpass_timeout: overpass_timeout, overpass_maxsize: overpass_maxsize)) {
+                    h2gis_datasource.getSpatialTable(logTableZones).save("${databaseFolder + File.separator}logzones.geojson")
+                    return null
+                }
+                if (delete_h2gis) {
+                    def localCon = h2gis_datasource.getConnection()
+                    if (localCon) {
+                        localCon.close()
+                        DeleteDbFiles.execute(databaseFolder, databaseName, true)
+                        debug "The local H2GIS database : ${databasePath} has been deleted"
+                    } else {
+                        error "Cannot delete the local H2GIS database : ${databasePath} "
+                    }
+                }
+                return [output: osmprocessing.getResults().outputTableNames]
+
+            } else {
+                error "Invalid  OSM area from $locations"
+                return null
+            }
         }
     }
 }
@@ -501,9 +385,9 @@ IProcess osm_processing() {
         title "Build OSM data and compute the geoindicators"
         id "osm_processing"
         inputs h2gis_datasource: JdbcDataSource, processing_parameters: Map, id_zones: Map,
-                outputFolder: "", ouputTableFiles: "", output_datasource: "", outputTableNames: "", outputSRID : Integer, downloadAllOSMData : true,
-                deleteOutputData:true, deleteOSMFile:false, logTableZones:String, bbox_size : 1000,
-                overpass_timeout :180, overpass_maxsize:536870912
+                outputFolder: "", ouputTableFiles: "", output_datasource: "", outputTableNames: "", outputSRID: Integer, downloadAllOSMData: true,
+                deleteOutputData: true, deleteOSMFile: false, logTableZones: String, bbox_size: 1000,
+                overpass_timeout: 180, overpass_maxsize: 536870912
         outputs outputTableNames: Map
         run { H2GIS h2gis_datasource, processing_parameters, id_zones, outputFolder, ouputTableFiles, output_datasource, outputTableNames,
               outputSRID, downloadAllOSMData, deleteOutputData, deleteOSMFile, logTableZones, bbox_size, overpass_timeout,
@@ -513,15 +397,13 @@ IProcess osm_processing() {
             //Create the table to log on the processed zone
             h2gis_datasource.execute """DROP TABLE IF EXISTS $logTableZones;
             CREATE TABLE $logTableZones (the_geom GEOMETRY(GEOMETRY, 4326), request VARCHAR, info VARCHAR);""".toString()
-            int nbAreas = id_zones.size();
+            int nbAreas = id_zones.size()
             info "$nbAreas osm areas will be processed"
-            int index = 0
             id_zones.each { id_zone ->
-                def start = System.currentTimeMillis();
                 //Extract the zone table and read its SRID
                 def zones = extractOSMZone(h2gis_datasource, id_zone, processing_parameters.distance, bbox_size)
                 if (zones) {
-                    id_zone = id_zone in Map ? "location_" + id_zone.join('_') : id_zone
+                    id_zone = id_zone in Collection ?  id_zone.join('_') : id_zone
                     def zone = zones.outputZoneTable
                     def zoneEnvelopeTableName = zones.outputZoneEnvelopeTable
                     if (h2gis_datasource.getTable(zone).getRowCount() == 0) {
@@ -548,7 +430,6 @@ IProcess osm_processing() {
                                           "leisure", "highway", "natural",
                                           "landuse", "landcover",
                                           "vegetation", "waterway"]
-                        //TODO : Remove unnecessary keys according the output tables set in the config file
                         query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]" + Utilities.buildOSMQueryWithAllData(zones.envelope, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
                     }
 
@@ -666,15 +547,15 @@ IProcess osm_processing() {
                             //Add the GIS layers to the list of results
                             def results = [:]
                             results.put("zone", zone)
-                            results.put("roadTableName", roadTableName)
-                            results.put("railTableName", railTableName)
-                            results.put("hydrographicTableName", hydrographicTableName)
-                            results.put("vegetationTableName", vegetationTableName)
-                            results.put("imperviousTableName", imperviousTableName)
-                            results.put("urbanAreasTableName", urbanAreasTable)
-                            results.put("buildingTableName", buildingTableName)
-                            results.put("seaLandMaskTableName", seaLandMaskTableName)
-                            results.put("buildingHeightMissingTableName", buildingEstimateTableName)
+                            results.put("road", roadTableName)
+                            results.put("rail", railTableName)
+                            results.put("water", hydrographicTableName)
+                            results.put("vegetation", vegetationTableName)
+                            results.put("impervious", imperviousTableName)
+                            results.put("urban_areas", urbanAreasTable)
+                            results.put("building", buildingTableName)
+                            results.put("sea_land_mask", seaLandMaskTableName)
+                            results.put("building_height_missing", buildingEstimateTableName)
 
 
                             //Compute traffic flow
@@ -684,7 +565,7 @@ IProcess osm_processing() {
                                         datasource    : h2gis_datasource,
                                         inputTableName: roadTableName,
                                         epsg          : srid])
-                                results.put("roadTrafficTableName", format.results.outputTableName)
+                                results.put("road_traffic", format.results.outputTableName)
                             }
 
                             //Compute the RSU indicators
@@ -727,17 +608,17 @@ IProcess osm_processing() {
                                 if (extractWorldPopLayer.execute([coverageId: coverageId, bbox: bbox])) {
                                     IProcess importAscGrid = WorldPopTools.Extract.importAscGrid()
                                     if (importAscGrid.execute([worldPopFilePath: extractWorldPopLayer.results.outputFilePath,
-                                                               epsg            : srid, tableName: coverageId.replaceAll(":", "_"), datasource: h2gis_datasource, epsg: srid])) {
+                                                               epsg            : srid, tableName: coverageId.replaceAll(":", "_"), datasource: h2gis_datasource])) {
                                         results.put("population", importAscGrid.results.outputTableWorldPopName)
 
                                         IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
-                                        if (!process.execute([inputBuildingTableName  : results.buildingTableName,
-                                                              inputpopulation: importAscGrid.results.outputTableWorldPopName,
-                                                              inputpopulation: ["pop"], datasource: h2gis_datasource])) {
+                                        if (!process.execute([inputBuildingTableName: results.buildingTableName,
+                                                              inputpopulation       : importAscGrid.results.outputTableWorldPopName
+                                                              , datasource          : h2gis_datasource])) {
                                             info "Cannot compute any population data at building level"
                                         }
                                         //Update the building table with the population data
-                                        results.put("buildingTableName", process.results.buildingTableName)
+                                        results.put("building", process.results.buildingTableName)
 
                                     } else {
                                         info "Cannot import the worldpop asc file $extractWorldPopLayer.results.outputFilePath"
@@ -777,16 +658,16 @@ IProcess osm_processing() {
                                             rsu_lcz: results.rsu_lcz,
                                             rsu_utrf_area: results.rsu_utrf_area,
                                             rsu_utrf_floor_area: results.rsu_utrf_floor_area,
-                                            sea_land_mask :seaLandMaskTableName,
+                                            sea_land_mask: seaLandMaskTableName,
                                             prefixName: processing_parameters.prefixName
                                     )) {
                                         results.put("grid_indicators", rasterizedIndicators.results.outputTableName)
                                     }
                                 } else {
                                     info "Cannot create a grid to aggregate the indicators"
+                                    h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zones.geometry}',4326) ,'$id_zone', 'Error computing the grid indicators')".toString()
+
                                 }
-                            } else {
-                                h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zones.geometry}',4326) ,'$id_zone', 'Error computing the grid indicators')".toString()
                             }
 
                             if (outputFolder && ouputTableFiles) {
@@ -810,18 +691,14 @@ IProcess osm_processing() {
                         error "Cannot execute the overpass query $query"
                         return
                     }
-                    index++
                 } else {
                     //Log in table
                     h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(null,'$id_zone', 'Error to extract the zone with Nominatim')".toString()
                     return
                 }
-                if (index > 0) {
-                    info "Number of areas processed ${index + 1} on $nbAreas"
-                }
             }
             if (outputTableNamesResult) {
-            return [outputTableNames: outputTableNamesResult]
+                return [outputTableNames: outputTableNamesResult]
             }
         }
     }
@@ -835,7 +712,7 @@ IProcess osm_processing() {
  * @param distance to expand the OSM bbox
  * @return
  */
-def extractOSMZone(def datasource, def zoneToExtract, def distance, def bbox_size) {
+def static extractOSMZone(def datasource, def zoneToExtract, def distance, def bbox_size) {
     def outputZoneTable = "ZONE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
     def outputZoneEnvelopeTable = "ZONE_ENVELOPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
     if (zoneToExtract) {
@@ -849,7 +726,7 @@ def extractOSMZone(def datasource, def zoneToExtract, def distance, def bbox_siz
             GEOMETRY_TYPE = "POLYGON"
         } else if (geom instanceof MultiPolygon) {
             GEOMETRY_TYPE = "MULTIPOLYGON"
-        } else{
+        } else {
             error("Invalid geometry to extract the OSM data ${geom.getGeometryType()}")
             return null
         }
@@ -861,13 +738,13 @@ def extractOSMZone(def datasource, def zoneToExtract, def distance, def bbox_siz
 
         //Find the best utm zone
         //Reproject the geometry and its envelope to the UTM zone
-        def con = datasource.getConnection();
+        def con = datasource.getConnection()
         def interiorPoint = envelope.centre()
         def epsg = GeographyUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
         def geomUTM = ST_Transform.ST_Transform(con, geom, epsg)
 
         //Check the size of the bbox
-        if((geomUTM.getEnvelopeInternal().getArea()/1.0E+6)>=bbox_size){
+        if ((geomUTM.getEnvelopeInternal().getArea() / 1.0E+6) >= bbox_size) {
             error("The size of the OSM BBOX is greated than the limit : ${bbox_size} in km².\n" +
                     "Please increase the area parameter if you want to skip this limit.")
             return null
@@ -884,89 +761,16 @@ def extractOSMZone(def datasource, def zoneToExtract, def distance, def bbox_siz
         INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${ST_Transform.ST_Transform(con, tmpGeomEnv, epsg).toString()}',${epsg}), '${zoneToExtract.toString()}');
         """.toString()
 
-        return [outputZoneTable: outputZoneTable,
+        return [outputZoneTable        : outputZoneTable,
                 outputZoneEnvelopeTable: outputZoneEnvelopeTable,
-                envelope:envelope,
-                geometry :geom
-                ]
-    }else{
+                envelope               : envelope,
+                geometry               : geom
+        ]
+    } else {
         error "The zone to extract cannot be null or empty"
         return null
     }
     return null
-}
-
-/**
- * Return the properties parameters to store results in a folder
- * @param outputFolder the output folder parameters from the json file
- */
-def outputFolderProperties(def outputFolder){
-    def tablesToSave = ["building_indicators",
-                        "block_indicators",
-                        "rsu_indicators",
-                        "rsu_lcz",
-                        "zones",
-                        "building",
-                        "road",
-                        "rail" ,
-                        "water",
-                        "vegetation",
-                        "impervious",
-                        "urban_areas",
-                        "rsu_utrf_area",
-                        "rsu_utrf_floor_area",
-                        "building_utrf",
-                        "grid_indicators",
-                        "sea_land_mask",
-                        "building_height_missing",
-                        "road_traffic",
-                        "population"]
-    if(outputFolder in Map){
-        def outputPath = outputFolder.get("path")
-        def outputTables = outputFolder.get("tables")
-        if(!outputPath){
-            return null
-        }
-        if(outputTables){
-            return ["path":outputPath, "tables" : tablesToSave.intersect(outputTables)]
-        }
-        return ["path":outputPath, "tables" : tablesToSave]
-    }
-    else{
-        return ["path":outputFolder, "tables" : tablesToSave]
-    }
-}
-
-/**
- * Create a datasource from the following parameters :
- * user, password, url
- *
- * @param database_properties from the json file
- * @return a connection or null if the parameters are invalid
- */
-def createDatasource(def database_properties){
-    def db_output_url = database_properties.get("url")
-    if(db_output_url){
-        if (db_output_url.startsWith("jdbc:")) {
-            String url = db_output_url.substring("jdbc:".length());
-            if (url.startsWith("h2") ) {
-                return H2GIS.open(database_properties)
-            } else if (url.startsWith("postgresql")) {
-                return POSTGIS.open(database_properties)
-            }
-            else {
-                error"Unsupported database"
-                return null
-            }
-        }
-        else {
-            error"Invalid output database url"
-            return null
-        }
-
-    }else{
-        error "The output database url cannot be null or empty"
-    }
 }
 
 
@@ -977,147 +781,145 @@ def createDatasource(def database_properties){
  * @param processing_parameters the file parameters
  * @return a filled map of parameters
  */
-def extractProcessingParameters(def processing_parameters){
-    def defaultParameters = [distance: 0, prefixName: "",
+def static extractProcessingParameters(def processing_parameters) {
+    def defaultParameters = [distance: 0f, prefixName: "",
                              hLevMin : 3, hLevMax: 15, hThresholdLev2: 10]
-    def rsu_indicators_default =[indicatorUse: [],
-                                 svfSimplified:true,
-                                 surface_vegetation: 10000,
-                                 surface_hydro: 2500,
-                                 snappingTolerance :0.01,
-                                 mapOfWeights :  ["sky_view_factor"                : 4,
-                                                  "aspect_ratio"                   : 3,
-                                                  "building_surface_fraction"      : 8,
-                                                  "impervious_surface_fraction"    : 0,
-                                                  "pervious_surface_fraction"      : 0,
-                                                  "height_of_roughness_elements"   : 6,
-                                                  "terrain_roughness_length"       : 0.5],
-                                 estimateHeight:true,
-                                 utrfModelName: "UTRF_OSM_RF_2_2.model"]
+    def rsu_indicators_default = [indicatorUse      : [],
+                                  svfSimplified     : true,
+                                  surface_vegetation: 10000f,
+                                  surface_hydro     : 2500f,
+                                  snappingTolerance : 0.01f,
+                                  mapOfWeights      : ["sky_view_factor"             : 4,
+                                                       "aspect_ratio"                : 3,
+                                                       "building_surface_fraction"   : 8,
+                                                       "impervious_surface_fraction" : 0,
+                                                       "pervious_surface_fraction"   : 0,
+                                                       "height_of_roughness_elements": 6,
+                                                       "terrain_roughness_length"    : 0.5],
+                                  estimateHeight    : true,
+                                  utrfModelName     : "UTRF_OSM_RF_2_2.model"]
     defaultParameters.put("rsu_indicators", rsu_indicators_default)
 
-    if(processing_parameters){
-        def distanceP =  processing_parameters.distance
-        if(distanceP && distanceP in Number){
+    if (processing_parameters) {
+        def distanceP = processing_parameters.distance
+        if (distanceP && distanceP in Number) {
             defaultParameters.distance = distanceP
         }
         def prefixNameP = processing_parameters.prefixName
-        if(prefixNameP && prefixNameP in String){
+        if (prefixNameP && prefixNameP in String) {
             defaultParameters.prefixName = prefixNameP
         }
 
-        def hLevMinP =  processing_parameters.hLevMin
-        if(hLevMinP && hLevMinP in Integer){
+        def hLevMinP = processing_parameters.hLevMin
+        if (hLevMinP && hLevMinP in Integer) {
             defaultParameters.hLevMin = hLevMinP
         }
-        def hLevMaxP =  processing_parameters.hLevMax
-        if(hLevMaxP && hLevMaxP in Integer){
+        def hLevMaxP = processing_parameters.hLevMax
+        if (hLevMaxP && hLevMaxP in Integer) {
             defaultParameters.hLevMax = hLevMaxP
         }
-        def hThresholdLev2P =  processing_parameters.hThresholdLev2
-        if(hThresholdLev2P && hThresholdLev2P in Integer){
+        def hThresholdLev2P = processing_parameters.hThresholdLev2
+        if (hThresholdLev2P && hThresholdLev2P in Integer) {
             defaultParameters.hThresholdLev2 = hThresholdLev2P
         }
         //Check for rsu indicators
-        def  rsu_indicators = processing_parameters.rsu_indicators
-        if(rsu_indicators){
+        def rsu_indicators = processing_parameters.rsu_indicators
+        if (rsu_indicators) {
             def indicatorUseP = rsu_indicators.indicatorUse
-            if(indicatorUseP && indicatorUseP in List) {
+            if (indicatorUseP && indicatorUseP in List) {
                 def allowed_rsu_indicators = ["LCZ", "UTRF", "TEB"]
                 def allowedOutputRSUIndicators = allowed_rsu_indicators.intersect(indicatorUseP*.toUpperCase())
                 if (allowedOutputRSUIndicators) {
                     rsu_indicators_default.indicatorUse = indicatorUseP
-                }
-                else {
+                } else {
                     error "Please set a valid list of RSU indicator names in ${allowedOutputRSUIndicators}"
                     return
                 }
-            }else{
+            } else {
                 rsu_indicators_default.indicatorUse = []
             }
-            def snappingToleranceP =  rsu_indicators.snappingTolerance
-            if(snappingToleranceP && snappingToleranceP in Number){
+            def snappingToleranceP = rsu_indicators.snappingTolerance
+            if (snappingToleranceP && snappingToleranceP in Number) {
                 rsu_indicators_default.snappingTolerance = snappingToleranceP
             }
-            def surface_vegetationP =  rsu_indicators.surface_vegetation
-            if(surface_vegetationP && surface_vegetationP in Number){
+            def surface_vegetationP = rsu_indicators.surface_vegetation
+            if (surface_vegetationP && surface_vegetationP in Number) {
                 rsu_indicators_default.surface_vegetation = surface_vegetationP
             }
-            def surface_hydroP =  rsu_indicators.surface_hydro
-            if(surface_hydroP && surface_hydroP in Number){
+            def surface_hydroP = rsu_indicators.surface_hydro
+            if (surface_hydroP && surface_hydroP in Number) {
                 rsu_indicators_default.surface_hydro = surface_hydroP
             }
             def svfSimplifiedP = rsu_indicators.svfSimplified
-            if(svfSimplifiedP && svfSimplifiedP in Boolean){
+            if (svfSimplifiedP && svfSimplifiedP in Boolean) {
                 rsu_indicators_default.svfSimplified = svfSimplifiedP
             }
             def estimateHeight = rsu_indicators.estimateHeight
-            if(estimateHeight && estimateHeight in Boolean){
+            if (estimateHeight && estimateHeight in Boolean) {
                 rsu_indicators_default.estimateHeight = estimateHeight
             }
             def mapOfWeightsP = rsu_indicators.mapOfWeights
-            if(mapOfWeightsP && mapOfWeightsP in Map){
+            if (mapOfWeightsP && mapOfWeightsP in Map) {
                 def defaultmapOfWeights = rsu_indicators_default.mapOfWeights
-                if((defaultmapOfWeights+mapOfWeightsP).size()!=defaultmapOfWeights.size()){
+                if ((defaultmapOfWeights + mapOfWeightsP).size() != defaultmapOfWeights.size()) {
                     error "The number of mapOfWeights parameters must contain exactly the parameters ${defaultmapOfWeights.keySet().join(",")}"
                     return
-                }else{
+                } else {
                     rsu_indicators_default.mapOfWeights = mapOfWeightsP
                 }
             }
-        }else{
-            rsu_indicators=rsu_indicators_default
+        } else {
+            rsu_indicators = rsu_indicators_default
         }
 
         //Check for grid indicators
-        def  grid_indicators = processing_parameters.grid_indicators
-        if(grid_indicators){
+        def grid_indicators = processing_parameters.grid_indicators
+        if (grid_indicators) {
             def x_size = grid_indicators.x_size
             def y_size = grid_indicators.y_size
             def list_indicators = grid_indicators.indicators
-            if(x_size && y_size){
-                if(x_size<=0 || y_size<= 0){
+            if (x_size && y_size) {
+                if (x_size <= 0 || y_size <= 0) {
                     error "Invalid grid size padding. Must be greater that 0"
                     return
                 }
-                if(!list_indicators){
+                if (!list_indicators) {
                     error "The list of indicator names cannot be null or empty"
                     return
                 }
-                def allowed_grid_indicators=["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_POP", "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
-                                             "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "UTRF_AREA_FRACTION", "LCZ_FRACTION", "LCZ_PRIMARY", "FREE_EXTERNAL_FACADE_DENSITY",
-                                             "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY", "BUILDING_HEIGHT_DIST", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION"]
+                def allowed_grid_indicators = ["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_POP", "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
+                                               "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "UTRF_AREA_FRACTION", "LCZ_FRACTION", "LCZ_PRIMARY", "FREE_EXTERNAL_FACADE_DENSITY",
+                                               "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY", "BUILDING_HEIGHT_DIST", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION"]
                 def allowedOutputIndicators = allowed_grid_indicators.intersect(list_indicators*.toUpperCase())
-                if(allowedOutputIndicators){
+                if (allowedOutputIndicators) {
                     //Update the RSU indicators list according the grid indicators
                     list_indicators.each { val ->
-                        if(val.trim().toUpperCase() in ["LCZ_FRACTION","LCZ_PRIMARY"]){
-                            rsu_indicators.indicatorUse<<"LCZ"
-                        }else if (val.trim().toUpperCase() in ["UTRF_AREA_FRACTION"]){
-                            rsu_indicators.indicatorUse<<"UTRF"
+                        if (val.trim().toUpperCase() in ["LCZ_FRACTION", "LCZ_PRIMARY"]) {
+                            rsu_indicators.indicatorUse << "LCZ"
+                        } else if (val.trim().toUpperCase() in ["UTRF_AREA_FRACTION"]) {
+                            rsu_indicators.indicatorUse << "UTRF"
                         }
                     }
-                def grid_indicators_tmp =  [
-                        "x_size": x_size,
-                        "y_size": y_size,
-                        "output": "geojson",
-                        "rowCol" : false,
-                        "indicators": allowedOutputIndicators
-                ]
+                    def grid_indicators_tmp = [
+                            "x_size"    : x_size,
+                            "y_size"    : y_size,
+                            "output"    : "geojson",
+                            "rowCol"    : false,
+                            "indicators": allowedOutputIndicators
+                    ]
                     def grid_output = grid_indicators.output
-                    if(grid_output) {
-                        if(grid_output.toLowerCase() in ["asc","geojson"]){
-                            grid_indicators_tmp.output =grid_output.toLowerCase()
+                    if (grid_output) {
+                        if (grid_output.toLowerCase() in ["asc", "geojson"]) {
+                            grid_indicators_tmp.output = grid_output.toLowerCase()
                         }
                     }
                     def grid_rowCol = grid_indicators.rowCol
-                    if(grid_rowCol && grid_rowCol in Boolean) {
-                        grid_indicators_tmp.rowCol =grid_rowCol
+                    if (grid_rowCol && grid_rowCol in Boolean) {
+                        grid_indicators_tmp.rowCol = grid_rowCol
                     }
 
-                defaultParameters.put("grid_indicators", grid_indicators_tmp)
-                }
-                else {
+                    defaultParameters.put("grid_indicators", grid_indicators_tmp)
+                } else {
                     error "Please set a valid list of indicator names in ${allowed_grid_indicators}"
                     return
                 }
@@ -1125,24 +927,22 @@ def extractProcessingParameters(def processing_parameters){
         }
 
         //Check for road_traffic method
-        def  road_traffic = processing_parameters.road_traffic
-        if(road_traffic && road_traffic in Boolean){
+        def road_traffic = processing_parameters.road_traffic
+        if (road_traffic && road_traffic in Boolean) {
             defaultParameters.put("road_traffic", road_traffic)
         }
 
         //Check if the pop indicators must be computed
-        def  pop_indics = processing_parameters.worldpop_indicators
-        if(pop_indics && pop_indics in Boolean){
+        def pop_indics = processing_parameters.worldpop_indicators
+        if (pop_indics && pop_indics in Boolean) {
             defaultParameters.put("worldpop_indicators", pop_indics)
         }
 
         return defaultParameters
-    }
-    else{
+    } else {
         return defaultParameters
     }
 }
-
 
 
 /**
@@ -1151,193 +951,35 @@ def extractProcessingParameters(def processing_parameters){
  * @param results a list of tables computed by geoclimate
  * @param ouputFolder the ouput folder
  * @param outputSRID srid code to reproject the result
- * @param reproject  true if the file must reprojected
+ * @param reproject true if the file must reprojected
  * @param deleteOutputData delete the files if exist
  * @param outputGrid file format of the grid
  * @return
  */
-def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFiles, def ouputFolder, def subFolderName, def outputSRID, def reproject, def deleteOutputData, def outputGrid){
+def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFiles, def ouputFolder, def subFolderName, def outputSRID, def reproject, def deleteOutputData, def outputGrid) {
     //Create a subfolder to store each results
-    def folderName = id_zone in Collection?id_zone.join("_"):id_zone
-    def subFolder = new File(ouputFolder.getAbsolutePath()+File.separator+subFolderName+folderName)
-    if(!subFolder.exists()){
+    def folderName = id_zone in Collection ? id_zone.join("_") : id_zone
+    def subFolder = new File(ouputFolder.getAbsolutePath() + File.separator + subFolderName + folderName)
+    if (!subFolder.exists()) {
         subFolder.mkdir()
-    }
-    else{
+    } else {
         FileUtilities.deleteFiles(subFolder)
     }
-    outputFiles.each{
-        //Save indicators
-        if(it == "building_indicators"){
-            saveTableAsGeojson(results.building_indicators, "${subFolder.getAbsolutePath()+File.separator+"building_indicators"}.geojson",h2gis_datasource,outputSRID, reproject, deleteOutputData)
-        }
-        else if(it == "block_indicators"){
-            saveTableAsGeojson(results.block_indicators, "${subFolder.getAbsolutePath()+File.separator+"block_indicators"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }
-        else  if(it == "rsu_indicators"){
-            saveTableAsGeojson(results.rsu_indicators, "${subFolder.getAbsolutePath()+File.separator+"rsu_indicators"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }
-        else  if(it == "rsu_lcz"){
-            saveTableAsGeojson(results.rsu_lcz,  "${subFolder.getAbsolutePath()+File.separator+"rsu_lcz"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }
-        else  if(it == "zones"){
-            saveTableAsGeojson(results.zone,  "${subFolder.getAbsolutePath()+File.separator+"zones"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }
-        //Save input GIS tables
-        else  if(it == "building"){
-            saveTableAsGeojson(results.buildingTableName, "${subFolder.getAbsolutePath()+File.separator+"building"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }
-        else if(it == "road"){
-            saveTableAsGeojson(results.roadTableName,  "${subFolder.getAbsolutePath()+File.separator+"road"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }
-        else if(it == "rail"){
-            saveTableAsGeojson(results.railTableName,  "${subFolder.getAbsolutePath()+File.separator+"rail"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }
-        if(it == "water"){
-            saveTableAsGeojson(results.hydrographicTableName, "${subFolder.getAbsolutePath()+File.separator+"water"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }
-        else if(it == "vegetation"){
-            saveTableAsGeojson(results.vegetationTableName,  "${subFolder.getAbsolutePath()+File.separator+"vegetation"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }
-        else if(it == "impervious"){
-            saveTableAsGeojson(results.imperviousTableName, "${subFolder.getAbsolutePath()+File.separator+"impervious"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }
-        else if(it == "urban_areas"){
-            saveTableAsGeojson(results.urbanAreasTableName, "${subFolder.getAbsolutePath()+File.separator+"urban_areas"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }else if(it == "rsu_utrf_area"){
-            saveTableAsGeojson(results.outputTableRsuUtrfoArea, "${subFolder.getAbsolutePath()+File.separator+"rsu_utrf_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }else if(it == "rsu_utrf_floor_area"){
-            saveTableAsGeojson(results.rsu_utrf_floor_area, "${subFolder.getAbsolutePath()+File.separator+"rsu_utrf_floor_area"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }else if(it == "building_utrf"){
-            saveTableAsGeojson(results.building_utrf, "${subFolder.getAbsolutePath()+File.separator+"building_utrf"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }
-        else if(it == "grid_indicators"){
-            if(outputGrid=="geojson"){
-                saveTableAsGeojson(results.grid_indicators, "${subFolder.getAbsolutePath()+File.separator+"grid_indicators"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
+    outputFiles.each {
+        if (it == "grid_indicators") {
+            if (outputGrid == "geojson") {
+                Geoindicators.WorkflowUtilities.saveToGeojson(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
+            } else if (outputGrid == "asc") {
+                Geoindicators.WorkflowUtilities.saveToAscGrid(results."$it", subFolder, it, h2gis_datasource, outputSRID, reproject, deleteOutputData)
             }
-            else if(outputGrid=="asc"){
-                saveTableToAsciiGrid(results.grid_indicators, subFolder, "grid_indicators", h2gis_datasource,outputSRID,reproject,deleteOutputData)
-            }
-        }
-        else if(it == "sea_land_mask"){
-            saveTableAsGeojson(results.seaLandMaskTableName, "${subFolder.getAbsolutePath()+File.separator+"sea_land_mask"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }
-        else if(it == "building_height_missing"){
-            saveTableAsCSV(results.buildingHeightMissingTableName, "${subFolder.getAbsolutePath()+File.separator+"building_height_missing"}.csv", h2gis_datasource,deleteOutputData)
-        }
-        else if(it == "road_traffic"){
-            saveTableAsGeojson(results.roadTrafficTableName,  "${subFolder.getAbsolutePath()+File.separator+"road_traffic"}.geojson",h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }else  if(it == "population"){
-            saveTableAsGeojson(results.population, "${subFolder.getAbsolutePath()+File.separator+"population"}.geojson", h2gis_datasource,outputSRID,reproject,deleteOutputData)
-        }
-    }
-}
-
-/**
- * Method to export a table corresponding to a grid with indicators in as many ESRI ASCII grid files as indicators
- * @param h2gis_table_to_save
- * @param h2gis_datasource
- * @param output_files_generic_name
- * @return
- */
-def saveTableToAsciiGrid(def outputTable , def subFolder,def filePrefix, def h2gis_datasource,def outputSRID, def reproject, def deleteOutputData) {
-   //Check if the table exists
-    if(outputTable && h2gis_datasource.hasTable(outputTable)) {
-        def env;
-        if (!reproject) {
-            env = h2gis_datasource.getSpatialTable(outputTable).getExtent().getEnvelopeInternal();
+        } else if (it == "building_height_missing") {
+            Geoindicators.WorkflowUtilities.saveToCSV(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.csv", h2gis_datasource, deleteOutputData)
         } else {
-            def geom = h2gis_datasource.firstRow("SELECT st_transform(ST_EXTENT(the_geom), $outputSRID) as geom from $outputTable".toString()).geom
-            if (geom) {
-                env = geom.getEnvelopeInternal();
-            }
+            Geoindicators.WorkflowUtilities.saveToGeojson(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
         }
-        if (env) {
-            def xmin = env.getMinX()
-            def ymin = env.getMinY()
-            def nbColsRowS = h2gis_datasource.firstRow("select max(id_col) as cmax, max(id_row) as rmax from $outputTable".toString())
-            def nbcols = nbColsRowS.cmax
-            def nbrows = nbColsRowS.rmax
-
-            double dy = env.getMaxY()-ymin;
-            def x_size = dy/nbrows;
-
-            def IndicsTable = h2gis_datasource."$outputTable"
-            List columnNames = IndicsTable.columns
-            columnNames.remove("THE_GEOM")
-            columnNames.remove("ID")
-            columnNames.remove("ID_COL")
-            columnNames.remove("ID_ROW")
-
-            //Add indexes
-            h2gis_datasource.getTable(outputTable)."ID_COL".createIndex()
-            h2gis_datasource.getTable(outputTable)."ID_ROW".createIndex()
-
-            //Save each grid
-            columnNames.each { it ->
-                def outputFile = new File("${subFolder.getAbsolutePath() + File.separator + filePrefix + "_" + it.toLowerCase()}.asc")
-                if (deleteOutputData) {
-                    outputFile.delete()
-                }
-                outputFile.withOutputStream { stream ->
-                    stream << "ncols $nbcols\nnrows $nbrows\nxllcorner $xmin\nyllcorner $ymin\ncellsize $x_size\nnodata_value -9999\n"
-                    def query = "select id_row, id_col, case when $it is not null then cast($it as decimal(18, 3)) else -9999 end as $it from $outputTable order by id_row desc, id_col"
-                    def rowData = ""
-                    h2gis_datasource.eachRow(query.toString()) { row ->
-                        rowData += row.getString(it) + " "
-                        if (row.getInt("id_col") == nbcols) {
-                            rowData += "\n"
-                            stream << rowData
-                            rowData = ""
-                        }
-                    }
-                }
-                //Save the PRJ file
-                if(outputSRID>=0) {
-                    File outPrjFile = new File("${subFolder.getAbsolutePath() + File.separator + filePrefix + "_" + it.toLowerCase()}.prj")
-                    PRJUtil.writePRJ(h2gis_datasource.getConnection(), outputSRID,outPrjFile)
-                }
-                info "$outputTable has been saved in ${filePrefix + "_" + it}.asc"
-            }
-        }
-    }
-    }
-
-/**
- * Method to save a table into a csV file
- * @param outputTable name of the table to export
- * @param filePath path to save the table
- * @param h2gis_datasource connection to the database
- * @param deleteOutputData true to delete the file if exists
- */
-def saveTableAsCSV(def outputTable , def filePath,def h2gis_datasource, def deleteOutputData){
-    if(outputTable && h2gis_datasource.hasTable(outputTable)){
-        h2gis_datasource.save("(SELECT ID_BUILD, ID_SOURCE FROM $outputTable WHERE estimated=true)", filePath,deleteOutputData)
-        info "${outputTable} has been saved in ${filePath}."
     }
 }
 
-/**
- * Method to save a table into a geojson file
- * @param outputTable name of the table to export
- * @param filePath path to save the table
- * @param h2gis_datasource connection to the database
- * @param outputSRID srid code to reproject the outputTable.
- * @param reproject true if the file must be reprojected
- * @param deleteOutputData true to delete the file if exists
- */
-def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource,def outputSRID, def reproject, def deleteOutputData){
-    if(outputTable && h2gis_datasource.hasTable(outputTable)){
-        if(!reproject){
-        h2gis_datasource.save(outputTable, filePath,deleteOutputData)
-        }else{
-            if(h2gis_datasource.getTable(outputTable).getRowCount()>0){
-            h2gis_datasource.getSpatialTable(outputTable).reproject(outputSRID).save(filePath, deleteOutputData)
-            }
-        }
-        info "${outputTable} has been saved in ${filePath}."
-    }
-}
 /**
  * Save the output tables in a database
  * @param output_datasource a connexion a database
@@ -1349,91 +991,91 @@ def saveTableAsGeojson(def outputTable , def filePath,def h2gis_datasource,def o
  * @param reproject the output table
  * @return
  */
-def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_datasource, def outputTableNames, def h2gis_tables, def id_zone,def inputSRID, def outputSRID, def reproject){
+def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_datasource, def outputTableNames, def h2gis_tables, def id_zone, def inputSRID, def outputSRID, def reproject) {
     //Export building indicators
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.building_indicators,id_zone,h2gis_datasource, h2gis_tables.building_indicators
-            , "WHERE ID_RSU IS NOT NULL", inputSRID, outputSRID,reproject)
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.building_indicators, id_zone, h2gis_datasource, h2gis_tables.building_indicators
+            , "WHERE ID_RSU IS NOT NULL", inputSRID, outputSRID, reproject)
 
     //Export block indicators
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.block_indicators,id_zone, h2gis_datasource, h2gis_tables.block_indicators
-            , "WHERE ID_RSU IS NOT NULL", inputSRID, outputSRID,reproject)
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.block_indicators, id_zone, h2gis_datasource, h2gis_tables.block_indicators
+            , "WHERE ID_RSU IS NOT NULL", inputSRID, outputSRID, reproject)
 
     //Export rsu indicators
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_indicators,id_zone, h2gis_datasource, h2gis_tables.rsu_indicators
-            , "",inputSRID, outputSRID,reproject)
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_indicators, id_zone, h2gis_datasource, h2gis_tables.rsu_indicators
+            , "", inputSRID, outputSRID, reproject)
 
     //Export rsu lcz
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_lcz,id_zone,h2gis_datasource, h2gis_tables.rsu_lcz
-            , "",inputSRID,outputSRID,reproject)
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_lcz, id_zone, h2gis_datasource, h2gis_tables.rsu_lcz
+            , "", inputSRID, outputSRID, reproject)
 
     //Export rsu_utrf_area
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_utrf_area,id_zone,h2gis_datasource, h2gis_tables.rsu_utrf_area
-            , "",inputSRID,outputSRID,reproject)
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_utrf_area, id_zone, h2gis_datasource, h2gis_tables.rsu_utrf_area
+            , "", inputSRID, outputSRID, reproject)
 
     //Export rsu_utrf_floor_area
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_utrf_floor_area,id_zone,h2gis_datasource, h2gis_tables.rsu_utrf_floor_area
-            , "",inputSRID,outputSRID,reproject)
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_utrf_floor_area, id_zone, h2gis_datasource, h2gis_tables.rsu_utrf_floor_area
+            , "", inputSRID, outputSRID, reproject)
 
     //Export grid_indicators
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.grid_indicators,id_zone,h2gis_datasource, h2gis_tables.grid_indicators
-            , "",inputSRID,outputSRID,reproject)
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.grid_indicators, id_zone, h2gis_datasource, h2gis_tables.grid_indicators
+            , "", inputSRID, outputSRID, reproject)
 
     //Export building_utrf
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.building_utrf,id_zone,h2gis_datasource, h2gis_tables.building_utrf
-            , "",inputSRID,outputSRID,reproject)
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.building_utrf, id_zone, h2gis_datasource, h2gis_tables.building_utrf
+            , "", inputSRID, outputSRID, reproject)
 
     //Export road_traffic
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.road_traffic, id_zone,h2gis_datasource, h2gis_tables.roadTrafficTableName
-            , "", inputSRID,outputSRID,reproject)
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.road_traffic, id_zone, h2gis_datasource, h2gis_tables.road_traffic
+            , "", inputSRID, outputSRID, reproject)
 
     //Export zone
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.zones,id_zone, h2gis_datasource, h2gis_tables.zone
-            , "",inputSRID,outputSRID,reproject)
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.zone, id_zone, h2gis_datasource, h2gis_tables.zone
+            , "", inputSRID, outputSRID, reproject)
 
     //Export building
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.building,id_zone, h2gis_datasource, h2gis_tables.buildingTableName
-            , "",inputSRID,outputSRID,reproject)
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.building, id_zone, h2gis_datasource, h2gis_tables.building
+            , "", inputSRID, outputSRID, reproject)
 
     //Export road
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.road, id_zone,h2gis_datasource, h2gis_tables.roadTableName
-            , "", inputSRID,outputSRID,reproject)
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.road, id_zone, h2gis_datasource, h2gis_tables.road
+            , "", inputSRID, outputSRID, reproject)
     //Export rail
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.rail,id_zone, h2gis_datasource, h2gis_tables.railTableName
-            , "",inputSRID,outputSRID,reproject)
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.rail, id_zone, h2gis_datasource, h2gis_tables.rail
+            , "", inputSRID, outputSRID, reproject)
     //Export vegetation
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.vegetation,id_zone, h2gis_datasource, h2gis_tables.vegetationTableName
-            , "",inputSRID,outputSRID,reproject)
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.vegetation, id_zone, h2gis_datasource, h2gis_tables.vegetation
+            , "", inputSRID, outputSRID, reproject)
     //Export water
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.water,id_zone, h2gis_datasource, h2gis_tables.hydrographicTableName
-            , "",inputSRID,outputSRID,reproject)
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.water, id_zone, h2gis_datasource, h2gis_tables.water
+            , "", inputSRID, outputSRID, reproject)
     //Export impervious
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.impervious, id_zone,h2gis_datasource, h2gis_tables.imperviousTableName
-            , "",inputSRID,outputSRID,reproject)
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.impervious, id_zone, h2gis_datasource, h2gis_tables.impervious
+            , "", inputSRID, outputSRID, reproject)
 
     //Export urban areas table
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.urban_areas, id_zone,h2gis_datasource, h2gis_tables.urbanAreasTableName
-            , "",inputSRID,outputSRID,reproject)
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.urban_areas, id_zone, h2gis_datasource, h2gis_tables.urban_areas
+            , "", inputSRID, outputSRID, reproject)
 
     //Export sea land mask table
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.sea_land_mask, id_zone,h2gis_datasource, h2gis_tables.seaLandMaskTableName
-            , "",inputSRID,outputSRID,reproject)
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.sea_land_mask, id_zone, h2gis_datasource, h2gis_tables.sea_land_mask
+            , "", inputSRID, outputSRID, reproject)
 
     //Export population table
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.population, id_zone,h2gis_datasource, h2gis_tables.population
-            , "", inputSRID,outputSRID,reproject)
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.population, id_zone, h2gis_datasource, h2gis_tables.population
+            , "", inputSRID, outputSRID, reproject)
 
     //Export building_height_missing table
     def output_table = outputTableNames.building_height_missing
-    def h2gis_table_to_save= h2gis_tables.buildingHeightMissingTableName
+    def h2gis_table_to_save = h2gis_tables.building_height_missing
 
-    if(output_table) {
+    if (output_table) {
         if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
             if (output_datasource.hasTable(output_table)) {
                 output_datasource.execute("DELETE FROM $output_table WHERE id_zone= '$id_zone'".toString())
-            }else{
+            } else {
                 output_datasource.execute """CREATE TABLE $output_table(ID_BUILD INTEGER, ID_SOURCE VARCHAR, ID_ZONE VARCHAR)""".toString()
             }
-            IOMethods.exportToDataBase(h2gis_datasource.getConnection(),"(SELECT ID_BUILD, ID_SOURCE, '$id_zone' as ID_ZONE from $h2gis_table_to_save where estimated=true)".toString(),
+            IOMethods.exportToDataBase(h2gis_datasource.getConnection(), "(SELECT ID_BUILD, ID_SOURCE, '$id_zone' as ID_ZONE from $h2gis_table_to_save where estimated=true)".toString(),
                     output_datasource.getConnection(), output_table, 2, 1000);
         }
     }
@@ -1452,17 +1094,17 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
  * @param outputSRID srid code used to reproject the output table
  * @return
  */
-def abstractModelTableBatchExportTable(JdbcDataSource output_datasource, def output_table, def id_zone, def h2gis_datasource, h2gis_table_to_save, def filter,def inputSRID,def outputSRID, def reproject){
-    if(output_table) {
+def abstractModelTableBatchExportTable(JdbcDataSource output_datasource, def output_table, def id_zone, def h2gis_datasource, h2gis_table_to_save, def filter, def inputSRID, def outputSRID, def reproject) {
+    if (output_table) {
         if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
             if (output_datasource.hasTable(output_table)) {
                 output_datasource.execute("DELETE FROM $output_table WHERE id_zone= '$id_zone'".toString())
                 //If the table exists we populate it with the last result
                 info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
-                int BATCH_MAX_SIZE = 1000;
+                int BATCH_MAX_SIZE = 1000
                 ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource)
                 if (inputRes) {
-                    def outputColumns = output_datasource.getTable(output_table).getColumnsTypes();
+                    def outputColumns = output_datasource.getTable(output_table).getColumnsTypes()
                     def outputconnection = output_datasource.getConnection()
                     try {
                         def inputColumns = inputRes.getColumnsTypes();
@@ -1476,7 +1118,7 @@ def abstractModelTableBatchExportTable(JdbcDataSource output_datasource, def out
                             inputColumns.each { entry ->
                                 if (diffCols.contains(entry.key)) {
                                     //DECFLOAT is not supported by POSTSGRESQL
-                                    def dataType = entry.value.equalsIgnoreCase("decfloat")?"FLOAT":entry.value
+                                    def dataType = entry.value.equalsIgnoreCase("decfloat") ? "FLOAT" : entry.value
                                     alterTable += "ALTER TABLE $output_table ADD COLUMN $entry.key $dataType;"
                                     outputColumns.put(entry.key, dataType)
                                 }
@@ -1518,28 +1160,27 @@ def abstractModelTableBatchExportTable(JdbcDataSource output_datasource, def out
                         info "The table $h2gis_table_to_save has been exported into the table $output_table"
                     }
                 }
-            }else {
-                def tmpTable =null
+            } else {
+                def tmpTable = null
                 info "Start to export the table $h2gis_table_to_save into the table $output_table"
                 if (filter) {
-                    if(!reproject){
+                    if (!reproject) {
                         tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().save(output_datasource, output_table, true);
-                    }
-                    else{
+                    } else {
                         tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true);
                         //Because the select query reproject doesn't contain any geometry metadata
                         output_datasource.execute("""ALTER TABLE $output_table
                             ALTER COLUMN the_geom TYPE geometry(geometry, $outputSRID)
                             USING ST_SetSRID(the_geom,$outputSRID);""".toString());
                     }
-                    if(tmpTable){
-                    //Workarround to update the SRID on resulset
-                    output_datasource.execute"""ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);""".toString()
+                    if (tmpTable) {
+                        //Workarround to update the SRID on resulset
+                        output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);""".toString()
                     }
                 } else {
-                    if(!reproject){
-                        tmpTable =h2gis_datasource.getTable(h2gis_table_to_save).save(output_datasource, output_table, true);
-                   }else{
+                    if (!reproject) {
+                        tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).save(output_datasource, output_table, true);
+                    } else {
                         tmpTable = h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(outputSRID).save(output_datasource, output_table, true);
                         //Because the select query reproject doesn't contain any geometry metadata
                         output_datasource.execute("""ALTER TABLE $output_table
@@ -1547,13 +1188,13 @@ def abstractModelTableBatchExportTable(JdbcDataSource output_datasource, def out
                             USING ST_SetSRID(the_geom,$outputSRID);""".toString());
                     }
                 }
-                if(tmpTable) {
+                if (tmpTable) {
                     output_datasource.execute """ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS gid serial;""".toString()
                     output_datasource.execute("UPDATE $output_table SET id_zone= '$id_zone'".toString());
                     output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""".toString())
                     info "The table $h2gis_table_to_save has been exported into the table $output_table"
-                }else{
-                    warn  "The table $h2gis_table_to_save hasn't been exported into the table $output_table"
+                } else {
+                    warn "The table $h2gis_table_to_save hasn't been exported into the table $output_table"
                 }
             }
         }
@@ -1572,59 +1213,59 @@ def abstractModelTableBatchExportTable(JdbcDataSource output_datasource, def out
  * @param outputSRID srid code used to reproject the output table
  * @return
  */
-def indicatorTableBatchExportTable(def output_datasource, def output_table, def id_zone, def h2gis_datasource, h2gis_table_to_save, def filter, def inputSRID, def outputSRID, def reproject){
-    if(output_table){
-    if(h2gis_table_to_save) {
-        if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
-            if (output_datasource.hasTable(output_table)) {
-                output_datasource.execute("DELETE FROM $output_table WHERE id_zone='$id_zone'".toString())
-                //If the table exists we populate it with the last result
-                info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
-                int BATCH_MAX_SIZE = 1000;
-                ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource)
-                if (inputRes) {
-                    def outputColumns  = output_datasource.getTable(output_table).getColumnsTypes();
-                    outputColumns.remove("gid")
-                    def outputconnection = output_datasource.getConnection()
-                    try {
-                        def inputColumns = inputRes.getColumnsTypes();
-                        //We check if the number of columns is not the same
-                        //If there is more columns in the input table we alter the output table
-                        def outPutColumnsNames = outputColumns.keySet()
-                        def diffCols = inputColumns.keySet().findAll { e ->  !outPutColumnsNames*.toLowerCase().contains( e.toLowerCase() ) }
-                        def alterTable = ""
-                        if(diffCols){
-                            inputColumns.each { entry ->
-                                if (diffCols.contains(entry.key)){
-                                    //DECFLOAT is not supported by POSTSGRESQL
-                                    def dataType = entry.value.equalsIgnoreCase("decfloat")?"FLOAT":entry.value
-                                    alterTable += "ALTER TABLE $output_table ADD COLUMN $entry.key $dataType;"
-                                    outputColumns.put(entry.key, dataType)
+def indicatorTableBatchExportTable(def output_datasource, def output_table, def id_zone, def h2gis_datasource, h2gis_table_to_save, def filter, def inputSRID, def outputSRID, def reproject) {
+    if (output_table) {
+        if (h2gis_table_to_save) {
+            if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
+                if (output_datasource.hasTable(output_table)) {
+                    output_datasource.execute("DELETE FROM $output_table WHERE id_zone='$id_zone'".toString())
+                    //If the table exists we populate it with the last result
+                    info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
+                    int BATCH_MAX_SIZE = 1000;
+                    ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource)
+                    if (inputRes) {
+                        def outputColumns = output_datasource.getTable(output_table).getColumnsTypes();
+                        outputColumns.remove("gid")
+                        def outputconnection = output_datasource.getConnection()
+                        try {
+                            def inputColumns = inputRes.getColumnsTypes();
+                            //We check if the number of columns is not the same
+                            //If there is more columns in the input table we alter the output table
+                            def outPutColumnsNames = outputColumns.keySet()
+                            def diffCols = inputColumns.keySet().findAll { e -> !outPutColumnsNames*.toLowerCase().contains(e.toLowerCase()) }
+                            def alterTable = ""
+                            if (diffCols) {
+                                inputColumns.each { entry ->
+                                    if (diffCols.contains(entry.key)) {
+                                        //DECFLOAT is not supported by POSTSGRESQL
+                                        def dataType = entry.value.equalsIgnoreCase("decfloat") ? "FLOAT" : entry.value
+                                        alterTable += "ALTER TABLE $output_table ADD COLUMN $entry.key $dataType;"
+                                        outputColumns.put(entry.key, dataType)
+                                    }
                                 }
+                                output_datasource.execute(alterTable.toString())
                             }
-                            output_datasource.execute(alterTable.toString())
-                        }
-                        def finalOutputColumns = outputColumns.keySet();
+                            def finalOutputColumns = outputColumns.keySet();
 
-                        def insertTable = "INSERT INTO $output_table (${finalOutputColumns.join(",")}) VALUES("
+                            def insertTable = "INSERT INTO $output_table (${finalOutputColumns.join(",")}) VALUES("
 
-                        def flatList =  outputColumns.inject([]) { result, iter ->
-                            result+= ":${iter.key.toLowerCase()}"
-                        }.join(",")
-                        insertTable+= flatList
-                        insertTable+=")";
-                        //Collect all values
-                        def ouputValues = finalOutputColumns.collectEntries {[it.toLowerCase(), null]}
-                        ouputValues.put("id_zone", id_zone)
-                        outputconnection.setAutoCommit(false);
+                            def flatList = outputColumns.inject([]) { result, iter ->
+                                result += ":${iter.key.toLowerCase()}"
+                            }.join(",")
+                            insertTable += flatList
+                            insertTable += ")";
+                            //Collect all values
+                            def ouputValues = finalOutputColumns.collectEntries { [it.toLowerCase(), null] }
+                            ouputValues.put("id_zone", id_zone)
+                            outputconnection.setAutoCommit(false);
                             output_datasource.withBatch(BATCH_MAX_SIZE, insertTable.toString()) { ps ->
-                                inputRes.eachRow{ row ->
+                                inputRes.eachRow { row ->
                                     //Fill the value
-                                    inputColumns.keySet().each{columnName ->
+                                    inputColumns.keySet().each { columnName ->
                                         def inputValue = row.getObject(columnName)
-                                        if(inputValue){
+                                        if (inputValue) {
                                             ouputValues.put(columnName.toLowerCase(), inputValue)
-                                        }else{
+                                        } else {
                                             ouputValues.put(columnName.toLowerCase(), null)
                                         }
                                     }
@@ -1632,28 +1273,28 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                                 }
                             }
 
-                    } catch (SQLException e) {
-                        error("Cannot save the table $output_table.\n $e");
-                        return false;
-                    } finally {
-                        outputconnection.setAutoCommit(true);
-                        info "The table $h2gis_table_to_save has been exported into the table $output_table"
+                        } catch (SQLException e) {
+                            error("Cannot save the table $output_table.\n $e");
+                            return false;
+                        } finally {
+                            outputconnection.setAutoCommit(true);
+                            info "The table $h2gis_table_to_save has been exported into the table $output_table"
+                        }
                     }
-                }
                 } else {
                     def tmpTable = null
                     info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
                     if (filter) {
                         if (!reproject) {
                             tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().save(output_datasource, output_table, true);
-                            if(tmpTable) {
+                            if (tmpTable) {
                                 //Workarround to update the SRID on resultset
                                 output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);""".toString()
                             }
 
                         } else {
                             tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true);
-                            if(tmpTable) {
+                            if (tmpTable) {
                                 //Workarround to update the SRID on resultset
                                 output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $outputSRID) USING ST_SetSRID(the_geom,$outputSRID);""".toString()
                             }
@@ -1670,20 +1311,19 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                             USING ST_SetSRID(the_geom,$outputSRID);""".toString())
                         }
                     }
-                    if(tmpTable){
-                    output_datasource.execute("ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS id_zone VARCHAR".toString())
-                    output_datasource.execute("UPDATE $output_table SET id_zone= ?", id_zone);
-                    output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""".toString())
-                    //Add GID column
-                    output_datasource.execute """ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS gid serial;""".toString()
-                    info "The table $h2gis_table_to_save has been exported into the table $output_table"
-                    }
-                    else{
+                    if (tmpTable) {
+                        output_datasource.execute("ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS id_zone VARCHAR".toString())
+                        output_datasource.execute("UPDATE $output_table SET id_zone= ?", id_zone);
+                        output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""".toString())
+                        //Add GID column
+                        output_datasource.execute """ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS gid serial;""".toString()
+                        info "The table $h2gis_table_to_save has been exported into the table $output_table"
+                    } else {
                         warn "The table $h2gis_table_to_save hasn't been exported into the table $output_table"
                     }
                 }
+            }
         }
-    }
     }
 }
 
@@ -1697,66 +1337,59 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
  * @param output_datasource
  * @return
  */
-def prepareTableOutput(def h2gis_table_to_save, def filter, def inputSRID,H2GIS h2gis_datasource, def output_table, def outputSRID,def output_datasource){
+def prepareTableOutput(def h2gis_table_to_save, def filter, def inputSRID, H2GIS h2gis_datasource, def output_table, def outputSRID, def output_datasource) {
     def targetTableSrid = output_datasource.getSpatialTable(output_table).srid
     if (filter) {
-        if(outputSRID==0){
-            if(inputSRID==targetTableSrid){
-                inputRes =  h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getTable()
-            }else {
-                if(targetTableSrid==0 && inputSRID==0){
+        if (outputSRID == 0) {
+            if (inputSRID == targetTableSrid) {
+                inputRes = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getTable()
+            } else {
+                if (targetTableSrid == 0 && inputSRID == 0) {
                     return h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getTable()
-                }else if(targetTableSrid!=0 && inputSRID!=0){
+                } else if (targetTableSrid != 0 && inputSRID != 0) {
                     return h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(targetTableSrid)
-                }
-                else{
+                } else {
                     error("Cannot export the $h2gis_table_to_save into the table $output_table \n due to inconsistent SRID")
                     return
                 }
             }
-        }
-        else{
-            if(inputSRID==targetTableSrid){
+        } else {
+            if (inputSRID == targetTableSrid) {
                 return h2gis_datasource.getTable(h2gis_table_to_save)
-            }else{
-                if(targetTableSrid==0 && inputSRID==0) {
+            } else {
+                if (targetTableSrid == 0 && inputSRID == 0) {
                     return h2gis_datasource.getTable(h2gis_table_to_save)
-                }else if(targetTableSrid!=0 && inputSRID!=0){
+                } else if (targetTableSrid != 0 && inputSRID != 0) {
                     return h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(targetTableSrid)
-                }
-                else{
+                } else {
                     error("Cannot export the $h2gis_table_to_save into the table $output_table \n due to inconsistent SRID")
                     return
                 }
             }
         }
-    }
-    else {
-        if(outputSRID==0){
-            if(inputSRID==targetTableSrid){
-                return  h2gis_datasource.getTable(h2gis_table_to_save)
-            }else {
-                if(targetTableSrid==0 && inputSRID==0) {
-                    return h2gis_datasource.getTable(h2gis_table_to_save)
-                }else if(targetTableSrid!=0 && inputSRID!=0){
-                    return h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(targetTableSrid)
-                }
-                else{
-                    error("Cannot export the $h2gis_table_to_save into the table $output_table \n due to inconsistent SRID")
-                    return
-                }
-            }
-        }
-        else{
-            if(inputSRID==targetTableSrid){
+    } else {
+        if (outputSRID == 0) {
+            if (inputSRID == targetTableSrid) {
                 return h2gis_datasource.getTable(h2gis_table_to_save)
-            }else{
-                if(targetTableSrid==0 && inputSRID==0) {
+            } else {
+                if (targetTableSrid == 0 && inputSRID == 0) {
                     return h2gis_datasource.getTable(h2gis_table_to_save)
-                }else if(targetTableSrid!=0 && inputSRID!=0){
+                } else if (targetTableSrid != 0 && inputSRID != 0) {
                     return h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(targetTableSrid)
+                } else {
+                    error("Cannot export the $h2gis_table_to_save into the table $output_table \n due to inconsistent SRID")
+                    return
                 }
-                else{
+            }
+        } else {
+            if (inputSRID == targetTableSrid) {
+                return h2gis_datasource.getTable(h2gis_table_to_save)
+            } else {
+                if (targetTableSrid == 0 && inputSRID == 0) {
+                    return h2gis_datasource.getTable(h2gis_table_to_save)
+                } else if (targetTableSrid != 0 && inputSRID != 0) {
+                    return h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(targetTableSrid)
+                } else {
                     error("Cannot export the $h2gis_table_to_save into the table $output_table \n due to inconsistent SRID")
                     return
                 }
@@ -1875,20 +1508,5 @@ IProcess buildGeoclimateLayers() {
 
             }
         }
-    }
-}
-
-
-
-
-/**
- * Parse a json file to a Map
- * @param jsonFile
- * @return
- */
-static Map readJSONParameters(def jsonFile) {
-    def jsonSlurper = new JsonSlurper()
-    if (jsonFile) {
-        return jsonSlurper.parse(jsonFile)
     }
 }

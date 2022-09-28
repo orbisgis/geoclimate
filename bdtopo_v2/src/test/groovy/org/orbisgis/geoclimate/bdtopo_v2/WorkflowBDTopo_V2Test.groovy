@@ -267,7 +267,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                                             "block_indicators":"block_indicators",
                                             "rsu_indicators":"rsu_indicators",
                                             "rsu_lcz":"rsu_lcz",
-                                            "zones":"zones" ]]],
+                                            "zone":"zone" ]]],
                 "parameters":
                         ["distance" : 0,
                          "hLevMin": 3,
@@ -316,7 +316,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                                             "block_indicators":"block_indicators",
                                             "rsu_indicators":"rsu_indicators",
                                             "rsu_lcz":"rsu_lcz",
-                                            "zones":"zones" ]]],
+                                            "zone":"zone" ]]],
                 "parameters":
                         ["distance" : 0,
                          "hLevMin": 3,
@@ -388,7 +388,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                            "block_indicators":"block_indicators",
                            "rsu_indicators":"rsu_indicators",
                            "rsu_lcz":"rsu_lcz",
-                           "zones":"zones", "grid_indicators":"grid_indicators" ]
+                           "zone":"zone", "grid_indicators":"grid_indicators" ]
         //Drop all output tables if exist
         postGIS.execute("DROP TABLE IF EXISTS ${outputTables.values().join(",")};");
         String directory ="./target/bdtopo_workflow_postgis"
@@ -445,7 +445,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                            "block_indicators":"block_indicators",
                            "rsu_indicators":"rsu_indicators",
                            "rsu_lcz":"rsu_lcz",
-                           "zones":"zones", "grid_indicators":"grid_indicators" ]
+                           "zone":"zone", "grid_indicators":"grid_indicators" ]
         //Drop all output tables if exist
         postGIS.execute("DROP TABLE IF EXISTS ${outputTables.values().join(",")};".toString());
         String directory ="./target/bdtopo_workflow_postgis_bbox"
@@ -472,8 +472,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                 "parameters":
                         ["distance" : 0,
                          rsu_indicators: [
-                                 "indicatorUse": ["LCZ", "UTRF"],
-                                 "svfSimplified": true
+                                 "indicatorUse": ["LCZ", "UTRF"]
                          ],
                          "grid_indicators": [
                                  "x_size": 10,
@@ -528,8 +527,9 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(input: createConfigFile(bdTopoParameters, directory)))
+        def tableNames =process.results.output.values()
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
-        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
+        assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.grid_indicators[0]} where water_fraction>0").count>0
     }
 
     @Test
@@ -572,11 +572,13 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(input: createConfigFile(bdTopoParameters, directory)))
+        def tableNames =process.results.output.values();
+        def grid_table =tableNames.grid_indicators[0]
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
-        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators".toString()).count==100
-        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where WATER_FRACTION>0".toString()).count==0
-        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where HIGH_VEGETATION_FRACTION>0".toString()).count>0
-        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where LOW_VEGETATION_FRACTION>0".toString()).count==0
+        assertTrue h2gis.firstRow("select count(*) as count from $grid_table".toString()).count==100
+        assertTrue h2gis.firstRow("select count(*) as count from $grid_table where WATER_FRACTION>0".toString()).count==0
+        assertTrue h2gis.firstRow("select count(*) as count from $grid_table where HIGH_VEGETATION_FRACTION>0".toString()).count>0
+        assertTrue h2gis.firstRow("select count(*) as count from $grid_table where LOW_VEGETATION_FRACTION>0".toString()).count==0
     }
 
     @Test
@@ -610,8 +612,9 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(input: createConfigFile(bdTopoParameters, directory)))
+        def tableNames =process.results.output.values();
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
-        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
+        assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.grid_indicators[0]} where water_fraction>0").count>0
     }
 
     @Test
@@ -645,8 +648,9 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(input: createConfigFile(bdTopoParameters, directory)))
+        def tableNames =process.results.output.values();
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
-        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where LCZ_PRIMARY is not null").count>0
+        assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.grid_indicators[0]} where LCZ_PRIMARY is not null").count>0
     }
 
     @Test
@@ -781,7 +785,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                                 "block_indicators":"block_indicators_2154",
                                 "rsu_indicators":"rsu_indicators_2154",
                                 "rsu_lcz":"rsu_lcz_2154",
-                                "zones":"zones_2154",
+                                "zone":"zone_2154",
                                 "building_utrf":"building_utrf_2154",
                                 "rsu_utrf_area":"rsu_utrf_area_2154",
                                 "rsu_utrf_floor_area":"rsu_utrf_floor_area_2154",

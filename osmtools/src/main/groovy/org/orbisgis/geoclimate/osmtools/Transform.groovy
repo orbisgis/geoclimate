@@ -75,12 +75,12 @@ def toPoints () {
                 error "Invalid EPSG code : $epsgCode"
                 return
             }
-            info "Start points transformation"
+            debug "Start points transformation"
             debug "Indexing osm tables..."
             buildIndexes datasource, osmTablesPrefix
             def pointsNodes = extractNodesAsPoints datasource, osmTablesPrefix, epsgCode, outputTableName, tags, columnsToKeep
             if (pointsNodes) {
-                info "The points have been built."
+                debug "The points have been built."
             } else {
                 warn "Cannot extract any point."
                 return
@@ -160,9 +160,9 @@ def extractWaysAsPolygons () {
     create {
         title "Transform all OSM ways as polygons"
         id "extractWaysAsPolygons"
-        inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags: [], columnsToKeep: []
+        inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags: [], columnsToKeep: [], valid_geom :true
         outputs outputTableName: String
-        run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
+        run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, valid_geom ->
             if (!datasource) {
                 error "Please set a valid database connection"
                 return
@@ -255,7 +255,17 @@ def extractWaysAsPolygons () {
                 CREATE INDEX ON $waysPolygonTmp(id_way);
         """.toString()
 
-            datasource """
+            if(valid_geom){
+                datasource """
+                DROP TABLE IF EXISTS $outputTableName; 
+                CREATE TABLE $outputTableName AS 
+                    SELECT 'w'||a.id_way AS id, CASE WHEN ST_ISVALID(a.THE_GEOM) THEN a.the_geom ELSE st_makevalid(a.the_geom) END as the_geom ${createTagList(datasource, columnsSelector)} 
+                    FROM $waysPolygonTmp AS a, $osmTableTag b
+                    WHERE a.id_way=b.id_way and st_isempty(a.the_geom)=false
+                    GROUP BY a.id_way;
+                """.toString()
+            }else {
+                datasource """
                 DROP TABLE IF EXISTS $outputTableName; 
                 CREATE TABLE $outputTableName AS 
                     SELECT 'w'||a.id_way AS id, a.the_geom ${createTagList(datasource, columnsSelector)} 
@@ -263,6 +273,7 @@ def extractWaysAsPolygons () {
                     WHERE a.id_way=b.id_way and st_isempty(a.the_geom)=false
                     GROUP BY a.id_way;
         """.toString()
+            }
 
             datasource """
                 DROP TABLE IF EXISTS $waysPolygonTmp;
@@ -293,9 +304,9 @@ def extractRelationsAsPolygons () {
     create {
         title "Transform all OSM ways as polygons"
         id "extractRelationsAsPolygons"
-        inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags: [], columnsToKeep: []
+        inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags: [], columnsToKeep: [], valid_geom:true
         outputs outputTableName: String
-        run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
+        run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, valid_geom ->
             if (!datasource) {
                 error "Please set a valid database connection"
                 return
@@ -460,6 +471,16 @@ def extractRelationsAsPolygons () {
                 CREATE INDEX ON $relationsMpHoles(id_relation);
         """.toString()
 
+            if(valid_geom){
+                datasource """
+                DROP TABLE IF EXISTS $outputTableName;     
+                CREATE TABLE $outputTableName AS 
+                    SELECT 'r'||a.id_relation AS id, CASE WHEN ST_ISVALID(a.THE_GEOM) THEN a.the_geom ELSE st_makevalid(a.the_geom) END as the_geom ${createTagList(datasource, columnsSelector)}
+                    FROM $relationsMpHoles AS a, ${osmTablesPrefix}_relation_tag  b 
+                    WHERE a.id_relation=b.id_relation and st_isempty(a.the_geom)=false
+                    GROUP BY a.the_geom, a.id_relation;
+                """.toString()
+            }else{
             datasource """
                 DROP TABLE IF EXISTS $outputTableName;     
                 CREATE TABLE $outputTableName AS 
@@ -467,7 +488,8 @@ def extractRelationsAsPolygons () {
                     FROM $relationsMpHoles AS a, ${osmTablesPrefix}_relation_tag  b 
                     WHERE a.id_relation=b.id_relation and st_isempty(a.the_geom)=false
                     GROUP BY a.the_geom, a.id_relation;
-        """.toString()
+            """.toString()
+            }
 
             datasource """
                 DROP TABLE IF EXISTS    $relationsPolygonsOuter, 
@@ -648,7 +670,7 @@ def extractRelationsAsLines() {
             }
 
             if (datasource.firstRow(countTagsQuery.toString()).count <= 0) {
-                warn "No keys or values found in the relations. An empty table will be returned."
+                debug "No keys or values found in the relations. An empty table will be returned."
                 datasource """
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));

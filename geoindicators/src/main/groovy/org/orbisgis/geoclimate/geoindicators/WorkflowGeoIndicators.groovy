@@ -1863,7 +1863,7 @@ IProcess rasterizeIndicators() {
             def seaLandFractionTab = postfix "SEA_LAND_FRACTION"
 
             def seaLandTypeField = "TYPE"
-            def grid_indicators_table = "grid_indicators"
+            def grid_indicators_table = postfix "grid_indicators"
             def grid_column_identifier = "id_grid"
             def indicatorTablesToJoin = [:]
             indicatorTablesToJoin.put(grid, grid_column_identifier)

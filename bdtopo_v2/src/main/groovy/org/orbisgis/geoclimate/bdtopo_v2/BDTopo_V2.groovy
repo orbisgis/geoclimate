@@ -2,6 +2,7 @@ package org.orbisgis.geoclimate.bdtopo_v2
 
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
+import org.orbisgis.geoclimate.geoindicators.WorkflowUtilities
 import org.orbisgis.process.GroovyProcessFactory
 import org.slf4j.LoggerFactory
 
@@ -17,7 +18,6 @@ abstract class BDTopo_V2 extends GroovyProcessFactory {
     public static WorkflowBDTopo_V2 = new WorkflowBDTopo_V2()
     public static InputDataLoading = new InputDataLoading()
     public static InputDataFormatting = new InputDataFormatting()
-
 
     static def uuid = { UUID.randomUUID().toString().replaceAll("-", "_") }
 

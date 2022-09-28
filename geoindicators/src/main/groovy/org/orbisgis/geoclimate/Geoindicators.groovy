@@ -11,6 +11,7 @@ import org.orbisgis.geoclimate.geoindicators.RsuIndicators
 import org.orbisgis.geoclimate.geoindicators.SpatialUnits
 import org.orbisgis.geoclimate.geoindicators.TypologyClassification
 import org.orbisgis.geoclimate.geoindicators.WorkflowGeoIndicators
+import org.orbisgis.geoclimate.geoindicators.WorkflowUtilities
 import org.orbisgis.process.GroovyProcessFactory
 import org.slf4j.LoggerFactory
 
@@ -28,6 +29,8 @@ abstract class Geoindicators  extends GroovyProcessFactory  {
     public static RoadIndicators = new RoadIndicators()
     public static PopulationIndicators= new PopulationIndicators()
     public static GridIndicators= new GridIndicators()
+
+    public static WorkflowUtilities= new WorkflowUtilities()
 
     //Cache the XStream models
     public static Map cacheModels =[:]

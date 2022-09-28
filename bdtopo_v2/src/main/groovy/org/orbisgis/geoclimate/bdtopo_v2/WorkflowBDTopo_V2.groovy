@@ -158,7 +158,7 @@ IProcess workflow() {
                         error "The configuration file must be a json file"
                         return
                     }
-                    parameters = readJSONParameters(configFile)
+                    parameters = Geoindicators.WorkflowUtilities.readJSON(configFile)
                 } else if (input instanceof Map) {
                     parameters = input
                 }
@@ -246,7 +246,7 @@ IProcess workflow() {
                                             "block_indicators",
                                             "rsu_indicators",
                                             "rsu_lcz",
-                                            "zones",
+                                            "zone",
                                             "building",
                                             "road",
                                             "rail",
@@ -263,7 +263,6 @@ IProcess workflow() {
             //Get processing parameters
             def processing_parameters = extractProcessingParameters(parameters.parameters)
             if (!processing_parameters) {
-                warn "Please set \"parameters\" values to compute GeoClimate indicators."
                 return
             }
 
@@ -273,10 +272,11 @@ IProcess workflow() {
             def file_outputFolder
             def outputFileTables
             def outputSRID
+            def deleteOutputData
             if (outputParameters) {
                 def outputDataBase = outputParameters.database
                 def outputFolder = outputParameters.folder
-                def deleteOutputData = outputParameters.get("delete")
+                deleteOutputData = outputParameters.get("delete")
                 if (!deleteOutputData) {
                     deleteOutputData = true
                 } else if (!deleteOutputData in Boolean) {
@@ -289,7 +289,7 @@ IProcess workflow() {
                     return null
                 }
                 if (outputFolder) {
-                    def outputFiles = outputFolderProperties(outputFolder, outputWorkflowTableNames)
+                    def outputFiles = Geoindicators.WorkflowUtilities.buildOutputFolderParameters(outputFolder, outputWorkflowTableNames)
                     outputFileTables = outputFiles.tables
                     //Check if we can write in the output folder
                     file_outputFolder = new File(outputFiles.path)
@@ -304,11 +304,12 @@ IProcess workflow() {
                         return
                     }
 
-                } else if (outputDataBase) {
+                }
+                if (outputDataBase) {
                     //Check the conditions to store the results a database
-                    def outputDataBaseData = checkOutputTables(outputDataBase, outputDataBase.tables, outputWorkflowTableNames)
-                    outputDatasource = outputDataBaseData.outputDatasource
-                    outputTables = outputDataBaseData.outputTables
+                    def outputDataBaseData = Geoindicators.WorkflowUtilities.buildOutputDBParameters(outputDataBase, outputDataBase.tables, outputWorkflowTableNames)
+                    outputDatasource = outputDataBaseData.datasource
+                    outputTables = outputDataBaseData.tables
                 }
             }
 
@@ -426,32 +427,6 @@ def deleteH2GISDb(def delete, Connection connection, def dbFolder, def dbName) {
 }
 
 /**
- * Method to check the output tables set by the user and create the datasource connexion
- * Return null if the table names are invalid or if we cannot create the connection to the database
- */
-def checkOutputTables(def outputDataBase, def outputTableNames, def outputWorkflowTableNames) {
-    def outputTables = [:]
-    if (!outputTableNames) {
-        outputTables = outputWorkflowTableNames.collect { [it: it] }
-    } else {
-        outputTableNames.each { table ->
-            if (outputWorkflowTableNames.contains(table.key.toLowerCase())) {
-                outputTables.put(table.key.toLowerCase(), table.value)
-            }
-        }
-        if (!outputTables) {
-            error "Please set a valid list of output tables as  : \n" +
-                    "${outputWorkflowTableNames.collect { name -> [name: name] }}"
-        }
-    }
-    def output_datasource = createDatasource(outputDataBase.subMap(["user", "password", "url"]))
-    if (!output_datasource) {
-        error "Cannot connect to the output database"
-    }
-    return [outputTables: outputTables, outputDatasource: output_datasource]
-
-}
-/**
  * Sanity check for the location value
  * @param id_zones
  * @return
@@ -490,55 +465,6 @@ def createMainFolder(def outputFolder, def location) {
     return folder.getAbsolutePath()
 }
 
-/**
- * Return the properties parameters to store results in a folder
- * @param outputFolder the output folder parameters from the json file
- */
-def outputFolderProperties(def outputFolder, def outputWorkflowTableNames) {
-    if (outputFolder in Map) {
-        def outputPath = outputFolder.path
-        def outputTables = outputFolder.tables
-        if (!outputPath) {
-            return
-        }
-        if (outputTables) {
-            return ["path": outputPath, "tables": outputWorkflowTableNames.intersect(outputTables)]
-        }
-        return ["path": outputPath, "tables": outputWorkflowTableNames]
-    } else {
-        return ["path": outputFolder, "tables": outputWorkflowTableNames]
-    }
-}
-
-/**
- * Create a datasource from the following parameters :
- * user, password, url
- *
- * @param database_properties from the json file
- * @return a connection or null if the parameters are invalid
- */
-def createDatasource(def database_properties) {
-    def db_output_url = database_properties.url
-    if (db_output_url) {
-        if (db_output_url.startsWith("jdbc:")) {
-            String url = db_output_url.substring("jdbc:".length());
-            if (url.startsWith("h2")) {
-                return H2GIS.open(database_properties)
-            } else if (url.startsWith("postgresql")) {
-                return POSTGIS.open(database_properties)
-            } else {
-                error "Unsupported database"
-                return
-            }
-        } else {
-            error "Invalid output database url"
-            return
-        }
-
-    } else {
-        error "The output database url cannot be null or empty"
-    }
-}
 
 /**
  *
@@ -935,14 +861,14 @@ def linkDataFromFolder(def inputFolder, def inputWorkflowTableNames, H2GIS h2gis
  * @return a filled map of parameters
  */
 def extractProcessingParameters(def processing_parameters) {
-    def defaultParameters = [distance       : 1000,
-                             distance_buffer: 500, prefixName: "",
+    def defaultParameters = [distance       : 1000f,
+                             distance_buffer: 500f, prefixName: "",
                              hLevMin        : 3, hLevMax: 15, hThresholdLev2: 10]
     def rsu_indicators_default = [indicatorUse      : [],
                                   svfSimplified     : true,
-                                  surface_vegetation: 10000,
-                                  surface_hydro     : 2500,
-                                  snappingTolerance : 0.01,
+                                  surface_vegetation: 10000f,
+                                  surface_hydro     : 2500f,
+                                  snappingTolerance : 0.01f,
                                   mapOfWeights      : ["sky_view_factor"             : 4,
                                                        "aspect_ratio"                : 3,
                                                        "building_surface_fraction"   : 8,
@@ -1112,6 +1038,12 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def out
                       def output_datasource, def outputTableNames, def outputSRID, def inputSRID, def deleteOutputData = true) {
     //Add the GIS layers to the list of results
     def outputTableNamesResult = [:]
+    def grid_indicators_params = processing_parameters.grid_indicators
+    def outputGrid ="geojson"
+    if (grid_indicators_params) {
+        outputGrid = grid_indicators_params.output
+    }
+
     //We process each zones because the input zone can overlap several communes
     h2gis_datasource.eachRow("SELECT ST_CollectionExtract(THE_GEOM, 3) as the_geom,code_insee  FROM COMMUNE") { row ->
         Geometry geom = row.the_geom
@@ -1129,11 +1061,14 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def out
                 """.toString())
                 def results = bdTopoProcessingSingleArea(h2gis_datasource, code_insee, subCommuneTableName, inputSRID, processing_parameters)
                 if (results) {
-                    saveResults(h2gis_datasource, code_insee, results, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData)
+                    computeGridIndicators(h2gis_datasource,code_insee, inputSRID,processing_parameters, results)
+                    saveResults(h2gis_datasource, code_insee, results, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData, outputGrid)
                     outputTableNamesResult.put(code_insee, results.findAll { it.value != null })
                 }
             }
         } else {
+            info "The location $code_insee is represented by $numGeom polygons\n. " +
+                    "GeoClimate will process each polygon individually."
             int subAreaCount = 1
             def tablesToMerge = ["zone"                : [],
                                  "road"                : [], "rail": [], "water": [],
@@ -1145,7 +1080,7 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def out
                                  "grid_indicators": []
             ]
             for (i in 0..<numGeom) {
-                info "Processing the sub area ${subAreaCount} on ${numGeom + 1}"
+                info "Processing the polygon ${subAreaCount} on ${numGeom + 1}"
                 def subGeom = geom.getGeometryN(i)
                 if (!subGeom.isEmpty()) {
                     def subCommuneTableName = postfix("COMMUNE")
@@ -1175,11 +1110,27 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def out
                 def tableNames = it.value
                 def queryToJoin = []
                 String tmp_table
+                HashSet allColumns =new HashSet()
+                def tableAndColumns = [:]
                 tableNames.each { tableName ->
                     if (tableName) {
-                        queryToJoin << "SELECT * FROM $tableName "
-                        tmp_table = tableName
+                        def tableColumns = JDBCUtilities.getColumnNames(h2gis_datasource.getConnection(), tableName)
+                        allColumns.addAll(tableColumns)
+                        tableAndColumns.put(tableName, tableColumns)
                     }
+                }
+                tableNames.each { tableName ->
+                    def columns = tableAndColumns.get(tableName)
+                    def joinColumns = []
+                    allColumns.each{col ->
+                        if (!columns.contains(col)) {
+                            joinColumns<< "null as ${col}"
+                        }else {
+                            joinColumns<< col
+                        }
+                    }
+                    queryToJoin << "SELECT ${joinColumns.join(",")} FROM $tableName"
+                    tmp_table = tableName
                 }
                 if (tmp_table) {
                     def finalTableName = postfix(tmp_table.substring(0, tmp_table.lastIndexOf("_")))
@@ -1190,13 +1141,52 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def out
                     results.put(it.key, finalTableName)
                 }
             }
+            computeGridIndicators(h2gis_datasource,code_insee,inputSRID, processing_parameters, results)
             outputTableNamesResult.put(code_insee, results)
-            saveResults(h2gis_datasource, code_insee, results, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData)
+            saveResults(h2gis_datasource, code_insee, results, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData,outputGrid)
 
         }
     }
     return outputTableNamesResult
 
+}
+
+/**
+ * Compute the grid indicators outside the workflow to be sure that the grid domain is continuous
+ * e.g if the input are is defined by a multipolygon (a location with islands)
+ * @param h2gis_datasource
+ * @param id_zone
+ * @param processing_parameters
+ * @param results
+ * @return
+ */
+def computeGridIndicators(H2GIS h2gis_datasource,def id_zone, def srid, def processing_parameters, def results){
+    def grid_indicators_params = processing_parameters.grid_indicators
+    //Compute the grid indicators
+    if (grid_indicators_params) {
+        def x_size = grid_indicators_params.x_size
+        def y_size = grid_indicators_params.y_size
+        IProcess gridProcess = Geoindicators.WorkflowGeoIndicators.createGrid()
+        def geomEnv = h2gis_datasource.getSpatialTable(results.zone).getExtent()
+        if (gridProcess.execute(datasource: h2gis_datasource, envelope: geomEnv,
+                x_size: x_size, y_size: y_size,
+                srid: srid, rowCol: grid_indicators_params.rowCol)) {
+            def gridTableName = gridProcess.results.outputTableName
+            IProcess rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators()
+            if (rasterizedIndicators.execute(datasource: h2gis_datasource, grid: gridTableName,
+                    list_indicators: grid_indicators_params.indicators,
+                    building: results.building, road: results.road, vegetation: results.vegetation,
+                    water: results.water, impervious: results.impervious,
+                    rsu_lcz: results.rsu_lcz,
+                    rsu_utrf_area: results.rsu_utrf_area,
+                    prefixName: processing_parameters.prefixName
+            )) {
+                results.put("grid_indicators", rasterizedIndicators.results.outputTableName)
+            }
+        } else {
+            info "Cannot create a grid to aggregate the indicators"
+        }
+    }
 }
 
 
@@ -1213,7 +1203,7 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def out
  * @param deleteOutputData
  * @return
  */
-def saveResults(def h2gis_datasource, def id_zone, def results, def srid, def outputFolder, def outputFiles, def output_datasource, def outputTableNames, def outputSRID, def deleteOutputData) {
+def saveResults(def h2gis_datasource, def id_zone, def results, def srid, def outputFolder, def outputFiles, def output_datasource, def outputTableNames, def outputSRID, def deleteOutputData, def outputGrid ) {
     //Check if the user decides to reproject the output data
     def reproject = false
     if (outputSRID) {
@@ -1231,7 +1221,7 @@ def saveResults(def h2gis_datasource, def id_zone, def results, def srid, def ou
         } else {
             FileUtilities.deleteFiles(folder)
         }
-        saveOutputFiles(h2gis_datasource, results, outputFiles, folder, outputSRID, reproject, deleteOutputData)
+        saveOutputFiles(h2gis_datasource, results, outputFiles, folder, outputSRID, reproject, deleteOutputData, outputGrid)
     }
     if (output_datasource) {
         saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone, srid, outputSRID, reproject)
@@ -1285,7 +1275,6 @@ def bdTopoProcessingSingleArea(def h2gis_datasource, def id_zone, def subCommune
         info "BDTOPO V2 GIS layers formated"
 
         def rsu_indicators_params = processing_parameters.rsu_indicators
-        def grid_indicators_params = processing_parameters.grid_indicators
         def worldpop_indicators = processing_parameters.worldpop_indicators
 
 
@@ -1358,32 +1347,6 @@ def bdTopoProcessingSingleArea(def h2gis_datasource, def id_zone, def subCommune
             }
         }
 
-        //Compute the grid indicators
-        if (grid_indicators_params) {
-            def x_size = grid_indicators_params.x_size
-            def y_size = grid_indicators_params.y_size
-            IProcess gridProcess = Geoindicators.WorkflowGeoIndicators.createGrid()
-            def geomEnv = h2gis_datasource.getSpatialTable(zone).getExtent()
-            if (gridProcess.execute(datasource: h2gis_datasource, envelope: geomEnv,
-                    x_size: x_size, y_size: y_size,
-                    srid: srid, rowCol: grid_indicators_params.rowCol)) {
-                def gridTableName = gridProcess.results.outputTableName
-                IProcess rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators()
-                if (rasterizedIndicators.execute(datasource: h2gis_datasource, grid: gridTableName,
-                        list_indicators: grid_indicators_params.indicators,
-                        building: buildingTableName, road: roadTableName, vegetation: vegetationTableName,
-                        water: hydrographicTableName, impervious: imperviousTableName,
-                        rsu_lcz: results.rsu_lcz,
-                        rsu_utrf_area: results.rsu_utrf_area,
-                        prefixName: processing_parameters.prefixName
-                )) {
-                    results.put("grid_indicators", rasterizedIndicators.results.outputTableName)
-                }
-            } else {
-                info "Cannot create a grid to aggregate the indicators"
-            }
-        }
-
         //Compute traffic flow
         if (processing_parameters.road_traffic) {
             IProcess format = Geoindicators.RoadIndicators.build_road_traffic()
@@ -1409,72 +1372,20 @@ def bdTopoProcessingSingleArea(def h2gis_datasource, def id_zone, def subCommune
  * @param deleteOutputData true to delete the file if exists
  * @return
  */
-def saveOutputFiles(def h2gis_datasource, def results, def outputFiles, def outputFolder, def outputSRID, def reproject, def deleteOutputData) {
+def saveOutputFiles(def h2gis_datasource, def results, def outputFiles, def outputFolder, def outputSRID, def reproject, def deleteOutputData, def outputGrid) {
     outputFiles.each {
-        //Save indicators
-        if (it == "building_indicators") {
-            saveTableAsGeojson(results.building_indicators, "${outputFolder.getAbsolutePath() + File.separator + "building_indicators"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "block_indicators") {
-            saveTableAsGeojson(results.block_indicators, "${outputFolder.getAbsolutePath() + File.separator + "block_indicators"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "rsu_indicators") {
-            saveTableAsGeojson(results.rsu_indicators, "${outputFolder.getAbsolutePath() + File.separator + "rsu_indicators"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "rsu_lcz") {
-            saveTableAsGeojson(results.rsu_lcz, "${outputFolder.getAbsolutePath() + File.separator + "rsu_lcz"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "zones") {
-            saveTableAsGeojson(results.zone, "${outputFolder.getAbsolutePath() + File.separator + "zones"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        }
-        //Save input GIS tables
-        else if (it == "building") {
-            saveTableAsGeojson(results.buildingTableName, "${outputFolder.getAbsolutePath() + File.separator + "building"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "road") {
-            saveTableAsGeojson(results.roadTableName, "${outputFolder.getAbsolutePath() + File.separator + "road"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "rail") {
-            saveTableAsGeojson(results.railTableName, "${outputFolder.getAbsolutePath() + File.separator + "rail"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        }
-        if (it == "water") {
-            saveTableAsGeojson(results.hydrographicTableName, "${outputFolder.getAbsolutePath() + File.separator + "water"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "vegetation") {
-            saveTableAsGeojson(results.vegetationTableName, "${outputFolder.getAbsolutePath() + File.separator + "vegetation"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "impervious") {
-            saveTableAsGeojson(results.imperviousTableName, "${outputFolder.getAbsolutePath() + File.separator + "impervious"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "urban_areas") {
-            saveTableAsGeojson(results.urbanAreasTableName, "${outputFolder.getAbsolutePath() + File.separator + "urban_areas"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "rsu_utrf_area") {
-            saveTableAsGeojson(results.rsu_utrf_area, "${outputFolder.getAbsolutePath() + File.separator + "rsu_utrf_area"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "rsu_utrf_floor_area") {
-            saveTableAsGeojson(results.rsu_utrf_floor_area, "${outputFolder.getAbsolutePath() + File.separator + "rsu_utrf_floor_area"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "building_utrf") {
-            saveTableAsGeojson(results.building_utrf, "${outputFolder.getAbsolutePath() + File.separator + "building_utrf"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "grid_indicators") {
-            saveTableAsGeojson(results.grid_indicators, "${outputFolder.getAbsolutePath() + File.separator + "grid_indicators"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "road_traffic") {
-            saveTableAsGeojson(results.roadTrafficTableName, "${outputFolder.getAbsolutePath() + File.separator + "road_traffic"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
-        } else if (it == "population") {
-            saveTableAsGeojson(results.population, "${outputFolder.getAbsolutePath() + File.separator + "population"}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
+        if (it == "grid_indicators") {
+            if (outputGrid == "geojson") {
+                Geoindicators.WorkflowUtilities.saveToGeojson(results."$it", "${outputFolder.getAbsolutePath() + File.separator + it}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
+            } else if (outputGrid == "asc") {
+                Geoindicators.WorkflowUtilities.saveToAscGrid(results."$it", outputFolder, it, h2gis_datasource, outputSRID, reproject, deleteOutputData)
+            }
+        } else {
+            Geoindicators.WorkflowUtilities.saveToGeojson(results."$it", "${outputFolder.getAbsolutePath() + File.separator + it}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
         }
     }
 }
 
-/**
- * Method to save a table into a geojson file
- * @param outputTable name of the table to export
- * @param filePath path to save the table
- * @param h2gis_datasource connection to the database
- * @param outputSRID srid code to reproject the outputTable.
- * @param deleteOutputData true to delete the file if exists
- */
-def saveTableAsGeojson(def outputTable, def filePath, def h2gis_datasource, def outputSRID, def reproject, def deleteOutputData) {
-    if (outputTable && h2gis_datasource.hasTable(outputTable)) {
-        if (!reproject) {
-            h2gis_datasource.save(outputTable, filePath, deleteOutputData)
-        } else {
-            if (h2gis_datasource.getTable(outputTable).getRowCount() > 0) {
-                h2gis_datasource.getSpatialTable(outputTable).reproject(outputSRID).save(filePath, deleteOutputData)
-            }
-        }
-        info "${outputTable} has been saved in ${filePath}."
-    }
-}
 
 /**
  * Save the output tables in a database
@@ -1487,7 +1398,7 @@ def saveTableAsGeojson(def outputTable, def filePath, def h2gis_datasource, def 
  */
 def saveTablesInDatabase(def output_datasource, def h2gis_datasource, def outputTableNames, def h2gis_tables, def id_zone, def inputSRID, def outputSRID, def reproject) {
     Connection con = output_datasource.getConnection()
-    con.setAutoCommit(true);
+    con.setAutoCommit(true)
 
     //Export building indicators
     indicatorTableBatchExportTable(output_datasource, outputTableNames.building_indicators, id_zone, h2gis_datasource, h2gis_tables.building_indicators
@@ -1523,31 +1434,31 @@ def saveTablesInDatabase(def output_datasource, def h2gis_datasource, def output
             , "", inputSRID, outputSRID, reproject)
 
     //Export road_traffic
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.road_traffic, id_zone, h2gis_datasource, h2gis_tables.roadTrafficTableName
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.road_traffic, id_zone, h2gis_datasource, h2gis_tables.road_traffic
             , "", inputSRID, outputSRID, reproject)
 
     //Export zone
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.zones, id_zone, h2gis_datasource, h2gis_tables.zone
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.zone, id_zone, h2gis_datasource, h2gis_tables.zone
             , "", inputSRID, outputSRID, reproject)
 
     //Export building
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.building, id_zone, h2gis_datasource, h2gis_tables.buildingTableName
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.building, id_zone, h2gis_datasource, h2gis_tables.building
             , "", inputSRID, outputSRID, reproject)
 
     //Export road
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.road, id_zone, h2gis_datasource, h2gis_tables.roadTableName
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.road, id_zone, h2gis_datasource, h2gis_tables.road
             , "", inputSRID, outputSRID, reproject)
     //Export rail
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.rail, id_zone, h2gis_datasource, h2gis_tables.railTableName
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.rail, id_zone, h2gis_datasource, h2gis_tables.rail
             , "", inputSRID, outputSRID, reproject)
     //Export vegetation
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.vegetation, id_zone, h2gis_datasource, h2gis_tables.vegetationTableName
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.vegetation, id_zone, h2gis_datasource, h2gis_tables.vegetation
             , "", inputSRID, outputSRID, reproject)
     //Export water
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.water, id_zone, h2gis_datasource, h2gis_tables.hydrographicTableName
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.water, id_zone, h2gis_datasource, h2gis_tables.water
             , "", inputSRID, outputSRID, reproject)
     //Export impervious
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.impervious, id_zone, h2gis_datasource, h2gis_tables.imperviousTableName
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.impervious, id_zone, h2gis_datasource, h2gis_tables.impervious
             , "", inputSRID, outputSRID, reproject)
 
     //Export population table
@@ -2030,14 +1941,4 @@ IProcess loadAndFormatData() {
 }
 
 
-/**
- * Parse a json file to a Map
- * @param jsonFile
- * @return
- */
-static Map readJSONParameters(def jsonFile) {
-    def jsonSlurper = new JsonSlurper()
-    if (jsonFile) {
-        return jsonSlurper.parse(jsonFile)
-    }
-}
+
