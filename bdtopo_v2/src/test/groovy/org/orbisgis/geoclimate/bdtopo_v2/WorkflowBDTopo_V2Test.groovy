@@ -528,8 +528,9 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(input: createConfigFile(bdTopoParameters, directory)))
+        def tableNames =process.results.output.values()
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
-        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
+        assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.grid_indicators[0]} where water_fraction>0").count>0
     }
 
     @Test
@@ -572,11 +573,13 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(input: createConfigFile(bdTopoParameters, directory)))
+        def tableNames =process.results.output.values();
+        def grid_table =tableNames.grid_indicators[0]
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
-        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators".toString()).count==100
-        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where WATER_FRACTION>0".toString()).count==0
-        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where HIGH_VEGETATION_FRACTION>0".toString()).count>0
-        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where LOW_VEGETATION_FRACTION>0".toString()).count==0
+        assertTrue h2gis.firstRow("select count(*) as count from $grid_table".toString()).count==100
+        assertTrue h2gis.firstRow("select count(*) as count from $grid_table where WATER_FRACTION>0".toString()).count==0
+        assertTrue h2gis.firstRow("select count(*) as count from $grid_table where HIGH_VEGETATION_FRACTION>0".toString()).count>0
+        assertTrue h2gis.firstRow("select count(*) as count from $grid_table where LOW_VEGETATION_FRACTION>0".toString()).count==0
     }
 
     @Test
@@ -610,8 +613,9 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(input: createConfigFile(bdTopoParameters, directory)))
+        def tableNames =process.results.output.values();
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
-        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
+        assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.grid_indicators[0]} where water_fraction>0").count>0
     }
 
     @Test
@@ -645,8 +649,9 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(input: createConfigFile(bdTopoParameters, directory)))
+        def tableNames =process.results.output.values();
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
-        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where LCZ_PRIMARY is not null").count>0
+        assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.grid_indicators[0]} where LCZ_PRIMARY is not null").count>0
     }
 
     @Test
