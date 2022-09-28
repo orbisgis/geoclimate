@@ -1067,6 +1067,8 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def out
                 }
             }
         } else {
+            info "The location $code_insee is represented by $numGeom polygons\n. " +
+                    "GeoClimate will process each polygon individually."
             int subAreaCount = 1
             def tablesToMerge = ["zone"                : [],
                                  "road"                : [], "rail": [], "water": [],
@@ -1078,7 +1080,7 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def out
                                  "grid_indicators": []
             ]
             for (i in 0..<numGeom) {
-                info "Processing the sub area ${subAreaCount} on ${numGeom + 1}"
+                info "Processing the polygon ${subAreaCount} on ${numGeom + 1}"
                 def subGeom = geom.getGeometryN(i)
                 if (!subGeom.isEmpty()) {
                     def subCommuneTableName = postfix("COMMUNE")
@@ -1108,13 +1110,27 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def out
                 def tableNames = it.value
                 def queryToJoin = []
                 String tmp_table
-                def columns =[]
+                HashSet allColumns =new HashSet()
+                def tableAndColumns = [:]
                 tableNames.each { tableName ->
                     if (tableName) {
-                        columns.addAll(JDBCUtilities.getColumnNames(h2gis_datasource.getConnection(), tableName))
-                        queryToJoin << "SELECT * FROM $tableName "
-                        tmp_table = tableName
+                        def tableColumns = JDBCUtilities.getColumnNames(h2gis_datasource.getConnection(), tableName)
+                        allColumns.addAll(tableColumns)
+                        tableAndColumns.put(tableName, tableColumns)
                     }
+                }
+                tableNames.each { tableName ->
+                    def columns = tableAndColumns.get(tableName)
+                    def joinColumns = []
+                    allColumns.each{col ->
+                        if (!columns.contains(col)) {
+                            joinColumns<< "null as ${col}"
+                        }else {
+                            joinColumns<< col
+                        }
+                    }
+                    queryToJoin << "SELECT ${joinColumns.join(",")} FROM $tableName"
+                    tmp_table = tableName
                 }
                 if (tmp_table) {
                     def finalTableName = postfix(tmp_table.substring(0, tmp_table.lastIndexOf("_")))
