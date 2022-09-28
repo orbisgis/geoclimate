@@ -1061,6 +1061,7 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def out
                 """.toString())
                 def results = bdTopoProcessingSingleArea(h2gis_datasource, code_insee, subCommuneTableName, inputSRID, processing_parameters)
                 if (results) {
+                    computeGridIndicators(h2gis_datasource,code_insee, inputSRID,processing_parameters, results)
                     saveResults(h2gis_datasource, code_insee, results, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData, outputGrid)
                     outputTableNamesResult.put(code_insee, results.findAll { it.value != null })
                 }
@@ -1107,8 +1108,10 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def out
                 def tableNames = it.value
                 def queryToJoin = []
                 String tmp_table
+                def columns =[]
                 tableNames.each { tableName ->
                     if (tableName) {
+                        columns.addAll(JDBCUtilities.getColumnNames(h2gis_datasource.getConnection(), tableName))
                         queryToJoin << "SELECT * FROM $tableName "
                         tmp_table = tableName
                     }
@@ -1122,6 +1125,7 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def out
                     results.put(it.key, finalTableName)
                 }
             }
+            computeGridIndicators(h2gis_datasource,code_insee,inputSRID, processing_parameters, results)
             outputTableNamesResult.put(code_insee, results)
             saveResults(h2gis_datasource, code_insee, results, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData,outputGrid)
 
@@ -1129,6 +1133,44 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def out
     }
     return outputTableNamesResult
 
+}
+
+/**
+ * Compute the grid indicators outside the workflow to be sure that the grid domain is continuous
+ * e.g if the input are is defined by a multipolygon (a location with islands)
+ * @param h2gis_datasource
+ * @param id_zone
+ * @param processing_parameters
+ * @param results
+ * @return
+ */
+def computeGridIndicators(H2GIS h2gis_datasource,def id_zone, def srid, def processing_parameters, def results){
+    def grid_indicators_params = processing_parameters.grid_indicators
+    //Compute the grid indicators
+    if (grid_indicators_params) {
+        def x_size = grid_indicators_params.x_size
+        def y_size = grid_indicators_params.y_size
+        IProcess gridProcess = Geoindicators.WorkflowGeoIndicators.createGrid()
+        def geomEnv = h2gis_datasource.getSpatialTable(results.zone).getExtent()
+        if (gridProcess.execute(datasource: h2gis_datasource, envelope: geomEnv,
+                x_size: x_size, y_size: y_size,
+                srid: srid, rowCol: grid_indicators_params.rowCol)) {
+            def gridTableName = gridProcess.results.outputTableName
+            IProcess rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators()
+            if (rasterizedIndicators.execute(datasource: h2gis_datasource, grid: gridTableName,
+                    list_indicators: grid_indicators_params.indicators,
+                    building: results.building, road: results.road, vegetation: results.vegetation,
+                    water: results.water, impervious: results.impervious,
+                    rsu_lcz: results.rsu_lcz,
+                    rsu_utrf_area: results.rsu_utrf_area,
+                    prefixName: processing_parameters.prefixName
+            )) {
+                results.put("grid_indicators", rasterizedIndicators.results.outputTableName)
+            }
+        } else {
+            info "Cannot create a grid to aggregate the indicators"
+        }
+    }
 }
 
 
@@ -1217,7 +1259,6 @@ def bdTopoProcessingSingleArea(def h2gis_datasource, def id_zone, def subCommune
         info "BDTOPO V2 GIS layers formated"
 
         def rsu_indicators_params = processing_parameters.rsu_indicators
-        def grid_indicators_params = processing_parameters.grid_indicators
         def worldpop_indicators = processing_parameters.worldpop_indicators
 
 
@@ -1290,32 +1331,6 @@ def bdTopoProcessingSingleArea(def h2gis_datasource, def id_zone, def subCommune
             }
         }
 
-        //Compute the grid indicators
-        if (grid_indicators_params) {
-            def x_size = grid_indicators_params.x_size
-            def y_size = grid_indicators_params.y_size
-            IProcess gridProcess = Geoindicators.WorkflowGeoIndicators.createGrid()
-            def geomEnv = h2gis_datasource.getSpatialTable(zone).getExtent()
-            if (gridProcess.execute(datasource: h2gis_datasource, envelope: geomEnv,
-                    x_size: x_size, y_size: y_size,
-                    srid: srid, rowCol: grid_indicators_params.rowCol)) {
-                def gridTableName = gridProcess.results.outputTableName
-                IProcess rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators()
-                if (rasterizedIndicators.execute(datasource: h2gis_datasource, grid: gridTableName,
-                        list_indicators: grid_indicators_params.indicators,
-                        building: buildingTableName, road: roadTableName, vegetation: vegetationTableName,
-                        water: hydrographicTableName, impervious: imperviousTableName,
-                        rsu_lcz: results.rsu_lcz,
-                        rsu_utrf_area: results.rsu_utrf_area,
-                        prefixName: processing_parameters.prefixName
-                )) {
-                    results.put("grid_indicators", rasterizedIndicators.results.outputTableName)
-                }
-            } else {
-                info "Cannot create a grid to aggregate the indicators"
-            }
-        }
-
         //Compute traffic flow
         if (processing_parameters.road_traffic) {
             IProcess format = Geoindicators.RoadIndicators.build_road_traffic()
@@ -1367,7 +1382,7 @@ def saveOutputFiles(def h2gis_datasource, def results, def outputFiles, def outp
  */
 def saveTablesInDatabase(def output_datasource, def h2gis_datasource, def outputTableNames, def h2gis_tables, def id_zone, def inputSRID, def outputSRID, def reproject) {
     Connection con = output_datasource.getConnection()
-    con.setAutoCommit(true);
+    con.setAutoCommit(true)
 
     //Export building indicators
     indicatorTableBatchExportTable(output_datasource, outputTableNames.building_indicators, id_zone, h2gis_datasource, h2gis_tables.building_indicators
