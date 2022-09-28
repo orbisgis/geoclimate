@@ -259,7 +259,7 @@ IProcess workflow() {
                                             "block_indicators",
                                             "rsu_indicators",
                                             "rsu_lcz",
-                                            "zones",
+                                            "zone",
                                             "building",
                                             "road",
                                             "rail",
@@ -403,7 +403,7 @@ IProcess osm_processing() {
                 //Extract the zone table and read its SRID
                 def zones = extractOSMZone(h2gis_datasource, id_zone, processing_parameters.distance, bbox_size)
                 if (zones) {
-                    id_zone = id_zone in Map ? "location_" + id_zone.join('_') : id_zone
+                    id_zone = id_zone in Collection ?  id_zone.join('_') : id_zone
                     def zone = zones.outputZoneTable
                     def zoneEnvelopeTableName = zones.outputZoneEnvelopeTable
                     if (h2gis_datasource.getTable(zone).getRowCount() == 0) {
@@ -665,9 +665,9 @@ IProcess osm_processing() {
                                     }
                                 } else {
                                     info "Cannot create a grid to aggregate the indicators"
+                                    h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zones.geometry}',4326) ,'$id_zone', 'Error computing the grid indicators')".toString()
+
                                 }
-                            } else {
-                                h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zones.geometry}',4326) ,'$id_zone', 'Error computing the grid indicators')".toString()
                             }
 
                             if (outputFolder && ouputTableFiles) {
@@ -1029,7 +1029,7 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
             , "", inputSRID, outputSRID, reproject)
 
     //Export zone
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.zones, id_zone, h2gis_datasource, h2gis_tables.zone
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.zone, id_zone, h2gis_datasource, h2gis_tables.zone
             , "", inputSRID, outputSRID, reproject)
 
     //Export building

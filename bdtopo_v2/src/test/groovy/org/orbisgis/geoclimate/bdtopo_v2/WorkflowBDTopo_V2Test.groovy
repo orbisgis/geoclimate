@@ -267,7 +267,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                                             "block_indicators":"block_indicators",
                                             "rsu_indicators":"rsu_indicators",
                                             "rsu_lcz":"rsu_lcz",
-                                            "zones":"zones" ]]],
+                                            "zone":"zone" ]]],
                 "parameters":
                         ["distance" : 0,
                          "hLevMin": 3,
@@ -316,7 +316,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                                             "block_indicators":"block_indicators",
                                             "rsu_indicators":"rsu_indicators",
                                             "rsu_lcz":"rsu_lcz",
-                                            "zones":"zones" ]]],
+                                            "zone":"zone" ]]],
                 "parameters":
                         ["distance" : 0,
                          "hLevMin": 3,
@@ -388,7 +388,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                            "block_indicators":"block_indicators",
                            "rsu_indicators":"rsu_indicators",
                            "rsu_lcz":"rsu_lcz",
-                           "zones":"zones", "grid_indicators":"grid_indicators" ]
+                           "zone":"zone", "grid_indicators":"grid_indicators" ]
         //Drop all output tables if exist
         postGIS.execute("DROP TABLE IF EXISTS ${outputTables.values().join(",")};");
         String directory ="./target/bdtopo_workflow_postgis"
@@ -445,7 +445,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                            "block_indicators":"block_indicators",
                            "rsu_indicators":"rsu_indicators",
                            "rsu_lcz":"rsu_lcz",
-                           "zones":"zones", "grid_indicators":"grid_indicators" ]
+                           "zone":"zone", "grid_indicators":"grid_indicators" ]
         //Drop all output tables if exist
         postGIS.execute("DROP TABLE IF EXISTS ${outputTables.values().join(",")};".toString());
         String directory ="./target/bdtopo_workflow_postgis_bbox"
@@ -472,8 +472,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                 "parameters":
                         ["distance" : 0,
                          rsu_indicators: [
-                                 "indicatorUse": ["LCZ", "UTRF"],
-                                 "svfSimplified": true
+                                 "indicatorUse": ["LCZ", "UTRF"]
                          ],
                          "grid_indicators": [
                                  "x_size": 10,
@@ -786,7 +785,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
                                 "block_indicators":"block_indicators_2154",
                                 "rsu_indicators":"rsu_indicators_2154",
                                 "rsu_lcz":"rsu_lcz_2154",
-                                "zones":"zones_2154",
+                                "zone":"zone_2154",
                                 "building_utrf":"building_utrf_2154",
                                 "rsu_utrf_area":"rsu_utrf_area_2154",
                                 "rsu_utrf_floor_area":"rsu_utrf_floor_area_2154",

@@ -246,7 +246,7 @@ IProcess workflow() {
                                             "block_indicators",
                                             "rsu_indicators",
                                             "rsu_lcz",
-                                            "zones",
+                                            "zone",
                                             "building",
                                             "road",
                                             "rail",
@@ -1438,7 +1438,7 @@ def saveTablesInDatabase(def output_datasource, def h2gis_datasource, def output
             , "", inputSRID, outputSRID, reproject)
 
     //Export zone
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.zones, id_zone, h2gis_datasource, h2gis_tables.zone
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.zone, id_zone, h2gis_datasource, h2gis_tables.zone
             , "", inputSRID, outputSRID, reproject)
 
     //Export building

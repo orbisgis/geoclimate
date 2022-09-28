@@ -6,11 +6,11 @@
         "delete" :true
     },
     "input" : {"bdtopo_v2": {
+        "loactions": "Redon",
         "database": {
             "user": "-",
             "password": "-",
             "url": "jdbc:postgresql://-",
-            "id_zones":["id zone here"],
             "tables": {"commune":"ign_bdtopo_2017.commune",
                 "bati_indifferencie":"ign_bdtopo_2017.bati_indifferencie",
                 "bati_industriel":"ign_bdtopo_2017.bati_industriel",
@@ -35,7 +35,7 @@
                 "block_indicators":"block_indicators_2154",
                 "rsu_indicators":"rsu_indicators_2154",
                  "rsu_lcz":"rsu_lcz_2154",
-            "zones":"zones_2154"}
+                "zone":"zones_2154"}
         }
     },
     "parameters":

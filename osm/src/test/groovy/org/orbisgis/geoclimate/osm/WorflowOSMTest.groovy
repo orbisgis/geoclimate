@@ -151,7 +151,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                  "tables": [
                                             "rsu_indicators":"rsu_indicators",
                                             "rsu_lcz":"rsu_lcz",
-                                            "zones":"zones" ,
+                                            "zone":"zone" ,
                                             "grid_indicators":"grid_indicators",
                                             "building_height_missing":"building_height_missing"]]],
                 "parameters":
@@ -180,7 +180,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
             def rsu_lczTable = postgis.getTable("rsu_lcz")
             assertNotNull(rsu_lczTable)
             assertTrue(rsu_lczTable.getRowCount()>0)
-            def zonesTable = postgis.getTable("zones")
+            def zonesTable = postgis.getTable("zone")
             assertNotNull(zonesTable)
             assertTrue(zonesTable.getRowCount()>0)
             def gridTable = postgis.getTable("grid_indicators")
@@ -262,7 +262,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
             }
         }
         assertTrue(resultFiles.size()==1)
-        assertTrue(resultFiles.get(0)==folder.absolutePath+File.separator+"zones.geojson")
+        assertTrue(resultFiles.get(0)==folder.absolutePath+File.separator+"zone.geojson")
     }
 
     @Disabled
@@ -295,7 +295,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
             }
         }
         assertTrue(resultFiles.size()==1)
-        assertTrue(resultFiles.get(0)==folder.absolutePath+File.separator+"zones.geojson")
+        assertTrue(resultFiles.get(0)==folder.absolutePath+File.separator+"zone.geojson")
     }
 
     @Test
@@ -376,7 +376,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "locations" : ["Pont-de-Veyle"]],
                 "output" :[
                 "folder" : ["path": directory,
-                    "tables": ["grid_indicators", "zones"]]],
+                    "tables": ["grid_indicators", "zone"]]],
                 "parameters":
                         ["distance" : 0,
                          "grid_indicators": [
@@ -389,14 +389,16 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
+        def tableNames =process.results.output.values()
+        def gridTable = tableNames.grid_indicators[0]
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
-        assertTrue h2gis.firstRow("select count(*) as count from grid_indicators where water_fraction>0").count>0
+        assertTrue h2gis.firstRow("select count(*) as count from $gridTable where water_fraction>0").count>0
         def  grid_file = new File("${directory+File.separator}osm_Pont-de-Veyle${File.separator}grid_indicators_water_fraction.asc")
         h2gis.execute("DROP TABLE IF EXISTS water_grid; CALL ASCREAD('${grid_file.getAbsolutePath()}', 'water_grid')")
         assertTrue h2gis.firstRow("select count(*) as count from water_grid").count==6
 
-        assertEquals(5, h2gis.firstRow("select count(*) as count from grid_indicators where LCZ_PRIMARY is not null").count)
-        assertEquals(1,h2gis.firstRow("select count(*) as count from grid_indicators where LCZ_PRIMARY is null").count)
+        assertEquals(5, h2gis.firstRow("select count(*) as count from $gridTable where LCZ_PRIMARY is not null").count)
+        assertEquals(1,h2gis.firstRow("select count(*) as count from $gridTable where LCZ_PRIMARY is null").count)
     }
 
     @Test
@@ -416,7 +418,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "locations" : [[48.49749,5.25349,48.58082,5.33682]]],
                 "output" :[
                         "folder" : ["path": directory,
-                                    "tables": ["grid_indicators", "zones"]]],
+                                    "tables": ["grid_indicators", "zone"]]],
                 "parameters":
                         ["distance" : 0,
                          "grid_indicators": [
@@ -603,7 +605,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def waterFile = "water"
         def railFile = "rail"
         def imperviousFile = "impervious"
-        def zoneFile = "zones"
+        def zoneFile = "zone"
         def sea_land_maskFile = "sea_land_mask"
         def filesToLoad = ["$roadFile": roadFile+test, "$vegetationFile": vegetationFile+test,
                            "$waterFile": waterFile+test, "$railFile": railFile+test,
