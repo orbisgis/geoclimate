@@ -999,13 +999,13 @@ class TransformUtilsTest extends AbstractOSMTest {
                 case 1:
                     assertEquals "house", it.building
                     assertEquals "w1", it.id
-                    assertTrue it.the_geom instanceof Polygon
+                    assertEquals 2 ,  it.the_geom.getDimension()
                     assertEquals "lake", it.water
                     break
                 case 2:
                     assertEquals "house", it.building
                     assertEquals "r1", it.id
-                    assertTrue it.the_geom instanceof Polygon
+                    assertEquals 2 ,  it.the_geom.getDimension()
                     assertEquals "lake", it.water
                     break
             }
@@ -1025,7 +1025,7 @@ class TransformUtilsTest extends AbstractOSMTest {
                 case 1:
                     assertEquals "house", it.building
                     assertEquals "r1", it.id
-                    assertTrue it.the_geom instanceof Polygon
+                    assertEquals 2 ,  it.the_geom.getDimension()
                     assertEquals "lake", it.water
                     break
             }
@@ -1066,7 +1066,7 @@ class TransformUtilsTest extends AbstractOSMTest {
                 case 1:
                     assertEquals "house", it.building
                     assertEquals "w1", it.id
-                    assertTrue it.the_geom instanceof Polygon
+                    assertEquals 2 ,  it.the_geom.getDimension()
                     assertEquals "lake", it.water
                     break
             }
