@@ -75,7 +75,7 @@ def createDatasource(def database_properties) {
 }
 
 /**
- * Method to the tables to save in a folder
+ * Method to check the output tables that can be saved
  *
  * @param  outputFolder properties to store in a folder (path and table names)
  * @parm   allowedOutputTables list of supported tables
