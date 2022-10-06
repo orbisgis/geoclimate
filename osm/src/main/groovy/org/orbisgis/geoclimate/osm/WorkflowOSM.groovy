@@ -233,7 +233,7 @@ IProcess workflow() {
             def overpass_maxsize = inputParameters.get("maxsize")
 
             if (!overpass_maxsize) {
-                overpass_maxsize = 1073741824
+                overpass_maxsize = 536870912
             } else if (overpass_maxsize <= 536870912) {
                 error "The maxsize value must be greater than the default value :  536870912 (512 MB)"
                 return null

@@ -278,11 +278,11 @@ IProcess prepareTSUData() {
                         hydrographic_unified = postfix "hydrographic_unified"
                         hydrographic_tmp = postfix "hydrographic_tmp"
 
-                        datasource "DROP TABLE IF EXISTS " + hydrographic_indice
-                        datasource "CREATE TABLE " + hydrographic_indice + "(THE_GEOM geometry, ID serial," +
-                                " CONTACT integer) AS (SELECT st_makevalid(THE_GEOM) AS the_geom, EXPLOD_ID , 0 FROM " +
-                                "ST_EXPLODE('(SELECT * FROM " + hydrographicTable + " WHERE ZINDEX=0)')" +
-                                " WHERE ST_DIMENSION(the_geom)>0 AND ST_ISEMPTY(the_geom)=false)"
+                        datasource "DROP TABLE IF EXISTS $hydrographic_indice".toString()
+                        datasource ("""CREATE TABLE  $hydrographic_indice (THE_GEOM geometry, ID serial,
+                                 CONTACT integer) AS (SELECT st_makevalid(THE_GEOM) AS the_geom, EXPLOD_ID , 0 FROM 
+                                ST_EXPLODE('(SELECT * FROM $hydrographicTable WHERE ZINDEX=0)') 
+                                 WHERE ST_DIMENSION(the_geom)>0 AND ST_ISEMPTY(the_geom)=false)""").toString()
 
                         datasource """CREATE SPATIAL INDEX IF NOT EXISTS hydro_indice_idx ON $hydrographic_indice (THE_GEOM);
                          UPDATE $hydrographic_indice SET CONTACT=1 WHERE ID IN(SELECT DISTINCT(a.ID)

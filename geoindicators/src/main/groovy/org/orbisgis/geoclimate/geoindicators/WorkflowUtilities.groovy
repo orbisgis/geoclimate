@@ -157,7 +157,7 @@ def saveToAscGrid(def outputTable, def subFolder, def filePrefix, def h2gis_data
 
             //Save each grid
             columnNames.each { it ->
-                def outputFile = new File("${subFolder.getAbsolutePath() + File.separator + filePrefix + "_" + it.toLowerCase()}.asc")
+                def outputFile = new File("${subFolder + File.separator + filePrefix + "_" + it.toLowerCase()}.asc")
                 if (deleteOutputData) {
                     outputFile.delete()
                 }
@@ -176,7 +176,7 @@ def saveToAscGrid(def outputTable, def subFolder, def filePrefix, def h2gis_data
                 }
                 //Save the PRJ file
                 if (outputSRID >= 0) {
-                    File outPrjFile = new File("${subFolder.getAbsolutePath() + File.separator + filePrefix + "_" + it.toLowerCase()}.prj")
+                    File outPrjFile = new File("${subFolder + File.separator + filePrefix + "_" + it.toLowerCase()}.prj")
                     PRJUtil.writePRJ(h2gis_datasource.getConnection(), outputSRID, outPrjFile)
                 }
                 info "$outputTable has been saved in $outputFile"

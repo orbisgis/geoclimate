@@ -36,6 +36,7 @@
  */
 package org.orbisgis.geoclimate.osmtools
 
+import org.h2gis.utilities.GeographyUtilities
 import org.junit.jupiter.api.*
 import org.locationtech.jts.geom.*
 import org.orbisgis.data.H2GIS
@@ -810,5 +811,68 @@ class TransformTest extends AbstractOSMTest {
                     assertNotNull(transform.results.outputTableName)
                     h2GIS.getTable(transform.results.outputTableName).save("/tmp/building.shp", true)
                 }
+    }
+
+    /**
+     * It uses for test purpose
+     */
+    @Disabled
+    @Test
+    void testIntegrationForDebug() {
+        def location = "Redon"
+        float distance = 1000
+        def interiorPoint = true
+        def nominatim = Utilities.getNominatimData(location)
+
+        if (!nominatim) {
+            println "Cannot find any OSM data for the location $location"
+        }
+
+        Geometry geom = nominatim["geom"]
+
+        if (!geom) {
+            println "Cannot find any geometry area for the location $location"
+        }
+
+        def env = geom.getEnvelopeInternal()
+        if(interiorPoint){
+            Coordinate p  = geom.getInteriorPoint().getCoordinate()
+            env = GeographyUtilities.createEnvelope(new Coordinate(p.x,p.y), distance, distance)
+        }
+
+        def overpass_enpoint = "https://lz4.overpass-api.de/api"
+
+        System.setProperty("OVERPASS_ENPOINT", overpass_enpoint)
+
+        H2GIS h2GIS = H2GIS.open("/tmp/geoclimate;AUTO_SERVER=TRUE")
+
+        def  keysValues = ["building", "railway", "amenity",
+                           "leisure", "highway", "natural",
+                           "landuse", "landcover",
+                           "vegetation","waterway"]
+
+        def query =  "[maxsize:536870912]"+ Utilities.buildOSMQueryWithAllData(env, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+
+
+        def extract = OSMTools.Loader.extract()
+        if (!query.isEmpty()) {
+            if (extract.execute(overpassQuery: query)) {
+                def prefix = "OSM_FILE_${OSMTools.Utilities.uuid()}"
+                def load = OSMTools.Loader.load()
+                if (load(datasource: h2GIS, osmTablesPrefix: prefix, osmFilePath:extract.results.outputFilePath)) {
+                    def transform
+                    //Extract water
+                    def tags = ["leisure":["park"]]
+                    def columns = ["leisure"]
+                    transform = OSMTools.Transform.toPolygons()
+                    transform.execute(datasource: h2GIS, osmTablesPrefix: prefix, tags: tags, columnsToKeep:columns)
+                    assertNotNull(transform.results.outputTableName)
+                    h2GIS.getTable(transform.results.outputTableName).save("/tmp/results.shp", true)
+
+                }
+            }
+        }
+
+
     }
 }

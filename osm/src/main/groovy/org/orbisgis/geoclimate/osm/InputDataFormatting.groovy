@@ -1195,7 +1195,7 @@ IProcess mergeWaterAndSeaLandTables() {
                 CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id_hydro serial, id_source VARCHAR, ZINDEX INTEGER);
             """.toString()
             if (inputSeaLandTableName && inputWaterTableName) {
-                if (datasource.firstRow("select count(*) as count from $inputSeaLandTableName where TYPE ='sea'").count > 0) {
+                if (datasource.firstRow("select count(*) as count from $inputSeaLandTableName where TYPE ='sea'".toString()).count > 0) {
                     def tmp_water_not_in_sea = "WATER_NOT_IN_SEA${UUID.randomUUID().toString().replaceAll("-", "_")}"
                     //This method is used to merge the SEA mask with the water table
                     def queryMergeWater = """DROP  TABLE IF EXISTS $outputTableName, $tmp_water_not_in_sea;

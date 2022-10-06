@@ -43,6 +43,10 @@ import org.locationtech.jts.geom.*
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.slf4j.LoggerFactory
 
+import java.util.concurrent.TimeUnit
+import java.util.regex.Matcher
+import java.util.regex.Pattern
+
 import static java.nio.charset.StandardCharsets.UTF_8
 
 class Utilities {
@@ -290,6 +294,12 @@ class Utilities {
             connection = url.openConnection()
         }
         connection.requestMethod = "GET"
+        def user_agent = System.getProperty("OVERPASS_USER_AGENT")
+        if(!user_agent){
+            user_agent = OSM_USER_AGENT
+        }
+        connection.setRequestProperty("User-Agent", user_agent)
+
         connection.connect()
 
         info url
@@ -638,6 +648,11 @@ class Utilities {
     /** Url of the status of the Overpass server */
     static def OVERPASS_STATUS_URL = "${OVERPASS_ENDPOINT}/status"
 
+    /** Default user agent*/
+    static def OSM_USER_AGENT = "geoclimate"
+
+    /** OVERPASS TIMEOUT */
+    static  int OVERPASS_TIMEOUT=180
     /**
      * Return the status of the Overpass server.
      * @return A string representation of the overpass status.
@@ -694,6 +709,24 @@ class Utilities {
         }
         info queryUrl
         connection.requestMethod = GET
+
+        Matcher timeoutMatcher = Pattern.compile("\\[timeout:(\\d+)\\]").matcher(queryUrl.toString());
+        int timeout = OVERPASS_TIMEOUT
+        if (timeoutMatcher.find()) {
+            timeout = (int) TimeUnit.SECONDS.toMillis(Integer.parseInt(timeoutMatcher.group(1)));
+        } else {
+            timeout = (int) TimeUnit.MINUTES.toMillis(3);
+        }
+
+        def user_agent = System.getProperty("OVERPASS_USER_AGENT")
+        if(!user_agent){
+            user_agent = OSM_USER_AGENT
+        }
+        connection.setRequestProperty("User-Agent", user_agent)
+
+        connection.setConnectTimeout(timeout);
+        connection.setReadTimeout(timeout);
+
         connection.connect()
 
         info "Executing query... $queryUrl"
@@ -745,6 +778,21 @@ class Utilities {
         }
         info queryUrl
         connection.requestMethod = GET
+        Matcher timeoutMatcher = Pattern.compile("\\[timeout:(\\d+)\\]").matcher(query)
+        int timeout = OVERPASS_TIMEOUT
+        if (timeoutMatcher.find()) {
+            timeout = (int) TimeUnit.SECONDS.toMillis(Integer.parseInt(timeoutMatcher.group(1)));
+        } else {
+            timeout = (int) TimeUnit.MINUTES.toMillis(3);
+        }
+        def user_agent = System.getProperty("OVERPASS_USER_AGENT")
+        if(!user_agent){
+            user_agent = OSM_USER_AGENT
+        }
+        connection.setRequestProperty("User-Agent", user_agent)
+        connection.setConnectTimeout(timeout)
+        connection.setReadTimeout(timeout)
+
         connection.connect()
 
         debug"Executing query... $query"
