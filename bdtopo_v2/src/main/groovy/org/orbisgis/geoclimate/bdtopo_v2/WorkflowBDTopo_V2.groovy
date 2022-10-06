@@ -1137,6 +1137,13 @@ def bdtopo_processing(def location, H2GIS h2gis_datasource, def processing_param
 
 }
 
+/**
+ * Method to merge a list of tables
+ * e.g : all building tables computed by zone are merged in one building table
+ * @param tablesToMerge
+ * @param h2gis_datasource
+ * @return
+ */
 def mergeResultTables(def tablesToMerge, H2GIS h2gis_datasource){
     def results = [:]
     def con =h2gis_datasource.getConnection()
