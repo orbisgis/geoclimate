@@ -360,7 +360,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         dirFile.mkdir()
         def tablesToSave = [
                             "rsu_lcz",]
-        def process = BDTopo_V2.WorkflowBDTopo_V2.bdtopo_processing(h2GISDatabase, defaultParameters, directory, tablesToSave, null, null, 4326, 2154);
+        def process = BDTopo_V2.WorkflowBDTopo_V2.bdtopo_processing(inseeCode, h2GISDatabase, defaultParameters, directory, tablesToSave, null, null, 4326, 2154);
         def tableNames = process.values()
 
         checkSpatialTable(h2GISDatabase, tableNames["block_indicators"])
@@ -368,8 +368,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest{
         checkSpatialTable(h2GISDatabase, tableNames["rsu_indicators"])
         checkSpatialTable(h2GISDatabase, tableNames["rsu_lcz"])
         def geoFiles = []
-        def  folder = new File(directory+File.separator+inseeCode)
-        folder.eachFileRecurse groovy.io.FileType.FILES,  { file ->
+        dirFile.eachFileRecurse groovy.io.FileType.FILES,  { file ->
             if (file.name.toLowerCase().endsWith(".geojson")) {
                 geoFiles << file.getAbsolutePath()
             }

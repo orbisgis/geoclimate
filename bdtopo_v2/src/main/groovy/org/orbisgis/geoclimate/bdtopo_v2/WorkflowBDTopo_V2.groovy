@@ -332,7 +332,7 @@ IProcess workflow() {
                         if (filterLinkedData(location, processing_parameters.distance, tablesLinked, sourceSrid, inputSRID, h2gis_datasource)) {
                             def formatedZone = checkAndFormatLocations(location)
                             if (formatedZone) {
-                                def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters,
+                                def bdtopo_results = bdtopo_processing(formatedZone, h2gis_datasource, processing_parameters,
                                         createMainFolder(file_outputFolder, formatedZone), outputFileTables, outputDatasource,
                                         outputTables, outputSRID, inputSRID)
                                 if (bdtopo_results) {
