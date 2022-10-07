@@ -613,7 +613,7 @@ IProcess osm_processing() {
 
                                         IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
                                         if (!process.execute([inputBuilding : results.building,
-                                                              inputpopulation       : importAscGrid.results.outputTableWorldPopName
+                                                              inputPopulation       : importAscGrid.results.outputTableWorldPopName
                                                               , datasource          : h2gis_datasource])) {
                                             info "Cannot compute any population data at building level"
                                         }

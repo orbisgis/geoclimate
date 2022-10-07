@@ -13,7 +13,7 @@ import org.orbisgis.process.api.IProcess
  * Disaggregate a set of population values to a grid
  * Update the input grid table to add new population columns
  * @param inputGridTableName the building table
- * @param inputpopulation the spatial unit that contains the population to distribute
+ * @param inputPopulation the spatial unit that contains the population to distribute
  * @param inputPopulationColumns the list of the columns to disaggregate
  * @return the input Grid table with the new population columns
  *

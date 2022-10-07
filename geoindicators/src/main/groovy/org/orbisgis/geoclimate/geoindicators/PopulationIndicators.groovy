@@ -53,7 +53,7 @@ IProcess formatPopulationTable() {
 /**
  * This process is used to aggregate population data at multiscales
  *
- * @param inputpopulation name of the population table
+ * @param inputPopulation name of the population table
  * @param inputPopulationColumns the list of the columns to keep
  * @param inputBuildingTableName name of the building table to distribute the population columns
  * @param inputRsuTableName name of the RSU table to distribute the population columns
@@ -72,8 +72,8 @@ IProcess multiScalePopulation() {
                 def prefixName = "pop"
                 if (buildingTable) {
                     IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
-                    if (process.execute(inputBuildingTableName: buildingTable,
-                            inputpopulation: populationTable, inputPopulationColumns: populationColumns,
+                    if (process.execute(inputBuilding: buildingTable,
+                            inputPopulation: populationTable, inputPopulationColumns: populationColumns,
                             datasource: datasource)) {
                         datasource.execute("""DROP TABLE IF EXISTS $buildingTable;
                                 ALTER TABLE ${process.results.buildingTableName} RENAME TO $buildingTable""".toString())

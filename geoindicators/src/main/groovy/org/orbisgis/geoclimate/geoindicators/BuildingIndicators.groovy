@@ -499,7 +499,7 @@ IProcess likelihoodLargeBuilding() {
  * Disaggregate a set of population values to the buildings
  * Update the input building table to add new population columns
  * @param inputBuildingTableName the building table
- * @param inputpopulation the spatial unit that contains the population to distribute
+ * @param inputPopulation the spatial unit that contains the population to distribute
  * @param inputPopulationColumns the list of the columns to disaggregate
  * @return the input building table with the new population columns
  *
@@ -509,9 +509,9 @@ IProcess buildingPopulation() {
     return create {
         title "Compute the number of inhabitants for each building"
         id "buildingPopulation"
-        inputs inputBuilding: String, inputpopulation: String, inputPopulationColumns :[], datasource: JdbcDataSource
+        inputs inputBuilding: String, inputPopulation: String, inputPopulationColumns :[], datasource: JdbcDataSource
         outputs buildingTableName: String
-        run { inputBuilding, inputpopulation, inputPopulationColumns, datasource ->
+        run { inputBuilding, inputPopulation, inputPopulationColumns, datasource ->
             def BASE_NAME = "building_with_population"
             def ID_BUILDING = "id_build"
             def ID_POP = "id_pop"
@@ -523,11 +523,11 @@ IProcess buildingPopulation() {
 
             //Indexing table
             datasource."$inputBuilding".the_geom.createSpatialIndex()
-            datasource."$inputpopulation".the_geom.createSpatialIndex()
+            datasource."$inputPopulation".the_geom.createSpatialIndex()
             def popColumns =[]
             def sum_popColumns =[]
             if (inputPopulationColumns) {
-                 datasource."$inputpopulation".getColumns().each { col ->
+                 datasource."$inputPopulation".getColumns().each { col ->
                      if (!["the_geom", "id_pop"].contains(col.toLowerCase()
                      )&& inputPopulationColumns.contains(col.toLowerCase())) {
                          popColumns << "b.$col"
@@ -545,7 +545,7 @@ IProcess buildingPopulation() {
                 drop table if exists $inputBuildingTableName_pop;
                 CREATE TABLE $inputBuildingTableName_pop AS SELECT (ST_AREA(ST_INTERSECTION(a.the_geom, st_force2D(b.the_geom)))*a.NB_LEV)  as area_building, a.$ID_BUILDING, 
                 b.id_pop, ${popColumns.join(",")} from
-                $inputBuilding as a, $inputpopulation as b where a.the_geom && b.the_geom and
+                $inputBuilding as a, $inputPopulation as b where a.the_geom && b.the_geom and
                 st_intersects(a.the_geom, b.the_geom) and (a.main_use in ('residential', 'building') 
                 or a.type in ('apartments', 'building', 'detached', 'farm', 'house','residential'));
                 create index on $inputBuildingTableName_pop ($ID_BUILDING);

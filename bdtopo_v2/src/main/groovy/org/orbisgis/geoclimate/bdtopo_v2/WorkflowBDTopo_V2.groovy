@@ -1347,7 +1347,7 @@ def bdTopoProcessingSingleArea(def h2gis_datasource, def id_zone, def subCommune
 
                     IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
                     if (!process.execute([inputBuilding  : results.building,
-                                          inputpopulation: importAscGrid.results.outputTableWorldPopName,
+                                          inputPopulation: importAscGrid.results.outputTableWorldPopName,
                                           inputPopulationColumns  : ["pop"], datasource: h2gis_datasource])) {
                         info "Cannot compute any population data at building level"
                     }
