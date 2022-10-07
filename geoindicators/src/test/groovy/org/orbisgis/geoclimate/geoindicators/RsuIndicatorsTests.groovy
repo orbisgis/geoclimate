@@ -765,7 +765,7 @@ class RsuIndicatorsTests {
         INSERT INTO rsu VALUES(1, 'POLYGON ((3 6, 6 6, 6 3, 3 3, 3 6))'::GEOMETRY);
         """.toString())
         IProcess process = Geoindicators.RsuIndicators.rsuPopulation()
-        assertTrue process.execute([inputRsuTableName: "rsu", inputpopulation: "population_grid",
+        assertTrue process.execute([inputRsuTableName: "rsu", inputPopulation: "population_grid",
                                     inputPopulationColumns :["pop"], datasource: h2GIS])
         assertEquals(10f, (float)h2GIS.firstRow("select pop from ${process.results.rsuTableName}").pop)
     }

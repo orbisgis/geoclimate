@@ -233,7 +233,7 @@ IProcess workflow() {
             def overpass_maxsize = inputParameters.get("maxsize")
 
             if (!overpass_maxsize) {
-                overpass_maxsize = 1073741824
+                overpass_maxsize = 536870912
             } else if (overpass_maxsize <= 536870912) {
                 error "The maxsize value must be greater than the default value :  536870912 (512 MB)"
                 return null
@@ -612,8 +612,8 @@ IProcess osm_processing() {
                                         results.put("population", importAscGrid.results.outputTableWorldPopName)
 
                                         IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
-                                        if (!process.execute([inputBuildingTableName: results.buildingTableName,
-                                                              inputpopulation       : importAscGrid.results.outputTableWorldPopName
+                                        if (!process.execute([inputBuilding : results.building,
+                                                              inputPopulation       : importAscGrid.results.outputTableWorldPopName
                                                               , datasource          : h2gis_datasource])) {
                                             info "Cannot compute any population data at building level"
                                         }
@@ -970,7 +970,7 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
             if (outputGrid == "geojson") {
                 Geoindicators.WorkflowUtilities.saveToGeojson(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
             } else if (outputGrid == "asc") {
-                Geoindicators.WorkflowUtilities.saveToAscGrid(results."$it", subFolder, it, h2gis_datasource, outputSRID, reproject, deleteOutputData)
+                Geoindicators.WorkflowUtilities.saveToAscGrid(results."$it", subFolder.getAbsolutePath(), it, h2gis_datasource, outputSRID, reproject, deleteOutputData)
             }
         } else if (it == "building_height_missing") {
             Geoindicators.WorkflowUtilities.saveToCSV(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.csv", h2gis_datasource, deleteOutputData)

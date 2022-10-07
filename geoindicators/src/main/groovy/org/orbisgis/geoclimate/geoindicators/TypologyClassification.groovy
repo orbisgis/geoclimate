@@ -307,7 +307,7 @@ IProcess identifyLczType() {
 
                 // For each LCZ type...
                 def queryLczDistance = ""
-                datasource.eachRow("SELECT * FROM $normalizedRange") { LCZ ->
+                datasource.eachRow("SELECT * FROM $normalizedRange".toString()) { LCZ ->
                     queryLczDistance += "SQRT("
                     // For each indicator...
                     urbanLCZExceptIndusColumns.collect { indic ->

@@ -392,7 +392,7 @@ class TransformUtils {
                     }
                 }
                 if(tag.value){
-                    def valueList = (tag.value instanceof Collection) ? tag.value.flatten().findResults{it} : [tag.value]
+                        def valueList = (tag.value instanceof Collection) ? tag.value.flatten().findResults{it} : [tag.value]
                     valueIn += "tag_value IN ('${valueList.join("','")}')"
                 }
 

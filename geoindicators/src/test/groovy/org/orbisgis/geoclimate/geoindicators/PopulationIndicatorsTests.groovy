@@ -20,8 +20,7 @@ class PopulationIndicatorsTests {
 
     @BeforeAll
     static void beforeAll() {
-        //h2GIS = open "./target/population_db;AUTO_SERVER=TRUE"
-        h2GIS = open "/tmp/population_db;AUTO_SERVER=TRUE"
+        h2GIS = open "./target/population_db;AUTO_SERVER=TRUE"
     }
 
     @Test
@@ -82,7 +81,7 @@ class PopulationIndicatorsTests {
         def results = process.results
 
         results.each {it->
-            h2GIS.save(it.value, "/tmp/${it.value}.geojson", true)
+            h2GIS.save(it.value, "./target/${it.value}.geojson", true)
         }
 
         def rows = h2GIS.rows("SELECT id_build, pop from ${results.buildingTable} order by id_build".toString())

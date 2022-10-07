@@ -1317,7 +1317,7 @@ IProcess computeAllGeoIndicators() {
                         }
                         datasource."$utrfBuild".I_TYPO.createIndex()
                         def queryDistinct = """SELECT DISTINCT I_TYPO AS I_TYPO FROM $utrfBuild"""
-                        def mapTypos = datasource.rows(queryDistinct)
+                        def mapTypos = datasource.rows(queryDistinct.toString())
                         def listTypos = []
                         mapTypos.each {
                             listTypos.add(urbTypoCorrespondenceTabInverted[it.I_TYPO])
@@ -1681,7 +1681,7 @@ IProcess computeGeoclimateIndicators() {
                     }
                     datasource."$utrfBuild".I_TYPO.createIndex()
                     def queryDistinct = """SELECT DISTINCT I_TYPO AS I_TYPO FROM $utrfBuild"""
-                    def mapTypos = datasource.rows(queryDistinct)
+                    def mapTypos = datasource.rows(queryDistinct.toString())
                     def listTypos = []
                     mapTypos.each {
                         listTypos.add(urbTypoCorrespondenceTabInverted[it.I_TYPO])

@@ -499,7 +499,7 @@ IProcess likelihoodLargeBuilding() {
  * Disaggregate a set of population values to the buildings
  * Update the input building table to add new population columns
  * @param inputBuildingTableName the building table
- * @param inputpopulation the spatial unit that contains the population to distribute
+ * @param inputPopulation the spatial unit that contains the population to distribute
  * @param inputPopulationColumns the list of the columns to disaggregate
  * @return the input building table with the new population columns
  *
@@ -509,9 +509,9 @@ IProcess buildingPopulation() {
     return create {
         title "Compute the number of inhabitants for each building"
         id "buildingPopulation"
-        inputs inputBuildingTableName: String, inputpopulation: String, inputPopulationColumns :[], datasource: JdbcDataSource
+        inputs inputBuilding: String, inputPopulation: String, inputPopulationColumns :[], datasource: JdbcDataSource
         outputs buildingTableName: String
-        run { inputBuildingTableName, inputpopulation, inputPopulationColumns, datasource ->
+        run { inputBuilding, inputPopulation, inputPopulationColumns, datasource ->
             def BASE_NAME = "building_with_population"
             def ID_BUILDING = "id_build"
             def ID_POP = "id_pop"
@@ -522,12 +522,12 @@ IProcess buildingPopulation() {
             def outputTableName = postfix BASE_NAME
 
             //Indexing table
-            datasource."$inputBuildingTableName".the_geom.createSpatialIndex()
-            datasource."$inputpopulation".the_geom.createSpatialIndex()
+            datasource."$inputBuilding".the_geom.createSpatialIndex()
+            datasource."$inputPopulation".the_geom.createSpatialIndex()
             def popColumns =[]
             def sum_popColumns =[]
             if (inputPopulationColumns) {
-                 datasource."$inputpopulation".getColumns().each { col ->
+                 datasource."$inputPopulation".getColumns().each { col ->
                      if (!["the_geom", "id_pop"].contains(col.toLowerCase()
                      )&& inputPopulationColumns.contains(col.toLowerCase())) {
                          popColumns << "b.$col"
@@ -540,12 +540,12 @@ IProcess buildingPopulation() {
             }
 
             //Filtering the building to get only residential and intersect it with the population table
-            def inputBuildingTableName_pop = postfix inputBuildingTableName
+            def inputBuildingTableName_pop = postfix inputBuilding
             datasource.execute("""
                 drop table if exists $inputBuildingTableName_pop;
                 CREATE TABLE $inputBuildingTableName_pop AS SELECT (ST_AREA(ST_INTERSECTION(a.the_geom, st_force2D(b.the_geom)))*a.NB_LEV)  as area_building, a.$ID_BUILDING, 
                 b.id_pop, ${popColumns.join(",")} from
-                $inputBuildingTableName as a, $inputpopulation as b where a.the_geom && b.the_geom and
+                $inputBuilding as a, $inputPopulation as b where a.the_geom && b.the_geom and
                 st_intersects(a.the_geom, b.the_geom) and (a.main_use in ('residential', 'building') 
                 or a.type in ('apartments', 'building', 'detached', 'farm', 'house','residential'));
                 create index on $inputBuildingTableName_pop ($ID_BUILDING);
@@ -564,7 +564,7 @@ IProcess buildingPopulation() {
             from $inputBuildingTableName_pop as a, $inputBuildingTableName_area_sum as b where a.$ID_POP=b.$ID_POP group by $ID_BUILDING;
             CREATE INDEX ON $inputBuildingTableName_pop_sum ($ID_BUILDING);
             DROP TABLE IF EXISTS $outputTableName;
-            CREATE TABLE $outputTableName AS SELECT a.*, ${popColumns.join(",")} from $inputBuildingTableName a  
+            CREATE TABLE $outputTableName AS SELECT a.*, ${popColumns.join(",")} from $inputBuilding a  
             LEFT JOIN $inputBuildingTableName_pop_sum  b on a.$ID_BUILDING=b.$ID_BUILDING;
             drop table if exists $inputBuildingTableName_pop,$inputBuildingTableName_pop_sum, $inputBuildingTableName_area_sum ;""".toString())
 

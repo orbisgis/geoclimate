@@ -332,7 +332,7 @@ IProcess workflow() {
                         if (filterLinkedData(location, processing_parameters.distance, tablesLinked, sourceSrid, inputSRID, h2gis_datasource)) {
                             def formatedZone = checkAndFormatLocations(location)
                             if (formatedZone) {
-                                def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters,
+                                def bdtopo_results = bdtopo_processing(formatedZone, h2gis_datasource, processing_parameters,
                                         createMainFolder(file_outputFolder, formatedZone), outputFileTables, outputDatasource,
                                         outputTables, outputSRID, inputSRID)
                                 if (bdtopo_results) {
@@ -381,11 +381,11 @@ IProcess workflow() {
                 def nbzones = 0;
                 for (location in locations) {
                     nbzones++
-                    inputSRID = loadDataFromPostGIS(inputDataBase.subMap(["user", "password", "url"]), location, processing_parameters.distance, inputTables,inputSRID, h2gis_datasource)
+                    inputSRID = loadDataFromPostGIS(inputDataBase.subMap(["user", "password", "url", "databaseName"]), location, processing_parameters.distance, inputTables,inputSRID, h2gis_datasource)
                     if (inputSRID) {
                         def formatedZone = checkAndFormatLocations(location)
                         if (formatedZone) {
-                            def bdtopo_results = bdtopo_processing(h2gis_datasource, processing_parameters, createMainFolder(file_outputFolder, formatedZone), outputFileTables, outputDatasource, outputTables, outputSRID, inputSRID)
+                            def bdtopo_results = bdtopo_processing(formatedZone, h2gis_datasource, processing_parameters, createMainFolder(file_outputFolder, formatedZone), outputFileTables, outputDatasource, outputTables, outputSRID, inputSRID)
                             if (bdtopo_results) {
                                 outputTableNamesResult.putAll(bdtopo_results)
                             } else {
@@ -1034,7 +1034,7 @@ def extractProcessingParameters(def processing_parameters) {
  * @param deleteOutputData true to delete the output files if exist
  * @return
  */
-def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def outputFolder, def outputFiles,
+def bdtopo_processing(def location, H2GIS h2gis_datasource, def processing_parameters, def outputFolder, def outputFiles,
                       def output_datasource, def outputTableNames, def outputSRID, def inputSRID, def deleteOutputData = true) {
     //Add the GIS layers to the list of results
     def outputTableNamesResult = [:]
@@ -1044,6 +1044,7 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def out
         outputGrid = grid_indicators_params.output
     }
 
+    def tmp_results = [:]
     //We process each zones because the input zone can overlap several communes
     h2gis_datasource.eachRow("SELECT ST_CollectionExtract(THE_GEOM, 3) as the_geom,code_insee  FROM COMMUNE") { row ->
         Geometry geom = row.the_geom
@@ -1061,24 +1062,13 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def out
                 """.toString())
                 def results = bdTopoProcessingSingleArea(h2gis_datasource, code_insee, subCommuneTableName, inputSRID, processing_parameters)
                 if (results) {
-                    computeGridIndicators(h2gis_datasource,code_insee, inputSRID,processing_parameters, results)
-                    saveResults(h2gis_datasource, code_insee, results, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData, outputGrid)
-                    outputTableNamesResult.put(code_insee, results.findAll { it.value != null })
+                    tmp_results.put(code_insee, results)
                 }
             }
         } else {
             info "The location $code_insee is represented by $numGeom polygons\n. " +
                     "GeoClimate will process each polygon individually."
             int subAreaCount = 1
-            def tablesToMerge = ["zone"                : [],
-                                 "road"                : [], "rail": [], "water": [],
-                                 "vegetation"          : [], "impervious": [], "building": [],
-                                 "building_indicators": [], "block_indicators": [],
-                                 "rsu_indicators"     : [], "rsu_lcz": [],
-                                 "rsu_utrf_area"       : [], "rsu_utrf_floor_area": [],
-                                 "building_utrf"      : [], "population": [], "road_traffic": [],
-                                 "grid_indicators": []
-            ]
             for (i in 0..<numGeom) {
                 info "Processing the polygon ${subAreaCount} on ${numGeom + 1}"
                 def subGeom = geom.getGeometryN(i)
@@ -1094,61 +1084,105 @@ def bdtopo_processing(H2GIS h2gis_datasource, def processing_parameters, def out
                 """.toString())
                     def results = bdTopoProcessingSingleArea(h2gis_datasource, code_insee, subCommuneTableName, inputSRID, processing_parameters)
                     if (results) {
-                        results.each { it ->
-                            if (it.value) {
-                                tablesToMerge[it.key] << it.value
-                            }
-                        }
+                        tmp_results.put(code_insee_plus_indice, results)
                     }
                 }
                 subAreaCount++
             }
-            //We must merge here all sub areas and then compute the grid indicators
-            //so the user have a continuous spatial domain instead of multiples tables
-            def results = [:]
-            tablesToMerge.each { it ->
-                def tableNames = it.value
-                def queryToJoin = []
-                String tmp_table
-                HashSet allColumns =new HashSet()
-                def tableAndColumns = [:]
-                tableNames.each { tableName ->
-                    if (tableName) {
-                        def tableColumns = JDBCUtilities.getColumnNames(h2gis_datasource.getConnection(), tableName)
-                        allColumns.addAll(tableColumns)
-                        tableAndColumns.put(tableName, tableColumns)
-                    }
-                }
-                tableNames.each { tableName ->
-                    def columns = tableAndColumns.get(tableName)
-                    def joinColumns = []
-                    allColumns.each{col ->
-                        if (!columns.contains(col)) {
-                            joinColumns<< "null as ${col}"
-                        }else {
-                            joinColumns<< col
+        }
+    }
+
+        if (tmp_results) {
+            if(tmp_results.size()==1){
+                def res = [:]
+                tmp_results.each{ code ->
+                    code.value.each{it->
+                        if (it.value) {
+                            res.put(it.key,it.value)
                         }
                     }
-                    queryToJoin << "SELECT ${joinColumns.join(",")} FROM $tableName"
-                    tmp_table = tableName
                 }
-                if (tmp_table) {
-                    def finalTableName = postfix(tmp_table.substring(0, tmp_table.lastIndexOf("_")))
-                    h2gis_datasource.execute("""
+                computeGridIndicators(h2gis_datasource, location, inputSRID, processing_parameters, res)
+                outputTableNamesResult.put(location, res)
+                saveResults(h2gis_datasource, location, res, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData, outputGrid)
+
+            }else {
+                def tablesToMerge = ["zone"               : [],
+                                     "road"               : [], "rail": [], "water": [],
+                                     "vegetation"         : [], "impervious": [], "building": [],
+                                     "building_indicators": [], "block_indicators": [],
+                                     "rsu_indicators"     : [], "rsu_lcz": [],
+                                     "rsu_utrf_area"      : [], "rsu_utrf_floor_area": [],
+                                     "building_utrf"      : [], "population": [], "road_traffic": [],
+                                     "grid_indicators"    : []
+                ]
+                tmp_results.each{ code ->
+                    code.value.each{it->
+                        if (it.value) {
+                            tablesToMerge[it.key] << it.value
+                        }
+                    }
+                }
+                //We must merge here all sub areas and then compute the grid indicators
+                //so the user have a continuous spatial domain instead of multiples tables
+                def results = mergeResultTables(tablesToMerge, h2gis_datasource)
+                computeGridIndicators(h2gis_datasource, location, inputSRID, processing_parameters, results)
+                outputTableNamesResult.put(location, results)
+                saveResults(h2gis_datasource, location, results, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData, outputGrid)
+
+            }
+        }
+
+    return outputTableNamesResult
+
+}
+
+/**
+ * Method to merge a list of tables
+ * e.g : all building tables computed by zone are merged in one building table
+ * @param tablesToMerge
+ * @param h2gis_datasource
+ * @return
+ */
+def mergeResultTables(def tablesToMerge, H2GIS h2gis_datasource){
+    def results = [:]
+    def con =h2gis_datasource.getConnection()
+    tablesToMerge.each { it ->
+        def tableNames = it.value
+        def queryToJoin = []
+        String tmp_table
+        HashSet allColumns =new HashSet()
+        def tableAndColumns = [:]
+        tableNames.each { tableName ->
+            if (tableName) {
+                def tableColumns = JDBCUtilities.getColumnNames(con, tableName)
+                allColumns.addAll(tableColumns)
+                tableAndColumns.put(tableName, tableColumns)
+            }
+        }
+        tableNames.each { tableName ->
+            def columns = tableAndColumns.get(tableName)
+            def joinColumns = []
+            allColumns.each{col ->
+                if (!columns.contains(col)) {
+                    joinColumns<< "null as ${col}"
+                }else {
+                    joinColumns<< col
+                }
+            }
+            queryToJoin << "SELECT ${joinColumns.join(",")} FROM $tableName"
+            tmp_table = tableName
+        }
+        if (tmp_table) {
+            def finalTableName = postfix(tmp_table.substring(0, tmp_table.lastIndexOf("_")))
+            h2gis_datasource.execute("""
                         DROP TABLE IF EXISTS $finalTableName;
                         CREATE TABLE $finalTableName as ${queryToJoin.join(" union all ")};
                         DROP TABLE IF EXISTS  ${tableNames.join(",")} """.toString())
-                    results.put(it.key, finalTableName)
-                }
-            }
-            computeGridIndicators(h2gis_datasource,code_insee,inputSRID, processing_parameters, results)
-            outputTableNamesResult.put(code_insee, results)
-            saveResults(h2gis_datasource, code_insee, results, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData,outputGrid)
-
+            results.put(it.key, finalTableName)
         }
     }
-    return outputTableNamesResult
-
+    return results
 }
 
 /**
@@ -1214,14 +1248,7 @@ def saveResults(def h2gis_datasource, def id_zone, def results, def srid, def ou
         outputSRID = srid
     }
     if (outputFolder && outputFiles) {
-        //Create the folder to save the results
-        def folder = new File(outputFolder + File.separator + id_zone)
-        if (!folder.exists()) {
-            folder.mkdir()
-        } else {
-            FileUtilities.deleteFiles(folder)
-        }
-        saveOutputFiles(h2gis_datasource, results, outputFiles, folder, outputSRID, reproject, deleteOutputData, outputGrid)
+        saveOutputFiles(h2gis_datasource, results, outputFiles, outputFolder, outputSRID, reproject, deleteOutputData, outputGrid)
     }
     if (output_datasource) {
         saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone, srid, outputSRID, reproject)
@@ -1240,7 +1267,6 @@ def saveResults(def h2gis_datasource, def id_zone, def results, def srid, def ou
 def bdTopoProcessingSingleArea(def h2gis_datasource, def id_zone, def subCommuneTableName, def srid, def processing_parameters) {
     def results = [:]
     //Let's run the BDTopo process for the id_zone
-    def start = System.currentTimeMillis()
     //Load and format the BDTopo data
     IProcess loadAndFormatData = loadAndFormatData()
     if (loadAndFormatData.execute([datasource                  : h2gis_datasource,
@@ -1320,8 +1346,8 @@ def bdTopoProcessingSingleArea(def h2gis_datasource, def id_zone, def subCommune
                     results.put("population", importAscGrid.results.outputTableWorldPopName)
 
                     IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
-                    if (!process.execute([inputBuildingTableName  : results.building,
-                                          inputpopulation: importAscGrid.results.outputTableWorldPopName,
+                    if (!process.execute([inputBuilding  : results.building,
+                                          inputPopulation: importAscGrid.results.outputTableWorldPopName,
                                           inputPopulationColumns  : ["pop"], datasource: h2gis_datasource])) {
                         info "Cannot compute any population data at building level"
                     }
@@ -1376,12 +1402,12 @@ def saveOutputFiles(def h2gis_datasource, def results, def outputFiles, def outp
     outputFiles.each {
         if (it == "grid_indicators") {
             if (outputGrid == "geojson") {
-                Geoindicators.WorkflowUtilities.saveToGeojson(results."$it", "${outputFolder.getAbsolutePath() + File.separator + it}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
+                Geoindicators.WorkflowUtilities.saveToGeojson(results."$it", "${outputFolder + File.separator + it}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
             } else if (outputGrid == "asc") {
                 Geoindicators.WorkflowUtilities.saveToAscGrid(results."$it", outputFolder, it, h2gis_datasource, outputSRID, reproject, deleteOutputData)
             }
         } else {
-            Geoindicators.WorkflowUtilities.saveToGeojson(results."$it", "${outputFolder.getAbsolutePath() + File.separator + it}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
+            Geoindicators.WorkflowUtilities.saveToGeojson(results."$it", "${outputFolder + File.separator + it}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
         }
     }
 }
