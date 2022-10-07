@@ -970,7 +970,7 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
             if (outputGrid == "geojson") {
                 Geoindicators.WorkflowUtilities.saveToGeojson(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
             } else if (outputGrid == "asc") {
-                Geoindicators.WorkflowUtilities.saveToAscGrid(results."$it", subFolder, it, h2gis_datasource, outputSRID, reproject, deleteOutputData)
+                Geoindicators.WorkflowUtilities.saveToAscGrid(results."$it", subFolder.getAbsolutePath(), it, h2gis_datasource, outputSRID, reproject, deleteOutputData)
             }
         } else if (it == "building_height_missing") {
             Geoindicators.WorkflowUtilities.saveToCSV(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.csv", h2gis_datasource, deleteOutputData)
