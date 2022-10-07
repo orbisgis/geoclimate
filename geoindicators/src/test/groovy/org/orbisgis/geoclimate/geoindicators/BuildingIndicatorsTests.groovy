@@ -169,7 +169,7 @@ class BuildingIndicatorsTests {
         INSERT INTO building VALUES(1,1, 'residential', 'residential', 'POLYGON ((3 6, 6 6, 6 3, 3 3, 3 6))'::GEOMETRY);
         """.toString())
         IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
-        assertTrue process.execute([inputBuildingTableName: "building", inputPopulation: "population_grid",
+        assertTrue process.execute([inputBuilding: "building", inputPopulation: "population_grid",
                                     inputPopulationColumns :["pop"], datasource: h2GIS])
         assertEquals(10f, (float)h2GIS.firstRow("select pop from ${process.results.buildingTableName}").pop)
     }
@@ -183,7 +183,7 @@ class BuildingIndicatorsTests {
         INSERT INTO building VALUES(1,1, 'residential','residential', 'POLYGON ((12 6, 8 6, 8 3, 12 3, 12 6))'::GEOMETRY);
         """.toString())
         IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
-        assertTrue process.execute([inputBuildingTableName: "building", inputPopulation: "population_grid",
+        assertTrue process.execute([inputBuilding: "building", inputPopulation: "population_grid",
                                     inputPopulationColumns :["pop"],datasource: h2GIS])
         assertEquals(10f, (float)h2GIS.firstRow("select pop from ${process.results.buildingTableName}").pop)
     }
@@ -198,7 +198,7 @@ class BuildingIndicatorsTests {
         INSERT INTO building VALUES(2,1, 'residential', 'residential','POLYGON ((8 6, 6 6, 6 3, 8 3, 8 6))'::GEOMETRY);
         """.toString())
         IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
-        assertTrue process.execute([inputBuildingTableName: "building", inputPopulation: "population_grid",
+        assertTrue process.execute([inputBuilding: "building", inputPopulation: "population_grid",
                                     inputPopulationColumns :["pop"],datasource: h2GIS])
         def rows = h2GIS.rows("select pop from ${process.results.buildingTableName} order by id_build")
         assertEquals(5f, (float)rows[0].pop)
@@ -214,7 +214,7 @@ class BuildingIndicatorsTests {
         INSERT INTO building VALUES(2,2, 'residential','residential',  'POLYGON ((8 6, 6 6, 6 3, 8 3, 8 6))'::GEOMETRY);
         """.toString())
         IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
-        assertTrue process.execute([inputBuildingTableName: "building", inputPopulation: "population_grid",
+        assertTrue process.execute([inputBuilding: "building", inputPopulation: "population_grid",
                                     inputPopulationColumns :["pop"],datasource: h2GIS])
         def rows = h2GIS.rows("select pop from ${process.results.buildingTableName} order by id_build")
         assertEquals(3.33f, (float)rows[0].pop, 0.01)
@@ -232,7 +232,7 @@ class BuildingIndicatorsTests {
         INSERT INTO building VALUES(2,1, 'residential', 'residential','POLYGON ((5 6, 1 6, 1 3, 5 3, 5 6))'::GEOMETRY);
         """.toString())
         IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
-        assertTrue process.execute([inputBuildingTableName: "building", inputPopulation: "population_grid",
+        assertTrue process.execute([inputBuilding: "building", inputPopulation: "population_grid",
                                     inputPopulationColumns :["pop"], datasource: h2GIS])
         def rows = h2GIS.rows("select pop, id_build from ${process.results.buildingTableName} order by id_build")
         assertEquals(13.33f, (float)rows[0].pop, 0.01)
