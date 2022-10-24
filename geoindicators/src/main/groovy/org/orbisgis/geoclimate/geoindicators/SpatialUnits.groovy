@@ -161,7 +161,7 @@ IProcess createTSU() {
                     CREATE TABLE $outputTableName AS 
                         SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(ST_FORCE2D(the_geom), $epsg) AS the_geom 
                         FROM ST_EXPLODE('(
-                                SELECT ST_BUFFER(ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom))))), $bufferSnap) AS the_geom 
+                                SELECT ST_BUFFER(ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))), $bufferSnap) AS the_geom 
                                 FROM $inputTableName)') where st_area(the_geom) > $area""".toString()
             }
 
