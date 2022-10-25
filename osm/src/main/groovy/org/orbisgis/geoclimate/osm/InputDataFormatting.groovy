@@ -1134,8 +1134,8 @@ IProcess formatSeaLandMask() {
                         
                         CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_mask}_the_geom_idx ON $sea_land_mask (THE_GEOM);
 
-                        CREATE TABLE $outputTableName as SELECT st_intersection(a.THE_GEOM, b.the_geom) as the_geom, a.id, a.type,a.ZINDEX 
-                        FROM $sea_land_mask as a, $inputZoneEnvelopeTableName  as b;                
+                        CREATE TABLE $outputTableName as select the_geom, id, type, ZINDEX from st_explode('(SELECT st_intersection(a.THE_GEOM, b.the_geom) as the_geom, a.id, a.type,a.ZINDEX 
+                        FROM $sea_land_mask as a, $inputZoneEnvelopeTableName  as b)');                
                        
                        
                         CREATE TABLE $coastLinesPoints as  SELECT ST_LocateAlong(the_geom, 0.5, -0.01) AS the_geom FROM 

@@ -140,6 +140,7 @@ IProcess createTSU() {
                 error "The area value to filter the TSU must be greater to 0"
                 return null
             }
+            def bufferSnap = -0.0001
 
             if (inputzone) {
                 datasource.getSpatialTable(inputTableName).the_geom.createSpatialIndex()
@@ -148,7 +149,7 @@ IProcess createTSU() {
                     CREATE TABLE $outputTableName AS 
                         SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(a.the_geom, $epsg) AS the_geom
                         FROM ST_EXPLODE('(
-                                SELECT ST_POLYGONIZE(ST_UNION(ST_PRECISIONREDUCER(ST_NODE(ST_ACCUM(the_geom)), 3))) AS the_geom 
+                                SELECT ST_BUFFER(ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))), $bufferSnap) AS the_geom 
                                 FROM $inputTableName)') AS a,
                             $inputzone AS b
                         WHERE a.the_geom && b.the_geom 
@@ -160,7 +161,7 @@ IProcess createTSU() {
                     CREATE TABLE $outputTableName AS 
                         SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(ST_FORCE2D(the_geom), $epsg) AS the_geom 
                         FROM ST_EXPLODE('(
-                                SELECT ST_POLYGONIZE(ST_UNION(ST_PRECISIONREDUCER(ST_NODE(ST_ACCUM(the_geom)), 3))) AS the_geom 
+                                SELECT ST_BUFFER(ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))), $bufferSnap) AS the_geom 
                                 FROM $inputTableName)') where st_area(the_geom) > $area""".toString()
             }
 

@@ -127,7 +127,7 @@ IProcess freeExternalFacadeDensityExact() {
                 DROP TABLE IF EXISTS $buildLine;
                 CREATE TABLE $buildLine
                     AS SELECT   a.$ID_FIELD_BU, a.$idRsu, ST_AREA(b.$GEOMETRIC_FIELD_RSU) AS $RSU_AREA,
-                                ST_INTERSECTION(ST_TOMULTILINE(a.$GEOMETRIC_FIELD_BU), b.$GEOMETRIC_FIELD_RSU) AS $GEOMETRIC_FIELD_BU,
+                                ST_CollectionExtract(ST_INTERSECTION(ST_TOMULTILINE(a.$GEOMETRIC_FIELD_BU), b.$GEOMETRIC_FIELD_RSU), 2) AS $GEOMETRIC_FIELD_BU,
                                 a.$HEIGHT_WALL
                     FROM $buildingTable AS a LEFT JOIN $rsuTable AS b
                     ON a.$idRsu = b.$idRsu""".toString()
@@ -1944,7 +1944,7 @@ IProcess frontalAreaIndexDistribution() {
                     DROP TABLE IF EXISTS $buildLine;
                     CREATE TABLE $buildLine
                         AS SELECT   a.$ID_FIELD_BU, a.$idRsu,
-                                    ST_INTERSECTION(ST_TOMULTILINE(a.$GEOMETRIC_FIELD_BU), b.$GEOMETRIC_FIELD_RSU) AS $GEOMETRIC_FIELD_BU,
+                                    ST_CollectionExtract(ST_INTERSECTION(ST_TOMULTILINE(a.$GEOMETRIC_FIELD_BU), b.$GEOMETRIC_FIELD_RSU),2) AS $GEOMETRIC_FIELD_BU,
                                     a.$HEIGHT_WALL
                         FROM $buildingTable AS a LEFT JOIN $rsuTable AS b
                         ON a.$idRsu = b.$idRsu""".toString()
@@ -1961,7 +1961,7 @@ IProcess frontalAreaIndexDistribution() {
                                     $idRsu,
                                     $HEIGHT_WALL,
                                     $ID_FIELD_BU
-                        FROM ST_EXPLODE('(SELECT    ST_TOMULTISEGMENTS(ST_INTERSECTION(a.$GEOMETRIC_FIELD_BU, 
+                        FROM ST_EXPLODE('(SELECT  ST_TOMULTISEGMENTS(ST_INTERSECTION(a.$GEOMETRIC_FIELD_BU, 
                                                                                        ST_SNAP(b.$GEOMETRIC_FIELD_BU, 
                                                                                                a.$GEOMETRIC_FIELD_BU,
                                                                                                $snap_tolerance))) AS $GEOMETRIC_FIELD_BU,

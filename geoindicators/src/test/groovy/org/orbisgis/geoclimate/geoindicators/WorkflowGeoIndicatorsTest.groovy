@@ -447,7 +447,7 @@ class WorkflowGeoIndicatorsTest {
     def checkRSUIndicators(def datasource, def rsuIndicatorsTableName, def save){
         //Check road_fraction > 0
         def countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE ROAD_FRACTION>0".toString())
-        assertEquals(217, countResult.count)
+        assertEquals(210, countResult.count)
 
         //Check building_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE BUILDING_FRACTION>0".toString())
@@ -455,7 +455,7 @@ class WorkflowGeoIndicatorsTest {
 
         //Check high_vegetation_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_fraction>0".toString())
-        assertEquals(37, countResult.count)
+        assertEquals(26, countResult.count)
 
         //Check high_vegetation_water_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_water_fraction>0".toString())
@@ -471,7 +471,7 @@ class WorkflowGeoIndicatorsTest {
 
         //Check high_vegetation_road_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_road_fraction>0".toString())
-        assertEquals(39, countResult.count)
+        assertEquals(29, countResult.count)
 
         //Check high_vegetation_impervious_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_impervious_fraction>0".toString())
@@ -483,7 +483,7 @@ class WorkflowGeoIndicatorsTest {
 
         //Check low_vegetation_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE low_vegetation_fraction>0".toString())
-        assertEquals(69, countResult.count)
+        assertEquals(55, countResult.count)
 
         //Check low_vegetation_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE impervious_fraction>0".toString())
