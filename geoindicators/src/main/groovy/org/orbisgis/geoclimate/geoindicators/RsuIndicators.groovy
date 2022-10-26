@@ -1,6 +1,7 @@
 package org.orbisgis.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
+import org.orbisgis.data.H2GIS
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.data.jdbc.*
 import org.orbisgis.process.api.IProcess
@@ -1433,6 +1434,7 @@ IProcess smallestCommunGeometry() {
                         "minimum polygon areas"
                 def tmp_point_polygonize = postfix "tmp_point_polygonize_zindex0"
                 datasource """DROP TABLE IF EXISTS $tmp_point_polygonize;
+                CREATE INDEX ON $tmp_tables($id_rsu);
                 CREATE TABLE $tmp_point_polygonize as  select  EXPLOD_ID as ${ID_COLUMN_NAME}, st_pointonsurface(st_force2D(the_geom)) as the_geom ,
                 st_area(the_geom) as area , ${id_rsu}
                  from st_explode ('(select st_polygonize(st_union(st_force2d(
@@ -1480,6 +1482,7 @@ IProcess smallestCommunGeometry() {
                         finalMerge.add("SELECT * FROM $tmptableName")
                     } else if (entry.key.startsWith("road")) {
                         datasource."$entry.key".the_geom.createSpatialIndex()
+                        datasource."$entry.key"."${id_rsu}".createIndex()
                         datasource """DROP TABLE IF EXISTS $tmptableName;
                     CREATE TABLE $tmptableName AS SELECT b.area, 0 as low_vegetation, 0 as high_vegetation, 0 as water, 0 as impervious, 1 as road, 0 as building, b.${ID_COLUMN_NAME}, b.${id_rsu} from ${entry.key} as a,
                 $final_polygonize as b where a.the_geom && b.the_geom and ST_intersects(a.the_geom, b.the_geom) AND a.${id_rsu} =b.${id_rsu}""".toString()
@@ -2181,6 +2184,231 @@ IProcess rsuPopulation() {
             drop table if exists $inputRsuTableName_pop,$inputRsuTableName_pop_sum, $inputRsuTableName_area_sum ;""".toString())
 
             [rsuTableName: outputTableName]
+        }
+    }
+}
+
+/**
+ * This process is used to compute a ground layer.
+ *
+ * All GIS layers prepared by GeoClimate can be set as input : building, road, water,
+ * vegetation and impervious
+ *
+ * The geometry of the input layers are flattened vertically to extract the smallest common geometry.
+ * This method allows to identify all common part between the input layers. e.g a vegetation geometry that overlaps
+ * a building, a water geometry that overlaps a road...
+ *
+ * A zones table must be set to split the input layers in small units and perform a fast chain.
+ *
+ * The result produces a geometry table with the following schema
+ *
+ * area,low_vegetation, high_vegetation,  water, impervious, road,  building, id_ground
+ *
+ * area : the area of the smallest common geometry
+ * low_vegetation : any type values stored in vegetation table, null otherwise
+ * high_vegetation : any type values stored in vegetation table, null otherwise
+ * water : any type values stored in vegetation table, null otherwise
+ * impervious : any type values stored in vegetation table, null otherwise
+ * road : any type values stored in vegetation table, null otherwise
+ * building : any type values stored in vegetation table, null otherwise
+ * id_ground= unique identifier
+ *
+ * Note that the relations are only computed for the zindex = 0
+ *
+ * @author Erwan Bocher (CNRS)
+ *
+ * @return a table that stores all spatial relations and the smallest common geometry
+ */
+IProcess groundLayer() {
+    return create {
+        title "Create continuous and unified ground layer"
+        inputs zones: String, id_zones: "id_zone", building: "", road: "", water: "", vegetation: "",
+                impervious: "", datasource: JdbcDataSource
+        outputs ground: String
+        run { zones, id_zones, building,road,water,vegetation,impervious, H2GIS datasource ->
+            //All table names cannot be null or empty
+            if(!building && !road && !water && !vegetation && !impervious){
+                return
+            }
+            def BASE_NAME = "GROUND_GEOMETRY"
+
+            debug "Compute the smallest geometries"
+
+            //To avoid column name duplication
+            def ID_COLUMN_NAME =   "ID_GROUND"
+
+            // The name of the outputTableName is constructed
+            def outputTableName = postfix BASE_NAME
+
+            if (zones && datasource.hasTable(zones)) {
+                datasource."$zones"."$id_zones".createIndex()
+                datasource."$zones".the_geom.createSpatialIndex()
+                def tablesToMerge = [:]
+                tablesToMerge += ["$zones": "select ST_ExteriorRing(the_geom) as the_geom, ${id_zones} from $zones"]
+                if (road && datasource.hasTable(road)) {
+                    debug "Preparing table : $road"
+                    datasource."$road".the_geom.createSpatialIndex()
+                    //Separate road features according the zindex
+                    def roadTable_zindex0_buffer = postfix "road_zindex0_buffer"
+                    def road_tmp = postfix "road_zindex0"
+                    datasource """DROP TABLE IF EXISTS $roadTable_zindex0_buffer, $road_tmp;
+            CREATE TABLE $roadTable_zindex0_buffer as SELECT st_buffer(the_geom, WIDTH::DOUBLE PRECISION/2)
+            AS the_geom, surface as type
+            FROM $road  where ZINDEX=0 ;
+            CREATE SPATIAL INDEX IF NOT EXISTS ids_$roadTable_zindex0_buffer ON $roadTable_zindex0_buffer(the_geom);
+            CREATE TABLE $road_tmp AS SELECT ST_CollectionExtract(st_intersection(st_union(st_accum(a.the_geom)),b.the_geom),3) AS the_geom, b.${id_zones}, a.type FROM
+            $roadTable_zindex0_buffer AS a, $zones AS b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom) GROUP BY b.${id_zones};
+            DROP TABLE IF EXISTS $roadTable_zindex0_buffer;
+            """.toString()
+                    tablesToMerge += ["$road_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_zones} from $road_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
+                }
+
+                if (vegetation && datasource.hasTable(vegetation)) {
+                    debug "Preparing table : $vegetation"
+                    datasource."$vegetation".the_geom.createSpatialIndex()
+                    def low_vegetation_rsu_tmp = postfix "low_vegetation_rsu_zindex0"
+                    def low_vegetation_tmp = postfix "low_vegetation_zindex0"
+                    def high_vegetation_tmp = postfix "high_vegetation_zindex0"
+                    def high_vegetation_rsu_tmp = postfix "high_vegetation_zindex0"
+                    datasource """DROP TABLE IF EXISTS $low_vegetation_tmp, $low_vegetation_rsu_tmp;
+                CREATE TABLE $low_vegetation_tmp as select ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom,  b.${id_zones}, a.type FROM 
+                    $vegetation AS a, $zones AS b WHERE a.the_geom && b.the_geom 
+                        AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='low';
+                CREATE TABLE $high_vegetation_tmp as select ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom,  b.${id_zones}, a.type FROM 
+                    $vegetation AS a, $zones AS b WHERE a.the_geom && b.the_geom 
+                        AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='high';
+                """.toString()
+                    tablesToMerge += ["$low_vegetation_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_zones} from $low_vegetation_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
+                    tablesToMerge += ["$high_vegetation_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_zones} from $high_vegetation_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
+                }
+
+                if (water && datasource.hasTable(water)) {
+                    debug "Preparing table : $water"
+                    datasource."$water".the_geom.createSpatialIndex()
+                    def water_tmp = postfix "water_zindex0"
+                    datasource """DROP TABLE IF EXISTS $water_tmp;
+                CREATE TABLE $water_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_zones}, 'water' as type FROM 
+                        $water AS a, $zones AS b WHERE a.the_geom && b.the_geom 
+                        AND ST_INTERSECTS(a.the_geom, b.the_geom)""".toString()
+                    tablesToMerge += ["$water_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_zones} from $water_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
+                }
+
+                if (impervious && datasource.hasTable(impervious)) {
+                    debug "Preparing table : $impervious"
+                    datasource."$impervious".the_geom.createSpatialIndex()
+                    def impervious_tmp = postfix "impervious_zindex0"
+                    datasource """DROP TABLE IF EXISTS $impervious_tmp;
+                CREATE TABLE $impervious_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_zones},  a.type FROM 
+                        $impervious AS a, $zones AS b WHERE a.the_geom && b.the_geom 
+                        AND ST_INTERSECTS(a.the_geom, b.the_geom)""".toString()
+                    tablesToMerge += ["$impervious_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_zones} from $impervious_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
+                }
+
+                if (building && datasource.hasTable(building)) {
+                    debug "Preparing table : $building"
+                    datasource."$building".the_geom.createSpatialIndex()
+                    def building_tmp = postfix "building_zindex0"
+                    datasource """DROP TABLE IF EXISTS $building_tmp;
+                CREATE TABLE $building_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_zones}, a.type FROM 
+                        $building AS a, $zones AS b WHERE a.the_geom && b.the_geom 
+                        AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.zindex=0""".toString()
+                    tablesToMerge += ["$building_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_zones} from $building_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
+                }
+
+                //Merging all tables in one
+                debug "Grouping all tables in one..."
+                if (!tablesToMerge) {
+                    error "Any features to compute surface fraction statistics"
+                    return
+                }
+                def tmp_tables = postfix "tmp_tables_zindex0"
+                datasource """DROP TABLE if exists $tmp_tables;
+            CREATE TABLE $tmp_tables(the_geom GEOMETRY, ${id_zones} integer) AS ${tablesToMerge.values().join(' union ')};
+               """.toString()
+
+                //Polygonize the input tables
+                debug "Generating " +
+                        "minimum polygon areas"
+                def final_polygonize = postfix "tmp_point_polygonize_zindex0"
+                datasource """DROP TABLE IF EXISTS $final_polygonize;
+                CREATE INDEX ON $tmp_tables($id_zones);
+                CREATE TABLE $final_polygonize as  select  CAST((row_number() over()) as Integer) as ${ID_COLUMN_NAME}, the_geom ,
+                st_area(the_geom) as area 
+                 from st_explode ('(select st_polygonize(st_union(st_force2d(
+                st_precisionreducer(st_node(st_accum(a.the_geom)), 3)))) as the_geom from $tmp_tables as a group by ${id_zones})')""".toString()
+
+                //Create indexes
+                datasource."$final_polygonize".the_geom.createSpatialIndex()
+                datasource."$final_polygonize"."${ID_COLUMN_NAME}".createIndex()
+
+                def finalMerge = []
+                def tmpTablesToDrop = []
+                tablesToMerge.each { entry ->
+                    debug "Processing table $entry.key"
+                    def tmptableName = "tmp_stats_$entry.key"
+                    tmpTablesToDrop<<tmptableName
+                    if (entry.key.startsWith("high_vegetation")) {
+                        datasource."$entry.key".the_geom.createSpatialIndex()
+                        datasource """DROP TABLE IF EXISTS $tmptableName;
+                CREATE TABLE $tmptableName AS SELECT b.area,NULL as low_vegetation, a.type as high_vegetation, NULL as water, NULL as impervious, NULL as road, NULL as building, b.${ID_COLUMN_NAME} from ${entry.key} as a,
+                $final_polygonize as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, st_pointonsurface(b.the_geom))""".toString()
+                         finalMerge.add("SELECT * FROM $tmptableName")
+                    } else if (entry.key.startsWith("low_vegetation")) {
+                        datasource."$entry.key".the_geom.createSpatialIndex()
+                        datasource """DROP TABLE IF EXISTS $tmptableName;
+                 CREATE TABLE $tmptableName AS SELECT b.area,a.type as low_vegetation, NULL as high_vegetation, NULL as water, NULL as impervious, NULL as road, NULL as building, b.${ID_COLUMN_NAME} from ${entry.key} as a,
+                $final_polygonize as b where a.the_geom && b.the_geom and st_intersects(a.the_geom,st_pointonsurface(b.the_geom))""".toString()
+                        finalMerge.add("SELECT * FROM $tmptableName")
+                    } else if (entry.key.startsWith("water")) {
+                        datasource."$entry.key".the_geom.createSpatialIndex()
+                        datasource """CREATE TABLE $tmptableName AS SELECT b.area,NULL as low_vegetation, NULL as high_vegetation, a.type as water, NULL as impervious, NULL as road,  NULL as building, b.${ID_COLUMN_NAME} from ${entry.key} as a,
+                $final_polygonize as b  where a.the_geom && b.the_geom and st_intersects(a.the_geom, st_pointonsurface(b.the_geom))""".toString()
+                        finalMerge.add("SELECT * FROM $tmptableName")
+                    } else if (entry.key.startsWith("road")) {
+                        datasource."$entry.key".the_geom.createSpatialIndex()
+                        datasource """DROP TABLE IF EXISTS $tmptableName;
+                    CREATE TABLE $tmptableName AS SELECT b.area, NULL as low_vegetation, NULL as high_vegetation, NULL as water, NULL as impervious, a.type as road, NULL as building, b.${ID_COLUMN_NAME} from ${entry.key} as a,
+                $final_polygonize as b where a.the_geom && b.the_geom and ST_intersects(a.the_geom, st_pointonsurface(b.the_geom))""".toString()
+                        finalMerge.add("SELECT * FROM $tmptableName")
+                    } else if (entry.key.startsWith("impervious")) {
+                        datasource."$entry.key".the_geom.createSpatialIndex()
+                        datasource """DROP TABLE IF EXISTS $tmptableName;
+                CREATE TABLE $tmptableName AS SELECT b.area, NULL as low_vegetation, NULL as high_vegetation, NULL as water, 'impervious' as impervious, NULL as road, NULL as building, b.${ID_COLUMN_NAME} from ${entry.key} as a,
+                $final_polygonize as b where a.the_geom && b.the_geom and ST_intersects(a.the_geom, st_pointonsurface(b.the_geom))""".toString()
+                        finalMerge.add("SELECT * FROM $tmptableName")
+                    } else if (entry.key.startsWith("building")) {
+                        datasource."$entry.key".the_geom.createSpatialIndex()
+                        datasource """DROP TABLE IF EXISTS $tmptableName;
+                CREATE TABLE $tmptableName AS SELECT b.area, NULL as low_vegetation, NULL as high_vegetation, NULL as water, NULL as impervious, NULL as road, a.type as building, b.${ID_COLUMN_NAME} from ${entry.key}  as a,
+                $final_polygonize as b where a.the_geom && b.the_geom and ST_intersects(a.the_geom, st_pointonsurface(b.the_geom))""".toString()
+                        finalMerge.add("SELECT * FROM $tmptableName")
+                    }
+                }
+                if (finalMerge) {
+                    //Do not drop RSU table
+                    tablesToMerge.remove("$zones")
+                    def allInfoTableName = postfix "allInfoTableName"
+                    def groupedLandTypes =  postfix("grouped_land_type")
+                    datasource """DROP TABLE IF EXISTS $allInfoTableName,$groupedLandTypes , $tmp_tables, $outputTableName;
+                                      CREATE TABLE $allInfoTableName as ${finalMerge.join(' union all ')};"""
+                    datasource """
+                                      CREATE INDEX ON $allInfoTableName (${ID_COLUMN_NAME});
+                                      CREATE TABLE $groupedLandTypes AS SELECT MAX(AREA) AS AREA, LISTAGG(LOW_VEGETATION, ',') AS LOW_VEGETATION,
+                                                        LISTAGG(HIGH_VEGETATION, ',') AS HIGH_VEGETATION, LISTAGG(WATER, ',') AS WATER,
+                                                        LISTAGG(IMPERVIOUS, ',') AS IMPERVIOUS, LISTAGG(ROAD, ',') AS ROAD, 
+                                                        LISTAGG(BUILDING,',') AS BUILDING, ${ID_COLUMN_NAME} FROM $allInfoTableName GROUP BY ${ID_COLUMN_NAME};""".toString()
+                    datasource """CREATE INDEX ON $groupedLandTypes ($ID_COLUMN_NAME);
+                    CREATE TABLE $outputTableName as SELECT a.$ID_COLUMN_NAME, a.the_geom,  b.* EXCEPT($ID_COLUMN_NAME) FROM $final_polygonize as a left join $groupedLandTypes as b 
+                on a.$ID_COLUMN_NAME= b.$ID_COLUMN_NAME;""".toString()
+
+                    datasource """DROP TABLE IF EXISTS ${tablesToMerge.keySet().join(' , ')}, ${allInfoTableName}, ${groupedLandTypes}, ${tmpTablesToDrop.join(",")}""".toString()
+                }
+
+            } else {
+                error """Cannot compute the unified ground layer"""
+            }
+            [ground: outputTableName]
+
         }
     }
 }

@@ -192,6 +192,7 @@
         "banana_plants": "high",
         "sugar_cane": "low",
         "garden": "low",
-        "marsh": "low"
+        "marsh": "low",
+        "saltmarsh": "low"
     }
 }
