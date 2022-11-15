@@ -188,6 +188,18 @@ IProcess workflow() {
             if (geoclimatedb) {
                 def h2gis_folder = geoclimatedb.get("folder")
                 if (h2gis_folder) {
+                    File tmp_folder_db =  new File(h2gis_folder)
+                    if(!tmp_folder_db.exists()){
+                        if(tmp_folder_db.mkdir()){
+                            h2gis_folder = null
+                            error "You don't have permission to write in the folder $h2gis_folder \n" +
+                                    "Please check the folder."
+                            return
+                        }
+                    }else  if (!tmp_folder_db.isDirectory()) {
+                        error "Invalid output folder $h2gis_folder."
+                        return
+                    }
                     databaseFolder = h2gis_folder
                 }
                 databasePath = databaseFolder + File.separator + databaseName
@@ -293,17 +305,17 @@ IProcess workflow() {
                     outputFileTables = outputFiles.tables
                     //Check if we can write in the output folder
                     file_outputFolder = new File(outputFiles.path)
-                    if (!file_outputFolder.isDirectory()) {
-                        error "The directory $file_outputFolder doesn't exist."
+                    if(!file_outputFolder.exists()){
+                        if(file_outputFolder.mkdir()){
+                            file_outputFolder = null
+                            error "You don't have permission to write in the folder $outputFolder \n" +
+                                    "Please check the folder."
+                            return
+                        }
+                    }else  if (!file_outputFolder.isDirectory()) {
+                        error "Invalid output folder $file_outputFolder."
                         return
                     }
-                    if (!file_outputFolder.canWrite()) {
-                        file_outputFolder = null
-                        error "You don't have permission to write in the folder $outputFolder \n" +
-                                "Please check the folder."
-                        return
-                    }
-
                 }
                 if (outputDataBase) {
                     //Check the conditions to store the results a database
