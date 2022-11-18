@@ -901,6 +901,13 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
         assertFalse(process.execute(input: createConfigFile(bdTopoParameters, directory)))
     }
 
+    @Disabled
+    @Test
+    void runFromFile() {
+        IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
+        assertTrue(process.execute(input:'/home/ebocher/Téléchargements/formation_geoclimate/bdtopo_demo_test.json'))
+    }
+
 
     /**
      * Check if the table exist and contains at least one row

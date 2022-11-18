@@ -59,7 +59,7 @@ class InputDataLoadingTest {
         assertEquals 10, h2GIS.getTable(process.results.hydroTableName).rowCount
 
         //h2GIS.getTable(process.results.imperviousTableName).save("./target/osm_hydro.shp")
-        assertEquals 45, h2GIS.getTable(process.results.imperviousTableName).rowCount
+        assertEquals 47, h2GIS.getTable(process.results.imperviousTableName).rowCount
 
         //h2GIS.getTable(process.results.imperviousTableName).save("./target/osm_hydro.shp")
         assertEquals 6, h2GIS.getTable(process.results.urbanAreasTableName).rowCount

@@ -515,8 +515,8 @@ IProcess distributionCharacterization() {
                         queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_VAL DOUBLE PRECISION)"
                     }
                     datasource queryCreateTable.toString()
-                    // Will insert values by batch of 1000 in the table
-                    datasource.withBatch(1000) { stmt ->
+                    // Will insert values by batch of 100 in the table
+                    datasource.withBatch(100) { stmt ->
                         datasource.eachRow("SELECT * FROM $distribTableNameNoNull".toString()) { row ->
                             def rowMap = row.toRowResult()
                             def id_rsu = rowMap."$inputId"
@@ -555,8 +555,8 @@ IProcess distributionCharacterization() {
                     }
 
                     datasource queryCreateTable.toString()
-                    // Will insert values by batch of 1000 in the table
-                    datasource.withBatch(1000) { stmt ->
+                    // Will insert values by batch of 100 in the table
+                    datasource.withBatch(100) { stmt ->
                         datasource.eachRow("SELECT * FROM $distribTableNameNoNull".toString()) { row ->
                             def rowMap = row.toRowResult()
                             def id_rsu = rowMap."$inputId"
@@ -596,8 +596,8 @@ IProcess distributionCharacterization() {
 
                     datasource queryCreateTable.toString()
 
-                    // Will insert values by batch of 1000 in the table
-                    datasource.withBatch(1000) { stmt ->
+                    // Will insert values by batch of 100 in the table
+                    datasource.withBatch(100) { stmt ->
                         datasource.eachRow("SELECT * FROM $distribTableNameNoNull".toString()) { row ->
                             def rowMap = row.toRowResult()
                             def id_rsu = rowMap."$inputId"

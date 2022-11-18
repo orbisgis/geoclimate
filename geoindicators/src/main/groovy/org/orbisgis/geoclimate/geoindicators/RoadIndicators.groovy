@@ -115,7 +115,7 @@ IProcess build_road_traffic() {
                     } else {
                         queryMapper += "${flatListColumns}, st_force2D(a.the_geom) as the_geom FROM $inputTableName  as a"
                     }
-                    datasource.withBatch(1000) { stmt ->
+                    datasource.withBatch(100) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             //Find road type
                             def source_road_type = row."type"
