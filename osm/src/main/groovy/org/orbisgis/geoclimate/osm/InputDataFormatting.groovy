@@ -225,7 +225,7 @@ IProcess formatRoadLayer() {
                     }
                     int rowcount = 1
                     def speedPattern = Pattern.compile("([0-9]+)( ([a-zA-Z]+))?", Pattern.CASE_INSENSITIVE)
-                    datasource.withBatch(1000) { stmt ->
+                    datasource.withBatch(100) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             def processRow = true
                             def road_access = row.'access'
@@ -348,7 +348,7 @@ IProcess formatRailsLayer() {
 
                     }
                     int rowcount = 1
-                    datasource.withBatch(1000) { stmt ->
+                    datasource.withBatch(100) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             def type = getTypeValue(row, columnNames, mappingType)
                             def zIndex = getZIndex(row.'layer')
@@ -567,7 +567,7 @@ IProcess formatImperviousLayer() {
                         queryMapper += ", st_force2D(a.the_geom) as the_geom FROM $inputTableName  as a"
                     }
                     int rowcount = 1
-                    datasource.withBatch(1000) { stmt ->
+                    datasource.withBatch(100) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             def toAdd = true
                             if ((row.surface != null) && (row.surface == "grass")) {
@@ -976,7 +976,7 @@ IProcess formatUrbanAreas() {
 
                     }
                     int rowcount = 1
-                    datasource.withBatch(1000) { stmt ->
+                    datasource.withBatch(100) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             def typeAndUseValues = getTypeAndUse(row, columnNames, mappingType)
                             def use = typeAndUseValues[1]

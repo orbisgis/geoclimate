@@ -192,7 +192,7 @@ class InputDataLoadingTest {
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(4, table.columnCount)
-        assertEquals(13, table.rowCount)
+        assertEquals(16, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
         assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
@@ -559,7 +559,7 @@ class InputDataLoadingTest {
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(4, table.columnCount)
-        assertEquals(2, table.rowCount)
+        assertEquals(5, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
         assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
@@ -574,7 +574,7 @@ class InputDataLoadingTest {
         // Check if the SURFACE_ACTIVITE table has the correct number of columns and rows
         table = h2GISDatabase.getTable("SURFACE_ACTIVITE")
         assertNotNull(table)
-        assertEquals(3, table.columnCount)
+        assertEquals(4, table.columnCount)
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
@@ -655,7 +655,7 @@ class InputDataLoadingTest {
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(4, table.columnCount)
-        assertEquals(13, table.rowCount)
+        assertEquals(16, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
         assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
@@ -703,7 +703,7 @@ class InputDataLoadingTest {
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(4, table.columnCount)
-        assertEquals(11, table.rowCount)
+        assertEquals(14, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.the_geom.isSpatial())
         assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))

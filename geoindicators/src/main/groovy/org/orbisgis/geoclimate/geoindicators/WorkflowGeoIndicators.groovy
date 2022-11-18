@@ -2332,7 +2332,7 @@ IProcess formatEstimatedBuilding() {
                     def columnNames = inputSpatialTable.columns
                     queryMapper += " ${columnNames.join(",")} FROM $inputTableName"
 
-                    datasource.withBatch(1000) { stmt ->
+                    datasource.withBatch(100) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             def heightRoof = row.height_roof
                             def heightWall = heightRoof

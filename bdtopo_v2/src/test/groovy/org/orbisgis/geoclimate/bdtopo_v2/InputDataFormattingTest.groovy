@@ -60,7 +60,7 @@ class InputDataFormattingTest {
         assertTrue processFormatting.execute([datasource: h2GISDatabase,
                                               inputTableName: resultsImport.outputBuildingName,
                                               inputZoneEnvelopeTableName: resultsImport.outputZoneName,
-                                              inputImpervious: resultsImport.outputImperviousName])
+                                              inputUrbanAreas: resultsImport.outputUrbanAreas])
         def tableOutput = processFormatting.results.outputTableName
         assertTrue(h2GISDatabase.firstRow("""SELECT count(*) as count from $tableOutput where TYPE is not null;""".toString()).count>0)
         assertTrue(h2GISDatabase.firstRow("""SELECT count(*) as count from $tableOutput where MAIN_USE is not null;""".toString()).count>0)

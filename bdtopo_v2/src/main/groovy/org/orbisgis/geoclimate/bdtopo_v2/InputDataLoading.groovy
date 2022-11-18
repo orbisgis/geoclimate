@@ -61,6 +61,7 @@ IProcess prepareBDTopoData() {
                 outputHydroName: String,
                 outputVegetName: String,
                 outputImperviousName: String,
+                outputUrbanAreas:String,
                 outputZoneName: String
         run { datasource, tableCommuneName, tableBuildIndifName, tableBuildIndusName,
               tableBuildRemarqName, tableRoadName, tableRailName, tableHydroName, tableVegetName,
@@ -162,7 +163,7 @@ IProcess prepareBDTopoData() {
             }
             if (!tablesExist.contains(tableImperviousActivSurfName)) {
                 tableImperviousActivSurfName = "SURFACE_ACTIVITE"
-                datasource.execute("DROP TABLE IF EXISTS $tableImperviousActivSurfName; CREATE TABLE $tableImperviousActivSurfName (THE_GEOM geometry(polygon, $srid), ID varchar, CATEGORIE varchar);".toString())
+                datasource.execute("DROP TABLE IF EXISTS $tableImperviousActivSurfName; CREATE TABLE $tableImperviousActivSurfName (THE_GEOM geometry(polygon, $srid), ID varchar, CATEGORIE varchar, ORIGINE varchar);".toString())
             }
             if (!tablesExist.contains(tablePiste_AerodromeName)) {
                 tablePiste_AerodromeName = "PISTE_AERODROME"
@@ -259,56 +260,64 @@ IProcess prepareBDTopoData() {
             ;
             """.toString())
 
-            //8. Prepare the Impervious areas table (from the layers "TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE", "SURFACE_ROUTE" and "SURFACE_ACTIVITE") that are in the study area (ZONE)
+            //8. Prepare the Urban areas
+            def input_urban_areas = postfix "INPUT_URBAN_AREAS"
+            datasource.execute(""" DROP TABLE IF EXISTS TMP_SURFACE_ACTIVITE;
+            CREATE TABLE TMP_SURFACE_ACTIVITE (THE_GEOM geometry, ID varchar(24), NATURE VARCHAR) AS 
+            SELECT ST_FORCE2D(ST_MAKEVALID(ST_CollectionExtract(ST_INTERSECTION(a.THE_GEOM, B.THE_GEOM), 3))) as the_geom, a.ID,a.CATEGORIE
+            FROM SURFACE_ACTIVITE a, $zoneTable b WHERE a.the_geom && b.the_geom AND 
+            ST_INTERSECTS(a.the_geom, b.the_geom);
+            DROP TABLE IF EXISTS $input_urban_areas;
+            CREATE TABLE $input_urban_areas (THE_GEOM geometry, ID_SOURCE varchar(24),TYPE VARCHAR, id_urban INTEGER)
+            AS SELECT THE_GEOM, ID, 
+            CASE WHEN NATURE ='Administratif' THEN 'government'
+            WHEN NATURE= 'Enseignement' THEN 'education'
+            WHEN NATURE='Santé' THEN 'healthcare' 
+            WHEN NATURE ='Culture et loisirs' THEN 'entertainment_arts_culture'
+            WHEN NATURE ='Transport' THEN 'transportation'
+            WHEN NATURE ='Industriel ou commercial' THEN 'commercial'
+            WHEN NATURE ='Gestion des eaux' THEN 'industrial'
+            WHEN NATURE ='Sport' THEN 'sport'
+            ELSE 'unknown' END AS TYPE
+            , EXPLOD_ID AS id_urban FROM ST_EXPLODE('TMP_SURFACE_ACTIVITE') where NATURE IN('Administratif', 'Enseignement',
+            'Santé','Culture et loisirs','Transport','Industriel ou commercial','Gestion des eaux'
+            ,'Sport');
+            """.toString())
+
+            //9. Prepare the Impervious areas table (from the layers "TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE", "SURFACE_ROUTE" and "SURFACE_ACTIVITE") that are in the study area (ZONE)
+            def input_impervious = postfix "INPUT_IMPERVIOUS"
             datasource.execute("""
-            DROP TABLE IF EXISTS TMP_IMPERV;
-            CREATE TABLE TMP_IMPERV (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE VARCHAR) AS
-            SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE 
+            DROP TABLE IF EXISTS $input_impervious;
+            CREATE TABLE $input_impervious (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE VARCHAR, id_impervious INTEGER) AS        
+            SELECT the_geom, ID,TYPE,CAST((row_number() over()) as Integer) from (      
+            SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE as type
             FROM TERRAIN_SPORT a, $zoneTable b WHERE a.the_geom && b.the_geom AND 
-            ST_INTERSECTS(a.the_geom, b.the_geom) AND a.NATURE='Piste de sport'
+            ST_INTERSECTS(a.the_geom, b.the_geom) AND a.NATURE in ('Piste de sport', 'Indifférencié')
             UNION all
-            SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE 
+            SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE
             FROM CONSTRUCTION_SURFACIQUE a, $zoneTable b WHERE a.the_geom && b.the_geom AND 
-            ST_INTERSECTS(a.the_geom, b.the_geom) AND a.NATURE in ('Barrage','Ecluse','Escalier')
+            ST_INTERSECTS(a.the_geom, b.the_geom) AND a.NATURE in ('Barrage','Ecluse','Dalle de protection')
             UNION all
             SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE 
             FROM SURFACE_ROUTE a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
             UNION all
-            SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID,a.CATEGORIE
-            FROM SURFACE_ACTIVITE a, $zoneTable b WHERE a.the_geom && b.the_geom AND 
-            ST_INTERSECTS(a.the_geom, b.the_geom)
+            SELECT  the_geom, ID,NATURE
+            FROM TMP_SURFACE_ACTIVITE
             UNION all
             SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE
             FROM PISTE_AERODROME a, $zoneTable b WHERE a.the_geom && b.the_geom AND 
             ST_INTERSECTS(a.the_geom, b.the_geom)
-            and a.NATURE = 'Piste en dur';
-            """.toString())
-
-            def input_impervious = postfix "INPUT_IMPERVIOUS"
-            datasource.execute("""
-            DROP TABLE IF EXISTS $input_impervious;
-            CREATE TABLE $input_impervious (THE_GEOM geometry, ID_SOURCE varchar(24),TYPE VARCHAR, id_impervious INTEGER)
-            AS SELECT THE_GEOM, ID_SOURCE, 
-            CASE WHEN TYPE ='Administratif' THEN 'government'
-            WHEN TYPE= 'Enseignement' THEN 'education'
-            WHEN TYPE='Santé' THEN 'healthcare' 
-            WHEN TYPE ='Culture et loisirs' THEN 'entertainment_arts_culture'
-            WHEN TYPE ='Transport' THEN 'transportation'
-            WHEN TYPE ='Industriel ou commercial' THEN 'commercial'
-            WHEN TYPE ='Gestion des eaux' THEN 'industrial'
-            WHEN TYPE ='Sport' THEN 'entertainment_arts_culture'
-            ELSE 'unknown' END AS TYPE
-            , EXPLOD_ID AS id_impervious FROM ST_EXPLODE('TMP_IMPERV');
+            and a.NATURE = 'Piste en dur') as foo;
             """.toString())
 
             //10. Clean tables
             datasource.execute("""
-            DROP TABLE IF EXISTS TMP_IMPERV ,ZONE_EXTENDED; """.toString())
+            DROP TABLE IF EXISTS  ZONE_EXTENDED,TMP_SURFACE_ACTIVITE; """.toString())
             debug('The BDTopo data has been prepared')
              return    [outputBuildingName: "INPUT_BUILDING", outputRoadName: "INPUT_ROAD",
                         outputRailName: "INPUT_RAIL", outputHydroName   : "INPUT_HYDRO",
                         outputVegetName: "INPUT_VEGET", outputImperviousName: input_impervious,
-                         outputZoneName    : zoneTable
+                        outputUrbanAreas : input_urban_areas, outputZoneName    : zoneTable
                 ]
             }
     }

@@ -12,7 +12,6 @@ import org.locationtech.jts.geom.Geometry
 import org.orbisgis.data.api.dataset.ITable
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.data.H2GIS
-import org.orbisgis.data.POSTGIS
 import org.orbisgis.process.api.IProcess
 import org.orbisgis.geoclimate.Geoindicators
 import org.h2gis.functions.io.utility.IOMethods
@@ -190,7 +189,7 @@ IProcess workflow() {
                 if (h2gis_folder) {
                     File tmp_folder_db =  new File(h2gis_folder)
                     if(!tmp_folder_db.exists()){
-                        if(tmp_folder_db.mkdir()){
+                        if(!tmp_folder_db.mkdir()){
                             h2gis_folder = null
                             error "You don't have permission to write in the folder $h2gis_folder \n" +
                                     "Please check the folder."
@@ -774,7 +773,7 @@ def loadDataFromPostGIS(def input_database_properties, def code, def distance, d
 
         if (inputTables.surface_activite) {
             //Extract surface_activite
-            def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, CATEGORIE  FROM ${inputTables.surface_activite}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY) AND (CATEGORIE='Administratif' OR CATEGORIE='Enseignement' OR CATEGORIE='Santé'))"
+            def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, CATEGORIE, ORIGINE  FROM ${inputTables.surface_activite}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
             outputTableName = "SURFACE_ACTIVITE"
             debug "Loading in the H2GIS database $outputTableName"
             IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000);
@@ -1082,7 +1081,7 @@ def bdtopo_processing(def location, H2GIS h2gis_datasource, def processing_param
                     "GeoClimate will process each polygon individually."
             int subAreaCount = 1
             for (i in 0..<numGeom) {
-                info "Processing the polygon ${subAreaCount} on ${numGeom + 1}"
+                info "Processing the polygon ${subAreaCount} on $numGeom "
                 def subGeom = geom.getGeometryN(i)
                 if (!subGeom.isEmpty()) {
                     def subCommuneTableName = postfix("COMMUNE")
@@ -1126,7 +1125,7 @@ def bdtopo_processing(def location, H2GIS h2gis_datasource, def processing_param
                                      "rsu_indicators"     : [], "rsu_lcz": [],
                                      "rsu_utrf_area"      : [], "rsu_utrf_floor_area": [],
                                      "building_utrf"      : [], "population": [], "road_traffic": [],
-                                     "grid_indicators"    : []
+                                     "grid_indicators"    : [], "urban_areas":[]
                 ]
                 tmp_results.each{ code ->
                     code.value.each{it->
@@ -1309,6 +1308,8 @@ def bdTopoProcessingSingleArea(def h2gis_datasource, def id_zone, def subCommune
         def vegetationTableName = loadAndFormatData.results.outputVeget
         def zone = loadAndFormatData.results.outputZone
         def imperviousTableName = loadAndFormatData.results.outputImpervious
+        def urbanAreasTableName = loadAndFormatData.results.outputUrbanAreas
+
 
         info "BDTOPO V2 GIS layers formated"
 
@@ -1322,6 +1323,7 @@ def bdTopoProcessingSingleArea(def h2gis_datasource, def id_zone, def subCommune
         results.put("water", hydrographicTableName)
         results.put("vegetation", vegetationTableName)
         results.put("impervious", imperviousTableName)
+        results.put("urban_areas", urbanAreasTableName)
         results.put("building", buildingTableName)
 
         //Compute the RSU indicators
@@ -1526,7 +1528,7 @@ def abstractModelTableBatchExportTable(def output_datasource, def output_table, 
             if (output_datasource.hasTable(output_table)) {
                 //If the table exists we populate it with the last result
                 info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
-                int BATCH_MAX_SIZE = 1000;
+                int BATCH_MAX_SIZE = 100;
                 ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource)
                 if (inputRes) {
                     def outputColumns = output_datasource.getTable(output_table).getColumnsTypes();
@@ -1649,7 +1651,7 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                 if (output_datasource.hasTable(output_table)) {
                     //If the table exists we populate it with the last result
                     info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
-                    int BATCH_MAX_SIZE = 1000;
+                    int BATCH_MAX_SIZE = 100;
                     ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource)
                     if (inputRes) {
                         def outputColumns = output_datasource.getTable(output_table).getColumnsTypes();
@@ -1859,6 +1861,7 @@ def prepareTableOutput(def h2gis_table_to_save, def filter, def inputSRID, def h
  * @return outputHydro Table name in which the (ready to be used in the GeoIndicators part) hydrographic areas are stored
  * @return outputVeget Table name in which the (ready to be used in the GeoIndicators part) vegetation areas are stored
  * @return outputImpervious Table name in which the (ready to be used in the GeoIndicators part) impervious areas are stored
+ * @return outputUrbanAreas Table name in which the (ready to be used in the GeoIndicators part) urban areas are stored
  * @return outputZone Table name in which the (ready to be used in the GeoIndicators part) zone is stored
  *
  */
@@ -1885,8 +1888,8 @@ IProcess loadAndFormatData() {
                 hLevMin: 3,
                 hLevMax: 15,
                 hThresholdLev2: 10
-        outputs outputBuilding: String, outputRoad: String, outputRail: String, outputHydro: String, outputVeget: String, outputImpervious: String,
-                outputZone: String
+        outputs outputBuilding: String, outputRoad: String, outputRail: String, outputHydro: String, outputVeget: String,
+                outputImpervious: String, outputUrbanAreas: String, outputZone: String
         run { datasource, distance, tableCommuneName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName, tableRoadName, tableRailName,
               tableHydroName, tableVegetName, tableImperviousSportName, tableImperviousBuildSurfName, tableImperviousRoadSurfName, tableImperviousActivSurfName,
               tablePiste_AerodromeName, tableReservoirName, hLevMin, hLevMax, hThresholdLev2 ->
@@ -1929,13 +1932,20 @@ IProcess loadAndFormatData() {
 
             def preprocessTables = importPreprocess.results
             def zoneTable = preprocessTables.outputZoneName
-            def finalImpervious = preprocessTables.outputImperviousName
+            def urbanAreas = preprocessTables.outputUrbanAreas
+
+            //Format impervious
+            IProcess processFormatting = BDTopo_V2.InputDataFormatting.formatImperviousLayer()
+            processFormatting.execute([datasource                : datasource,
+                                       inputTableName            : preprocessTables.outputImperviousName])
+            def finalImpervious = processFormatting.results.outputTableName
+
 
             //Format building
-            IProcess processFormatting = BDTopo_V2.InputDataFormatting.formatBuildingLayer()
+            processFormatting = BDTopo_V2.InputDataFormatting.formatBuildingLayer()
             processFormatting.execute([datasource                : datasource,
                                        inputTableName            : preprocessTables.outputBuildingName,
-                                       inputImpervious           : finalImpervious, h_lev_min: hLevMin, h_lev_max: hLevMax,
+                                       inputUrbanAreas           : urbanAreas, h_lev_min: hLevMin, h_lev_max: hLevMax,
                                        hThresholdLev2            : hThresholdLev2,
                                        inputZoneEnvelopeTableName: zoneTable])
             def finalBuildings = processFormatting.results.outputTableName
@@ -1969,10 +1979,10 @@ IProcess loadAndFormatData() {
                                        inputZoneEnvelopeTableName: zoneTable])
             def finalHydro = processFormatting.results.outputTableName
 
-            debug "End of the BD Topo extract transform process."
+            debug "End of the BDTopo extract transform process."
 
             [outputBuilding: finalBuildings, outputRoad: finalRoads, outputRail: finalRails, outputHydro: finalHydro,
-             outputVeget   : finalVeget, outputImpervious: finalImpervious, outputZone: zoneTable]
+             outputVeget   : finalVeget, outputImpervious: finalImpervious, outputUrbanAreas :urbanAreas, outputZone: zoneTable]
 
         }
     }

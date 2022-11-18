@@ -2,7 +2,8 @@
   "tags" : {
     "highway": [
         "residential", 
-        "pedestrian"
+        "pedestrian",
+        "rest_area"
     ],
     "amenity": [
         "parking",
@@ -12,7 +13,7 @@
     ],
     "leisure": ["pitch"],
     "railway": ["platform"],
-    "landuse": ["railway","construction"]
+    "landuse": ["railway","construction", "industrial", "commercial"]
   },
   "columns": [
     "highway",

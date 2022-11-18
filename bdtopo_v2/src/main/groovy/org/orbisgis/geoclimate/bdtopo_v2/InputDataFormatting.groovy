@@ -3,6 +3,7 @@ package org.orbisgis.geoclimate.bdtopo_v2
 import groovy.transform.BaseScript
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.Polygon
+import org.orbisgis.data.H2GIS
 import org.orbisgis.data.api.dataset.ISpatialTable
 import org.orbisgis.data.api.dataset.ITable
 import org.orbisgis.data.jdbc.JdbcDataSource
@@ -27,9 +28,9 @@ IProcess formatBuildingLayer() {
     return create {
         title "Transform BDTopo buildings table into a table that matches the constraints of the GeoClimate input model"
         id "formatBuildingLayer"
-        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: String, inputImpervious: "", h_lev_min: 3, h_lev_max: 15, hThresholdLev2: 10
+        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: String, inputUrbanAreas: "", h_lev_min: 3, h_lev_max: 15, hThresholdLev2: 10
         outputs outputTableName: String
-        run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, inputImpervious, h_lev_min, h_lev_max, hThresholdLev2 ->
+        run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, inputUrbanAreas, h_lev_min, h_lev_max, hThresholdLev2 ->
 
             if (!h_lev_min) {
                 h_lev_min = 3
@@ -130,7 +131,7 @@ IProcess formatBuildingLayer() {
 
                     //Formating building table
                     def id_build = 1;
-                    datasource.withBatch(1000) { stmt ->
+                    datasource.withBatch(100) { stmt ->
                         datasource.eachRow(queryMapper.toString()) { row ->
                             def feature_type = "building"
                             def feature_main_use = "building"
@@ -182,17 +183,17 @@ IProcess formatBuildingLayer() {
                             }
                         }
                     }
-                    //Let's use the impervious table to improve building qualification
-                    if (inputImpervious) {
+                    //Let's use the urban areas table to improve building qualification
+                    if (inputUrbanAreas) {
                         datasource."$outputTableName".the_geom.createSpatialIndex()
                         datasource."$outputTableName".id_build.createIndex()
                         datasource."$outputTableName".type.createIndex()
-                        datasource."$inputImpervious".the_geom.createSpatialIndex()
+                        datasource."$inputUrbanAreas".the_geom.createSpatialIndex()
                         def buildinType = postfix("BUILDING_TYPE")
 
                         datasource.execute """create table $buildinType as SELECT 
                         max(b.type) as type, 
-                        max(b.type) as main_use, a.id_build FROM $outputTableName a, $inputImpervious b 
+                        max(b.type) as main_use, a.id_build FROM $outputTableName a, $inputUrbanAreas b 
                         WHERE ST_POINTONSURFACE(a.the_geom) && b.the_geom and st_intersects(ST_POINTONSURFACE(a.the_geom), b.the_geom) 
                         AND  a.TYPE ='building' AND b.TYPE != 'unknown'
                          group by a.id_build""".toString()
@@ -305,7 +306,7 @@ IProcess formatRoadLayer() {
                         queryMapper += ", the_geom FROM $inputTableName  as a"
                     }
                     int rowcount = 1
-                    datasource.withBatch(1000) { stmt ->
+                    datasource.withBatch(100) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             def road_type = row.TYPE
                             if (road_type) {
@@ -411,7 +412,7 @@ IProcess formatHydroLayer() {
 
                     }
                     int rowcount = 1
-                    datasource.withBatch(1000) { stmt ->
+                    datasource.withBatch(100) { stmt ->
                         datasource.eachRow(query) { row ->
                             def water_type = 'water'
                             def water_zindex = 0
@@ -485,7 +486,7 @@ IProcess formatRailsLayer() {
                                       'Tramway'                   : 'tram',
                                       'Pont'                      : 'bridge', 'Tunnel': 'tunnel', 'NC': null]
                     int rowcount = 1
-                    datasource.withBatch(1000) { stmt ->
+                    datasource.withBatch(100) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             def rail_type = row.TYPE
                             if (rail_type) {
@@ -600,7 +601,7 @@ IProcess formatVegetationLayer() {
                     ]
 
                     int rowcount = 1
-                    datasource.withBatch(1000) { stmt ->
+                    datasource.withBatch(100) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             def vegetation_type = row.TYPE
                             if (vegetation_type) {
@@ -705,4 +706,80 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
     }
     return [heightWall: heightWall, heightRoof: heightRoof, nbLevels: nbLevels, estimated: estimated]
 
+}
+
+/**
+ * This process is used to transform the BDTopo impervious table into a table that matches the constraints
+ * of the geoClimate Input Model
+ * @param datasource A connexion to a DB containing the impervious table
+ * @param inputTableName The name of the impervious table in the DB
+ * @return outputTableName The name of the final impervious table
+ */
+IProcess formatImperviousLayer() {
+    return create {
+        title "Format the impervious table into a table that matches the constraints of the GeoClimate Input Model"
+        inputs datasource: JdbcDataSource, inputTableName: String
+        outputs outputTableName: String
+        run { H2GIS datasource, inputTableName ->
+            debug('Impervious formation')
+            def outputTableName = postfix("IMPERVIOUS")
+            datasource.execute """ drop table if exists $outputTableName;
+                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_impervious serial,TYPE VARCHAR);""".toString()
+
+            // A map to set up mappings between BDTopo values and the tags allowed by the internal geoclimate model
+            def matching_bdtopo_values =  ["Indifférencié":"sport" , "Piste de sport":"sport",
+                                       "Terrain de tennis":"sport","Barrage":"dam", "Dalle de protection":"tile_slab", "Ecluse":"lock",
+                                         "Parking":"parking", "Péage":"rest_area", "Place ou carrefour":"square","Piste en dur":"aerodrome",
+                                         "Administratif":"government", "Culture et loisirs":"entertainment_arts_culture",
+                                   "Enseignement":"education", "Gestion des eaux":"industrial",
+                                   "Industriel ou commercial":"commercial", "Santé":"healthcare", "Sport":"sport", "Transport":"transport"]
+
+            // A map of weigths to select a tag when several geometries overlap
+            def weight_values = ["dam" : 100, "tile_slab" : 100,
+                                 "lock":100, "parking": 200, "rest_area":200, "square" : 200,"aerodrome":  300,
+                                 "government":5, "entertainment_arts_culture":10,"education":  10,
+                                 "industrial":20, "commercial":20,"healthcare":10,  "transport":15,
+                                 "sport":10]
+
+            //We must remove all overlapping geometries and then choose the attribute TYPE to set according some priorities
+            def polygonizedTable = postfix("impervious_polygonized")
+            datasource.execute(""" DROP TABLE IF EXISTS $polygonizedTable;
+            CREATE TABLE $polygonizedTable as
+            SELECT * from ST_EXPLODE('(select st_polygonize(st_union(st_accum(ST_ToMultiLine( the_geom)))) as the_geom from $inputTableName)')
+            """.toString())
+
+            datasource."$inputTableName".the_geom.createSpatialIndex()
+
+            datasource.execute(""" CREATE SPATIAL INDEX ON $polygonizedTable(THE_GEOM);
+                        CREATE INDEX ON $polygonizedTable(EXPLOD_ID);""".toString())
+
+            def query =  """SELECT LISTAGG(a.ID_IMPERVIOUS, ',') AS ids_impervious, LISTAGG(a.TYPE, ',') AS types, b.EXPLOD_ID as id, b.the_geom  FROM $inputTableName AS a, $polygonizedTable AS b
+            WHERE a.the_geom && b.the_geom AND st_intersects(st_pointonsurface(b.the_geom), a.the_geom) GROUP BY b.explod_id;""".toString()
+            int rowcount = 1
+            datasource.withBatch(100) { stmt ->
+                datasource.eachRow(query) { row ->
+                    def types = row.types
+                    def type =null;
+                    //Choose the best impervious type
+                    def listTypes = types.split(",") as Set
+                    if (listTypes.size() == 1) {
+                        def mapping = matching_bdtopo_values.get(types)
+                        if (mapping) {
+                            type = mapping
+                        }
+                    } else {
+                        type = weight_values.subMap(matching_bdtopo_values.subMap(listTypes).values()).max { it.key }.key
+                    }
+                    if (type) {
+                        Geometry geom = row.the_geom
+                        def epsg = geom.getSRID()
+                        stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${geom}',$epsg), ${rowcount++}, '${type}')".toString()
+                    }
+                }
+            }
+            datasource.execute("DROP TABLE IF EXISTS $polygonizedTable".toString())
+            debug('Impervious areas transformation finishes')
+            [outputTableName: outputTableName]
+        }
+    }
 }
