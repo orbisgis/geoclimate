@@ -13,7 +13,9 @@
     ],
     "leisure": ["pitch"],
     "railway": ["platform"],
-    "landuse": ["railway","construction", "industrial", "commercial"]
+    "landuse": ["railway","construction", "industrial", "commercial"],
+    "area:aeroway": ["runway"],
+    "aeroway": ["apron"]
   },
   "columns": [
     "highway",
@@ -22,6 +24,9 @@
     "area",
     "leisure",
     "parking",
-    "landuse"
+    "landuse",
+    "area:aeroway",
+    "aeroway",
+    "building"
   ]
 }

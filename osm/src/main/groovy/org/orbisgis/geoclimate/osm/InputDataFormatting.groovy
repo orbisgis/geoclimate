@@ -230,7 +230,7 @@ IProcess formatRoadLayer() {
                             def processRow = true
                             def road_access = row.'access'
                             def road_area = row.'area'
-                            if(road_area in['yes']){
+                            if (road_area in ['yes']) {
                                 processRow = false
                             }
                             def road_service = row.'service'
@@ -541,7 +541,7 @@ IProcess formatImperviousLayer() {
             debug('Impervious transformation starts')
             def outputTableName = "INPUT_IMPERVIOUS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             datasource.execute """Drop table if exists $outputTableName;
-                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_impervious serial, ID_SOURCE VARCHAR);""".toString()
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_impervious serial);""".toString()
             debug(inputTableName)
             if (inputTableName) {
                 def paramsDefaultFile = this.class.getResourceAsStream("imperviousParams.json")
@@ -555,42 +555,51 @@ IProcess formatImperviousLayer() {
                     columnNames.remove("THE_GEOM")
                     queryMapper += columnsMapper(columnNames, columnToMap)
                     if (inputZoneEnvelopeTableName) {
-                        queryMapper += ", CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
+                        queryMapper += ", CASE WHEN st_overlaps (a.the_geom, b.the_geom) " +
                                 "THEN st_force2D(st_intersection(a.the_geom, b.the_geom)) " +
                                 "ELSE a.the_geom " +
                                 "END AS the_geom " +
                                 "FROM " +
                                 "$inputTableName AS a, $inputZoneEnvelopeTableName AS b " +
                                 "WHERE " +
-                                "a.the_geom && b.the_geom "
+                                "a.the_geom && b.the_geom"
                     } else {
                         queryMapper += ", st_force2D(a.the_geom) as the_geom FROM $inputTableName  as a"
                     }
+                    def imperviousPrepared = postfix("impervious_prepared")
+
+                    datasource.execute("""  
+                DROP TABLE IF EXISTS $imperviousPrepared;
+                CREATE TABLE $imperviousPrepared as select st_polygonize(st_union(st_accum(ST_ToMultiLine( the_geom)))) as the_geom from 
+            ($queryMapper) as foo where "surface" not in('grass') or "parking" not in ('underground') and "building" is null""".toString())
+
+
                     int rowcount = 1
                     datasource.withBatch(100) { stmt ->
-                        datasource.eachRow(queryMapper) { row ->
-                            def toAdd = true
+                        datasource.eachRow("SELECT * FROM $imperviousPrepared".toString()) { row ->
+                            /*def toAdd = true
                             if ((row.surface != null) && (row.surface == "grass")) {
                                 toAdd = false
                             }
                             if ((row.parking != null) && (row.parking == "underground")) {
                                 toAdd = false
-                            }
-                            if (toAdd) {
-                                Geometry geom = row.the_geom
-                                if(!geom.isEmpty()) {
-                                    for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                        Geometry subGeom = geom.getGeometryN(i)
-                                        if(!subGeom.isEmpty()){
+                            }*/
+                            //if (toAdd) {
+                            Geometry geom = row.the_geom
+                            if (!geom.isEmpty()) {
+                                for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                    Geometry subGeom = geom.getGeometryN(i)
+                                    if (!subGeom.isEmpty()) {
                                         if (subGeom instanceof Polygon) {
-                                            stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}')".toString()
-                                        }
+                                            stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++})".toString()
                                         }
                                     }
                                 }
                             }
+                            // }
                         }
                     }
+                    datasource.execute("DROP TABLE IF EXISTS  $imperviousPrepared".toString())
                 }
             }
             debug('Impervious transformation finishes')
@@ -1033,7 +1042,7 @@ IProcess formatSeaLandMask() {
                         def coastLinesPoints = "coatline_points_zone${UUID.randomUUID().toString().replaceAll("-", "_")}"
                         def sea_land_mask = "sea_land_mask${UUID.randomUUID().toString().replaceAll("-", "_")}"
                         def sea_land_mask_in_zone = "sea_land_mask_in_zone${UUID.randomUUID().toString().replaceAll("-", "_")}"
-                        def water_to_be_filtered ="water_to_be_filtered${UUID.randomUUID().toString().replaceAll("-", "_")}"
+                        def water_to_be_filtered = "water_to_be_filtered${UUID.randomUUID().toString().replaceAll("-", "_")}"
                         def water_filtered_exploded = "water_filtered_exploded${UUID.randomUUID().toString().replaceAll("-", "_")}"
                         datasource.execute """DROP TABLE IF EXISTS $outputTableName, $coastLinesIntersects, 
                         $islands_mark, $mergingDataTable,  $coastLinesIntersectsPoints, $coastLinesPoints,$sea_land_mask,
@@ -1117,12 +1126,12 @@ IProcess formatSeaLandMask() {
                          """.toString()
 
                         } else {
-                         datasource.execute """
+                            datasource.execute """
                         CREATE TABLE $islands_mark (the_geom GEOMETRY, ID SERIAL) AS 
                        SELECT the_geom, EXPLOD_ID  FROM st_explode('(  
                        SELECT ST_LINEMERGE(st_accum(THE_GEOM)) AS the_geom, NULL FROM $coastLinesIntersects)');""".toString()
 
-                        datasource.execute """  
+                            datasource.execute """  
                         CREATE TABLE $mergingDataTable  AS
                         SELECT  THE_GEOM FROM $coastLinesIntersects 
                         UNION ALL
