@@ -570,7 +570,7 @@ IProcess formatImperviousLayer() {
                     def polygonizedExploded = postfix("polygonized_exploded")
                     datasource.execute("""  
                     DROP TABLE IF EXISTS $polygonizedTable;
-                    CREATE TABLE $polygonizedExploded as select st_polygonize(st_union(st_accum(ST_ToMultiLine( the_geom)))) as the_geom from 
+                    CREATE TABLE $polygonizedTable as select st_polygonize(st_union(st_accum(ST_ToMultiLine( the_geom)))) as the_geom from 
                     ($queryMapper) as foo where "surface" not in('grass') or "parking" not in ('underground') or "building" is null;
                     DROP TABLE IF EXISTS $polygonizedExploded;
                     CREATE TABLE $polygonizedExploded as select * from st_explode('$polygonizedTable');
