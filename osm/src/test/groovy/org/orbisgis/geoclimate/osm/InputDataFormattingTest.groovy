@@ -154,7 +154,7 @@ class InputDataFormattingTest {
                 inputTableName: extractData.results.imperviousTableName,
                 epsg          : epsg])
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_formated.shp", true)
-        assertEquals 47, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertEquals 44, h2GIS.getTable(format.results.outputTableName).rowCount
 
         //Sea/Land mask
         format = OSM.InputDataFormatting.formatSeaLandMask()
