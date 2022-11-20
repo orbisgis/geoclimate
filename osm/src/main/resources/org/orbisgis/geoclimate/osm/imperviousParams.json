@@ -28,5 +28,39 @@
     "area:aeroway",
     "aeroway",
     "building"
-  ]
-}
+  ],
+  "type" : {
+    "parking": {
+      "amenity": [
+        "parking",
+        "bicycle_parking",
+        "car_sharing",
+        "parking_place"],
+      "highway": [
+        "rest_area"
+      ]
+    },
+    "industrial": {
+      "landuse": ["railway","construction", "industrial"],
+      "area:aeroway": ["runway"],
+      "aeroway": ["apron"],
+      "railway": ["platform"]
+    },
+    "commercial": {
+      "landuse": [ "commercial"]
+    },
+    "sport": {
+      "leisure": ["pitch"]
+    },
+    "residential": {
+      "highway": [
+        "residential"
+      ]
+    },
+    "pedestrian": {
+      "highway": [
+        "pedestrian"
+      ]
+    }
+  }
+   }
