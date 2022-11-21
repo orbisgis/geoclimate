@@ -92,19 +92,13 @@ IProcess formatBuildingLayer() {
                                 String roof_height = row.'roof:height'
                                 String b_lev = row.'building:levels'
                                 String roof_lev = row.'roof:levels'
-                                String roof_shape = row.'roof:shape'
                                 def heightRoof = getHeightRoof(height, heightPattern)
                                 def heightWall = getHeightWall(heightRoof, roof_height)
                                 def nbLevels = getNbLevels(b_lev, roof_lev)
-
-                                if (nbLevels == 0) {
-                                    nbLevels = typeAndLevel[type]
-                                }
-
                                 def formatedHeight = formatHeightsAndNbLevels(heightWall, heightRoof, nbLevels, h_lev_min,
-                                        h_lev_max, hThresholdLev2)
-
+                                        h_lev_max, hThresholdLev2,type, typeAndLevel)
                                 def zIndex = getZIndex(row.'layer')
+                                String roof_shape = row.'roof:shape'
 
                                 if (formatedHeight.nbLevels > 0 && zIndex >= 0 && type) {
                                     Geometry geom = row.the_geom
@@ -689,7 +683,7 @@ static float getHeightWall(height, r_height) {
  * @return a map with the new values
  */
 static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels, def h_lev_min,
-                                    def h_lev_max, def hThresholdLev2) {
+                                    def h_lev_max, def hThresholdLev2, def buildingType, def levelBuildingTypeMap) {
     //Use the OSM values
     if (heightWall != 0 && heightRoof != 0 && nbLevels != 0) {
         return [heightWall: heightWall, heightRoof: heightRoof, nbLevels: nbLevels, estimated: false]
@@ -700,26 +694,37 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
     if (heightWall == 0) {
         if (heightRoof == 0) {
             if (nbLevels == 0) {
-                heightWall = h_lev_min
+                nbLevels = levelBuildingTypeMap[buildingType]
+                if(!nbLevels){
+                    nbLevels=1
+                }
+                heightWall = h_lev_min * nbLevels
+                heightRoof=heightWall
                 estimated = true
             } else {
                 heightWall = h_lev_min * nbLevels
+                heightRoof=heightWall
             }
         } else {
             heightWall = heightRoof
+            nbLevels = Math.floor(heightWall / h_lev_min)
+        }
+    }else if(heightWall==heightRoof){
+        if(nbLevels==0){
+            nbLevels=Math.floor(heightWall / h_lev_min)
         }
     }
-    // Update heightRoof
-    if (heightRoof == 0) {
-        heightRoof = heightWall
-    }
-
     // Control of heights and number of levels
     // Check if height_roof is lower than height_wall. If yes, then correct height_roof
-    if (heightWall > heightRoof) {
+    else if (heightWall > heightRoof) {
         heightRoof = heightWall
+        if(nbLevels==0){
+            nbLevels=Math.floor(heightWall / h_lev_min)
+        }
     }
-    def tmpHmin = nbLevels * h_lev_min
+
+
+   /* def tmpHmin = nbLevels * h_lev_min
     // Check if there is a high difference between the "real" and "theorical (based on the level number) roof heights
     if (tmpHmin > heightRoof) {
         heightRoof = tmpHmin
@@ -729,7 +734,7 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
         if (tmpHmax < heightWall) {
             nbLevels = Math.floor(heightWall / h_lev_max)
         }
-    }
+    }*/
     return [heightWall: heightWall, heightRoof: heightRoof, nbLevels: nbLevels, estimated: estimated]
 
 }

@@ -230,6 +230,7 @@ class InputDataFormattingTest {
                 assertEquals(expectedFlow.get(it.key), it.value)
             }
         }
+        assertEquals(1, h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where PAVEMENT = 'NL08'").count)
 
     }
 
