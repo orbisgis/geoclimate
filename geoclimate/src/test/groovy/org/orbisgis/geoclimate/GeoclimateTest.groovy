@@ -3,6 +3,7 @@ package org.orbisgis.geoclimate
 import groovy.json.JsonOutput
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import picocli.CommandLine
 
 import java.util.regex.Pattern
@@ -14,6 +15,9 @@ import java.util.regex.Pattern
  * @author Sylvain PALOMINOS (UBS chaire GEOTERA)
  */
 class GeoclimateTest {
+
+    @TempDir
+    static File folder
 
     @Test
     void runCLITest() {

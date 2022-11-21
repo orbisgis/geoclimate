@@ -38,6 +38,7 @@ package org.orbisgis.geoclimate.osmtools
 
 import org.h2gis.utilities.GeographyUtilities
 import org.junit.jupiter.api.*
+import org.junit.jupiter.api.io.TempDir
 import org.locationtech.jts.geom.*
 import org.orbisgis.data.H2GIS
 import org.orbisgis.process.api.IProcess
@@ -55,6 +56,9 @@ import static org.junit.jupiter.api.Assertions.*
  * @author Sylvain PALOMINOS (UBS LAB-STICC 2019)
  */
 class TransformTest extends AbstractOSMTest {
+
+    @TempDir
+    static File folder
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TransformTest)
 

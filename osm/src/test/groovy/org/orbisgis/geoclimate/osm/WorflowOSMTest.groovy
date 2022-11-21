@@ -5,6 +5,7 @@ import org.apache.commons.io.FileUtils
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.POSTGIS
@@ -15,6 +16,8 @@ import static org.junit.jupiter.api.Assertions.*
 
 class WorflowOSMTest extends WorkflowAbstractTest {
 
+    @TempDir
+    static File folder
 
     /**
      * This method is used to copy resources from the jar the tmp folder in order to limit

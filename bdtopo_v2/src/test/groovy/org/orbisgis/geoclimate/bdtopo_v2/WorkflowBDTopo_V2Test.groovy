@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
+import org.junit.jupiter.api.io.TempDir
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.io.WKTReader
@@ -19,6 +20,9 @@ import static org.junit.jupiter.api.Assertions.*
 
 class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
 
+    @TempDir
+    static File folder
+
     def static postgis_dbProperties = [databaseName: 'orbisgis_db',
                                        user        : 'orbisgis',
                                        password    : 'orbisgis',
@@ -29,7 +33,6 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
 
     private static communeToTest = "12174"
 
-    private static def h2db = "./target/bdtopo_chain"
     private static def bdtopoFoldName = "sample_$communeToTest"
     private static def listTables = ["COMMUNE", "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL", "BATI_REMARQUABLE",
                                      "ROUTE", "SURFACE_EAU", "ZONE_VEGETATION", "TRONCON_VOIE_FERREE", "TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE",
@@ -58,7 +61,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
         return null;
     }
 
-    private def loadFiles(String dbPath) {
+    private def loadFiles(def dbPath) {
         H2GIS h2GISDatabase = H2GIS.open(dbPath)
         // Load parameter files
         paramTables.each {
@@ -89,11 +92,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
 
     @Test
     void loadAndFormatData() {
-        String directory = "./target/bdtopo_chain_prepare"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
-        H2GIS h2GISDatabase = loadFiles(dirFile.absolutePath + File.separator + "bdtopo_db;AUTO_SERVER=TRUE")
+        H2GIS h2GISDatabase = loadFiles(folder.absolutePath + File.separator + "loadAndFormatData;AUTO_SERVER=TRUE")
         def process = BDTopo_V2.WorkflowBDTopo_V2.loadAndFormatData()
         assertTrue process.execute([datasource                 : h2GISDatabase,
                                     tableCommuneName           : 'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
@@ -113,7 +112,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
 
     @Test
     void createUnitsOfAnalysisTest() {
-        H2GIS h2GIS = H2GIS.open("./target/processingchainscales;AUTO_SERVER=TRUE")
+        H2GIS h2GIS = H2GIS.open(folder.absolutePath + File.separator + "createUnitsOfAnalysisTest;AUTO_SERVER=TRUE")
         String sqlString = new File(getClass().getResource("data_for_tests.sql").toURI()).text
         h2GIS.execute(sqlString)
 
@@ -144,11 +143,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
 
     @Test
     void bdtopoLczFromTestFiles() {
-        String directory = "./target/bdtopo_chain_lcz"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
-        H2GIS datasource = loadFiles(dirFile.absolutePath + File.separator + "bdtopo_db;AUTO_SERVER=TRUE")
+        H2GIS datasource = loadFiles(folder.absolutePath + File.separator + "bdtopoLczFromTestFiles;AUTO_SERVER=TRUE")
         def process = BDTopo_V2.WorkflowBDTopo_V2.loadAndFormatData()
         assertTrue process.execute([datasource                 : datasource,
                                     tableCommuneName           : 'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
@@ -188,11 +183,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
 
     @Test
     void bdtopoGeoIndicatorsFromTestFiles() {
-        String directory = "./target/bdtopo_chain_geoindicators"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
-        H2GIS h2GISDatabase = loadFiles(dirFile.absolutePath + File.separator + "bdtopo_db;AUTO_SERVER=TRUE")
+        H2GIS h2GISDatabase = loadFiles(folder.absolutePath + File.separator + "bdtopoGeoIndicatorsFromTestFiles;AUTO_SERVER=TRUE")
         def process = BDTopo_V2.WorkflowBDTopo_V2.loadAndFormatData()
         assertTrue process.execute([datasource                 : h2GISDatabase,
                                     tableCommuneName           : 'COMMUNE', tableBuildIndifName: 'BATI_INDIFFERENCIE',
@@ -212,7 +203,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
         def svfSimplified = true //Fast test
         def indicatorUse = ["TEB", "UTRF", "LCZ"]
         //Run tests
-        geoIndicatorsCalc(dirFile.absolutePath, h2GISDatabase, abstractTables.outputZone, abstractTables.outputBuilding,
+        geoIndicatorsCalc(folder.absolutePath, h2GISDatabase, abstractTables.outputZone, abstractTables.outputBuilding,
                 abstractTables.outputRoad, abstractTables.outputRail, abstractTables.outputVeget,
                 abstractTables.outputHydro, saveResults, svfSimplified, indicatorUse, prefixName)
     }
@@ -220,11 +211,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
 
     @Test
     void roadTrafficFromBDTopoTest() {
-        String directory = "./target/bdtopo_chain_prepare"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
-        H2GIS h2GISDatabase = loadFiles(dirFile.absolutePath + File.separator + "bdtopo_db;AUTO_SERVER=TRUE")
+        H2GIS h2GISDatabase = loadFiles(folder.absolutePath + File.separator + "roadTrafficFromBDTopoTest;AUTO_SERVER=TRUE")
         def process = BDTopo_V2.WorkflowBDTopo_V2.loadAndFormatData()
         assertTrue process.execute([datasource      : h2GISDatabase,
                                     tableCommuneName: 'COMMUNE',
@@ -242,14 +229,10 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
 
     @Test
     void workflowWrongMapOfWeights() {
-        String directory = "./target/bdtopo_workflow"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         def bdTopoParameters = [
                 "description" : "Example of configuration file to run the BDTopo workflow and store the results in a folder",
                 "geoclimatedb": [
-                        "folder": "${dirFile.absolutePath}",
+                        "folder": folder.absolutePath,
                         "name"  : "bdtopo_workflow_db;AUTO_SERVER=TRUE",
                         "delete": true
                 ],
@@ -260,7 +243,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
                         "database":
                                 ["user"    : "sa",
                                  "password": "sa",
-                                 "url"     : "jdbc:h2://${dirFile.absolutePath + File.separator + "geoclimate_chain_db_output;AUTO_SERVER=TRUE"}",
+                                 "url"     : "jdbc:h2://${folder.absolutePath + File.separator + "geoclimate_chain_db_output;AUTO_SERVER=TRUE"}",
                                  "tables"  : ["building_indicators": "building_indicators",
                                               "block_indicators"   : "block_indicators",
                                               "rsu_indicators"     : "rsu_indicators",
@@ -283,20 +266,16 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
                         ]
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
-        assertFalse(process.execute(input: createConfigFile(bdTopoParameters, directory)))
+        assertFalse(process.execute(input: createConfigFile(bdTopoParameters, folder.getAbsolutePath())))
     }
 
     @Disabled
     @Test
     void workflowFolderToDatabase() {
-        String directory = "./target/bdtopo_workflow"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         def bdTopoParameters = [
                 "description" : "Example of configuration file to run the BDTopo workflow and store the results in a folder",
                 "geoclimatedb": [
-                        "folder": "${dirFile.absolutePath}",
+                        "folder": folder.absolutePath,
                         "name"  : "bdtopo_workflow_db;AUTO_SERVER=TRUE",
                         "delete": true
                 ],
@@ -307,7 +286,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
                         "database":
                                 ["user"    : "sa",
                                  "password": "sa",
-                                 "url"     : "jdbc:h2://${dirFile.absolutePath + File.separator + "geoclimate_chain_db_output;AUTO_SERVER=TRUE"}",
+                                 "url"     : "jdbc:h2://${folder.absolutePath + File.separator + "geoclimate_chain_db_output;AUTO_SERVER=TRUE"}",
                                  "tables"  : ["building_indicators": "building_indicators",
                                               "block_indicators"   : "block_indicators",
                                               "rsu_indicators"     : "rsu_indicators",
@@ -330,7 +309,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
                         ]
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
-        assertTrue(process.execute(input: createConfigFile(bdTopoParameters, directory)))
+        assertTrue(process.execute(input: createConfigFile(bdTopoParameters, folder.getAbsolutePath())))
     }
 
 
@@ -344,17 +323,10 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
                                          mapOfWeights : ["sky_view_factor"             : 2, "aspect_ratio": 1, "building_surface_fraction": 4,
                                                          "impervious_surface_fraction" : 0, "pervious_surface_fraction": 0,
                                                          "height_of_roughness_elements": 3, "terrain_roughness_length": 1]]]
-        String directory = "./target/bdtopo_chain_workflow_srid"
-        File dirFile = new File(directory)
-        if (dirFile.exists()) {
-            FileUtilities.deleteFiles(dirFile, true)
-        }
-        dirFile.mkdir()
-        H2GIS h2GISDatabase = loadFiles(dirFile.absolutePath + File.separator + "bdtopo_db;AUTO_SERVER=TRUE")
-        dirFile.mkdir()
+        H2GIS h2GISDatabase = loadFiles(folder.absolutePath + File.separator + "roadTrafficFromBDTopoTest;AUTO_SERVER=TRUE")
         def tablesToSave = [
                 "rsu_lcz",]
-        def process = BDTopo_V2.WorkflowBDTopo_V2.bdtopo_processing(inseeCode, h2GISDatabase, defaultParameters, directory, tablesToSave, null, null, 4326, 2154);
+        def process = BDTopo_V2.WorkflowBDTopo_V2.bdtopo_processing(inseeCode, h2GISDatabase, defaultParameters, folder.absolutePath, tablesToSave, null, null, 4326, 2154);
         def tableNames = process.values()
 
         checkSpatialTable(h2GISDatabase, tableNames["block_indicators"])
@@ -362,7 +334,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
         checkSpatialTable(h2GISDatabase, tableNames["rsu_indicators"])
         checkSpatialTable(h2GISDatabase, tableNames["rsu_lcz"])
         def geoFiles = []
-        dirFile.eachFileRecurse groovy.io.FileType.FILES, { file ->
+        folder.eachFileRecurse groovy.io.FileType.FILES, { file ->
             if (file.name.toLowerCase().endsWith(".geojson")) {
                 geoFiles << file.getAbsolutePath()
             }
@@ -392,12 +364,12 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
         def bdTopoParameters = [
                 "description" : "Example of configuration file to run the BDTopo workflow and store the results in a folder",
                 "geoclimatedb": [
-                        "folder": "${dirFile.absolutePath}",
+                        "folder": folder.getAbsolutePath(),
                         "name"  : "bdtopo_workflow_db;AUTO_SERVER=TRUE",
                         "delete": true
                 ],
                 "input"       : [
-                        "folder": ["path"     : dataFolder,
+                        "folder": ["path"     : folder.getAbsolutePath(),
                                    "locations": [communeToTest]]],
                 "output"      : [
                         "database":
@@ -694,23 +666,19 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
 
     @Test
     void testWorkFlowRoadTraffic() {
-        String directory = "./target/bdtopo_roadtraffic"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         String dataFolder = getDataFolderPath()
         def bdTopoParameters = [
                 "description" : "Example of configuration file to build the road traffic",
                 "geoclimatedb": [
-                        "folder": dirFile.absolutePath,
-                        "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "folder": folder.absolutePath,
+                        "name"  : "testWorkFlowRoadTraffic;AUTO_SERVER=TRUE",
                         "delete": false
                 ],
                 "input"       : [
                         "folder"   : dataFolder,
                         "locations": [communeToTest]],
                 "output"      : [
-                        "folder": ["path"  : "$directory",
+                        "folder": ["path"  : folder.absolutePath,
                                    "tables": ["road_traffic"]]],
                 "parameters"  :
                         ["distance"    : 0,
@@ -721,7 +689,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
         assertTrue(process.execute(input: bdTopoParameters))
         def roadTableName = process.getResults().output[communeToTest]["road_traffic"]
         assertNotNull(roadTableName)
-        H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
+        H2GIS h2gis = H2GIS.open(folder.absolutePath + File.separator+"testWorkFlowRoadTraffic;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from $roadTableName where road_type is null".toString()).count == 0
     }
 
@@ -866,15 +834,11 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
 
     @Test
     void testWorkFlowListCodes() {
-        String directory = "./target/bdtopo_chain_grid"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         String dataFolder = getDataFolderPath()
         def bdTopoParameters = [
                 "description" : "Example of configuration file to run the grid indicators",
                 "geoclimatedb": [
-                        "folder": "${dirFile.absolutePath}",
+                        "folder": folder.absolutePath,
                         "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete": false
                 ],
@@ -882,7 +846,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
                         "folder": ["path"     : dataFolder,
                                    "locations": [2000, 2001, 2002]]],
                 "output"      : [
-                        "folder": ["path"  : "$directory",
+                        "folder": ["path"  : folder.absolutePath,
                                    "tables": ["grid_indicators"]]],
                 "parameters"  :
                         ["distance"       : 0,
@@ -894,7 +858,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
                         ]
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
-        assertFalse(process.execute(input: createConfigFile(bdTopoParameters, directory)))
+        assertFalse(process.execute(input: createConfigFile(bdTopoParameters, folder.absolutePath)))
     }
 
     @Disabled

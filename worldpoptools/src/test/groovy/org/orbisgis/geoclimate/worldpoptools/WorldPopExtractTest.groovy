@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
+import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
 import org.orbisgis.process.api.IProcess
 import org.slf4j.Logger
@@ -17,6 +18,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.orbisgis.data.H2GIS.open
 
 class WorldPopExtractTest {
+
+    @TempDir
+    static File folder
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorldPopExtractTest)
     private static H2GIS h2GIS

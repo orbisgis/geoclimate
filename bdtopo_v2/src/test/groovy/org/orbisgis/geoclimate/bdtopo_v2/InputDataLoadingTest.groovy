@@ -1,13 +1,15 @@
 package org.orbisgis.geoclimate.bdtopo_v2
 
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
 
 import static org.junit.jupiter.api.Assertions.*
 
 class InputDataLoadingTest {
 
-
+    @TempDir
+    static File folder
     public static communeToTest = "12174"
 
 
@@ -25,7 +27,7 @@ class InputDataLoadingTest {
                            "ROAD_BD_TOPO_TYPE", "VEGET_ABSTRACT_PARAMETERS", "VEGET_ABSTRACT_TYPE",
                            "VEGET_BD_TOPO_TYPE"]
 
-        H2GIS h2GISDatabase = H2GIS.open("./target/${dbPath};AUTO_SERVER=TRUE", "sa", "")
+        H2GIS h2GISDatabase = H2GIS.open(folder.getAbsolutePath()+File.separator+"bdtopo_v2_2_inputDataLoadingTest;AUTO_SERVER=TRUE")
 
         // Load parameter files
         paramTables.each{

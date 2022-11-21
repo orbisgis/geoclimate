@@ -40,6 +40,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
+import org.junit.jupiter.api.io.TempDir
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.orbisgis.data.H2GIS
@@ -57,6 +58,9 @@ import static org.junit.jupiter.api.Assertions.*
  * @author Sylvain PALOMINOS (UBS LAB-STICC 2019)
  */
 class LoaderTest extends AbstractOSMTest {
+
+    @TempDir
+    static File folder
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LoaderTest)
 
