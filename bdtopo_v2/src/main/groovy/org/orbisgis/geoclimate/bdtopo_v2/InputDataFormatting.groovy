@@ -49,7 +49,7 @@ IProcess formatBuildingLayer() {
 
             datasource.execute("""DROP TABLE IF EXISTS $outputTableName;
             CREATE TABLE $outputTableName (THE_GEOM geometry, ID_BUILD integer, ID_SOURCE varchar(24), 
-            HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT, NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX integer);""".toString())
+            HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT, NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX integer, ROOF_SHAPE VARCHAR);""".toString())
 
             if (inputTableName) {
                 ISpatialTable inputSpatialTable = datasource."$inputTableName"
@@ -174,7 +174,7 @@ IProcess formatBuildingLayer() {
                                                     ${formatedHeight.nbLevels},
                                                     '${feature_type}',
                                                     '${feature_main_use}',
-                                                    ${zIndex})
+                                                    ${zIndex}, null)
                                             """.toString()
 
                                         id_build++

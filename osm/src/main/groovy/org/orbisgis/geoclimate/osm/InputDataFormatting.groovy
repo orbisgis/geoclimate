@@ -57,7 +57,7 @@ IProcess formatBuildingLayer() {
             datasource """ 
                 DROP TABLE if exists ${outputTableName};
                 CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id_build INTEGER, ID_SOURCE VARCHAR, 
-                    HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT, NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER);
+                    HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT, NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER, ROOF_SHAPE VARCHAR);
             """.toString()
             if (inputTableName) {
                 def paramsDefaultFile = this.class.getResourceAsStream("buildingParams.json")
@@ -84,30 +84,34 @@ IProcess formatBuildingLayer() {
                     def id_build = 1;
                     datasource.withBatch(100) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
-                            String height = row.height
-                            String roof_height = row.'roof:height'
-                            String b_lev = row.'building:levels'
-                            String roof_lev = row.'roof:levels'
                             def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
                             def use = typeAndUseValues[1]
                             def type = typeAndUseValues[0]
                             if (type) {
+                                String height = row.height
+                                String roof_height = row.'roof:height'
+                                String b_lev = row.'building:levels'
+                                String roof_lev = row.'roof:levels'
+                                String roof_shape = row.'roof:shape'
                                 def heightRoof = getHeightRoof(height, heightPattern)
                                 def heightWall = getHeightWall(heightRoof, roof_height)
                                 def nbLevels = getNbLevels(b_lev, roof_lev)
-                                if (nbLevels >= 0) {
-                                    def nbLevelsFromType = typeAndLevel[type]
-                                    def formatedHeight = formatHeightsAndNbLevels(heightWall, heightRoof, nbLevels, h_lev_min,
-                                            h_lev_max, hThresholdLev2, nbLevelsFromType == null ? 0 : nbLevelsFromType)
 
-                                    def zIndex = getZIndex(row.'layer')
+                                if (nbLevels == 0) {
+                                    nbLevels = typeAndLevel[type]
+                                }
 
-                                    if (formatedHeight.nbLevels > 0 && zIndex >= 0 && type) {
-                                        Geometry geom = row.the_geom
-                                        for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                            Geometry subGeom = geom.getGeometryN(i)
-                                            if (subGeom instanceof Polygon) {
-                                                stmt.addBatch """
+                                def formatedHeight = formatHeightsAndNbLevels(heightWall, heightRoof, nbLevels, h_lev_min,
+                                        h_lev_max, hThresholdLev2)
+
+                                def zIndex = getZIndex(row.'layer')
+
+                                if (formatedHeight.nbLevels > 0 && zIndex >= 0 && type) {
+                                    Geometry geom = row.the_geom
+                                    for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                        Geometry subGeom = geom.getGeometryN(i)
+                                        if (subGeom instanceof Polygon) {
+                                            stmt.addBatch """
                                                 INSERT INTO ${outputTableName} values(
                                                     ST_GEOMFROMTEXT('${subGeom}',$epsg), 
                                                     $id_build, 
@@ -117,18 +121,18 @@ IProcess formatBuildingLayer() {
                                                     ${formatedHeight.nbLevels},
                                                     '${type}',
                                                     '${use}',
-                                                    ${zIndex})
+                                                    ${zIndex},
+                                                    ${roof_shape ? "'"+roof_shape+"'" : null})
                                             """.toString()
 
-                                                stmt.addBatch """
+                                            stmt.addBatch """
                                                 INSERT INTO ${outputEstimateTableName} values(
                                                     $id_build, 
                                                     '${row.id}',
                                                     ${formatedHeight.estimated})
                                                 """.toString()
 
-                                                id_build++
-                                            }
+                                            id_build++
                                         }
                                     }
                                 }
@@ -230,7 +234,7 @@ IProcess formatRoadLayer() {
                             def processRow = true
                             def road_access = row.'access'
                             def road_area = row.'area'
-                            if(road_area in['yes']){
+                            if (road_area in ['yes']) {
                                 processRow = false
                             }
                             def road_service = row.'service'
@@ -578,13 +582,13 @@ IProcess formatImperviousLayer() {
                             }
                             if (toAdd) {
                                 Geometry geom = row.the_geom
-                                if(!geom.isEmpty()) {
+                                if (!geom.isEmpty()) {
                                     for (int i = 0; i < geom.getNumGeometries(); i++) {
                                         Geometry subGeom = geom.getGeometryN(i)
-                                        if(!subGeom.isEmpty()){
-                                        if (subGeom instanceof Polygon) {
-                                            stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}')".toString()
-                                        }
+                                        if (!subGeom.isEmpty()) {
+                                            if (subGeom instanceof Polygon) {
+                                                stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}')".toString()
+                                            }
                                         }
                                     }
                                 }
@@ -685,7 +689,7 @@ static float getHeightWall(height, r_height) {
  * @return a map with the new values
  */
 static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels, def h_lev_min,
-                                    def h_lev_max, def hThresholdLev2, def nbLevFromType) {
+                                    def h_lev_max, def hThresholdLev2) {
     //Use the OSM values
     if (heightWall != 0 && heightRoof != 0 && nbLevels != 0) {
         return [heightWall: heightWall, heightRoof: heightRoof, nbLevels: nbLevels, estimated: false]
@@ -709,15 +713,6 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
     if (heightRoof == 0) {
         heightRoof = heightWall
     }
-    // Update nbLevels
-    // If the nb_lev parameter  is equal to 1 or 2
-    // (and height_wall > 10m) then apply the rule. Else, the nb_lev is equal to 1
-    if (nbLevels == 0) {
-        nbLevels = 1
-        if (nbLevFromType == 1 || (nbLevFromType == 2 && heightWall > hThresholdLev2)) {
-            nbLevels = Math.floor(heightWall / h_lev_min)
-        }
-    }
 
     // Control of heights and number of levels
     // Check if height_roof is lower than height_wall. If yes, then correct height_roof
@@ -730,7 +725,7 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
         heightRoof = tmpHmin
     }
     def tmpHmax = nbLevels * h_lev_max
-    if (nbLevFromType == 1 || nbLevFromType == 2 && heightWall > hThresholdLev2) {
+    if (nbLevels == 1 || nbLevels == 2 && heightWall > hThresholdLev2) {
         if (tmpHmax < heightWall) {
             nbLevels = Math.floor(heightWall / h_lev_max)
         }
@@ -1033,7 +1028,7 @@ IProcess formatSeaLandMask() {
                         def coastLinesPoints = "coatline_points_zone${UUID.randomUUID().toString().replaceAll("-", "_")}"
                         def sea_land_mask = "sea_land_mask${UUID.randomUUID().toString().replaceAll("-", "_")}"
                         def sea_land_mask_in_zone = "sea_land_mask_in_zone${UUID.randomUUID().toString().replaceAll("-", "_")}"
-                        def water_to_be_filtered ="water_to_be_filtered${UUID.randomUUID().toString().replaceAll("-", "_")}"
+                        def water_to_be_filtered = "water_to_be_filtered${UUID.randomUUID().toString().replaceAll("-", "_")}"
                         def water_filtered_exploded = "water_filtered_exploded${UUID.randomUUID().toString().replaceAll("-", "_")}"
                         datasource.execute """DROP TABLE IF EXISTS $outputTableName, $coastLinesIntersects, 
                         $islands_mark, $mergingDataTable,  $coastLinesIntersectsPoints, $coastLinesPoints,$sea_land_mask,
@@ -1117,12 +1112,12 @@ IProcess formatSeaLandMask() {
                          """.toString()
 
                         } else {
-                         datasource.execute """
+                            datasource.execute """
                         CREATE TABLE $islands_mark (the_geom GEOMETRY, ID SERIAL) AS 
                        SELECT the_geom, EXPLOD_ID  FROM st_explode('(  
                        SELECT ST_LINEMERGE(st_accum(THE_GEOM)) AS the_geom, NULL FROM $coastLinesIntersects)');""".toString()
 
-                        datasource.execute """  
+                            datasource.execute """  
                         CREATE TABLE $mergingDataTable  AS
                         SELECT  THE_GEOM FROM $coastLinesIntersects 
                         UNION ALL
