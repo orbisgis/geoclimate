@@ -11,11 +11,10 @@ import static org.orbisgis.data.H2GIS.open
 class BlockIndicatorsTests {
 
     private static def h2GIS
-    private static def randomDbName() {"${BlockIndicatorsTests.simpleName}_${UUID.randomUUID().toString().replaceAll"-", "_"}"}
 
     @BeforeAll
     static void beforeAll(){
-        h2GIS = open"./target/${randomDbName()};AUTO_SERVER=TRUE"
+        h2GIS = open"./target/${"blockIndicatorsTests"};AUTO_SERVER=TRUE"
     }
 
     @BeforeEach

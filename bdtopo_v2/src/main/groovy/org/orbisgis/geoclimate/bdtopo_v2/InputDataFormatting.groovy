@@ -19,8 +19,6 @@ import java.util.regex.Pattern
  * @param datasource A connexion to a DB containing the raw buildings table
  * @param inputTableName The name of the raw buildings table in the DB
  * @param hLevMin Minimum building level height
- * @param hLevMax Maximum building level height
- * @param hThresholdLev2 Threshold on the building height, used to determine the number of levels
  * @return outputTableName The name of the final buildings table
  * @return outputEstimatedTableName The name of the table containing the state of estimation for each building
  */
@@ -28,20 +26,12 @@ IProcess formatBuildingLayer() {
     return create {
         title "Transform BDTopo buildings table into a table that matches the constraints of the GeoClimate input model"
         id "formatBuildingLayer"
-        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: String, inputUrbanAreas: "", h_lev_min: 3, h_lev_max: 15, hThresholdLev2: 10
+        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: String, inputUrbanAreas: "", h_lev_min: 3
         outputs outputTableName: String
-        run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, inputUrbanAreas, h_lev_min, h_lev_max, hThresholdLev2 ->
-
+        run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, inputUrbanAreas, h_lev_min ->
             if (!h_lev_min) {
                 h_lev_min = 3
             }
-            if (!h_lev_max) {
-                h_lev_max = 15
-            }
-            if (!hThresholdLev2) {
-                hThresholdLev2 = 10
-            }
-
             def outputTableName = postfix "BUILDING"
             debug 'Formating building layer'
 
@@ -148,14 +138,12 @@ IProcess formatBuildingLayer() {
                             def height_roof = 0
                             def nb_lev = 0
                             //Update height_wall
-                            if (height_wall == null || height_wall == 0) {
-                                height_wall = h_lev_min
-                                height_roof = h_lev_max
+                            if (!height_wall) {
+                                height_wall = 0
                             }
                             //Update NB_LEV
-                            def nbLevelsFromType = building_type_level[feature_type]
                             def formatedHeight = formatHeightsAndNbLevels(height_wall, height_roof, nb_lev, h_lev_min,
-                                    h_lev_max, hThresholdLev2, nbLevelsFromType == null ? 0 : nbLevelsFromType)
+                                    feature_type,  building_type_level)
 
                             def zIndex = 0
                             if (formatedHeight.nbLevels > 0) {
@@ -210,7 +198,7 @@ IProcess formatBuildingLayer() {
                                                a.NB_LEV, 
                                                COALESCE(b.TYPE, a.TYPE) AS TYPE ,
                                                COALESCE(b.MAIN_USE, a.MAIN_USE) AS MAIN_USE
-                                               , a.ZINDEX from $outputTableName
+                                               , a.ZINDEX, a.ROOF_SHAPE from $outputTableName
                                         a LEFT JOIN $buildinType b on a.id_build=b.id_build""".toString()
 
                         datasource.execute """DROP TABLE IF EXISTS $buildinType, $outputTableName;
@@ -647,15 +635,11 @@ IProcess formatVegetationLayer() {
  * @param heightRoof value
  * @param nbLevels value
  * @param h_lev_min value
- * @param h_lev_max value
- * @param hThresholdLev2 value
- * @param nbLevFromType value
- * @param hThresholdLev2 value
  * @return a map with the new values
  */
 static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels, def h_lev_min,
-                                    def h_lev_max, def hThresholdLev2, def nbLevFromType) {
-    //Use the OSM values
+                                    def buildingType, def levelBuildingTypeMap) {
+    //Use the BDTopo values
     if (heightWall != 0 && heightRoof != 0 && nbLevels != 0) {
         return [heightWall: heightWall, heightRoof: heightRoof, nbLevels: nbLevels, estimated: false]
     }
@@ -665,43 +649,32 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
     if (heightWall == 0) {
         if (heightRoof == 0) {
             if (nbLevels == 0) {
-                heightWall = h_lev_min
+                nbLevels = levelBuildingTypeMap[buildingType]
+                if(!nbLevels){
+                    nbLevels=1
+                }
+                heightWall = h_lev_min * nbLevels
+                heightRoof=heightWall
                 estimated = true
             } else {
                 heightWall = h_lev_min * nbLevels
+                heightRoof=heightWall
             }
         } else {
             heightWall = heightRoof
-        }
-    }
-    // Update heightRoof
-    if (heightRoof == 0) {
-        heightRoof = heightWall
-    }
-    // Update nbLevels
-    // If the nb_lev parameter  is equal to 1 or 2
-    // (and height_wall > 10m) then apply the rule. Else, the nb_lev is equal to 1
-    if (nbLevels == 0) {
-        nbLevels = 1
-        if (nbLevFromType == 1 || (nbLevFromType == 2 && heightWall > hThresholdLev2)) {
             nbLevels = Math.floor(heightWall / h_lev_min)
         }
+    }else if(heightWall==heightRoof){
+        if(nbLevels==0){
+            nbLevels=Math.floor(heightWall / h_lev_min)
+        }
     }
-
     // Control of heights and number of levels
     // Check if height_roof is lower than height_wall. If yes, then correct height_roof
-    if (heightWall > heightRoof) {
+    else if (heightWall > heightRoof) {
         heightRoof = heightWall
-    }
-    def tmpHmin = nbLevels * h_lev_min
-    // Check if there is a high difference between the "real" and "theorical (based on the level number) roof heights
-    if (tmpHmin > heightRoof) {
-        heightRoof = tmpHmin
-    }
-    def tmpHmax = nbLevels * h_lev_max
-    if (nbLevFromType == 1 || nbLevFromType == 2 && heightWall > hThresholdLev2) {
-        if (tmpHmax < heightWall) {
-            nbLevels = Math.floor(heightWall / h_lev_max)
+        if(nbLevels==0){
+            nbLevels=Math.floor(heightWall / h_lev_min)
         }
     }
     return [heightWall: heightWall, heightRoof: heightRoof, nbLevels: nbLevels, estimated: estimated]

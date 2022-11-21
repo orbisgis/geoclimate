@@ -106,8 +106,6 @@ import org.orbisgis.geoclimate.Geoindicators
  * - mapOfWeights Values that will be used to increase or decrease the weight of an indicator (which are the key
  * of the map) for the LCZ classification step (default : all values to 1)
  * - hLevMin Minimum building level height
- * - hLevMax Maximum building level height
- * - hThresholdLev2 Threshold on the building height, used to determine the number of levels
  *
  * @return
  * a map with the name of zone and a list of the output tables computed and stored in the local database, otherwise throw an error.
@@ -485,8 +483,6 @@ IProcess osm_processing() {
                                         inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                                         epsg                      : srid,
                                         h_lev_min                 : processing_parameters.hLevMin,
-                                        h_lev_max                 : processing_parameters.hLevMax,
-                                        hThresholdLev2            : processing_parameters.hThresholdLev2,
                                         urbanAreasTableName       : urbanAreasTable])
 
                                 buildingTableName = format.results.outputTableName
@@ -796,7 +792,7 @@ def static extractOSMZone(def datasource, def zoneToExtract, def distance, def b
  */
 def static extractProcessingParameters(def processing_parameters) {
     def defaultParameters = [distance: 0f, prefixName: "",
-                             hLevMin : 3, hLevMax: 15, hThresholdLev2: 10]
+                             hLevMin : 3]
     def rsu_indicators_default = [indicatorUse      : [],
                                   svfSimplified     : true,
                                   surface_vegetation: 10000f,
@@ -827,14 +823,7 @@ def static extractProcessingParameters(def processing_parameters) {
         if (hLevMinP && hLevMinP in Integer) {
             defaultParameters.hLevMin = hLevMinP
         }
-        def hLevMaxP = processing_parameters.hLevMax
-        if (hLevMaxP && hLevMaxP in Integer) {
-            defaultParameters.hLevMax = hLevMaxP
-        }
-        def hThresholdLev2P = processing_parameters.hThresholdLev2
-        if (hThresholdLev2P && hThresholdLev2P in Integer) {
-            defaultParameters.hThresholdLev2 = hThresholdLev2P
-        }
+
         //Check for rsu indicators
         def rsu_indicators = processing_parameters.rsu_indicators
         if (rsu_indicators) {
@@ -1429,12 +1418,10 @@ IProcess buildGeoclimateLayers() {
         inputs datasource: JdbcDataSource,
                 zoneToExtract: Object,
                 distance: 500,
-                hLevMin: 3,
-                hLevMax: 15,
-                hThresholdLev2: 10
+                hLevMin: 3
         outputs outputBuilding: String, outputRoad: String, outputRail: String,
                 outputHydro: String, outputVeget: String, outputImpervious: String, outputZone: String, outputZoneEnvelope: String
-        run { datasource, zoneToExtract, distance, hLevMin, hLevMax, hThresholdLev2 ->
+        run { datasource, zoneToExtract, distance, hLevMin ->
 
             if (datasource == null) {
                 error "Cannot access to the database to store the osm data"

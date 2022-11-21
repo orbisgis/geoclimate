@@ -18,8 +18,6 @@ import java.util.regex.Pattern
  * @param datasource A connexion to a DB containing the raw buildings table
  * @param inputTableName The name of the raw buildings table in the DB
  * @param hLevMin Minimum building level height
- * @param hLevMax Maximum building level height
- * @param hThresholdLev2 Threshold on the building height, used to determine the number of levels
  * @param epsg EPSG code to apply
  * @param jsonFilename Name of the json formatted file containing the filtering parameters
  * @return outputTableName The name of the final buildings table
@@ -29,18 +27,11 @@ IProcess formatBuildingLayer() {
     return create {
         title "Transform OSM buildings table into a table that matches the constraints of the GeoClimate input model"
         id "formatBuildingLayer"
-        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, h_lev_min: 3, h_lev_max: 15, hThresholdLev2: 10, jsonFilename: "", urbanAreasTableName: ""
+        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, h_lev_min: 3, jsonFilename: "", urbanAreasTableName: ""
         outputs outputTableName: String, outputEstimateTableName: String
-        run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, epsg, h_lev_min, h_lev_max, hThresholdLev2, jsonFilename, urbanAreasTableName ->
-
+        run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, epsg, h_lev_min, jsonFilename, urbanAreasTableName ->
             if (!h_lev_min) {
                 h_lev_min = 3
-            }
-            if (!h_lev_max) {
-                h_lev_max = 15
-            }
-            if (!hThresholdLev2) {
-                hThresholdLev2 = 10
             }
 
             def outputTableName = postfix "INPUT_BUILDING"
@@ -95,8 +86,7 @@ IProcess formatBuildingLayer() {
                                 def heightRoof = getHeightRoof(height, heightPattern)
                                 def heightWall = getHeightWall(heightRoof, roof_height)
                                 def nbLevels = getNbLevels(b_lev, roof_lev)
-                                def formatedHeight = formatHeightsAndNbLevels(heightWall, heightRoof, nbLevels, h_lev_min,
-                                        h_lev_max, hThresholdLev2,type, typeAndLevel)
+                                def formatedHeight = formatHeightsAndNbLevels(heightWall, heightRoof, nbLevels, h_lev_min,type, typeAndLevel)
                                 def zIndex = getZIndex(row.'layer')
                                 String roof_shape = row.'roof:shape'
 
@@ -156,7 +146,7 @@ IProcess formatBuildingLayer() {
                                                a.NB_LEV, 
                                                COALESCE(b.TYPE, a.TYPE) AS TYPE ,
                                                COALESCE(b.MAIN_USE, a.MAIN_USE) AS MAIN_USE
-                                               , a.ZINDEX from $outputTableName
+                                               , a.ZINDEX, a.a.ROOF_SHAPE from $outputTableName
                                         a LEFT JOIN $buildinType b on a.id_build=b.id_build""".toString()
 
                         datasource.execute """DROP TABLE IF EXISTS $buildinType, $outputTableName;
@@ -676,14 +666,9 @@ static float getHeightWall(height, r_height) {
  * @param heightRoof value
  * @param nbLevels value
  * @param h_lev_min value
- * @param h_lev_max value
- * @param hThresholdLev2 value
- * @param nbLevFromType value
- * @param hThresholdLev2 value
  * @return a map with the new values
  */
-static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels, def h_lev_min,
-                                    def h_lev_max, def hThresholdLev2, def buildingType, def levelBuildingTypeMap) {
+static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels, def h_lev_min, def buildingType, def levelBuildingTypeMap) {
     //Use the OSM values
     if (heightWall != 0 && heightRoof != 0 && nbLevels != 0) {
         return [heightWall: heightWall, heightRoof: heightRoof, nbLevels: nbLevels, estimated: false]
@@ -722,21 +707,7 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
             nbLevels=Math.floor(heightWall / h_lev_min)
         }
     }
-
-
-   /* def tmpHmin = nbLevels * h_lev_min
-    // Check if there is a high difference between the "real" and "theorical (based on the level number) roof heights
-    if (tmpHmin > heightRoof) {
-        heightRoof = tmpHmin
-    }
-    def tmpHmax = nbLevels * h_lev_max
-    if (nbLevels == 1 || nbLevels == 2 && heightWall > hThresholdLev2) {
-        if (tmpHmax < heightWall) {
-            nbLevels = Math.floor(heightWall / h_lev_max)
-        }
-    }*/
     return [heightWall: heightWall, heightRoof: heightRoof, nbLevels: nbLevels, estimated: estimated]
-
 }
 
 

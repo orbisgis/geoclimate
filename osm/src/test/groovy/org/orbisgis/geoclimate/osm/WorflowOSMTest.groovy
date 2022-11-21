@@ -340,8 +340,6 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters":
                         ["distance" : 100,
                          "hLevMin": 3,
-                         "hLevMax": 15,
-                         "hThresholdLev2": 10,
                          rsu_indicators: ["indicatorUse": ["LCZ"],
                                           "svfSimplified": true,
                          "mapOfWeights":

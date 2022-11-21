@@ -62,8 +62,6 @@ class GeoclimateTest {
                                 "indicatorUse": ["TEB"],
                                 "svfSimplified": true,
                                 "hLevMin": 3,
-                                "hLevMax": 15,
-                                "hThresholdLev2": 10
                         ]
         ]
 

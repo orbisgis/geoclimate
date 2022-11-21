@@ -104,7 +104,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
                                     tablePiste_AerodromeName   : 'PISTE_AERODROME',
                                     tableReservoirName         : 'RESERVOIR',
-                                    distance                   : 0, hLevMin: 3, hLevMax: 15, hThresholdLev2: 10
+                                    distance                   : 0, hLevMin: 3
         ])
         process.getResults().each { entry ->
             assertNotNull(h2GISDatabase.getTable(entry.getValue()))
@@ -159,7 +159,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
                                     tablePiste_AerodromeName   : 'PISTE_AERODROME',
                                     tableReservoirName         : 'RESERVOIR',
-                                    distance                   : 1000, hLevMin: 3, hLevMax: 15, hThresholdLev2: 10
+                                    distance                   : 1000, hLevMin: 3
         ])
         def abstractTables = process.getResults()
 
@@ -203,7 +203,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
                                     tableImperviousRoadSurfName: 'SURFACE_ROUTE', tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
                                     tablePiste_AerodromeName   : 'PISTE_AERODROME',
                                     tableReservoirName         : 'RESERVOIR', distance: 1000,
-                                    hLevMin                    : 3, hLevMax: 15, hThresholdLev2: 10
+                                    hLevMin                    : 3
         ])
         def abstractTables = process.getResults()
 
@@ -269,8 +269,6 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
                 "parameters"  :
                         ["distance"      : 0,
                          "hLevMin"       : 3,
-                         "hLevMax"       : 15,
-                         "hThresholdLev2": 10,
                          rsu_indicators  : [
                                  "indicatorUse" : ["LCZ", "TEB", "UTRF"],
                                  "svfSimplified": true,
@@ -318,8 +316,6 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
                 "parameters"  :
                         ["distance"      : 0,
                          "hLevMin"       : 3,
-                         "hLevMax"       : 15,
-                         "hThresholdLev2": 10,
                          rsu_indicators  : [
                                  "indicatorUse" : ["LCZ", "TEB", "UTRF"],
                                  "svfSimplified": true,
