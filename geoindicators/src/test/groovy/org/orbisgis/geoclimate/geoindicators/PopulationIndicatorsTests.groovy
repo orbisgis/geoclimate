@@ -3,6 +3,7 @@ package org.orbisgis.geoclimate.geoindicators
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
@@ -15,12 +16,13 @@ import static org.orbisgis.data.H2GIS.open
 
 class PopulationIndicatorsTests {
 
-
+    @TempDir
+    static File folder
     private static H2GIS h2GIS
 
     @BeforeAll
     static void beforeAll() {
-        h2GIS = open "./target/population_db;AUTO_SERVER=TRUE"
+        h2GIS = open(folder.getAbsolutePath()+File.separator+"populationIndicatorsTests;AUTO_SERVER=TRUE")
     }
 
     @Test

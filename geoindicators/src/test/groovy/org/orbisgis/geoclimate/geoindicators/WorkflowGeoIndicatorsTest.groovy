@@ -2,6 +2,7 @@ package org.orbisgis.geoclimate.geoindicators
 
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.data.dataframe.DataFrame
 import org.orbisgis.data.H2GIS
@@ -12,8 +13,12 @@ import org.slf4j.LoggerFactory
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
+import static org.orbisgis.data.H2GIS.open
 
 class WorkflowGeoIndicatorsTest {
+
+    @TempDir
+    static File folder
 
     public static Logger logger = LoggerFactory.getLogger(WorkflowGeoIndicatorsTest.class)
 
@@ -86,8 +91,7 @@ class WorkflowGeoIndicatorsTest {
     public static def inputTableNames
     @BeforeAll
     static void beforeAll(){
-        File directory = new File("./target/geoindicators_workflow")
-        datasource = H2GIS.open(directory.absolutePath + File.separator + "osm_workflow_db;AUTO_SERVER=TRUE")
+        datasource = open(folder.getAbsolutePath()+File.separator+"workflowGeoIndicatorsTest;AUTO_SERVER=TRUE")
         assertNotNull(datasource)
         datasource.load(WorkflowGeoIndicatorsTest.class.getResource("BUILDING.geojson"), "BUILDING", true)
         datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ROAD.geojson"), "ROAD", true)
@@ -490,7 +494,7 @@ class WorkflowGeoIndicatorsTest {
         assertEquals(0, countResult.count)
 
         if(save){
-            datasource.getTable(tableName).save("${directory.absolutePath}${File.separator}${rsuIndicatorsTableName}.geojson")
+            datasource.getTable(tableName).save(new File(folder,"${rsuIndicatorsTableName}.geojson".toString()))
         }
     }
 
