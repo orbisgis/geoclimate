@@ -19,7 +19,7 @@ IProcess groundAcousticAbsorption() {
         title "Compute a ground acoustic absorption table"
         inputs zone: String, id_zone: String, building: "", road: "", water: "", vegetation: "",
                 impervious: "", datasource: H2GIS, jsonFilename: ""
-        outputs ground: String
+        outputs ground_acoustic: String
         run { zone, id_zone, building, road, water, vegetation, impervious, H2GIS datasource, jsonFilename ->
 
             IProcess process = Geoindicators.RsuIndicators.groundLayer()
@@ -40,12 +40,12 @@ IProcess groundAcousticAbsorption() {
                 int rowcount = 1
                 datasource.withBatch(100) { stmt ->
                     datasource.eachRow("SELECT the_geom, LOW_VEGETATION_TYPE, HIGH_VEGETATION_TYPE, WATER_TYPE, IMPERVIOUS_TYPE FROM $ground where BUILDING_TYPE IS NULL AND ROAD_TYPE IS NULL".toString()) { row ->
-
+                        def data = row.toRowResult()
                         float g_coeff
                         def best_types
                         def layer_name
-                        layer_priorities.eachWithIndex {layer ->
-                            def tmp_val =row."${layer}_TYPE".toLowerCase()
+                        layer_priorities.each {layer ->
+                            def tmp_val =data."${layer.toUpperCase()}_TYPE"
                             if(tmp_val){
                                 best_types=tmp_val
                                 layer_name=layer
@@ -69,14 +69,14 @@ IProcess groundAcousticAbsorption() {
                         } else {
                             type = weight_values.subMap(matching_bdtopo_values.subMap(listTypes).values()).max { it.key }.key
                         }*/
-                        Geometry geom = row.the_geom
+                        Geometry geom = data.THE_GEOM
                         def epsg = geom.getSRID()
                         stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${geom}',$epsg), ${rowcount++},${g_coeff}, '${layer_name}')".toString()
 
                     }
                 }
                 debug('Ground acoustic transformation finishes')
-                [outputTableName: outputTableName]
+                [ground_acoustic: outputTableName]
             }
         }
 
